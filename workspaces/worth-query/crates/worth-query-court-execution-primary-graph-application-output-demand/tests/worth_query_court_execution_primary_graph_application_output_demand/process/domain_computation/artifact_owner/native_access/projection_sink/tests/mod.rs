@@ -15,7 +15,6 @@ use worth_query_installation::facade::WorthQueryArtifactNativeAlignment;
 
 use worth_query_execution::facade::domain_computation::WorthQueryArtifactProjectionSink;
 
-#[global_allocator]
 pub static TEST_ALLOCATOR: &StatsAlloc<std::alloc::System> = &INSTRUMENTED_SYSTEM;
 
 #[test]
