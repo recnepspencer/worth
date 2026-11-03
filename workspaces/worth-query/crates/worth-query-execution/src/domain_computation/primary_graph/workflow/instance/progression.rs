@@ -89,23 +89,23 @@ impl SettledWorkflowTransition {
 /// cold rebuild of a completed instance excludes its final terminal settlement.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorkflowInstanceProgress {
-    captured_inputs: Option<OrdMap<EntityId, captured_inputs::RetainedCapturedInputs>>,
-    head: EntityId,
-    next_occurrence: u64,
+    pub captured_inputs: Option<OrdMap<EntityId, captured_inputs::RetainedCapturedInputs>>,
+    pub head: EntityId,
+    pub next_occurrence: u64,
     pub retry_counts: OrdMap<(EntityId, ApplicationWorkflowControlOutcome), usize>,
     pub path_depth: u64,
     pub path: OrdMap<u64, WorkflowPathFrame>,
-    back_blocked_by_operation: bool,
+    pub back_blocked_by_operation: bool,
     pub back_edge_iterations: OrdMap<(EntityId, EntityId), u64>,
     pub latest_transitions: OrdMap<EntityId, WorkflowTransitionLocator>,
-    latest_transition_identities: OrdMap<EntityId, (u64, String)>,
+    pub latest_transition_identities: OrdMap<EntityId, (u64, String)>,
     pub latest_assessment_evidence: OrdMap<EntityId, WorkflowAssessmentEvidenceLocator>,
     /// Assessment evidence bytes this instance's own history retains.
-    retained_evidence_bytes: u64,
+    pub retained_evidence_bytes: u64,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-struct WorkflowPathFrame {
+pub struct WorkflowPathFrame {
     source: EntityId,
 }
 

@@ -5,7 +5,7 @@ use crate::domain_computation::primary_graph::application_discovery::{
 };
 use worth_query_installation::facade::WorthQueryApplicationWorkflowResourceCeiling;
 
-pub(in crate::domain_computation::primary_graph) struct WorkflowRecord {
+pub struct WorkflowRecord {
     pub(in crate::domain_computation::primary_graph) state: State,
     pub(in crate::domain_computation::primary_graph) instance: EntityId,
     pub(in crate::domain_computation::primary_graph) lineage: EntityId,

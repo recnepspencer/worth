@@ -17,9 +17,9 @@ mod selected;
 mod unpublished;
 
 pub struct PreparedSelectedDelivery<'a> {
-    lowering: &'a std::sync::Arc<worth_runtime_bridge::facade::BridgeInstalledConditionalLowering>,
-    ordinal: usize,
-    preserved: bool,
+    pub lowering: &'a std::sync::Arc<worth_runtime_bridge::facade::BridgeInstalledConditionalLowering>,
+    pub ordinal: usize,
+    pub preserved: bool,
 }
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>

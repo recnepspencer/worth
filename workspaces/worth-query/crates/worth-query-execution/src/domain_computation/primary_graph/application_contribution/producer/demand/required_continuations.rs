@@ -131,10 +131,10 @@ where
     Schema: ApplicationSchema,
     Family: WorthQueryProducerOutputFamily<Schema>,
 {
-    demand: Option<WorthQueryAdmittedOutputDemand<Schema, Family>>,
-    pending_claim: Option<SelectedRequiredRefreshClaim>,
-    pending_provenance: Option<RequiredSuccessorProvenance>,
-    predecessor: Option<SelectedReadyReadmission>,
+    pub demand: Option<WorthQueryAdmittedOutputDemand<Schema, Family>>,
+    pub pending_claim: Option<SelectedRequiredRefreshClaim>,
+    pub pending_provenance: Option<RequiredSuccessorProvenance>,
+    pub predecessor: Option<SelectedReadyReadmission>,
 }
 
 impl<Schema, Family> ErasedRequiredSuccessor<Schema> for TypedRequiredSuccessor<Schema, Family>

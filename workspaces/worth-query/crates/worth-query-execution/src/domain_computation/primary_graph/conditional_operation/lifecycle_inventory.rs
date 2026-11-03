@@ -3,11 +3,11 @@ use std::sync::Weak;
 use super::inspection::WorthQueryConditionalRuntimeInspection;
 
 pub struct WorthQueryConditionalOperationLiveness {
-    pub(super) binding: Weak<()>,
-    pub(super) lease: Weak<super::installation::ConditionalClockLease>,
-    pub(super) wakes: Vec<Weak<()>>,
-    pub(super) intents: Vec<Weak<()>>,
-    pub(super) attempts: Vec<Weak<()>>,
+    pub binding: Weak<()>,
+    pub lease: Weak<super::installation::ConditionalClockLease>,
+    pub wakes: Vec<Weak<()>>,
+    pub intents: Vec<Weak<()>>,
+    pub attempts: Vec<Weak<()>>,
 }
 
 /// A probe that reports which conditional runtime resources are still alive,

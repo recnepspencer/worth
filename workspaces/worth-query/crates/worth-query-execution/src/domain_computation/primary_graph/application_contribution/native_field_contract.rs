@@ -4,7 +4,7 @@ use worth_query_declaration::facade::application_schema as schema;
 use worth_query_installation::facade as domain;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(super) struct NativeFieldBindingExpectation {
+pub struct NativeFieldBindingExpectation {
     pub(super) locus: schema::ApplicationFieldBindingLocus,
     pub(super) binding: TypeId,
     pub(super) value: TypeId,
@@ -51,7 +51,7 @@ impl NativeFieldBindingExpectation {
 }
 
 #[derive(Debug)]
-pub(super) struct NativeFieldContractDenial {
+pub struct NativeFieldContractDenial {
     pub(super) locus: schema::ApplicationFieldBindingLocus,
     pub(super) detail: String,
 }

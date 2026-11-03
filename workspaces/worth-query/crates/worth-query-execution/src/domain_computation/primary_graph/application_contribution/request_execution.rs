@@ -213,7 +213,7 @@ enum DispatchForm<'d> {
 }
 
 /// One run's placement. Each pattern runs inside a work ceiling on it.
-pub(super) struct QueryDispatch<'d> {
+pub struct QueryDispatch<'d> {
     form: DispatchForm<'d>,
     certified_seed: Option<u64>,
 }

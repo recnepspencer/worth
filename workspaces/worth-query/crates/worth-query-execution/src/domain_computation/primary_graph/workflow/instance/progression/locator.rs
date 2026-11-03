@@ -28,7 +28,7 @@ impl WorkflowTransitionLocator {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) struct WorkflowAssessmentEvidenceLocator {
+pub struct WorkflowAssessmentEvidenceLocator {
     transition: WorkflowTransitionLocator,
     evidence: EntityId,
 }

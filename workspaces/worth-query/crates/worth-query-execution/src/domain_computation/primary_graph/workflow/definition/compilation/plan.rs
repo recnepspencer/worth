@@ -22,34 +22,34 @@ pub(super) use dispatch::CompiledWorkflowDispatch;
 /// authority. The instance owner must freshly admit every use.
 #[derive(Clone)]
 pub struct CompiledWorkflowDefinition {
-    pub(super) publication: Arc<CompiledWorkflowPublicationPlan>,
-    pub(super) content_identity: ApplicationWorkflowDefinitionContentIdentity,
-    pub(super) program_revision: ApplicationProgramRevision,
+    pub publication: Arc<CompiledWorkflowPublicationPlan>,
+    pub content_identity: ApplicationWorkflowDefinitionContentIdentity,
+    pub program_revision: ApplicationProgramRevision,
     /// A migration successor's first node; see [`Self::resumed_at`].
-    pub(super) resume: Option<usize>,
+    pub resume: Option<usize>,
 }
 
 pub struct CompiledWorkflowPublicationPlan {
-    pub(super) lineage: EntityId,
-    pub(super) definition: EntityId,
-    pub(super) start: usize,
-    pub(super) nodes: Box<[CompiledWorkflowNode]>,
-    pub(super) connections: Box<[CompiledWorkflowConnection]>,
-    pub(super) global_actions:
+    pub lineage: EntityId,
+    pub definition: EntityId,
+    pub start: usize,
+    pub nodes: Box<[CompiledWorkflowNode]>,
+    pub connections: Box<[CompiledWorkflowConnection]>,
+    pub global_actions:
         Arc<[worth_query_installation::facade::WorthQueryWorkflowGlobalActionDependency]>,
-    pub(super) node_ordinals: Arc<[(EntityId, usize)]>,
-    pub(super) dispatch: Arc<CompiledWorkflowDispatch>,
+    pub node_ordinals: Arc<[(EntityId, usize)]>,
+    pub dispatch: Arc<CompiledWorkflowDispatch>,
 }
 
 pub struct CompiledWorkflowNode {
-    pub(super) entity: EntityId,
-    pub(super) meaning: Arc<CompiledWorkflowNodeMeaning>,
+    pub entity: EntityId,
+    pub meaning: Arc<CompiledWorkflowNodeMeaning>,
 }
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct CompiledWorkflowNodeMeaning {
-    pub(super) path: String,
-    pub(super) kind: CompiledWorkflowNodeKind,
+    pub path: String,
+    pub kind: CompiledWorkflowNodeKind,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -101,10 +101,10 @@ pub(in crate::domain_computation::primary_graph) enum CompiledWorkflowAssessment
 }
 
 pub struct CompiledWorkflowConnection {
-    pub(super) entity: EntityId,
-    pub(super) source: EntityId,
-    pub(super) target: EntityId,
-    pub(super) kind: Arc<CompiledWorkflowConnectionKind>,
+    pub entity: EntityId,
+    pub source: EntityId,
+    pub target: EntityId,
+    pub kind: Arc<CompiledWorkflowConnectionKind>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -132,7 +132,7 @@ pub struct CompiledWorkflowSemanticConnection {
 }
 
 #[derive(Debug, Eq, PartialEq)]
-pub(super) struct CompiledWorkflowSemanticPlan {
+pub struct CompiledWorkflowSemanticPlan {
     pub(super) start: usize,
     pub(super) nodes: Box<[Arc<CompiledWorkflowNodeMeaning>]>,
     pub(super) connections: Box<[CompiledWorkflowSemanticConnection]>,

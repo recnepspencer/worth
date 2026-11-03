@@ -10,21 +10,21 @@ use super::plan::{
 };
 
 pub struct ColdCompiledWorkflowDefinition {
-    pub(super) lineage: EntityId,
-    pub(super) definition: EntityId,
-    pub(super) start_node: EntityId,
-    pub(super) nodes: Box<[CompiledWorkflowNode]>,
-    pub(super) connections: Box<[CompiledWorkflowConnection]>,
-    pub(super) global_actions:
+    pub lineage: EntityId,
+    pub definition: EntityId,
+    pub start_node: EntityId,
+    pub nodes: Box<[CompiledWorkflowNode]>,
+    pub connections: Box<[CompiledWorkflowConnection]>,
+    pub global_actions:
         Box<[worth_query_installation::facade::WorthQueryWorkflowGlobalActionDependency]>,
-    pub(super) revisions: WorkflowDefinitionPublicationRevisions,
+    pub revisions: WorkflowDefinitionPublicationRevisions,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct WorkflowDefinitionPublicationRevisions {
-    pub(super) start: Option<VersionId>,
-    pub(super) nodes: Option<VersionId>,
-    pub(super) connections: Option<VersionId>,
+    pub start: Option<VersionId>,
+    pub nodes: Option<VersionId>,
+    pub connections: Option<VersionId>,
 }
 
 #[derive(Clone)]
@@ -40,7 +40,7 @@ pub(super) struct WorkflowDefinitionPublicationBinding {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(super) enum WorkflowDefinitionPublicationBindingDenial {
+pub enum WorkflowDefinitionPublicationBindingDenial {
     MissingStartNode,
     UnknownConnectionEndpoint,
     BindingCardinalityMismatch,

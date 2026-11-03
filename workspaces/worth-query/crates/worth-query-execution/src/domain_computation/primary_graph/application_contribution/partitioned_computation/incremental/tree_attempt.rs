@@ -9,7 +9,7 @@ use super::tree_report::{
     WorthQueryPartitionedTreeRun as Run,
 };
 
-pub(super) enum EditDisposition<Tree> {
+pub enum EditDisposition<Tree> {
     Completed(Tree),
     Rebuild(Cause),
 }

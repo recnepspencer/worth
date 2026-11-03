@@ -64,7 +64,7 @@ pub struct DeclaredConditionalBinding {
     pub contract: WorthQueryApplicationConditionalPackageContract,
     pub required_producers: Vec<String>,
     pub binding_type: TypeId,
-    pub(super) operation_type: TypeId,
+    pub operation_type: TypeId,
     pub installed_type: TypeId,
 }
 

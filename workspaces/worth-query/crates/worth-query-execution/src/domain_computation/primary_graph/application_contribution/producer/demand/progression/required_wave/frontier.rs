@@ -41,7 +41,7 @@ impl MemberState {
     }
 }
 
-pub(super) enum RequiredUpstream {
+pub enum RequiredUpstream {
     Member(usize),
     HeldCaller,
 }

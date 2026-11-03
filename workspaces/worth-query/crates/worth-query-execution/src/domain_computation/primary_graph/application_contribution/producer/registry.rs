@@ -30,9 +30,9 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallation
 #[derive(Clone)]
 pub struct DeclaredProducerBinding
 {
-    pub(in crate::domain_computation::primary_graph::application_contribution) owner: String,
+    pub owner: String,
     pub identity: String,
-    pub(in crate::domain_computation::primary_graph::application_contribution) source_selector:
+    pub source_selector:
         String,
     pub output_family:
         String,
@@ -43,18 +43,18 @@ pub struct DeclaredProducerBinding
     pub output_role_families:
         Vec<ApplicationMutationOutputRoleFamilyDescriptor>,
     pub output_role: String,
-    pub(in crate::domain_computation::primary_graph::application_contribution) operation: String,
+    pub operation: String,
     pub handler_identity:
         String,
     pub provider_identity:
         String,
-    pub(in crate::domain_computation::primary_graph::application_contribution) applicability:
+    pub applicability:
         Vec<WorthQueryProducerApplicability>,
     pub supported:
         Vec<WorthQueryProducerApplicability>,
-    pub(in crate::domain_computation::primary_graph::application_contribution) required_invariants:
+    pub required_invariants:
         Vec<WorthQueryProducerInvariantRequirement>,
-    pub(in crate::domain_computation::primary_graph::application_contribution) reuse_policy: String,
+    pub reuse_policy: String,
     pub ownership:
         worth_foundational::facade::ProducerPublicationOwnership,
     pub owned_scope_entity: Option<String>,
@@ -64,15 +64,15 @@ pub struct DeclaredProducerBinding
         Option<Arc<super::output_equivalence_contract::InstalledProducerOutputEquivalence>>,
     pub input_reuse:
         Option<super::WorthQueryProducerInputReuseContract>,
-    pub(in crate::domain_computation::primary_graph::application_contribution) binding_type: TypeId,
-    pub(in crate::domain_computation::primary_graph::application_contribution) source_type: TypeId,
+    pub binding_type: TypeId,
+    pub source_type: TypeId,
     pub operation_binding_type:
         TypeId,
     /// The operation the producer's mutation binding runs.
-    pub(in crate::domain_computation::primary_graph::application_contribution) operation_type: TypeId,
-    pub(in crate::domain_computation::primary_graph::application_contribution) output_contract_type:
+    pub operation_type: TypeId,
+    pub output_contract_type:
         TypeId,
-    pub(in crate::domain_computation::primary_graph::application_contribution) provider_type:
+    pub provider_type:
         TypeId,
 }
 

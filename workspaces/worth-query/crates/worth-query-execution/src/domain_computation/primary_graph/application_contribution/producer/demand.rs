@@ -59,14 +59,14 @@ pub use read_close::WorthQueryOutputReadCloseDenial;
 /// and advancing the demand re-check that the producer is still installed.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQuerySelectedApplicationProducer {
-    pub(super) identity: String,
-    pub(super) applicability: WorthQueryProducerApplicability,
-    pub(super) exact_retained_output: bool,
-    pub(super) retained_idempotency_key: Option<[u8; 32]>,
-    pub(super) retained_output_binding: Option<TypeId>,
+    pub identity: String,
+    pub applicability: WorthQueryProducerApplicability,
+    pub exact_retained_output: bool,
+    pub retained_idempotency_key: Option<[u8; 32]>,
+    pub retained_output_binding: Option<TypeId>,
     // An exact selection whose producer declares no Preserve posture reuses
     // the live output it was selected for and never executes over it.
-    pub(super) reuses_live_output_only: bool,
+    pub reuses_live_output_only: bool,
 }
 
 /// Runtime-affine admission for one exact source occurrence and installed producer.

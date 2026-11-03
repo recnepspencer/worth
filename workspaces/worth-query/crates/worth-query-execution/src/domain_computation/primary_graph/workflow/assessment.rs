@@ -19,24 +19,24 @@ use crate::domain_computation::primary_graph::application_attempt::{
 pub mod dependency;
 
 pub struct WorkflowAssessmentEvidenceMeaning {
-    pub(in crate::domain_computation::primary_graph) identity: String,
-    pub(in crate::domain_computation::primary_graph) producer: String,
-    pub(in crate::domain_computation::primary_graph) family: String,
-    pub(in crate::domain_computation::primary_graph) query: String,
-    pub(in crate::domain_computation::primary_graph) parameter_type: String,
-    pub(in crate::domain_computation::primary_graph) result_type: String,
-    pub(in crate::domain_computation::primary_graph) binding: String,
-    pub(in crate::domain_computation::primary_graph) subject: EntityId,
-    pub(in crate::domain_computation::primary_graph) proposal_identity: String,
-    pub(in crate::domain_computation::primary_graph) coverage_identity: String,
-    pub(in crate::domain_computation::primary_graph) source_identity: String,
-    pub(in crate::domain_computation::primary_graph) passing: bool,
-    pub(in crate::domain_computation::primary_graph) publication_identity: String,
-    pub(in crate::domain_computation::primary_graph) output_content_identity: String,
-    pub(in crate::domain_computation::primary_graph) program_revision: String,
+    pub identity: String,
+    pub producer: String,
+    pub family: String,
+    pub query: String,
+    pub parameter_type: String,
+    pub result_type: String,
+    pub binding: String,
+    pub subject: EntityId,
+    pub proposal_identity: String,
+    pub coverage_identity: String,
+    pub source_identity: String,
+    pub passing: bool,
+    pub publication_identity: String,
+    pub output_content_identity: String,
+    pub program_revision: String,
     /// What the evidence retains; see [`workflow_evidence_retained_bytes`].
-    pub(in crate::domain_computation::primary_graph) retained_bytes: u64,
-    pub(in crate::domain_computation::primary_graph) currentness_facts:
+    pub retained_bytes: u64,
+    pub currentness_facts:
         std::sync::Arc<[super::super::WorthQueryApplicationObservedFact]>,
 }
 

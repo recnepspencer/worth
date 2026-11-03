@@ -22,9 +22,9 @@ use crate::domain_computation::primary_graph::{
 };
 
 pub struct WorthQueryInstalledOutputProducerRoute {
-    pub(in crate::domain_computation::primary_graph) scheduling:
+    pub scheduling:
         Arc<BridgeInstalledConditionalLowering>,
-    pub(in crate::domain_computation::primary_graph) output_comparison:
+    pub output_comparison:
         Option<super::output_evaluation::InstalledOutputComparison>,
 }
 pub(in crate::domain_computation::primary_graph) type WorthQueryInstalledOutputProducerRoutes =

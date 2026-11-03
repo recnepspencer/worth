@@ -1,43 +1,43 @@
 use worth_query_installation::facade::WorthQueryClockCoordinate;
 
 pub struct ErasedClockObservationReceipt {
-    pub(in crate::domain_computation::primary_graph::conditional_operation) sequence: u64,
-    pub(in crate::domain_computation::primary_graph::conditional_operation) observed_coordinate:
+    pub sequence: u64,
+    pub observed_coordinate:
         u64,
-    pub(in crate::domain_computation::primary_graph::conditional_operation) due_wake_count: usize,
-    pub(in crate::domain_computation::primary_graph::conditional_operation) due_work_remaining:
+    pub due_wake_count: usize,
+    pub due_work_remaining:
         bool,
-    pub(in crate::domain_computation::primary_graph::conditional_operation) authoritative_commit_count:
+    pub authoritative_commit_count:
         usize,
-    pub(in crate::domain_computation::primary_graph::conditional_operation) authoritative_work_remaining:
+    pub authoritative_work_remaining:
         bool,
-    pub(in crate::domain_computation::primary_graph::conditional_operation) retained_due_wake_count:
+    pub retained_due_wake_count:
         usize,
-    pub(in crate::domain_computation::primary_graph::conditional_operation) retained_eligible_wake_count:
+    pub retained_eligible_wake_count:
         usize,
-    pub(in crate::domain_computation::primary_graph::conditional_operation) retained_suppressed_wake_count:
+    pub retained_suppressed_wake_count:
         usize,
-    pub(in crate::domain_computation::primary_graph::conditional_operation) retained_deferred_wake_count:
+    pub retained_deferred_wake_count:
         usize,
-    pub(in crate::domain_computation::primary_graph::conditional_operation) retained_failed_wake_count:
+    pub retained_failed_wake_count:
         usize,
-    pub(in crate::domain_computation::primary_graph::conditional_operation) committed_operation_count:
+    pub committed_operation_count:
         usize,
-    pub(in crate::domain_computation::primary_graph::conditional_operation) already_committed_operation_count:
+    pub already_committed_operation_count:
         usize,
-    pub(in crate::domain_computation::primary_graph::conditional_operation) failed_operation_count:
+    pub failed_operation_count:
         usize,
-    pub(in crate::domain_computation::primary_graph::conditional_operation) indeterminate_operation_count:
+    pub indeterminate_operation_count:
         usize,
-    pub(in crate::domain_computation::primary_graph::conditional_operation) snapshot_capacity_backpressure:
+    pub snapshot_capacity_backpressure:
         Option<usize>,
-    pub(in crate::domain_computation::primary_graph::conditional_operation) retention_capacity_backpressure:
+    pub retention_capacity_backpressure:
         bool,
-    pub(in crate::domain_computation::primary_graph::conditional_operation) execution_provenance:
+    pub execution_provenance:
         Vec<super::super::WorthQueryConditionalExecutionProvenance>,
-    pub(in crate::domain_computation::primary_graph::conditional_operation) granular_invalidations:
+    pub granular_invalidations:
         Vec<worth_runtime_bridge::facade::BridgeGranularInvalidationDelivery>,
-    pub(in crate::domain_computation::primary_graph::conditional_operation) granular_invalidation_coverage:
+    pub granular_invalidation_coverage:
         crate::domain_computation::primary_graph::WorthQueryGranularInvalidationCoverage,
 }
 
