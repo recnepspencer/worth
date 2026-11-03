@@ -1,3 +1,5 @@
+use super::recorded_commit_axes;
+
 #[path = "approved_payment_workflow/actor_handoff.rs"]
 pub mod actor_handoff;
 #[path = "approved_payment_workflow/approval.rs"]

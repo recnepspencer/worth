@@ -63,5 +63,5 @@ pub fn require_authenticated_approval_and_replay(
     let super::assertions::WorkflowProgressOutcome::RecoveredCommitted(data) = replay else {
         panic!("approval retry returns data, not a performed stage");
     };
-    crate::facade::recorded_commit_axes::assert_agrees(&data, original.receipt());
+    super::recorded_commit_axes::assert_agrees(&data, original.receipt());
 }

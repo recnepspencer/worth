@@ -11,6 +11,8 @@ use std::{num::NonZeroUsize, time::Duration};
 mod approval;
 #[path = "../../../worth-query-bank-testkit-server/src/approved_payment_workflow/assertions.rs"]
 mod assertions;
+#[path = "../../../worth-query-bank-testkit-server/src/recorded_commit_axes.rs"]
+mod recorded_commit_axes;
 #[path = "../../../worth-query-bank-testkit-server/src/approved_payment_workflow/authentication.rs"]
 mod authentication;
 #[path = "../../../worth-query-bank-testkit-server/src/ordinary_reads/fixture.rs"]
