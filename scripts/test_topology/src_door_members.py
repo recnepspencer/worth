@@ -27,6 +27,7 @@ from src_scope import scope_items
 LIB = 'workspaces/worth-query/crates/worth-query-execution/src/lib.rs'
 WORKSPACE = 'workspaces/worth-query'
 AUTHORITY = re.compile(r'Authority|authority|\bmint\b')
+KEYWORDS = {'mut', 'ref', 'move', 'return', 'in', 'if', 'else', 'match', 'let', 'as', 'box', 'break', 'yield'}
 FIELD = re.compile(r'field `(\w+)` of struct `(?:[\w:]*::)?(\w+)')
 
 
@@ -55,6 +56,20 @@ def owning_impl(index, path, offset):
     return best
 
 
+def owning_field_door(index, field):
+    """(module node, struct shape) whose door file already reads `field`, when unique."""
+    found = []
+    for names, node in index.items():
+        if names and names[-1] == 'court_doors_for_test' and f'pub fn {field}_for_test(&self)' in node.text:
+            parent = index[names[:-1]]
+            for _a, _v, keyword, item, start, end in scope_items(parent.own_text()):
+                if keyword == 'struct':
+                    shape = struct_shape(parent.own_text()[start:end])
+                    if shape and field in shape['fields'] and f'impl{shape["generics"]} {shape["name"]}' in node.text:
+                        found.append((parent, shape))
+    return found[0] if len(found) == 1 else None
+
+
 def struct_declaration(index, name):
     found = []
     for names, node in index.items():
@@ -75,9 +90,19 @@ def members(root, check, report, write_report):
     for diagnostic in diagnostics(check):
         code = (diagnostic.get('code') or {}).get('code')
         primary = next((s for s in diagnostic['spans'] if s['is_primary']), None)
-        if primary is None or code not in ('E0624', 'E0616', 'E0596', 'E0451', 'E0423'):
+        if primary is None or code not in ('E0624', 'E0616', 'E0596', 'E0594', 'E0451', 'E0423'):
             continue
         site = (root / WORKSPACE / primary['file_name']).resolve()
+        if code in ('E0596', 'E0594'):
+            found = mutable_sites(diagnostic, site, None)
+            owner = owning_field_door(index, found[0]) if found else None
+            if owner is None:
+                unplaced.append(diagnostic['message'])
+                continue
+            node, shape = owner
+            doors[node.names][('field_mut', found[0], shape['name'])] = field_door(shape, found[0], True)
+            sites[site].add(found[1])
+            continue
         if code in ('E0451', 'E0423'):
             struct = constructed_struct(diagnostic)
             found = struct_declaration(index, struct) if struct else None
@@ -134,7 +159,7 @@ def members(root, check, report, write_report):
             if shape is None or field not in shape['fields']:
                 unplaced.append(diagnostic['message'])
                 continue
-            mutable = code == 'E0596' or writes(site, primary['byte_end'])
+            mutable = writes(site, primary['byte_end']) or borrowed_mut(site, primary['byte_start'])
             doors[node.names][('field', field, struct)] = field_door(shape, field, False)
             if mutable:
                 doors[node.names][('field_mut', field, struct)] = field_door(shape, field, True)
@@ -168,6 +193,25 @@ def open_declarations(opened):
                 data = data[:at] + b'pub ' + data[at:]
         path.write_bytes(data)
     return len(opened)
+
+
+def borrowed_mut(path, field_start):
+    """Whether the field access starting its name at `field_start` is under `&mut`."""
+    data = path.read_bytes()
+    begin = expression_start(data, field_start)
+    return data[:begin].rstrip().endswith(b'&mut')
+
+
+def mutable_sites(diagnostic, site, doors_by_field):
+    """E0596/E0594 over `(*expr.f_for_test())`: switch to `f_mut_for_test`, add its door."""
+    primary = next(s for s in diagnostic['spans'] if s['is_primary'])
+    data = site.read_bytes()[primary['byte_start']:primary['byte_end']]
+    match = re.search(rb'\.(\w+)_for_test\(\)\)$', data)
+    if match is None:
+        return None
+    field = match.group(1).decode()
+    at = primary['byte_start'] + match.start(1)
+    return field, (at, at + len(field) + len('_for_test'), field + '_mut_for_test')
 
 
 def writes(path, end):
@@ -248,8 +292,12 @@ def expression_start(data, field_start):
             i = j - 1
             continue  # a call or index group: its callee comes next
         elif c.isalnum() or c == '_':
-            while i >= 0 and (text[i].isalnum() or text[i] == '_'):
-                i -= 1
+            j = i
+            while j >= 0 and (text[j].isalnum() or text[j] == '_'):
+                j -= 1
+            if text[j + 1:i + 1] in KEYWORDS:
+                break
+            i = j
         elif c == '?':
             i -= 1
             continue

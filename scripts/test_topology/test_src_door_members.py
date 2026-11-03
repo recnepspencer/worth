@@ -33,6 +33,11 @@ class MemberDoorTests(unittest.TestCase):
         text = b'f(a, crate::m::X::get().field)'
         self.assertEqual(text[expression_start(text, text.index(b'field')):], b'crate::m::X::get().field)')
 
+    def test_keywords_end_the_postfix_expression(self):
+        text = b'std::mem::take(&mut state.records.get_mut(&k).unwrap().prerequisites)'
+        at = text.index(b'prerequisites')
+        self.assertEqual(text[expression_start(text, at):at], b'state.records.get_mut(&k).unwrap().')
+
     def test_assignment_needs_the_mutable_door(self):
         import tempfile
         from pathlib import Path
