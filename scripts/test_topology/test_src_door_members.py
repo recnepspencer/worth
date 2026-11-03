@@ -41,6 +41,11 @@ class MemberDoorTests(unittest.TestCase):
         at = text.index(b'prerequisites')
         self.assertEqual(text[expression_start(text, at):at], b'state.records.get_mut(&k).unwrap().')
 
+    def test_line_comments_do_not_join_the_expression(self):
+        text = b'// before retirement.\n    state\n        .records'
+        at = text.index(b'records')
+        self.assertEqual(text[expression_start(text, at):at], b'state\n        .')
+
     def test_assignment_needs_the_mutable_door(self):
         import tempfile
         from pathlib import Path

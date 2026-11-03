@@ -268,6 +268,22 @@ def rewrite_sites(sites):
     return count
 
 
+def skip_back(text, i):
+    """Index of the last code character at or before `i`, past whitespace and line comments."""
+    while i >= 0:
+        if text[i].isspace():
+            if text[i] == '\n':
+                line_start = text.rfind('\n', 0, i) + 1
+                comment = text.find('//', line_start, i)
+                if comment >= 0:
+                    i = comment - 1
+                    continue
+            i -= 1
+            continue
+        return i
+    return i
+
+
 def expression_start(data, field_start):
     """Byte where the postfix expression before `.field` begins (identifiers, calls, indexes)."""
     text = data[:field_start].decode('utf-8')
@@ -278,8 +294,9 @@ def expression_start(data, field_start):
     i -= 1
     closing = {')': '(', ']': '[', '}': '{'}
     while i >= 0:
-        while i >= 0 and text[i].isspace():
-            i -= 1
+        i = skip_back(text, i)
+        if i < 0:
+            break
         c = text[i]
         if c in closing:
             depth, j = 0, i
@@ -305,9 +322,7 @@ def expression_start(data, field_start):
             continue
         else:
             break
-        k = i
-        while k >= 0 and text[k].isspace():
-            k -= 1
+        k = skip_back(text, i)
         if k >= 1 and text[k] == ':' and text[k - 1] == ':':
             i = k - 2
             continue
