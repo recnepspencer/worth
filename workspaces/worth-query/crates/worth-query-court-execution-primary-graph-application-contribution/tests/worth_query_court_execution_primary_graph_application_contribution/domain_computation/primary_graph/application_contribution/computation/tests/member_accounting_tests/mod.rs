@@ -1,4 +1,5 @@
 //! Explicit accounting survives the same installed member boundary as native compute.
+use worth_query_execution::facade::application_contribution::WorthQueryManagedComputationOwner;
 use crate::domain_computation::primary_graph::application_contribution::computation::tests::*;
 use worth_foundational::DeterminismContract;
 use worth_foundational::ExecutionBudget;
