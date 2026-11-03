@@ -130,7 +130,22 @@ fn append_pending_extent(world: &PhysicalResidencyStoreWorld, bytes: &[u8]) {
     };
     let appended = match submission.append_prepared_wal_group(NonEmpty::new(prepared, Vec::new())) {
         PhysicalWalGroupAppendOutcome::Appended(appended) => appended,
-        _ => panic!("real pending extent must append"),
+        PhysicalWalGroupAppendOutcome::NotAdmitted { cause, .. } => {
+            panic!("pending extent append not admitted: {cause:?}")
+        }
+        PhysicalWalGroupAppendOutcome::AdmissionRejected(rejected) => {
+            panic!("pending extent group rejected: {:?}", rejected.cause())
+        }
+        PhysicalWalGroupAppendOutcome::NotStarted(continuation) => panic!(
+            "pending extent append not started: {:?}",
+            continuation.cause()
+        ),
+        PhysicalWalGroupAppendOutcome::PartiallyAppended(continuation) => {
+            panic!("pending extent append partial: {:?}", continuation.cause())
+        }
+        PhysicalWalGroupAppendOutcome::Indeterminate(_) => {
+            panic!("pending extent append indeterminate")
+        }
     };
     assert!(matches!(
         submission.synchronize_appended_wal_group(appended),
