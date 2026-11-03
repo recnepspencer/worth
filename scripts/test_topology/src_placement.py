@@ -88,22 +88,67 @@ def pack(units, ceiling):
 
 
 def place_testkits(model, kinds, products_of, frontier_of_products, ceiling=CEILING):
+    """Support components packed so testkit crates form a DAG.
+
+    A component's need is the frontier of everything it and its support dependencies name,
+    so a component that uses a `decl` component carries `decl` too and groups depend one way.
+    Inside a group, components fill crates contiguously in dependency order (dependencies
+    first, ties by area), so a crate only depends on crates filled before it.
+    """
     support, edges = support_graph(model, kinds)
     groups = components(support, edges)
-    by_need = defaultdict(list)
-    for group in groups:
-        need = tuple(sorted(set(frontier_of_products(set().union(*(products_of(n) for n in group))))
-                            - {'worth-query-execution'}))
-        lines = sum(part_lines(model, n, kinds[n], 'testkit') for n in group)
-        by_need[need].append({'owner_area': '/'.join(group[0]), 'packing_lines': lines, 'members': group})
-    crates = {}
-    for need, units in sorted(by_need.items()):
-        pieces = pack(units, ceiling)
-        for index, piece in enumerate(pieces):
+    group_of = {n: g for g in groups for n in g}
+    depends = {g: {group_of[t] for n in g for t in edges[n]} - {g} for g in groups}
+    named = {}
 
+    def closure(g):
+        if g not in named:
+            named[g] = set().union(*(products_of(n) for n in g))
+            for d in sorted(depends[g]):
+                named[g] |= closure(d)
+        return named[g]
+
+    by_need = defaultdict(list)
+    for g in groups:
+        need = tuple(sorted(set(frontier_of_products(closure(g))) - {'worth-query-execution'}))
+        by_need[need].append(g)
+    crates = {}
+    for need, members in sorted(by_need.items(), key=lambda kv: len(kv[0])):
+        order = topological(members, depends)
+        pieces, current, size = [], [], 0
+        for g in order:
+            lines = sum(part_lines(model, n, kinds[n], 'testkit') for n in g)
+            if current and size + lines > ceiling:
+                pieces.append(current)
+                current, size = [], 0
+            current.append({'owner_area': '/'.join(g[0]), 'packing_lines': lines, 'members': g})
+            size += lines
+        if current:
+            pieces.append(current)
+        for piece in pieces:
             name = unique(testkit_name(need, piece, len(pieces) > 1), crates)
             crates[name] = sorted(n for unit in piece for n in unit['members'])
     return crates
+
+
+def topological(groups, depends):
+    """Dependencies first; among ready components, the smallest area path first."""
+    members = set(groups)
+    waiting = {g: {d for d in depends[g] if d in members} for g in groups}
+    ready = sorted((g for g in groups if not waiting[g]), key=lambda g: '/'.join(g[0]))
+    order = []
+    while ready:
+        g = ready.pop(0)
+        order.append(g)
+        for other in sorted(members):
+            if g in waiting[other]:
+                waiting[other].discard(g)
+                if not waiting[other]:
+                    ready.append(other)
+                    ready.sort(key=lambda x: '/'.join(x[0]))
+    if len(order) != len(groups):
+        raise ValueError('support components are cyclic after condensation')
+    return order
 
 
 def unique(name, taken):
