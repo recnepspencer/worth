@@ -131,10 +131,16 @@ def trait_impl(text):
 
 def impl_target(text):
     """Self type of an `impl` header: the first type after `for`, else after the generics."""
+    path = impl_self_path(text)
+    return path[-1] if path else None
+
+
+def impl_self_path(text):
+    """The self type's path segments of an `impl` item."""
     stream = tokens(text)
     start = next((k for k, t in enumerate(stream) if t.value == 'impl'), None)
     if start is None:
-        return None
+        return ()
     header, depth = [], 0
     for token in stream[start + 1:]:
         if token.value in ('{', 'where') and depth == 0:
@@ -145,10 +151,24 @@ def impl_target(text):
             depth -= 1
         elif depth == 0:
             header.append(token)
+    return impl_target_path(header)
+
+
+def impl_target_path(header):
+    """Segments of the self type path among an impl header's depth-0 tokens (`crate::a::T`)."""
     values = [t.value for t in header]
     if 'for' in values:
         header = header[values.index('for') + 1:]
-    return next((t.value for t in header if t.kind == 'ident' and t.value not in ('dyn', 'mut', 'const')), None)
+    path, k = [], 0
+    while k < len(header) and not (header[k].kind == 'ident' and header[k].value not in ('dyn', 'mut', 'const')):
+        k += 1
+    while k < len(header) and header[k].kind == 'ident':
+        path.append(header[k].value)
+        if k + 2 < len(header) and header[k + 1].value == ':' and header[k + 2].value == ':':
+            k += 3
+        else:
+            break
+    return tuple(path)
 
 
 def classify(model, seeds, family_seeds=(), referenced=(), dev_aliases=(), method_edges=None):

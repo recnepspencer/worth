@@ -64,7 +64,7 @@ def dispositions(model, unit_of):
 def impl_couplings(model):
     """Type-defining moving module -> moving modules holding impls of that type."""
     from src_hooks import impl_target
-    from src_kept_impls import impl_trait, in_moved
+    from src_kept_impls import impl_trait, in_moved, self_type_origin
     couples = {}
     for names, record in model.records.items():
         if record.extracted or record.foreign:
@@ -81,7 +81,7 @@ def impl_couplings(model):
                 trait_origin = model.everything.origin(names, trait)[0]
                 if trait_origin is not None and in_moved(model, trait_origin[0]):
                     continue
-            origin = model.everything.origin(names, target)[0]
+            origin = self_type_origin(model, names, text)
             if origin is not None and origin[0] != names and origin[0] in model.records:
                 couples.setdefault(origin[0], set()).add(names)
     return couples

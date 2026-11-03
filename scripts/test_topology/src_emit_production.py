@@ -317,8 +317,12 @@ def method_widenings(node, offset, body, called, impl_methods):
     return result
 
 
-def compiler_widenings(model, items, methods, fields):
-    """Edits that make compiler-evidenced declarations `pub`: items, inherent methods, struct fields."""
+def compiler_widenings(model, items, methods, fields, compiled_families=()):
+    """Edits that make compiler-evidenced declarations `pub`: items, inherent methods, struct fields.
+
+    Test families that compile in place (support the moved code calls) are widened too.
+    """
+    compiled = set(compiled_families)
     from src_hooks import impl_methods, trait_impl
     edits = defaultdict(list)
     for key in items:
@@ -342,7 +346,7 @@ def compiler_widenings(model, items, methods, fields):
         struct, field = key.split('::')
         wanted_fields.setdefault(struct, set()).add(field)
     for names, node in model.index.items():
-        if model.production.in_family(names):
+        if model.production.in_family(names) and not any(names[:len(f)] == f for f in compiled):
             continue
         own = node.own_text()
         for _a, _v, keyword, item, start, end in scope_items(own):

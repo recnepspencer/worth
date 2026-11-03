@@ -161,7 +161,7 @@ def door_traits(model):
                 continue
             text = own[item.start:item.end]
             target = impl_target(text)
-            if impl_trait(text) is not None or not target or not library_definition(model, names, target):
+            if impl_trait(text) is not None or not target or not library_definition(model, names, target, text):
                 continue
             base = camel(names[-1]) + target + 'ForTest'
             used[base] = used.get(base, 0) + 1
@@ -183,6 +183,6 @@ def convert(text, trait):
     bodies = '\n\n'.join(method.strip('\n') for _n, _s, method in methods)
     where_clause = (' ' + where) if where else ''
     replacement = (f'{attributes}/// Test doors on a library type, owned by the moved courts.\n'
-                   f'pub trait {trait}{generics}{where_clause} {{\n{signatures}\n}}\n\n'
+                   f'pub trait {trait}{generics}: Sized{where_clause} {{\n{signatures}\n}}\n\n'
                    f'{attributes}impl{generics} {trait}{arguments} for {self_type}{where_clause} {{\n{bodies}\n}}')
     return tuple(n for n, _s, _m in methods), replacement

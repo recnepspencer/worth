@@ -51,8 +51,21 @@ def in_moved(model, module):
     return any(module[:len(n)] == n for n, r in model.records.items() if not r.extracted)
 
 
-def library_definition(model, names, name):
-    origin, _gated = model.everything.origin(names, name)
+def self_type_origin(model, names, text):
+    """(module, item) the self type of an impl item resolves to, following qualified paths."""
+    from src_hooks import impl_self_path
+    path = impl_self_path(text)
+    if len(path) < 2:
+        return model.everything.origin(names, path[0])[0] if path else None
+    resolved = resolve(path, names, model.index)
+    if resolved is None or not resolved[1]:
+        return None
+    module, rest = resolved
+    return model.everything.origin(module, rest[0])[0] or (module, rest[0])
+
+
+def library_definition(model, names, name, text=None):
+    origin = self_type_origin(model, names, text) if text is not None else model.everything.origin(names, name)[0]
     return (origin is not None and origin[0] != '<external>' and not in_moved(model, origin[0])
             and not any(origin[0][:len(f)] == f for f in model.families))
 
@@ -73,7 +86,7 @@ def mark_kept_impls(model):
             target, trait = impl_target(text), impl_trait(text)
             trait_origin = model.everything.origin(names, trait)[0] if trait else None
             # Inherent impls become door traits (src_door_traits); library-trait impls stay.
-            if target and trait is not None and library_definition(model, names, target) and \
+            if target and trait is not None and library_definition(model, names, target, text) and \
                     (trait_origin is None or not in_moved(model, trait_origin[0])):
                 record.kept.add(index)
                 work.append((names, index))

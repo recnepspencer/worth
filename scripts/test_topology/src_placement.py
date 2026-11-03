@@ -47,9 +47,12 @@ def support_graph(model, kinds):
                 edges[names].add(owner)
     # Mounted foreign source reads its parent and siblings through `super::`: one crate holds them.
     from src_court_plan import foreign_includes
+    # Foreign source reaches its siblings through `super::` too: a parent with mounted foreign
+    # children keeps all its support children.
+    hosts = {names[:-1] for names in support
+             if model.records[names].foreign or foreign_includes(model.records[names])}
     for names in support:
-        record = model.records[names]
-        if (record.foreign or foreign_includes(record)) and names[:-1] in members:
+        if names[:-1] in hosts and names[:-1] in members:
             edges[names].add(names[:-1])
             edges[names[:-1]].add(names)
     from src_ownership import impl_couplings

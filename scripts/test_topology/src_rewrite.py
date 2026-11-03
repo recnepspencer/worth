@@ -9,14 +9,15 @@ Canonical paths, in order:
 Glob imports become explicit imports of the names the module actually uses.
 """
 from dataclasses import dataclass, field
+import re
 
 from rust_source import replace_spans, tokens
 from src_occurrences import scan, visibility_markers
 from src_paths import resolve
 from src_glob_words import inherited_words, path_tail
+from src_parts import leading_inner_attributes, part_text
 
 LIBRARY = 'worth_query_execution'
-COURT_KEEP = ('use', 'macro_rules')
 
 
 @dataclass
@@ -38,52 +39,6 @@ def public_paths(surface):
             if origin not in best or len(module) < len(best[origin][0]):
                 best[origin] = (module, name)
     return best
-
-
-def leading_inner_attributes(text):
-    """Leading `//!` doc lines, `/*! */` blocks and `#![...]` attributes, which must stay first."""
-    import re
-    position = 0
-    while True:
-        match = re.match(r'\s*(?://![^\n]*\n?|/\*!.*?\*/)', text[position:], re.S)
-        if match:
-            position += match.end()
-            continue
-        stream = tokens(text[position:])
-        if len(stream) > 2 and stream[0].value == '#' and stream[1].value == '!':
-            depth, j = 0, 2
-            while j < len(stream):
-                depth += {'[': 1, ']': -1}.get(stream[j].value, 0)
-                if depth == 0:
-                    break
-                j += 1
-            position += stream[j].end
-            continue
-        break
-    return text[:position], position
-
-
-def part_text(record, part, disposition):
-    """The source of one part of a module scope; a split keeps tests and imports in the court."""
-    text = record.node.own_text()
-    if record.kept_impls or record.doors:
-        # Library-trait impls stay in the library; inherent impls become door traits.
-        text = replace_spans(text, [(start, end, '') for start, end in record.kept_impls]
-                             + [(door.start, door.end, door.replacement) for door in record.doors])
-        record = record_without_kept(record, text)
-    if disposition != 'split':
-        return text
-    inner, start = leading_inner_attributes(text)
-    pieces = [inner]
-    for item in record.items:
-        if item.end <= start:
-            continue
-        macro = item.name == '!' or item.keyword == 'macro_rules'
-        court = item.test or macro or item.keyword in COURT_KEEP
-        testkit = not item.test and not macro
-        if (part == 'court' and court) or (part == 'testkit' and testkit):
-            pieces.append('\n' + text[item.start:item.end])
-    return ''.join(pieces) + '\n'
 
 
 def item_macros(model, module):
@@ -122,14 +77,6 @@ def without_duplicate_imports(text, generated):
                     continue
         out.append(line)
     return '\n'.join(out)
-
-
-def record_without_kept(record, text):
-    from src_move_model import items_of
-    import copy
-    clone = copy.copy(record)
-    clone.items = items_of(text)
-    return clone
 
 
 class Rewriter:
@@ -339,15 +286,16 @@ class Rewriter:
         from src_move_model import items_of
         stream = tokens(text)
         heads = {t.value for k, t in enumerate(stream) if t.kind == 'ident'
-                 and not (k and stream[k - 1].value in ('.', ':'))
+                 and not (k and stream[k - 1].value == '.') and not path_tail(stream, k)
                  and not (k + 1 < len(stream) and stream[k + 1].value == '!')}
+        own = self.module_path(record.names, reader_crate) + '::'
         defined = {item.name for item in items_of(text)}
         uses, _paths = scan(text)
         bound = {alias or segments[-1] for d in uses for segments, glob, alias in d.leaves if segments and not glob}
         lines = []
         for name in sorted((heads & self.model.visible(record.names)) - defined - bound):
             path = self.resolve_path(('self', name), record.names, reader_crate)
-            if path is None or path == name:
+            if path is None or path == name or path == own + name:
                 continue
             lines.append('use ' + path + ('' if path.rsplit('::', 1)[-1] == name else f' as {name}') + ';')
         if not lines:
@@ -366,6 +314,11 @@ class Rewriter:
     def use_lines(self, segments, glob, alias, names, reader_crate, words, visibility):
         prefix = (visibility + ' ') if visibility else ''
         resolved = resolve(segments, names, self.model.index)
+        heads = getattr(self, 'heads', {})
+        if resolved is None and segments and segments[0] in heads:
+            # A path through an imported module alias (`primary_graph::x::Item`) is crate-rooted.
+            segments = ('crate',) + tuple(heads[segments[0]]) + tuple(segments[1:])
+            resolved = resolve(segments, names, self.model.index)
         if resolved is None:
             return [prefix + 'use ' + '::'.join(segments) + ('::*' if glob else '') + (f' as {alias}' if alias else '') + ';']
         module, rest = resolved

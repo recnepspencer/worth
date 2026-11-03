@@ -130,7 +130,8 @@ def effects_for(root, lib, baseline, admissions, workspace, overrides):
         edits[source].extend(changes)
     for source, changes in compiler_widenings(model, overrides.get('compiler_widen_items', []),
                                               overrides.get('compiler_widen_methods', []),
-                                              overrides.get('compiler_widen_fields', [])).items():
+                                              overrides.get('compiler_widen_fields', []),
+                                              classes.compiled_families).items():
         edits[source].extend(changes)
     for source, changes in residual_sweep(model, classes, edits, p['dev_aliases']).items():
         edits[source].extend(changes)
