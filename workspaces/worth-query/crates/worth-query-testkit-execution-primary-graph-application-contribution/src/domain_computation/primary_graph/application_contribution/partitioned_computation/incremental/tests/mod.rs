@@ -301,7 +301,7 @@ pub fn prior_of(first: Attempt, moved: bool) -> ComputationPrior {
                 let partitioner = readers
                     .reads()
                     .any(|read| !matches!(read, ComputationRead::Partition(_)));
-                partitioner || readers.partitions().len() == 1
+                partitioner || readers.partitions_for_test().len() == 1
             })
             .map(|(key, fact, _)| (key.clone(), fact.clone()))
             .expect("one owner call reads the status");

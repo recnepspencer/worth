@@ -102,7 +102,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
 
     let prepared = product
         .publication_binding_for_test()
-        .prepare_relational_candidate(candidate, request, false)
+        .prepare_relational_candidate_for_test(candidate, request, false)
         .expect("fixture World publication prepares");
     (prepared, application_basis)
 }

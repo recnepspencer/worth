@@ -70,3 +70,5 @@ pub(super) fn lower_program_activation(
         },
     ))
 }
+
+mod court_doors_for_test;

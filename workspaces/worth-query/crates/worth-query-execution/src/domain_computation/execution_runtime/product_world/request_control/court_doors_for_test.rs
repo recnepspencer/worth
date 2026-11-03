@@ -8,3 +8,11 @@ impl WorthQueryPreparedProductPublication {
         Self::execute(self, execution)
     }
 }
+
+impl WorthQueryProductPublicationBinding {
+    #[doc(hidden)]
+    pub fn prepare_relational_candidate_for_test(
+        &self, candidate: worth_relational::facade::mvcc::PreparedRelationalCommitCandidate, request: &WorthQueryRequestScope, successor_observation_requested: bool) -> Result<WorthQueryPreparedProductPublication, Denial<NoEffectCompositePublication>> {
+        Self::prepare_relational_candidate(self, candidate, request, successor_observation_requested)
+    }
+}

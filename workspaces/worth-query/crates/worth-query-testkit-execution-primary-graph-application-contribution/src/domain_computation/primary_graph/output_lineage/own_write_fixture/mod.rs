@@ -249,23 +249,23 @@ pub fn commit_own_write(
             .flat_map(|branches| branches.values_mut())
             .flat_map(|history| history.values_mut())
             .flat_map(|rows| rows.iter_mut())
-            .rfind(|cell| cell.get().unwrap().source_partition_identity == Some([7; 32]))
+            .rfind(|cell| (*cell.get().unwrap().source_partition_identity_for_test()) == Some([7; 32]))
             .unwrap();
         let recorded = Arc::get_mut(cell)
             .expect("performed cell has only lineage custody")
             .get_mut()
             .unwrap();
-        let count = recorded.observed_source_facts().unwrap().len();
+        let count = recorded.observed_source_facts_for_test().unwrap().len();
         let boundary = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::handler_fact_boundary::CompletedHandlerFactBoundary::completed_for_test(count);
         let context = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::decision_reuse::PreparedDecisionReuseContext::new_for_test(
             worth_query_execution::facade::application_contribution::WorthQueryProducerInputReuseContract::canonical_bitwise(
                 worth_query_execution::facade::application_contribution::WorthQueryDecisionContextDependencies::KEY), Some([11;32]), None, None).unwrap();
-        recorded.completed_decision_reuse = boundary.seal_decision_reuse_for_test(
+        (*recorded.completed_decision_reuse_mut_for_test()) = boundary.seal_decision_reuse_for_test(
             context,
             worth_query_execution::court_doors_for_test::domain_computation::primary_graph::handler::decision_context_use::DecisionContextUse::default().key_for_test(),
         );
-        recorded.completed_handler_facts = Some(boundary);
-        recorded.prepared_input_reuse_key = Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::input_reuse_key::PreparedInputReuseKey::new_for_test(
+        (*recorded.completed_handler_facts_mut_for_test()) = Some(boundary);
+        (*recorded.prepared_input_reuse_key_mut_for_test()) = Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::input_reuse_key::PreparedInputReuseKey::new_for_test(
             worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::membership::WorthQueryObservedSourceSelection::selecting_for_test(u64::try_from(count).unwrap()),
             [11;32], worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::registry::semantic_edition::InstalledProducerEdition::for_test_for_test([12;32])));
     }
@@ -278,7 +278,7 @@ pub fn commit_own_write(
         .flat_map(|branches| branches.values())
         .flat_map(|history| history.values())
         .flat_map(|rows| rows.iter())
-        .rfind(|cell| cell.get().unwrap().source_partition_identity == Some([7; 32]))
+        .rfind(|cell| (*cell.get().unwrap().source_partition_identity_for_test()) == Some([7; 32]))
         .cloned()
         .expect("the committed output has a retained cell");
     let completed = (*world

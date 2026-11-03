@@ -29,7 +29,7 @@ pub fn seed_program_activation(
         .clone();
     let created = CreatedEntityRef {
         partition_id: PartitionId::main(),
-        kind_id: layout.entity_kind,
+        kind_id: (*layout.entity_kind_for_test()),
         client_key: ClientKey::raw("fixture-program-activation"),
     };
     let batch = WorkerIntentBatch::new("seed-program-activation").push(MutationIntent::Create(
@@ -38,7 +38,7 @@ pub fn seed_program_activation(
             kind_id: created.kind_id,
             client_key: created.client_key.clone(),
             fields: AspectFieldPatch::from(BTreeMap::from([(
-                layout.program_revision_locator.clone(),
+                (*layout.program_revision_locator_for_test()).clone(),
                 program_revision_rendering(revision),
             )])),
         }),
