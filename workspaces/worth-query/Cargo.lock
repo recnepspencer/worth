@@ -936,6 +936,7 @@ dependencies = [
 name = "worth-query-court-execution-package-archive-primary-graph-application-attempt"
 version = "0.1.0"
 dependencies = [
+ "serde",
  "sha2",
  "stats_alloc",
  "worth-execution",

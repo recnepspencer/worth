@@ -28,7 +28,7 @@ worth_proof::binding_axes! {
         principal_scope: WorthQueryOperationScopeBinding => PrincipalScope,
         installed_aftermath: [u8; 32] => InstalledAftermath,
     }
-    drift pub(crate) enum WorthQueryRecoveryBindingDrift;
+    drift pub enum WorthQueryRecoveryBindingDrift;
 }
 
 impl WorthQueryRecoveryBindingCurrentTruth {

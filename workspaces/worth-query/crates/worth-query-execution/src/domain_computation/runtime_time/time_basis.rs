@@ -6,7 +6,7 @@ use worth_query_declaration::facade::application_capability::ApplicationCapabili
 use super::time_source::{WorthQueryRuntimeTimeSource, WorthQuerySystemRuntimeTimeSource};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(crate) enum WorthQueryRuntimeTimeDenial {
+pub enum WorthQueryRuntimeTimeDenial {
     SourceUnavailable,
     BeforeUnixEpoch,
     TimelineValueOverflow,
