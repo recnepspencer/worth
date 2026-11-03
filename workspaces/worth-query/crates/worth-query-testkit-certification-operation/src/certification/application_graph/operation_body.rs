@@ -132,7 +132,9 @@ pub fn authenticate_operator<Schema: BodySchemaBinding>(
         schema,
         WorthQueryAuthenticationAdapterAdmission::new(
             WorthQueryAuthenticationAudience::new("document-retention-host").unwrap(),
-            WorthQueryAuthenticationMethod::new("certification").unwrap(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
+            WorthQueryAuthenticationMethod::new("certification").unwrap(),
+            scope.clock().clone(),
+        ),
         OperatorAdapter,
     )
     .unwrap();
