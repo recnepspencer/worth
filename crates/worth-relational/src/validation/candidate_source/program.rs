@@ -41,6 +41,10 @@ impl PartialEq for ManagedIndexSourceProgram {
 impl Eq for ManagedIndexSourceProgram {}
 impl std::hash::Hash for ManagedIndexSourceProgram {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        #[expect(
+            clippy::disallowed_methods,
+            reason = "Fixed allocation identity deduplicates custody; canonical order never uses this address"
+        )]
         std::ptr::hash(Arc::as_ptr(&self.0), state);
     }
 }

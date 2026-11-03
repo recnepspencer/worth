@@ -27,7 +27,7 @@ fn a_membership_that_gained_an_instance_or_is_full_is_not_current() {
     let host_request = crate::test_request_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut runtime = capacity_runtime();
+    let runtime = capacity_runtime();
     let [lineage, first, second] =
         commit_entities(execution, &runtime, ["lineage", "first", "second"]);
     let read = commit_live(execution, &runtime, "first-live", first, lineage);

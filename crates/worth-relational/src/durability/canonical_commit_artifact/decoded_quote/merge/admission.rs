@@ -23,10 +23,9 @@ pub(in super::super::super) fn prepare_canonical_readmission(
 ) -> Result<Option<MergeReadmissionMemory>, Refusal> {
     let mut merge = None;
     canonical.fields(request, |name, value| {
-        if name == "merge_execution_authority" && !value.is_none() {
-            if merge.replace(value).is_some() {
-                return Err(malformed());
-            }
+        if name == "merge_execution_authority" && !value.is_none() && merge.replace(value).is_some()
+        {
+            return Err(malformed());
         }
         Ok(())
     })?;

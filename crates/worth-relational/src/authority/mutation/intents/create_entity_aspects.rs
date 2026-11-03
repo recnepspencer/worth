@@ -52,10 +52,10 @@ pub(super) fn apply<'a>(
         &intent.client_key,
         entity_id,
     )?;
-    Ok(MutationOutcome::entity_created(
+    MutationOutcome::entity_created(
         &workspace.execution(),
         entity_id,
         intent.kind_id,
         record_aspect_patch::published_patch(patch),
-    )?)
+    )
 }

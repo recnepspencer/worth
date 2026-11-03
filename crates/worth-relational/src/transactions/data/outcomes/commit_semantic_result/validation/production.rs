@@ -29,7 +29,7 @@ impl RelationalInvariantExecutionMeaning {
                         current_version: original.current_version_id,
                         touched: original.touched.clone(),
                         counts: original.counts,
-                        non_applicability: original.non_applicability.clone(),
+                        non_applicability: original.non_applicability,
                     }
                 }),
                 verdict,

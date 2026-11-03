@@ -20,7 +20,7 @@ fn serial(token: CancellationToken) -> SerialRequest {
 
 #[test]
 fn cancelled_native_preparation_is_a_control_stop_not_no_kind() {
-    let mut runtime = RelationalRuntimeApi::builder()
+    let runtime = RelationalRuntimeApi::builder()
         .schema_registry(schema())
         .build()
         .expect("valid native runtime configuration");
@@ -58,14 +58,14 @@ fn cancelled_relation_equality_is_a_control_stop_not_false() {
         CommitExecutionDenialKind, EntityReference, RecordRef, RelationSpec,
         RelationalExecutionDenialCause as Cause,
     };
-    let mut runtime = RelationalRuntimeApi::builder()
+    let runtime = RelationalRuntimeApi::builder()
         .schema_registry(schema())
         .build()
         .expect("valid native runtime configuration");
     let source = CancellationSource::new();
     let request = serial(source.token());
     let execution = ExecutionRequest::serial(&request);
-    let mut create_entity = |key| {
+    let create_entity = |key| {
         let committed = transaction(&runtime, key)
             .commit(&execution, &runtime)
             .unwrap();

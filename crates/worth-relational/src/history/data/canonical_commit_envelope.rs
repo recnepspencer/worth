@@ -96,7 +96,15 @@ pub struct CanonicalCommitEnvelope {
     body: CanonicalCommitEnvelopeBody,
     semantic_result: std::sync::Arc<crate::transactions::data::RelationalCommitSemanticResult>,
     // Intrinsic input and body admission outlive every decoded body field.
+    #[allow(
+        dead_code,
+        reason = "Original diagnostic, proof and funding custody remains owned through retirement"
+    )]
     pub(crate) decoded_bytes: Option<worth_execution::ExecutionImmutableBytes>,
+    #[allow(
+        dead_code,
+        reason = "Original diagnostic, proof and funding custody remains owned through retirement"
+    )]
     pub(crate) decoded_memory: Option<worth_execution::ExecutionMemoryReservation>,
     // LAST: real weak-position observers share only this fixed allocation bill.
     pub(crate) control_allocation: Option<std::sync::Arc<CanonicalEnvelopeControlAllocation>>,

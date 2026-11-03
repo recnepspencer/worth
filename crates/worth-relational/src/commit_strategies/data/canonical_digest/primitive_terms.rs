@@ -43,15 +43,15 @@ impl StrategyDigestBytes {
     }
 
     pub(super) fn u16(&mut self, value: u16) {
-        self.bytes.update(&value.to_le_bytes());
+        self.bytes.update(value.to_le_bytes());
     }
 
     pub(super) fn u32(&mut self, value: u32) {
-        self.bytes.update(&value.to_le_bytes());
+        self.bytes.update(value.to_le_bytes());
     }
 
     pub(super) fn u64(&mut self, value: u64) {
-        self.bytes.update(&value.to_le_bytes());
+        self.bytes.update(value.to_le_bytes());
     }
 
     pub(super) fn usize(&mut self, value: usize) {

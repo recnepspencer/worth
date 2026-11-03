@@ -47,7 +47,7 @@ impl WorthQueryPrimaryGraphProvider {
     pub(in crate::domain_computation::primary_graph) fn retained_application_commit_basis(
         &self,
         commit: &worth_relational::facade::history::RelationalCommitReceipt,
-    ) -> Option<super::WorthQueryRetainedApplicationCommitBasis> {
+    ) -> Option<super::session_commit::WorthQueryRetainedApplicationCommitBasis> {
         self.completed_commit_evidence
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())

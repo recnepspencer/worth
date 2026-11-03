@@ -191,7 +191,7 @@ fn read_source<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>>(
         parent_context.principal(),
         allocation,
         native,
-        |mut plan, native| {
+        |plan, native| {
             if !adapter.installed().admits_source(plan.query)
                 || !matches!(
                     plan.governance,

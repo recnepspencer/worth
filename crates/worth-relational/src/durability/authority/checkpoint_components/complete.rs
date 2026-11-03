@@ -98,7 +98,7 @@ pub(in crate::durability) fn capture_complete(
                 }
                 _ => corrupt("current component observation changed").into(),
             })?
-            .ok_or_else(|| Stop::OriginalAuthorityUnavailable)?;
+            .ok_or(Stop::OriginalAuthorityUnavailable)?;
         current.push(Current { root, binding });
     }
     let external = runtime
@@ -111,7 +111,7 @@ pub(in crate::durability) fn capture_complete(
     let count = current
         .len()
         .checked_add(external.iter().len())
-        .ok_or_else(|| overflow())?;
+        .ok_or_else(overflow)?;
     let _views_memory = reserve::<Observation<'_>>(request, count)?;
     let mut observations = Vec::with_capacity(count);
     for (index, source) in current.iter().enumerate() {
@@ -153,15 +153,15 @@ pub(in crate::durability) fn capture_complete(
             }
             continue;
         }
-        unique = unique.checked_add(1).ok_or_else(|| overflow())?;
+        unique = unique.checked_add(1).ok_or_else(overflow)?;
         bytes = bytes
             .checked_add(
                 observation
                     .descriptor
                     .allocation_bytes()
-                    .ok_or_else(|| overflow())?,
+                    .ok_or_else(overflow)?,
             )
-            .ok_or_else(|| overflow())?;
+            .ok_or_else(overflow)?;
     }
     bytes =
         bytes
@@ -173,7 +173,7 @@ pub(in crate::durability) fn capture_complete(
                 .map_err(|_| overflow())?
                 .size(),
             )
-            .ok_or_else(|| overflow())?;
+            .ok_or_else(overflow)?;
     let memory = request
         .reserve_retained_memory(u64::try_from(bytes).map_err(|_| overflow())?)
         .map_err(|cause| Stop::Request(cause.into()))?;

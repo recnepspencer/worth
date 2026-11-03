@@ -54,10 +54,10 @@ impl RelationalObservationRetirement {
             self.retention_released = true;
             return Ok(false);
         }
-        if let Some(lease) = inner.registry_lease.get_mut() {
-            if !lease.try_retire() {
-                return Err(());
-            }
+        if let Some(lease) = inner.registry_lease.get_mut()
+            && !lease.try_retire()
+        {
+            return Err(());
         }
         // Both business obligations are disarmed before ordinary field Drop.
         Ok(true)

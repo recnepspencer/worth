@@ -21,13 +21,12 @@ impl RelationalSourceClose {
         let state = self.state_mut();
         match state.stage {
             Stage::Quiesce => {
-                match state
+                if let Some(cause) = state
                     .runtime
                     .try_prepare_stopped_close()
                     .map_err(|()| Denial::Busy)?
                 {
-                    Some(cause) => return Err(Denial::Native(cause)),
-                    None => {}
+                    return Err(Denial::Native(cause));
                 }
                 if !state
                     .runtime

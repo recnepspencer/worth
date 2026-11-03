@@ -87,6 +87,10 @@ fn record(
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<(), Denial> {
     crate::execution::check_request(request).map_err(Denial::Request)?;
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Fixed allocation identity deduplicates custody; canonical order never uses this address"
+    )]
     let identity = Arc::as_ptr(authority) as usize;
     if identities.get(&identity).is_some() {
         return Ok(());

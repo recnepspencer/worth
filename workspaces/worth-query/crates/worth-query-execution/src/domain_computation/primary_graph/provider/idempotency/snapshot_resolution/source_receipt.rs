@@ -256,7 +256,7 @@ fn decode_key(text: &str) -> Result<[u8; 32], Denial> {
         return Err(Denial::Unavailable);
     }
     let mut key = [0; 32];
-    for (target, pair) in key.iter_mut().zip(text.as_bytes().chunks_exact(2)) {
+    for (target, pair) in key.iter_mut().zip(text.as_bytes().as_chunks::<2>().0) {
         let digit = |byte| match byte {
             b'0'..=b'9' => Ok(byte - b'0'),
             b'a'..=b'f' => Ok(byte - b'a' + 10),

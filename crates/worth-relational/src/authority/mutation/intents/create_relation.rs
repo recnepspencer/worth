@@ -77,14 +77,14 @@ pub(super) fn apply<'a>(
         &spec.target,
         relation_id,
     )?;
-    Ok(MutationOutcome::relation_created(
+    MutationOutcome::relation_created(
         &workspace.execution(),
         relation_id,
         source,
         target,
         spec.kind_id,
         record_aspect_patch::published_patch(patch),
-    )?)
+    )
 }
 
 fn resolve_entity_reference(

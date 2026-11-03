@@ -37,6 +37,10 @@ disallowed-methods = [
 # exact private key; key_ordering_tests proves lookup while that ledger changes.
 # https://clippy.rust-lang.org/rust-1.94.0/index.html#mutable_key_type
 ignore-interior-mutability = [
+  # Equality uses immutable declared coordinates or fixed allocation identity, never funding/cache state.
+  "worth_relational::validation::candidate_source::program::ManagedIndexSourceProgram",
+  # Equality uses immutable declared coordinates or fixed allocation identity, never funding/cache state.
+  "worth_relational::graph_member::key::projected_storage::ProjectedMemberStorage",
   "bytes::Bytes",
   "worth_query_execution::domain_computation::primary_graph::structural_walk::key::StructuralWalkKey",
   # ordering_coordinates/Hash inspect fixed coordinates and meaning identity,

@@ -151,8 +151,10 @@ impl InstalledOutputComparison {
             )? {
                 Err(cause) => ProducerOutputEvaluationState::Ineligible(cause),
                 Ok(observed) => {
+                    // fetch_update is the supported atomic spelling at MSRV 1.94.
+                    #[allow(deprecated)]
                     let attempt = attempts
-                        .try_update(
+                        .fetch_update(
                             std::sync::atomic::Ordering::Relaxed,
                             std::sync::atomic::Ordering::Relaxed,
                             |current| current.checked_add(2),

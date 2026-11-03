@@ -75,14 +75,14 @@ pub(super) fn apply<'a>(
         &intent.target,
         relation_id,
     )?;
-    Ok(MutationOutcome::relation_created(
+    MutationOutcome::relation_created(
         &workspace.execution(),
         relation_id,
         source,
         target_entity,
         intent.kind_id,
         record_aspect_patch::published_patch(patch),
-    )?)
+    )
 }
 
 fn resolve_endpoint(

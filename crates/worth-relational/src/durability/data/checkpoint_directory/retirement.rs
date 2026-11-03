@@ -88,8 +88,9 @@ impl DirectoryRetirementPayload {
                             .take()
                             .expect("completed owner retirement is present")
                             .into_retired()
-                            .ok()
-                            .expect("completed owner retirement retains inert data"),
+                            .unwrap_or_else(|_| {
+                                unreachable!("completed owner retirement retains inert data")
+                            }),
                     );
                 }
                 observation => return progress(observation),
@@ -143,7 +144,10 @@ impl std::fmt::Debug for CheckpointDirectoryRetirement {
                 "canonical_members",
                 &self.payload.manifest.canonical_members.entries().len(),
             )
-            .field("history", &Arc::as_ptr(&self.payload.history_members))
+            .field(
+                "history_owners",
+                &Arc::strong_count(&self.payload.history_members),
+            )
             .field("member_active", &self.payload.member.is_some())
             .finish_non_exhaustive()
     }

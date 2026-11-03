@@ -34,12 +34,12 @@ impl NativeSourceMemberState {
         &self,
         source: &dyn RelationalDurableColdSource,
     ) -> Result<Option<RelationalDurableMemberCustody>, Denial> {
-        if let Some(original) = &self.source {
-            if !std::ptr::addr_eq(original.as_ref(), source) {
-                return Err(Denial::Refused(
-                    RelationalDurableMemberRetirementRefusal::ForeignSource,
-                ));
-            }
+        if let Some(original) = &self.source
+            && !std::ptr::addr_eq(original.as_ref(), source)
+        {
+            return Err(Denial::Refused(
+                RelationalDurableMemberRetirementRefusal::ForeignSource,
+            ));
         }
         match &self.custody {
             NativeMemberRetirementSlot::Original(token) => Ok(Some(token.clone())),

@@ -25,7 +25,7 @@ pub use derived_replacement::{
 };
 pub use public_cache::{ManagedIndexPublicCache, ManagedIndexPublicCacheRetirement};
 
-pub(super) struct CompanionRootImage {
+pub(in crate::mvcc) struct CompanionRootImage {
     pub(super) root_id: u64,
     pub(super) commit_id: Option<CommitId>,
     pub(super) position: AtomicU64,
@@ -41,7 +41,7 @@ impl CompanionRootImage {
     }
 }
 
-pub(super) struct CompanionBranchCellCore {
+pub(in crate::mvcc) struct CompanionBranchCellCore {
     pub(super) runtime_instance_id: u64,
     pub(super) registration_generation: u64,
     pub(super) branch_id: BranchId,

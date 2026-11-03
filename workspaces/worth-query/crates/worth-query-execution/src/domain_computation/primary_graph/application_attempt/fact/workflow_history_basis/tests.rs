@@ -16,7 +16,7 @@ fn history_basis_requires_same_owner_branch_version_and_live_candidate() {
     let host_request = crate::test_request_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut runtime = history_runtime();
+    let runtime = history_runtime();
     let first = commit(execution, &runtime, "first");
     let retained = runtime
         .admit_branch_basis(&runtime.main_branch_identity())
@@ -105,7 +105,7 @@ fn history_basis_requires_same_owner_branch_version_and_live_candidate() {
         },
         1
     ));
-    let mut foreign = history_runtime();
+    let foreign = history_runtime();
     let foreign_snapshot = commit(execution, &foreign, "first");
     assert!(!remains_equal(
         &foreign,

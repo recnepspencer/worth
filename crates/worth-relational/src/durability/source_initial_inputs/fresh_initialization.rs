@@ -78,7 +78,7 @@ impl RelationalFreshInitialization {
             .map_err(|cause| Refusal::Request(cause.into()))?;
         let source = runtime.durability.cold_source().ok_or(Refusal::Missing)?;
         if self.runtime.as_ptr() != runtime.state_binding().as_ptr()
-            || self.source.as_ptr().cast::<()>() != Arc::as_ptr(&source).cast::<()>()
+            || !std::sync::Weak::ptr_eq(&self.source, &Arc::downgrade(&source))
             || runtime.history().latest_commit().is_some()
         {
             return Err(Refusal::Malformed);

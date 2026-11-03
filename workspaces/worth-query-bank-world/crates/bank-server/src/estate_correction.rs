@@ -1,3 +1,7 @@
+#![allow(
+    clippy::result_large_err,
+    reason = "Typed refusals preserve original recovery and cleanup custody without allocating on failure"
+)]
 //! A recorded freeze restores account status through ordinary source-completion custody.
 use crate::application_definition::RestoreFrozenAccountAction;
 use crate::{

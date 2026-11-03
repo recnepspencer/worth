@@ -14,6 +14,10 @@ pub(crate) struct RelationalRegionSourceWalk {
 pub(crate) enum RelationalRegionSourceWalkProgress {
     Advanced,
     Region(
+        #[allow(
+            dead_code,
+            reason = "Original diagnostic, proof and funding custody remains owned through retirement"
+        )]
         PartitionId,
         Arc<crate::storage::residency::RelationalRegionResidency>,
     ),

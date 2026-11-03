@@ -88,6 +88,7 @@ impl BankApprovedPaymentApplyOutcome {
 }
 
 impl BankApprovedPaymentPerformedOperation {
+    #[cfg(test)]
     pub(crate) const fn native_receipt(&self) -> &WorthQueryApplicationCommitReceipt {
         &self.receipt
     }

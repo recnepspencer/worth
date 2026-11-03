@@ -118,7 +118,7 @@ fn lifecycle_structural_evidence<'a>(
     }
     let transition = lifecycle_transition(structural_change);
     (transition != super::data::LifecycleTransitionClass::NoTransition)
-        .then(|| super::BorrowedAspectDeltaEvidence::Lifecycle { transition })
+        .then_some(super::BorrowedAspectDeltaEvidence::Lifecycle { transition })
 }
 
 fn whole_aspect_set_evidence<'a>(
@@ -140,7 +140,7 @@ fn whole_aspect_clear_evidence<'a>(
     patch
         .whole_aspect_clears()
         .any(|key| key == binding.contract.key())
-        .then(|| super::BorrowedAspectDeltaEvidence::AuthoritativePatch {
+        .then_some(super::BorrowedAspectDeltaEvidence::AuthoritativePatch {
             operation: super::BorrowedPatchOperation::WholeAspectClear {
                 contract: &binding.contract,
             },

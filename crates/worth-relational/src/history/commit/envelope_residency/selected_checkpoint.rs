@@ -76,10 +76,10 @@ impl RelationalCommitEnvelopeResidency {
             Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
             Err(std::sync::TryLockError::WouldBlock) => return Err(Ack::Busy),
         };
-        if let Some(position) = &state.position {
-            if position.position() != entry.position {
-                return Err(Ack::Storage(Cause::IntegrityMismatch));
-            }
+        if let Some(position) = &state.position
+            && position.position() != entry.position
+        {
+            return Err(Ack::Storage(Cause::IntegrityMismatch));
         }
         match &state.backing {
             EnvelopeBacking::Journal {

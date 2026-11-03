@@ -186,9 +186,9 @@ pub(super) fn expand(
             .map(|entry| (entry.commit.commit_id, entry.root.clone()))
             .collect(),
         mirror_schema_digest: manifest.mirror_schema,
-        branch_cells: branch_cells,
-        branch_lifecycle: branch_lifecycle,
-        retired_branch_names: retired_branch_names,
+        branch_cells,
+        branch_lifecycle,
+        retired_branch_names,
         branch_roots,
         branch_root_schema_images: manifest.schemas.ordinary_owned_copy(),
         record_identity: manifest.record_identity,
@@ -210,7 +210,7 @@ pub(super) fn expand(
         derived_index_checkpoint_format,
         symbol_table,
         symbol_identity_frontier: manifest.symbol_identity_frontier,
-        runtime_name: runtime_name,
+        runtime_name,
     })
 }
 

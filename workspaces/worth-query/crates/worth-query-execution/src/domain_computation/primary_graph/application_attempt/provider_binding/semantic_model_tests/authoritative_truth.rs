@@ -30,7 +30,7 @@ pub(super) fn compile_committed_observations(
     alpha: &AspectFieldLocator,
     beta: &AspectFieldLocator,
 ) -> CommittedObservationWorld {
-    let mut runtime = schema::fixture_runtime();
+    let runtime = schema::fixture_runtime();
     let entities = commit_entities(execution, &runtime, alpha, beta);
     let decoy_relation = commit_relation(
         execution,

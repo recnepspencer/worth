@@ -119,8 +119,9 @@ impl SelectedCheckpointReadRetirement {
                     .take()
                     .expect("original retirement is owned")
                     .into_retired()
-                    .ok()
-                    .expect("complete retirement retains original inert data"),
+                    .unwrap_or_else(|_| {
+                        unreachable!("complete retirement retains original inert data")
+                    }),
             );
             self.complete = true;
             // The separately borrowed authentic source keeps this release nonfinal.

@@ -128,7 +128,7 @@ impl<P, R, S: Summary> PredicateTree<P, R, S> {
             .ok_or(Stop::CapacityOverflow)?;
         let memory = execution
             .reserve_retained_memory(bytes)
-            .map_err(|cause| Stop::Request(cause))?;
+            .map_err(Stop::Request)?;
         control.poll()?;
         self.attach(
             slot,

@@ -94,7 +94,7 @@ impl RelationalDurableMemberCustody {
             .owner
             .source
             .as_ref()
-            .is_none_or(|issuer| issuer.as_ptr().cast::<()>() != Arc::as_ptr(source).cast::<()>())
+            .is_none_or(|issuer| !std::sync::Weak::ptr_eq(issuer, &Arc::downgrade(source)))
         {
             return Err(super::RelationalDurableOwnedReadRefusal::ForeignSource);
         }
@@ -114,7 +114,7 @@ impl RelationalDurableMemberCustody {
             .source
             .as_ref()
             .ok_or(Refusal::ForeignProtection)?;
-        if issuer.as_ptr().cast::<()>() != Arc::as_ptr(source).cast::<()>() {
+        if !std::sync::Weak::ptr_eq(issuer, &Arc::downgrade(source)) {
             return Err(Refusal::ForeignSource);
         }
         if member.length > limit {

@@ -1,9 +1,6 @@
 //! Concrete original-owner inputs; memory data cannot qualify a Home source.
 use worth_relational::facade::{
-    durability::{
-        ReadmittedRelationalCreatedEntity, RecoveredRelationalSemanticResult,
-        RelationalAssociatedEffectRefusal,
-    },
+    durability::{ReadmittedRelationalCreatedEntity, RelationalAssociatedEffectRefusal},
     identity::EntityId,
     transactions::RelationalCommitSemanticResult,
 };

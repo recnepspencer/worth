@@ -49,8 +49,8 @@ pub(super) fn readmit(
         coverage: manifest.coverage,
         commit_descriptors: manifest.commits.iter().map(|entry| (entry.commit.commit_id, entry.root.clone())).collect(),
         mirror_schema_digest: manifest.mirror_schema,
-        branch_cells: branch_cells, branch_lifecycle: branch_lifecycle,
-        retired_branch_names: retired_branch_names,
+        branch_cells, branch_lifecycle,
+        retired_branch_names,
         branch_roots: Vec::new(), branch_root_schema_images: manifest.schemas.ordinary_owned_copy(),
         record_identity: manifest.record_identity,
         record_generation_high_water: Vec::new(), reusable_record_slots: Vec::new(), record_slot_frontiers: Vec::new(),
@@ -62,7 +62,7 @@ pub(super) fn readmit(
         derived_index_checkpoint: None,
         derived_index_checkpoint_format: crate::durability::derived_index_artifacts::DerivedIndexCheckpointArtifacts::FORMAT_VERSION,
         symbol_table: symbols.snapshot(), symbol_identity_frontier: manifest.symbol_identity_frontier,
-        runtime_name: runtime_name,
+        runtime_name,
     };
     Ok(checkpoint)
 }

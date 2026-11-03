@@ -43,15 +43,15 @@ pub(super) fn apply_relation_row<'a>(
     target: &EntityReference,
     fields: &AspectFieldPatch,
 ) -> Result<(), TransactionCommitError> {
-    let source_id = resolve_entity_reference(workspace, &source)?;
-    let target_id = resolve_entity_reference(workspace, &target)?;
+    let source_id = resolve_entity_reference(workspace, source)?;
+    let target_id = resolve_entity_reference(workspace, target)?;
     let patch_target = RecordAspectPatchTarget::RelationCreation {
         kind_id: intent.kind_id,
     };
     let plan = workspace.relation_aspect_plan(intent.kind_id);
     let candidate = field_authoring_candidate::lower(
         &workspace.execution(),
-        &fields,
+        fields,
         PortablePatchReadmissionPurpose::RecordCreation,
         plan,
         intent.kind_id,
