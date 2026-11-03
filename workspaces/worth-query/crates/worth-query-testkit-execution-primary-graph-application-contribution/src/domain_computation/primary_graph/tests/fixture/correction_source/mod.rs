@@ -6,7 +6,6 @@ use worth_execution::ExecutionAllocationPolicy;
 use worth_query_declaration::facade::application_operation::*;
 use worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::causal_fact::WorthQueryPendingAftermathCausality;
 use worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::commit_causality::ApplicationCommitCausality;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::bootstrap;
 use worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase;
 use worth_query_execution::facade::application_installation::WorthQueryProgramOwner;
 use worth_query_execution::facade::domain_computation::HandlerResult;
