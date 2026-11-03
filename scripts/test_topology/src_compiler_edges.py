@@ -40,7 +40,7 @@ FIELD = re.compile(r'field `(\w+)` of (?:struct|union|variant) `(?:[\w:]*::)?(\w
 PRIVATE_FIELDS = re.compile(r'fields? (`\w+`(?:, `\w+`)*(?: and `\w+`)?) of (?:struct|variant) `(?:[\w:]*::)?(\w+)')
 
 
-PRIVATE_TYPE = re.compile(r'^type `([\w:]+)` is private')
+PRIVATE_TYPE = re.compile(r'^type `([\w:]+)(?:<[^`]*>)?` is private')
 
 
 def declaration_of(tree, path):
@@ -131,6 +131,10 @@ def harvest(check_json, root):
             if re.match(r'crates/worth-query-(court|testkit)-', span['file_name']):
                 forced.update('::'.join(d) for d in definers)
             continue
+        family = next((f.names for f in found if caller[:len(f.names)] == f.names), None)
+        if not definers and family is not None:
+            # A staying test family calling a method that moved out of the library moves too.
+            forced.add('::'.join(family))
         for definer in definers:
             if caller[:len(definer)] != definer:
                 edges.setdefault('::'.join(caller), set()).add('::'.join(definer))
