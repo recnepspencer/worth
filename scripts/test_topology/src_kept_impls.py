@@ -77,11 +77,15 @@ def mark_kept_impls(model):
                     (trait_origin is None or not in_moved(model, trait_origin[0])):
                 record.kept.add(index)
                 work.append((names, index))
-    # Production cfg(test) code that reaches moved items keeps them in the library (recorders, doors).
+    # Production cfg(test) statements (inside function bodies) that call moved items keep those
+    # items in the library: recorders the instrumentation writes. Gated items are classified apart.
     for names, node in model.index.items():
         if names in model.records or any(names[:len(f)] == f for f in model.families):
             continue
-        for reference in references(_Text(names, node.own_text()), model.index):
+        statements = gated_statements(node.own_text())
+        if not statements:
+            continue
+        for reference in references(_Text(names, statements), model.index):
             if reference.item is None:
                 continue
             origin = model.everything.origin(reference.module, reference.item)[0] or (reference.module, reference.item)
@@ -123,6 +127,23 @@ def mark_kept_impls(model):
         record.kept_names = {record.items[i].name for i in record.kept if record.items[i].keyword != 'impl'}
         count += len(record.kept)
     return count
+
+
+def gated_statements(text):
+    """Text of `#[cfg(test)]` statements that sit inside function bodies (not items)."""
+    from src_emit_production import GATE, unit_extent
+    pieces = []
+    for match in GATE.finditer(text):
+        following = text[match.end():]
+        if re.match(r'(?:#\s*\[[^\]]*\]\s*)*(?:pub(?:\s*\([^)]*\))?\s+)?'
+                    r'(?:fn|struct|enum|const|static|type|trait|union|impl|mod|use|macro_rules|thread_local)\b',
+                    following):
+            continue
+        line_start = text.rfind('\n', 0, match.start()) + 1
+        if not text[line_start:match.start()].strip() and text[line_start:match.start()] == '':
+            continue
+        pieces.append(following[:unit_extent(following)])
+    return '\n'.join(pieces)
 
 
 def has_kept(model, names):

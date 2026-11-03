@@ -12,6 +12,7 @@ from src_emit_crates import (LIBRARY_DIR, crate_sources, library_dependencies, m
                              referenced_testkits)
 from src_emit_production import apply_edits, compiler_widenings, hook_edits, production_edits, residual_gates
 from src_families import file_text
+from src_kept_impls import has_kept
 from src_multiset import multiset_of_texts
 
 CONFIG = 'tools/boundary-check/config/'
@@ -191,7 +192,7 @@ def residual_sweep(model, classes, edits, dev_aliases=()):
     kept = ({name for _module, name in classes.kept}
             | {name for group in (classes.orphaned, classes.extracted) for items in group.values()
                for name, _spans in items}
-            | {f[-1] for f in model.families if f not in classes.compiled_families}
+            | {f[-1] for f in model.families if f not in classes.compiled_families and not has_kept(model, f)}
             | set(dev_aliases))
     skip = defaultdict(list)
     for family, record in model.families.items():
