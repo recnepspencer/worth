@@ -64,7 +64,8 @@ import { createResourceSurfaceBindings } from "./resource_surface_bindings.js";
 import { createFormResetStore } from "./reset/store.js";
 import { createFormStateHistoryStore } from "./state_history.js";
 import { createStateHistoryControllerBindings } from "./state_history/controller_bindings.js";
-import { createFieldHandle } from "./fields/handles.js";
+import { registerFormFields } from "./fields/registry.js";
+import { applyFormFieldUpdates } from "./fields/bulk_updates.js";
 import { evaluateSteps } from "./steps/artifacts.js";
 import { materializeStepDeclarations } from "./steps/declarations.js";
 import { materializeFormSourceAuthority, readSourceBootstrapArtifact } from "./sources/form_sources.js";
@@ -102,7 +103,6 @@ export function createFormController(signalNamespace, declaration, options = {})
   const stepDeclarations = materializeStepDeclarations(declaration, fieldDeclarations);
   const actionDeclarations = materializeActionDeclarations(declaration, stepDeclarations, fieldDeclarations);
   const fieldHandles = {};
-  const fieldsById = new Map();
   const rawInputs = new Map();
   const parseFailures = new Map();
   const actionAttempts = createActionAttemptStore();
@@ -248,6 +248,13 @@ export function createFormController(signalNamespace, declaration, options = {})
     formRef: () => form,
     stateHistory,
   });
+  const fieldState = {
+    writeDraft: updateDraft,
+    recordRawInput: stateHistoryBindings.recordRawInput,
+    recordDraftWrite: stateHistoryBindings.recordDraftWrite,
+    interactions, rawInputs, parseFailures,
+  };
+
   const formReportBindings = createFormReportBindings({
     formRef: () => form,
     fieldDeclarations,
@@ -350,34 +357,14 @@ export function createFormController(signalNamespace, declaration, options = {})
         rawInputBlockers,
       });
     },
+    setFields(values, options) { return applyFormFieldUpdates(form, fieldDeclarations, fieldState, values, options); },
     fields: fieldHandles,
     namespace: signalNamespace,
   });
 
-  for (const declaration of fieldDeclarations) {
-    const handle = reactiveBindings.wrapFieldHandle(createFieldHandle(declaration, form, {
-      writeDraft: updateDraft,
-      recordRawInput: stateHistoryBindings.recordRawInput,
-      recordDraftWrite: stateHistoryBindings.recordDraftWrite,
-      interactions,
-      rawInputs,
-      parseFailures,
-    }));
-    fieldHandles[declaration.name] = handle;
-    fieldsById.set(declaration.id, handle);
-  }
-  Object.freeze(fieldHandles);
-  Object.defineProperty(form, "field", {
-    enumerable: false,
-    value(fieldId) {
-      const handle = fieldsById.get(fieldId);
-      if (!handle) {
-        throw new FormDeclarationError("form field is not declared", { fieldId });
-      }
-      return handle;
-    },
-  });
+  registerFormFields(form, fieldHandles, fieldDeclarations, fieldState, reactiveBindings);
   reactiveBindings.wrapControllerMutations(form);
+  reactiveBindings.initialize();
   return Object.freeze(form);
 
   function authoritativeSource() { return canonicalizations.sourceFor(sourceAuthority.read()); }

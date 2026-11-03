@@ -53,6 +53,7 @@ export const productFilesToCopy = Object.freeze([
   ["product/entrypoint/worker_first_host_dependency_refresh.ts", "product/entrypoint/worker_first_host_dependency_refresh.js"],
   ["product/entrypoint/worker_first_persistence_host_capability.ts", "product/entrypoint/worker_first_persistence_host_capability.js"],
   ["product/entrypoint/worker_first_root_session.ts", "product/entrypoint/worker_first_root_session.js"],
+  ["product/entrypoint/worker_first_root_termination.ts", "product/entrypoint/worker_first_root_termination.js"],
   ["product/entrypoint/worker_first_root_session_exact_import.ts", "product/entrypoint/worker_first_root_session_exact_import.js"],
   ["product/entrypoint/worker_first_root_session_lifecycle.ts", "product/entrypoint/worker_first_root_session_lifecycle.js"],
   ["product/entrypoint/worker_first_resource_branch_lifecycle.ts", "product/entrypoint/worker_first_resource_branch_lifecycle.js"],

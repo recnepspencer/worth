@@ -28,6 +28,7 @@ import {
 import { createWorkerFirstRootImportedGraph } from "./worker_first_root_imported_graph.js";
 import { readRootHistoryFacade } from "./worker_first_root_history.js";
 import { createWorkerFirstRootSession } from "./worker_first_root_session.js";
+import { createWorkerFirstRootTermination } from "./worker_first_root_termination.js";
 import {
   createRootAdaptersFacade,
   createRootDiagnosticsFacade,
@@ -50,6 +51,7 @@ export function createWorkerFirstCallableSignals(request) {
 async function createWorkerFirstCallableSignalsAfterBootstrap(rootSession, request) {
   await rootSession.ready();
   const trackedGraphs = new Set();
+  const terminate = createWorkerFirstRootTermination(rootSession, trackedGraphs);
   let diagnostics = null;
   let history = null;
   let adapters = null;
@@ -328,10 +330,7 @@ async function createWorkerFirstCallableSignalsAfterBootstrap(rootSession, reque
     compatibilityRuntime() {
       throwWorkerFirstCallableUnavailable("signals.compatibilityRuntime");
     },
-    async terminate() {
-      terminateTrackedGraphs(trackedGraphs);
-      await rootSession.terminate();
-    },
+    terminate,
     free() {
       void callableSignals.terminate();
     },
@@ -362,13 +361,6 @@ function createUnavailableNamespace(operation) {
       },
     },
   );
-}
-
-function terminateTrackedGraphs(trackedGraphs) {
-  for (const graph of trackedGraphs) {
-    trackedGraphs.delete(graph);
-    void graph.terminate();
-  }
 }
 
 function normalizeWorkerFirstInputOptions(options) {

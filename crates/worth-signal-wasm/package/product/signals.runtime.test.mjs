@@ -71,6 +71,8 @@ import "./signals_runtime/publication/repeated_dynamic_instance_identity.test.mj
 import "./signals_runtime/publication/scoped_graph_manual_scope_equivalence.test.mjs";
 import "./signals_runtime/inputs/public_graph_input_output_contract.test.mjs";
 import "./signals_runtime/forms/form_kernel_patch_plan.test.mjs";
+import "./signals_runtime/forms/form_summary_source_continuity.test.mjs";
+import "./signals_runtime/forms/form_atomic_field_updates.test.mjs";
 import "./signals_runtime/forms/form_phase_one_kernel_authority.test.mjs";
 import "./signals_runtime/forms/form_validation_readiness.test.mjs";
 import "./signals_runtime/forms/form_availability_admission.test.mjs";
