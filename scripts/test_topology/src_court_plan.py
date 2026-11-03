@@ -174,17 +174,26 @@ def called_methods(model):
 
 
 def extracted_readers(model, classes):
-    """Staying families that name an extracted item: they must move with it."""
-    names = {name for removed in (classes.extracted, classes.orphaned)
-             for items in removed.values() for name, _spans in items}
+    """Staying families whose resolved references reach an extracted or orphaned item.
+
+    Resolution, not identifier matching: a common name (`map`) must not drag families along.
+    """
+    from src_families import ExpandedView
+    from src_paths import references
+    removed = {(module, name) for group in (classes.extracted, classes.orphaned)
+               for module, items in group.items() for name, _spans in items}
     moving = set(model.moving)
     result = set()
     for family, record in model.families.items():
         if family in moving:
             continue
-        words = {t.value for n in record.node.walk() for t in tokens(n.own_text()) if t.kind == 'ident'}
-        if words & names:
-            result.add(family)
+        for node in record.node.walk():
+            for reference in references(ExpandedView(node), model.index):
+                if reference.item is None:
+                    continue
+                origin, _gated = model.everything.origin(reference.module, reference.item)
+                if (origin or (reference.module, reference.item)) in removed:
+                    result.add(family)
     return result
 
 

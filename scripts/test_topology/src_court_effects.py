@@ -178,7 +178,8 @@ def residual_sweep(model, classes, edits, dev_aliases=()):
     or any test family keep their gate.
     """
     kept = ({name for _module, name in classes.kept}
-            | {name for items in classes.orphaned.values() for name, _spans in items}
+            | {name for group in (classes.orphaned, classes.extracted) for items in group.values()
+               for name, _spans in items}
             | {f[-1] for f in model.families if f not in classes.compiled_families}
             | set(dev_aliases))
     skip = defaultdict(list)
