@@ -21,16 +21,14 @@ fn public_real_operation_request_publishes_and_replays_one_immutable_proposal() 
         403,
     ));
     assert_eq!(proposal.node_path(), "propose");
-    assert!(!proposal.replayed());
+    assert!(proposal.receipt().changed_record_count() > 0);
 
-    let replay = expect_proposal(propose_instance(
-        &application,
-        started.instance().clone(),
-        403,
-    ));
-    assert!(replay.replayed());
-    assert_eq!(replay.transition(), proposal.transition());
-    assert_eq!(replay.proposal(), proposal.proposal());
+    let replay = recorded::proposal(
+        propose_instance(&application, started.instance().clone(), 403).unwrap(),
+    );
+    recorded::original(&replay, proposal.receipt());
+    recorded::creates(&replay, proposal.transition());
+    recorded::creates(&replay, proposal.proposal().entity_id());
 
     match propose_instance(&application, started.instance().clone(), 404)
         .expect("a new proposal key must reach retained-head comparison")

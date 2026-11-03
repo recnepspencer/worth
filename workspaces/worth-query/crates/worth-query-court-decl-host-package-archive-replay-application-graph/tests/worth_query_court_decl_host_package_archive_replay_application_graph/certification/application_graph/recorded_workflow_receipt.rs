@@ -1,7 +1,9 @@
 //! Retries compare owner-readmitted data with the genuine original effect.
-use worth_query_host::facade::primary_graph::{
+use worth_query_host::facade::application_entry::{
     WorkflowDefinitionPublicationOutcome, WorkflowDefinitionRetirementOutcome,
     WorkflowInstanceStartOutcome, WorkflowProposalOutcome,
+};
+use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationCommitReceipt as Live,
     WorthQueryRecoveredApplicationCommitReceipt as Recorded,
 };
