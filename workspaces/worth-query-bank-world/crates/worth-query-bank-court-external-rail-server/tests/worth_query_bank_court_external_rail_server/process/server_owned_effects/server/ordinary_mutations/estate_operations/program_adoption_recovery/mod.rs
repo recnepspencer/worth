@@ -11,7 +11,7 @@ fn performed_effect_recovery_survives_removal_from_the_current_program() {
         .live_receipt()
         .expect("fresh source retains its full native owner");
     let correlation = world.transport.attempts()[0].clone();
-    let handle = world.open_recovery(&receipt);
+    let handle = world.open_recovery(receipt);
     let specialist = world.fixture.authenticate_specialist();
     let runtime = &world.fixture.world.runtime;
     let branch = runtime.current_branch();

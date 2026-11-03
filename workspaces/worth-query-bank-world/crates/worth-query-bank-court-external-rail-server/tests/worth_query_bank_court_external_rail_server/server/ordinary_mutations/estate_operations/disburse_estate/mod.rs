@@ -39,7 +39,7 @@ fn public_progression_disburses_through_a_distinct_authoritative_journal() {
         !receipt.retained_preimage(),
         "compensation operations must not promise an inverse pre-image"
     );
-    assert_admission_derives_the_request_identities_once(&receipt);
+    assert_admission_derives_the_request_identities_once(receipt);
     assert_authoritative_activity(&fixture);
     assert_equivalent_retry(&fixture, &specialist, &key, &outcome_closed);
 }

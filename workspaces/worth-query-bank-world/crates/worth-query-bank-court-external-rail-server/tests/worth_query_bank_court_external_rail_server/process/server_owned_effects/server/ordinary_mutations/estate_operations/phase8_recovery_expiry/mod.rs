@@ -10,13 +10,13 @@ fn current_expiry_evidence_remains_descriptive() {
     let receipt = receipt_closed
         .live_receipt()
         .expect("fresh source retains its full native owner");
-    let handle = world.open_recovery(&receipt);
+    let handle = world.open_recovery(receipt);
     assert_eq!(
         world
             .fixture
             .world
             .runtime
-            .commit_recovery_claim_status(&receipt),
+            .commit_recovery_claim_status(receipt),
         Ok(BankRecoveryClaimStatus::Live)
     );
     assert!(matches!(
@@ -45,7 +45,7 @@ fn clock_advanced_expiry_terminalizes_through_bank() {
     let receipt = receipt_closed
         .live_receipt()
         .expect("fresh source retains its full native owner");
-    let handle = world.open_recovery(&receipt);
+    let handle = world.open_recovery(receipt);
     authorization_time.advance_to_epoch_seconds(5_601);
     let BankRecoveryExpiryEvaluation::Expired(decision) = world
         .fixture
@@ -67,14 +67,14 @@ fn clock_advanced_expiry_terminalizes_through_bank() {
             .fixture
             .world
             .runtime
-            .commit_recovery_claim_status(&receipt),
+            .commit_recovery_claim_status(receipt),
         Ok(BankRecoveryClaimStatus::Expired)
     );
     let denied = world
         .fixture
         .world
         .runtime
-        .open_commit_recovery(&receipt)
+        .open_commit_recovery(receipt)
         .expect_err("expired recovery remains terminal");
     assert_eq!(denied.kind(), BankRecoveryDenialKind::RecoveryAlreadyMinted);
 }

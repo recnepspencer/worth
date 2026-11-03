@@ -1,3 +1,7 @@
+#![allow(
+    clippy::result_large_err,
+    reason = "Typed refusals return original recovery, cleanup and permit custody without allocating on failure"
+)]
 use crate::estate_progression::delegation::command_courts::CommandCourtOutcome;
 mod advancement_custody;
 mod owning_commands;
@@ -154,7 +158,7 @@ fn revoking_the_exact_root_immediately_cuts_active_children_and_grandchildren() 
         )
         .expect("the root must activate its exact narrowed child"),
     );
-    assert_committed(
+    let _closed_command_157 = assert_committed(
         delegate(
             &fixture,
             &approver,
@@ -179,7 +183,7 @@ fn revoking_the_exact_root_immediately_cuts_active_children_and_grandchildren() 
         &request_scope(),
     )
     .expect("the exact active root must revoke through the public Bank command");
-    assert_committed(revoked);
+    let _closed_command_182 = assert_committed(revoked);
 
     let replay = delegate(
         &fixture,

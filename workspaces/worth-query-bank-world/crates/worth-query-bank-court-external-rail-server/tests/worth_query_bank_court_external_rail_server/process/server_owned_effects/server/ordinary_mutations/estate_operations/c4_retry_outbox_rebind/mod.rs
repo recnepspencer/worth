@@ -11,6 +11,7 @@ fn ordinary_equivalent_retry_skips_materialization_and_the_external_rail() {
     let receipt = receipt_closed
         .live_receipt()
         .expect("fresh source retains its full native owner");
+    assert!(receipt.co_committed_dispatch_outbox());
     assert_eq!(
         world.notice_status(),
         DeathNoticeStatus::NotificationRequested

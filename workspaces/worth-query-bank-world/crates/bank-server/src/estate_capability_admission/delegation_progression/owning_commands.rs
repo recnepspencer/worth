@@ -41,7 +41,7 @@ fn retained_delegation_cannot_retarget_and_rechecks_command_grant() {
         &scope,
     )
     .expect("real revocation removes command access after capture");
-    assert_committed(revoked);
+    let _closed_command_44 = assert_committed(revoked);
     let command = match command.advance(&fixture.runtime.request(&original, &scope)) {
         Advance::Refused { command, denial: Denial::Native(
             worth_query_host::facade::application_entry::WorthQueryApplicationCapabilityDelegationDenial::Authorization(_),

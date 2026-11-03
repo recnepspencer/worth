@@ -31,7 +31,7 @@ fn safe_retry_of_already_completed_effect_adds_no_contact_and_no_physical_conseq
         .observe_estate_rail_completion(&route, token)
         .expect("synchronous completion entered the one terminal owner");
 
-    let mut handle = world.open_recovery(&receipt);
+    let mut handle = world.open_recovery(receipt);
     let specialist = world.fixture.authenticate_specialist();
     let action = world.specialist_action();
     let scope = request_scope();

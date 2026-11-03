@@ -1,3 +1,7 @@
+#![allow(
+    clippy::result_large_err,
+    reason = "Typed refusals return original recovery, cleanup and permit custody without allocating on failure"
+)]
 use bank_domain::{estate::EstateAction, proposals::BankIdempotencyKey};
 use bank_server::{
     BankApprovedEstateElevation, BankAuthenticatedPrincipal, BankEstateElevationApprovalOutcome,

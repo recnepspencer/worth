@@ -11,7 +11,7 @@ fn disposal_returns_original_handle_on_refusal_then_native_receipt() {
         .live_receipt()
         .expect("fresh source retains its full native owner");
     let runtime = &world.fixture.world.runtime;
-    let handle = world.open_recovery(&receipt);
+    let handle = world.open_recovery(receipt);
     let revision = world.estate_account_revision();
     let notice = world.notice_status();
     let attempts = world.transport.attempts();
@@ -22,7 +22,7 @@ fn disposal_returns_original_handle_on_refusal_then_native_receipt() {
         "real rail effect already landed despite lost response"
     );
     assert_eq!(
-        runtime.commit_recovery_claim_status(&receipt),
+        runtime.commit_recovery_claim_status(receipt),
         Ok(BankRecoveryClaimStatus::Live)
     );
 
@@ -46,7 +46,7 @@ fn disposal_returns_original_handle_on_refusal_then_native_receipt() {
     ));
     let handle = handle.expect("opening refusal cannot consume native custody");
     assert_eq!(
-        runtime.commit_recovery_claim_status(&receipt),
+        runtime.commit_recovery_claim_status(receipt),
         Ok(BankRecoveryClaimStatus::Live)
     );
 
@@ -69,7 +69,7 @@ fn disposal_returns_original_handle_on_refusal_then_native_receipt() {
     );
     let handle = handle.expect("admission refusal returns that original handle");
     assert_eq!(
-        runtime.commit_recovery_claim_status(&receipt),
+        runtime.commit_recovery_claim_status(receipt),
         Ok(BankRecoveryClaimStatus::Live)
     );
 
@@ -111,7 +111,7 @@ fn disposal_returns_original_handle_on_refusal_then_native_receipt() {
         binding.installed_aftermath_operation_slot()
     );
     assert_eq!(
-        runtime.commit_recovery_claim_status(&receipt),
+        runtime.commit_recovery_claim_status(receipt),
         Ok(BankRecoveryClaimStatus::Disposed)
     );
     assert_eq!(world.transport.attempts(), attempts);

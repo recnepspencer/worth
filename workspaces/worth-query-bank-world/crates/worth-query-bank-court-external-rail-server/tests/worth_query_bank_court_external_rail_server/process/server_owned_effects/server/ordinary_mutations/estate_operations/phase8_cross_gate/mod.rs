@@ -11,8 +11,8 @@ fn lost_response_recovery_through_real_rail_and_aftermath() {
     let receipt = receipt_closed
         .live_receipt()
         .expect("fresh source retains its full native owner");
-    assert_lost_response_commit(&world, &receipt);
-    assert_unresolved_recovery(&world, &receipt, revision_before);
+    assert_lost_response_commit(&world, receipt);
+    assert_unresolved_recovery(&world, receipt, revision_before);
 }
 
 #[test]
@@ -34,7 +34,7 @@ fn unrelated_aftermath_lookup_cannot_substitute_the_handle_contract() {
         .world
         .runtime
         .reconcile_commit_recovery(
-            world.open_recovery(&receipt),
+            world.open_recovery(receipt),
             &specialist,
             world.specialist_action(),
             &request_scope(),
@@ -53,7 +53,7 @@ fn already_completed_resolve_returns_inherited_taxonomy() {
         .expect("fresh source retains its full native owner");
     let specialist = world.fixture.authenticate_specialist();
     let resolution = world.fixture.world.runtime.resolve_commit_recovery(
-        world.open_recovery(&receipt),
+        world.open_recovery(receipt),
         &specialist,
         world.specialist_action(),
         &request_scope(),
@@ -80,7 +80,7 @@ fn inspect_requires_disclosure_proof_not_boolean() {
         .world
         .runtime
         .inspect_commit_recovery(
-            &world.open_recovery(&receipt),
+            &world.open_recovery(receipt),
             &specialist,
             world.specialist_action(),
             &request_scope(),

@@ -10,7 +10,7 @@ fn notify_death_compensation_consumes_its_exact_handle_contract() {
     let receipt = receipt_closed
         .live_receipt()
         .expect("fresh source retains its full native owner");
-    let handle = compensate_world.open_recovery(&receipt);
+    let handle = compensate_world.open_recovery(receipt);
     let specialist = compensate_world.fixture.authenticate_specialist();
     let action = compensate_world.specialist_action();
     let admitted = compensate_world
@@ -32,7 +32,7 @@ fn notify_death_reconciliation_consumes_its_exact_handle_contract() {
     let receipt = receipt_closed
         .live_receipt()
         .expect("fresh source retains its full native owner");
-    let handle = reconcile_world.open_recovery(&receipt);
+    let handle = reconcile_world.open_recovery(receipt);
     let specialist = reconcile_world.fixture.authenticate_specialist();
     let action = reconcile_world.specialist_action();
     let admitted = reconcile_world

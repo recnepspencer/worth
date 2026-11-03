@@ -10,7 +10,7 @@ fn two_principals_can_delegate_with_the_same_client_key() {
     let approver = fixture.authenticate_approver();
     let key = idempotency(89);
 
-    assert_committed(
+    let _closed_command_13 = assert_committed(
         crate::estate_progression::delegation::command_courts::complete_delegation(
             &fixture.runtime,
             &specialist,
@@ -20,7 +20,7 @@ fn two_principals_can_delegate_with_the_same_client_key() {
         )
         .expect("the specialist should activate the first child"),
     );
-    assert_committed(
+    let _closed_command_23 = assert_committed(
         crate::estate_progression::delegation::command_courts::complete_delegation(
             &fixture.runtime,
             &approver,
@@ -41,7 +41,7 @@ fn two_principals_can_revoke_with_the_same_client_key() {
     let approver = fixture.authenticate_approver();
     let key = idempotency(90);
 
-    assert_committed(
+    let _closed_command_44 = assert_committed(
         crate::estate_progression::delegation::command_courts::complete_revocation(
             &fixture.runtime,
             &specialist,
@@ -54,7 +54,7 @@ fn two_principals_can_revoke_with_the_same_client_key() {
         )
         .expect("the specialist should revoke the first grant"),
     );
-    assert_committed(
+    let _closed_command_57 = assert_committed(
         crate::estate_progression::delegation::command_courts::complete_revocation(
             &fixture.runtime,
             &approver,
@@ -92,7 +92,8 @@ fn exact_delegation_replays_after_parent_expiry_but_fresh_child_is_denied() {
     .unwrap();
     let key = idempotency(91);
 
-    assert_committed(delegate(&fixture, &principal, action, key.clone()).unwrap());
+    let _closed_command_95 =
+        assert_committed(delegate(&fixture, &principal, action, key.clone()).unwrap());
     time.advance_to_epoch_seconds(201);
     let replay = delegate(&fixture, &principal, action, key.clone())
         .expect("an exact prior commit must replay after its parent expires");

@@ -1,3 +1,7 @@
+#![allow(
+    clippy::result_large_err,
+    reason = "Typed refusals return original recovery, cleanup and permit custody without allocating on failure"
+)]
 //! Actual closed native carriers and collection release remain move-only.
 use super::{
     closed_mutation_estate::ClosedMutationEstate, closed_mutation_source::ClosedMutationSource,

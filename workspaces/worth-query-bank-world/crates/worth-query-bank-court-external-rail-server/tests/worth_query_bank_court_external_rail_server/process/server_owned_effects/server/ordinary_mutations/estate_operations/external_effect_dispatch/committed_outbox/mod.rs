@@ -19,7 +19,7 @@ fn committed_outbox_is_fresh_owner_truth_with_exact_commit_affinity() {
                     .fixture
                     .world
                     .runtime
-                    .observe_committed_dispatch_outbox(&phase, &receipt)
+                    .observe_committed_dispatch_outbox(&phase, receipt)
                     .expect("the Query provider can read its current Relational owner view")
                     .expect("the declared effect committed one outbox row")
             },
@@ -67,7 +67,7 @@ fn another_runtime_without_the_exact_commit_cannot_observe_a_receipts_committed_
                     .fixture
                     .world
                     .runtime
-                    .observe_committed_dispatch_outbox(&phase, &receipt)
+                    .observe_committed_dispatch_outbox(&phase, receipt)
             )
             .expect("installed host call opens"),
         Err(BankCommittedDispatchOutboxReadDenial::ForeignRuntime)

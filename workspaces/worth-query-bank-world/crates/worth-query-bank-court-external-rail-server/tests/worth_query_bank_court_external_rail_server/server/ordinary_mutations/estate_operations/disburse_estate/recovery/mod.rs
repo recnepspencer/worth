@@ -31,7 +31,7 @@ fn disbursement_recovery_uses_its_own_admitted_operation() {
     let handle = fixture
         .world
         .runtime
-        .open_commit_recovery(&receipt)
+        .open_commit_recovery(receipt)
         .expect("the committed receipt must open its exact recovery handle");
     fixture
         .world
@@ -80,7 +80,7 @@ fn disbursement_compensation_uses_its_own_admitted_operation() {
     let handle = fixture
         .world
         .runtime
-        .open_commit_recovery(&receipt)
+        .open_commit_recovery(receipt)
         .expect("the committed receipt must open its exact recovery handle");
     let transition = fixture
         .world

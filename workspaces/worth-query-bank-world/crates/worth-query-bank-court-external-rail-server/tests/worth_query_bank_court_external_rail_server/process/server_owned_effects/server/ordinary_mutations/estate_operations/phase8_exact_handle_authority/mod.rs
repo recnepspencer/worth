@@ -11,7 +11,7 @@ fn cloned_receipt_cannot_mint_a_second_recovery_handle() {
         .live_receipt()
         .expect("fresh source retains its full native owner");
     let copied_receipt = receipt.clone();
-    let handle = world.open_recovery(&receipt);
+    let handle = world.open_recovery(receipt);
     let denied = world
         .fixture
         .world
@@ -37,10 +37,10 @@ fn a_receipt_committed_by_another_runtime_cannot_mint_a_handle_here() {
         .fixture
         .world
         .runtime
-        .open_commit_recovery(&receipt)
+        .open_commit_recovery(receipt)
         .expect_err("a runtime cannot open recovery for a foreign commit");
     assert_eq!(denied.kind(), BankRecoveryDenialKind::ForeignRuntime);
-    drop(committing.open_recovery(&receipt));
+    drop(committing.open_recovery(receipt));
 }
 
 #[test]
@@ -53,7 +53,7 @@ fn a_completed_bank_transition_spends_the_recovery_permanently() {
     let receipt = receipt_closed
         .live_receipt()
         .expect("fresh source retains its full native owner");
-    let handle = world.open_recovery(&receipt);
+    let handle = world.open_recovery(receipt);
     let specialist = world.fixture.authenticate_specialist();
     world
         .fixture
@@ -70,7 +70,7 @@ fn a_completed_bank_transition_spends_the_recovery_permanently() {
         .fixture
         .world
         .runtime
-        .open_commit_recovery(&receipt)
+        .open_commit_recovery(receipt)
         .expect_err("an exercised recovery cannot be reopened");
     assert_eq!(denied.kind(), BankRecoveryDenialKind::RecoveryAlreadyMinted);
 }
@@ -89,7 +89,7 @@ fn expiry_decision_is_consumed_only_by_the_bank_transition() {
     let receipt = receipt_closed
         .live_receipt()
         .expect("fresh source retains its full native owner");
-    let handle = world.open_recovery(&receipt);
+    let handle = world.open_recovery(receipt);
     authorization_time.advance_to_epoch_seconds(5_601);
     let evaluation = world
         .fixture
