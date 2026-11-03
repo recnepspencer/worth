@@ -46,6 +46,10 @@ impl CancellationSource {
 }
 
 impl CancellationToken {
+    pub(crate) fn same_signal(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.cancelled, &other.cancelled)
+    }
+
     /// A token no source can cancel.
     pub fn new() -> Self {
         Self::default()

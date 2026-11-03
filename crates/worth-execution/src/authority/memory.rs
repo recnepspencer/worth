@@ -195,6 +195,11 @@ impl SerialMemoryBudget {
     }
 
     fn resize(&self, from: u64, to: u64) -> Result<(), MemoryLimitDenial> {
+        // This transition cannot exceed any ceiling or counter, even if another
+        // holder fills the ledger. It neither admits nor releases any bytes.
+        if from == 0 && to == 0 {
+            return Ok(());
+        }
         // Requests can share budgets across threads. Issue order keeps overlapping
         // lineages deadlock-free; refusal order remains innermost policy first.
         // A single ledger has no ordering problem. Keep its guard on the stack;

@@ -1,5 +1,5 @@
 //! Repeated fragment custody must not reconstruct a shared ledger's metadata.
-use super::SerialMemoryBudget;
+use super::{MemoryLimitDenial, MemoryLimitLevel, SerialMemoryBudget};
 use std::cell::Cell;
 
 thread_local! {
@@ -45,4 +45,25 @@ fn repeated_fragment_reservations_do_not_rebuild_shared_ledger_setup() {
             "{rows} rows reconstructed {setups} ledger setups"
         );
     }
+}
+
+#[test]
+fn empty_scope_tickets_keep_full_ledger_charges_and_nonzero_refusals() {
+    let budget = SerialMemoryBudget::new(Some(7));
+    let full = budget.reserve(7).unwrap();
+    let mut empty = budget.reserve(0).unwrap();
+    empty.resize(0).unwrap();
+    assert_eq!(budget.charged_memory_bytes(), 7);
+    assert_eq!(
+        budget.reserve(1).unwrap_err(),
+        MemoryLimitDenial::Capacity {
+            requested: 1,
+            admitted: 0,
+            level: MemoryLimitLevel::Policy { ancestor: 0 },
+        }
+    );
+    drop(empty);
+    assert_eq!(budget.charged_memory_bytes(), 7);
+    drop(full);
+    assert_eq!(budget.charged_memory_bytes(), 0);
 }
