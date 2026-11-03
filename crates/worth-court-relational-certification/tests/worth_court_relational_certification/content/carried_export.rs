@@ -46,7 +46,7 @@ impl RelationalDurableColdSource for Source {
             self.reads.fetch_add(1, Ordering::SeqCst);
             match self.fault.load(Ordering::SeqCst) {
                 0 => {}
-                1 => bytes[8..10].copy_from_slice(&1_u16.to_le_bytes()),
+                1 => bytes[8..10].copy_from_slice(&2_u16.to_le_bytes()),
                 2 => bytes[58..66].copy_from_slice(&(256_u64 * 1024 * 1024 - 65).to_le_bytes()),
                 3 => *bytes.last_mut().unwrap() ^= 1,
                 value => panic!("unrecognized court fault {value}"),
@@ -157,8 +157,8 @@ fn content_carried_export_preserves_version_and_size_refusals_across_repeated_ca
                 1 => assert_eq!(
                     frame,
                     RelationalCanonicalCommitArtifactFrameRefusal::UnsupportedVersion {
-                        found: 1,
-                        supported: 2
+                        found: 2,
+                        supported: 3
                     }
                 ),
                 2 => assert_eq!(

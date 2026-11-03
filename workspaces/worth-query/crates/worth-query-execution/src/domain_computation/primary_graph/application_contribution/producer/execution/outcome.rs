@@ -218,6 +218,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
                 &commit_denial,
                 commit_denial.unobserved_write(),
             )
+            .with_retirement_error(commit_denial.authored_retirement_error())
             .with_custom_invariant_denial(commit_denial.custom_invariant_denial().cloned())
             .with_producer_requirement_denial(requirement))
         }

@@ -26,6 +26,8 @@ pub(crate) struct CanonicalEnvelopeWire<'a> {
         Vec<std::sync::Arc<super::CanonicalRequiredOutputCodecRetirement>>,
     #[serde(default)]
     required_output_origin: Option<std::sync::Arc<super::CanonicalRequiredOutputOrigin>>,
+    #[serde(default)]
+    producer_cascade_retirement: Option<std::sync::Arc<super::CanonicalProducerRetirement>>,
     authored_cascade_retirement: Option<std::sync::Arc<super::CanonicalAuthoredRetirement>>,
     authored_cascade_restoration: Option<std::sync::Arc<super::CanonicalAuthoredRestoration>>,
     #[serde(default)]
@@ -101,6 +103,7 @@ impl CanonicalEnvelopeWire<'_> {
             live_managed_source_history: super::LiveManagedSourceHistory::default(),
             required_output_codec_retirements: self.required_output_codec_retirements,
             required_output_origin: self.required_output_origin,
+            producer_cascade_retirement: self.producer_cascade_retirement,
             authored_cascade_retirement: self.authored_cascade_retirement,
             authored_cascade_restoration: self.authored_cascade_restoration,
             required_output_materialization: self.required_output_materialization,

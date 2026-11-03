@@ -222,7 +222,8 @@ fn reconstruct_chain(
                 break;
             }
             CanonicalOutputPublication::Preserve { predecessor }
-            | CanonicalOutputPublication::AuthoredRetirement { predecessor } => {
+            | CanonicalOutputPublication::AuthoredRetirement { predecessor }
+            | CanonicalOutputPublication::ProducerRetirement { predecessor } => {
                 let previous = runtime
                     .history
                     .canonical_envelope(predecessor)

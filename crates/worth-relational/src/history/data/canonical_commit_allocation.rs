@@ -48,6 +48,9 @@ impl CanonicalCommitEnvelope {
                 &self.required_output_origin,
             ))
             .saturating_add(optional_canonical_nested_bytes(
+                &self.producer_cascade_retirement,
+            ))
+            .saturating_add(optional_canonical_nested_bytes(
                 &self.authored_cascade_retirement,
             ))
             .saturating_add(optional_canonical_nested_bytes(

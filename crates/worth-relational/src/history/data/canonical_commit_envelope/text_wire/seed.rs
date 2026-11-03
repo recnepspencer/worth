@@ -22,6 +22,7 @@ impl<'de> Visitor<'de> for CanonicalEnvelopeSeed<'_, '_, '_, '_> {
         let mut content = None;
         let mut required_output_codec_retirements = None;
         let mut required_output_origin = None;
+        let mut producer_cascade_retirement = None;
         let mut authored_cascade_restoration = None;
         let mut authored_cascade_retirement = None;
         let mut required_output_materialization = None;
@@ -70,6 +71,12 @@ impl<'de> Visitor<'de> for CanonicalEnvelopeSeed<'_, '_, '_, '_> {
                         return Err(M::Error::duplicate_field("required_output_origin"));
                     }
                     required_output_origin = Some(map.next_value()?);
+                }
+                "producer_cascade_retirement" => {
+                    if producer_cascade_retirement.is_some() {
+                        return Err(M::Error::duplicate_field("producer_cascade_retirement"));
+                    }
+                    producer_cascade_retirement = Some(map.next_value()?);
                 }
                 "authored_cascade_retirement" => {
                     if authored_cascade_retirement.is_some() {
@@ -244,6 +251,8 @@ impl<'de> Visitor<'de> for CanonicalEnvelopeSeed<'_, '_, '_, '_> {
                 .ok_or_else(|| M::Error::missing_field("required_output_codec_retirements"))?,
             required_output_origin: required_output_origin
                 .ok_or_else(|| M::Error::missing_field("required_output_origin"))?,
+            // The current producer omits exactly the absent cascade header.
+            producer_cascade_retirement: producer_cascade_retirement.flatten(),
             authored_cascade_retirement: authored_cascade_retirement
                 .ok_or_else(|| M::Error::missing_field("authored_cascade_retirement"))?,
             authored_cascade_restoration: authored_cascade_restoration

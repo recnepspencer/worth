@@ -1,5 +1,6 @@
 //! Compare the submitted roster only after Native independently selected its closure.
 use super::*;
+use std::sync::Arc;
 
 pub(super) fn require_roster(
     anchor: EntityId,
