@@ -37,3 +37,24 @@ impl WorthQueryPrimaryGraphLayout {
         Self::field(self, entity, aspect, field)
     }
 }
+
+impl WorthQueryPrimaryFieldLayout {
+    #[doc(hidden)]
+    pub fn entity_kind_for_test(&self) -> &KindId {
+        &self.entity_kind
+    }
+}
+
+impl WorthQueryPrimaryFieldLayout {
+    #[doc(hidden)]
+    pub fn equality_index_id_for_test(&self) -> &Option<DerivedIndexId> {
+        &self.equality_index_id
+    }
+}
+
+impl WorthQueryPrimaryFieldLayout {
+    #[doc(hidden)]
+    pub fn locator_for_test(&self) -> &AspectFieldLocator {
+        &self.locator
+    }
+}

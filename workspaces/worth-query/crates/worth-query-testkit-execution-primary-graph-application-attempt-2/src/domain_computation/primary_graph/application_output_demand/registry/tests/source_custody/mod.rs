@@ -106,8 +106,8 @@ pub fn custody_wait(superseded: bool, token: bool) {
             )),
             usize::from(!token),
         );
-        (*active.source_commits_for_test()).push(commit.clone());
-        (*state.records_for_test()).insert_for_test(selected.clone(), active);
+        (*active.source_commits_mut_for_test()).push(commit.clone());
+        (*state.records_mut_for_test()).insert_for_test(selected.clone(), active);
     }
     registry.complete_prepared_source_for_test(&receipt);
     (*registry.state_for_test()).lock().unwrap().drain_completed_custody_for_test();

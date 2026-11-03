@@ -1,0 +1,15 @@
+{
+ "authority_doors": [],
+ "constructor_doors": [],
+ "field_doors": [
+  "domain_computation::primary_graph::application_output_demand::registry::DemandRecord.source_commits (mut)",
+  "domain_computation::primary_graph::application_output_demand::registry::DemandRegistryState.records (mut)",
+  "domain_computation::primary_graph::schema_layout::WorthQueryPrimaryFieldLayout.entity_kind",
+  "domain_computation::primary_graph::schema_layout::WorthQueryPrimaryFieldLayout.equality_index_id",
+  "domain_computation::primary_graph::schema_layout::WorthQueryPrimaryFieldLayout.locator"
+ ],
+ "method_doors": [],
+ "unplaced": [
+  "cannot assign to data in a `&` reference"
+ ]
+}
