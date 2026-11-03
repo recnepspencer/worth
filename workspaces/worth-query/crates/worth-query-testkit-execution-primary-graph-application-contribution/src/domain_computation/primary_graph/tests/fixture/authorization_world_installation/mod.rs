@@ -55,7 +55,7 @@ impl AuthorizationWorld {
             .output_lineage
             .lock()
             .unwrap()
-            .fixture_binding(TypeId::of::<Contract>(), identity);
+            .fixture_binding(TypeId::of_for_test::<Contract>(), identity);
     }
 
     pub fn selected_product(

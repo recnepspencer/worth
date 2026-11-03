@@ -55,13 +55,13 @@ pub fn recorded_settlements(
     let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity);
     let mut lineage = WorthQueryApplicationOutputLineage::default();
     lineage.fixture_binding(
-        TypeId::of::<RegistryRestoredOutput>(),
+        TypeId::of_for_test::<RegistryRestoredOutput>(),
         "RegistryRestoredOutput",
     );
 
     for partition in partitions {
-        lineage.record_restoration(
-        TypeId::of::<RegistryRestoredOutput>(),
+        lineage.record_restoration_for_test(
+        TypeId::of_for_test::<RegistryRestoredOutput>(),
         runtime_authority,
         schema.clone(),
         scope,
