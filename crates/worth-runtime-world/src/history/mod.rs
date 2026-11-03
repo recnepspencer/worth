@@ -42,3 +42,7 @@ pub(crate) use retention::{
 };
 
 pub use catalog::{HistoryCatalogCounters, HistoryMetadataLedger};
+
+pub(crate) use commit::CompositeCommitRetirement;
+
+pub(crate) use publication::PublicationFactsRetirement;

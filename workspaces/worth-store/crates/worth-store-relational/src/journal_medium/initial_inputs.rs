@@ -21,7 +21,7 @@ impl StoreJournalMedium {
                 detail: Detail::Request(cause.into()),
             };
         }
-        let records = match self.serving.anchored_records() {
+        let records = match self.serving().anchored_records() {
             Ok(records) => records,
             Err(cause) => {
                 return Fate::ProvenNoEffect {

@@ -4,12 +4,12 @@ pub use crate::checkpoint::{
     ApplicationHomeCheckpoint, ApplicationHomeCheckpointDenial,
     ApplicationHomeCheckpointInspection, ApplicationHomeCheckpointJournalObservation,
     ApplicationHomeCheckpointLimits, ApplicationHomeCheckpointOperation,
-    ApplicationHomeCheckpointRecovery, HomeManifestDenial, HOME_CHECKPOINT_PROTOCOL,
-    HOME_CHECKPOINT_VERSION,
+    ApplicationHomeCheckpointRecovery, HomeManifestDenial,
+    RetiredApplicationHomeCheckpointOperation, HOME_CHECKPOINT_PROTOCOL, HOME_CHECKPOINT_VERSION,
 };
 pub use crate::close::{
     ApplicationHomeCloseDenial, ApplicationHomeCloseOutcome, ApplicationHomeClosePosture,
-    ApplicationHomeRecoveryCustody,
+    ApplicationHomeRecoveryCustody, RetiredApplicationHomeAllocation,
 };
 pub use crate::deadline::ApplicationHomeDeadlineDenial;
 pub use crate::descriptor::ApplicationHomeDescriptorDenial;

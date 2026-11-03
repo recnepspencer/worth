@@ -150,7 +150,7 @@ impl BridgeOwnedSignalRuntime {
             .unwrap_or_else(std::sync::PoisonError::into_inner) = allocations;
         candidate.bridge.correspondence_allocations =
             Arc::clone(&self.bridge.correspondence_allocations);
-        self.bridge = candidate.bridge;
+        *self.bridge = candidate.bridge;
         let lowerings = candidate.lowerings;
         installed.replace_installed(lowerings);
         *clocks = candidate.managed_clocks;

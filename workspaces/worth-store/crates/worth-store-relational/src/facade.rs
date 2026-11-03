@@ -9,7 +9,7 @@ pub use crate::section::{
     PreparedRelationalHomeSource, PreparedRelationalSection,
     RelationalCheckpointSelectionProtection, RelationalCheckpointSelectionSource,
     RelationalHomeSourcePreparation, RelationalSectionCheckpointDenial,
-    RelationalSectionCloseDenial, RelationalSectionCompleteCheckpointPreparation,
+    PreparedRelationalSectionClose, RetiredRelationalSectionAllocation, RelationalSectionCloseDenial, RelationalSectionCompleteCheckpointPreparation,
     RelationalSectionReadmissionDenial, RelationalStoreSection, UnrecoveredRelationalSection,
     UnsharedReadmittedRelationalSection,
 };

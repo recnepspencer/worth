@@ -12,8 +12,8 @@ mod branch_root_schema_images;
 mod checkpoint_coverage;
 mod checkpoint_directory;
 pub(crate) use checkpoint_directory::{
-    CheckpointDirectoryAdmission, CheckpointDirectoryRetirement, PreparedCheckpointDirectory,
-    PreparedCheckpointDirectoryRetirement, RelationalCheckpointDirectory,
+    CheckpointDirectoryAdmission, CheckpointDirectoryRetirement, NativeCheckpointDirectoryEdge,
+    NativeDirectoryRetirementHandoff, PreparedCheckpointDirectory, RelationalCheckpointDirectory,
 };
 mod checkpoint_images;
 mod checkpoint_manifest;

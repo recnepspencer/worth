@@ -3,6 +3,10 @@ use super::RelationalDurableColdSource;
 use std::any::Any;
 use std::sync::{Arc, Weak};
 
+mod native_source_slot;
+pub(crate) use native_source_slot::NativeSourceMemberState;
+mod native_slot;
+pub(crate) use native_slot::{NativeMemberRetirementHandoff, NativeMemberSlotDenial};
 mod retirement;
 pub use retirement::{
     RelationalDurableMemberRetirement, RelationalDurableMemberRetirementObservation,

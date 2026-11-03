@@ -19,6 +19,7 @@ use worth_query_testkit_host::facade::host::{
 };
 use worth_store_application::*;
 mod administration;
+mod home_close;
 mod idempotency;
 mod operations;
 mod selected;
@@ -108,7 +109,7 @@ fn unshared(
     .unwrap_or_else(|refused| panic!("actual existing schema: {:?}", refused.reason()));
     let home = home
         .readmit(query.home_initial_schema_receipt(), &execution)
-        .unwrap_or_else(|_| panic!("actual Native recovery"))
+        .unwrap_or_else(|refused| panic!("actual Native recovery: {refused:?}"))
         .consume(|home| home);
     (query, home)
 }

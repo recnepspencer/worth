@@ -1,3 +1,7 @@
+pub use basis::{
+    RelationalBranchBasisRetirement, RelationalBranchBasisRetirementDenial,
+    RelationalBranchBasisRetirementProgress, RetiredRelationalBranchBasis,
+};
 mod authority;
 mod basis;
 mod basis_admission_identity;
@@ -35,6 +39,7 @@ pub(crate) use reference::CheckpointComponentCellSource;
 mod reference_publication_cell;
 mod reference_state;
 mod registry;
+pub(crate) use registry::RelationalSourceRootSlot;
 mod root;
 mod root_checkpoint;
 mod root_partition_access;
@@ -131,6 +136,7 @@ pub(crate) use root::{
 pub(crate) use root_checkpoint::{RelationalBranchRootCheckpoint, RelationalRootRegionCheckpoint};
 pub(crate) use root_regions::{
     RelationalPersistentRegionAllocationKind, RelationalPersistentRegionSet,
+    RelationalRegionSourceWalk, RelationalRegionSourceWalkProgress,
 };
 pub(crate) use root_selection::SelectedRelationalBranchState;
 pub(crate) use sharing_cost_cell::RelationalBranchSharingCostCell;

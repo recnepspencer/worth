@@ -1,4 +1,5 @@
 mod mutation_input;
+mod source_retirement;
 pub(crate) use mutation_input::{MutationSymbolMeanings, OriginalSymbolMeanings};
 mod cold_pages;
 mod state;

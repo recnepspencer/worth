@@ -14,6 +14,8 @@ use crate::storage::residency::RelationalResidencyDemandFailure as Failure;
 use crate::symbols::data::Symbol;
 
 mod member_export;
+mod source_retirement;
+use source_retirement::SymbolPageState;
 mod page_shape;
 use page_shape::{SymbolPageSelection, SymbolPageShape};
 
@@ -25,14 +27,7 @@ pub(super) struct RuntimeSymbolResidency {
     regions: Mutex<HashSet<crate::storage::residency::RelationalRegionSymbolAdmissionIdentity>>,
     by_id: Vec<RelationalCheckpointPage>,
     by_value: Vec<RelationalCheckpointSymbolBucket>,
-    source: Arc<dyn RelationalDurableColdSource>,
-    _placement: crate::durability::medium::RelationalDurableMemberCustody,
-    pages: Mutex<
-        BTreeMap<
-            RelationalDurableMemberLocator,
-            Result<SymbolPageShape, RelationalStorageUnavailable>,
-        >,
-    >,
+    pages: Mutex<SymbolPageState>,
 }
 
 impl RuntimeSymbolResidency {
@@ -81,9 +76,12 @@ impl RuntimeSymbolResidency {
             regions: Mutex::new(HashSet::new()),
             by_id,
             by_value,
-            source,
-            _placement: placement,
-            pages: Mutex::new(BTreeMap::new()),
+            pages: Mutex::new(SymbolPageState {
+                data: BTreeMap::new(),
+                physical: crate::durability::medium::NativeSourceMemberState::new(
+                    source, placement,
+                ),
+            }),
         })
     }
 
@@ -98,9 +96,10 @@ impl RuntimeSymbolResidency {
                 regions: Mutex::new(HashSet::new()),
                 by_id: self.by_id.clone(),
                 by_value: self.by_value.clone(),
-                source: self.source.clone(),
-                _placement: self._placement.clone(),
-                pages: Mutex::new(pages.clone()),
+                pages: Mutex::new(SymbolPageState {
+                    data: pages.data.clone(),
+                    physical: pages.physical.retain_serving(),
+                }),
             },
             owner,
         )
@@ -274,8 +273,10 @@ impl RuntimeSymbolResidency {
             };
         }
         let result = (|| {
-            let bytes = self
-                .source
+            let bytes = pages
+                .physical
+                .source()
+                .ok_or_else(|| unavailable(subject, Cause::SourceUnavailable))?
                 .read_member(locator, 1 << 30)
                 .map_err(|cause| unavailable(subject, cause))?;
             let snapshot = crate::durability::checkpoints::symbol_pages::readmit(

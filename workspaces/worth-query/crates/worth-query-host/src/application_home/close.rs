@@ -10,6 +10,7 @@ use worth_query_execution::facade::{
     primary_graph::WorthQueryHomeRetirementDenial,
 };
 use worth_store_application::*;
+mod maintenance;
 mod retirement;
 mod retry;
 
@@ -68,6 +69,11 @@ enum CloseCustody<Schema, Program> {
         query: WorthQueryRetiringHomeQuery<Schema, Program>,
         home: WorldSealedApplicationHome,
         cause: WorthQueryHomeRetirementDenial,
+    },
+    MaintenanceRetirement {
+        query: WorthQueryRetiringHomeQuery<Schema, Program>,
+        home: WorldSealedApplicationHome,
+        cause: ApplicationHomeCloseDenial,
     },
     QueryReleased {
         cause: ApplicationHomeCloseDenial,
@@ -146,6 +152,7 @@ impl<Schema, Program> WorthQueryApplicationHomeCloseRefused<Schema, Program> {
             CloseCustody::World { home, .. } => Some(home.reason()),
             CloseCustody::WorldAdmission { cause, .. } => Some(cause),
             CloseCustody::QueryReleased { cause, .. } => Some(cause),
+            CloseCustody::MaintenanceRetirement { cause, .. } => Some(cause),
             _ => None,
         }
     }
@@ -166,6 +173,7 @@ impl<Schema, Program> WorthQueryApplicationHomeCloseRefused<Schema, Program> {
             CloseCustody::QueryAdmission { cause, .. }
             | CloseCustody::QueryRetirement { cause, .. } => format!("{cause:?}"),
             CloseCustody::QueryReleased { cause, .. } => format!("{cause:?}"),
+            CloseCustody::MaintenanceRetirement { cause, .. } => format!("{cause:?}"),
         }
     }
 }

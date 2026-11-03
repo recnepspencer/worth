@@ -13,6 +13,7 @@ use worth_runtime_bridge::facade::{
 };
 
 pub(in crate::domain_computation::primary_graph) mod home_definition;
+mod home_retirement;
 
 use super::{
     WorthQueryPrimaryGraphInstallationDenial, WorthQueryPrimaryGraphInstallationDenialKind,
@@ -42,15 +43,21 @@ impl WorthQueryApplicationBridgeInstallation {
         worth_runtime_bridge::facade::BridgeConditionalDenial,
     > {
         Ok(WorthQueryInstalledApplicationBridge {
-            ordinary: self.ordinary,
-            conditional: std::sync::Arc::new(std::sync::RwLock::new(self.conditional.seal()?)),
+            ordinary: Some(self.ordinary),
+            conditional: Some(std::sync::Arc::new(std::sync::RwLock::new(
+                self.conditional.seal()?,
+            ))),
+            retiring_ordinary: None,
+            retired_ordinary: None,
         })
     }
 }
 
 pub(crate) struct WorthQueryInstalledApplicationBridge {
-    ordinary: RuntimeBridge,
-    conditional: std::sync::Arc<std::sync::RwLock<BridgeSealedRuntimeAssembly>>,
+    ordinary: Option<RuntimeBridge>,
+    conditional: Option<std::sync::Arc<std::sync::RwLock<BridgeSealedRuntimeAssembly>>>,
+    retiring_ordinary: Option<worth_runtime_bridge::facade::RetiringRuntimeBridge>,
+    retired_ordinary: Option<worth_runtime_bridge::facade::RetiredRuntimeBridge>,
 }
 
 impl WorthQueryInstalledApplicationBridge {
@@ -59,19 +66,25 @@ impl WorthQueryInstalledApplicationBridge {
         conditional: std::sync::Arc<std::sync::RwLock<BridgeSealedRuntimeAssembly>>,
     ) -> Self {
         Self {
-            ordinary,
-            conditional,
+            ordinary: Some(ordinary),
+            conditional: Some(conditional),
+            retiring_ordinary: None,
+            retired_ordinary: None,
         }
     }
 
     pub(super) fn ordinary(&self) -> &RuntimeBridge {
-        &self.ordinary
+        self.ordinary
+            .as_ref()
+            .expect("retired Query exposes no ordinary Bridge")
     }
 
     pub(crate) fn conditional(
         &self,
     ) -> std::sync::RwLockReadGuard<'_, BridgeSealedRuntimeAssembly> {
         self.conditional
+            .as_ref()
+            .expect("retired Query exposes no conditional Bridge")
             .read()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
     }
@@ -80,6 +93,8 @@ impl WorthQueryInstalledApplicationBridge {
         &self,
     ) -> std::sync::RwLockWriteGuard<'_, BridgeSealedRuntimeAssembly> {
         self.conditional
+            .as_ref()
+            .expect("retired Query exposes no conditional Bridge")
             .write()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
     }
@@ -87,7 +102,11 @@ impl WorthQueryInstalledApplicationBridge {
     pub(super) fn conditional_operations(
         &self,
     ) -> std::sync::Arc<std::sync::RwLock<BridgeSealedRuntimeAssembly>> {
-        std::sync::Arc::clone(&self.conditional)
+        std::sync::Arc::clone(
+            self.conditional
+                .as_ref()
+                .expect("only serving Query retains Bridge"),
+        )
     }
 }
 

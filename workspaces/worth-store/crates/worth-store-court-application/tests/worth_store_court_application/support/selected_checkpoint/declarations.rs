@@ -8,7 +8,13 @@ pub(crate) const ANCHOR: &str = "home.checkpoint";
 
 /// The selected checkpoint's generation; 0 when the home has none.
 pub(crate) fn generation(home: &ReadmittedApplicationHome) -> u64 {
-    home.physical_serving_for_test()
+    generation_from_serving(home.physical_serving_for_test())
+}
+
+pub(crate) fn generation_from_serving(
+    serving: &worth_store::physical_runtime::ServingPhysicalRuntime,
+) -> u64 {
+    serving
         .anchored_records()
         .expect("anchored records")
         .read(

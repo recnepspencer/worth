@@ -3,6 +3,7 @@ mod attachment;
 mod checkpoint;
 mod close;
 mod definition;
+pub(crate) use close::{HomeBridgeCloseCustody, RetiredHomeBridgeComposition};
 pub use close::{WorldHomeClosePosture, WorldHomeCloseRefused, WorldSealedApplicationHome};
 pub use definition::{ApplicationHomeWorldDefinition, ApplicationWorldDefinition};
 mod ports;

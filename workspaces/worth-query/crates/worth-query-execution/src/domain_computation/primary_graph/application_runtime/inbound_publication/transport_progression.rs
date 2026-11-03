@@ -45,7 +45,7 @@ where
         let incarnation = original.product_incarnation();
         let runtime_instance = self
             .product_runtime
-            .source
+            .source()
             .authoritative_source_profile()
             .runtime_instance_id();
         if owner.relational_runtime_instance_id() != runtime_instance {

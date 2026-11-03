@@ -61,7 +61,7 @@ fn an_adopted_suffix_keeps_placement_custody_after_its_source_cell_is_released()
         refusal: Mutex::new(None),
     });
     let mut cold = fixture.cold;
-    cold.source = source;
+    cold.source = Some(source);
     let cell = RelationalRegionResidency::cold(cold).unwrap();
     assert!(active.load(Ordering::SeqCst) > 0);
     assert_eq!(fixture.source.reads.load(Ordering::SeqCst), 0);
@@ -97,7 +97,7 @@ fn cold_cell_custody_refusal_preserves_the_region_failure_and_is_retryable_witho
         refusal: Mutex::new(Some(Cause::SourceUnavailable)),
     });
     let mut cold = fixture.cold;
-    cold.source = source.clone();
+    cold.source = Some(source.clone());
     let failure = RelationalRegionResidency::cold(cold.clone()).unwrap_err();
     assert_eq!(
         failure.subject,

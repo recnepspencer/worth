@@ -1,6 +1,10 @@
 use super::*;
 
 mod closeout;
+pub use crate::home_retirement::{
+    BridgeHomeRetirementDenial, BridgeHomeRetirementProgress, RetiredRuntimeBridge,
+    RetiringRuntimeBridge,
+};
 mod continuity_planning;
 mod debug;
 mod diagnostics;

@@ -82,7 +82,7 @@ impl WorthQueryProductRuntime {
         observation: worth_runtime_world::facade::ProductBranchObservation,
     ) -> Result<WorthQueryProductBranchLease, WorthQueryProductBranchAdmissionDenial> {
         let bridge_source = self
-            .source
+            .source()
             .retain_branch_basis_for_bridge(observation.basis().relational_basis())
             .map_err(|_| {
                 WorthQueryProductBranchAdmissionDenial::Refused(

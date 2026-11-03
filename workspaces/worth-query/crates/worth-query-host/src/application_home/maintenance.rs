@@ -9,15 +9,30 @@ use worth_store_application::{
 };
 
 #[derive(Debug)]
-struct HomeMaintenance {
-    operation: ApplicationHomeCheckpointOperation,
+pub(super) struct HomeMaintenance {
+    pub(super) operation: Option<ApplicationHomeCheckpointOperation>,
+    pub(super) retired_operation:
+        Option<worth_store_application::RetiredApplicationHomeCheckpointOperation>,
     _memory: Option<ExecutionMemoryReservation>,
 }
 impl WorthQueryHomeMaintenance for HomeMaintenance {
+    fn preflight_home_retirement(
+        &mut self,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<(), worth_query_execution::facade::primary_graph::WorthQueryHomeRetirementDenial>
+    {
+        request.consult().map_err(
+            worth_query_execution::facade::primary_graph::WorthQueryHomeRetirementDenial::Execution,
+        )
+    }
     fn after_advancement(&self, request: &ExecutionRequest<'_, '_>) {
         // Query retains the exact business value. Actual work/refusal stays in
         // this SAME Store operation's attempt/coverage; there is no error ledger.
-        let _ = self.operation.after_advancement(request);
+        let _ = self
+            .operation
+            .as_ref()
+            .expect("only serving Query invokes maintenance")
+            .after_advancement(request);
     }
 }
 pub(super) fn prepare(
@@ -38,7 +53,8 @@ pub(super) fn prepare(
     // This private Arc is only installed in Query; no public Arc/Weak door
     // exposes its backing independently of the operation and LAST grant.
     Ok(Arc::new(HomeMaintenance {
-        operation,
+        operation: Some(operation),
+        retired_operation: None,
         _memory: memory,
     }))
 }

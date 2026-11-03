@@ -23,14 +23,13 @@ fn close(
 ) {
     match home.close(execution) {
         Ok(ApplicationHomeCloseOutcome::Closed {
-            checkpoint: Err(ApplicationHomeCheckpointDenial::WorldSectionRequired),
-            ..
+            checkpoint: Ok(_), ..
         }) => {}
         Ok(ApplicationHomeCloseOutcome::CloseRefused { reason, .. }) => {
             panic!("actual Native close refused: {reason:?}")
         }
         Err(refused) => panic!("actual World close refused: {:?}", refused.reason()),
-        _ => panic!("World checkpoint coverage remains explicitly unavailable"),
+        _ => panic!("the original coupled checkpoint must complete before physical close"),
     }
 }
 

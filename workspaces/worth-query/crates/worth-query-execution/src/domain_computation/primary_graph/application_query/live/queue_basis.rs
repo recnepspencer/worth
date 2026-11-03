@@ -40,7 +40,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn admit_liv
     let request_bridge = application.bridge.ordinary().fork_managed_request_lane();
     admit_live_lower_execution_basis(
         &request_bridge,
-        &application.product_runtime.source,
+        application.product_runtime.source(),
         subject,
         &attempt_identity,
         buffer_capacity,

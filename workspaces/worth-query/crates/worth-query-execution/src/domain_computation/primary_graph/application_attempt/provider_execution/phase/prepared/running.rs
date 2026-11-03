@@ -126,7 +126,7 @@ where
     let request_bridge = application.bridge.ordinary().fork_managed_request_lane();
     let run_admission = application
         .runtime
-        .managed_run_admission(&request_bridge, &application.product_runtime.source);
+        .managed_run_admission(&request_bridge, application.product_runtime.source());
     let running = run_admission
         .admit_direct(&operation, attempt, read_request, execution)
         .map_err(|failure| {

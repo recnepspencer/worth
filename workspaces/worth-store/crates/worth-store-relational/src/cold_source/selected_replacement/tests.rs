@@ -11,7 +11,7 @@ use worth_store::physical_runtime::{
 
 fn publish(source: &StoreColdSource, generation: u64, bytes: &[u8]) -> AnchoredRecordPublished {
     source
-        .serving
+        .serving()
         .anchored_records()
         .unwrap()
         .publish(

@@ -148,3 +148,9 @@ pub use crate::lifecycle::{
 pub use crate::lifecycle::{
     world_branch_reads_on_this_thread_for_test, RuntimeWorldReadObservation,
 };
+
+pub use crate::publication::{
+    ConsumedPublicationRetirement, ConsumedPublicationRetirementDenial,
+    ConsumedPublicationRetirementProgress, PreparedConsumedPublicationRetirement,
+    RetiredConsumedPublication,
+};

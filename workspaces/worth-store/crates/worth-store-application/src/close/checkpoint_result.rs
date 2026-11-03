@@ -6,6 +6,7 @@ type CheckpointResult =
 
 struct Backing {
     result: Option<CheckpointResult>,
+    native_retirement: Option<worth_store_relational::PreparedRelationalSectionClose>,
     memory: Option<ExecutionMemoryReservation>,
 }
 
@@ -17,12 +18,40 @@ pub(crate) struct HomeCloseCheckpointResult {
 impl HomeCloseCheckpointResult {
     pub(crate) fn prepare(execution: &ExecutionRequest<'_, '_>) -> Result<Self, WorkCeilingDenial> {
         let memory = execution.reserve_retained_memory(std::mem::size_of::<Backing>() as u64)?;
+        let native_retirement =
+            worth_store_relational::PreparedRelationalSectionClose::prepare(execution)?;
         Ok(Self {
             backing: Some(Box::new(Backing {
                 result: None,
+                native_retirement: Some(native_retirement),
                 memory,
             })),
         })
+    }
+    pub(crate) fn take_native_retirement(
+        &mut self,
+    ) -> worth_store_relational::PreparedRelationalSectionClose {
+        self.backing
+            .as_mut()
+            .expect("same prepaid Home backing")
+            .native_retirement
+            .take()
+            .expect("original Native close storage moves exactly once into its section")
+    }
+    pub(crate) fn restore_native_retirement(
+        &mut self,
+        original: worth_store_relational::PreparedRelationalSectionClose,
+    ) {
+        let slot = &mut self
+            .backing
+            .as_mut()
+            .expect("same prepaid Home backing")
+            .native_retirement;
+        assert!(
+            slot.is_none(),
+            "reversible refusal returns the original vacant preparation"
+        );
+        *slot = Some(original);
     }
     pub(crate) fn is_none(&self) -> bool {
         self.backing

@@ -63,6 +63,11 @@ pub(super) struct WorthQueryPrimaryGraphApplicationAttemptStore {
     next_registration: u64,
     next_overlay: u64,
 }
+impl WorthQueryPrimaryGraphApplicationAttemptStore {
+    pub(super) fn home_close_has_work(&self) -> bool {
+        !self.attempts.is_empty()
+    }
+}
 
 enum WorthQueryApplicationAttemptEntry {
     Reserved {

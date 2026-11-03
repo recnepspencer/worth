@@ -477,18 +477,27 @@ is Busy with the original payload untouched. These atomic uniqueness checks
 also exclude Weak aliases; no strong_count probe, second typed Arc anchor,
 alias destruction, replacement allocation or drop-and-restore is permitted.
 
-The existing OperationHandler contract gains family-local object-safe
-preflight_home_retirement and advance_home_retirement hooks, both defaulting
-to Unsupported. They borrow the original invoking ExecutionRequest and the
-original mutable handler. Preflight preserves business state. Only an audited
-supported handler can establish how its ACTUAL operational fields retire; a
-declared durable-family roster or empty capability list is insufficient.
-Known supported nested operational sharing refuses Busy before seal. Unknown
-wrappers, opaque closures and externally mutable state without an authentic
-owner admission contract remain Unsupported.
-The first admitted family is the actual internal compiled-body registration
-origin. Opaque supplier registrations remain Unsupported even if they override
-the hooks and assert Complete. Only the concrete Host close consumer may invoke
+Coordinator ruling, 2026-11-02: the Home retires what it owns: the registry
+entry, original TypedHandlerSlot, original handler Arc and its invocation
+capability. Both actual Arc::get_mut checks above remain required. If either
+is not unique, return Busy with the original payload untouched. After World
+seal that exact handler can never be invoked again; its payload remains until
+the same retired Home's explicit unbudgeted reclaim. Supplier-internal shared
+state is outside Home custody. Home close neither certifies that state nor
+refuses merely because the supplier shares it.
+
+OperationHandler's object-safe preflight_home_retirement and
+advance_home_retirement hooks borrow the original ExecutionRequest and mutable
+handler. Their defaults admit and complete this Home-custody retirement without
+changing the payload. Preflight preserves business state. An override may
+refuse Busy or Unsupported when the handler knows its operational state cannot
+retire, or retain its own progress through post-seal retry. Preserve the
+compiled-body family's audited hooks. Both supported registration paths retain
+the original Schema/Binding thunk; neither is an unknown erased wrapper.
+The former blanket supplier-origin refusal is retired by this ruling because
+it made physical Closed unreachable for ordinary application handlers.
+
+Only the concrete Host close consumer may invoke
 `begin_after_world_seal`; its exact caller is mechanically sealed as
 `query-home-retirement`. The prepared owner exposes no live clone between the
 unique original-owner preflight and that irreversible handoff.
@@ -504,8 +513,9 @@ Native binding exclusion, source retirement or physical Store Closed; those
 actual owner gates remain independent prerequisites.
 
 The adversarial proof covers both erased-slot and active-handler aliases,
-nested external operational sharing, unchanged execution after pre-seal
-refusal, stopped post-seal retry retaining the original handler, and actual
+explicit handler-declared refusal, ordinary handlers with supplier-internal
+shared state, unchanged execution after pre-seal refusal, stopped post-seal
+retry retaining the original handler, and actual
 filesystem Store Closed while a user Drop probe remains alive until reclaim.
 Owner-private tests may create otherwise inaccessible internal aliases; those
 are not public external-handler handles. Passing only those private courts

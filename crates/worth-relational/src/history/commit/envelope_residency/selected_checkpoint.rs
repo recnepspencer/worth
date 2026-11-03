@@ -34,14 +34,14 @@ impl RetiredCanonicalPlacement {
         };
         // The same captured row and new cell still retain this exact index owner.
         drop(entry);
-        Some(directory)
+        Some(directory.into_original())
     }
 }
 impl RelationalCommitEnvelopeResidency {
     pub(crate) fn selected_directory(&self) -> Option<Arc<RelationalCheckpointDirectory>> {
         let state = self.state.lock().unwrap_or_else(|error| error.into_inner());
         match &state.backing {
-            EnvelopeBacking::SelectedCheckpoint { directory, .. } => Some(directory.clone()),
+            EnvelopeBacking::SelectedCheckpoint { directory, .. } => directory.snapshot(),
             _ => None,
         }
     }
@@ -107,7 +107,10 @@ impl RelationalCommitEnvelopeResidency {
         }
         let old = std::mem::replace(
             &mut state.backing,
-            EnvelopeBacking::SelectedCheckpoint { entry, directory },
+            EnvelopeBacking::SelectedCheckpoint {
+                entry,
+                directory: crate::durability::data::NativeCheckpointDirectoryEdge::new(directory),
+            },
         );
         state.canonical_payload_bytes = None;
         Ok(RetiredCanonicalPlacement { backing: Some(old) })

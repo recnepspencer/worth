@@ -1,16 +1,30 @@
 //! One counted cell lifetime, movable independently of its immutable region.
 use super::RelationalRegionResidency;
-use std::sync::atomic::Ordering;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 #[derive(Debug)]
 pub(super) struct RegionLeaseCustody {
     cell: Arc<RelationalRegionResidency>,
+    active: AtomicBool,
 }
 
 impl RegionLeaseCustody {
     pub(super) fn accepted(cell: Arc<RelationalRegionResidency>) -> Self {
-        Self { cell }
+        Self {
+            cell,
+            active: AtomicBool::new(true),
+        }
+    }
+
+    pub(super) fn retire_native(&self) {
+        if self.active.swap(false, Ordering::AcqRel) {
+            let previous = self.cell.leases.fetch_sub(1, Ordering::AcqRel);
+            debug_assert!(
+                previous > 0,
+                "this original lease retires its one issued count"
+            );
+        }
     }
 
     pub(super) fn cell(&self) -> &Arc<RelationalRegionResidency> {
@@ -39,6 +53,9 @@ impl Clone for RegionLeaseCustody {
 
 impl Drop for RegionLeaseCustody {
     fn drop(&mut self) {
+        if !self.active.load(Ordering::Acquire) {
+            return;
+        }
         let previous = self.cell.leases.fetch_sub(1, Ordering::AcqRel);
         debug_assert!(
             /* Proof: RegionLeaseCustody::accepted is private to lease admission after its count increment; Clone increments separately before constructing the copy. Each custody owns a strong Arc and Drop decrements its one issued count once. */

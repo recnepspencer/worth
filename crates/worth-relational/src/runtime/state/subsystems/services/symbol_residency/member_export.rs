@@ -59,7 +59,16 @@ impl RelationalDurableColdSource for SymbolMemberExport {
         &self,
         members: &[RelationalDurableMemberLocator],
     ) -> Result<RelationalDurableMemberCustody, Cause> {
-        self.owner.source.retain_members(members)
+        let source = self
+            .owner
+            .pages
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .physical
+            .source()
+            .cloned()
+            .ok_or(Cause::SourceUnavailable)?;
+        source.retain_members(members)
     }
     fn read_member(
         &self,
@@ -84,7 +93,11 @@ impl RelationalDurableColdSource for SymbolMemberExport {
                 limit,
             })
         } else {
-            self.owner.source.read_member(member, limit)
+            pages
+                .physical
+                .source()
+                .ok_or(Cause::SourceUnavailable)?
+                .read_member(member, limit)
         }
         .and_then(|bytes| {
             member_frame::decode(&bytes, member, MemberKind::Symbols)?;
@@ -102,6 +115,15 @@ impl RelationalDurableColdSource for SymbolMemberExport {
         position: crate::publication::patch::data::PatchStreamPosition,
         limit: u64,
     ) -> Result<Vec<u8>, Cause> {
-        self.owner.source.read_commit(position, limit)
+        let source = self
+            .owner
+            .pages
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .physical
+            .source()
+            .cloned()
+            .ok_or(Cause::SourceUnavailable)?;
+        source.read_commit(position, limit)
     }
 }

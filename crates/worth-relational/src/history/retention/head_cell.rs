@@ -19,7 +19,7 @@ pub(super) struct CheckedHeadObligation {
 impl RelationalBranchHeadRetentionCell {
     /// Retire this exact live-head obligation without releasing its root data.
     /// The stopped authentic owner keeps the branch cell and root inventory.
-    pub(crate) fn try_retire_memory_head(&self) -> Result<(), ()> {
+    pub(crate) fn try_retire_stopped_head(&self) -> Result<(), ()> {
         let slot = match self.obligation.try_lock() {
             Ok(value) => value,
             Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),

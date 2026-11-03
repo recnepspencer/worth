@@ -310,3 +310,23 @@ installed dependencies and altered meaning refuse. Source profile and role
 descriptions remain correlation data. Store's private Home composition supplies
 the same actual Native owner and registered source; a matching caller-supplied
 profile cannot construct the concrete Home stage.
+
+## Retire Home-owned Bridge custody
+
+The concrete Native adapter's `try_retire_alias_for_request` consumes its
+original local runtime alias. A foreign owner or request stop returns the same
+source; independently retained snapshots keep their own Native read custody.
+The retired source retains passive metadata until unbudgeted `reclaim`.
+
+`RuntimeBridge::into_home_retirement` preflights its original concrete source
+wrappers before extraction. Its advancing task retains configuration and each
+original retired source. Unknown source wrappers, reader pools, continuity
+sources and writeback owners refuse rather than running arbitrary supplier
+cleanup. A retired Bridge is local capability retirement, not Native or Store
+close evidence.
+
+The sealed Home assembly funds its retirement storage before the final World
+admission cut. Only the exact Store Home caller can prepare its producer-initial
+empty Signal stop; a stopped assembly retains its original Signal and Bridge
+allocations through later retirement. Nonempty operational inventories refuse
+through the owner gates. This does not qualify Native physical source close.

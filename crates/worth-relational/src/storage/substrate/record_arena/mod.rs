@@ -11,7 +11,7 @@ mod values;
 pub(crate) use arena::*;
 pub(crate) use history_frontier::{HistoryAppendFrontier, HistoryFrontierSibling};
 pub(crate) use history_opening::RecordHistoryOpening;
-pub(crate) use history_prefix::RecordHistoryPrefix;
+pub(crate) use history_prefix::{RecordHistoryCustody, RecordHistoryPrefix};
 pub(crate) use kinds::*;
 pub(crate) use slot_view::*;
 pub(crate) use values::*;

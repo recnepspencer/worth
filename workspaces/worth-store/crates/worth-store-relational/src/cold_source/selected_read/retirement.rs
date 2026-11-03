@@ -23,7 +23,7 @@ impl StoreColdSource {
             || !selected
                 .serving
                 .as_ref()
-                .is_some_and(|serving| Arc::ptr_eq(serving, &self.serving))
+                .is_some_and(|serving| Arc::ptr_eq(serving, self.serving()))
         {
             return Err(R::ForeignCustody);
         }
@@ -49,7 +49,7 @@ impl StoreColdSource {
             };
             selected.retirement = Some(read.into_retirement());
         }
-        let records = match self.serving.anchored_records() {
+        let records = match self.serving().anchored_records() {
             Ok(records) => records,
             Err(_) => return O::Refused(R::ProviderUnavailable),
         };

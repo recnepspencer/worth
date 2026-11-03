@@ -7,6 +7,8 @@ use worth_store::physical_runtime::{
     PhysicalStoreCloseFailure, PhysicalStoreCloseObservation, PhysicalStoreCloseOutcome,
     PhysicalStoreCloseTask, PhysicalStoreCloseTaskPoll, ServingPhysicalRuntime,
 };
+mod native_retirement;
+mod physical_retirement;
 
 enum PhysicalCloseCustody {
     Retained(Arc<ServingPhysicalRuntime>),
@@ -17,7 +19,8 @@ enum PhysicalCloseCustody {
 enum NativeCloseCustody {
     Serving(worth_store_relational::RelationalStoreSection),
     Prepared(worth_store_relational::ClosingRelationalSection),
-    Released,
+    NeverAttached,
+    Retired(worth_store_relational::RetiredRelationalSectionAllocation),
 }
 
 pub struct ApplicationHomeRecoveryCustody {
@@ -27,7 +30,7 @@ pub struct ApplicationHomeRecoveryCustody {
     physical: PhysicalCloseCustody,
     native: NativeCloseCustody,
     world_close_report: Option<worth_runtime_world::facade::RuntimeWorldCloseReport>,
-    world_composition: Option<crate::world_section::ApplicationHomeBridgeComposition>,
+    world_composition: Option<crate::world_section::HomeBridgeCloseCustody>,
     checkpoint_owner: Arc<crate::checkpoint::owner::HomeCheckpointOwner>,
     world_publications: Arc<crate::world_section::WorldPublications>,
 }
@@ -56,7 +59,7 @@ impl ApplicationHomeRecoveryCustody {
             descriptor: context.descriptor,
             checkpoint,
             physical: PhysicalCloseCustody::Retained(context.serving),
-            native: NativeCloseCustody::Released,
+            native: NativeCloseCustody::NeverAttached,
             world_close_report: None,
             world_composition: None,
             checkpoint_owner: context.checkpoint,
@@ -112,7 +115,8 @@ impl ApplicationHomeRecoveryCustody {
             physical: PhysicalCloseCustody::Retained(context.serving),
             native: NativeCloseCustody::Serving(relational),
             world_close_report: context.world_close_report,
-            world_composition,
+            world_composition: world_composition
+                .map(crate::world_section::HomeBridgeCloseCustody::Serving),
             checkpoint_owner: context.checkpoint,
             world_publications: context.world_publications,
         }
@@ -136,7 +140,9 @@ impl ApplicationHomeRecoveryCustody {
             NativeCloseCustody::Serving(native) => {
                 Some(native.runtime().retention().active_snapshot_count())
             }
-            NativeCloseCustody::Prepared(_) | NativeCloseCustody::Released => None,
+            NativeCloseCustody::Prepared(_)
+            | NativeCloseCustody::Retired(_)
+            | NativeCloseCustody::NeverAttached => None,
         }
     }
 
@@ -209,127 +215,41 @@ impl ApplicationHomeRecoveryCustody {
         if let Err(cause) = interrupted(execution) {
             return self.refused(ApplicationHomeCloseDenial::Execution(cause));
         }
-        if let Some(composition) = self.world_composition.take() {
-            if let Err(composition) = composition.try_close() {
+        loop {
+            let Some(composition) = self.world_composition.take() else {
+                break;
+            };
+            if matches!(
+                composition,
+                crate::world_section::HomeBridgeCloseCustody::Retired(_)
+            ) {
+                self.world_composition = Some(composition);
+                break;
+            }
+            let NativeCloseCustody::Serving(native) = &self.native else {
                 self.world_composition = Some(composition);
                 return self.refused(ApplicationHomeCloseDenial::WorldCompositionRetained);
-            }
-        }
-        if matches!(self.native, NativeCloseCustody::Serving(_)) {
-            if let Err(cause) = self.settle_retained_checkpoint(execution) {
-                return self.refused(cause);
-            }
-        }
-        self.native = match std::mem::replace(&mut self.native, NativeCloseCustody::Released) {
-            NativeCloseCustody::Serving(native) => match native.prepare_close() {
-                Ok(native) => NativeCloseCustody::Prepared(native),
-                Err((native, cause)) => {
-                    self.native = NativeCloseCustody::Serving(native);
-                    return self.refused(ApplicationHomeCloseDenial::Relational(cause));
+            };
+            match composition.advance(execution, native.runtime()) {
+                Ok((composition, progress)) => {
+                    self.world_composition = Some(composition);
+                    if progress
+                        == worth_runtime_bridge::facade::BridgeHomeRetirementProgress::Complete
+                    {
+                        break;
+                    }
                 }
-            },
-            phase @ (NativeCloseCustody::Prepared(_) | NativeCloseCustody::Released) => phase,
+                Err((composition, cause)) => {
+                    self.world_composition = Some(composition);
+                    return self.refused(cause);
+                }
+            }
+        }
+        self = match self.advance_native_close(execution) {
+            Ok(home) => home,
+            Err((home, cause)) => return home.refused(cause),
         };
-        if matches!(self.native, NativeCloseCustody::Prepared(_)) {
-            if let Err(cause) = self.settle_retained_checkpoint(execution) {
-                return self.refused(cause);
-            }
-            let NativeCloseCustody::Prepared(native) =
-                std::mem::replace(&mut self.native, NativeCloseCustody::Released)
-            else {
-                unreachable!("prepared Native owner is retained until settlement");
-            };
-            native.finish();
-        }
-        if let PhysicalCloseCustody::Retained(serving) = self.physical {
-            if let Err(cause) = interrupted(execution) {
-                return Self {
-                    physical: PhysicalCloseCustody::Retained(serving),
-                    ..self
-                }
-                .refused(ApplicationHomeCloseDenial::Execution(cause));
-            }
-            let serving = match Arc::try_unwrap(serving) {
-                Ok(serving) => serving,
-                Err(serving) => {
-                    return Self {
-                        physical: PhysicalCloseCustody::Retained(serving),
-                        ..self
-                    }
-                    .refused(ApplicationHomeCloseDenial::PhysicalCustodyRetained)
-                }
-            };
-            self.physical = match start.start(serving) {
-                Ok(task) => PhysicalCloseCustody::Running(task),
-                Err(refused) => {
-                    let (serving, error) = refused.into_parts();
-                    return Self {
-                        physical: PhysicalCloseCustody::Retained(Arc::new(serving)),
-                        ..self
-                    }
-                    .refused(
-                        ApplicationHomeCloseDenial::PhysicalCloseStartFailed {
-                            kind: error.kind(),
-                            detail: error.to_string(),
-                        },
-                    );
-                }
-            };
-        }
-        loop {
-            self.physical = match self.physical {
-                PhysicalCloseCustody::Running(task) => match task.poll() {
-                    PhysicalStoreCloseTaskPoll::Pending(task) => {
-                        PhysicalCloseCustody::Running(task)
-                    }
-                    PhysicalStoreCloseTaskPoll::Failed(failure) => {
-                        let cause = *failure.cause();
-                        return Self {
-                            physical: PhysicalCloseCustody::Failed(failure),
-                            ..self
-                        }
-                        .refused(ApplicationHomeCloseDenial::PhysicalCloseFailed(cause));
-                    }
-                    PhysicalStoreCloseTaskPoll::Completed(outcome) => match outcome {
-                        PhysicalStoreCloseOutcome::Closed { shutdown, .. } => {
-                            return ApplicationHomeCloseOutcome::Closed {
-                                store: shutdown,
-                                checkpoint: self.checkpoint.into_result(),
-                            }
-                        }
-                        outcome @ PhysicalStoreCloseOutcome::InspectionRequired { .. } => {
-                            return Self {
-                                physical: PhysicalCloseCustody::InspectionRequired(outcome),
-                                ..self
-                            }
-                            .refused(ApplicationHomeCloseDenial::PhysicalInspectionRequired);
-                        }
-                    },
-                },
-                PhysicalCloseCustody::InspectionRequired(outcome) => {
-                    return Self {
-                        physical: PhysicalCloseCustody::InspectionRequired(outcome),
-                        ..self
-                    }
-                    .refused(ApplicationHomeCloseDenial::PhysicalInspectionRequired);
-                }
-                PhysicalCloseCustody::Failed(failure) => {
-                    let cause = *failure.cause();
-                    return Self {
-                        physical: PhysicalCloseCustody::Failed(failure),
-                        ..self
-                    }
-                    .refused(ApplicationHomeCloseDenial::PhysicalCloseFailed(cause));
-                }
-                PhysicalCloseCustody::Retained(_) => {
-                    unreachable!("retained physical owner was classified before waiting")
-                }
-            };
-            if let Err(cause) = interrupted(execution) {
-                return self.refused(ApplicationHomeCloseDenial::Execution(cause));
-            }
-            std::thread::sleep(std::time::Duration::from_millis(1));
-        }
+        self.finish_physical_release(execution, start)
     }
 
     fn settle_retained_checkpoint(

@@ -29,6 +29,10 @@ struct Usage {
     bytes: u64,
 }
 
+pub(in crate::conditional_execution) struct HomeStopRetentionGuard<'a> {
+    _guard: std::sync::MutexGuard<'a, Usage>,
+}
+
 /// Retains accounting without retaining the operational Bridge root.
 #[derive(Debug)]
 pub(in crate::conditional_execution) struct BridgeRetentionReservation {
@@ -40,6 +44,40 @@ pub(in crate::conditional_execution) struct BridgeRetentionReservation {
 }
 
 impl BridgeRetentionLedger {
+    pub(in crate::conditional_execution) fn try_home_stop_guard(
+        &self,
+    ) -> Result<HomeStopRetentionGuard<'_>, crate::facade::BridgeHomeRetirementDenial> {
+        use crate::facade::BridgeHomeRetirementDenial as Denial;
+        let guard = self.state.try_lock().map_err(|_| Denial::Busy)?;
+        if guard.closed {
+            return Err(Denial::Unsupported);
+        }
+        if guard.clocks != 0
+            || guard.intents != 0
+            || guard.definition_candidates != 0
+            || guard.bytes != 0
+        {
+            return Err(Denial::Busy);
+        }
+        Ok(HomeStopRetentionGuard { _guard: guard })
+    }
+    pub(in crate::conditional_execution) fn try_close_for_home_stop(
+        &self,
+    ) -> Result<(), crate::facade::BridgeHomeRetirementDenial> {
+        let mut state = self
+            .state
+            .try_lock()
+            .map_err(|_| crate::facade::BridgeHomeRetirementDenial::Busy)?;
+        if state.clocks != 0
+            || state.intents != 0
+            || state.definition_candidates != 0
+            || state.bytes != 0
+        {
+            return Err(crate::facade::BridgeHomeRetirementDenial::Busy);
+        }
+        state.closed = true;
+        Ok(())
+    }
     pub(in crate::conditional_execution) fn new(
         budget: BridgeConditionalRetentionBudget,
     ) -> Result<Arc<Self>, BridgeRetentionDenial> {

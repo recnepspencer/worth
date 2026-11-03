@@ -1,3 +1,5 @@
+mod home_retirement;
+use home_retirement::PublicationReceiptRetirement;
 use std::sync::{Arc, Mutex, OnceLock};
 
 use worth_runtime_world::facade::{
@@ -8,12 +10,13 @@ use worth_runtime_world::facade::{
 use super::{runtime::WorthQueryProductRootIdentity, WorthQueryPerformedRelationalProductChange};
 
 struct WorthQueryProductPublicationTerminal {
-    publication: ConsumedCompositePublication,
+    publication: Option<ConsumedCompositePublication>,
     conditional_definition_generation: Option<u64>,
 }
 
 struct WorthQueryProductPublicationCustody {
     terminal: OnceLock<WorthQueryProductPublicationTerminal>,
+    retirement: PublicationReceiptRetirement,
     fresh_delivery_available: Mutex<bool>,
     live_successor_observation:
         Mutex<Option<worth_runtime_world::facade::ProductBranchObservation>>,
@@ -78,6 +81,7 @@ impl WorthQueryReservedProductPublicationReceipt {
         Self {
             custody: Arc::new(WorthQueryProductPublicationCustody {
                 terminal: OnceLock::new(),
+                retirement: PublicationReceiptRetirement::Vacant,
                 fresh_delivery_available: Mutex::new(true),
                 live_successor_observation: Mutex::new(None),
                 output_demand_observation: Mutex::new(None),
@@ -122,7 +126,7 @@ impl WorthQueryReservedProductPublicationReceipt {
                 .unwrap_or_else(std::sync::PoisonError::into_inner) = successor_observation;
         }
         let terminal = WorthQueryProductPublicationTerminal {
-            publication,
+            publication: Some(publication),
             conditional_definition_generation,
         };
         self.custody.terminal.get_or_init(|| terminal);
@@ -144,7 +148,10 @@ impl WorthQueryProductPublicationReceipt {
     }
 
     pub(crate) fn publication(&self) -> &ConsumedCompositePublication {
-        &self.terminal().publication
+        self.terminal()
+            .publication
+            .as_ref()
+            .expect("only serving receipt exposes original publication")
     }
 
     /// Takes this copy's World history protection, leaving it detached.

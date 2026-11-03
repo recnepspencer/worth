@@ -1,14 +1,16 @@
 mod admission;
 pub(crate) use admission::CheckpointDirectoryAdmission;
 mod retirement;
+mod source_edge;
 pub(crate) use retirement::{CheckpointDirectoryRetirement, PreparedCheckpointDirectoryRetirement};
+pub(crate) use source_edge::{NativeCheckpointDirectoryEdge, NativeDirectoryRetirementHandoff};
 use std::sync::Arc;
 
 use super::RelationalCheckpointManifest;
 use crate::durability::medium::{RelationalDurableColdSource, RelationalDurableMemberCustody};
 
 /// An admitted directory intrinsically retains its complete semantic basis.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub(crate) struct RelationalCheckpointDirectory {
     pub(crate) source_schemas: std::sync::OnceLock<
         Arc<
@@ -21,6 +23,7 @@ pub(crate) struct RelationalCheckpointDirectory {
     pub(crate) canonical_read:
         crate::durability::checkpoint_history::readmission::SelectedCheckpointRead,
     _basis: RelationalDurableMemberCustody,
+    retirement: PreparedCheckpointDirectoryRetirement,
 }
 
 /// Capture precedes placement: a draft cannot claim custody of new members.

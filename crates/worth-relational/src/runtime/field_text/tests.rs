@@ -34,15 +34,13 @@ fn field_text_import_denial_preserves_source_table_and_head() {
     let denial = runtime
         .admit_field_text(&ExecutionRequest::leased(&limited), &basis, &source)
         .unwrap_err();
-    assert!(matches!(
-        denial,
-        Denial::Request(
-            crate::execution::RelationalExecutionDenialCause::PolicyMemoryExhausted {
-                admitted: 1,
-                ..
-            }
-        )
-    ));
+    assert!(
+        matches!(denial,
+            Denial::Request(crate::execution::RelationalExecutionDenialCause::PolicyMemoryExhausted { requested, admitted, ancestor: 0 })
+                if requested > admitted && admitted <= 1
+        ),
+        "the original one-byte policy refused admission: {denial:?}"
+    );
     assert_eq!(source.bytes(), b"native-actor-json");
     assert_eq!(runtime.services.symbols.snapshot(), before);
     assert_eq!(runtime.observe_branch(&identity).unwrap().0, head);

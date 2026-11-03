@@ -1,7 +1,7 @@
 //! Actual Home/Native/World custody survives process death and explicit release.
 use worth_execution::ExecutionRequest;
 use worth_runtime_world::facade::*;
-use worth_store_application::{ApplicationHomeCheckpointDenial, ApplicationHomeCloseOutcome};
+use worth_store_application::ApplicationHomeCloseOutcome;
 mod child;
 mod published_predecessor;
 const LOCATION: &str = "WORTH_WORLD_RELEASE_HOME";
@@ -162,13 +162,12 @@ fn close(
 ) {
     match home.close(execution) {
         Ok(ApplicationHomeCloseOutcome::Closed {
-            checkpoint: Err(ApplicationHomeCheckpointDenial::WorldSectionRequired),
-            ..
+            checkpoint: Ok(_), ..
         }) => {}
         Err(refused) => panic!("World close refused: {:?}", refused.reason()),
         Ok(ApplicationHomeCloseOutcome::CloseRefused { reason, .. }) => {
             panic!("Native close refused: {reason:?}")
         }
-        _ => panic!("full World checkpoint remains explicitly unsupported"),
+        _ => panic!("the original coupled checkpoint must complete before physical close"),
     }
 }

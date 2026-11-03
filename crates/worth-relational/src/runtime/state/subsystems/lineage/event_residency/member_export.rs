@@ -9,7 +9,7 @@ impl RelationalDurableColdSource for RuntimeLineageEventResidency {
         &self,
         members: &[RelationalDurableMemberLocator],
     ) -> Result<RelationalDurableMemberCustody, Cause> {
-        self.source.retain_members(members)
+        self.source()?.retain_members(members)
     }
     fn read_member(
         &self,
@@ -17,14 +17,14 @@ impl RelationalDurableColdSource for RuntimeLineageEventResidency {
         limit: u64,
     ) -> Result<Vec<u8>, Cause> {
         let cell = self.pages.get(&locator).ok_or(Cause::SourceUnavailable)?;
-        cell.export_member(self.source.as_ref(), limit)
+        cell.export_member(self.source()?.as_ref(), limit)
     }
     fn read_commit(
         &self,
         position: crate::publication::patch::data::PatchStreamPosition,
         limit: u64,
     ) -> Result<Vec<u8>, Cause> {
-        self.source.read_commit(position, limit)
+        self.source()?.read_commit(position, limit)
     }
 }
 impl EventPageCell {

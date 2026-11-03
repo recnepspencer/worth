@@ -30,9 +30,8 @@ struct NodePageCell {
 
 #[derive(Debug)]
 pub(super) struct RuntimeLineageNodeResidency {
-    source: Arc<dyn RelationalDurableColdSource>,
+    pub(super) custody: Mutex<crate::durability::medium::NativeSourceMemberState>,
     pages: Vec<Arc<NodePageCell>>,
-    _placement: crate::durability::medium::RelationalDurableMemberCustody,
 }
 
 impl RuntimeLineageNodeResidency {
@@ -67,8 +66,10 @@ impl RuntimeLineageNodeResidency {
             }
         })?;
         Ok(Self {
-            _placement: placement,
-            source: directory.source.clone(),
+            custody: Mutex::new(crate::durability::medium::NativeSourceMemberState::new(
+                directory.source.clone(),
+                placement,
+            )),
             pages: directory
                 .manifest
                 .lineage
@@ -107,7 +108,10 @@ impl RuntimeLineageNodeResidency {
         let Some(cell) = self.page(id) else {
             return Ok(None);
         };
-        let page = cell.demand(execution, self.source.as_ref())?;
+        let source = self
+            .source()
+            .map_err(|cause| node_page::failure(&cell.descriptor, cause))?;
+        let page = cell.demand(execution, source.as_ref())?;
         let Ok(slot) = page
             .page
             .nodes

@@ -1,3 +1,5 @@
+mod retirement;
+pub(crate) use retirement::CompositeCommitRetirement;
 use worth_relational::facade::history::RelationalCommitIdentity;
 use worth_runtime_bridge::facade::AdmittedRuntimeWorldCorrespondenceBasis;
 use worth_signal::facade::branch::SignalBranchBasisAdmissionIdentity;
@@ -135,7 +137,7 @@ impl CompositeCommitLineage {
 #[derive(Debug)]
 pub struct CompositeRuntimeWorldCommit {
     identity: CompositeCommitIdentity,
-    basis: AdmittedCompositeRuntimeWorldBasis,
+    basis: Option<AdmittedCompositeRuntimeWorldBasis>,
     lineage: CompositeCommitLineage,
     component_evidence: CompositeComponentEvidence,
     caller_correlation: Option<CompositeCallerCorrelation>,
@@ -153,7 +155,7 @@ impl CompositeRuntimeWorldCommit {
         let component_evidence = CompositeComponentEvidence::retained(&basis);
         Ok(Self {
             identity,
-            basis,
+            basis: Some(basis),
             lineage: CompositeCommitLineage::Root {
                 parent: CompositeCommitParent::Root,
                 provenance: CompositeCommitProvenance::Bootstrap(bootstrap),
@@ -188,7 +190,7 @@ impl CompositeRuntimeWorldCommit {
         )?;
         Ok(Self {
             identity,
-            basis,
+            basis: Some(basis),
             lineage: CompositeCommitLineage::Ordinary {
                 parent: CompositeCommitParent::Ordinary(OrdinaryParent::new(
                     predecessor.identity().clone(),
@@ -209,7 +211,9 @@ impl CompositeRuntimeWorldCommit {
     }
 
     pub fn basis(&self) -> &AdmittedCompositeRuntimeWorldBasis {
-        &self.basis
+        self.basis
+            .as_ref()
+            .expect("only serving commit exposes original basis")
     }
 
     pub fn relational_change(&self) -> CompositeComponentChangePosture {
@@ -223,7 +227,7 @@ impl CompositeRuntimeWorldCommit {
     /// Correspondence is derived from the one admitted composite basis. No
     /// independently supplied or stored correspondence authority exists.
     pub fn correspondence_basis(&self) -> &AdmittedRuntimeWorldCorrespondenceBasis {
-        self.basis.correspondence_basis()
+        self.basis().correspondence_basis()
     }
 
     pub fn provenance(&self) -> &CompositeCommitProvenance {
@@ -254,7 +258,7 @@ impl CompositeRuntimeWorldCommit {
         results: &CompositeOwnerExecutionResults,
     ) -> bool {
         self.component_evidence
-            .matches_owner_results(results, predecessor, &self.basis)
+            .matches_owner_results(results, predecessor, self.basis())
     }
 }
 

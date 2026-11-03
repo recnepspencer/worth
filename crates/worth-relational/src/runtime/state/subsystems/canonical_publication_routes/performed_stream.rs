@@ -16,6 +16,9 @@ use crate::durability::medium::{RelationalCommitPublication, RelationalDurableMe
 
 #[path = "performed_stream/recovered_source.rs"]
 mod recovered_source;
+#[path = "performed_stream/source_retirement.rs"]
+mod source_retirement;
+pub(crate) use source_retirement::RelationalPerformedSourceWalk;
 
 #[derive(Default)]
 pub(super) struct PerformedPublicationStream {

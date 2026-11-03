@@ -1,6 +1,6 @@
 use std::{
     collections::BTreeMap,
-    sync::{Arc, Mutex, MutexGuard, PoisonError, RwLock},
+    sync::{Arc, Mutex, PoisonError, RwLock},
 };
 
 use worth_proof::TransitionOutcome;
@@ -11,6 +11,8 @@ use super::{
     BridgeInstalledConditionalLowering, BridgeInstalledConditionalLoweringCounters,
 };
 use crate::facade::RuntimeBridge;
+mod home_retirement_slots;
+use home_retirement_slots::{OrdinaryBridgeCustody, SignalRuntimeGuard};
 
 pub struct BridgeConditionalInstallationRequest {
     pub contract: super::BridgeConditionalContract,
@@ -33,10 +35,10 @@ pub(super) struct AdmittedConditionalInstallationRequest {
 /// Bridge-owned ordinary conditional runtime. It retains the exact Signal
 /// graph; Query never receives a raw graph or a detached node capability.
 pub struct BridgeOwnedSignalRuntime {
-    pub(super) bridge: RuntimeBridge,
+    pub(super) bridge: OrdinaryBridgeCustody,
     pub(super) retention: Arc<super::retention::BridgeRetentionLedger>,
     pub(super) baseline_semantic_dependency_count: usize,
-    pub(super) signal_runtime: Mutex<SignalRuntime<(), (), (), (), ()>>,
+    pub(super) signal_runtime: Mutex<Option<SignalRuntime<(), (), (), (), ()>>>,
     pub(super) signal_graph_instance_id: u64,
     pub(super) signal_graph_lifecycle_probe: worth_signal::facade::SignalGraphLifecycleProbe,
     pub(super) signal_services: Option<super::service_binding::BridgeSignalServiceBinding>,
@@ -111,9 +113,9 @@ impl BridgeOwnedSignalRuntime {
         })?;
         Ok(Self {
             retention,
-            bridge,
+            bridge: OrdinaryBridgeCustody::new(bridge),
             baseline_semantic_dependency_count,
-            signal_runtime: Mutex::new(signal_runtime),
+            signal_runtime: Mutex::new(Some(signal_runtime)),
             signal_graph_instance_id,
             signal_graph_lifecycle_probe,
             signal_services: None,
@@ -130,12 +132,16 @@ impl BridgeOwnedSignalRuntime {
         self.signal_runtime
             .get_mut()
             .unwrap_or_else(PoisonError::into_inner)
+            .as_mut()
+            .expect("serving assembly owns its original Signal runtime")
     }
 
-    pub(super) fn lock_signal_runtime(&self) -> MutexGuard<'_, SignalRuntime<(), (), (), (), ()>> {
-        self.signal_runtime
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
+    pub(super) fn lock_signal_runtime(&self) -> SignalRuntimeGuard<'_> {
+        SignalRuntimeGuard::new(
+            self.signal_runtime
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner),
+        )
     }
 
     pub(super) fn install(
@@ -178,7 +184,9 @@ impl BridgeOwnedSignalRuntime {
             let runtime = self
                 .signal_runtime
                 .get_mut()
-                .unwrap_or_else(PoisonError::into_inner);
+                .unwrap_or_else(PoisonError::into_inner)
+                .as_mut()
+                .expect("serving assembly owns Signal");
             let prepared = crate::correspondence::prepare_registered_correspondence_batch(
                 bridge,
                 admitted.dependency_extension.registrations(),
@@ -369,6 +377,14 @@ pub(super) fn lowering_key(
 
 impl Drop for BridgeOwnedSignalRuntime {
     fn drop(&mut self) {
+        if self
+            .signal_runtime
+            .get_mut()
+            .unwrap_or_else(PoisonError::into_inner)
+            .is_none()
+        {
+            return;
+        }
         self.retention.close();
         self.revoke_conditional_liveness();
         self.revoke_managed_clock_liveness();

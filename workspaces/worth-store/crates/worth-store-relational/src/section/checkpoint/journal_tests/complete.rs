@@ -148,23 +148,28 @@ fn weak_complete_preparation_preserves_close_stop_resume_and_owner_loss() {
         ))
     ));
     let prepared = preparation.prepare(execution).unwrap();
-    let (section, cause) = match section.prepare_close() {
+    let retirement = crate::PreparedRelationalSectionClose::prepare(execution).unwrap();
+    let (section, retirement, cause) = match section.prepare_close(retirement, execution) {
         Err(refused) => refused,
         Ok(_) => panic!("the actual retained Complete capture must veto Native close"),
     };
-    assert_eq!(
+    assert!(matches!(
         cause,
         RelationalSectionCloseDenial::Native(RelationalRuntimeCloseDenial::ReadCustodyRetained)
-    );
+    ));
     drop(prepared);
-    let closing = section.prepare_close().unwrap_or_else(|(_, cause)| {
-        panic!("idle weak preparation cannot retain close custody: {cause:?}")
-    });
+    let closing = section
+        .prepare_close(retirement, execution)
+        .unwrap_or_else(|(_, _, cause)| {
+            panic!("idle weak preparation cannot retain close custody: {cause:?}")
+        });
     assert!(
         matches!(preparation.prepare(execution), Err(Denial::Capture(_))),
         "stopped Native owner cannot prepare through a weak port"
     );
-    let section = closing.resume();
+    let (section, _retirement) = closing
+        .resume()
+        .unwrap_or_else(|_| panic!("reversible preparation retains the same serving owner"));
     let prepared = idle.prepare(execution).unwrap();
     assert_eq!(prepared.covered().0, 1);
     drop(prepared);
@@ -174,4 +179,76 @@ fn weak_complete_preparation_preserves_close_stop_resume_and_owner_loss() {
         preparation.prepare(execution),
         Err(Denial::OwnerUnavailable)
     ));
+}
+
+#[test]
+fn owned_visibility_cache_retires_before_external_capture_recheck_and_source_seal() {
+    use worth_relational::facade::runtime::RelationalSourceCloseProgress as Progress;
+    let serial = SerialRequest::from_memory(
+        SerialMemoryBudget::new(None),
+        CancellationSource::new().token(),
+        None,
+    );
+    let execution = &ExecutionRequest::serial(&serial);
+    let (_directory, section, _selected) = section(execution);
+    let native = section.runtime();
+    let (_, basis) = native
+        .observe_branch(&native.main_branch_identity())
+        .unwrap();
+    let snapshot = native
+        .snapshots()
+        .snapshot_for_observation(&basis.observation())
+        .unwrap();
+    drop(basis);
+    drop(
+        native
+            .read_truth()
+            .read_snapshot(&snapshot, execution)
+            .unwrap()
+            .unwrap(),
+    );
+    native.snapshots().release_snapshot(&snapshot).unwrap();
+    drop(snapshot);
+    let preparation = section.complete_checkpoint_preparation();
+    let capture = preparation.prepare(execution).unwrap();
+    let serving = section.serving.clone();
+    let retirement = crate::PreparedRelationalSectionClose::prepare(execution).unwrap();
+    let mut closing = section
+        .prepare_close(retirement, execution)
+        .unwrap_or_else(|(_, _, cause)| panic!("the actual cache owns its read pins: {cause:?}"));
+    let mut refused = false;
+    for _ in 0..1000 {
+        match closing.advance(execution, &serving) {
+            Ok(Progress::Advanced) => {}
+            Err(RelationalSectionCloseDenial::Native(
+                RelationalRuntimeCloseDenial::ReadCustodyRetained,
+            )) => {
+                refused = true;
+                break;
+            }
+            result => panic!("the original external capture must retain close: {result:?}"),
+        }
+    }
+    assert!(
+        refused,
+        "the real capture still owns its original Native custody"
+    );
+    let mut closing = match closing.resume() {
+        Err(closing) => closing,
+        Ok(_) => panic!("retiring the actual cache forbids service restoration"),
+    };
+    assert!(matches!(
+        preparation.prepare(execution),
+        Err(Denial::Capture(_))
+    ));
+    assert_eq!(capture.covered().0, 1);
+    drop(capture);
+    for _ in 0..1000 {
+        match closing.advance(execution, &serving) {
+            Ok(Progress::Advanced) => {}
+            Ok(Progress::Complete) => return,
+            result => panic!("same original owner must finish after capture release: {result:?}"),
+        }
+    }
+    panic!("the finite original source graph must finish retirement");
 }

@@ -37,12 +37,21 @@ impl RelationalRegionResidency {
             sources.extend(required.iter().map(|member| (*member, source.clone())));
         }
         if let Some(cold) = &self.backing {
+            let source = self
+                .state
+                .lock()
+                .unwrap_or_else(|error| error.into_inner())
+                .physical
+                .as_ref()
+                .and_then(|physical| physical.source())
+                .cloned()
+                .ok_or_else(|| self.failure(Cause::SourceUnavailable))?;
             let mut backed = cold.history_members.members(cold.history);
             backed.insert(cold.head);
             sources.extend(
                 backed
                     .intersection(&required)
-                    .map(|member| (*member, cold.source.clone())),
+                    .map(|member| (*member, source.clone())),
             );
         }
         if let Some(lease) = self.lease_checkpoint_contents()? {
@@ -54,12 +63,13 @@ impl RelationalRegionResidency {
                 .flatten()
                 .chain(partition.relation_arena.history_prefixes.iter().flatten())
             {
+                let source = prefix.source().map_err(|cause| self.failure(cause))?;
                 sources.extend(
                     prefix
                         .history_members
                         .members(prefix.member)
                         .intersection(&required)
-                        .map(|member| (*member, prefix.source.clone())),
+                        .map(|member| (*member, source.clone())),
                 );
             }
         }

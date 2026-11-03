@@ -567,3 +567,8 @@ crates/worth-testkit-relational/ crates/worth-court-relational-certification/tes
 
 # Actual held selected-member fault controls; source issuer and original cut stay unchanged.
 crates/worth-testkit-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/recorded_component_checkpoint.rs
+# Original cfg(test) observation metadata retained without exercising its control.
+crates/worth-relational/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/execution_runtime/product_world/source_owner/home_retirement.rs
+
+# The relocated coupled checkpoint court observes its actual issued operation.
+workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/interrupted_close/checkpoint.rs

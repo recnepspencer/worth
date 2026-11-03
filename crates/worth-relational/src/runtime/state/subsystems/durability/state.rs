@@ -16,8 +16,12 @@ pub(super) struct CheckpointEnvelopeLocation {
 ///
 /// Envelopes and checkpoints are held by shared ownership so a reader can
 /// carry them out of the subsystem lock without copying them.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Default)]
 pub(crate) struct DurabilityState {
+    pub(super) medium: Option<Arc<crate::durability::medium::RelationalDurableMediumBinding>>,
+    pub(super) transition_history:
+        Option<crate::durability::medium::RelationalTransitionHistoryReader>,
+    pub(super) cold_source: Option<Arc<dyn crate::durability::medium::RelationalDurableColdSource>>,
     pub(super) log: Vec<(
         CommitId,
         PatchStreamPosition,
@@ -29,6 +33,21 @@ pub(crate) struct DurabilityState {
 }
 
 impl DurabilityState {
+    pub(super) fn fork_snapshot(
+        &self,
+        transition_history: Option<crate::durability::medium::RelationalTransitionHistoryReader>,
+    ) -> Self {
+        Self {
+            medium: None,
+            transition_history,
+            cold_source: self.cold_source.clone(),
+            log: self.log.clone(),
+            checkpoints: self.checkpoints.clone(),
+            log_commit_index: self.log_commit_index.clone(),
+            checkpoint_commit_index: self.checkpoint_commit_index.clone(),
+        }
+    }
+
     pub(super) fn push_log_envelope(
         &mut self,
         commit: (

@@ -65,6 +65,11 @@ pub(super) enum WorthQueryPendingApplicationIdempotency {
 }
 
 impl WorthQueryPendingApplicationPublicationRegistry {
+    pub(in crate::domain_computation::primary_graph::provider) fn home_close_has_work(
+        &self,
+    ) -> bool {
+        !self.slots.is_empty() || !self.corrections.is_empty()
+    }
     pub(in crate::domain_computation::primary_graph) fn new(maximum_slots: usize) -> Self {
         Self {
             maximum_slots,
