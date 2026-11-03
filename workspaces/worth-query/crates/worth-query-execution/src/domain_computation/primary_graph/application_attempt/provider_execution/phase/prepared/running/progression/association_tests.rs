@@ -153,12 +153,15 @@ fn assert_interleaved_terminal(
                 baseline,
                 both_attempts,
             );
-            let expected_peer =
-                if matches!(victim, WorthQueryApplicationCommitOutcome::Committed(_)) {
-                    PeerExpectation::AlreadyCommitted
-                } else {
-                    PeerExpectation::Committed
-                };
+            let expected_peer = if matches!(
+                victim,
+                WorthQueryApplicationCommitOutcome::Committed(_)
+                    | WorthQueryApplicationCommitOutcome::RecoveredCommitted(_)
+            ) {
+                PeerExpectation::RecoveredCommitted
+            } else {
+                PeerExpectation::Committed
+            };
             finish_peer(phase, &world, peer, baseline, expected_peer);
         })
         .expect("fixture owner admits its advancement");
@@ -221,13 +224,10 @@ fn finish_peer(
             );
         }
         (
-            PeerExpectation::AlreadyCommitted,
-            WorthQueryApplicationCommitOutcome::AlreadyCommitted(receipt),
+            PeerExpectation::RecoveredCommitted,
+            WorthQueryApplicationCommitOutcome::RecoveredCommitted(receipt),
         ) => {
-            assert_eq!(
-                receipt.terminal().kind(),
-                WorthQueryApplicationCommitTerminalKind::Recovered
-            );
+            assert!(receipt.new_product_head().memory().is_some());
         }
         (PeerExpectation::ProductBasisStale, outcome) => {
             crate::domain_computation::primary_graph::tests::application_attempt::assert_product_basis_stale(
@@ -252,7 +252,7 @@ fn finish_peer(
 #[derive(Clone, Copy, Debug)]
 enum PeerExpectation {
     Committed,
-    AlreadyCommitted,
+    RecoveredCommitted,
     ProductBasisStale,
 }
 

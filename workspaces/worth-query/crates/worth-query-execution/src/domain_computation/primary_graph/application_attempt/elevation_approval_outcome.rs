@@ -217,12 +217,16 @@ impl WorthQueryApprovedElevation {
 
 /// Every way committing an elevation approval can end.
 ///
-/// This mirrors the application commit outcome. `Approved` and
-/// `AlreadyApproved` carry the move-only approved-elevation authority. Most
+/// This mirrors the application commit outcome. `Approved` carries the move-only approved-elevation authority. Most
 /// variants that did not land hand the consumed requested elevation back, so it
 /// can be committed again.
 #[derive(Debug)]
 pub enum WorthQueryElevationApprovalOutcome {
+    /// Immutable original meaning plus the exact predecessor supplied by this call.
+    RecoveredCommitted {
+        receipt: crate::domain_computation::primary_graph::provider::WorthQueryRecoveredApplicationCommitReceipt,
+        requested: WorthQueryRequestedElevation,
+    },
     CleanupRequired(Box<super::WorthQueryApplicationCleanupRequired>),
     /// The product branch moved after the basis. Nothing was committed.
     ProductStale(
@@ -241,8 +245,6 @@ pub enum WorthQueryElevationApprovalOutcome {
     ),
     /// This attempt committed the approval.
     Approved(WorthQueryApprovedElevation),
-    /// The idempotency key had already committed this approval; nothing was redone.
-    AlreadyApproved(WorthQueryApprovedElevation),
     /// The basis was stale at compare. Nothing was committed; re-read and retry.
     Stale(
         WorthQueryApplicationStaleAttempt,
@@ -270,11 +272,14 @@ pub(in crate::domain_computation::primary_graph) fn approved_outcome(
     binding: WorthQueryElevationApprovalBinding,
 ) -> WorthQueryElevationApprovalOutcome {
     match outcome {
+        WorthQueryApplicationCommitOutcome::RecoveredCommitted(receipt) => {
+            WorthQueryElevationApprovalOutcome::RecoveredCommitted {
+                receipt,
+                requested: binding.into_requested(),
+            }
+        }
         WorthQueryApplicationCommitOutcome::Committed(commit) => {
             WorthQueryElevationApprovalOutcome::Approved(approved(binding, commit))
-        }
-        WorthQueryApplicationCommitOutcome::AlreadyCommitted(commit) => {
-            WorthQueryElevationApprovalOutcome::AlreadyApproved(approved(binding, commit))
         }
         WorthQueryApplicationCommitOutcome::Stale(stale) => {
             WorthQueryElevationApprovalOutcome::Stale(stale, binding.into_requested())

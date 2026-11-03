@@ -32,7 +32,6 @@ fn a_cancellation_ends_only_the_copy_on_its_own_branch() {
     // key then cancels it afresh: a cancellation names its own instance.
     approve(&application, &instance, &required, &proposal, 89_013);
     let own = cancelled(cancel_instance(&application, instance.clone(), 89_012));
-    assert!(!own.replayed());
     assert_eq!(own.instance(), &instance);
 }
 
@@ -54,15 +53,13 @@ fn a_migrated_instance_reports_the_effect_its_source_performed() {
     .clone();
 
     let ended = cancelled(cancel_instance(&application, successor.clone(), 89_115));
-    assert!(!ended.replayed());
     assert_eq!(ended.performed_node_paths(), ["apply".to_owned()]);
-    let replay = cancelled(cancel_instance(&application, successor.clone(), 89_115));
-    assert!(replay.replayed());
-    assert_eq!(
-        replay.performed_node_paths(),
-        ["apply".to_owned()],
-        "a replay reads the carried effect back from settled history",
-    );
+    let replay = crate::recorded_receipt::cancelled(cancel_instance(
+        &application,
+        successor.clone(),
+        89_115,
+    ));
+    crate::recorded_receipt::assert_agrees(&replay, ended.receipt());
     assert_eq!(read_retention(application.runtime(), successor.branch()), 8);
 }
 
@@ -119,6 +116,5 @@ fn a_cancellation_without_the_start_capability_is_refused_and_claims_no_key() {
         ),
         other => panic!("only the start capability cancels: {other:?}"),
     }
-    let ended = cancelled(cancel_instance(&application, instance, 89_210));
-    assert!(!ended.replayed(), "the refused request claimed no key");
+    let _ended = cancelled(cancel_instance(&application, instance, 89_210));
 }

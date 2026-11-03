@@ -9,7 +9,7 @@ fn public_query_progression_opens_the_exact_verified_estate_case() {
     );
     let specialist = fixture.authenticate_specialist();
     let key = BankIdempotencyKey::new("open-estate-case-program-entry").unwrap();
-    let outcome = {
+    let outcome_closed = {
         let source_actor = &specialist;
         let source_scope = &request_scope();
         let source_key = &key;
@@ -41,8 +41,11 @@ fn public_query_progression_opens_the_exact_verified_estate_case() {
         let closed_source = source_completed
             .close_with_evidence(&source_request)
             .unwrap_or_else(|(_, cause)| panic!("lawful native source close: {cause:?}"));
-        bank_server::BankCommitReceipt::from_closed_source(closed_source)
+        bank_server::BankClosedSourceCompletion::from_query(closed_source)
     };
+    let outcome = outcome_closed
+        .live_receipt()
+        .expect("fresh completion retains its actual live receipt");
 
     let receipt = outcome;
     assert_eq!(receipt.changed_record_count(), 2);
@@ -56,7 +59,7 @@ fn public_query_progression_opens_the_exact_verified_estate_case() {
         DeathNoticeStatus::Verified,
     );
 
-    assert_equivalent_retry(&fixture, &specialist, &key, &receipt);
+    assert_equivalent_retry(&fixture, &specialist, &key, &outcome_closed);
     assert_intent_drift(&fixture, &specialist, &key);
 }
 

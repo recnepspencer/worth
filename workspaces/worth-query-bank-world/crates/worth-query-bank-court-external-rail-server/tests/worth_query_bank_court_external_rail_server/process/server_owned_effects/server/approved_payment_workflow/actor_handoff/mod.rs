@@ -36,7 +36,8 @@ fn revoked_starter_cannot_advance_but_second_actor_commits_attributed_payment() 
         payment: fixture.payment,
         approver: principal_id(SECOND_APPROVER),
     };
-    let instance = journey::start_approved_payment_instance(&starter_workflow, &starter_authority);
+    let (_definition, instance) =
+        journey::start_approved_payment_instance(&starter_workflow, &starter_authority);
     let authorized_users = fixture
         .world
         .runtime

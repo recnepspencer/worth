@@ -13,6 +13,7 @@ use super::{
 };
 
 mod durable;
+mod memory_original;
 #[path = "product_cas/movement.rs"]
 mod movement;
 #[path = "product_cas/retained.rs"]
@@ -79,7 +80,7 @@ impl CompositePublicationReady {
         ))
     }
 
-    pub(crate) fn publish_controlled(
+    fn publish_controlled_after_capture(
         self,
         cell: &ProductBranchReferenceCell,
         cancellation: &super::RuntimeWorldCancellationToken,

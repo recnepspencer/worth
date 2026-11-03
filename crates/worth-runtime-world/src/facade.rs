@@ -70,7 +70,8 @@ pub use crate::history::{
     HistoryCatalogCounters, HistoryMetadataLedger, HistoryReclamationDenial, OrdinaryParent,
     RetiredBranchHistoryRelease, RuntimeWorldPerformedPublicationProtection,
     RuntimeWorldPublicationCursor, RuntimeWorldPublicationFrontier, RuntimeWorldPublicationPage,
-    RuntimeWorldPublicationRow, WorldReadmittedPublication, WorldReadmittedPublicationDenial,
+    RuntimeWorldPublicationRow, WorldObservedMemoryPublication, WorldReadmittedPublication,
+    WorldReadmittedPublicationDenial,
 };
 
 pub use crate::identity::{

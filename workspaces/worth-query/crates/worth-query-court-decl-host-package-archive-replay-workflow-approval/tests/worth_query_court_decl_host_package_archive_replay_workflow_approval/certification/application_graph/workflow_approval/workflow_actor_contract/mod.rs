@@ -2,8 +2,9 @@ pub(crate) use worth_query_testkit_certification_application_graph::facade::cert
 
 #[test]
 fn workflow_actor_contract_multiactor_requires_positive_original_proposer_and_current_grant() {
-    let (application, _, instance, proposal, required, _) =
-        approval_journey("actor-review", 71_000);
+    let (application, _, instance, original_proposal, required, _) =
+        first_proposal::approval_journey("actor-review", 71_000);
+    let proposal = original_proposal.proposal().clone();
     let runtime = application.runtime();
     let scope = request_scope();
     let author = authenticate_operator(runtime.installed_schema(), &scope);
@@ -57,18 +58,18 @@ fn workflow_actor_contract_multiactor_requires_positive_original_proposer_and_cu
         other => panic!("distinct currently admitted reviewer must approve: {other:?}"),
     };
     use worth_query_decl::facade::application_capability::ApplicationWorkflowRecordedRole as Role;
-    let proposer = match propose_instance(&application, instance.clone(), 71_002).unwrap() {
-        WorkflowProposalOutcome::Published(replay) => {
-            assert!(replay.replayed());
-            replay
-                .receipt()
-                .committed_changes()
-                .workflow_actor_fields_for_test(proposal.entity_id(), Role::Proposer)
-                .unwrap()
-                .expect("original proposal has its admitted proposer")
+    match propose_instance(&application, instance.clone(), 71_002).unwrap() {
+        WorkflowProposalOutcome::RecoveredCommitted(data) => {
+            crate::recorded_receipt::assert_agrees(&data, original_proposal.receipt())
         }
         other => panic!("original proposal replays without rediscovery: {other:?}"),
-    };
+    }
+    let proposer = original_proposal
+        .receipt()
+        .committed_changes()
+        .workflow_actor_fields_for_test(proposal.entity_id(), Role::Proposer)
+        .unwrap()
+        .expect("original proposal has its admitted proposer");
     let recorded_advancer = performed
         .receipt()
         .committed_changes()
@@ -234,11 +235,18 @@ fn workflow_actor_contract_proposal_replay_preserves_original_execution_principa
     use super::super::document_retention_model::workflow::{
         WorkflowDefinitionAuthoringInput, WorkflowDefinitionAuthoringIntent,
     };
-    let (application, _, instance, proposal, _, _) = approval_journey("actor-replay", 73_000);
+    let (application, _, instance, original_proposal, _, _) =
+        first_proposal::approval_journey("actor-replay", 73_000);
+    let proposal = original_proposal.proposal().clone();
     match propose_instance(&application, instance.clone(), 73_002).unwrap() {
-        WorkflowProposalOutcome::Published(replay) => {
-            assert!(replay.replayed());
-            assert_eq!(replay.proposal(), &proposal);
+        WorkflowProposalOutcome::RecoveredCommitted(data) => {
+            crate::recorded_receipt::assert_agrees(&data, original_proposal.receipt());
+            assert!(data
+                .semantic_result()
+                .semantic()
+                .created_entities()
+                .iter()
+                .any(|entry| entry.assigned == proposal.entity_id()));
         }
         other => panic!("original admitted proposer must replay its exact occurrence: {other:?}"),
     }

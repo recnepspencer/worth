@@ -4,7 +4,10 @@ pub(crate) use worth_query_bank_testkit_server::facade::estate_operations::exter
 fn committed_outbox_is_fresh_owner_truth_with_exact_commit_affinity() {
     let world = dispatch_world("committed-owner-read");
     world.transport.under(FaultScript::Succeed, PATIENT);
-    let receipt = world.commit_notification(48);
+    let receipt_closed = world.commit_notification(48);
+    let receipt = receipt_closed
+        .live_receipt()
+        .expect("fresh source retains its full native owner");
     let observed = world
         .fixture
         .world
@@ -47,7 +50,10 @@ fn committed_outbox_is_fresh_owner_truth_with_exact_commit_affinity() {
 fn another_runtime_without_the_exact_commit_cannot_observe_a_receipts_committed_outbox() {
     let owner = dispatch_world("owner-runtime");
     owner.transport.under(FaultScript::Succeed, PATIENT);
-    let receipt = owner.commit_notification(50);
+    let receipt_closed = owner.commit_notification(50);
+    let receipt = receipt_closed
+        .live_receipt()
+        .expect("fresh source retains its full native owner");
     let stranger = dispatch_world("stranger-runtime");
 
     assert_eq!(
@@ -64,6 +70,6 @@ fn another_runtime_without_the_exact_commit_cannot_observe_a_receipts_committed_
                     .observe_committed_dispatch_outbox(&phase, &receipt)
             )
             .expect("installed host call opens"),
-        Err(BankCommittedDispatchOutboxReadDenial::ExactCommitUnavailable)
+        Err(BankCommittedDispatchOutboxReadDenial::ForeignRuntime)
     );
 }

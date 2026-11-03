@@ -80,6 +80,13 @@ fn retained_selection_proves_only_endpoint_ancestry_after_real_retirement() {
             ProductExactHistoryDenial::History(CompositeAncestorSelectionDenial::RetiredHistoryGap)
         ))
     ));
+    let retired_sibling = court
+        .world
+        .branch_port()
+        .retire_product_branch(&sibling)
+        .unwrap();
+    assert_eq!(retired_sibling.owner_retirement_work().len(), 1);
+    drop(retired_sibling);
     drop((selected, cursor, root, sibling, head));
     court.finish();
 }

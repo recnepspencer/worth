@@ -1397,6 +1397,7 @@ name = "worth-query-court-query-decl-host"
 version = "0.1.0"
 dependencies = [
  "serde",
+ "serde_json",
  "worth-execution",
  "worth-foundational",
  "worth-query-decl",

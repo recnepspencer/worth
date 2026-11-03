@@ -78,13 +78,11 @@ where
                     }
                     WorthQueryApplicationRetainedCommitOutcome::Other(outcome) => {
                         let outcome = match outcome.landed() {
-                            Ok((receipt, true)) => {
-                                WorthQueryApplicationMutationOutcome::AlreadyCommitted(receipt)
-                            }
-                            Ok((receipt, false)) => {
+                            Ok(worth_query_execution::facade::primary_graph::WorthQueryApplicationLandedCommit::Live { receipt }) => {
                                 WorthQueryApplicationMutationOutcome::Committed { receipt, result }
                             }
-                            Err(custody) => WorthQueryApplicationMutationOutcome::Commit(custody),
+                            Ok(worth_query_execution::facade::primary_graph::WorthQueryApplicationLandedCommit::Recovered(receipt)) => crate::application_entry::WorthQueryApplicationMutationOutcome::RecoveredCommitted(receipt),
+                Err(custody) => WorthQueryApplicationMutationOutcome::Commit(custody),
                         };
                         WorthQueryApplicationRetainedMutationOutcome::Other(outcome)
                     }

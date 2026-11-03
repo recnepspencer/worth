@@ -35,27 +35,17 @@ fn lifecycle_replays_through_query_after_each_prior_transition() {
     let BankEstateElevationRequestOutcome::Requested(requested) = request_outcome else {
         panic!("initial elevation request must commit: {request_outcome:?}");
     };
-    let BankEstateElevationRequestOutcome::AlreadyRequested(replayed_request) = fixture
-        .runtime
-        .request_estate_emergency_access_with_key(&requester, request_action, &request_key, &scope)
-        .unwrap()
-    else {
-        panic!("the exact request must return a second authority");
-    };
-    let BankEstateElevationRequestOutcome::AlreadyRequested(late_close_request) = fixture
-        .runtime
-        .request_estate_emergency_access_with_key(&requester, request_action, &request_key, &scope)
-        .unwrap()
-    else {
-        panic!("the exact request must retain authority for later close replay");
-    };
-    let BankEstateElevationRequestOutcome::AlreadyRequested(late_approval_request) = fixture
-        .runtime
-        .request_estate_emergency_access_with_key(&requester, request_action, &request_key, &scope)
-        .unwrap()
-    else {
-        panic!("the exact request must retain authority for later approval replay");
-    };
+    let request_data = fixture.lifecycle_original(&requester, request_action, &request_key, &scope);
+    assert_eq!(
+        request_data.changed_record_count(),
+        requested.request_changed_record_count()
+    );
+    super::lifecycle_observation::assert_selected_original(
+        &fixture,
+        &requester,
+        &scope,
+        &request_data,
+    );
     let approve_action = EstateAction::ApproveEmergencyAccess {
         estate: ESTATE,
         access: EmergencyAccessId::new(495).unwrap(),
@@ -83,33 +73,22 @@ fn lifecycle_replays_through_query_after_each_prior_transition() {
         .unwrap()
         .selected_commit()
         .clone();
-    let replay = fixture
-        .runtime
-        .approve_estate_emergency_access_with_key(
-            &approver,
-            replayed_request,
-            approve_action,
-            &approval_key,
-            &scope,
-        )
-        .unwrap();
-    let BankEstateElevationApprovalOutcome::AlreadyApproved(replayed) = replay else {
-        panic!("Query must return the committed approval on exact replay: {replay:?}");
-    };
-    let BankEstateElevationApprovalOutcome::AlreadyApproved(late_close_approved) = fixture
-        .runtime
-        .approve_estate_emergency_access_with_key(
-            &approver,
-            late_close_request,
-            approve_action,
-            &approval_key,
-            &scope,
-        )
-        .unwrap()
-    else {
-        panic!("exact approval replay must retain authority for later close replay");
-    };
-    assert_eq!(replayed.query().approver(), first.query().approver());
+    let approval_data =
+        fixture.lifecycle_original(&approver, approve_action, &approval_key, &scope);
+    assert_eq!(
+        approval_data.changed_record_count(),
+        first.approval_changed_record_count()
+    );
+    super::lifecycle_observation::assert_selected_original(
+        &fixture,
+        &approver,
+        &scope,
+        &approval_data,
+    );
+    assert_eq!(
+        fixture.lifecycle_original(&approver, approve_action, &approval_key, &scope),
+        approval_data
+    );
     assert_eq!(
         crate::test_host_policy::with_phase(fixture.runtime.application_runtime(), |phase| {
             fixture
@@ -152,22 +131,22 @@ fn lifecycle_replays_through_query_after_each_prior_transition() {
         .unwrap()
         .selected_commit()
         .clone();
+    let original_close_data =
+        fixture.lifecycle_original(&approver, close_action, &close_key, &scope);
     authorization_time.advance_to_epoch_seconds(101);
-    let close_replay = fixture
-        .runtime
-        .revoke_estate_emergency_access_with_key(
-            &approver,
-            replayed,
-            close_action,
-            &close_key,
-            &scope,
-        )
-        .unwrap();
-    let BankEstateElevationCloseOutcome::AlreadyClosed(replayed_mandatory) = close_replay else {
-        panic!("Query must return the committed close on exact replay: {close_replay:?}");
-    };
-    assert_eq!(replayed_mandatory.closure_kind(), mandatory.closure_kind());
-    assert_eq!(replayed_mandatory.closed_at(), mandatory.closed_at());
+    let close_data = fixture.lifecycle_original(&approver, close_action, &close_key, &scope);
+    assert_eq!(
+        close_data.changed_record_count(),
+        mandatory.close_changed_record_count()
+    );
+    assert_eq!(mandatory.closed_at(), &first_closed_at);
+    assert_eq!(close_data, original_close_data);
+    super::lifecycle_observation::assert_selected_original(
+        &fixture,
+        &approver,
+        &scope,
+        &close_data,
+    );
     assert_eq!(
         crate::test_host_policy::with_phase(fixture.runtime.application_runtime(), |phase| {
             fixture
@@ -210,22 +189,18 @@ fn lifecycle_replays_through_query_after_each_prior_transition() {
         .unwrap()
         .selected_commit()
         .clone();
+    let original_review_data =
+        fixture.lifecycle_original(&reviewer, review_action, &review_key, &scope);
+    let first_reviewed_at = reviewed.reviewed_at().clone();
     authorization_time.advance_to_epoch_seconds(102);
-    let review_replay = fixture
-        .runtime
-        .complete_estate_mandatory_review_with_key(
-            &reviewer,
-            replayed_mandatory,
-            review_action,
-            &review_key,
-            &scope,
-        )
-        .unwrap();
-    let BankEstateMandatoryReviewOutcome::AlreadyReviewed(replayed_review) = review_replay else {
-        panic!("Query must return the committed review on exact replay: {review_replay:?}");
-    };
-    assert_eq!(replayed_review.closure_kind(), reviewed.closure_kind());
-    assert_eq!(replayed_review.reviewed_at(), reviewed.reviewed_at());
+    let review_data = fixture.lifecycle_original(&reviewer, review_action, &review_key, &scope);
+    assert_eq!(review_data, original_review_data);
+    super::lifecycle_observation::assert_selected_original(
+        &fixture,
+        &reviewer,
+        &scope,
+        &review_data,
+    );
     assert_eq!(
         crate::test_host_policy::with_phase(fixture.runtime.application_runtime(), |phase| {
             fixture
@@ -305,45 +280,25 @@ fn lifecycle_replays_through_query_after_each_prior_transition() {
         panic!("the expired fresh approval must retain its authorization denial");
     };
     assert_eq!(denial.kind(), BankAuthorizationDenialKind::ElevationExpired);
-    let later_close = fixture.runtime.revoke_estate_emergency_access_with_key(
-        &approver,
-        late_close_approved,
-        close_action,
-        &close_key,
-        &scope,
+    // Full original data equality includes the Native artifact digest that seals
+    // the original timestamp values. No later clock or head becomes receipt truth.
+    assert_eq!(
+        fixture.lifecycle_original(&approver, close_action, &close_key, &scope),
+        close_data
     );
-    let BankEstateElevationCloseOutcome::AlreadyClosed(later_mandatory) = later_close.unwrap()
-    else {
-        panic!("exact close replay must survive the later review transition");
-    };
-    assert_eq!(later_mandatory.closed_at(), &first_closed_at);
-    assert_eq!(later_mandatory.closure_kind(), reviewed.closure_kind());
-    let later_review = fixture.runtime.complete_estate_mandatory_review_with_key(
-        &reviewer,
-        later_mandatory,
-        review_action,
-        &review_key,
-        &scope,
+    assert_eq!(
+        fixture.lifecycle_original(&reviewer, review_action, &review_key, &scope),
+        review_data
     );
-    let BankEstateMandatoryReviewOutcome::AlreadyReviewed(later_reviewed) = later_review.unwrap()
-    else {
-        panic!("exact review replay must survive commit-basis eviction");
-    };
-    assert_eq!(later_reviewed.reviewed_at(), reviewed.reviewed_at());
-    let later_approval = fixture.runtime.approve_estate_emergency_access_with_key(
-        &approver,
-        late_approval_request,
-        approve_action,
-        &approval_key,
-        &scope,
+    assert_eq!(
+        fixture.lifecycle_original(&approver, approve_action, &approval_key, &scope),
+        approval_data
     );
-    assert!(
-        matches!(
-            later_approval,
-            Ok(BankEstateElevationApprovalOutcome::AlreadyApproved(_))
-        ),
-        "exact approval replay must survive later close and review: {later_approval:?}"
+    assert_eq!(
+        fixture.lifecycle_original(&requester, request_action, &request_key, &scope),
+        request_data
     );
+    assert_eq!(reviewed.reviewed_at(), &first_reviewed_at);
     assert_eq!(
         crate::test_host_policy::with_phase(fixture.runtime.application_runtime(), |phase| {
             fixture

@@ -12,7 +12,12 @@
 
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 
+mod cleanup_dispatch;
 mod denial;
+enum OriginalDispatchObservation<'a> {
+    Starting,
+    Observed(&'a WorthQueryExternalEffectDispatch),
+}
 
 use std::sync::Arc;
 
@@ -170,6 +175,7 @@ where
                 transport.as_ref(),
                 committed,
                 admission.publication_request(),
+                |_| {},
             )
             .map_err(WorthQueryExternalDispatchPreparationDenial::redispatch_denial)?;
         Ok(WorthQueryPerformedExternalRedispatch::record(
@@ -216,6 +222,7 @@ where
             transport.as_ref(),
             committed,
             request,
+            |_| {},
         ) {
             Ok(dispatch) => WorthQueryApplicationCommitOutcome::Committed(
                 receipt.with_external_dispatch(dispatch),
@@ -234,6 +241,7 @@ where
         transport: &dyn WorthQueryExternalEffectTransport,
         committed: crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxObservation,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+        mut observe: impl FnMut(OriginalDispatchObservation<'_>),
     ) -> Result<WorthQueryExternalEffectDispatch, WorthQueryExternalDispatchPreparationDenial> {
         if committed.record().inbound().is_some()
             && self.has_retained_installed_transport_completion(committed.record().correlation())
@@ -269,12 +277,13 @@ where
             .primary_provider
             .begin_external_dispatch_in_flight(&completion_owner)
             .map_err(denial::from_in_flight)?;
-        let dispatch = dispatch_external_effect(transport, admitted).map_err(|denial| match denial {
+        let dispatch = dispatch_external_effect(transport, admitted, || observe(OriginalDispatchObservation::Starting)).map_err(|denial| match denial {
             crate::domain_computation::application_aftermath::WorthQueryAftermathDerivationFailure::RuntimeTimeUnavailable => {
                 WorthQueryExternalDispatchPreparationDenial::TimeObservationDenied
             }
             _ => WorthQueryExternalDispatchPreparationDenial::CanonicalDerivationDenied,
         })?;
+        observe(OriginalDispatchObservation::Observed(&dispatch));
         if completion_owner.record().inbound().is_some() && dispatch.is_external_completion() {
             let evidence =
                 InstalledTransportCompletion::from_observed_dispatch(completion_owner, &dispatch)

@@ -11,7 +11,10 @@ fn expired_grant_after_mint_denies_fresh_admission_not_foreign_principal() {
     world
         .transport
         .under(FaultScript::CommitThenLoseResponse, PATIENT);
-    let receipt = world.commit_notification(84);
+    let receipt_closed = world.commit_notification(84);
+    let receipt = receipt_closed
+        .live_receipt()
+        .expect("fresh source retains its full native owner");
     let handle = world.open_recovery(&receipt);
     let specialist = world.fixture.authenticate_specialist();
     let action = world.specialist_action();

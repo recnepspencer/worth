@@ -183,8 +183,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             WorthQueryApplicationIdempotencyResolution::ProductPreparationPending(pending) => {
                 Some(WorthQueryApplicationCommitOutcome::ProductPreparationPending(pending))
             }
-            WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(receipt) => Some(
-                WorthQueryApplicationCommitOutcome::AlreadyCommitted(receipt),
+            WorthQueryApplicationIdempotencyResolution::RecoveredCommitted(receipt) => Some(
+                WorthQueryApplicationCommitOutcome::RecoveredCommitted(receipt),
             ),
             WorthQueryApplicationIdempotencyResolution::IntentDrift
             | WorthQueryApplicationIdempotencyResolution::Unseen => None,

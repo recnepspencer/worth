@@ -2,7 +2,8 @@ pub(crate) use recovery::{AdmittedRecoveredCodecPublication, RecoveredCodecPubli
 mod associated_effects;
 mod authority_continuity;
 pub use associated_effects::{
-    ReadmittedRelationalAssociatedEffect, RelationalAssociatedEffectRefusal,
+    ObservedRelationalMemoryCommit, ReadmittedRelationalAssociatedEffect,
+    ReadmittedRelationalCreatedEntity, RelationalAssociatedEffectRefusal,
     RelationalAssociatedEffectSettlement, RelationalAssociatedEffectSubject,
 };
 mod checkpoint_capture;

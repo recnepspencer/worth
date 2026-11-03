@@ -44,74 +44,49 @@ where
     where
         Input: Clone + Send + Sync + 'static,
     {
-        let (admission, transition_locator, evidence_locator) = match self {
+        let (admission, evidence_locator) = match self {
             Self::Transition {
                 program,
-                transition_identity_locator,
                 assessment_identity_locator,
                 ..
-            } => (
-                &program.read_set.admission,
-                transition_identity_locator,
-                assessment_identity_locator,
-            ),
+            } => (&program.read_set.admission, assessment_identity_locator),
             Self::AwaitingAssessment(prepared) => (
                 &prepared.admitted.read_set().admission,
-                &prepared.layout.transition.identity,
                 &prepared.layout.assessment_evidence.identity,
             ),
             Self::AwaitingCondition(prepared) => (
                 &prepared.admitted.read_set().admission,
-                &prepared.layout.transition.identity,
                 &prepared.layout.assessment_evidence.identity,
             ),
             Self::AwaitingOperation(prepared) => (
                 &prepared.admitted.read_set().admission,
-                &prepared.layout.transition.identity,
                 &prepared.layout.assessment_evidence.identity,
             ),
             Self::ReplayOnly {
                 read_set,
-                transition_identity_locator,
                 assessment_identity_locator,
                 ..
-            } => (
-                &read_set.admission,
-                transition_identity_locator,
-                assessment_identity_locator,
-            ),
+            } => (&read_set.admission, assessment_identity_locator),
             Self::AwaitingEvidence {
                 read_set,
-                transition_identity_locator,
                 assessment_identity_locator,
                 ..
             }
             | Self::AwaitingProposal {
                 read_set,
-                transition_identity_locator,
                 assessment_identity_locator,
                 ..
-            } => (
-                &read_set.admission,
-                transition_identity_locator,
-                assessment_identity_locator,
-            ),
+            } => (&read_set.admission, assessment_identity_locator),
             Self::AwaitingApproval {
                 read_set,
-                transition_identity_locator,
                 assessment_identity_locator,
                 ..
-            } => (
-                &read_set.admission,
-                transition_identity_locator,
-                assessment_identity_locator,
-            ),
+            } => (&read_set.admission, assessment_identity_locator),
         };
         resolve_replay(
             execution,
             runtime,
             admission,
-            transition_locator,
             evidence_locator,
             required,
             settlement,
@@ -132,7 +107,6 @@ fn resolve_replay<Schema, Operation, Input, Scope, Query>(
         Input,
         Scope,
     >,
-    transition_locator: &worth_foundational::facade::AspectFieldLocator,
     evidence_locator: &worth_foundational::facade::AspectFieldLocator,
     required: &RequiredWorkflowAssessment,
     settlement: &WorthQueryOutputDemandSettlement,
@@ -180,25 +154,8 @@ where
                 super::super::super::WorthQueryApplicationCommitDenial::idempotency_intent_drift(),
             )),
         ),
-        WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(receipt) => Some(
-            runtime
-                .primary_provider
-                .graph
-                .with_runtime(execution, |relational| {
-                    super::super::publication::project(
-                        execution,
-                        relational,
-                        receipt,
-                        required.transition_identity().to_owned(),
-                        transition_locator.clone(),
-                        required.node_path().to_owned(),
-                        false,
-                        Some(assessment),
-                        None,
-                        None,
-                        true,
-                    )
-                }),
-        ),
+        WorthQueryApplicationIdempotencyResolution::RecoveredCommitted(receipt) => {
+            return Ok(Some(WorkflowProgressOutcome::RecoveredCommitted(receipt)))
+        }
     })
 }

@@ -35,6 +35,13 @@ fn final_clock_panic_keeps_owner_effects_without_product_movement() {
     let settlement = settled(execute_without_signal(execution, &owner, prepared));
     let successor = settlement.successor_basis().unwrap().clone();
     let ready = settlement.ready(successor).unwrap();
+    let ready = ready
+        .capture_memory_original(
+            &execution,
+            &owner.state.history,
+            &owner.state.relational.basis_port(),
+        )
+        .unwrap();
     let cell = owner.state.branches.root_cell().unwrap();
     assert!(
         std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| ready.publish_controlled(
@@ -94,6 +101,13 @@ fn cancellation_during_clock_check_prevents_product_movement() {
     let settlement = settled(execute_without_signal(execution, &owner, prepared));
     let successor = settlement.successor_basis().unwrap().clone();
     let ready = settlement.ready(successor).unwrap();
+    let ready = ready
+        .capture_memory_original(
+            &execution,
+            &owner.state.history,
+            &owner.state.relational.basis_port(),
+        )
+        .unwrap();
     let cell = owner.state.branches.root_cell().unwrap();
     let record = match ready.publish_controlled(
         &cell,

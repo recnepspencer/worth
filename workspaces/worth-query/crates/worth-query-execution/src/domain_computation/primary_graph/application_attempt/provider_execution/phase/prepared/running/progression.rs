@@ -20,9 +20,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) mod progre
 mod registered;
 mod session_admission;
 
-pub(in crate::domain_computation::primary_graph::application_attempt) use authorized::WorthQueryManagedEquivalentCommitReceiptPermit;
 pub(in crate::domain_computation::primary_graph::application_attempt) use commit_resolution::WorthQueryFreshCommitReceiptPermit;
-pub(in crate::domain_computation::primary_graph::application_attempt) use fresh::WorthQueryRegisteredEquivalentCommitReceiptPermit;
 use mutation_cleanup::WorthQueryApplicationMutationCleanupOwner;
 pub(in crate::domain_computation) use registered::{
     WorthQueryProviderAttemptRegistrationContext, WorthQueryRegisteredProviderAttempt,
@@ -30,6 +28,8 @@ pub(in crate::domain_computation) use registered::{
 
 pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) struct WorthQueryProgressedApplicationCommit
 {
+    original_completion:
+        crate::domain_computation::primary_graph::provider::OriginalCompletionReceiver,
     outcome: WorthQueryProviderProgressionOutcome,
     workflow_settlement_publication: Option<super::LocalWorkflowSettlementPublication>,
     lease: WorthQueryApplicationSnapshotLease,
@@ -74,8 +74,10 @@ impl WorthQueryProviderProgressionCompletion {
         running: crate::domain_computation::WorthQueryRunningDirectRun,
         workflow_settlement_publication: Option<super::LocalWorkflowSettlementPublication>,
         request: worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+        original_completion: crate::domain_computation::primary_graph::provider::OriginalCompletionReceiver,
     ) -> WorthQueryProgressedApplicationCommit {
         WorthQueryProgressedApplicationCommit {
+            original_completion,
             outcome: self.outcome,
             workflow_settlement_publication,
             lease,
@@ -111,6 +113,8 @@ struct WorthQueryApplicationCommitProgressionAuthority<
     idempotency: WorthQueryApplicationIdempotencyBinding,
     coordination: &'a WorthQueryApplicationBranchCommitCoordination<'provider>,
     product: &'a crate::basis::WorthQueryProductBranchLease,
+    original_completion:
+        &'a crate::domain_computation::primary_graph::provider::OriginalCompletionReceiver,
     aftermath_causality: Option<
         crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
     >,
@@ -190,9 +194,10 @@ where
         idempotency,
         mut running,
         mutation_run,
-        attempt_basis,
+        mut attempt_basis,
         aftermath_causality,
     } = running_commit;
+    let original_completion = attempt_basis.take_original_completion();
     progress_provider_application(
         execution,
         phase,
@@ -210,6 +215,7 @@ where
             aftermath_causality,
         },
         mutation_run,
+        &original_completion,
         allocation_policy,
     )
     .finish(
@@ -217,6 +223,7 @@ where
         running,
         workflow_settlement_publication,
         admission.publication_request().clone(),
+        original_completion,
     )
 }
 
@@ -225,6 +232,7 @@ fn progress_provider_application<Schema, Operation, Input, Scope>(
     phase: &WorthQueryAdvancementPhase<'_>,
     progression: WorthQueryProviderProgression<'_, Schema, Operation, Input, Scope>,
     mutation_run: crate::domain_computation::provider_session::WorthQueryMutationRunBinding,
+    original_completion: &crate::domain_computation::primary_graph::provider::OriginalCompletionReceiver,
     allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> WorthQueryProviderProgressionCompletion
 where
@@ -296,6 +304,7 @@ where
         idempotency,
         coordination: &coordination,
         product: &product,
+        original_completion,
         aftermath_causality,
     };
     registered_session.progress(execution, &authority, allocation_policy)

@@ -143,6 +143,13 @@ def attribute(event, declaration):
                               dependencies[dependency]['features'])
                              for dependency in row['dependency_units']) ==
                       sorted((name, features) for name, features in observed)}
+    if len(unique) > 1:
+        from compiler_fingerprint import FingerprintRefusal, resolve
+        try:
+            identity = resolve(event, unique.values(), declaration)
+            unique = {identity: unique[identity]}
+        except FingerprintRefusal:
+            pass  # Preserve the typed refusal and complete candidate inventory.
     if len(unique) != 1:
         raise CompilerUnitRefusal('artifact does not identify exactly one predeclared compiler unit: '
                                   + encoded({'package': event['package_id'], 'target': target,

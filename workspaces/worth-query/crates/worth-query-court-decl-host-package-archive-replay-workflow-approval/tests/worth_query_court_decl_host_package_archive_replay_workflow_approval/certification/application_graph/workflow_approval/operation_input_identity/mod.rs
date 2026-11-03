@@ -60,7 +60,7 @@ fn a_workflow_operation_encodes_its_input_once_whether_it_commits_or_replays() {
 
     SetRetentionInput::reset_encoding_count();
     let retry = perform();
-    let WorthQueryApplicationMutationOutcome::AlreadyCommitted(recovered) = retry else {
+    let WorthQueryApplicationMutationOutcome::RecoveredCommitted(recovered) = retry else {
         panic!("the unchanged retry replays: {retry:?}");
     };
     assert_eq!(
@@ -68,5 +68,5 @@ fn a_workflow_operation_encodes_its_input_once_whether_it_commits_or_replays() {
         1,
         "a retry encodes its input once too"
     );
-    assert_request_identity_work(recovered.canonical_work().admission(), 63, 276, 5);
+    crate::recorded_receipt::assert_agrees(&recovered, &receipt);
 }

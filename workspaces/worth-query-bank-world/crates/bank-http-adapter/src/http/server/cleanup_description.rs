@@ -1,6 +1,6 @@
 //! Descriptive diagnostics derive solely from the actual native physical receipt.
 pub(super) fn describe(
-    receipt: &worth_query_host::facade::runtime::WorthQueryDirectRunCleanupReceipt,
+    receipt: &worth_query_host::facade::primary_graph::WorthQueryApplicationManagedCleanupReceipt,
 ) -> super::super::protocol::BankHttpNativeCleanupDescription {
     let inspection = receipt.inspection();
     super::super::protocol::BankHttpNativeCleanupDescription {

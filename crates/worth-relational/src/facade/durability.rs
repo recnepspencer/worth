@@ -1,5 +1,6 @@
 pub use crate::durability::authority::{
-    FreshRelationalSourceAdmission, ReadmittedRelationalAssociatedEffect,
+    FreshRelationalSourceAdmission, ObservedRelationalMemoryCommit,
+    ReadmittedRelationalAssociatedEffect, ReadmittedRelationalCreatedEntity,
     RefusedRelationalRecordedComponent, RelationalAssociatedEffectRefusal,
     RelationalAssociatedEffectSettlement, RelationalAssociatedEffectSubject,
     RelationalFreshSourceAdmissionStop, RelationalRecordedComponentAdmissionCause,

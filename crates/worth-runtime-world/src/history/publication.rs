@@ -4,7 +4,10 @@
 mod delivery;
 mod retirement;
 pub(crate) use retirement::PublicationFactsRetirement;
+pub(super) mod memory_observation;
+pub(crate) use memory_observation::MemoryPublicationRecord;
 mod readmission;
+pub use memory_observation::WorldObservedMemoryPublication;
 pub(crate) use readmission::{PublicationEvidence, ReadmittedPublicationRecord};
 pub use readmission::{WorldReadmittedPublication, WorldReadmittedPublicationDenial};
 
@@ -58,6 +61,7 @@ pub(crate) struct CanonicalPublicationEnvelope {
     expected: ProductBranchReferenceSnapshot,
     facts: OnceLock<PerformedPublicationFacts>,
     committed: AtomicBool,
+    memory_original: OnceLock<crate::history::MemoryOriginalRegistration>,
     delivery: AtomicU8,
     successor_observation: Mutex<Option<crate::branch::ProductBranchObservation>>,
     revision: Arc<PublicationRevision>,
@@ -95,6 +99,7 @@ impl CanonicalPublicationEnvelope {
             expected,
             facts: OnceLock::new(),
             committed: AtomicBool::new(false),
+            memory_original: OnceLock::new(),
             delivery: AtomicU8::new(delivery::AVAILABLE),
             successor_observation: Mutex::new(None),
             revision,
@@ -122,6 +127,18 @@ impl CanonicalPublicationEnvelope {
             late_cancellation,
             cost_counters,
         }
+    }
+
+    pub(crate) fn install_memory_original(
+        &self,
+        registration: crate::history::MemoryOriginalRegistration,
+    ) {
+        self.memory_original
+            .set(registration)
+            .expect("one canonical envelope owns its original record");
+    }
+    pub(crate) fn has_memory_original(&self) -> bool {
+        self.memory_original.get().is_some()
     }
 
     pub(crate) fn commit_identity(&self) -> &CompositeCommitIdentity {
@@ -233,6 +250,9 @@ impl StagedPublicationRecord {
             self.facts.late_cancellation =
                 CompositeLateCancellationPosture::RequestedAfterProductMovement;
             self.facts.cost_counters.record_cancellation_observation();
+        }
+        if let Some(original) = self.envelope.memory_original.get() {
+            original.mark_committed(&self.facts.movement);
         }
         self.envelope
             .facts

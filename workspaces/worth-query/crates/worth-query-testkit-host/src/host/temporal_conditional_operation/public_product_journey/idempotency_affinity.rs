@@ -23,12 +23,31 @@ pub fn shared_component_sibling_cannot_claim_another_product_commit() {
         .require_committed()
         .expect("the source mutation must commit");
     let same_product = world.retry_input_change_on_branch(source_identity, "source-committed");
-    let primary_graph::WorthQueryApplicationCommitOutcome::AlreadyCommitted(recovered) =
+    let primary_graph::WorthQueryApplicationCommitOutcome::RecoveredCommitted(recovered) =
         same_product
     else {
         panic!("the same product occurrence must retain idempotent recovery: {same_product:?}")
     };
-    assert!(recovered.is_same_authoritative_commit(&original));
+    assert_eq!(recovered.commit_reference(), original.commit_reference());
+    assert_eq!(
+        Some(recovered.outcome_identity()),
+        original.outcome_identity()
+    );
+    assert_eq!(
+        recovered.exact_output_settlement(),
+        original.recorded_output_settlement()
+    );
+    assert_eq!(
+        recovered
+            .new_product_head()
+            .memory()
+            .unwrap()
+            .selected_commit(),
+        original
+            .committed_product_publication()
+            .composite_commit()
+            .ordinal()
+    );
 
     let committed_source = world
         .application
@@ -72,7 +91,7 @@ pub fn shared_component_sibling_cannot_claim_another_product_commit() {
     );
     assert_eq!(
         denial.kind(),
-        primary_graph::WorthQueryApplicationCommitDenialKind::IdempotencyIntentDrift,
+        primary_graph::WorthQueryApplicationCommitDenialKind::IdempotencyForeignAffinity,
     );
 }
 

@@ -23,7 +23,10 @@ pub fn protected_foreign_status(fixture: &FreezeFixture) -> AccountStatus {
         .status()
 }
 
-pub fn commit_freeze(fixture: &FreezeFixture, key: u8) -> bank_server::BankCommitReceipt {
+pub fn commit_freeze(
+    fixture: &FreezeFixture,
+    key: u8,
+) -> bank_server::BankClosedSourceCompletion<bank_domain::schema::EstateMutationResult> {
     let specialist = fixture.authenticate_specialist();
     {
         let source_actor = &specialist;
@@ -58,6 +61,6 @@ pub fn commit_freeze(fixture: &FreezeFixture, key: u8) -> bank_server::BankCommi
         let closed_source = source_completed
             .close_with_evidence(&source_request)
             .unwrap_or_else(|(_, cause)| panic!("lawful native source close: {cause:?}"));
-        bank_server::BankCommitReceipt::from_closed_source(closed_source)
+        bank_server::BankClosedSourceCompletion::from_query(closed_source)
     }
 }

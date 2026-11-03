@@ -5,6 +5,7 @@ mod denial;
 mod disburse_estate;
 mod elevation_lifecycle;
 pub(crate) mod freeze_account;
+mod idempotency_observation;
 mod lifecycle_facts;
 pub(crate) mod notify_death;
 pub(crate) mod open_estate_case;

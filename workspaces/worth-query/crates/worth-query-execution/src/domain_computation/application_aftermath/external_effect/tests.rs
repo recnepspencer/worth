@@ -27,6 +27,7 @@ fn completed_dispatch_has_four_distinct_exact_predecessors() {
     let dispatch = dispatch::dispatch_external_effect(
         &FixedTransport(WorthQueryExternalTransportOutcome::Completed),
         admitted_from_fresh_runtime(7),
+        || {},
     )
     .unwrap();
     let ladder = dispatch.causal_ladder();
@@ -79,6 +80,7 @@ fn transport_faults_never_fabricate_owner_observation_or_completion() {
         let dispatch = dispatch::dispatch_external_effect(
             &FixedTransport(outcome),
             admitted_from_fresh_runtime(index as u64 + 9),
+            || {},
         )
         .unwrap();
         assert!(!dispatch.is_external_completion());
@@ -104,6 +106,7 @@ fn unsupported_protocol_version_preserves_exact_external_owner_causality() {
             WorthQueryExternalTransportOutcome::UnsupportedProtocolVersion(unsupported),
         ),
         admitted_from_fresh_runtime(10),
+        || {},
     )
     .unwrap();
 
@@ -127,11 +130,13 @@ fn distinct_attempt_ordinals_produce_distinct_attempt_identities() {
     let first = dispatch::dispatch_external_effect(
         &FixedTransport(WorthQueryExternalTransportOutcome::LostResponse),
         first_admitted,
+        || {},
     )
     .unwrap();
     let second = dispatch::dispatch_external_effect(
         &FixedTransport(WorthQueryExternalTransportOutcome::Completed),
         second_admitted,
+        || {},
     )
     .unwrap();
     assert_eq!(
@@ -160,11 +165,13 @@ fn equal_attempt_ordinals_in_distinct_query_runtimes_cannot_collide() {
     let first = dispatch::dispatch_external_effect(
         &FixedTransport(WorthQueryExternalTransportOutcome::LostResponse),
         first_admitted,
+        || {},
     )
     .unwrap();
     let second = dispatch::dispatch_external_effect(
         &FixedTransport(WorthQueryExternalTransportOutcome::LostResponse),
         second_admitted,
+        || {},
     )
     .unwrap();
 
@@ -186,11 +193,13 @@ fn identical_values_at_distinct_record_identities_have_distinct_causal_roots() {
     let first = dispatch::dispatch_external_effect(
         &FixedTransport(WorthQueryExternalTransportOutcome::LostResponse),
         first_admitted,
+        || {},
     )
     .unwrap();
     let second = dispatch::dispatch_external_effect(
         &FixedTransport(WorthQueryExternalTransportOutcome::LostResponse),
         second_admitted,
+        || {},
     )
     .unwrap();
 

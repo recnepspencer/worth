@@ -62,7 +62,7 @@ fn equivalent_retry_recovers_original_receipt_while_intent_drift_is_denied() {
             admitted_program(&phase, &world, &principal, &account, &request, "committed")
         })
         .expect("the fixture read owns its installed host call");
-    let WorthQueryApplicationCommitOutcome::AlreadyCommitted(mut recovered) =
+    let WorthQueryApplicationCommitOutcome::RecoveredCommitted(mut recovered) =
         world.application.compare_and_commit_application(
             retry,
             idempotency(9, 7),
@@ -71,19 +71,16 @@ fn equivalent_retry_recovers_original_receipt_while_intent_drift_is_denied() {
     else {
         panic!("an equivalent retry must recover the original commit");
     };
-    assert!(recovered.is_same_authoritative_commit(&original));
+    crate::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_original(
+        &recovered, &original,
+    );
     assert_eq!(
         original.terminal().kind(),
         WorthQueryApplicationCommitTerminalKind::Executed
     );
-    assert_eq!(
-        recovered.terminal().kind(),
-        WorthQueryApplicationCommitTerminalKind::Recovered
-    );
-    assert_eq!(recovered.terminal().attempt_resources_released(), None);
-    assert!(recovered
-        .take_performed_relational_product_change()
-        .is_none());
+    assert!(recovered.new_product_head().memory().is_some());
+    assert!(recovered.world_journal_position().is_none());
+    // D9: absence of this method is now a compile-fail constructor/authority fence.
     let first_root = world
         .application
         .granular_invalidation_installation()

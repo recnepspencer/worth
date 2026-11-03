@@ -1,4 +1,5 @@
 # Law 1, reach: exact test targets, test-only mounted sources, fixtures and certification sources.
+crates/worth-execution/ workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/process/host/durable_retry/request_stops.rs
 workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/native_components/index_catalog.rs
 workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/query_readmission/bootstrap_publication.rs
 workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/journal_absence.rs
@@ -572,3 +573,13 @@ crates/worth-relational/ workspaces/worth-query/crates/worth-query-execution/src
 
 # The relocated coupled checkpoint court observes its actual issued operation.
 workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/interrupted_close/checkpoint.rs
+# Actual Native-effect/World-compare seam; no outcome injection.
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/process/host/durable_retry/fate_reopening.rs
+crates/worth-runtime-world/ workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/process/host/durable_retry/fate_reopening.rs
+
+# Concurrent retry courts inspect actual installed history to distinguish one commit from repeated sets.
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/process/host/durable_retry/mod.rs
+workspaces/worth-query/crates/worth-query-execution/ crates/worth-court-server-certification-suite/tests/worth_court_server_certification_suite/process/durable_query_retry/mod.rs
+
+# Actual cleanup scheduling for the closed HTTP original-custody journey.
+workspaces/worth-query-bank-world/crates/bank-server/ workspaces/worth-query-bank-world/crates/bank-http-adapter/src/http/server/tests/closed_mutation_handoff/retained_effect.rs

@@ -54,7 +54,7 @@ fn older_approval_replays_after_the_same_node_settles_again() {
         {
             WorkflowProgressOutcome::Completed(performed) => {
                 assert!(!performed.replayed());
-                performed.transition()
+                (performed.transition(), performed.receipt().clone())
             }
             other => panic!("expected rejection, got {other:?}"),
         };
@@ -67,7 +67,7 @@ fn older_approval_replays_after_the_same_node_settles_again() {
             first = Some((required, transition));
         }
     }
-    let (required, transition) = first.unwrap();
+    let (required, (transition, original_receipt)) = first.unwrap();
     for cold in [false, true] {
         if cold {
             application
@@ -84,9 +84,14 @@ fn older_approval_replays_after_the_same_node_settles_again() {
         )
         .expect("older retry prepares")
         {
-            WorkflowProgressOutcome::Completed(performed) => {
-                assert!(performed.replayed());
-                assert_eq!(performed.transition(), transition);
+            WorkflowProgressOutcome::RecoveredCommitted(data) => {
+                crate::recorded_receipt::assert_agrees(&data, &original_receipt);
+                assert!(data
+                    .semantic_result()
+                    .semantic()
+                    .created_entities()
+                    .iter()
+                    .any(|entry| entry.assigned == transition));
             }
             other => panic!("expected original rejection replay, got {other:?}"),
         }
@@ -133,7 +138,11 @@ fn exact_approval_persists_replays_and_binds_decision_and_instance() {
                     principal.generation(),
                 )
             );
-            (approval.entity(), approval.identity().to_owned())
+            (
+                approval.entity(),
+                approval.identity().to_owned(),
+                performed.receipt().clone(),
+            )
         }
         other => panic!("expected a performed workflow approval, got {other:?}"),
     };
@@ -160,30 +169,15 @@ fn exact_approval_persists_replays_and_binds_decision_and_instance() {
     )
     .expect("the exact approval retry must prepare")
     {
-        WorkflowProgressOutcome::Completed(performed) => {
-            assert!(performed.replayed());
-            let approval = performed
-                .approval()
-                .expect("approval replay must reconstruct the durable approval fact");
-            let (entity, identity) = &committed_approval;
-            let mut actual_evidence = approval.evidence().to_vec();
-            actual_evidence.sort_unstable();
-            assert_eq!(approval.entity(), *entity);
-            assert_eq!(approval.identity(), identity);
-            assert_eq!(approval.decision(), WorkflowApprovalDecision::Approve);
-            assert_eq!(approval.proposal(), proposal.entity_id());
-            assert_eq!(actual_evidence, expected_evidence);
-            let principal = performed.receipt().principal_scope().principal();
-            assert_eq!(
-                approval.approver(),
-                worth_relational::facade::identity::EntityId::new(
-                    worth_relational::facade::identity::PartitionId::new(principal.partition_id()),
-                    principal.local_slot(),
-                    principal.generation(),
-                )
-            );
-            assert_eq!(approval.purpose(), "String(Raw(\"reviewed-document\"))");
-            assert_eq!(approval.expiry(), u64::MAX);
+        WorkflowProgressOutcome::RecoveredCommitted(data) => {
+            let (entity, _identity, original_receipt) = &committed_approval;
+            crate::recorded_receipt::assert_agrees(&data, original_receipt);
+            assert!(data
+                .semantic_result()
+                .semantic()
+                .created_entities()
+                .iter()
+                .any(|entry| entry.assigned == *entity));
         }
         other => panic!("expected a replayed workflow approval, got {other:?}"),
     }

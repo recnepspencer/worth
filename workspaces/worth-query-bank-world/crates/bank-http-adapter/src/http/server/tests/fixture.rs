@@ -168,11 +168,15 @@ pub(super) fn application_with_authorization_time(
     account: AccountId,
     source: impl WorthQueryRuntimeTimeSource,
 ) -> CausalHttpApplication {
-    let runtime = BankIdentityRuntime::install_world_with_authorization_time_source(
-        world_seed(account),
-        source,
-    )
-    .expect("bank HTTP runtime should install with authorization time");
+    application_from_timed_seed(world_seed(account), source)
+}
+
+fn application_from_timed_seed(
+    seed: BankWorldSeed,
+    source: impl WorthQueryRuntimeTimeSource,
+) -> CausalHttpApplication {
+    let runtime = BankIdentityRuntime::install_world_with_authorization_time_source(seed, source)
+        .expect("bank HTTP runtime should install with authorization time");
     application_from_runtime(runtime)
 }
 
@@ -373,3 +377,5 @@ fn audience() -> WorthQueryAuthenticationAudience {
 fn method() -> WorthQueryAuthenticationMethod {
     WorthQueryAuthenticationMethod::new(TEST_METHOD).unwrap()
 }
+
+pub(super) mod expiring_notification;

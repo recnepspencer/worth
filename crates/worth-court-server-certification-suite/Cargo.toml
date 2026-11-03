@@ -8,6 +8,7 @@
 "license" = { "workspace" = true }
 
 [dependencies]
+"worth-query-testkit-host" = { "path" = "../../workspaces/worth-query/crates/worth-query-testkit-host" }
 "worth-testkit-compiler" = { "path" = "../worth-testkit-compiler" }
 "flate2" = { "version" = "^1" }
 "serde" = { "version" = "^1", "features" = ["derive", "rc"] }

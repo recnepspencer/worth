@@ -28,8 +28,7 @@ pub fn public_consumer_compiles_one_move_only_lifecycle(
         },
     )?;
     match outcome {
-        EstateLifecycleProgressionOutcome::Reviewed(receipt)
-        | EstateLifecycleProgressionOutcome::AlreadyReviewed(receipt) => {
+        EstateLifecycleProgressionOutcome::Reviewed(receipt) => {
             let _ = receipt;
         }
         EstateLifecycleProgressionOutcome::RequestStopped(outcome) => {

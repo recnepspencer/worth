@@ -59,11 +59,12 @@ impl RelationalRuntime {
                 if positioned.commit.commit_id != commit_id
                     || positioned.commit.version_id.0 != target.version_id()
                     || basis.inner.root.descriptor() != Some(target.roots())
-                    || !Artifact::matches_positioned_payload(&positioned, envelope).map_err(
-                        |error| Refusal::PayloadEncoding {
-                            detail: error.to_string(),
-                        },
-                    )?
+                    || !Artifact::matches_positioned_payload_for_request(
+                        &positioned,
+                        envelope,
+                        execution,
+                    )
+                    .map_err(Refusal::Source)?
                 {
                     return Err(Refusal::CanonicalMismatch { commit_id });
                 }
@@ -78,11 +79,12 @@ impl RelationalRuntime {
                         }
                         entry.payload_digest
                     }
-                    None => Artifact::positioned_payload_digest(&positioned).map_err(|error| {
-                        Refusal::PayloadEncoding {
-                            detail: error.to_string(),
-                        }
-                    })?,
+                    None => Artifact::envelope_payload_digest_for_request(
+                        positioned.position(),
+                        positioned.envelope(),
+                        execution,
+                    )
+                    .map_err(Refusal::Source)?,
                 };
                 Some(copying::CanonicalDescription {
                     receipt: &envelope.commit,

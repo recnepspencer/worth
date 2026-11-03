@@ -79,6 +79,35 @@ pub enum WorthQuerySourceCompletion<Result> {
             worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial,
         >,
     },
+    Recorded {
+        retained: Option<WorthQueryApplicationReadObservation>,
+        receipt: worth_query_execution::facade::primary_graph::WorthQueryRecoveredApplicationCommitReceipt,
+        publication: Option<WorthQueryManagedApplicationRecoveryPerformed>,
+        initial_posture: Option<WorthQueryApplicationUncommitted>,
+        initial_advancement_failure: Option<
+            worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial,
+        >,
+    },
+}
+
+impl<Result> WorthQuerySourceCompletion<Result> {
+    /// Only already owned live evidence can supply its original capability.
+    pub fn live_receipt(&self) -> Option<&WorthQueryApplicationCommitReceipt> {
+        match self {
+            Self::Fresh { receipt, .. } | Self::Recovered { receipt, .. } => Some(receipt),
+            Self::Recorded { .. } => None,
+        }
+    }
+    pub fn recorded_receipt(
+        &self,
+    ) -> Option<
+        &worth_query_execution::facade::primary_graph::WorthQueryRecoveredApplicationCommitReceipt,
+    > {
+        match self {
+            Self::Recorded { receipt, .. } => Some(receipt),
+            Self::Fresh { .. } | Self::Recovered { .. } => None,
+        }
+    }
 }
 
 /// Native progress returns custody, completion owns close, and terminal custody cannot advance.

@@ -62,15 +62,25 @@ async fn elevation_request_replays_from_query_after_http_registry_restarts() {
     );
 
     let replayed = post_request(&client, &resumed_origin, "replay", "prevent_immediate_loss").await;
-    assert!(matches!(
-        replayed,
-        BankHttpElevationRequestOutcome::Requested {
-            disposition: BankHttpCommitDisposition::AlreadyCommitted,
-            changed_record_count,
-            emitted_effect_count,
-            ..
-        } if (changed_record_count, emitted_effect_count) == (first_changes, first_emissions)
-    ));
+    let recorded = match replayed {
+        BankHttpElevationRequestOutcome::Recorded { commit, .. } => commit,
+        other => panic!("retry returns recorded original meaning: {other:?}"),
+    };
+    assert_eq!(
+        (recorded.changed_record_count, recorded.emitted_effect_count),
+        (first_changes, first_emissions)
+    );
+    let late = post_request(
+        &client,
+        &resumed_origin,
+        "late-replay",
+        "prevent_immediate_loss",
+    )
+    .await;
+    let BankHttpElevationRequestOutcome::Recorded { commit: late, .. } = late else {
+        panic!("late replay stays recorded")
+    };
+    assert_eq!(late, recorded);
     let registry_drift = post_request(
         &client,
         &resumed_origin,

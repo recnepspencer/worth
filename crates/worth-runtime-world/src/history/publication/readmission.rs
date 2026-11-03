@@ -15,7 +15,22 @@ pub(crate) struct ReadmittedPublicationRecord {
     pub(crate) attempt: CompositePublicationAttemptIdentity,
     pub(crate) location: crate::durability::AdmittedWorldOccurrenceLocation,
     pub(crate) incarnation: worth_foundational::facade::HomeIncarnation,
-    native: RelationalRecoveredPublicationCustody,
+    native: NativePublicationMeaning,
+}
+#[derive(Debug)]
+enum NativePublicationMeaning {
+    Recovered(RelationalRecoveredPublicationCustody),
+    Source(worth_relational::facade::durability::ReadmittedRelationalAssociatedEffect),
+}
+impl NativePublicationMeaning {
+    fn effect(
+        &self,
+    ) -> &worth_relational::facade::durability::ReadmittedRelationalAssociatedEffect {
+        match self {
+            Self::Recovered(custody) => custody.effect(),
+            Self::Source(effect) => effect,
+        }
+    }
 }
 impl ReadmittedPublicationRecord {
     pub(crate) fn new(
@@ -32,7 +47,23 @@ impl ReadmittedPublicationRecord {
             attempt,
             location,
             incarnation,
-            native: native.consume(|native| native),
+            native: NativePublicationMeaning::Recovered(native.consume(|native| native)),
+        })
+    }
+    pub(crate) fn from_source(
+        before: ProductBranchReferenceSnapshot,
+        after: ProductBranchReferenceSnapshot,
+        attempt: CompositePublicationAttemptIdentity,
+        occurrence: &crate::durability::AdmittedWorldOccurrence,
+        native: worth_relational::facade::durability::ReadmittedRelationalAssociatedEffect,
+    ) -> Arc<Self> {
+        Arc::new(Self {
+            before,
+            after,
+            attempt,
+            location: occurrence.location().clone(),
+            incarnation: occurrence.publishing_incarnation(),
+            native: NativePublicationMeaning::Source(native),
         })
     }
     pub(crate) fn semantic(&self) -> &RelationalCommitSemanticResult {
@@ -64,10 +95,13 @@ impl PublicationEvidence {
 
 #[derive(Debug)]
 pub enum WorldReadmittedPublicationDenial {
+    Request(worth_execution::WorkCeilingDenial),
     ForeignHome,
     OwnerUnavailable,
     History(crate::history::CompositeHistoryCatalogDenial),
     NotReadmitted,
+    Source(Box<crate::durability::WorldReadmissionDenial>),
+    NativeMismatch,
 }
 /// An owning read of original recovered meaning. Its exact history protection
 /// and catalog keep the SAME record and Native leases alive across head moves.
@@ -97,6 +131,19 @@ pub struct WorldReadmittedPublication {
     pub(crate) _catalog: crate::history::CompositeHistoryCatalog,
 }
 impl WorldReadmittedPublication {
+    pub fn created_entity(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        entity: worth_relational::facade::identity::EntityId,
+    ) -> Result<
+        Option<worth_relational::facade::durability::ReadmittedRelationalCreatedEntity<'_>>,
+        worth_relational::facade::durability::RelationalAssociatedEffectRefusal,
+    > {
+        self.record
+            .native
+            .effect()
+            .created_entity(execution, entity)
+    }
     pub fn before(&self) -> &ProductBranchReferenceSnapshot {
         &self.record.before
     }
@@ -128,5 +175,10 @@ impl WorldReadmittedPublication {
     }
     pub fn admitted_incarnation(&self) -> worth_foundational::facade::HomeIncarnation {
         self.record.incarnation
+    }
+    pub fn recovered_semantic_result(
+        &self,
+    ) -> &worth_relational::facade::durability::RecoveredRelationalSemanticResult {
+        self.record.native.effect().recovered_semantic_result()
     }
 }

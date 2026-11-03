@@ -86,7 +86,7 @@ fn owner_acceptance_and_recovery_doors_open_before_their_first_reader() {
             "workflow-request-opening",
             FaultScript::CommitThenLoseResponse,
         );
-        ready
+        let performed = ready
             .perform()
             .into_performed()
             .expect("the real rail holds this committed payment");
@@ -122,7 +122,7 @@ fn owner_acceptance_and_recovery_doors_open_before_their_first_reader() {
         zero_work();
         let before = reads();
         let denied = prepared
-            .accept_operation_from_owner(&ready.operation, mutation)
+            .accept_operation_from_owner(&ready.operation, performed.native_receipt(), mutation)
             .unwrap_err();
         let Acceptance::Opening(denial) = denied else {
             panic!("opening cause: {denied:?}")
@@ -134,7 +134,11 @@ fn owner_acceptance_and_recovery_doors_open_before_their_first_reader() {
         reports();
         let before = reads();
         assert!(matches!(
-            prepared.accept_operation_from_owner(&ready.operation, mutation),
+            prepared.accept_operation_from_owner(
+                &ready.operation,
+                performed.native_receipt(),
+                mutation
+            ),
             Err(Acceptance::Owner(Posture::DispatchPending))
         ));
         admitted(before);
@@ -145,7 +149,10 @@ fn owner_acceptance_and_recovery_doors_open_before_their_first_reader() {
         let before = reads();
         let denied = mutation
             .advanced()
-            .prepare_workflow_operation_recovery_from_owner(&ready.operation)
+            .prepare_workflow_operation_recovery_from_owner(
+                &ready.operation,
+                performed.native_receipt(),
+            )
             .err()
             .unwrap();
         let Preparation::Opening(denial) = denied else {
@@ -157,7 +164,10 @@ fn owner_acceptance_and_recovery_doors_open_before_their_first_reader() {
         let before = reads();
         let prepared = mutation
             .advanced()
-            .prepare_workflow_operation_recovery_from_owner(&ready.operation)
+            .prepare_workflow_operation_recovery_from_owner(
+                &ready.operation,
+                performed.native_receipt(),
+            )
             .expect("the genuine unresolved outbox admits recovery");
         admitted(before);
         ready
@@ -175,7 +185,12 @@ fn owner_acceptance_and_recovery_doors_open_before_their_first_reader() {
         zero_work();
         let before = reads();
         let denied = prepared
-            .accept_recovered_operation_from_owner(&ready.operation, mutation, &recovery)
+            .accept_recovered_operation_from_owner(
+                &ready.operation,
+                performed.native_receipt(),
+                mutation,
+                &recovery,
+            )
             .unwrap_err();
         let Acceptance::Opening(denial) = denied else {
             panic!("opening cause: {denied:?}")
@@ -185,8 +200,12 @@ fn owner_acceptance_and_recovery_doors_open_before_their_first_reader() {
         let mutation = operation();
         reports();
         let before = reads();
-        let outcome =
-            prepared.accept_recovered_operation_from_owner(&ready.operation, mutation, &recovery);
+        let outcome = prepared.accept_recovered_operation_from_owner(
+            &ready.operation,
+            performed.native_receipt(),
+            mutation,
+            &recovery,
+        );
         assert!(
             matches!(outcome, Err(Acceptance::Acceptance(CustodyAcceptance::Attempt(ref denial)))
             if denial.kind() == AttemptKind::WorkflowTransitionAffinityMismatch),

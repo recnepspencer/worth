@@ -11,7 +11,7 @@ fn public_query_progression_freezes_the_exact_estate_account() {
     let fixture = exact_freeze_world("estate-freeze-commit", AccountStatus::Open);
     let specialist = fixture.authenticate_specialist();
     let key = BankIdempotencyKey::new("freeze-estate-account-program-entry").unwrap();
-    let outcome = {
+    let outcome_closed = {
         let source_actor = &specialist;
         let source_scope = &request_scope();
         let source_key = &key;
@@ -44,8 +44,11 @@ fn public_query_progression_freezes_the_exact_estate_account() {
         let closed_source = source_completed
             .close_with_evidence(&source_request)
             .unwrap_or_else(|(_, cause)| panic!("lawful native source close: {cause:?}"));
-        bank_server::BankCommitReceipt::from_closed_source(closed_source)
+        bank_server::BankClosedSourceCompletion::from_query(closed_source)
     };
+    let outcome = outcome_closed
+        .live_receipt()
+        .expect("fresh completion retains its actual live receipt");
 
     let receipt = outcome;
     assert_eq!(receipt.changed_record_count(), 2);
@@ -83,21 +86,20 @@ fn public_query_progression_freezes_the_exact_estate_account() {
         };
         assert!(matches!(
             source_completed.evidence(),
-            worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Recovered { .. }
+            worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Recorded { .. }
         ));
         let closed_source = source_completed
             .close_with_evidence(&source_request)
             .unwrap_or_else(|(_, cause)| panic!("lawful native source close: {cause:?}"));
-        bank_server::BankCommitReceipt::from_closed_source(closed_source)
+        bank_server::BankClosedSourceCompletion::from_query(closed_source)
     };
     let recovered = retry;
-    assert_eq!(receipt.aftermath(), recovered.aftermath());
-    assert!(recovered.retained_preimage());
-    assert!(
-        recovered.performed_preimage_retention_work(),
-        "the installed recorded inverse must pay its explicit retention work"
-    );
-    assert_freeze_canonical_work(recovered.canonical_work());
+    worth_query_bank_testkit_server::facade::estate_operations::external_effect_dispatch::publication_assertions::assert_recovered_commit_axes(&outcome_closed, &recovered);
+    // D9's original data has no live retention-work counter. The original
+    // performed source above still proves its declared inverse and paid work.
+    assert!(receipt.retained_preimage());
+    assert!(receipt.performed_preimage_retention_work());
+    assert_freeze_canonical_work(receipt.canonical_work());
     assert_eq!(estate_account_status(&fixture), AccountStatus::Frozen);
 
     let _drift = {
@@ -154,7 +156,7 @@ fn estate_preview_keeps_its_exact_account_status_after_a_freeze_commit() {
         .expect("preview must read the selected open account");
     assert_eq!(before.rows()[0].account().status(), AccountStatus::Open);
 
-    let committed = {
+    let committed_closed = {
         let source_actor = &specialist;
         let source_scope = &request_scope();
         let source_key = &idempotency(230);
@@ -187,8 +189,11 @@ fn estate_preview_keeps_its_exact_account_status_after_a_freeze_commit() {
         let closed_source = source_completed
             .close_with_evidence(&source_request)
             .unwrap_or_else(|(_, cause)| panic!("lawful native source close: {cause:?}"));
-        bank_server::BankCommitReceipt::from_closed_source(closed_source)
+        bank_server::BankClosedSourceCompletion::from_query(closed_source)
     };
+    let committed = committed_closed
+        .live_receipt()
+        .expect("fresh completion retains its actual live receipt");
     assert!(committed.changed_record_count() > 0);
     assert_eq!(estate_account_status(&fixture), AccountStatus::Frozen);
 

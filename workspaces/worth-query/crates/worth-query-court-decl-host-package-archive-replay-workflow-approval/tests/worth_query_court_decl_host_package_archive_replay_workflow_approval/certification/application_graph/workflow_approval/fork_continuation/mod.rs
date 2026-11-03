@@ -38,13 +38,13 @@ fn a_fork_continues_a_waiting_instance_only_as_a_new_admitted_instance() {
         "propose",
         88_012,
     ));
-    assert!(!successor.replayed());
+    let original_receipt = successor.receipt().clone();
     let successor = successor.instance().clone();
     assert_eq!(successor.branch(), fork);
     assert_ne!(successor.entity_id(), instance.entity_id());
     assert_eq!(successor.definition_entity_id(), definition.entity_id());
     assert_eq!(successor.start_node_path(), "propose");
-    let replay = started(continue_on_fork(
+    let replay = crate::recorded_receipt::started(continue_on_fork(
         &application,
         fork,
         instance.clone(),
@@ -52,8 +52,13 @@ fn a_fork_continues_a_waiting_instance_only_as_a_new_admitted_instance() {
         "propose",
         88_012,
     ));
-    assert!(replay.replayed());
-    assert_eq!(replay.instance(), &successor);
+    crate::recorded_receipt::assert_agrees(&replay, &original_receipt);
+    assert!(replay
+        .semantic_result()
+        .semantic()
+        .created_entities()
+        .iter()
+        .any(|entry| entry.assigned == successor.entity_id()));
     assert_eq!(
         migration_denial(continue_on_fork(
             &application,
@@ -69,22 +74,34 @@ fn a_fork_continues_a_waiting_instance_only_as_a_new_admitted_instance() {
 
     let (fork_proposal, fork_required, _) =
         approval_requirement(&application, successor.clone(), 88_020);
-    for (replay, attempt) in [(false, "decides"), (true, "replays")] {
-        match approve_instance(
-            &application,
-            successor.clone(),
-            &fork_required,
-            &fork_proposal,
-            WorkflowApprovalDecision::Approve,
-            88_030,
-        ) {
-            Ok(WorkflowProgressOutcome::Completed(performed)) => assert_eq!(
-                performed.replayed(),
-                replay,
-                "the successor {attempt} its decision against the fork's root",
-            ),
-            other => panic!("the successor {attempt} its own decision on the fork: {other:?}"),
+    let decision = match approve_instance(
+        &application,
+        successor.clone(),
+        &fork_required,
+        &fork_proposal,
+        WorkflowApprovalDecision::Approve,
+        88_030,
+    )
+    .unwrap()
+    {
+        WorkflowProgressOutcome::Completed(performed) => performed,
+        other => panic!("the successor decides against the fork's own root: {other:?}"),
+    };
+    assert!(!decision.replayed());
+    match approve_instance(
+        &application,
+        successor.clone(),
+        &fork_required,
+        &fork_proposal,
+        WorkflowApprovalDecision::Approve,
+        88_030,
+    )
+    .unwrap()
+    {
+        WorkflowProgressOutcome::RecoveredCommitted(data) => {
+            crate::recorded_receipt::assert_agrees(&data, decision.receipt())
         }
+        other => panic!("the successor replays its exact own decision on the fork: {other:?}"),
     }
     perform_approved_effect(&application, &successor, 88_031);
     assert_eq!(read_retention(application.runtime(), fork), 8);

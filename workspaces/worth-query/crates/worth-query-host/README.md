@@ -48,11 +48,25 @@ never run again. Reads use that published World basis even when an independent
 Native commit is newer. Recovered index definitions and their selected-basis
 generations must be admitted before service escapes.
 
-An exact old mutation key can return `PreviouslyCommitted`, carrying the actual
-historical commit ID. Its original live receipt and Rust result are unavailable;
-read current state through a fresh query. The business handler does not replay.
+An exact old mutation key returns `RecoveredCommitted` with the original
+recorded receipt. Query reads the binding's creation artifact and the matching
+World occurrence; process evidence supplies no receipt fields. The receipt
+preserves Native meaning, old/new product references, original publication
+attempt, intent, outcome, emissions, output settlement, outbox and causality.
+It contains no live output capability or reconstructed Rust handler result.
+Use `recovered_receipt()` for that data and a fresh query for current state. Memory-only receipt heads remain explicitly memory scoped; their Native frame coordinates do not prove durable backing.
+A changed intent or foreign product affinity refuses before handler execution.
 Durable binding rows restore the outcome identity frontier before a new key can
 commit. Malformed or duplicate bindings return owning opening refusal.
+
+For retained reads, pass the recovered data to
+`request.at_original_receipt(&phase, &receipt, maximum_history_work)` under a
+fresh authorized request. This selects through the current owner's real history
+and can refuse unavailable retained material. `at_recorded_commit` accepts the
+Home-scoped commit coordinate. Neither method turns recorded data into live
+publication or recovery authority. Owning source completion exposes recorded
+evidence through `recorded_receipt()` and already-held live evidence through
+`live_receipt()`; keep its publication and cleanup obligations until lawful close.
 
 An ordinary Directory mutation can return `ProductPreparationPending` before
 or after Native effects. Keep that original terminal. Same-key requests observe
@@ -587,7 +601,7 @@ let outcome = prepared.publish();
 ```
 
 Migrations, workflow dispositions, and every outcome are shown with real code
-in [Build an Application §7](../../../../docs/build-an-application.md#7-adopt-a-new-program-on-a-branch).
+in [Build an Application Â§7](../../../../docs/build-an-application.md#7-adopt-a-new-program-on-a-branch).
 
 Inspection and semantic comparison are descriptive. Preparation consumes exact
 branch, source-program, target-support, target-rule, migration, resource, and

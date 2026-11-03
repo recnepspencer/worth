@@ -1,5 +1,5 @@
 use super::*;
-use crate::BankMutationCommitOutcome;
+use crate::estate_progression::delegation::command_courts::CommandCourtOutcome;
 
 /// A prepared delegation decided on its parent's authority and on its child
 /// id naming no grant. An unrelated revocation moves neither fact. A commit
@@ -44,7 +44,7 @@ fn unrelated_revocation_preserves_the_prepared_delegation_and_a_taken_child_id_s
         &request_scope(),
     )
     .expect("an unrelated authority should revoke independently");
-    assert!(matches!(revoked, BankMutationCommitOutcome::Committed(_)));
+    assert!(matches!(revoked, CommandCourtOutcome::Committed(_)));
     let commit = |program, seed| {
         fixture
             .runtime
@@ -65,7 +65,7 @@ fn unrelated_revocation_preserves_the_prepared_delegation_and_a_taken_child_id_s
     assert!(
         matches!(
             replayed,
-            WorthQueryApplicationCommitOutcome::AlreadyCommitted(_)
+            WorthQueryApplicationCommitOutcome::RecoveredCommitted(_)
         ),
         "the same request replays its commit: {replayed:?}"
     );

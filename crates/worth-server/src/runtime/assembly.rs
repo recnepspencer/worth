@@ -20,10 +20,7 @@ use crate::{
     registration::WorthServerSurfaceRegistry,
     request_context::WorthServerRequestContextFacade,
     response::WorthServerResponseFacade,
-    surfaces::{
-        compat_http::{WorthServerStoredBinaryIngress, WorthServerStoredCompatibilityMutation},
-        WorthServerSurfacesFacade,
-    },
+    surfaces::{compat_http::WorthServerStoredBinaryIngress, WorthServerSurfacesFacade},
     transport::WorthServerRouteAssembly,
     WorthServerTransportCallerVerifier,
 };
@@ -45,8 +42,6 @@ pub(crate) struct WorthServerRuntimeAssembly {
     counters: Arc<WorthServerCounters>,
     product_session_registry: WorthServerProductSessionRegistry,
     transport_caller_admission: crate::transport::WorthServerTransportCallerAdmission,
-    compat_http_mutation_retry_store:
-        Arc<Mutex<HashMap<String, WorthServerStoredCompatibilityMutation>>>,
     product_operation_retry_store: Arc<Mutex<HashMap<String, WorthServerStoredProductOperation>>>,
     compat_http_binary_ingress_store: Arc<Mutex<HashMap<String, WorthServerStoredBinaryIngress>>>,
     execution_authority: Option<Arc<ExecutionAuthority>>,
@@ -116,7 +111,6 @@ impl WorthServerRuntimeAssembly {
             counters,
             product_session_registry,
             transport_caller_admission,
-            compat_http_mutation_retry_store: Arc::new(Mutex::new(HashMap::new())),
             product_operation_retry_store: Arc::new(Mutex::new(HashMap::new())),
             compat_http_binary_ingress_store: Arc::new(Mutex::new(HashMap::new())),
             execution_authority,
@@ -187,12 +181,6 @@ impl WorthServerRuntimeAssembly {
         &self,
     ) -> &crate::transport::WorthServerTransportCallerAdmission {
         &self.transport_caller_admission
-    }
-
-    pub(crate) fn compat_http_mutation_retry_store(
-        &self,
-    ) -> &Arc<Mutex<HashMap<String, WorthServerStoredCompatibilityMutation>>> {
-        &self.compat_http_mutation_retry_store
     }
 
     pub(crate) fn compat_http_binary_ingress_store(

@@ -52,14 +52,14 @@ use worth_query_host::facade::{
 
 | Module | Names you will look for there |
 |---|---|
-| `…decl::facade::application_program` | `ApplicationFeature`, `ApplicationFeatureSpec`, `ApplicationProgramDefinition`, `ApplicationProgramAuthoring`, `ValidatedApplicationProgram`, ports and connections, `ApplicationWorkflowSpec`, `ApplicationWorkflowDefinitionBuilder` |
-| `…decl::facade::application_operation` | `ApplicationMutationBinding`, `ApplicationMutationIntent`, `ApplicationCapabilityMutationBinding` |
-| `…host::facade::application_installation` | `in_memory_program`, `in_memory_rostered_program`, `WorthQueryInMemoryApplicationLimits`, `WorthQueryProgramApplicationRuntime`, `WorthQueryProgramOwner` (a trait: import it to call `owned_revision()`) |
-| `…host::facade::application_entry` | `WorthQueryApplicationRequestExt`, `WorthQueryOperationBuilder`, `WorthQueryOperationDescription`, `WorthQueryOperationAdvance`, `WorthQuerySettledFixedOperation`, `WorthQueryTerminalFixedOperation`, `WorthQueryWorkflowOperation`, `WorthQueryApplicationMutationOutcome`, `WorthQueryBranchAdoptionPublicationOutcome`, `Workflow*Outcome`, `Published*Ref` |
-| `…host::facade::application_discovery` | `WorthQueryWorkflowDefinitionDiscovery`, `WorthQueryWorkflowInstanceRead`, `WorthQueryWorkflowInstancePage`, `WorthQueryWorkflowHistoryPage`, `WorthQueryWorkflowHistoryMark` |
-| `…host::facade::domain` | `WorthQueryApplicationWorkflowSpecInstallation`, `WorthQueryApplicationWorkflowResourceCeiling`, `WorthQueryInstalledApplicationSchema` |
-| `…host::facade::primary_graph` | `OperationHandler`, `DecisionReader`, `CandidateWriter`, `WorthQuerySelectedProgramInspection` |
-| `…host::facade::admission` | `authenticated_principal::{admit_authentication_adapter, WorthQueryRequestScope}`, `authentication_event::install_authentication_event_owner` |
+| `â€¦decl::facade::application_program` | `ApplicationFeature`, `ApplicationFeatureSpec`, `ApplicationProgramDefinition`, `ApplicationProgramAuthoring`, `ValidatedApplicationProgram`, ports and connections, `ApplicationWorkflowSpec`, `ApplicationWorkflowDefinitionBuilder` |
+| `â€¦decl::facade::application_operation` | `ApplicationMutationBinding`, `ApplicationMutationIntent`, `ApplicationCapabilityMutationBinding` |
+| `â€¦host::facade::application_installation` | `in_memory_program`, `in_memory_rostered_program`, `WorthQueryInMemoryApplicationLimits`, `WorthQueryProgramApplicationRuntime`, `WorthQueryProgramOwner` (a trait: import it to call `owned_revision()`) |
+| `â€¦host::facade::application_entry` | `WorthQueryApplicationRequestExt`, `WorthQueryOperationBuilder`, `WorthQueryOperationDescription`, `WorthQueryOperationAdvance`, `WorthQuerySettledFixedOperation`, `WorthQueryTerminalFixedOperation`, `WorthQueryWorkflowOperation`, `WorthQueryApplicationMutationOutcome`, `WorthQueryBranchAdoptionPublicationOutcome`, `Workflow*Outcome`, `Published*Ref` |
+| `â€¦host::facade::application_discovery` | `WorthQueryWorkflowDefinitionDiscovery`, `WorthQueryWorkflowInstanceRead`, `WorthQueryWorkflowInstancePage`, `WorthQueryWorkflowHistoryPage`, `WorthQueryWorkflowHistoryMark` |
+| `â€¦host::facade::domain` | `WorthQueryApplicationWorkflowSpecInstallation`, `WorthQueryApplicationWorkflowResourceCeiling`, `WorthQueryInstalledApplicationSchema` |
+| `â€¦host::facade::primary_graph` | `OperationHandler`, `DecisionReader`, `CandidateWriter`, `WorthQuerySelectedProgramInspection` |
+| `â€¦host::facade::admission` | `authenticated_principal::{admit_authentication_adapter, WorthQueryRequestScope}`, `authentication_event::install_authentication_event_owner` |
 
 `worth_query_host::facade::declaration` exposes the same declaration modules,
 so a host crate can reach `declaration::application_program::*` without a
@@ -94,15 +94,15 @@ some declaration macros. `worth_query_mutation_binding!`,
 
 | Step | What you do | The call | Section |
 |---|---|---|---|
-| 1 | Declare the schema and its contributions | `worth_query_application!`, `worth_query_application_contribution!`, `impl WorthQueryApplicationContribution` | [§2](#2-declare-the-schema-and-its-contributions) |
-| 2 | Declare features and the program | `worth_query_application_contribution! { pub feature ... }`, its `ApplicationFeatureDefinition` projections, `impl ApplicationProgramDefinition` | [Complete definitions](#complete-feature-definitions), [§3](#3-declare-features-and-the-program) |
-| 3 | Validate the program | `ApplicationProgramAuthoring::<S, P>::begin().validated_program()` | [§3.5](#35-validate) |
-| 4 | Install the application graph | `application_installation::in_memory_program(..)` or `in_memory_rostered_program(..)` | [§4](#4-install-the-application-graph) |
-| 5 | Run program-owned actions | `request.mutate(intent)…idempotency_owned(key)?.retain_operation::<Program, Action>(&runtime)`, then `operation.advance(&fresh_request)` | [§5](#5-run-the-program) |
-| 6 | Install the workflow vocabulary | `WorthQueryApplicationWorkflowSpecInstallation::begin(..)…finish()`, then `retain_workflow_spec(..)` | [§6.2](#62-install-the-workflow-vocabulary-once) |
-| 7 | Author and validate a workflow | `ApplicationWorkflowDefinitionBuilder::<Spec>::new(..)`, nodes, connections, `finish()?.validate()?` | [§6.3](#63-author-a-definition) |
-| 8 | Publish, start, and advance it | `bind_definition`, `prepare_workflow_publication`, `prepare_workflow_instance_start`, `prepare_workflow_advance` | [§6.6](#66-publish-discover-start-advance) |
-| 9 | Adopt a new program on one branch | `.on_branch(b).programs()`, `compare(&target)`, `adopt(&requirements)?`, `prepare(max)`, `programs.publish(prepared)` | [§7](#7-adopt-a-new-program-on-a-branch) |
+| 1 | Declare the schema and its contributions | `worth_query_application!`, `worth_query_application_contribution!`, `impl WorthQueryApplicationContribution` | [Â§2](#2-declare-the-schema-and-its-contributions) |
+| 2 | Declare features and the program | `worth_query_application_contribution! { pub feature ... }`, its `ApplicationFeatureDefinition` projections, `impl ApplicationProgramDefinition` | [Complete definitions](#complete-feature-definitions), [Â§3](#3-declare-features-and-the-program) |
+| 3 | Validate the program | `ApplicationProgramAuthoring::<S, P>::begin().validated_program()` | [Â§3.5](#35-validate) |
+| 4 | Install the application graph | `application_installation::in_memory_program(..)` or `in_memory_rostered_program(..)` | [Â§4](#4-install-the-application-graph) |
+| 5 | Run program-owned actions | `request.mutate(intent)â€¦idempotency_owned(key)?.retain_operation::<Program, Action>(&runtime)`, then `operation.advance(&fresh_request)` | [Â§5](#5-run-the-program) |
+| 6 | Install the workflow vocabulary | `WorthQueryApplicationWorkflowSpecInstallation::begin(..)â€¦finish()`, then `retain_workflow_spec(..)` | [Â§6.2](#62-install-the-workflow-vocabulary-once) |
+| 7 | Author and validate a workflow | `ApplicationWorkflowDefinitionBuilder::<Spec>::new(..)`, nodes, connections, `finish()?.validate()?` | [Â§6.3](#63-author-a-definition) |
+| 8 | Publish, start, and advance it | `bind_definition`, `prepare_workflow_publication`, `prepare_workflow_instance_start`, `prepare_workflow_advance` | [Â§6.6](#66-publish-discover-start-advance) |
+| 9 | Adopt a new program on one branch | `.on_branch(b).programs()`, `compare(&target)`, `adopt(&requirements)?`, `prepare(max)`, `programs.publish(prepared)` | [Â§7](#7-adopt-a-new-program-on-a-branch) |
 
 The running example is the **Bank reference application**
 (`workspaces/worth-query-bank-world`). It is the only complete application
@@ -136,9 +136,9 @@ Three separations matter most:
 3. **Revision, support, and activation are three different facts.** The
    revision says what the program means. Support says this host can run it
    (it is rostered). Activation says a given branch runs it. Changing
-   activation is *adoption* ([§7](#7-adopt-a-new-program-on-a-branch)).
+   activation is *adoption* ([Â§7](#7-adopt-a-new-program-on-a-branch)).
 
-Terms: [Glossary](glossary.md) — see **Program**, **Feature**,
+Terms: [Glossary](glossary.md) â€” see **Program**, **Feature**,
 **Contribution**, **Adoption**, **Workflow**, **Installation**.
 
 ---
@@ -173,7 +173,7 @@ worth_query_application_contribution! {
                 .aspect(TemporalIntent::reference(), IntentFacts::reference())
                 .field(TemporalIntent::reference(), IntentRevisionField::reference())
                 // ... more fields, relations, a principal binding ...
-                // ... operations use declared_operation with their typed access (§2.1) ...
+                // ... operations use declared_operation with their typed access (Â§2.1) ...
                 .invariant(integrity::definition());
             super::application_entry::declare(schema)
         }
@@ -405,7 +405,7 @@ An application value owner can derive
 Serde serialization, portable wire shape, and a checked deserialization seed
 from one definition. Use those generated serialization implementations. Supported
 grammar includes concrete named/unit/newtype structs, external unit/newtype/named
-variants, internally tagged unit/named variants, 8–64 bit integers, booleans,
+variants, internally tagged unit/named variants, 8â€“64 bit integers, booleans,
 strings, checked `usize` indices on a `u64` wire, fixed arrays, `Vec`, `Option`,
 `Box` and exact two-element tuple payloads. Literal
 `serde(rename = "...")`, enum `rename_all = "snake_case"`, and container
@@ -902,7 +902,7 @@ impl ApplicationProgramDefinition<BankSchema> for BankApplication {
 The execution point is `ApplicationCommitBoundary`,
 `ApplicationMutationSensitive`, or `ApplicationSnapshotPublication`. The rule's
 handler is still registered in the contribution's `configure`, with
-`setup.invariant(..)` ([§2](#2-declare-the-schema-and-its-contributions)). A
+`setup.invariant(..)` ([Â§2](#2-declare-the-schema-and-its-contributions)). A
 program selects which declared rules govern its branches.
 
 ### 3.4 Ports, connections, and the output graph
@@ -2015,7 +2015,7 @@ Its own methods:
 | `contains_action::<Binding>()`, `contains_output_root::<Root>()` | Whether the installed program owns an action or output root |
 | `supported_program::<P>()` | `Option<WorthQuerySupportedProgramHandle>` for a rostered program. The handle implements the `WorthQueryProgramOwner` trait; import the trait to call `owned_revision()`, which is the adoption target |
 | `retire_program_support(&revision)` | Retires support for a revision no branch still needs |
-| `retain_workflow_spec(..)` | Binds a workflow vocabulary ([§6.2](#62-install-the-workflow-vocabulary-once)) |
+| `retain_workflow_spec(..)` | Binds a workflow vocabulary ([Â§6.2](#62-install-the-workflow-vocabulary-once)) |
 | `close_conditional_runtime()` | Closes conditional resources at shutdown |
 
 `discovery()` lists query requests, mutations, queries, and fields.
@@ -2310,7 +2310,7 @@ let principal = adapter.authenticate(credential, &scope).await?;
 `Credential` type and returns a `WorthQueryValidatedExternalPrincipal` from
 `validate` (see `.../product_workflow_support/adapters.rs`). The external
 identity must already be bound to a principal in the graph. The example does
-that while seeding, in the `initial_state` closure from §4.1:
+that while seeding, in the `initial_state` closure from Â§4.1:
 
 <!-- illustrative -->
 ```rust,ignore
@@ -2514,7 +2514,7 @@ The full, compiling version of all three is
 lines). The schema registers the binding with
 `.application_mutation_binding::<AmendTemporalBinding>()`, and the
 contribution registers the handler with `setup.handler::<Binding, _>(..)`
-([§2](#2-declare-the-schema-and-its-contributions)).
+([Â§2](#2-declare-the-schema-and-its-contributions)).
 `worth_query_mutation_binding!` (decl facade) writes the binding for you in
 common cases.
 
@@ -4219,8 +4219,10 @@ scheduler, and no timer or callback advances an instance: **the caller pumps
 progress**, one request per step. An external effect completes through an
 authenticated inbound occurrence (`inbound_occurrences().receive(..)` on the
 installed runtime), which completes the effect's owner. After a caller accepts
-the owner's receipt (`accept_operation_from_owner`), an `AwaitInbound` node
-observes that owner result on the next advance. Callback bytes never resume
+the actual original owner's receipt (`accept_operation_from_owner` requires
+that live receipt alongside the freshly admitted bound request), an `AwaitInbound`
+node observes that owner result on the next advance. Recorded retry data cannot
+supply live recovery authority. Callback bytes never resume
 an instance. See
 [Workflows: Caller-pumped progression](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md#caller-pumped-progression)
 and [Waiting for an inbound completion](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md#waiting-for-an-inbound-completion).
@@ -4340,7 +4342,7 @@ impl ApplicationMutationBinding<BankSchema> for $binding {
     type Input = ApprovePayment;
     type Operation = $operation;
     type Decision = ();                       // no handler decides a control step
-    // ... the same associated types as any mutation binding (§5.2) ...
+    // ... the same associated types as any mutation binding (Â§5.2) ...
     const REQUIRES_APPLICATION_PROGRAM: bool = true;
     const WORKFLOW_CONTROL: bool = true;
     // ... identities, scope_field, and principal_binding ...
@@ -4359,8 +4361,8 @@ impl ApplicationCapabilityRequest<BankSchema, $capability> for ApprovePayment {
 Install its access with `schema.declared_operation::<Operation>(definition)`
 and the existing explicit policy. Keep the workflow-control binding's native
 authorization rules. The macro is invoked once for each control step, for example
-`ApprovedBusinessPaymentAuthoringOperation`, `…AuthoringBinding`,
-`…AuthoringIntent`, and `ApprovedBusinessPaymentAuthoring`. The whole file is
+`ApprovedBusinessPaymentAuthoringOperation`, `â€¦AuthoringBinding`,
+`â€¦AuthoringIntent`, and `ApprovedBusinessPaymentAuthoring`. The whole file is
 244 lines.
 
 #### Create and enroll through one retained action
@@ -4705,7 +4707,7 @@ propose, advance to `AwaitingOperation`, execute through
 
 Every lifecycle call is a method on the ordinary mutation request chain. The
 mutation intent is the matching control intent (authoring, instance start,
-advance, or approval), and the workflow runtime from §6.2 is passed in.
+advance, or approval), and the workflow runtime from Â§6.2 is passed in.
 
 `workflow_runtime` dereferences to the program runtime, so
 `workflow_runtime.request(&principal, &scope)` is the request entry for every
@@ -4821,7 +4823,7 @@ recorded outcome instead of performing a second step.
 | `AwaitingActor` | The caller is not authorized for the next step; an authorized caller pumps the same instance |
 | `AwaitingAssessment`, `AwaitingCondition`, `AwaitingEvidence` | Settle the named read, then accept it |
 | `AwaitingApproval` | A signed approval is required |
-| `AwaitingOperation` | The guarded effect must run ([§6.5](#65-who-may-run-a-guarded-operation)) |
+| `AwaitingOperation` | The guarded effect must run ([Â§6.5](#65-who-may-run-a-guarded-operation)) |
 | `Application`, `PreparationDenied`, `AuthenticationDenied`, `IdempotencyDenied` | No step was recorded; each says why |
 | `ProjectionDenied` | The commit landed and carries its receipt; only its projection was refused |
 | `ProjectionReadStopped { receipt, cause }` | The commit landed and its receipt is retained; the projection read it requires stopped (`cause` is a `RelationalExecutionDenialCause`) |
@@ -4864,7 +4866,7 @@ signing.sign(&event).map(|request| request.execute())
 `ApprovePaymentMutationBinding` explicitly requires its approval capability.
 Authority is issued only after that exact approval is satisfied. A binding that
 declares `ApplicationWorkflowExecutionRequirements::occurrence_only()` can run
-without an approval ([§6.5](#65-who-may-run-a-guarded-operation)).
+without an approval ([Â§6.5](#65-who-may-run-a-guarded-operation)).
 
 <!-- illustrative -->
 ```rust,ignore
@@ -4924,12 +4926,12 @@ dispatch handle does not substitute for that evidence, assessment acceptance or 
 | `accept_owned_operation(completed)` | Fresh selected admission confirms original local atomic settlement as replay without a new commit/key write; external settlement requires actual recovery/inbound evidence. Success and refusal retain the same completed owner and cleanup. |
 | `operation.advance(&fresh_request)` | Continues original native unpublished/keyed/dispatch custody without reconstructing input, key, authority or recovery handle. |
 | `completed.close(&fresh_request)` | Releases actual cleanup; refusal returns the same owner. Physical release does not make the workflow terminal. |
-| `mutate(i).workflow(&phase, workflow, authored)…`, `start_workflow`, `run_workflow` | The ordinary convenience lane, which validates, binds, publishes, starts, and runs in fewer calls. `phase` is the `WorthQueryAdvancementPhase` of an open advancement, such as the one `with_host_advancement` passes its closure. |
+| `mutate(i).workflow(&phase, workflow, authored)â€¦`, `start_workflow`, `run_workflow` | The ordinary convenience lane, which validates, binds, publishes, starts, and runs in fewer calls. `phase` is the `WorthQueryAdvancementPhase` of an open advancement, such as the one `with_host_advancement` passes its closure. |
 
 **Observing an instance.** There is no instance-status query. You learn state
 from each typed outcome, from `discover_workflow_definition`, from an
 assessment demand's notifications, and from the adoption workflow inventory
-([§7.4](#74-workflows-and-custody-during-adoption)).
+([Â§7.4](#74-workflows-and-custody-during-adoption)).
 
 **What refuses:**
 
@@ -5397,7 +5399,7 @@ The program currently activated on the branch declares its adoption permission
 through `ApplicationProgramDefinition::adoption_authorization`. Its
 `ApplicationProgramAdoptionBinding` names the installed capability, operation,
 input binding and principal binding. Declare the corresponding capability
-contract in the schema and issue real grants through your application’s grant
+contract in the schema and issue real grants through your applicationâ€™s grant
 owner. A program with no declaration refuses adoption with
 `WorthQueryProgramAdoptionAuthorizationDenial::CapabilityNotDeclared`.
 
@@ -5506,7 +5508,7 @@ The same chain in production code is
 The preparation denials in this table (`TargetRuleRejected`,
 `MigrationAssessmentRequired`, `MigrationSourceChanged`,
 `MigrationTargetMismatch`, `RequirementsChanged`, `SelectionLimitExceeded`)
-and `WorkflowDispositionRequired` ([§7.4](#74-workflows-and-custody-during-adoption))
+and `WorkflowDispositionRequired` ([Â§7.4](#74-workflows-and-custody-during-adoption))
 are variants of `WorthQueryBranchAdoptionPreparationDenial`. They arrive
 wrapped as
 `WorthQueryApplicationProgramAdoptionPreparationDenial::Adoption(..)`; its
@@ -5686,7 +5688,7 @@ Use the declarations and host functions exported by `worth-query-decl` and
 |---|---|
 | Compose application meaning | `ApplicationProgramDefinition` and complete feature definitions, or `ApplicationFeatureSpec` for specialized composition |
 | Declare an action | `action::<Binding, Delivery>()` on the feature builder; inspect it through `ApplicationActionDeclaration` |
-| Adopt a revision | `compare(&revision)` → `adopt(&requirements)` → `[.migration(..)] [.workflow(..)]` → `prepare(max)` |
+| Adopt a revision | `compare(&revision)` â†’ `adopt(&requirements)` â†’ `[.migration(..)] [.workflow(..)]` â†’ `prepare(max)` |
 | Inspect semantic changes | `ApplicationSemanticChangeKind::{Added, Removed, Changed}` per family |
 | Retain a published workflow definition | `PublishedWorkflowDefinitionRef` |
 | Install workflow vocabulary | `retain_workflow_spec` on the program runtime, then `support_workflow_spec` on the returned workflow runtime |
@@ -5705,7 +5707,7 @@ Use the declarations and host functions exported by `worth-query-decl` and
 | Contribution composition, installation and output demand | [`worth-query-host` README](../workspaces/worth-query/crates/worth-query-host/README.md) |
 | Declaration surface | [`worth-query-decl` README](../workspaces/worth-query/crates/worth-query-decl/README.md) |
 | The complete pure-facade reference application | [Bank public consumer contract](../workspaces/worth-query-bank-world/docs/public-consumer-contract.md) |
-| What the runtimes guarantee underneath all of this | [How WORTH Works §9, §12, §13](how-it-works.md#9-query-the-life-of-one-request) |
+| What the runtimes guarantee underneath all of this | [How WORTH Works Â§9, Â§12, Â§13](how-it-works.md#9-query-the-life-of-one-request) |
 | Find the call for a task; what to do before concluding a capability is missing | [Capability Index](capability-index.md) |
 
 The Query guides use names exported through the two application facades.
@@ -6764,12 +6766,28 @@ does not rerun initialization. Memory startup adds no completion commit.
 Ordinary reads after reopen use the selected published World basis, including
 when independent Native history is newer. Actual recovered index definitions
 and the generations needed at that basis are admitted before serving a request.
-An exact old mutation key can return `PreviouslyCommitted` with its historical
-commit ID, without rerunning the business handler. Read current state through a
-fresh query; the original live receipt and Rust result are unavailable. New keys
-receive identities beyond the actual durable outcome frontier. Malformed,
-duplicate or invalid binding state returns owning opening refusal. An exhausted
-outcome frontier refuses the new commit.
+An exact old mutation key returns `RecoveredCommitted`, preserving the original
+recorded receipt without rerunning the business handler. Inspect
+`outcome.recovered_receipt()` for original Native meaning, old/new product
+references, publication attempt, intent, outcome, emitted effects, exact output
+settlement, dispatch outbox and aftermath causality. Every field comes from the
+original owner artifacts. The recorded receipt carries no live output or
+publication authority and does not reconstruct a Rust handler result. Query
+fresh current state separately. A changed intent returns `IdempotencyIntentDrift`;
+a foreign product affinity refuses at idempotency admission. Keep unresolved or
+unpublished custody and follow its typed recovery route before trying again.
+New keys receive identities beyond the actual durable outcome frontier.
+Malformed, duplicate or invalid binding state returns owning opening refusal.
+An exhausted outcome frontier refuses the new commit.
+
+For retained reads, pass the recovered data to
+`request.at_original_receipt(&phase, &receipt, maximum_history_work)` under a
+fresh authorized request. This selects through the current owner's real history
+and can refuse unavailable retained material. `at_recorded_commit` accepts the
+Home-scoped commit coordinate. Neither method turns recorded data into live
+publication or recovery authority. Owning source completion exposes recorded
+evidence through `recorded_receipt()` and already-held live evidence through
+`live_receipt()`; keep its publication and cleanup obligations until lawful close.
 
 Treat `ProductPreparationPending` as original custody. Keep the returned
 terminal and business key; duplicate requests must observe that custody rather

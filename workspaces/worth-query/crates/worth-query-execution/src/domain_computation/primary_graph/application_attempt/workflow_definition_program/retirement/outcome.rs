@@ -50,7 +50,6 @@ impl<Schema, Operation, Input, Scope>
 pub struct PerformedWorkflowDefinitionRetirement {
     definition: PublishedWorkflowDefinitionRef,
     receipt: WorthQueryApplicationCommitReceipt,
-    replayed: bool,
 }
 
 impl PerformedWorkflowDefinitionRetirement {
@@ -61,17 +60,14 @@ impl PerformedWorkflowDefinitionRetirement {
     pub const fn receipt(&self) -> &WorthQueryApplicationCommitReceipt {
         &self.receipt
     }
-
-    pub const fn replayed(&self) -> bool {
-        self.replayed
-    }
 }
 
 /// What executing a workflow definition retirement produced.
 #[derive(Debug)]
 pub enum WorkflowDefinitionRetirementOutcome {
+    RecoveredCommitted(crate::domain_computation::primary_graph::provider::WorthQueryRecoveredApplicationCommitReceipt),
     Retired(PerformedWorkflowDefinitionRetirement),
-    /// The commit did not land. A landed commit, first or replayed, is the
+    /// The commit did not land. A fresh landed commit is the
     /// performed variant.
     Application(WorthQueryApplicationUncommitted),
 }
@@ -130,8 +126,9 @@ where
             crate::domain_computation::application_aftermath::ApplicationCommitCausality::Ordinary,
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         );
-        let (receipt, replayed) = match outcome.landed() {
-            Ok(landed) => landed,
+        let receipt = match outcome.landed() {
+            Ok(crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationLandedCommit::Live { receipt }) => receipt,
+            Ok(crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationLandedCommit::Recovered(receipt)) => return WorkflowDefinitionRetirementOutcome::RecoveredCommitted(receipt),
             Err(uncommitted) => {
                 return WorkflowDefinitionRetirementOutcome::Application(uncommitted)
             }
@@ -139,7 +136,6 @@ where
         WorkflowDefinitionRetirementOutcome::Retired(PerformedWorkflowDefinitionRetirement {
             definition,
             receipt,
-            replayed,
         })
     }
 }

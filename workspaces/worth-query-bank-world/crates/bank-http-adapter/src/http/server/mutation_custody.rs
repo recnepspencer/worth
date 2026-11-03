@@ -94,8 +94,50 @@ pub(super) enum CustodyDescription {
         source: worth_query_host::facade::primary_graph::WorthQueryCorrectionSourceCoordinates,
     },
     Terminal,
+    Closed,
+    Recorded(super::super::protocol::BankHttpRecordedCommitDescription),
 }
 impl SourceMutationCustody {
+    pub(super) fn take_closed(
+        self,
+    ) -> Result<super::closed_mutation_source::ClosedMutationSource, Self> {
+        use super::closed_mutation_source::ClosedMutationSource;
+        match self {
+            Self::CapabilityRevocation(owner) => owner
+                .take_closed()
+                .map(ClosedMutationSource::CapabilityRevocation)
+                .map_err(Self::CapabilityRevocation),
+            Self::EstateFreeze(owner) => owner
+                .take_closed()
+                .map(ClosedMutationSource::EstateFreeze)
+                .map_err(Self::EstateFreeze),
+            Self::EstateCorrection(owner) => owner
+                .take_closed()
+                .map(ClosedMutationSource::EstateCorrection)
+                .map_err(Self::EstateCorrection),
+            Self::Deposit(owner) => owner
+                .take_closed()
+                .map(ClosedMutationSource::Deposit)
+                .map_err(Self::Deposit),
+            Self::Withdraw(owner) => owner
+                .take_closed()
+                .map(ClosedMutationSource::Withdraw)
+                .map_err(Self::Withdraw),
+            Self::SendMoney(owner) => owner
+                .take_closed()
+                .map(ClosedMutationSource::SendMoney)
+                .map_err(Self::SendMoney),
+            Self::Correction(owner) => owner
+                .take_closed()
+                .map(ClosedMutationSource::Correction)
+                .map_err(Self::Correction),
+            Self::Reapplication(owner) => owner
+                .take_closed()
+                .map(ClosedMutationSource::Reapplication)
+                .map_err(Self::Reapplication),
+        }
+    }
+
     pub(super) fn advance(
         self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, BankSchema>,
@@ -139,31 +181,39 @@ impl SourceMutationCustody {
     pub(super) fn close(
         self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, BankSchema>,
-    ) -> Result<(), (Self, BankHttpDenial)> {
+    ) -> Result<Self, (Self, BankHttpDenial)> {
         match self {
             Self::Reapplication(owner) => owner
                 .close(request)
+                .map(Self::Reapplication)
                 .map_err(|(owner, denial)| (Self::Reapplication(owner), denial)),
             Self::CapabilityRevocation(owner) => owner
                 .close(request)
+                .map(Self::CapabilityRevocation)
                 .map_err(|(owner, denial)| (Self::CapabilityRevocation(owner), denial)),
             Self::EstateFreeze(owner) => owner
                 .close(request)
+                .map(Self::EstateFreeze)
                 .map_err(|(owner, denial)| (Self::EstateFreeze(owner), denial)),
             Self::EstateCorrection(owner) => owner
                 .close(request)
+                .map(Self::EstateCorrection)
                 .map_err(|(owner, denial)| (Self::EstateCorrection(owner), denial)),
             Self::Correction(owner) => owner
                 .close(request)
+                .map(Self::Correction)
                 .map_err(|(owner, denial)| (Self::Correction(owner), denial)),
             Self::Deposit(owner) => owner
                 .close(request)
+                .map(Self::Deposit)
                 .map_err(|(owner, denial)| (Self::Deposit(owner), denial)),
             Self::Withdraw(owner) => owner
                 .close(request)
+                .map(Self::Withdraw)
                 .map_err(|(owner, denial)| (Self::Withdraw(owner), denial)),
             Self::SendMoney(owner) => owner
                 .close(request)
+                .map(Self::SendMoney)
                 .map_err(|(owner, denial)| (Self::SendMoney(owner), denial)),
         }
     }
@@ -211,6 +261,7 @@ pub(super) struct SourceMutationRecord {
     pub(super) owner: super::authenticated_owner::BankHttpAuthenticatedOwner,
     pub(super) sequence: u64,
     pub(super) custody: SourceMutationCustody,
+    pub(super) released_cleanup: Option<WorthQueryOperationCleanupReceipt>,
     pub(super) _permit: tokio::sync::OwnedSemaphorePermit,
 }
 pub(super) fn describe_commit(
@@ -230,6 +281,8 @@ pub(super) fn describe_commit(
 }
 
 pub(super) enum MutationRecord {
+    Closed(super::closed_mutation_custody::ClosedMutationRecord),
+    ClosedHandoff,
     Handoff(super::native_cleanup_custody::HandoffRecord),
     Source(SourceMutationRecord),
     Native(super::native_cleanup_custody::NativeCleanupRecord),
@@ -256,5 +309,26 @@ impl From<worth_query_host::facade::application_entry::WorthQuerySourceOnlyPostu
             Native::Indeterminate => Self::Indeterminate,
             Native::Terminal => Self::Terminal,
         }
+    }
+}
+
+pub(super) fn describe_recorded(
+    receipt: &worth_query_host::facade::primary_graph::WorthQueryRecoveredApplicationCommitReceipt,
+) -> super::super::protocol::BankHttpRecordedCommitDescription {
+    super::super::protocol::BankHttpRecordedCommitDescription {
+        native_commit: super::super::protocol::BankHttpCorrectionCommit {
+            commit_id: receipt.commit_reference().commit_id.0,
+            version_id: receipt.commit_reference().version_id.0,
+            branch_id: receipt.commit_reference().branch_id.0.clone(),
+            parents: receipt
+                .commit_reference()
+                .parents
+                .iter()
+                .map(|id| id.0)
+                .collect(),
+        },
+        outcome_identity: receipt.outcome_identity().get(),
+        changed_record_count: receipt.changed_record_count(),
+        emitted_effect_count: receipt.emitted_effect_count(),
     }
 }

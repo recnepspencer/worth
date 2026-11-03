@@ -1,12 +1,14 @@
 //! Independent native cleanup never makes a conditional operation runnable again.
 use crate::domain_computation::primary_graph::{
     WorthQueryAdvancementPhase, WorthQueryApplicationCleanupRequired,
-    WorthQueryApplicationManagedCleanup, WorthQueryApplicationUncommitted,
+    WorthQueryApplicationCommitOutcome, WorthQueryApplicationManagedCleanup,
 };
 pub(super) struct RetainedManagedCleanup {
-    outcome: WorthQueryApplicationUncommitted,
+    outcome: WorthQueryApplicationCommitOutcome,
     pending: Option<WorthQueryApplicationManagedCleanup>,
-    receipt: Option<crate::domain_computation::WorthQueryDirectRunCleanupReceipt>,
+    receipt: Option<
+        crate::domain_computation::primary_graph::WorthQueryApplicationManagedCleanupReceipt,
+    >,
     kind: crate::domain_computation::WorthQueryMutationCleanupFailureKind,
 }
 impl RetainedManagedCleanup {
@@ -19,6 +21,17 @@ impl RetainedManagedCleanup {
             receipt: None,
             kind,
         }
+    }
+    fn take_released_original(
+        &mut self,
+    ) -> Option<crate::domain_computation::primary_graph::WorthQueryApplicationManagedCleanupReceipt>
+    {
+        if self.pending.is_some() || self.receipt.as_ref()?.original.is_none() {
+            return None;
+        }
+        let original = self.receipt.take()?;
+        self.receipt = Some(original.clone());
+        Some(original)
     }
     pub(super) fn run_identity(&self) -> &str {
         match &self.pending {
@@ -112,4 +125,17 @@ pub(super) fn include_retained_cleanup<'a>(
                 std::slice::from_ref(wake),
             ));
     }
+}
+
+pub(super) fn take_released_original<'a>(
+    wakes: impl Iterator<Item = &'a mut Wake>,
+) -> Option<crate::domain_computation::primary_graph::WorthQueryApplicationManagedCleanupReceipt> {
+    for wake in wakes {
+        if let Decision::OperationCleanupRequired(_, cleanup) = &mut wake.decision {
+            if let Some(original) = cleanup.take_released_original() {
+                return Some(original);
+            }
+        }
+    }
+    None
 }

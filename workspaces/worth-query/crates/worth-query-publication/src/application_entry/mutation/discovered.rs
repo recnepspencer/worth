@@ -207,7 +207,7 @@ where
     // Classify the already-produced native evidence; this invokes no handler or publication.
     if let WorthQueryApplicationMutationOutcome::Commit(worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted::CleanupRequired(required)) = outcome {
         let (outcome, cleanup) = required.into_parts();
-        return WorthQueryApplicationDiscoveredMutationOutcome::CleanupRequired { cleanup, outcome: Box::new(discovered_outcome::<Schema, Intent, Program, Root>(discovery, WorthQueryApplicationMutationOutcome::Commit(outcome), source)) };
+        return WorthQueryApplicationDiscoveredMutationOutcome::CleanupRequired { cleanup, outcome: Box::new(discovered_outcome::<Schema, Intent, Program, Root>(discovery, WorthQueryApplicationMutationOutcome::from_commit_outcome(outcome), source)) };
     }
     let outcome = match outcome {
         WorthQueryApplicationMutationOutcome::Commit(worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted::ProductUnpublished(partial)) => {

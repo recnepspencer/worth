@@ -1,5 +1,10 @@
 //! Bank adaptation of Query application commits.
 
+mod closed_capability_command;
+mod closed_source_completion;
+pub use closed_capability_command::BankClosedCapabilityCommand;
+pub use closed_source_completion::BankClosedSourceCompletion;
+
 mod managed_cleanup;
 pub use managed_cleanup::{BankManagedCleanup, BankReleasedManagedCleanup};
 

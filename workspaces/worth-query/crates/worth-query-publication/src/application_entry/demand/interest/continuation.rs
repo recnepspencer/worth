@@ -48,10 +48,10 @@ where
         request: &crate::application_entry::WorthQueryApplicationRequest<'_, '_, '_, Schema>,
     ) -> Result<
         Option<
-            worth_query_execution::facade::domain_computation::WorthQueryDirectRunCleanupReceipt,
+            worth_query_execution::facade::primary_graph::WorthQueryApplicationManagedCleanupReceipt,
         >,
         WorthQueryApplicationOutputDemandDenial,
-    > {
+    >{
         if !std::ptr::eq(application, request.application) {
             return Err(WorthQueryApplicationOutputDemandDenial::FreshRequestMismatch);
         }

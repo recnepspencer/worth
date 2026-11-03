@@ -51,7 +51,6 @@ fn a_migrated_source_admits_nothing_but_the_replay_of_its_migration() {
         "propose",
         87_213,
     ));
-    assert!(!successor.replayed());
     for (resume_at, key) in [("propose", 87_214), ("finished", 87_215)] {
         assert_eq!(
             migration_denial(migrate_instance(
@@ -65,15 +64,20 @@ fn a_migrated_source_admits_nothing_but_the_replay_of_its_migration() {
             "a source migrates once",
         );
     }
-    let replay = started(migrate_instance(
+    let replay = crate::recorded_receipt::started(migrate_instance(
         &application,
         instance.clone(),
         target,
         "propose",
         87_213,
     ));
-    assert!(replay.replayed());
-    assert_eq!(replay.instance(), successor.instance());
+    crate::recorded_receipt::assert_agrees(&replay, successor.receipt());
+    assert!(replay
+        .semantic_result()
+        .semantic()
+        .created_entities()
+        .iter()
+        .any(|entry| entry.assigned == successor.instance().entity_id()));
 
     let decision = approve_instance(
         &application,

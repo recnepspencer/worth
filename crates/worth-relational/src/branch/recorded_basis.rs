@@ -7,6 +7,8 @@ use crate::history::data::{CommitId, RelationalCommitReceipt};
 use crate::publication::patch::data::PatchStreamPosition;
 
 mod copying;
+mod memory_component;
+pub use memory_component::ObservedRelationalMemoryComponent;
 mod export;
 mod json;
 mod readmission;

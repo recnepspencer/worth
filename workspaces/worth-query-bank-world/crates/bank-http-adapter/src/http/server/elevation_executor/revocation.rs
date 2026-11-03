@@ -99,8 +99,13 @@ where
         BankEstateElevationCloseOutcome::Closed(authority) => {
             (authority, BankHttpCommitDisposition::Committed)
         }
-        BankEstateElevationCloseOutcome::AlreadyClosed(authority) => {
-            (authority, BankHttpCommitDisposition::AlreadyCommitted)
+        BankEstateElevationCloseOutcome::RecoveredCommitted { receipt, approved } => {
+            registry.restore_approved(&request.token, approved);
+            return BankHttpElevationRevocationOutcome::Recorded {
+                request_id,
+                commit: super::super::mutation_custody::describe_recorded(&receipt),
+            }
+            .into();
         }
         BankEstateElevationCloseOutcome::Stale { approved, .. } => {
             registry.restore_approved(&request.token, approved);

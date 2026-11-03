@@ -19,3 +19,6 @@ pub mod generation;
 
 #[path = "workflow_actor_contract/allocation.rs"]
 pub mod allocation;
+
+#[path = "workflow_actor_contract/first_proposal.rs"]
+pub mod first_proposal;

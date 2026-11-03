@@ -18,13 +18,13 @@ async fn callback_settled_cancellation_survives_late_exact_duplicate() {
             court.destination_account,
         )
     });
-    let (instance, operation) = tokio::task::block_in_place(|| {
+    let (_definition, instance, operation) = tokio::task::block_in_place(|| {
         let workflow = court
             .runtime
             .approved_business_payment(&court.approver, &scope);
         journey::prepare_approved_payment_operation(&workflow, &authority)
     });
-    tokio::task::block_in_place(|| {
+    let performed = tokio::task::block_in_place(|| {
         court
             .runtime
             .approved_business_payment(&court.approver, &scope)
@@ -37,7 +37,7 @@ async fn callback_settled_cancellation_survives_late_exact_duplicate() {
             )
             .expect("the real payment operation commits")
             .into_performed()
-            .expect("the rail owns the committed payment effect");
+            .expect("the rail owns the committed payment effect")
     });
 
     let signed = tokio::time::timeout(Duration::from_secs(20), court.proxy.await_first_capture())
@@ -81,6 +81,7 @@ async fn callback_settled_cancellation_survives_late_exact_duplicate() {
                 workflow.advanced().accept_native_effect(
                     instance.clone(),
                     &operation,
+                    &performed,
                     authority.clone(),
                     authority.clone(),
                     &key("approved-payment:cancel-court:perform"),

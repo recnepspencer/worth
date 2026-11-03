@@ -6,7 +6,10 @@ fn current_expiry_evidence_remains_descriptive() {
     world
         .transport
         .under(FaultScript::CommitThenLoseResponse, PATIENT);
-    let receipt = world.commit_notification(77);
+    let receipt_closed = world.commit_notification(77);
+    let receipt = receipt_closed
+        .live_receipt()
+        .expect("fresh source retains its full native owner");
     let handle = world.open_recovery(&receipt);
     assert_eq!(
         world
@@ -38,7 +41,10 @@ fn clock_advanced_expiry_terminalizes_through_bank() {
     world
         .transport
         .under(FaultScript::CommitThenLoseResponse, PATIENT);
-    let receipt = world.commit_notification(78);
+    let receipt_closed = world.commit_notification(78);
+    let receipt = receipt_closed
+        .live_receipt()
+        .expect("fresh source retains its full native owner");
     let handle = world.open_recovery(&receipt);
     authorization_time.advance_to_epoch_seconds(5_601);
     let BankRecoveryExpiryEvaluation::Expired(decision) = world

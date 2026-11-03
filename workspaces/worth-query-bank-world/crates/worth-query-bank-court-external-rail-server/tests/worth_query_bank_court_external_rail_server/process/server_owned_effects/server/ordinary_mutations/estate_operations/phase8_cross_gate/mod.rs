@@ -7,7 +7,10 @@ fn lost_response_recovery_through_real_rail_and_aftermath() {
         .transport
         .under(FaultScript::CommitThenLoseResponse, world::PATIENT);
     let revision_before = world.estate_account_revision();
-    let receipt = world.commit_with(world::idempotency(71));
+    let receipt_closed = world.commit_with(world::idempotency(71));
+    let receipt = receipt_closed
+        .live_receipt()
+        .expect("fresh source retains its full native owner");
     assert_lost_response_commit(&world, &receipt);
     assert_unresolved_recovery(&world, &receipt, revision_before);
 }
@@ -18,7 +21,10 @@ fn unrelated_aftermath_lookup_cannot_substitute_the_handle_contract() {
     world
         .transport
         .under(FaultScript::CommitThenLoseResponse, world::PATIENT);
-    let receipt = world.commit_notification(85);
+    let receipt_closed = world.commit_notification(85);
+    let receipt = receipt_closed
+        .live_receipt()
+        .expect("fresh source retains its full native owner");
     let aftermath = installed_notify_death_aftermath(&world.fixture.world.runtime);
     let substituted = installed_disburse_aftermath(&world.fixture.world.runtime);
     assert_ne!(substituted.identity(), aftermath.identity());
@@ -41,7 +47,10 @@ fn unrelated_aftermath_lookup_cannot_substitute_the_handle_contract() {
 fn already_completed_resolve_returns_inherited_taxonomy() {
     let world = cross_gate_world("already-completed");
     world.transport.under(FaultScript::Succeed, world::PATIENT);
-    let receipt = world.commit_with(world::idempotency(76));
+    let receipt_closed = world.commit_with(world::idempotency(76));
+    let receipt = receipt_closed
+        .live_receipt()
+        .expect("fresh source retains its full native owner");
     let specialist = world.fixture.authenticate_specialist();
     let resolution = world.fixture.world.runtime.resolve_commit_recovery(
         world.open_recovery(&receipt),
@@ -50,7 +59,7 @@ fn already_completed_resolve_returns_inherited_taxonomy() {
         &request_scope(),
     );
     match resolution {
-        Ok(BankRecoveryIdempotencyResolution::AlreadyCommitted) => {}
+        Ok(BankRecoveryIdempotencyResolution::RecoveredCommitted(_)) => {}
         Err(BankEstateProgressionDenial::Recovery(d))
             if d.kind() == BankRecoveryDenialKind::UnresolvedExternalPosture => {}
         other => panic!("expected AlreadyCommitted or unresolved posture, got {other:?}"),
@@ -61,7 +70,10 @@ fn already_completed_resolve_returns_inherited_taxonomy() {
 fn inspect_requires_disclosure_proof_not_boolean() {
     let world = cross_gate_world("inspect-disclosure");
     world.transport.under(FaultScript::Succeed, world::PATIENT);
-    let receipt = world.commit_notification(74);
+    let receipt_closed = world.commit_notification(74);
+    let receipt = receipt_closed
+        .live_receipt()
+        .expect("fresh source retains its full native owner");
     let specialist = world.fixture.authenticate_specialist();
     let view = world
         .fixture

@@ -57,7 +57,8 @@ fn sibling_publication_substitution_denies_before_transport() {
                 &phase.phase_for_application(&world.application),
                 &transport,
                 substituted,
-                &crate::domain_computation::primary_graph::tests::fixture::live_scope()
+                &crate::domain_computation::primary_graph::tests::fixture::live_scope(),
+                |_| {}
             ),
             Err(
                 WorthQueryExternalDispatchPreparationDenial::AttemptAdmissionDenied(

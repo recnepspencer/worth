@@ -119,29 +119,10 @@ pub(crate) fn direct_and_compat_mutation(
     (direct, compat)
 }
 
-pub(crate) fn idempotent_mutation(
-    server: &WorthServer,
-    identity: &str,
-    idempotency_key: &str,
-) -> WorthServerCompatibilityMutation {
-    worth_testkit_server::shared_support_compat_http_phase_three_runtime::compat_mutation_success(
-        server.compat_http().mutate(
-            worth_server::WorthServerCompatibilityMutationExecutionInput::new(
-                worth_testkit_server::shared_support_compat_http_phase_three_runtime::prepared_mutation_request(
-                    server,
-                    worth_testkit_server::shared_support_compat_http_phase_three_runtime::mutation_input("tasks.insert")
-                        .with_header("idempotency-key", idempotency_key)
-                        .build()
-                        .expect("idempotent mutation input should validate"),
-                ),
-                "tasks.insert",
-                worth_testkit_server::shared_support_compat_http_phase_three_runtime::single_insert_body(identity),
-            ),
-        ),
-    )
-}
-
-pub(crate) fn idempotent_mutation_conflict(
+// D9 explicitly retires process-memory retry authority. A synthetic workspace
+// with no installed Query application must refuse keyed writes without effect.
+// Positive retries are proved by durable_query_retry's actual filesystem Home.
+pub(crate) fn unconfigured_keyed_mutation_refusal(
     server: &WorthServer,
     identity: &str,
     idempotency_key: &str,
@@ -154,7 +135,7 @@ pub(crate) fn idempotent_mutation_conflict(
                     worth_testkit_server::shared_support_compat_http_phase_three_runtime::mutation_input("tasks.insert")
                         .with_header("idempotency-key", idempotency_key)
                         .build()
-                        .expect("idempotent conflict input should validate"),
+                        .expect("idempotent mutation input should validate"),
                 ),
                 "tasks.insert",
                 worth_testkit_server::shared_support_compat_http_phase_three_runtime::single_insert_body(identity),

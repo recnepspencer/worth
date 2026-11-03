@@ -191,8 +191,11 @@ async fn exercise_completion(
     tokio::task::block_in_place(|| {
         transport.under(FaultScript::CommitThenLoseResponse, Duration::from_secs(5));
     });
-    let receipt =
+    let closed =
         tokio::task::block_in_place(|| notification_source::issue(runtime, specialist, action))?;
+    let receipt = closed
+        .live_receipt()
+        .expect("fresh source retains its complete native owner");
     assert!(receipt.co_committed_dispatch_outbox());
     assert_eq!(receipt.emitted_effect_count(), 1);
     // This is only a selector copied from the actual Query-issued request.
@@ -214,17 +217,50 @@ async fn exercise_completion(
         terminal.original_world_commit(),
         terminal.completion_world_commit()
     );
-    // Terminal publication and the end of the physical in-flight lease retire
-    // the mandatory original basis. A receipt is not an indefinite read pin.
-    let retired = tokio::task::block_in_place(|| {
+    // Terminal delivery retires the mandatory window pin. The complete original
+    // owner still admits an exact read; its recorded meaning remains unchanged.
+    let original_outbox = tokio::task::block_in_place(|| {
         runtime.with_application_advancement(&support::request_scope(), |phase| {
             runtime.observe_committed_dispatch_outbox(&phase, &receipt)
         })
     })
-    .map_err(|cause| format!("Bank request refused: {cause:?}"))?;
+    .map_err(|cause| format!("Bank request refused: {cause:?}"))?
+    .map_err(|cause| format!("original outbox read refused: {cause:?}"))?
+    .expect("the original declared effect has its co-committed row");
+    let dispatched = transport.production_dispatches();
+    assert_eq!(dispatched.len(), 1);
+    let dispatched = &dispatched[0];
     assert_eq!(
-        retired,
-        Err(bank_server::BankCommittedDispatchOutboxReadDenial::ExactCommitUnavailable)
+        original_outbox.correlation(),
+        dispatched.correlation.token()
+    );
+    assert_eq!(
+        original_outbox.correlation_family(),
+        dispatched.correlation.family()
+    );
+    assert_eq!(original_outbox.effect(), dispatched.payload.effect());
+    assert_eq!(
+        original_outbox.protocol_identity(),
+        dispatched.payload.protocol_identity()
+    );
+    assert_eq!(
+        original_outbox.protocol_version(),
+        dispatched.payload.protocol_version()
+    );
+    assert_eq!(
+        original_outbox.maximum_payload_bytes(),
+        dispatched.payload.maximum_bytes()
+    );
+    assert_eq!(original_outbox.payload(), dispatched.payload.bytes());
+    let original_native = closed
+        .completion()
+        .live_receipt()
+        .expect("actual original Native owner")
+        .commit_reference();
+    assert_eq!(original_outbox.commit_id(), original_native.commit_id.0);
+    assert_eq!(
+        original_outbox.commit_version(),
+        original_native.version_id.0
     );
     let custody = tokio::time::timeout(Duration::from_secs(10), async {
         loop {

@@ -22,7 +22,7 @@ async fn close_before_payment_callback_preserves_unresolved_dispatch() {
         payment: payment_id,
         approver: principal_id(APPROVER),
     };
-    let (instance, operation) = tokio::task::block_in_place(|| {
+    let (_definition, instance, operation) = tokio::task::block_in_place(|| {
         let workflow = runtime.approved_business_payment(&approver, &scope);
         journey::prepare_approved_payment_operation(&workflow, &authority)
     });

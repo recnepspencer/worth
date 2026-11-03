@@ -96,10 +96,7 @@ fn exact_delegation_replays_after_parent_expiry_but_fresh_child_is_denied() {
     time.advance_to_epoch_seconds(201);
     let replay = delegate(&fixture, &principal, action, key.clone())
         .expect("an exact prior commit must replay after its parent expires");
-    assert!(matches!(
-        replay,
-        BankMutationCommitOutcome::AlreadyCommitted(_)
-    ));
+    assert!(matches!(replay, CommandCourtOutcome::RecoveredCommitted(_)));
 
     let EstateAction::DelegateCapability { child, .. } = &mut action else {
         unreachable!();

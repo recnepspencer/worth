@@ -1,3 +1,4 @@
+use crate::estate_progression::delegation::command_courts::CommandCourtOutcome;
 mod advancement_custody;
 mod owning_commands;
 use bank_domain::estate::{
@@ -17,8 +18,7 @@ use super::fixture::{
 };
 use crate::{
     BankApplicationQueryDenial, BankAuthenticatedPrincipal, BankCommitDenialKind,
-    BankCommitDenialStage, BankEstateProgressionDenial, BankMutationCommitOutcome,
-    BankReadControls,
+    BankCommitDenialStage, BankEstateProgressionDenial, BankReadControls,
 };
 
 mod delegation_request;
@@ -52,9 +52,13 @@ fn public_delegation_creates_the_exact_narrowed_child_and_retries_idempotently()
         &request_scope(),
     )
     .expect("Query must activate the exact narrowed child");
-    let BankMutationCommitOutcome::Committed(receipt) = &first else {
+    let CommandCourtOutcome::Committed(receipt) = &first else {
         panic!("unexpected delegation outcome: {first:?}");
     };
+    let original = receipt;
+    let receipt = original
+        .live_receipt()
+        .expect("fresh command owns its live projection");
     // The child id naming no grant is one of the facts decided on.
     assert_eq!(receipt.decision_fact_count(), Some(6));
     let canonical = receipt.canonical_work();
@@ -72,10 +76,12 @@ fn public_delegation_creates_the_exact_narrowed_child_and_retries_idempotently()
         &request_scope(),
     )
     .expect("the exact delegation retry must recover the first commit");
-    let BankMutationCommitOutcome::AlreadyCommitted(recovered) = &retry else {
+    let CommandCourtOutcome::RecoveredCommitted(recovered) = &retry else {
         panic!("the exact delegation retry must recover the first commit: {retry:?}");
     };
-    assert_admission_derives_the_request_identities_once(recovered.canonical_work().admission());
+    crate::estate_progression::delegation::command_courts::assert_original_receipt(
+        original, recovered,
+    );
 
     let drift = crate::estate_progression::delegation::command_courts::complete_delegation(
         &fixture.runtime,
@@ -87,7 +93,7 @@ fn public_delegation_creates_the_exact_narrowed_child_and_retries_idempotently()
     .expect("proposal drift is a typed commit outcome");
     assert!(matches!(
         drift,
-        BankMutationCommitOutcome::Denied {
+        CommandCourtOutcome::Denied {
             kind: BankCommitDenialKind::IdempotencyIntentDrift,
             stage: BankCommitDenialStage::Idempotency,
         }
@@ -139,7 +145,7 @@ fn revoking_the_exact_root_immediately_cuts_active_children_and_grandchildren() 
     let reviewer = fixture.authenticate_reviewer();
     let executor = fixture.authenticate_executor();
 
-    assert_committed(
+    let delegated = assert_committed(
         delegate(
             &fixture,
             &specialist,
@@ -182,10 +188,12 @@ fn revoking_the_exact_root_immediately_cuts_active_children_and_grandchildren() 
         idempotency(97),
     )
     .expect("the exact committed child should replay after its parent is revoked");
-    let BankMutationCommitOutcome::AlreadyCommitted(recovered) = &replay else {
+    let CommandCourtOutcome::RecoveredCommitted(recovered) = &replay else {
         panic!("the revoked parent's committed child must replay: {replay:?}");
     };
-    assert_admission_derives_the_request_identities_once(recovered.canonical_work().admission());
+    crate::estate_progression::delegation::command_courts::assert_original_receipt(
+        &delegated, recovered,
+    );
 
     assert_governance_denied(&fixture, &specialist);
     assert_governance_denied(&fixture, &approver);
@@ -282,7 +290,7 @@ fn delegate(
     principal: &BankAuthenticatedPrincipal,
     action: EstateAction,
     idempotency: BankIdempotencyKey,
-) -> Result<BankMutationCommitOutcome, BankEstateProgressionDenial> {
+) -> Result<CommandCourtOutcome, BankEstateProgressionDenial> {
     crate::estate_progression::delegation::command_courts::complete_delegation(
         &fixture.runtime,
         principal,
@@ -340,11 +348,11 @@ fn capability_if_present(
         .find(|capability| capability.id() == grant)
 }
 
-fn assert_committed(outcome: BankMutationCommitOutcome) {
-    assert!(
-        matches!(outcome, BankMutationCommitOutcome::Committed(_)),
-        "the public mutation must authoritatively commit: {outcome:?}"
-    );
+fn assert_committed(outcome: CommandCourtOutcome) -> crate::BankClosedCapabilityCommand {
+    match outcome {
+        CommandCourtOutcome::Committed(owner) => owner,
+        other => panic!("the public mutation must authoritatively commit: {other:?}"),
+    }
 }
 
 fn assert_admission_derives_the_request_identities_once(

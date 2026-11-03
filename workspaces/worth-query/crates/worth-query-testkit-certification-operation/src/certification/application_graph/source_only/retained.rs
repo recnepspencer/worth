@@ -75,6 +75,10 @@ pub fn observation(
         | WorthQuerySourceCompletion::Recovered {
             retained: Some(read),
             ..
+        }
+        | WorthQuerySourceCompletion::Recorded {
+            retained: Some(read),
+            ..
         } => read,
         _ => panic!("retained completion requires native observation"),
     }

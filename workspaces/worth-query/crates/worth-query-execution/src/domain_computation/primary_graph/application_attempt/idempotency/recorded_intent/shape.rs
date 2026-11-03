@@ -39,6 +39,7 @@ pub(in crate::domain_computation::primary_graph) fn validate(
         "workflow-approval",
         "mutation-binding",
         "correction",
+        "transport-intent",
     ];
     let mut previous = None;
     for slot in slots {
@@ -107,6 +108,7 @@ mod tests {
                 "workflow-approval",
                 "mutation-binding",
                 "correction",
+                "transport-intent",
             ]
             .map(|name| format!(":{name}={digest}"))
             .concat();

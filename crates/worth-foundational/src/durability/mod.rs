@@ -12,8 +12,10 @@ pub use composite_attempt_association::{
 mod home_identity;
 mod home_incarnation;
 mod owner_family;
+mod query_output_settlement;
 mod retention_class;
 mod state_family;
+pub use query_output_settlement::DurableQueryOutputSettlement;
 pub use state_family::DurableStateFamily;
 #[cfg(test)]
 mod tests;

@@ -129,7 +129,7 @@ fn later_commit_recovery_selects_exact_evidence_and_rejects_foreign_reference_ax
     else {
         panic!("the later exact-evidence target commits");
     };
-    let WorthQueryApplicationCommitOutcome::AlreadyCommitted(recovered) =
+    let WorthQueryApplicationCommitOutcome::RecoveredCommitted(recovered) =
         world.application.compare_and_commit_application(
             retry,
             idempotency(87, 88),
@@ -138,8 +138,11 @@ fn later_commit_recovery_selects_exact_evidence_and_rejects_foreign_reference_ax
     else {
         panic!("the later commit must not select the first stored entry");
     };
-    assert!(recovered.is_same_authoritative_commit(&later_receipt));
-    assert_retained_status(&recovered, "unrelated");
+    crate::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_original(
+        &recovered,
+        &later_receipt,
+    );
+    assert_retained_status(&later_receipt, "unrelated");
 
     let mut foreign_version = later_receipt.commit_reference().clone();
     foreign_version.version_id =

@@ -237,9 +237,13 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         let actual = occurrence
             .committed_product_publication()
             .composite_commit();
-        if actual.owner_identity().get() != locator.world_owner()
-            || actual.ordinal() != locator.world_commit()
-        {
+        let owner = match actual.owner_identity().durable() {
+            Some(owner) => worth_foundational::facade::WorldOwnerCoordinate::Home { owner },
+            None => worth_foundational::facade::WorldOwnerCoordinate::MemoryOnly {
+                observation: actual.owner_identity().get(),
+            },
+        };
+        if owner != locator.world_owner() || actual.ordinal() != locator.world_commit() {
             return Err(WorthQueryCorrectionSelectionDenial::SourcePublicationMismatch);
         }
         self.select_retained_occurrence(

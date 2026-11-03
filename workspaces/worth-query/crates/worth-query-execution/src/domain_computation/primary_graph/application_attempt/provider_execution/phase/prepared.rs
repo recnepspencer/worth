@@ -3,13 +3,10 @@ use worth_query_installation::facade::ApplicationSchema;
 
 use super::super::super::provider_binding::installed_preimage_demand;
 use super::super::super::{
-    provider_recomparison::recover_equivalent_commit_evidence,
-    WorthQueryApplicationCommitAuthorityBinding, WorthQueryApplicationCommitDenial,
-    WorthQueryApplicationCommitDenialStage as DenialStage, WorthQueryApplicationCommitOutcome,
-    WorthQueryApplicationCommitReceipt, WorthQueryApplicationEffectProgram,
-    WorthQueryApplicationIdempotencyBinding, WorthQueryCommittedReceiptProjection,
+    WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitDenialStage as DenialStage,
+    WorthQueryApplicationCommitOutcome, WorthQueryApplicationEffectProgram,
+    WorthQueryApplicationIdempotencyBinding,
 };
-use super::super::aftermath_resolution::resolve_exact_committed_aftermath;
 use super::super::elevation_currentness::WorthQueryElevationCommitCurrentness;
 use super::super::outcome::commit_outcome_from_authorization_denial;
 use super::super::provider_denial::{denied, denied_with_detail};
@@ -60,17 +57,6 @@ pub(in crate::domain_computation::primary_graph::application_attempt::provider_e
     aftermath_causality: Option<
         crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
     >,
-}
-
-pub(in crate::domain_computation::primary_graph::application_attempt) struct WorthQueryEarlyEquivalentCommitReceiptPermit
-{
-    _owner_mint: (),
-}
-
-impl WorthQueryEarlyEquivalentCommitReceiptPermit {
-    fn mint() -> Self {
-        Self { _owner_mint: () }
-    }
 }
 
 pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) enum WorthQueryApplicationCommitPreparation<

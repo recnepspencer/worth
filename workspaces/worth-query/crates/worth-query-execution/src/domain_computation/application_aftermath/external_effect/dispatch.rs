@@ -220,15 +220,16 @@ impl WorthQueryExternalEffectDispatch {
 pub(in crate::domain_computation) fn dispatch_external_effect(
     transport: &dyn WorthQueryExternalEffectTransport,
     admitted: crate::domain_computation::primary_graph::WorthQueryAdmittedExternalDispatchAttempt,
+    starting: impl FnOnce(),
 ) -> Result<WorthQueryExternalEffectDispatch, WorthQueryAftermathDerivationFailure> {
     with_admitted_dispatch(admitted, |attempt, clock, progression_work| {
         let correlation = *attempt.record().correlation();
         clock
             .sample(ApplicationCapabilityValidityTimeline::UnixEpochMilliseconds)
             .map_err(|_| WorthQueryAftermathDerivationFailure::RuntimeTimeUnavailable)?;
-        let observed = transport.dispatch(WorthQueryExternalDispatchRequest::for_record(
-            attempt.record(),
-        ));
+        let request = WorthQueryExternalDispatchRequest::for_record(attempt.record());
+        starting();
+        let observed = transport.dispatch(request);
         let classified = classify_dispatch_observation(observed, attempt, clock);
         let causal_ladder = WorthQueryExternalEffectCausalLadder {
             provider_commit: attempt.provider_commit().clone(),

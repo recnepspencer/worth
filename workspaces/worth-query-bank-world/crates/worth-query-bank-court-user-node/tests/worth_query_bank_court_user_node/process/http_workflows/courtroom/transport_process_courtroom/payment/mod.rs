@@ -35,7 +35,7 @@ async fn completed_payment_callback_waits_for_fresh_workflow_advance() {
         payment: payment_id,
         approver: principal_id(APPROVER),
     };
-    let (instance, operation) = tokio::task::block_in_place(|| {
+    let (definition, instance, operation) = tokio::task::block_in_place(|| {
         let workflow = runtime.approved_business_payment(&approver, &scope);
         journey::prepare_approved_payment_operation(&workflow, &authority)
     });
@@ -298,6 +298,7 @@ async fn completed_payment_callback_waits_for_fresh_workflow_advance() {
             &approver,
             &scope,
             instance.branch(),
+            &definition,
             authority,
         )
     });

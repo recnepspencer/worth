@@ -3,14 +3,16 @@ use super::*;
 
 #[test]
 fn only_a_new_commit_records_a_publication_in_this_advance() {
-    graph::output_lineage::own_write_fixture::with_committed_own_write(|_, receipt, _, _| {
+    graph::output_lineage::own_write_fixture::with_committed_own_write(|world, receipt, _, _| {
         let recorded = std::cell::Cell::new(0);
+        let recovered = crate::domain_computation::primary_graph::tests::fixture::recorded_receipt::read_original(world, &receipt);
         let replay = commit_receipt(
             "published fixture",
-            WorthQueryApplicationCommitOutcome::AlreadyCommitted(receipt.clone()),
+            WorthQueryApplicationCommitOutcome::RecoveredCommitted(recovered),
         )
-        .unwrap_or_else(|_| panic!("a replay retains its receipt"));
-        replay.record_publication(|| recorded.set(recorded.get() + 1));
+        .err()
+        .expect("original data cannot mint a producer publication capability");
+        assert!(replay.recovered_publication().is_some());
         assert_eq!(
             recorded.get(),
             0,

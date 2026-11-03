@@ -50,6 +50,7 @@ fn production_fresh_attempt_operation_distinguishes_safe_redispatch() {
                 &transport,
                 original_observation,
                 &live_scope(),
+                |_| {},
             )
             .expect("original dispatch");
         let retry = world
@@ -60,6 +61,7 @@ fn production_fresh_attempt_operation_distinguishes_safe_redispatch() {
                 &transport,
                 retry_observation,
                 &live_scope(),
+                |_| {},
             )
             .expect("safe redispatch");
         assert_eq!(
@@ -116,7 +118,8 @@ fn foreign_owner_observation_denies_before_transport_and_preserves_cause() {
                 &phase.phase_for_application(&world.application),
                 &transport,
                 foreign,
-                &live_scope()
+                &live_scope(),
+                |_| {}
             ),
             Err(
                 WorthQueryExternalDispatchPreparationDenial::AttemptAdmissionDenied(
@@ -151,7 +154,8 @@ fn unavailable_runtime_time_is_a_typed_dispatch_preparation_denial() {
                 &phase.phase_for_application(&world.application),
                 &transport,
                 observation,
-                &live_scope()
+                &live_scope(),
+                |_| {}
             ),
             Err(WorthQueryExternalDispatchPreparationDenial::TimeObservationDenied)
         );

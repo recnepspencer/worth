@@ -5,11 +5,18 @@ use crate::query_handoff::{UnavailableWorkspaceProvider, WorthServerQueryWorkspa
 #[derive(Clone)]
 pub struct WorthServerQueryHandoffConfig {
     workspace_provider: Arc<dyn WorthServerQueryWorkspaceProvider>,
+    application_mutation: Option<crate::WorthServerQueryApplicationMutationBinding>,
 }
 
 impl WorthServerQueryHandoffConfig {
     pub fn builder() -> WorthServerQueryHandoffConfigBuilder {
         WorthServerQueryHandoffConfigBuilder::default()
+    }
+
+    pub fn application_mutation(
+        &self,
+    ) -> Option<&crate::WorthServerQueryApplicationMutationBinding> {
+        self.application_mutation.as_ref()
     }
 
     pub fn workspace_provider(&self) -> &Arc<dyn WorthServerQueryWorkspaceProvider> {
@@ -31,12 +38,14 @@ impl fmt::Debug for WorthServerQueryHandoffConfig {
 #[derive(Clone)]
 pub struct WorthServerQueryHandoffConfigBuilder {
     workspace_provider: Arc<dyn WorthServerQueryWorkspaceProvider>,
+    application_mutation: Option<crate::WorthServerQueryApplicationMutationBinding>,
 }
 
 impl Default for WorthServerQueryHandoffConfigBuilder {
     fn default() -> Self {
         Self {
             workspace_provider: Arc::new(UnavailableWorkspaceProvider),
+            application_mutation: None,
         }
     }
 }
@@ -53,6 +62,14 @@ impl fmt::Debug for WorthServerQueryHandoffConfigBuilder {
 }
 
 impl WorthServerQueryHandoffConfigBuilder {
+    pub fn with_application_mutation(
+        mut self,
+        binding: crate::WorthServerQueryApplicationMutationBinding,
+    ) -> Self {
+        self.application_mutation = Some(binding);
+        self
+    }
+
     pub fn with_workspace_provider(
         mut self,
         workspace_provider: impl WorthServerQueryWorkspaceProvider,
@@ -74,6 +91,7 @@ impl WorthServerQueryHandoffConfigBuilder {
     ) -> Result<WorthServerQueryHandoffConfig, WorthServerQueryHandoffConfigError> {
         Ok(WorthServerQueryHandoffConfig {
             workspace_provider: self.workspace_provider,
+            application_mutation: self.application_mutation,
         })
     }
 }

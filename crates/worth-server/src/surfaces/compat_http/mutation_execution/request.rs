@@ -4,7 +4,7 @@ use serde_json::Value;
 
 use crate::{WorthServerQueryHandoffDenial, WorthServerQueryHandoffDenialCode};
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
 pub struct WorthServerCompatibilityMutationRequest {
     commands: Vec<WorthServerCompatibilityMutationCommand>,
     batch: bool,
@@ -98,7 +98,7 @@ impl WorthServerCompatibilityMutationRequest {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
 pub enum WorthServerCompatibilityMutationCommand {
     Insert {
         collection: String,

@@ -51,7 +51,8 @@ fn callback_winner_is_recognized_before_transport_world_publication() {
         .unwrap()
         .unwrap();
     let completed =
-        dispatch_external_effect(&CompletingTransport(AtomicUsize::new(0)), admitted).unwrap();
+        dispatch_external_effect(&CompletingTransport(AtomicUsize::new(0)), admitted, || {})
+            .unwrap();
     let evidence = InstalledTransportCompletion::from_observed_dispatch(owner, &completed).unwrap();
     world
         .application
