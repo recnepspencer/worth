@@ -19,7 +19,7 @@ impl RelationalRegionResidency {
             return (cold.entity_slots, cold.relation_slots);
         }
         let state = self.state.lock().unwrap_or_else(|error| error.into_inner());
-        match &*state {
+        match &**state {
             ResidencyState::Head { region, .. } | ResidencyState::Full(region) => (
                 region.partition.entity_arena.slot_count(),
                 region.partition.relation_arena.slot_count(),
@@ -38,7 +38,7 @@ impl RelationalRegionResidency {
             .state
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
-        match &*state {
+        match &**state {
             ResidencyState::Head { region, .. } | ResidencyState::Full(region) => {
                 region.partition.allocation_inventory()
             }
@@ -52,7 +52,7 @@ impl RelationalRegionResidency {
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
         let resident = matches!(
-            &*state,
+            &**state,
             ResidencyState::Head { .. } | ResidencyState::Full(_)
         );
         (std::mem::size_of::<Self>()
@@ -69,7 +69,7 @@ impl RelationalRegionResidency {
             .state
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
-        match &*state {
+        match &**state {
             ResidencyState::Head { region, .. } | ResidencyState::Full(region) => region
                 .commitment
                 .as_ref()
@@ -86,7 +86,7 @@ impl RelationalRegionResidency {
             .state
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
-        if let ResidencyState::Head { region, .. } | ResidencyState::Full(region) = &*state
+        if let ResidencyState::Head { region, .. } | ResidencyState::Full(region) = &**state
             && let Some(commitment) = &region.commitment
         {
             commitment.visit_allocations(visitor);

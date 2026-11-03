@@ -1326,6 +1326,7 @@ dependencies = [
  "worth-query-package-archive",
  "worth-query-replay",
  "worth-query-testkit-certification-application-graph",
+ "worth-query-testkit-certification-canonical",
  "worth-query-testkit-document-retention",
  "worth-query-testkit-host",
  "worth-relational",
@@ -1397,6 +1398,7 @@ name = "worth-query-court-query-decl-host"
 version = "0.1.0"
 dependencies = [
  "serde",
+ "serde_json",
  "worth-execution",
  "worth-foundational",
  "worth-query-decl",

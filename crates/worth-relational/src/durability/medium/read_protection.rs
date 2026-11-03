@@ -67,7 +67,7 @@ impl RelationalDurableReadProtection {
         source: &Arc<dyn RelationalDurableColdSource>,
     ) -> Result<(), Refusal> {
         // The Weak keeps this allocation identity non-reusable. Never upgrade it.
-        if self.issuer.as_ptr().cast::<()>() != Arc::as_ptr(source).cast::<()>() {
+        if !Weak::ptr_eq(&self.issuer, &Arc::downgrade(source)) {
             return Err(Refusal::ForeignSource);
         }
         Ok(())

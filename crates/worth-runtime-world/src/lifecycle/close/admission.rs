@@ -4,8 +4,25 @@ use crate::lifecycle::owner::RuntimeWorldOwnerState;
 use std::sync::{Arc, Mutex};
 use worth_execution::ExecutionRequest;
 mod gates;
+mod receipt;
+pub(crate) use receipt::RecoveredCloseReceipt;
 #[cfg(test)]
 mod tests;
+
+pub(crate) fn checkpoint(request: &ExecutionRequest<'_, '_>, units: u64) -> Result<(), Denial> {
+    let mut stopped = None;
+    let scope = request.run_native_with_checkpoint(|context| {
+        stopped = Some(if context.has_accounting() {
+            context.checkpoint(units)
+        } else {
+            context.poll()
+        });
+    });
+    if let Some(Err(cause)) = stopped {
+        return Err(Denial::Stopped(cause));
+    }
+    scope.map(|_| ()).map_err(Denial::Execution)
+}
 
 /// Holds the actual final admission gates without changing World state.
 /// Drop leaves Open. No supplier callback or I/O belongs inside this cut.
@@ -46,8 +63,11 @@ where
     observe(state, request)?;
     let frontier = state.history.close_frontier(request)?;
     // Original-request funding and task allocation happen outside owner gates.
-    let task = CloseProgress::prepare_task(request)?;
+    let task = CloseProgress::prepare_task(request, &state.recovery, &state.history)?;
     let gates = gates::borrow(state, request)?;
+    task.try_lock()
+        .map_err(|_| Denial::Busy)?
+        .validate_recovered(&state.recovery, &state.history, request)?;
     state.history.try_validate_close_frontier(&frontier)?;
     request.check_live().map_err(Denial::Stopped)?;
     Ok(RuntimeWorldPreCloseAdmission { gates, task })

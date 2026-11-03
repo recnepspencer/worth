@@ -110,7 +110,7 @@ fn cancellation_during_bridge_read_remains_cancellation_in_the_advancement() {
         );
         let (entered, ready) = sync_channel(1);
         let (release, released) = sync_channel(1);
-        let source = world.application.product_runtime.source.clone();
+        let source = world.application.product_runtime.source().clone();
         let (_, basis) = source
             .observe_branch_basis(&world.application.relational_branch_identity)
             .unwrap();

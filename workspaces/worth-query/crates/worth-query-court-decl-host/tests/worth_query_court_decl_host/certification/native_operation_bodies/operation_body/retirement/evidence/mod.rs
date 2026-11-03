@@ -40,8 +40,10 @@ fn value_change_retires_all_selections_preserves_holders_and_replays_original_co
     ));
     snapshot(&app, 303, false);
     match invoke_input(&app, 1202, input(8)) {
-        Outcome::AlreadyCommitted(replay) => {
-            assert_eq!(original.outcome_identity(), replay.outcome_identity())
+        Outcome::RecoveredCommitted(replay) => {
+            worth_query_testkit_certification_canonical::facade::recorded_receipt_comparison::assert_original(
+                &replay, &original,
+            )
         }
         other => panic!("original replay: {other:?}"),
     }

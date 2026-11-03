@@ -43,7 +43,7 @@ impl<'host> Model<'host> {
             drop(rows);
             return self.advance_pending(storage, caller);
         }
-        if matches!(resolution, Resolution::AlreadyCommitted(_)) {
+        if matches!(resolution, Resolution::RecoveredCommitted(_)) {
             let claim = storage
                 .read_claim(caller, &loaded.input(key))
                 .map_err(Failure::ClaimRead)?;

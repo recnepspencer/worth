@@ -15,7 +15,9 @@ pub(super) fn locators(
 pub(super) fn values(pending: &WorthQueryPendingAftermathCausality) -> [Option<AspectValue>; 4] {
     let source = pending.recorded_source();
     [
-        Some(AspectValue::UInt64(source.world().owner_identity().get())),
+        Some(AspectValue::UInt64(
+            source.world_owner_coordinate().row_owner_number(),
+        )),
         Some(AspectValue::UInt64(source.world().ordinal())),
         Some(AspectValue::String(InternedString::from(
             source.relational().branch_id.0.clone(),

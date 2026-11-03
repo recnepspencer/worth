@@ -1,6 +1,6 @@
 use super::*;
 
-pub trait BridgeSourceAdapter: Send + Sync + 'static {
+pub trait BridgeSourceAdapter: std::any::Any + Send + Sync + 'static {
     fn declared_capabilities(&self) -> BridgeSourceCapabilitySet;
 
     fn open_snapshot(

@@ -40,7 +40,7 @@ impl Clone for VersionedEntityMetadata {
             self.retired_at,
             self.generation,
             self.kind_id,
-            self.lineage_id.clone(),
+            self.lineage_id,
             self.extra.clone(),
         )
     }

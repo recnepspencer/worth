@@ -13,7 +13,7 @@ impl RelationalRegionResidency {
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
         self.check_damage()?;
-        match &*state {
+        match &**state {
             ResidencyState::Head { region } | ResidencyState::Full(region) => {
                 {
                     let update_counter = &self.leases;
@@ -52,7 +52,7 @@ impl RelationalRegionResidency {
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
         self.check_damage()?;
-        match &*state {
+        match &**state {
             ResidencyState::Head { region, .. } | ResidencyState::Full(region)
                 if self.backing.is_none() =>
             {
@@ -92,7 +92,7 @@ impl RelationalRegionResidency {
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
         self.check_damage()?;
-        match &*state {
+        match &**state {
             ResidencyState::Full(region) if self.backing.is_none() => {
                 {
                     let update_counter = &self.leases;

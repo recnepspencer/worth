@@ -16,19 +16,42 @@ pub(super) struct CheckpointEnvelopeLocation {
 ///
 /// Envelopes and checkpoints are held by shared ownership so a reader can
 /// carry them out of the subsystem lock without copying them.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Default)]
 pub(crate) struct DurabilityState {
+    pub(super) medium: Option<Arc<crate::durability::medium::RelationalDurableMediumBinding>>,
+    pub(super) transition_history:
+        Option<crate::durability::medium::RelationalTransitionHistoryReader>,
+    pub(super) cold_source: Option<Arc<dyn crate::durability::medium::RelationalDurableColdSource>>,
     pub(super) log: Vec<(
         CommitId,
         PatchStreamPosition,
         Arc<RelationalCommitEnvelopeResidency>,
     )>,
     pub(super) checkpoints: Vec<Arc<DurableCheckpoint>>,
+    pub(super) source_roots: Option<Arc<crate::durability::RecoveredRootInventory>>,
     log_commit_index: HashMap<CommitId, usize>,
     checkpoint_commit_index: HashMap<CommitId, CheckpointEnvelopeLocation>,
 }
 
 impl DurabilityState {
+    pub(super) fn fork_snapshot(
+        &self,
+        transition_history: Option<crate::durability::medium::RelationalTransitionHistoryReader>,
+    ) -> Self {
+        Self {
+            medium: None,
+            transition_history,
+            cold_source: self.cold_source.clone(),
+            log: self.log.clone(),
+            checkpoints: self.checkpoints.clone(),
+            // A fork has its own actual branch inventory. It does not acquire
+            // the source owner's separate checkpoint-image admissions.
+            source_roots: None,
+            log_commit_index: self.log_commit_index.clone(),
+            checkpoint_commit_index: self.checkpoint_commit_index.clone(),
+        }
+    }
+
     pub(super) fn push_log_envelope(
         &mut self,
         commit: (

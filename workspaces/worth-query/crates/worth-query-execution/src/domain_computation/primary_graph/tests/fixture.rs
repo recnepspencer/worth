@@ -247,3 +247,6 @@ pub(in crate::domain_computation::primary_graph) mod correction_source;
 pub(crate) use advancement_host::AdvancementHost;
 mod reconstruction_execution;
 pub(in crate::domain_computation::primary_graph) use reconstruction_execution::isolated_request_owner;
+
+#[path = "fixture/recorded_receipt.rs"]
+pub(in crate::domain_computation::primary_graph) mod recorded_receipt;

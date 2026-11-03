@@ -64,7 +64,7 @@ impl CanonicalCheckpointMembers {
             return Ok(None);
         }
         let size = Self::allocation_bytes(count)
-            .ok_or_else(|| crate::execution::RelationalExecutionDenialCause::MemoryOverflow)?;
+            .ok_or(crate::execution::RelationalExecutionDenialCause::MemoryOverflow)?;
         request.reserve_retained_memory(size).map_err(Into::into)
     }
     pub(crate) fn from_reserved(

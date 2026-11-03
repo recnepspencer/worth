@@ -52,6 +52,14 @@ impl std::fmt::Debug for ActiveAttemptCustody {
 }
 
 impl ActiveAttemptCustody {
+    pub(crate) fn publication_envelope(
+        &self,
+    ) -> &Arc<crate::history::CanonicalPublicationEnvelope> {
+        self.record
+            .publication
+            .as_ref()
+            .expect("ordinary attempt reserves original publication")
+    }
     pub(crate) fn reserved_commit_identity(&self) -> crate::identity::CompositeCommitIdentity {
         self.record
             .state()

@@ -114,8 +114,11 @@ fn reader() {
     let (_, live) = scope();
     assert_eq!(balance(home.runtime(), &live), 8);
     match set(home.runtime(), &live, 0x8807, 8).unwrap() {
-        WorthQueryApplicationMutationOutcome::PreviouslyCommitted(observed) => {
-            println!("HOME_READER_OLD_COMMIT={}", observed.commit_id().0)
+        WorthQueryApplicationMutationOutcome::RecoveredCommitted(observed) => {
+            println!(
+                "HOME_READER_OLD_COMMIT={}",
+                observed.commit_reference().commit_id.0
+            )
         }
         other => panic!("old key must preserve only its historical fact: {other:?}"),
     }

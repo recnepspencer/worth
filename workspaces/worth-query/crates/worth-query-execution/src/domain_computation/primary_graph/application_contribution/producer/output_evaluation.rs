@@ -43,6 +43,10 @@ pub(in crate::domain_computation::primary_graph) struct ProducerOutputEvaluation
 pub(in crate::domain_computation::primary_graph) enum ProducerOutputEvaluationState {
     Ineligible(WorthQueryProducerEvaluationIneligibility),
     CaptureUnavailable(
+        #[allow(
+            dead_code,
+            reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it"
+        )]
         crate::domain_computation::primary_graph::application_attempt::OutputFieldCaptureFailure,
     ),
     Compared(ComparedProducerOutput),
@@ -147,6 +151,8 @@ impl InstalledOutputComparison {
             )? {
                 Err(cause) => ProducerOutputEvaluationState::Ineligible(cause),
                 Ok(observed) => {
+                    // fetch_update is the supported atomic spelling at MSRV 1.94.
+                    #[allow(deprecated)]
                     let attempt = attempts
                         .fetch_update(
                             std::sync::atomic::Ordering::Relaxed,

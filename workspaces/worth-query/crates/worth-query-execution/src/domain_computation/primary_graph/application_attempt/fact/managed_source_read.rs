@@ -30,7 +30,7 @@ pub(in crate::domain_computation::primary_graph) struct ManagedInfluenceOrigin {
 }
 
 #[derive(Clone)]
-pub(in crate::domain_computation::primary_graph) struct ManagedSourceRead {
+pub(in crate::domain_computation) struct ManagedSourceRead {
     key: ManagedSourceReadKey,
     authorization: Arc<super::SourceReadAuthorization>,
     native: Arc<ManagedIndexSourceObservation>,

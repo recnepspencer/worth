@@ -56,13 +56,10 @@ where
                     .map_err(Denial::Binding)?;
                 let prepared = source.authorize_recovery_view(&phase, request, &mut view)
                     .map_err(Denial::Opening)?;
-                let receipt = match self.evidence() {
-                    WorthQuerySourceCompletion::Fresh { receipt, .. }
-                    | WorthQuerySourceCompletion::Recovered { receipt, .. } => receipt,
-                };
+                let receipt = self.evidence().live_receipt();
                 let custody = WorthQueryWorkflowAdvanceAdapter::resolve_guarded_operation_custody(
                     &phase, source.runtime.runtime(), &prepared.admission, prepared.idempotency,
-                    self.required.transition_identity_bytes(), Some(receipt),
+                    self.required.transition_identity_bytes(), receipt,
                 ).map_err(Denial::Inspection)?;
                 let receipt = match custody {
                     WorthQueryGuardedWorkflowOperationCustody::Committed(receipt)

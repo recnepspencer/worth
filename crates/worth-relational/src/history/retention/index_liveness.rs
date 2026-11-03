@@ -21,13 +21,34 @@ impl super::RelationalBranchRetentionOwner {
                 self.inner
                     .index_retention_roots_examined
                     .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                let Some(retired) = self.inner.retired_roots.get(&key) else {
+                let snapshot = {
+                    let roots = self.inner.read_retired_roots();
+                    roots
+                        .get(&key)
+                        .filter(|retired| retired.generation == generation && retired.retired)
+                        .map(|retired| {
+                            (
+                                retired.root.clone(),
+                                retired.historical_binding.clone(),
+                                match branch {
+                                    Some(branch) => retired
+                                        .branch_bindings
+                                        .get(branch)
+                                        .cloned()
+                                        .into_iter()
+                                        .collect::<Vec<_>>(),
+                                    None => retired
+                                        .branch_bindings
+                                        .values()
+                                        .cloned()
+                                        .collect::<Vec<_>>(),
+                                },
+                            )
+                        })
+                };
+                let Some((root, historical, branches)) = snapshot else {
                     return false;
                 };
-                if retired.generation != generation || !retired.retired {
-                    return false;
-                }
-                let root = &retired.root;
                 if root
                     .canonical_envelope()
                     .map(|envelope| envelope.commit.version_id)
@@ -37,17 +58,10 @@ impl super::RelationalBranchRetentionOwner {
                     return false;
                 }
                 let id = root.id();
-                retired.historical_binding.has_root_obligation(id)
-                    || match branch {
-                        Some(branch) => retired
-                            .branch_bindings
-                            .get(branch)
-                            .is_some_and(|binding| binding.has_root_obligation(id)),
-                        None => retired
-                            .branch_bindings
-                            .values()
-                            .any(|binding| binding.has_root_obligation(id)),
-                    }
+                historical.has_root_obligation(id)
+                    || branches
+                        .iter()
+                        .any(|binding| binding.has_root_obligation(id))
             })
     }
 }

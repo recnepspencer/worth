@@ -116,7 +116,6 @@ impl CorrespondenceAllocationRegistry {
         self.retained_aspect_by_target.clear();
     }
 
-    #[cfg(test)]
     pub(crate) fn is_empty(&self) -> bool {
         self.authoritative_records.is_empty()
             && self.owners.is_empty()

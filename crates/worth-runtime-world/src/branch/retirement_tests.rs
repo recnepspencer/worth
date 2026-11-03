@@ -189,7 +189,7 @@ pub(super) fn owner_lifecycles(
     (
         owner
             .state
-            .relational
+            .relational_services()
             .lifecycle_port()
             .owner_lifecycle_observation(),
         owner
@@ -291,7 +291,7 @@ fn branch_capacity_denies_before_identity_or_retention_work_for_fork_input() {
 
     let relational_lifecycle = owner
         .state
-        .relational
+        .relational_services()
         .lifecycle_port()
         .owner_lifecycle_observation();
     let signal_lifecycle = owner
@@ -316,7 +316,7 @@ fn branch_capacity_denies_before_identity_or_retention_work_for_fork_input() {
     assert_eq!(
         owner
             .state
-            .relational
+            .relational_services()
             .lifecycle_port()
             .owner_lifecycle_observation(),
         relational_lifecycle

@@ -5,7 +5,7 @@ fn disbursement_recovery_uses_its_own_admitted_operation() {
     let fixture = disbursement_world("disbursement-recovery-authority", 1_000);
     let specialist = fixture.authenticate_actor();
     let action = fixture.action(250);
-    let outcome = {
+    let outcome_closed = {
         let closing_actor = &specialist;
         let closing_scope = worth_query_bank_testkit_server::facade::support::request_scope();
         let closing_request = fixture.world.runtime.request(closing_actor, &closing_scope);
@@ -19,16 +19,19 @@ fn disbursement_recovery_uses_its_own_admitted_operation() {
             done.evidence(),
             worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Fresh { .. }
         ));
-        bank_server::BankCommitReceipt::from_closed_source(
+        bank_server::BankClosedSourceCompletion::from_query(
             done.close_with_evidence(&closing_request)
                 .unwrap_or_else(|(_, cause)| panic!("source close: {cause:?}")),
         )
     };
+    let outcome = outcome_closed
+        .live_receipt()
+        .expect("fresh completion retains its actual live receipt");
     let receipt = outcome;
     let handle = fixture
         .world
         .runtime
-        .open_commit_recovery(&receipt)
+        .open_commit_recovery(receipt)
         .expect("the committed receipt must open its exact recovery handle");
     fixture
         .world
@@ -42,7 +45,7 @@ fn disbursement_recovery_uses_its_own_admitted_operation() {
         .expect("resolution must use the disbursement operation rather than NotifyDeath");
     assert!(matches!(
         resolution,
-        BankRecoveryIdempotencyResolution::AlreadyCommitted
+        BankRecoveryIdempotencyResolution::RecoveredCommitted(_)
     ));
 }
 
@@ -51,7 +54,7 @@ fn disbursement_compensation_uses_its_own_admitted_operation() {
     let fixture = disbursement_world("disbursement-compensation-authority", 1_000);
     let specialist = fixture.authenticate_actor();
     let action = fixture.action(250);
-    let outcome = {
+    let outcome_closed = {
         let closing_actor = &specialist;
         let closing_scope = worth_query_bank_testkit_server::facade::support::request_scope();
         let closing_request = fixture.world.runtime.request(closing_actor, &closing_scope);
@@ -65,16 +68,19 @@ fn disbursement_compensation_uses_its_own_admitted_operation() {
             done.evidence(),
             worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Fresh { .. }
         ));
-        bank_server::BankCommitReceipt::from_closed_source(
+        bank_server::BankClosedSourceCompletion::from_query(
             done.close_with_evidence(&closing_request)
                 .unwrap_or_else(|(_, cause)| panic!("source close: {cause:?}")),
         )
     };
+    let outcome = outcome_closed
+        .live_receipt()
+        .expect("fresh completion retains its actual live receipt");
     let receipt = outcome;
     let handle = fixture
         .world
         .runtime
-        .open_commit_recovery(&receipt)
+        .open_commit_recovery(receipt)
         .expect("the committed receipt must open its exact recovery handle");
     let transition = fixture
         .world

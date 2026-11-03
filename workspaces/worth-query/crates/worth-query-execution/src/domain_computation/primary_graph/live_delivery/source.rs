@@ -105,6 +105,10 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryLiveCommitBatc
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryLiveCommitBatchCell(
     OnceLock<WorthQueryLiveCommitBatch>,
+    #[allow(
+        dead_code,
+        reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it"
+    )]
     Arc<SourceFactsAllocation>,
 );
 

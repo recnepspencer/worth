@@ -161,7 +161,7 @@ fn copy(
     let mut buffer = ExecutionRequestArrayBuilder::<u8>::allocate(*request, bytes.len())
         .map_err(Refusal::Buffer)?;
     buffer.extend_from_slice(bytes).map_err(Refusal::Buffer)?;
-    Ok(buffer.seal_immutable_bytes().map_err(Refusal::Buffer)?)
+    buffer.seal_immutable_bytes().map_err(Refusal::Buffer)
 }
 fn map_failure(cause: worth_execution::ExecutionOrderedMapDenial) -> Refusal {
     use worth_execution::ExecutionOrderedMapDenial as Denial;

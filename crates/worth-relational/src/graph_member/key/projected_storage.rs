@@ -9,9 +9,6 @@ struct Backing {
     memory: OnceLock<Option<ExecutionMemoryReservation>>,
 }
 impl ProjectedMemberStorage {
-    pub fn as_ref(&self) -> &super::ProjectedMemberCoordinate {
-        &self.0.value
-    }
     pub(crate) fn control_bytes() -> Option<u64> {
         let layout = std::alloc::Layout::new::<(usize, usize)>()
             .extend(std::alloc::Layout::new::<Backing>())

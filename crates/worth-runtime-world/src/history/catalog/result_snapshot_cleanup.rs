@@ -64,7 +64,7 @@ impl CompositeHistoryCatalog {
         }
         let result = match &entry.publication {
             None if matches!(
-                entry.commit.parent(),
+                entry.commit().parent(),
                 crate::history::CompositeCommitParent::Root
             ) && state.root.as_ref() == Some(identity) =>
             {

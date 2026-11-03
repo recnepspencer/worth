@@ -14,6 +14,36 @@ where
     I: Copy + Ord + Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
+    fn observe_memory_original_publication(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        effect: worth_relational::facade::durability::ObservedRelationalMemoryCommit,
+    ) -> Result<
+        crate::history::WorldObservedMemoryPublication,
+        crate::history::WorldReadmittedPublicationDenial,
+    > {
+        use crate::history::WorldReadmittedPublicationDenial as Denial;
+        let _call = self.try_admit_call().ok_or(Denial::OwnerUnavailable)?;
+        let _operation = self
+            .reserve_creation_operation()
+            .map_err(|()| Denial::OwnerUnavailable)?;
+        if self.state.durable.is_some() {
+            return Err(Denial::ForeignHome);
+        }
+        self.state
+            .history
+            .observe_memory_original(execution, self.owner_identity(), effect)
+    }
+    fn readmitted_native_publication(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        effect: worth_relational::facade::durability::ReadmittedRelationalAssociatedEffect,
+    ) -> Result<
+        crate::history::WorldReadmittedPublication,
+        crate::history::WorldReadmittedPublicationDenial,
+    > {
+        self.read_original_native_publication(execution, effect)
+    }
     fn readmitted_publication(
         &self,
         identity: &worth_foundational::facade::DurableCompositeCommitIdentity,

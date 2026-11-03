@@ -20,6 +20,22 @@ pub(crate) struct BridgeExecutionBasisReservationRegistry {
 }
 
 impl BridgeExecutionBasisReservationRegistry {
+    pub(crate) fn try_home_stop_guard(
+        &self,
+    ) -> Result<
+        std::sync::MutexGuard<'_, HashSet<BridgeExecutionBasisReservationKey>>,
+        crate::facade::BridgeHomeRetirementDenial,
+    > {
+        let guard = self
+            .reserved
+            .try_lock()
+            .map_err(|_| crate::facade::BridgeHomeRetirementDenial::Busy)?;
+        if guard.is_empty() {
+            Ok(guard)
+        } else {
+            Err(crate::facade::BridgeHomeRetirementDenial::Busy)
+        }
+    }
     pub(crate) fn reserve(
         self: &Arc<Self>,
         key: BridgeExecutionBasisReservationKey,

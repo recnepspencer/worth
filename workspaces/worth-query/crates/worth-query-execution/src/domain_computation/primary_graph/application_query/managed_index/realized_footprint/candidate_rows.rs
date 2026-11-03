@@ -105,7 +105,6 @@ impl CapturedCandidateRows {
                             scratch.reserve,
                             &mut |cause| {
                                 (scratch.fault)(cause);
-                                ()
                             },
                         )
                         .unwrap_or(false))
@@ -158,8 +157,8 @@ impl CapturedCandidateRows {
             let current = rows
                 .entry(entity)
                 .ok_or_else(|| control.refuse(Stop::SourceSlotUnavailable))?;
-            if !Arc::ptr_eq(&original.body, current) {
-                if original.body.content(control)? != current.content(control)?
+            if !Arc::ptr_eq(&original.body, current)
+                && (original.body.content(control)? != current.content(control)?
                     || !original
                         .body
                         .same_content(current, &mut |work| control.checkpoint(work),
@@ -170,11 +169,10 @@ impl CapturedCandidateRows {
                                     Fault::CapacityOverflow => Stop::CapacityOverflow,
                                     Fault::AllocationFailed => Stop::MaterialStorage(worth_relational::facade::transactions::RelationalExecutionDenialCause::AllocationFailed),
                                 })
-                            })?
+                            })?)
                 {
                     return Ok(false);
                 }
-            }
         }
         Ok(true)
     }

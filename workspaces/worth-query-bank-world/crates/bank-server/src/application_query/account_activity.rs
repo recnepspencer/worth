@@ -92,6 +92,30 @@ impl<'runtime, 'principal> BankAccountActivityRequestForPrincipal<'runtime, 'pri
             .map_err(BankApplicationQueryDenial::ExecutionRequest)?
     }
 
+    /// Selects original receipt data through current authorization and bounded owner history.
+    pub fn historical_original(
+        self,
+        commit: &worth_query_host::facade::primary_graph::WorthQueryRecoveredApplicationCommitReceipt,
+        maximum_result_count: NonZeroUsize,
+        maximum_history_work: NonZeroUsize,
+        request: &worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope,
+    ) -> Result<BankAccountActivityHistoricalResult, BankApplicationQueryDenial> {
+        let application = self.runtime.application_runtime();
+        application
+            .with_application_advancement(request, |phase| {
+                let ordinary = application.request(self.principal.external(), request);
+                let selected = ordinary
+                    .at_original_receipt(&phase, commit, Some(maximum_history_work))
+                    .map_err(BankApplicationQueryDenial::from_history_selection)?;
+                selected
+                    .query(account_activity(self.account))
+                    .limit_results(maximum_result_count)
+                    .execute_in_advancement(&phase)
+                    .map_err(BankApplicationQueryDenial::from_request_query)
+            })
+            .map_err(BankApplicationQueryDenial::ExecutionRequest)?
+    }
+
     pub fn retained(
         self,
         observation: &worth_query_host::facade::application_entry::WorthQueryApplicationReadObservation,

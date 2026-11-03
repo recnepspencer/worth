@@ -36,6 +36,8 @@ pub(crate) use position_retention::RetainedCanonicalPosition;
 
 #[path = "canonical_publication_routes/indexed_catalog.rs"]
 mod indexed_catalog;
+#[path = "canonical_publication_routes/source_retirement.rs"]
+mod source_retirement;
 use branch_transition_stream::BranchTransitionStream;
 pub(crate) use branch_transition_stream::{
     BranchTransitionPublication, BranchTransitionRecordError, OriginalBranchSchemaInputs,
@@ -50,6 +52,7 @@ pub use position_admission::RelationalCanonicalPositionAdmissionDenial;
 pub(crate) use position_admission::{
     readmit_positioned_canonical_commit, CanonicalPositionAdmission,
 };
+pub(crate) use source_retirement::RelationalPerformedSourceWalk;
 
 pub(crate) struct RelationalCanonicalPublicationRoutes {
     checkpoint_catalog: RwLock<

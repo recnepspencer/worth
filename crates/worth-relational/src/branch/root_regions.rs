@@ -7,6 +7,10 @@ use super::root::{
     RelationalBranchRootCaptureDenial, RelationalBranchRootIdentityIssuer, RelationalRootRegion,
 };
 
+mod source_retirement;
+pub(crate) use source_retirement::{
+    RelationalRegionSourceWalk, RelationalRegionSourceWalkProgress,
+};
 mod insertion;
 use insertion::insert_leaf;
 mod request_construction;

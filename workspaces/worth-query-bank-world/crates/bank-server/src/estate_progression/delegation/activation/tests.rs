@@ -100,7 +100,7 @@ fn parent_revocation_after_activation_materialization_denies_final_commit() {
     .expect("the exact parent must revoke before the stale program reaches the provider");
     assert!(matches!(
         revoked,
-        crate::BankMutationCommitOutcome::Committed(_)
+        crate::estate_progression::delegation::command_courts::CommandCourtOutcome::Committed(_)
     ));
     let outcome = fixture
         .runtime

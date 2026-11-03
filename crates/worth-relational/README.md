@@ -716,3 +716,12 @@ no selected checkpoint or journal tail. Fresh admission never creates recovered
 authority or restore-work evidence. It does not supply missing historical
 original inputs on reopen, admit a selected Complete Home source, or retire
 Native/provider service graphs.
+
+### Retire one external branch lease
+
+`RelationalBranchRetentionLease::into_observation_retirement` consumes that
+original issued lease through the existing retained-observation retirement
+task. It retires the external obligation and the lease's original observation
+share under the supplied request, retaining inert original allocations until
+explicit reclaim. An independently held observation keeps its genuine read
+veto. This local retirement does not establish whole-runtime or physical close.

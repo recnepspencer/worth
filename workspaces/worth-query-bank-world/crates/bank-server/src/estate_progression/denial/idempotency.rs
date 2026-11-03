@@ -24,7 +24,6 @@ pub enum BankEstateIdempotencyResolutionDenial {
     ),
     /// The key is recorded with the same intent and that commit took effect,
     /// but the runtime no longer holds its receipt, as after a restore.
-    CommittedReceiptNotRetained,
     /// The key's recorded intent was written by an earlier encoding that
     /// cannot be checked against this request.
     RecordedIntentUnverifiable,
@@ -79,9 +78,6 @@ fn from_kind(
         WorthQueryApplicationIdempotencyResolutionDenialKind::ProviderUnavailable => {
             BankEstateIdempotencyResolutionDenial::ProviderUnavailable
         }
-        WorthQueryApplicationIdempotencyResolutionDenialKind::CommittedReceiptNotRetained {
-            ..
-        } => BankEstateIdempotencyResolutionDenial::CommittedReceiptNotRetained,
         WorthQueryApplicationIdempotencyResolutionDenialKind::RecordedIntentUnverifiable => {
             BankEstateIdempotencyResolutionDenial::RecordedIntentUnverifiable
         }

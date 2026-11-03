@@ -67,7 +67,7 @@ where
     let custody = attempt.take_relational_custody().ok_or(ForkFailure {
         denial: RuntimeWorldBranchAdmissionDenial::CustodyCapacityExhausted,
     })?;
-    let fork_port = owner.state.relational.fork_port();
+    let fork_port = owner.state.relational_services().fork_port();
     let reservation = fork_port
         .reserve_fork_target(target.clone())
         .map_err(|denial| relational_fork_failure(&denial))?;
@@ -107,7 +107,7 @@ where
     let admitted = attempt.source().basis().relational_basis();
     let (descriptor, source) = owner
         .state
-        .relational
+        .relational_services()
         .fork_port()
         .observe_fork_source(admitted.descriptor().branch_id())
         .map_err(|denial| relational_fork_failure(&denial))?;

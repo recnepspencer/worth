@@ -96,6 +96,22 @@ pub enum RuntimeWorldBranchCreationOutcome {
 pub(crate) trait RuntimeWorldObservationService:
     super::availability::RuntimeWorldAvailability
 {
+    fn observe_memory_original_publication(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        effect: worth_relational::facade::durability::ObservedRelationalMemoryCommit,
+    ) -> Result<
+        crate::history::WorldObservedMemoryPublication,
+        crate::history::WorldReadmittedPublicationDenial,
+    >;
+    fn readmitted_native_publication(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        effect: worth_relational::facade::durability::ReadmittedRelationalAssociatedEffect,
+    ) -> Result<
+        crate::history::WorldReadmittedPublication,
+        crate::history::WorldReadmittedPublicationDenial,
+    >;
     fn readmitted_publication(
         &self,
         identity: &worth_foundational::facade::DurableCompositeCommitIdentity,

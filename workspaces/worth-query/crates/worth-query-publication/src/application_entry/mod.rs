@@ -35,6 +35,8 @@ mod denial;
 mod elevation_approval;
 mod elevation_close;
 mod elevation_request;
+mod lifecycle_idempotency;
+pub use lifecycle_idempotency::WorthQueryCapabilityLifecycleIdempotencyDenial;
 mod inbound_occurrence;
 mod live;
 mod mandatory_review;

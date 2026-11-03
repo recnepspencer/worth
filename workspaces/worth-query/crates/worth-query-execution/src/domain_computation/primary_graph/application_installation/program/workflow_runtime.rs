@@ -103,7 +103,7 @@ where
     /// the one installed for the program its branch runs.
     pub fn vocabulary(&self) -> WorthQueryWorkflowVocabulary<'_, Schema, Spec> {
         WorthQueryWorkflowVocabulary::new(
-            &self.runtime.backing.runtime(),
+            self.runtime.backing.runtime(),
             &self.workflow,
             &self.supported,
             &self.authentication,

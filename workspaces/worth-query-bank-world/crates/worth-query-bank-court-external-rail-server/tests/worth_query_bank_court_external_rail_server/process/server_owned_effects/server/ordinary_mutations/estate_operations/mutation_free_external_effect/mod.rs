@@ -10,7 +10,10 @@ fn mutation_free_external_effect_co_commits_outbox_recovers_lost_response_once()
     let status_before = world.notice_status();
     assert_eq!(status_before, DeathNoticeStatus::NotificationRequested);
 
-    let receipt = world.commit_with(binding.clone());
+    let receipt_closed = world.commit_with(binding.clone());
+    let receipt = receipt_closed
+        .live_receipt()
+        .expect("fresh source retains its full native owner");
     assert!(
         receipt.co_committed_dispatch_outbox(),
         "declared external effect must co-commit its outbox even with zero domain writes"
@@ -34,6 +37,8 @@ fn mutation_free_external_effect_co_commits_outbox_recovers_lost_response_once()
     );
 
     assert_equivalent_retry_skips_rail_and_unseen_request_consumes_sentinel(
-        &world, binding, &receipt,
+        &world,
+        binding,
+        &receipt_closed,
     );
 }

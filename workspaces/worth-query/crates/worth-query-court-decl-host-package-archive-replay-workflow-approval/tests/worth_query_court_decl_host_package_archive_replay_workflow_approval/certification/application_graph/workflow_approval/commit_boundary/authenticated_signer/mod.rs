@@ -65,10 +65,33 @@ fn approval_owner_rejects_authentication_from_another_principal() {
         advance_instance(&application, instance.clone(), 25_010),
         Ok(WorkflowProgressOutcome::AwaitingApproval(_))
     ));
-    assert!(
-        matches!(approve_instance(&application, instance.clone(), &required, &proposal, WorkflowApprovalDecision::Approve, 25_011), Ok(WorkflowProgressOutcome::Completed(performed)) if !performed.replayed())
-    );
-    assert!(
-        matches!(approve_instance(&application, instance, &required, &proposal, WorkflowApprovalDecision::Approve, 25_011), Ok(WorkflowProgressOutcome::Completed(performed)) if performed.replayed())
-    );
+    let original = match approve_instance(
+        &application,
+        instance.clone(),
+        &required,
+        &proposal,
+        WorkflowApprovalDecision::Approve,
+        25_011,
+    )
+    .unwrap()
+    {
+        WorkflowProgressOutcome::Completed(performed) => performed,
+        other => panic!("the genuine signer must perform: {other:?}"),
+    };
+    assert!(!original.replayed());
+    match approve_instance(
+        &application,
+        instance,
+        &required,
+        &proposal,
+        WorkflowApprovalDecision::Approve,
+        25_011,
+    )
+    .unwrap()
+    {
+        WorkflowProgressOutcome::RecoveredCommitted(data) => {
+            crate::recorded_receipt::assert_agrees(&data, original.receipt())
+        }
+        other => panic!("the same original replays without another signing use: {other:?}"),
+    }
 }

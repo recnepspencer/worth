@@ -1,3 +1,4 @@
+mod home_retirement;
 mod output_availability_candidate;
 mod retention;
 pub(in crate::domain_computation::primary_graph) use output_availability_candidate::{

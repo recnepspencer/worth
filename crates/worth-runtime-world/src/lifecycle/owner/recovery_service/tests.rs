@@ -139,9 +139,13 @@ pub(super) fn successor_basis(
             .identities
             .lock()
             .unwrap_or_else(|error| error.into_inner()),
-        &owner.state.relational.basis_port(),
+        &owner.state.relational_services().basis_port(),
         &owner.state.signal.basis_port(),
-        &owner.state.bridge,
+        owner
+            .state
+            .bridge
+            .as_ref()
+            .expect("serving World owns correspondence"),
         relational,
         signal.unwrap_or_else(|| expected.basis().signal_basis().clone()),
         expected.basis().correspondence_basis().clone(),

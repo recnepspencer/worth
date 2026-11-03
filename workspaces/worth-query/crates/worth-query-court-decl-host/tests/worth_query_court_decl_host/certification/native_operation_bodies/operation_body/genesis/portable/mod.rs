@@ -38,7 +38,7 @@ fn creation_only_body_survives_checkpoint_and_fresh_readmission() {
     let replay = create(&restored, 304, input(1)).unwrap();
     // Restart retains the committed idempotency fact, not the old live receipt.
     assert!(
-        matches!(replay, Outcome::PreviouslyCommitted(_)),
+        matches!(replay, Outcome::RecoveredCommitted(_)),
         "{replay:?}"
     );
     assert_eq!(read_retention(&restored), 7);

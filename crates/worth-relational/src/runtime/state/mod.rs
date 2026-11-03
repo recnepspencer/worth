@@ -25,6 +25,10 @@ pub(crate) use runtime_state::{
 pub use runtime_state::{
     PreparedRelationalRuntimeClose, RelationalRuntimeCloseDenial, RelationalRuntimeCloseRefused,
 };
+pub use runtime_state::{
+    PreparedRelationalSourceClose, RelationalSourceClose, RelationalSourceCloseDenial,
+    RelationalSourceCloseProgress, RetiredSourceRelationalAllocation,
+};
 pub(in crate::runtime) use runtime_state::{
     RelationalRuntimeOwner, RelationalRuntimePublicationOwner,
 };

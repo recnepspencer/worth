@@ -54,7 +54,7 @@ where
         let result = (|| {
             let original = self
                 .state
-                .relational
+                .relational_services()
                 .basis_port()
                 .export_recorded_retained_component(execution, basis.relational_basis())
                 .map_err(Denial::NativeRecorded)?;

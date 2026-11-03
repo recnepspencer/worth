@@ -21,4 +21,8 @@ pub(crate) mod supported_public_workflows;
 pub(crate) mod upfront_contract_vocabulary_certification;
 
 #[path = "worth_court_proof/supported_programs/mod.rs"]
+#[expect(
+    dead_code,
+    reason = "Compile-pass programs prove generic progression by typechecking unused witness functions"
+)]
 mod supported_programs;

@@ -87,8 +87,12 @@ where
         BankEstateElevationRequestOutcome::Requested(authority) => {
             (authority, BankHttpCommitDisposition::Committed)
         }
-        BankEstateElevationRequestOutcome::AlreadyRequested(authority) => {
-            (authority, BankHttpCommitDisposition::AlreadyCommitted)
+        BankEstateElevationRequestOutcome::RecoveredCommitted(receipt) => {
+            return BankHttpElevationRequestOutcome::Recorded {
+                request_id,
+                commit: super::super::mutation_custody::describe_recorded(&receipt),
+            }
+            .into();
         }
         BankEstateElevationRequestOutcome::Stale { .. } => {
             return (request_denied(Some(request_id), stale())).into();

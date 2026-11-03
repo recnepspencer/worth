@@ -1,5 +1,6 @@
 pub use crate::durability::authority::{
-    FreshRelationalSourceAdmission, ReadmittedRelationalAssociatedEffect,
+    FreshRelationalSourceAdmission, ObservedRelationalMemoryCommit,
+    ReadmittedRelationalAssociatedEffect, ReadmittedRelationalCreatedEntity,
     RefusedRelationalRecordedComponent, RelationalAssociatedEffectRefusal,
     RelationalAssociatedEffectSettlement, RelationalAssociatedEffectSubject,
     RelationalFreshSourceAdmissionStop, RelationalRecordedComponentAdmissionCause,
@@ -34,6 +35,7 @@ pub use crate::durability::medium::{
     RelationalDurableMemberRetirement, RelationalDurableMemberRetirementObservation,
     RelationalDurableMemberRetirementRefusal, RelationalDurablePublicationRefusal,
     RelationalDurableRecoverySource, RelationalDurableTransitionReadFailure,
+    RelationalMediumRetirementDenial, RelationalMediumRetirementProgress,
     RetiredRelationalDurableMemberCustody,
 };
 pub use crate::durability::migration::ReadmittedCanonicalCommit;
@@ -55,6 +57,7 @@ pub use crate::transactions::data::RecoveredRelationalSemanticResult;
 pub use crate::durability::authority::{
     RefusedRelationalPublicationReadmission, RelationalRecordedSuccessorRefusal,
     RelationalRecoveredPublicationAdmissionCause, RelationalRecoveredPublicationCustody,
+    RelationalRecoveredPublicationRetirement, RetiredRelationalRecoveredPublication,
 };
 pub use crate::durability::data::{
     CheckpointAllocatorInspection, CheckpointRecordFrontier, CheckpointRecordIdentity,

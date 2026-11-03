@@ -8,6 +8,7 @@ use crate::runtime::state::subsystems::{RuntimeOwnedState, RuntimeSubsystem};
 use crate::runtime::RelationalRuntimeConfig;
 
 mod checkpoint_selection;
+mod source_retirement;
 mod state;
 pub(crate) use checkpoint_selection::{
     RelationalCheckpointManifestPublication, RelationalCheckpointManifestSelection,
@@ -20,18 +21,17 @@ use state::DurabilityState;
 #[derive(Debug, Default)]
 pub(crate) struct DurabilitySubsystem {
     state: RuntimeOwnedState<DurabilityState>,
-    /// The durable medium every commit is published to before it becomes
-    /// live. A forked runtime is a speculative copy and never inherits it.
-    medium: Option<Arc<RelationalDurableMediumBinding>>,
-    /// Speculative copies retain historical reads, never publication access.
-    transition_history: Option<RelationalTransitionHistoryReader>,
-    cold_source: Option<Arc<dyn crate::durability::medium::RelationalDurableColdSource>>,
     checkpoint_selection: RelationalCheckpointManifestSelection,
 }
 
 impl DurabilitySubsystem {
     pub(crate) fn has_source_affinity(&self) -> bool {
-        self.medium.is_some() || self.transition_history.is_some() || self.cold_source.is_some()
+        {
+            let state = self.state.read();
+            state.medium.is_some()
+                || state.transition_history.is_some()
+                || state.cold_source.is_some()
+        }
     }
     pub(crate) fn checkpoint_selection(&self) -> &RelationalCheckpointManifestSelection {
         &self.checkpoint_selection
@@ -40,38 +40,41 @@ impl DurabilitySubsystem {
     pub(crate) fn cold_source(
         &self,
     ) -> Option<Arc<dyn crate::durability::medium::RelationalDurableColdSource>> {
-        self.cold_source.clone()
+        self.state.read().cold_source.clone()
     }
 
     pub(crate) fn attach_cold_source(
         &mut self,
         source: Arc<dyn crate::durability::medium::RelationalDurableColdSource>,
     ) {
-        self.cold_source = Some(source);
+        self.state.write().cold_source = Some(source);
     }
 
     pub(crate) fn attach_medium(&mut self, medium: Box<dyn RelationalDurableMedium>) {
         let binding = Arc::new(RelationalDurableMediumBinding::new(medium));
-        self.cold_source = Some(binding.cold_source());
-        self.medium = Some(binding);
+        let source = binding.cold_source();
+        let mut state = self.state.write();
+        state.cold_source = Some(source);
+        state.medium = Some(binding);
     }
 
     /// Move the medium out so it can move into the runtime recovery rebuilt.
     /// This runtime, and every port that holds its attachment, then refuses
     /// to publish. `None` when it has no medium or the medium already moved.
     pub(crate) fn detach_medium(&self) -> Option<Box<dyn RelationalDurableMedium>> {
-        self.medium.as_ref().and_then(|binding| binding.detach())
+        self.medium().as_ref().and_then(|binding| binding.detach())
     }
 
     pub(crate) fn medium(&self) -> Option<Arc<RelationalDurableMediumBinding>> {
-        self.medium.clone()
+        self.state.read().medium.clone()
     }
 
     pub(crate) fn transition_history(&self) -> Option<RelationalTransitionHistoryReader> {
-        self.medium
-            .as_ref()
-            .map(|medium| medium.transition_history())
-            .or_else(|| self.transition_history.clone())
+        let (medium, reader) = {
+            let state = self.state.read();
+            (state.medium.clone(), state.transition_history.clone())
+        };
+        medium.map(|medium| medium.transition_history()).or(reader)
     }
 
     pub(crate) fn push_log_envelope(
@@ -171,20 +174,17 @@ impl RuntimeSubsystem for DurabilitySubsystem {
     fn new(_config: &Self::Config) -> Self {
         Self {
             state: RuntimeOwnedState::new(DurabilityState::default()),
-            medium: None,
-            transition_history: None,
-            cold_source: None,
             checkpoint_selection: Default::default(),
         }
     }
 
     fn fork(&self) -> Self {
+        let reader = self.transition_history();
         Self {
-            state: self.state.detached(),
-            medium: None,
-            transition_history: self.transition_history(),
-            cold_source: self.cold_source.clone(),
+            state: RuntimeOwnedState::new(self.state.read().fork_snapshot(reader)),
             checkpoint_selection: self.checkpoint_selection.detached(),
         }
     }
 }
+
+mod service_alias_retirement;

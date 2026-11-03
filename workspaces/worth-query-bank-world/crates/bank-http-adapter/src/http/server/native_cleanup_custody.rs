@@ -13,8 +13,8 @@ pub(super) struct NativeCleanupRecord {
 /// Move-only host evidence after lawful native physical release. This is not a commit.
 #[must_use = "retain original business evidence and the exact installed runtime"]
 pub struct BankHttpReleasedCleanup {
-    pub(super) runtime: std::sync::Arc<dyn super::inbound_completion::BankRailCompletionRuntime>,
     pub(super) evidence: BankReleasedManagedCleanup,
+    pub(super) runtime: std::sync::Arc<dyn super::inbound_completion::BankRailCompletionRuntime>,
 }
 impl BankHttpReleasedCleanup {
     /// Borrows the exact installed Bank allocation retained by this handoff.
@@ -43,6 +43,12 @@ pub struct BankHttpCleanupRuntime {
     application: std::sync::Arc<dyn super::inbound_completion::BankRailCompletionRuntime>,
 }
 impl BankHttpCleanupRuntime {
+    pub(super) fn retain(
+        application: std::sync::Arc<dyn super::inbound_completion::BankRailCompletionRuntime>,
+    ) -> Self {
+        Self { application }
+    }
+
     /// The original Bank runtime, including its lawful request and cleanup entrances.
     pub fn runtime(&self) -> &bank_server::BankIdentityRuntime {
         self.application.runtime()

@@ -27,10 +27,10 @@ fn a_membership_that_gained_an_instance_or_is_full_is_not_current() {
     let host_request = crate::test_request_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut runtime = capacity_runtime();
+    let runtime = capacity_runtime();
     let [lineage, first, second] =
-        commit_entities(execution, &mut runtime, ["lineage", "first", "second"]);
-    let read = commit_live(execution, &mut runtime, "first-live", first, lineage);
+        commit_entities(execution, &runtime, ["lineage", "first", "second"]);
+    let read = commit_live(execution, &runtime, "first-live", first, lineage);
     let expected = incoming(execution, &runtime, &read.snapshot, lineage);
     assert_eq!(expected.len(), 1);
     assert!(remains_equal(
@@ -57,7 +57,7 @@ fn a_membership_that_gained_an_instance_or_is_full_is_not_current() {
         "a membership that already fills the lineage admits no start",
     );
 
-    let raced = commit_live(execution, &mut runtime, "second-live", second, lineage);
+    let raced = commit_live(execution, &runtime, "second-live", second, lineage);
     assert!(
         !remains_equal(
             &runtime,
@@ -85,7 +85,7 @@ fn a_membership_that_gained_an_instance_or_is_full_is_not_current() {
         "the raced membership differs however much room is left",
     );
     for snapshot in [&read.snapshot, &raced.snapshot] {
-        crate::relational_snapshot_release::release_query_snapshot(&mut runtime, snapshot);
+        crate::relational_snapshot_release::release_query_snapshot(&runtime, snapshot);
     }
 }
 

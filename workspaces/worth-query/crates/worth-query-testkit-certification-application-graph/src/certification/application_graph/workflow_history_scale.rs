@@ -107,7 +107,6 @@ impl HistoryCourt {
                 std::mem::discriminant(&other)
             ),
         };
-        assert!(!performed.replayed());
         assert_eq!(
             performed.node_path(),
             if self.history.is_multiple_of(2) {

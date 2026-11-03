@@ -64,7 +64,7 @@ fn head_capture_acknowledges_and_carries_the_entire_layer_closure_without_loadin
             head: captured.leaf.head,
             history: captured.leaf.history,
             history_members: Arc::new(directory),
-            source: next_source.clone(),
+            source: Some(next_source.clone()),
             kind_authority: captured.leaf.kind_authority,
             ..cold
         };
@@ -94,15 +94,28 @@ fn appending_at_head_across_reopened_layers_matches_complete_history() {
     let fixture = region_with_history();
     let request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
-    let original = region_load::load_head(&fixture.cold, execution, 1 << 24).unwrap();
-    let mut oracle = region_load::load_full(&fixture.cold, &original, execution, 1 << 24)
-        .unwrap()
-        .partition
-        .clone();
+    let original = region_load::load_head(
+        &fixture.cold,
+        fixture.cold.source.as_ref().unwrap(),
+        execution,
+        1 << 24,
+    )
+    .unwrap();
+    let mut oracle = region_load::load_full(
+        &fixture.cold,
+        fixture.cold.source.as_ref().unwrap(),
+        &original,
+        execution,
+        1 << 24,
+    )
+    .unwrap()
+    .partition
+    .clone();
     let mut cold = fixture.cold.clone();
     let mut source = fixture.source.clone();
     for version in 1_000..1_004 {
-        let head = region_load::load_head(&cold, execution, 1 << 24).unwrap();
+        let head = region_load::load_head(&cold, cold.source.as_ref().unwrap(), execution, 1 << 24)
+            .unwrap();
         let mut partial = head.partition.clone();
         let extra = partial
             .entity_arena
@@ -145,7 +158,13 @@ fn ancestor_damage_is_sticky_and_aggregate_input_limits_are_retryable() {
     let fixture = region_with_history();
     let request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
-    let head = region_load::load_head(&fixture.cold, execution, 1 << 24).unwrap();
+    let head = region_load::load_head(
+        &fixture.cold,
+        fixture.cold.source.as_ref().unwrap(),
+        execution,
+        1 << 24,
+    )
+    .unwrap();
     let (cold, source) = encode_layer(&fixture.cold, &fixture.source, &head.partition);
     let cell = RelationalRegionResidency::cold(cold.clone()).unwrap();
     head_demand(&cell, 1 << 24).unwrap();
@@ -159,7 +178,7 @@ fn ancestor_damage_is_sticky_and_aggregate_input_limits_are_retryable() {
     members.get_mut(&fixture.cold.history).unwrap()[0] ^= 1;
     let damaged = counted(members, cold.history);
     let cell = RelationalRegionResidency::cold(RelationalColdRegion {
-        source: damaged.clone(),
+        source: Some(damaged.clone()),
         ..cold
     })
     .unwrap();
@@ -206,7 +225,7 @@ pub(super) fn encode_layer(
             history_members: captured.history_members,
             content_digest: commitment.digest(partition.partition_id),
             kind_authority: captured.kind_authority,
-            source: source.clone(),
+            source: Some(source.clone()),
             ..cold.clone()
         },
         source,

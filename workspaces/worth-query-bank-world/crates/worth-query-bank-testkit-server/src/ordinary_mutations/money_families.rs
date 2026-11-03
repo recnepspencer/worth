@@ -75,7 +75,7 @@ pub fn exercise(fixture: &fixture::OrdinaryReadFixture) {
         assert!(work.invariant_work_units() > 0);
         assert!(done.close(&request).is_ok());
     }
-    {
+    let original = {
         let scope = request_scope();
         let request = fixture.world.runtime.request(&owner, &scope);
         let operation = fixture
@@ -109,8 +109,11 @@ pub fn exercise(fixture: &fixture::OrdinaryReadFixture) {
         assert!(work.proposed_fact_count() > 0);
         assert!(work.relational_invariant_execution_count() > 0);
         assert!(work.invariant_work_units() > 0);
-        assert!(done.close(&request).is_ok());
-    }
+        bank_server::BankClosedSourceCompletion::from_query(
+            done.close_with_evidence(&request)
+                .unwrap_or_else(|(_, cause)| panic!("original source closes: {cause:?}")),
+        )
+    };
     let scope = request_scope();
     let request = fixture.world.runtime.request(&owner, &scope);
     let retry = fixture
@@ -135,7 +138,7 @@ pub fn exercise(fixture: &fixture::OrdinaryReadFixture) {
     else {
         panic!("retained replay completion")
     };
-    let worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Recovered {
+    let worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Recorded {
         receipt,
         ..
     } = retry.evidence()
@@ -143,9 +146,17 @@ pub fn exercise(fixture: &fixture::OrdinaryReadFixture) {
         panic!("recovered native evidence")
     };
     assert_eq!(
-        receipt.terminal().kind(),
-        WorthQueryApplicationCommitTerminalKind::Recovered
+        receipt.commit_reference(),
+        original
+            .completion()
+            .live_receipt()
+            .unwrap()
+            .commit_reference()
     );
-    assert_eq!(receipt.terminal().attempt_resources_released(), None);
-    assert!(retry.close(&request).is_ok());
+    let recovered = bank_server::BankClosedSourceCompletion::from_query(
+        retry
+            .close_with_evidence(&request)
+            .unwrap_or_else(|(_, cause)| panic!("recorded source closes: {cause:?}")),
+    );
+    super::estate_operations::external_effect_dispatch::publication_assertions::assert_recovered_commit_axes(&original, &recovered);
 }

@@ -149,6 +149,7 @@ where
     if let Some(context) = prepared_context {
         required_output.retain_prepared_decision_reuse(context);
     }
+    let publication_scope = admission.operation_scope_binding().clone();
     admission.bind_required_output_demand(required_output);
     let bound_source = prepared_source
         .consume_into(&mut admission)
@@ -271,6 +272,25 @@ where
                     )
                 }
             };
+            if let crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome::RecoveredCommitted(receipt) = outcome {
+                let execution = phase.execution_request_for(&runtime.product_runtime)
+                    .map_err(|cause| denial(WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "original producer publication"))?;
+                // Refresh only the same actual branch occurrence for output-owner
+                // selection. The handler's original source/dependency binding stays intact.
+                let current = runtime.product_runtime.owner.observation_port()
+                    .observe_product_branch_occurrence(selected.product().observation().lifecycle_incarnation())
+                    .map_err(|_| denial(WorthQueryOutputDemandDenialKind::PublicationStale, "original producer occurrence unavailable")
+                        .with_recovered_publication(receipt.clone())
+                        .with_recovery_posture(crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable))?;
+                let stable = runtime.primary_provider.graph.output_lineage.lock()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner)
+                    .resolve_original_publication::<Operation<Schema, Binding>>(
+                        &execution, &publication_scope, &current, idempotency, &receipt,
+                    ).map_err(|stop| super::super::source_readmission::ready_resource_denial(Binding::IDENTITY, stop))?;
+                return stable.map(ProducerExecutionOutcome::Stable).ok_or_else(||
+                    denial(WorthQueryOutputDemandDenialKind::ProducerUnavailable, Binding::IDENTITY)
+                        .with_recovered_publication(receipt).into());
+            }
             commit_receipt(Binding::IDENTITY, outcome)
                 .map(ProducerExecutionOutcome::Committed)
                 .map_err(ProducerExecutionStop::ExecutionStopped)

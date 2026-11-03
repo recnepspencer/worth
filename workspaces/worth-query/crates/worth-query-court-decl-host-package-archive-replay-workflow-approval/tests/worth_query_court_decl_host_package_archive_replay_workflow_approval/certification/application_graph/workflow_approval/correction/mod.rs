@@ -55,12 +55,12 @@ fn correction_preserves_completed_workflow_and_rejects_spent_approval() {
         .prepare()
         .unwrap();
     let WorthQueryApplicationCorrectionPreparation::Settled(
-        WorthQueryApplicationMutationOutcome::AlreadyCommitted(replay),
+        WorthQueryApplicationMutationOutcome::RecoveredCommitted(replay),
     ) = replay
     else {
         panic!("exact workflow correction retry must return the original inverse");
     };
-    assert_eq!(replay.commit_reference(), inverse.commit_reference());
+    crate::recorded_receipt::assert_agrees(&replay, &inverse);
     assert_eq!(
         instance_cancellation::cancellation_denial(
             worth_query_testkit_document_retention::facade::document_retention_model::workflow::cancel_instance(

@@ -1,11 +1,21 @@
+mod home_owner;
+mod home_owner_progress;
 use crate::history::HistoryReclamationDenial;
+pub use home_owner::{
+    RetiredRuntimeWorldHome, RuntimeWorldHomeRetirement, RuntimeWorldHomeRetirementDenial,
+    RuntimeWorldHomeRetirementProgress,
+};
 mod admission;
 #[path = "close/drain.rs"]
 mod drain;
 pub use admission::RuntimeWorldPreCloseAdmission;
+pub(crate) use admission::{checkpoint as checkpoint_close_step, RecoveredCloseReceipt};
+mod recovered;
+mod recovered_native;
 #[path = "close/report.rs"]
 mod report;
 mod result_snapshots;
+pub(in crate::lifecycle) use recovered::retire as retire_recovered;
 pub use result_snapshots::{
     RuntimeWorldResultSnapshotCleanup, RuntimeWorldResultSnapshotCleanupDenial,
     RuntimeWorldResultSnapshotCleanupProgress, RuntimeWorldResultSnapshotCleanupReport,
@@ -37,6 +47,10 @@ pub enum RuntimeWorldCloseDenial {
     CleanupRequired,
     CloseProgressPoisoned,
     CloseProgressInvariant,
+    RecoveredNativeRetirement(
+        worth_relational::facade::change_source::RelationalRetainedObservationRetirementDenial,
+    ),
+    ReportAllocationFailed,
     UndeliveredPublication,
     AlreadyClosing,
     AlreadyClosed,
@@ -56,7 +70,9 @@ where
 {
     /// Close under the caller's original request. Busy or stopped admission
     /// leaves Open; after sealing, the SAME retained task resumes in Closing.
-    /// Unresolved business custody refuses before sealing. Head retirement
+    /// Unresolved live business custody refuses before sealing. Unclaimed
+    /// recovered durable obligations remain journal-backed and are reported.
+    /// Head retirement
     /// runs outside admission locks and retains each exact item on refusal.
     pub fn close(
         &self,
@@ -78,6 +94,13 @@ where
                 super::RuntimeWorldOwnerLifecycleObservation::Closing
             }
             RuntimeWorldCloseState::Closed => super::RuntimeWorldOwnerLifecycleObservation::Closed,
+        }
+    }
+
+    fn require_optional_memory_history(&self) -> Result<(), HistoryReclamationDenial> {
+        match &self.state.durable {
+            Some(_) => Err(HistoryReclamationDenial::AuthoritativeDurableHistory),
+            None => Ok(()),
         }
     }
 }
@@ -105,6 +128,7 @@ where
     fn retire_changed_history(
         &self,
     ) -> Result<Vec<crate::identity::CompositeCommitIdentity>, HistoryReclamationDenial> {
+        self.require_optional_memory_history()?;
         let _operation = self
             .reserve_recovery_operation_if_open_and_bootstrapped()
             .map_err(|_| {
@@ -119,6 +143,7 @@ where
         &self,
         keep: &crate::identity::CompositeCommitIdentity,
     ) -> Result<Vec<crate::identity::CompositeCommitIdentity>, HistoryReclamationDenial> {
+        self.require_optional_memory_history()?;
         let _operation = self
             .reserve_recovery_operation_if_open_and_bootstrapped()
             .map_err(|_| {
@@ -137,6 +162,7 @@ where
         &self,
         from: &crate::identity::CompositeCommitIdentity,
     ) -> Result<crate::history::RetiredBranchHistoryRelease, HistoryReclamationDenial> {
+        self.require_optional_memory_history()?;
         let _operation = self
             .reserve_recovery_operation_if_open_and_bootstrapped()
             .map_err(|_| {
@@ -186,6 +212,21 @@ pub(crate) struct RuntimeWorldCloseContract {
 }
 
 impl RuntimeWorldCloseContract {
+    pub(super) fn retirement_task(
+        &self,
+    ) -> Result<std::sync::Arc<std::sync::Mutex<drain::CloseProgress>>, RuntimeWorldCloseDenial>
+    {
+        match self.state {
+            RuntimeWorldCloseState::Open | RuntimeWorldCloseState::Closing => {
+                Err(RuntimeWorldCloseDenial::CloseNotCompleted)
+            }
+            RuntimeWorldCloseState::Closed => self
+                .progress
+                .as_ref()
+                .cloned()
+                .ok_or(RuntimeWorldCloseDenial::CloseProgressInvariant),
+        }
+    }
     pub(crate) const fn open() -> Self {
         Self {
             state: RuntimeWorldCloseState::Open,

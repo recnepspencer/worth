@@ -35,8 +35,18 @@ pub fn assert_touched_record_slopes() {
         );
         assert_eq!(
             work.performed_touch_targets_materialized(),
-            6,
-            "the installed amendment scope checks its six declared fields once"
+            1 + 1
+                + [
+                    "key",
+                    "intent",
+                    "outcome-identity",
+                    "emitted-effect-count",
+                    "product-affinity",
+                    "attempt-association-source",
+                    "output-settlement",
+                ]
+                .len(),
+            "one input write, one idempotency entity creation and its seven required fields"
         );
         assert_eq!(work.decision_fact_count(), touched_records + 1);
         assert_eq!(work.proposed_fact_count(), touched_records);

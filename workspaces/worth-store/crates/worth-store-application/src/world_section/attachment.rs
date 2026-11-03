@@ -6,12 +6,14 @@ pub(super) fn attach_bridge(
     section: &worth_store_relational::RelationalStoreSection,
     builder: worth_runtime_bridge::facade::UnattachedRelationalBridgeBuilder,
     graph_role: String,
-) -> Result<
-    worth_runtime_world::facade::RuntimeWorldCorrespondencePort,
-    crate::ApplicationHomeOpenRefusal,
-> {
-    let (_, bridge) = build_bridge(section, builder, graph_role)?;
-    Ok(bridge.runtime_world_correspondence_port())
+) -> Result<ApplicationHomeBridgeComposition, crate::ApplicationHomeOpenRefusal> {
+    let (source, ordinary) = build_bridge(section, builder, graph_role)?;
+    Ok(ApplicationHomeBridgeComposition {
+        source,
+        ordinary,
+        conditional: None,
+        retirement: std::sync::Mutex::new(None),
+    })
 }
 
 fn build_bridge(
@@ -42,37 +44,9 @@ fn build_bridge(
 pub(crate) struct ApplicationHomeBridgeComposition {
     pub(super) source: worth_runtime_bridge::facade::RuntimeBridgeRelationalSource,
     pub(super) ordinary: worth_runtime_bridge::facade::RuntimeBridge,
+    pub(super) retirement: std::sync::Mutex<Option<super::close::PreparedHomeBridgeRetirement>>,
     pub(super) conditional:
-        Arc<std::sync::RwLock<worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly>>,
-}
-impl ApplicationHomeBridgeComposition {
-    pub(crate) fn try_close(self) -> Result<(), Self> {
-        let Self {
-            source,
-            ordinary,
-            conditional,
-        } = self;
-        let conditional = match Arc::try_unwrap(conditional) {
-            Ok(conditional) => conditional,
-            Err(conditional) => {
-                return Err(Self {
-                    source,
-                    ordinary,
-                    conditional,
-                })
-            }
-        };
-        let mut conditional = conditional
-            .into_inner()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        conditional.close_conditional_resources();
-        // Drops the same source and ordinary Bridge after actual conditional
-        // cleanup; independently retained caller handles remain real custody.
-        drop(conditional);
-        drop(ordinary);
-        drop(source);
-        Ok(())
-    }
+        Option<Arc<std::sync::RwLock<worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly>>>,
 }
 pub(super) fn attach_query_bridge(
     section: &worth_store_relational::RelationalStoreSection,
@@ -91,7 +65,8 @@ pub(super) fn attach_query_bridge(
     Ok(ApplicationHomeBridgeComposition {
         source,
         ordinary,
-        conditional: Arc::new(std::sync::RwLock::new(conditional)),
+        conditional: Some(Arc::new(std::sync::RwLock::new(conditional))),
+        retirement: std::sync::Mutex::new(None),
     })
 }
 /// Actual admitted Home custody. No Clone, raw identity constructor or second
@@ -104,14 +79,20 @@ impl UnclaimedWorldSlot {
         serving: Arc<ServingPhysicalRuntime>,
         descriptor: &crate::descriptor::HomeDescriptor,
         checkpoint: &Arc<crate::checkpoint::owner::HomeCheckpointOwner>,
-    ) -> Self {
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Self, worth_execution::WorkCeilingDenial> {
+        let (layout, _) = std::alloc::Layout::new::<[std::sync::atomic::AtomicUsize; 2]>()
+            .extend(std::alloc::Layout::new::<super::ApplicationWorldMedium>())
+            .expect("fixed original World medium layout");
+        let funding = request.reserve_retained_memory(layout.pad_to_align().size() as u64)?;
         let owner = DurableWorldOwnerIdentity::from_recorded(
             descriptor.identity,
             WorldOwnerSlotIdentity::from_recorded(0),
         );
-        Self {
+        Ok(Self {
             medium: Arc::new(super::ApplicationWorldMedium {
-                serving,
+                serving: std::sync::Mutex::new(Some(serving)),
+                _funding: funding,
                 binding: WorldDurableHomeBinding::from_admitted_adapter(
                     owner,
                     descriptor.incarnation,
@@ -121,7 +102,7 @@ impl UnclaimedWorldSlot {
                 publications: Arc::new(super::WorldPublications::default()),
                 checkpoint: Arc::downgrade(checkpoint),
             }),
-        }
+        })
     }
     pub(crate) fn publications(&self) -> Arc<super::WorldPublications> {
         self.medium.publications.clone()

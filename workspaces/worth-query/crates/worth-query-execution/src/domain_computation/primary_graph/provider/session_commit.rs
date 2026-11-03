@@ -14,9 +14,9 @@ pub(in crate::domain_computation::primary_graph) use outbox_commit::{
     WorthQueryCommittedDispatchOutboxBindingDenial, WorthQueryCommittedDispatchOutboxReceiptSeal,
     WorthQueryCommittedDispatchOutboxResolution,
 };
-pub(in crate::domain_computation::primary_graph) use receipt_basis_retention::{
-    WorthQueryReceiptBasisRetentionStore, WorthQueryRetainedApplicationCommitBasis,
-};
+pub(in crate::domain_computation::primary_graph) use receipt_basis_retention::WorthQueryReceiptBasisRetentionStore;
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) use receipt_basis_retention::WorthQueryRetainedApplicationCommitBasis;
 
 use super::WorthQueryPrimaryGraphProvider;
 use crate::domain_computation::{

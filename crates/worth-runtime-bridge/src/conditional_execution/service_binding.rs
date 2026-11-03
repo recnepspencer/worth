@@ -29,7 +29,9 @@ impl BridgeOwnedSignalRuntime {
         let signal_runtime = self
             .signal_runtime
             .get_mut()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .as_mut()
+            .expect("serving assembly owns Signal");
         let binding = {
             let mut lowerings = self
                 .conditional_lowerings

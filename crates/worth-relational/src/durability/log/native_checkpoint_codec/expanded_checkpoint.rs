@@ -176,7 +176,9 @@ pub(super) fn expand(
             .collect(),
         retained_empty_components: manifest.retained_empty_components.clone(),
         directory: None,
-        canonical_directory: Some(directory),
+        canonical_directory: Some(crate::durability::data::NativeCheckpointDirectoryEdge::new(
+            directory,
+        )),
         root_kind_images,
         mirror_kind_images,
         coverage: manifest.coverage,
@@ -186,9 +188,9 @@ pub(super) fn expand(
             .map(|entry| (entry.commit.commit_id, entry.root.clone()))
             .collect(),
         mirror_schema_digest: manifest.mirror_schema,
-        branch_cells: branch_cells,
-        branch_lifecycle: branch_lifecycle,
-        retired_branch_names: retired_branch_names,
+        branch_cells,
+        branch_lifecycle,
+        retired_branch_names,
         branch_roots,
         branch_root_schema_images: manifest.schemas.ordinary_owned_copy(),
         record_identity: manifest.record_identity,
@@ -210,7 +212,7 @@ pub(super) fn expand(
         derived_index_checkpoint_format,
         symbol_table,
         symbol_identity_frontier: manifest.symbol_identity_frontier,
-        runtime_name: runtime_name,
+        runtime_name,
     })
 }
 
@@ -240,7 +242,7 @@ fn expand_regions(
         .map(|leaf| {
             let cell = RelationalRegionResidency::cold(RelationalColdRegion {
                 kind_authority: leaf.kind_authority,
-                source: source.clone(),
+                source: Some(source.clone()),
                 partition_id: leaf.partition_id,
                 head: leaf.head,
                 history: leaf.history,

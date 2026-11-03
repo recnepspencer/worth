@@ -154,11 +154,10 @@ pub(super) fn settle_for_close(
         HomeWalCheckpoint::Admitting(request) => Some(request),
         _ => None,
     };
-    if let Some(request) = admitting {
-        if let Err(cause) = install_start(attempt, serving.checkpoints().start(request).into_raw())
-        {
-            return Ok(Err(cause));
-        }
+    if let Some(request) = admitting
+        && let Err(cause) = install_start(attempt, serving.checkpoints().start(request).into_raw())
+    {
+        return Ok(Err(cause));
     }
     loop {
         let terminal = {

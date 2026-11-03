@@ -42,7 +42,7 @@ where
         use crate::durability::{
             WorldDurableMediumBinding, WorldReadmissionDenial as Denial, WorldRecoveredJournalState,
         };
-        let binding = WorldDurableMediumBinding::new(medium);
+        let binding = WorldDurableMediumBinding::new(medium, request).map_err(Denial::Medium)?;
         let (recovered, selected_coverage) = WorldRecoveredJournalState::read_protected_source(
             source.as_ref(),
             binding.binding(),
@@ -102,8 +102,6 @@ where
             effects,
             request,
         )?;
-        Ok(RuntimeWorldOwner {
-            root: Arc::new(root),
-        })
+        Ok(RuntimeWorldOwner::from_root(root))
     }
 }

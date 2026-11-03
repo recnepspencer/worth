@@ -19,6 +19,14 @@ impl RelationalBranchObservation {
 }
 
 impl RelationalObservationRetirement {
+    pub(crate) fn from_original_basis(basis: AdmittedRelationalBranchBasis) -> Self {
+        Self {
+            shared: Some(basis.inner),
+            exclusive: None,
+            retention_released: false,
+        }
+    }
+
     /// The caller borrows the authentic owner throughout this step. Its live
     /// head/retired-root inventory prevents provider custody destruction here.
     pub(crate) fn advance(&mut self) -> Result<bool, ()> {
@@ -46,10 +54,10 @@ impl RelationalObservationRetirement {
             self.retention_released = true;
             return Ok(false);
         }
-        if let Some(lease) = inner.registry_lease.get_mut() {
-            if !lease.try_retire() {
-                return Err(());
-            }
+        if let Some(lease) = inner.registry_lease.get_mut()
+            && !lease.try_retire()
+        {
+            return Err(());
         }
         // Both business obligations are disarmed before ordinary field Drop.
         Ok(true)

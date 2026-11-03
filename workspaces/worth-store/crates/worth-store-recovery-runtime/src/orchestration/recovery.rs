@@ -69,9 +69,6 @@ fn select_source(
 fn discover_source(
     admitted: AdmittedPhysicalRecovery,
 ) -> Result<SelectedPhysicalRecovery, PhysicalRecoveryOutcome> {
-    let discovered = match admitted.discover() {
-        Ok(discovered) => discovered,
-        Err(outcome) => return Err(outcome),
-    };
+    let discovered = admitted.discover()?;
     discovered.select()
 }

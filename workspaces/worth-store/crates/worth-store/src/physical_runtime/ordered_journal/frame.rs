@@ -249,7 +249,7 @@ fn required_spine(position: u64, candidates: &[SpineEntry]) -> Option<Vec<SpineE
 }
 
 fn required_positions(position: u64) -> impl Iterator<Item = u64> {
-    let below = position.checked_sub(1).unwrap_or(0);
+    let below = position.saturating_sub(1);
     let mut previous = None;
     (0..64)
         .map(move |shift| (below >> shift) << shift)

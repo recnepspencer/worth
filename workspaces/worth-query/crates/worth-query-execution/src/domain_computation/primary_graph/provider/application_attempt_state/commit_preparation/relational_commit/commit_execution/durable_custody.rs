@@ -25,12 +25,24 @@ pub(in crate::domain_computation::primary_graph::provider) enum QueryDurableWorl
     PendingOpen(WorldPendingOpenAttempt),
     Opened(WorldOpenedPublicationAttempt),
     NativePreparation(WorldQueryNativePreparation),
+    #[allow(
+        dead_code,
+        reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it"
+    )]
     NativeRefused(WorldNativePreparationRefusal),
     Prepared(WorldPreparedPublicationWithoutSignal),
     PendingPublication(WorldPendingDurablePublication),
     Unpublished(ProductUnpublishedOwnerEffects),
     PublicationRecoveryRequired {
+        #[allow(
+            dead_code,
+            reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it"
+        )]
         cause: WorldDurablePublicationDenial,
+        #[allow(
+            dead_code,
+            reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it"
+        )]
         custody: ProductUnpublishedOwnerEffects,
     },
     OwnerCallInProgress(QueryDurableOwnerCall),
@@ -71,13 +83,31 @@ pub(in crate::domain_computation::primary_graph::provider) struct RetainedQueryD
 }
 
 /// Narrow causes cannot embed a public same-store Query recovery wrapper.
+#[derive(Debug)]
 pub(in crate::domain_computation::primary_graph::provider) enum QueryDurablePreparationDenial {
+    #[allow(
+        dead_code,
+        reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it"
+    )]
     Request(worth_execution::WorkCeilingDenial),
+    #[allow(
+        dead_code,
+        reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it"
+    )]
     Candidate(QueryCandidatePreparationDenial),
+    #[allow(
+        dead_code,
+        reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it"
+    )]
     Prerequisite(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial),
+    #[allow(
+        dead_code,
+        reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it"
+    )]
     QueryEvidence(WorthQueryProviderSessionFailure),
 }
 
+#[derive(Debug)]
 pub(super) enum QueryCandidatePreparationDenial {
     ManagedSource(managed_source::ManagedSourcePreparationDenial),
     Native(worth_relational::facade::mvcc::TransactionCommitError),
@@ -92,6 +122,16 @@ impl QueryPreparingApplicationCommit {
         matches!(self.native, QueryNativeCustody::Proposal(_))
     }
 }
+impl std::fmt::Debug for RetainedQueryDurablePreparation {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("RetainedQueryDurablePreparation")
+            .field("stage", &self.stage())
+            .field("query_denial", &self.query_denial)
+            .finish_non_exhaustive()
+    }
+}
+
 impl RetainedQueryDurablePreparation {
     pub(in crate::domain_computation::primary_graph::provider) fn stage(
         &self,

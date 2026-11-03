@@ -91,6 +91,47 @@ impl WorthQueryRecoveryHandleBinding {
         })
     }
 
+    pub(in crate::domain_computation::application_aftermath) fn from_pending_original(
+        original: &crate::domain_computation::primary_graph::application_attempt::WorthQueryPendingApplicationCommitReceipt,
+        dispatch: Option<
+            &crate::domain_computation::application_aftermath::WorthQueryExternalEffectDispatch,
+        >,
+        expires_at_unix_ms: Option<u64>,
+    ) -> Result<Self, WorthQueryRecoveryHandleDenial> {
+        let authority = original.original_authority();
+        let aftermath = authority.installed_aftermath().ok_or_else(|| {
+            WorthQueryRecoveryHandleDenial::new(
+                WorthQueryRecoveryHandleDenialKind::RecoveryNotAdmitted,
+            )
+        })?;
+        match aftermath.recovery() {
+            InstalledAftermathRecoveryContract::NotAdmitted => {
+                return Err(WorthQueryRecoveryHandleDenial::new(
+                    WorthQueryRecoveryHandleDenialKind::RecoveryNotAdmitted,
+                ))
+            }
+            InstalledAftermathRecoveryContract::Admissible { .. } => {}
+        }
+        let scope = authority.principal_scope();
+        Ok(Self {
+            runtime_instance_id: original.original_runtime_instance_id(),
+            schema_identity: *scope.binding_identity().schema_identity().bytes(),
+            commit: original.original_commit().clone(),
+            committed_product_publication: original.original_publication().clone(),
+            application_binding_generation: scope.binding_identity().generation(),
+            installed_operation: *authority.installed_operation(),
+            mutation_work: original.original_work().cloned(),
+            retained_preimage: original.original_preimage().cloned(),
+            retained_governed_input: authority.retained_governed_input_carrier().cloned(),
+            principal_scope: scope.clone(),
+            idempotency: authority.idempotency_binding(),
+            provider_posture: dispatch.map(|dispatch| dispatch.posture().clone()),
+            committed_dispatch_outbox: original.original_outbox_binding().cloned(),
+            installed_aftermath: aftermath.clone(),
+            expires_at_unix_ms,
+        })
+    }
+
     pub const fn runtime_instance_id(&self) -> u64 {
         self.runtime_instance_id
     }

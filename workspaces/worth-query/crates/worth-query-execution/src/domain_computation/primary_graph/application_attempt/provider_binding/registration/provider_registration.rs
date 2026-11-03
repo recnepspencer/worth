@@ -327,6 +327,7 @@ impl WorthQueryPrimaryGraphProvider {
         let external_payload = effects.emissions().external_payload(external_effect)?;
         let (effects, dispatch_outbox) = effects.bind_registration_intents(
             self,
+            affinity.product_publication().observation(),
             emitted_effect_count,
             aftermath_causality.as_ref(),
             WorthQueryDispatchOutboxBasis {

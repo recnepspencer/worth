@@ -140,9 +140,9 @@ pub struct WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub(super) basis_leases:
         super::application_query::resource_lifecycle::WorthQueryApplicationBasisRegistry,
     pub(super) granular_invalidation: super::WorthQueryGranularInvalidationInstallation,
-    pub(crate) primary_provider: std::sync::Arc<WorthQueryPrimaryGraphProvider>,
+    pub(crate) primary_provider: super::provider::PrimaryProviderCustody,
     pub(super) primary_graph_authority:
-        worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
+        home_retirement::PrimaryGraphParticipationCustody,
 
     pub(super) source_meanings:
         super::application_query::observed_source::source_identity::WorthQueryObservedSourceMeaningRegistry,

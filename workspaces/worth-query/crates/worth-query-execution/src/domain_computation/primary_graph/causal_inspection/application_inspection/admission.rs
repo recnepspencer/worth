@@ -41,11 +41,17 @@ pub(super) enum InspectionAdmissionDenial {
     ForeignIssuedAccess,
     MissingGraph,
     MissingInspection,
+    #[allow(dead_code, reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it")]
     Authorization(crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenial),
+    #[allow(dead_code, reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it")]
     CurrentAuthorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind),
+    #[allow(dead_code, reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it")]
     Capability(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial),
+    #[allow(dead_code, reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it")]
     Scope(crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenial),
+    #[allow(dead_code, reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it")]
     Security(crate::basis::WorthQueryProductBranchAdmissionDenial),
+    #[allow(dead_code, reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it")]
     Governance(crate::domain_computation::authorization::application_disclosure::WorthQueryApplicationQueryGovernanceDenialKind),
     FacetDenied,
     DiagnosticAdmission(crate::domain_computation::primary_graph::admitted_capture::CaptureStop<crate::domain_computation::authorization::application_disclosure::DiagnosticComparisonDenial>),
@@ -60,6 +66,7 @@ pub(super) enum InspectionAdmissionDenial {
     Target(InspectionTargetDenial),
     Storage(crate::domain_computation::primary_graph::admitted_capture::CaptureStop<crate::domain_computation::primary_graph::admitted_capture::RetainedStorageDenial>),
     Plan(crate::domain_computation::primary_graph::admitted_capture::CaptureStop<plan::InspectionPlanDenial>),
+    #[allow(dead_code, reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it")]
     Session(crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSessionStartDenial),
     Read(crate::domain_computation::provider_session::WorthQueryManagedGraphReadDenial),
     Terminal(crate::domain_computation::provider_session::WorthQueryInspectionReadTerminalDenial),

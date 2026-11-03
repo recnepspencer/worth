@@ -6,7 +6,7 @@ mod checkpoint_restart;
 mod refusals;
 mod separate_process;
 
-pub(super) fn opening_failed(stage: &str, refused: &impl std::fmt::Debug) -> ! {
+pub(crate) fn opening_failed(stage: &str, refused: &impl std::fmt::Debug) -> ! {
     let detail = format!("{refused:?}");
     let end = detail
         .char_indices()
@@ -54,10 +54,10 @@ fn same_directory_reopens_reads_and_commits_without_replaying_initializer_or_old
     .unwrap_or_else(|refused| opening_failed("same Home readmission", &refused));
     assert_eq!(balance(home.runtime(), &live), 8);
     match set(home.runtime(), &live, 0x771, 8).unwrap() {
-        WorthQueryApplicationMutationOutcome::PreviouslyCommitted(observed) => {
-            assert_eq!(observed.commit_id(), original_commit);
+        WorthQueryApplicationMutationOutcome::RecoveredCommitted(observed) => {
+            assert_eq!(observed.commit_reference().commit_id, original_commit);
         }
-        other => panic!("old key must report only its historical commit: {other:?}"),
+        other => panic!("old key must return its exact original durable receipt: {other:?}"),
     }
     assert_eq!(contacts.load(Ordering::SeqCst), 1);
     assert_eq!(balance(home.runtime(), &live), 8);
@@ -106,10 +106,10 @@ fn flushed_and_pending_multibatch_homes_readmit_their_completed_publication() {
         .unwrap_or_else(|refused| opening_failed("multibatch readmission", &refused));
         let (_, live) = scope();
         assert_eq!(balance(home.runtime(), &live), 7);
-        assert!(matches!(
-            set(home.runtime(), &live, 0x773, 8).unwrap(),
-            WorthQueryApplicationMutationOutcome::Committed { result: 8, .. }
-        ));
+        match set(home.runtime(), &live, 0x773, 8).unwrap() {
+            WorthQueryApplicationMutationOutcome::Committed { result: 8, .. } => {}
+            other => panic!("mutation after multibatch reopen (flushed={flush_final}): {other:?}"),
+        }
         assert_eq!(balance(home.runtime(), &live), 8);
         assert_eq!(contacts.load(Ordering::SeqCst), 1);
         home.close(&execution)

@@ -162,10 +162,7 @@ impl FrozenOriginalInputs {
                     })?
                     .ok_or(Denial::OriginalAuthorityUnavailable)?;
                 let actual = crate::durability::source_initial_inputs::RelationalSourceInitialInputsArtifact::from_owned(actual, execution)
-                    .and_then(|frame| frame.readmit(execution)).map_err(|cause| match cause {
-                        crate::durability::source_initial_inputs::RelationalInitialInputsRefusal::Request(cause) => Denial::Request(cause),
-                        _ => Denial::OriginalAuthorityUnavailable,
-                    })?;
+                    .and_then(|frame| frame.readmit(execution)).map_err(initial_inputs_stop)?;
                 if actual.entries.get(..accepted.entries.len()) != Some(&accepted.entries[..])
                     || actual.main != accepted.main
                     || (actual
@@ -280,4 +277,27 @@ use crate::durability::checkpoint_history::capture::{
 };
 fn map_stop(cause: worth_execution::ExecutionOrderedMapDenial) -> Denial {
     capture_stop(read_map_stop(cause))
+}
+
+// Readmission can stop inside the schema payload, below its outer framing.
+// Request and allocation refusals must remain request outcomes at capture.
+fn initial_inputs_stop(
+    cause: crate::durability::source_initial_inputs::RelationalInitialInputsRefusal,
+) -> Denial {
+    use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal as Payload;
+    use crate::durability::source_initial_inputs::RelationalInitialInputsRefusal as Refusal;
+    match cause {
+        Refusal::Request(cause) | Refusal::Payload(Payload::Request(cause)) => {
+            Denial::Request(cause)
+        }
+        Refusal::Native(cause) => capture_stop(cause),
+        Refusal::Payload(Payload::FieldText(cause)) => {
+            capture_stop(crate::symbols::data::field_text_recovery_stop(cause))
+        }
+        Refusal::Malformed
+        | Refusal::Missing
+        | Refusal::UnsupportedVersion(_)
+        | Refusal::Source(_)
+        | Refusal::Payload(_) => Denial::OriginalAuthorityUnavailable,
+    }
 }

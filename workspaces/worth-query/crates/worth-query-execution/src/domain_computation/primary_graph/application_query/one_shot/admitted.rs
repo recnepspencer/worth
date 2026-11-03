@@ -32,7 +32,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         QueryResult: WorthQueryApplicationProjection<Schema, Query>,
     {
         let spent = OneShotReadWorkObservation::new();
-        let mut plan = plan;
+        let plan = plan;
         super::plan_admission::validate_one_shot_plan_with_native_access(
             execution, self, &plan, native,
         )
@@ -40,7 +40,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 
         let (raw, authorization_work, read_proof) =
             match super::super::authorized_read::execute_selected_authorized_read_with_native_access(
-                execution, self, &mut plan, &spent, native,
+                execution, self, &plan, &spent, native,
             ) {
                 Ok(read) => read,
                 Err(SelectedAuthorizedReadStop::Read(denial)) => {

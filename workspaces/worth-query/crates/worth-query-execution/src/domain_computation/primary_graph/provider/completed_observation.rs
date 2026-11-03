@@ -1,9 +1,24 @@
-use super::{
-    WorthQueryPrimaryGraphCommittedApplication, WorthQueryPrimaryGraphProvider,
-    WorthQueryProductIdempotencyAffinity, WorthQueryProviderIdempotencyResolution,
-};
+use super::{WorthQueryPrimaryGraphCommittedApplication, WorthQueryPrimaryGraphProvider};
 
 impl WorthQueryPrimaryGraphProvider {
+    #[cfg(test)]
+    pub(in crate::domain_computation::primary_graph) fn discard_receipt_basis_window_for_test(
+        &self,
+    ) {
+        *self
+            .receipt_basis_retention
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner) = Default::default();
+    }
+
+    #[cfg(test)]
+    pub(in crate::domain_computation::primary_graph) fn discard_completed_evidence_for_test(&self) {
+        *self
+            .completed_commit_evidence
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner) = Default::default();
+    }
+
     pub(in crate::domain_computation::primary_graph) fn capture_correction_witness(
         &self,
         execution: worth_execution::ExecutionRequest<'_, '_>,
@@ -28,21 +43,11 @@ impl WorthQueryPrimaryGraphProvider {
             .observe(commit)
     }
 
-    pub(in crate::domain_computation::primary_graph) fn observe_completed_application_for_session(
-        &self,
-        session: &crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding,
-    ) -> Option<WorthQueryPrimaryGraphCommittedApplication> {
-        self.completed_commit_evidence
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .observe_session(session)
-    }
-
     #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn retained_application_commit_basis(
         &self,
         commit: &worth_relational::facade::history::RelationalCommitReceipt,
-    ) -> Option<super::WorthQueryRetainedApplicationCommitBasis> {
+    ) -> Option<super::session_commit::WorthQueryRetainedApplicationCommitBasis> {
         self.completed_commit_evidence
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
@@ -51,23 +56,6 @@ impl WorthQueryPrimaryGraphProvider {
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .acquire(commit.commit_id)
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn resolve_completed_application_idempotency(
-        &self,
-        product: &WorthQueryProductIdempotencyAffinity,
-        binding: crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding,
-    ) -> Option<WorthQueryProviderIdempotencyResolution> {
-        let (committed_binding, committed) = self
-            .completed_commit_evidence
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .observe_idempotency(product, binding)?;
-        Some(if committed_binding == binding {
-            WorthQueryProviderIdempotencyResolution::Equivalent(committed)
-        } else {
-            WorthQueryProviderIdempotencyResolution::Drift
-        })
     }
 
     #[cfg(test)]

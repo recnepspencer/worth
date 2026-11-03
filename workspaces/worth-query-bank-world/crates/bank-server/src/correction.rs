@@ -1,3 +1,7 @@
+#![allow(
+    clippy::result_large_err,
+    reason = "Typed refusals preserve original recovery and cleanup custody without allocating on failure"
+)]
 //! Recorded money correction uses the installed reversal's retained delivery owner.
 use crate::{
     BankApplication, BankAuthenticatedPrincipal, BankIdentityRuntime, ReverseJournalAction,

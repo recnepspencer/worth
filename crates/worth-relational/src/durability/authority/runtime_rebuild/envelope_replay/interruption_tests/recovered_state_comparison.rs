@@ -101,7 +101,11 @@ fn canonicalize_retired_roots(lines: &[String]) -> Vec<String> {
         let line = &lines[index];
         output.push(line.clone());
         index += 1;
-        if line.trim() != "retired_roots: {" {
+        let retired_map = line.trim() == "retired_roots: {"
+            || (line.trim() == "data: {"
+                && index >= 2
+                && lines[index - 2].trim() == "retired_roots: RwLock {");
+        if !retired_map {
             continue;
         }
         let indent = line.len() - line.trim_start().len();

@@ -51,6 +51,8 @@ where
         }
         self.state
             .bridge
+            .as_ref()
+            .expect("serving World owns correspondence")
             .compare_current_exact(attempt.predecessor_basis().correspondence_basis())
             .map_err(|_| NoEffectCause::CorrespondenceRebindRequired)?;
         // The exact product cell is rechecked last, immediately before the

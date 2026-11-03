@@ -91,7 +91,7 @@ impl ReadmittedRegionDirectory {
                 std::collections::btree_map::Entry::Vacant(entry) => {
                     let cell = RelationalRegionResidency::cold(RelationalColdRegion {
                         kind_authority: leaf.kind_authority,
-                        source: self.directory.source.clone(),
+                        source: Some(self.directory.source.clone()),
                         partition_id: leaf.partition_id,
                         head: leaf.head,
                         history: leaf.history,

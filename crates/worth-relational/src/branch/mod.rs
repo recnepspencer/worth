@@ -1,3 +1,7 @@
+pub use basis::{
+    RelationalBranchBasisRetirement, RelationalBranchBasisRetirementDenial,
+    RelationalBranchBasisRetirementProgress, RetiredRelationalBranchBasis,
+};
 mod authority;
 mod basis;
 mod basis_admission_identity;
@@ -28,13 +32,15 @@ mod owner_services;
 mod recorded_basis;
 mod reference;
 pub use recorded_basis::{
-    RecordedRelationalCanonicalComponent, RecordedRelationalComponentReference,
-    RecordedRelationalComponentTarget, RelationalRecordedComponentRefusal,
+    ObservedRelationalMemoryComponent, RecordedRelationalCanonicalComponent,
+    RecordedRelationalComponentReference, RecordedRelationalComponentTarget,
+    RelationalRecordedComponentRefusal,
 };
 pub(crate) use reference::CheckpointComponentCellSource;
 mod reference_publication_cell;
 mod reference_state;
 mod registry;
+pub(crate) use registry::RelationalSourceRootSlot;
 mod root;
 mod root_checkpoint;
 mod root_partition_access;
@@ -104,6 +110,7 @@ pub use owner_services::{
     RelationalCommitResultSnapshotCleanupProgress, RelationalCommitResultSnapshotRelease,
     RelationalCommitResultSnapshotReleaseDenial, RelationalMaterializationPort,
     RelationalOwnerLifecycleObservation, RelationalOwnerServicePorts,
+    RelationalOwnerServiceRetirementDenial, RetiredRelationalOwnerServicePorts,
 };
 pub use reference::RelationalBranchCellDenial;
 pub use reference::{
@@ -131,6 +138,7 @@ pub(crate) use root::{
 pub(crate) use root_checkpoint::{RelationalBranchRootCheckpoint, RelationalRootRegionCheckpoint};
 pub(crate) use root_regions::{
     RelationalPersistentRegionAllocationKind, RelationalPersistentRegionSet,
+    RelationalRegionSourceWalk, RelationalRegionSourceWalkProgress,
 };
 pub(crate) use root_selection::SelectedRelationalBranchState;
 pub(crate) use sharing_cost_cell::RelationalBranchSharingCostCell;

@@ -2,10 +2,9 @@
 use super::{tests::observe, *};
 use crate::domain_computation::primary_graph::{
     tests::fixture::{
-        installed_authorization_world, installed_reclaiming_authorization_world, live_scope,
-        publish_relational_mutation, Account, AccountIdentity, AccountLabel, AccountMembershipTag,
-        AccountOwner, AccountStatus, AuthorizationWorld, PrincipalIdentityField,
-        TestAccountSourceBinding,
+        installed_reclaiming_authorization_world, live_scope, publish_relational_mutation, Account,
+        AccountIdentity, AccountLabel, AccountMembershipTag, AccountOwner, AccountStatus,
+        AuthorizationWorld, PrincipalIdentityField, TestAccountSourceBinding,
     },
     WorthQueryPrincipalResolutionMode,
 };
@@ -17,7 +16,7 @@ use worth_relational::facade::{
     symbols::ClientKey,
     transactions::{
         AspectFieldPatch, CreateIntent, DeleteEntityIntent, EntityMutationIntent, EntityReference,
-        EntitySpec, MutationIntent, RelationSpec, ReplaceEntityIntent, WorkerIntentBatch,
+        EntitySpec, MutationIntent, RelationSpec, WorkerIntentBatch,
     },
 };
 

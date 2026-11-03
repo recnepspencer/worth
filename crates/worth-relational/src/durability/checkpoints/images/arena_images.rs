@@ -71,7 +71,7 @@ pub(super) fn arena_to_image<K: CheckpointArenaKind>(
             entries
                 .iter()
                 .map(|meta| {
-                    let kind_id = K::meta_kind(&meta);
+                    let kind_id = K::meta_kind(meta);
                     K::plan(catalog, kind_id).ok_or_else(|| missing_plan(kind_id))?;
                     K::meta_to_image(meta, contracts)
                 })

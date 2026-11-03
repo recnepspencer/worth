@@ -72,7 +72,7 @@ fn every_capability_admission_reports_its_one_governed_input_derivation() {
         panic!("the first governed-input attempt must commit");
     };
     assert_admission_only_work(committed.canonical_work(), first_admission.canonical_work);
-    let WorthQueryApplicationCommitOutcome::AlreadyCommitted(recovered) =
+    let WorthQueryApplicationCommitOutcome::RecoveredCommitted(recovered) =
         world.application.compare_and_commit_application(
             retry,
             idempotency(81, 81),
@@ -81,7 +81,13 @@ fn every_capability_admission_reports_its_one_governed_input_derivation() {
     else {
         panic!("an equal input under the same key must recover the commit");
     };
-    assert_admission_only_work(recovered.canonical_work(), retry_admission.canonical_work);
+    crate::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_original(
+        &recovered, &committed,
+    );
+    assert_eq!(
+        retry_admission.canonical_work,
+        first_admission.canonical_work
+    );
 }
 
 #[test]

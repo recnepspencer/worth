@@ -18,6 +18,22 @@ impl std::fmt::Debug for RetiredCanonicalPlacement {
     }
 }
 impl RetiredCanonicalPlacement {
+    pub(crate) fn retire_journal_source(
+        &mut self,
+        source: Option<&dyn crate::durability::medium::RelationalDurableColdSource>,
+    ) -> Result<(), crate::durability::medium::RelationalCheckpointAcknowledgementDenial> {
+        use crate::durability::medium::RelationalCheckpointAcknowledgementDenial as Ack;
+        match &mut self.backing {
+            Some(EnvelopeBacking::Journal {
+                source: original, ..
+            }) => original
+                .retire(source.ok_or(Ack::CaptureNotBound)?)
+                .map_err(Ack::Retirement),
+            Some(EnvelopeBacking::Memory { .. } | EnvelopeBacking::SelectedCheckpoint { .. })
+            | None => Ok(()),
+        }
+    }
+
     pub(crate) fn has_directory(&self) -> bool {
         matches!(
             self.backing,
@@ -34,14 +50,14 @@ impl RetiredCanonicalPlacement {
         };
         // The same captured row and new cell still retain this exact index owner.
         drop(entry);
-        Some(directory)
+        Some(directory.into_original())
     }
 }
 impl RelationalCommitEnvelopeResidency {
     pub(crate) fn selected_directory(&self) -> Option<Arc<RelationalCheckpointDirectory>> {
         let state = self.state.lock().unwrap_or_else(|error| error.into_inner());
         match &state.backing {
-            EnvelopeBacking::SelectedCheckpoint { directory, .. } => Some(directory.clone()),
+            EnvelopeBacking::SelectedCheckpoint { directory, .. } => directory.snapshot(),
             _ => None,
         }
     }
@@ -76,10 +92,10 @@ impl RelationalCommitEnvelopeResidency {
             Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
             Err(std::sync::TryLockError::WouldBlock) => return Err(Ack::Busy),
         };
-        if let Some(position) = &state.position {
-            if position.position() != entry.position {
-                return Err(Ack::Storage(Cause::IntegrityMismatch));
-            }
+        if let Some(position) = &state.position
+            && position.position() != entry.position
+        {
+            return Err(Ack::Storage(Cause::IntegrityMismatch));
         }
         match &state.backing {
             EnvelopeBacking::Journal {
@@ -107,7 +123,10 @@ impl RelationalCommitEnvelopeResidency {
         }
         let old = std::mem::replace(
             &mut state.backing,
-            EnvelopeBacking::SelectedCheckpoint { entry, directory },
+            EnvelopeBacking::SelectedCheckpoint {
+                entry,
+                directory: crate::durability::data::NativeCheckpointDirectoryEdge::new(directory),
+            },
         );
         state.canonical_payload_bytes = None;
         Ok(RetiredCanonicalPlacement { backing: Some(old) })

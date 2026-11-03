@@ -16,12 +16,13 @@ use crate::storage::partition::AdjacencyKindBasis;
 
 pub(super) fn load_head(
     cold: &RelationalColdRegion,
+    source: &Arc<dyn crate::durability::medium::RelationalDurableColdSource>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     limit: u64,
 ) -> Result<Arc<ResidentRegion>, Failure> {
     let (mut partition, frontiers, mut historical) = (|| -> Result<_, Cause> {
         check_member_limit(cold.head.length, limit)?;
-        let bytes = cold.source.read_member(cold.head, limit)?;
+        let bytes = source.read_member(cold.head, limit)?;
         let frame = RelationalRegionImage::decode(
             &bytes,
             cold.head,
@@ -80,8 +81,9 @@ pub(super) fn load_head(
     let commitment = PartitionContentCommitment::capture_head(&partition, &symbols, &frontiers)
         .ok_or_else(|| unavailable(cold, Cause::Damaged))?;
     verify_leaf(cold, &partition, &commitment).map_err(|cause| unavailable(cold, cause))?;
-    let history_custody = cold
-        .source
+    let custody_memory = crate::storage::substrate::RecordHistoryCustody::reserve(execution)
+        .map_err(|cause| Failure::Request(cause.into()))?;
+    let history_custody = source
         .retain_members(
             &cold
                 .history_members
@@ -90,6 +92,11 @@ pub(super) fn load_head(
                 .collect::<Vec<_>>(),
         )
         .map_err(|cause| unavailable(cold, cause))?;
+    let history_custody = crate::storage::substrate::RecordHistoryCustody::new(
+        source.clone(),
+        history_custody,
+        custody_memory,
+    );
     let (entity_openings, relation_openings) = frontiers.into_arenas();
     install_history_prefixes(
         &mut partition.entity_arena,
@@ -109,12 +116,14 @@ pub(super) fn load_head(
     Ok(Arc::new(ResidentRegion {
         partition,
         commitment: Some(commitment),
+        _history_custody: Some(history_custody),
         _memory: None,
     }))
 }
 
 pub(super) fn load_full(
     cold: &RelationalColdRegion,
+    source: &Arc<dyn crate::durability::medium::RelationalDurableColdSource>,
     head: &ResidentRegion,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     limit: u64,
@@ -127,7 +136,7 @@ pub(super) fn load_full(
         kind_commitment: cold.kind_authority.history,
     };
     let mut folder = super::history_fold::HistoryFolder::new(execution, cold.partition_id, limit);
-    let history = folder.read(cold.source.as_ref(), &cold.history_members, &reference)?;
+    let history = folder.read(source.as_ref(), &cold.history_members, &reference)?;
     super::kind_commitment::verify(&history.kind_projection, cold.kind_authority.history)
         .map_err(|cause| unavailable(cold, cause))?;
     if history.entities.len() != head.partition.entity_arena.slot_count()
@@ -136,13 +145,13 @@ pub(super) fn load_full(
         return Err(unavailable(cold, Cause::Damaged).into());
     }
     let entities = folder.fold_rows::<crate::storage::substrate::EntityRecordKind>(
-        cold.source.as_ref(),
+        source.as_ref(),
         &cold.history_members,
         &reference,
         history.entities.len(),
     )?;
     let relations = folder.fold_rows::<crate::storage::substrate::RelationRecordKind>(
-        cold.source.as_ref(),
+        source.as_ref(),
         &cold.history_members,
         &reference,
         history.relations.len(),
@@ -197,6 +206,7 @@ pub(super) fn load_full(
     Ok(Arc::new(ResidentRegion {
         partition,
         commitment: Some(commitment),
+        _history_custody: None,
         _memory: None,
     }))
 }
@@ -211,7 +221,7 @@ fn unavailable(cold: &RelationalColdRegion, cause: Cause) -> RelationalStorageUn
 fn install_history_prefixes<K: crate::storage::substrate::RecordKind>(
     arena: &mut crate::storage::substrate::RecordArena<K>,
     cold: &RelationalColdRegion,
-    custody: &crate::durability::medium::RelationalDurableMemberCustody,
+    custody: &Arc<crate::storage::substrate::RecordHistoryCustody>,
     openings: Vec<(u64, crate::storage::substrate::HistoryAppendFrontier)>,
     historical: &mut BTreeMap<usize, Vec<crate::storage::partition::RegionRelationProjection>>,
 ) -> Result<(), Failure> {
@@ -224,8 +234,7 @@ fn install_history_prefixes<K: crate::storage::substrate::RecordKind>(
             arena.history_prefixes.set(
                 row_index,
                 Some(crate::storage::substrate::RecordHistoryPrefix {
-                    source: cold.source.clone(),
-                    _placement_custody: custody.clone(),
+                    custody: custody.clone(),
                     member: cold.history,
                     history_members: cold.history_members.clone(),
                     partition_id: cold.partition_id,

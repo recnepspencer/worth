@@ -21,3 +21,8 @@ pub use lifecycle_port::{RelationalBranchLifecyclePort, RelationalOwnerLifecycle
 pub use materialization_port::RelationalMaterializationPort;
 pub use service_ports::RelationalOwnerServicePorts;
 pub use transaction_admission_port::RelationalBranchTransactionAdmissionPort;
+
+mod service_retirement;
+pub use service_retirement::{
+    RelationalOwnerServiceRetirementDenial, RetiredRelationalOwnerServicePorts,
+};

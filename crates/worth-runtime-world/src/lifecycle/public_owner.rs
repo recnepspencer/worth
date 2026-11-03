@@ -1,3 +1,4 @@
+mod presence;
 use super::builder::{MissingRuntimeWorldInput, RuntimeWorldOwnerBuilder};
 use super::service_ports::{
     RuntimeWorldBranchPort, RuntimeWorldLifecyclePort, RuntimeWorldObservationPort,
@@ -17,6 +18,8 @@ where
     Ctx: Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
+    // Presence relinquishes admission before the ordinary Root field is dropped.
+    pub(super) presence: presence::PublicWorldPresence,
     pub(super) root: Arc<RuntimeWorldOwnerRoot<D, I, E, Ctx, T>>,
 }
 impl RuntimeWorldOwner<(), (), (), (), ()> {
@@ -39,6 +42,14 @@ where
     Ctx: Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
+    pub(in crate::lifecycle) fn from_root(root: RuntimeWorldOwnerRoot<D, I, E, Ctx, T>) -> Self {
+        let root = Arc::new(root);
+        Self {
+            presence: presence::PublicWorldPresence::new(&root),
+            root,
+        }
+    }
+
     /// Initialize constant-size cleanup custody after this actual owner sealed.
     pub fn result_snapshot_cleanup_after_close(
         &self,
@@ -61,19 +72,41 @@ where
         if operation.active != 0
             || operation.recovery_active != 0
             || state
-                .recovery
-                .try_has_close_custody()
-                .map_err(|_| Denial::Busy)?
-            || state
                 .custody
                 .try_has_close_custody()
                 .map_err(|_| Denial::Busy)?
         {
             return Err(Denial::InconsistentSealedCatalog);
         }
+        state
+            .recovery
+            .try_close_recovered_count(state.durable.is_some(), request)
+            .map_err(|cause| match cause {
+                super::RuntimeWorldCloseDenial::Busy => Denial::Busy,
+                super::RuntimeWorldCloseDenial::Stopped(cause) => {
+                    Denial::Stopped(worth_execution::WorkCeilingDenial::Stopped(cause))
+                }
+                super::RuntimeWorldCloseDenial::Execution(cause) => Denial::Stopped(cause),
+                super::RuntimeWorldCloseDenial::CloseNotCompleted
+                | super::RuntimeWorldCloseDenial::OwnerUnavailable
+                | super::RuntimeWorldCloseDenial::PublicationFrontierChanged
+                | super::RuntimeWorldCloseDenial::UnresolvedBusinessCustody
+                | super::RuntimeWorldCloseDenial::CleanupRequired
+                | super::RuntimeWorldCloseDenial::RecoveredNativeRetirement(_)
+                | super::RuntimeWorldCloseDenial::CloseProgressPoisoned
+                | super::RuntimeWorldCloseDenial::CloseProgressInvariant
+                | super::RuntimeWorldCloseDenial::ReportAllocationFailed
+                | super::RuntimeWorldCloseDenial::UndeliveredPublication
+                | super::RuntimeWorldCloseDenial::AlreadyClosing
+                | super::RuntimeWorldCloseDenial::AlreadyClosed
+                | super::RuntimeWorldCloseDenial::InFlightCriticalSection
+                | super::RuntimeWorldCloseDenial::DurablePublicationUnsettled => {
+                    Denial::InconsistentSealedCatalog
+                }
+            })?;
         let frontier = state.history.try_result_snapshot_cleanup_frontier()?;
         Ok(super::RuntimeWorldResultSnapshotCleanup::from_closed_owner(
-            state.relational.basis_port(),
+            state.relational_services().basis_port(),
             state.history.clone(),
             frontier,
         ))
@@ -175,9 +208,7 @@ where
     pub(super) fn from_inputs(
         inputs: RuntimeWorldOwnerInputs<D, I, E, Ctx, T>,
     ) -> Result<Self, RuntimeWorldIdentityExhaustion> {
-        Ok(Self {
-            root: Arc::new(RuntimeWorldOwnerRoot::new(inputs)?),
-        })
+        Ok(Self::from_root(RuntimeWorldOwnerRoot::new(inputs)?))
     }
     pub fn owner_identity(&self) -> RuntimeWorldOwnerIdentity {
         self.root.owner_identity()
@@ -237,17 +268,5 @@ where
             .durable
             .as_ref()
             .map(crate::durability::WorldCheckpointPort::new)
-    }
-}
-impl<D, I, E, Ctx, T> Drop for RuntimeWorldOwner<D, I, E, Ctx, T>
-where
-    D: Copy + Ord + std::fmt::Debug + Send + Sync + 'static,
-    I: Copy + Ord + Send + Sync + 'static,
-    E: Send + Sync + 'static,
-    Ctx: Send + Sync + 'static,
-    T: Copy + Ord + Send + Sync + 'static,
-{
-    fn drop(&mut self) {
-        self.root.release_public_owner();
     }
 }

@@ -1,4 +1,4 @@
-mod component_obligation;
+pub(crate) mod component_obligation;
 mod dependency_counts;
 mod obligation_transfer;
 mod observation_capacity;

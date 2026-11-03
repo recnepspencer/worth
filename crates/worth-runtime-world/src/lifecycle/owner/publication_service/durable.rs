@@ -40,7 +40,7 @@ where
         };
         let recorded = match self
             .state
-            .relational
+            .relational_services()
             .basis_port()
             .export_recorded_retained_component(execution, &original_basis)
         {

@@ -170,9 +170,6 @@ impl Octets<'_, '_, '_> {
     pub(crate) fn len(&self) -> usize {
         self.count
     }
-    pub(super) fn remaining(&self) -> usize {
-        self.remaining
-    }
     pub(crate) fn byte(&mut self) -> Result<u8, Refusal> {
         self.cursor.check_live()?;
         self.remaining = self.remaining.checked_sub(1).ok_or_else(malformed)?;
@@ -185,14 +182,6 @@ impl Octets<'_, '_, '_> {
         } else {
             Err(malformed())
         }
-    }
-    pub(super) fn u32(&mut self) -> Result<u32, Refusal> {
-        Ok(u32::from_le_bytes([
-            self.byte()?,
-            self.byte()?,
-            self.byte()?,
-            self.byte()?,
-        ]))
     }
     pub(crate) fn skip(&mut self, count: usize) -> Result<(), Refusal> {
         if count > self.remaining {

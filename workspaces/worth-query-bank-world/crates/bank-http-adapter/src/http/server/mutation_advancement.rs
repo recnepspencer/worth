@@ -98,6 +98,7 @@ pub(super) async fn execute<A: BankHttpApplicationAuthenticator>(
             }
         };
         let record = SourceMutationRecord {
+            released_cleanup: None,
             owner,
             sequence: command.sequence,
             custody,
@@ -110,7 +111,10 @@ pub(super) async fn execute<A: BankHttpApplicationAuthenticator>(
     let Some(record) = records.get(&command.custody_id) else {
         return reject(Some(command.request_id), BankHttpDenialKind::NotFound);
     };
-    if matches!(record, MutationRecord::Handoff(_)) {
+    if matches!(
+        record,
+        MutationRecord::Handoff(_) | MutationRecord::ClosedHandoff
+    ) {
         return reject(Some(command.request_id), BankHttpDenialKind::Stale);
     }
     if matches!(record, MutationRecord::Estate(..)) {
@@ -126,6 +130,17 @@ pub(super) async fn execute<A: BankHttpApplicationAuthenticator>(
     }
     if matches!(record, MutationRecord::Native(_)) {
         return super::native_cleanup_command::execute(application, records, command, scope, owner);
+    }
+    if let MutationRecord::Closed(record) = record {
+        return refusal_before_admission(
+            &command,
+            denial(if record.owner == owner {
+                BankHttpDenialKind::Stale
+            } else {
+                BankHttpDenialKind::PermissionDenied
+            }),
+            Some(record.sequence),
+        );
     }
     let MutationRecord::Source(record) = record else {
         unreachable!("native returned")
@@ -173,23 +188,37 @@ pub(super) async fn execute<A: BankHttpApplicationAuthenticator>(
         MutationCommand::ResumeSource => {
             refused(&command, denial(BankHttpDenialKind::MalformedRequest))
         }
-        MutationCommand::ReleaseCleanup => match record.custody.release_cleanup(&request) {
-            Ok(receipt) => BankHttpMutationOutcome::CollectionReleased {
-                request_id: command.request_id.clone(),
-                custody_id: command.custody_id.clone(),
-                sequence: command.sequence,
-                retired_component_count: receipt.retired_component_count(),
-                managed: receipt
-                    .managed_cleanup_receipt()
-                    .map(super::cleanup_description::describe),
-            },
-            Err(denial) => refused(&command, denial),
-        },
+        MutationCommand::ReleaseCleanup => {
+            if record.released_cleanup.is_some() {
+                refused(
+                    &command,
+                    super::mutation_refusal::denial(BankHttpDenialKind::Stale),
+                )
+            } else {
+                match record.custody.release_cleanup(&request) {
+                    Ok(receipt) => {
+                        let outcome = BankHttpMutationOutcome::CollectionReleased {
+                            request_id: command.request_id.clone(),
+                            custody_id: command.custody_id.clone(),
+                            sequence: command.sequence,
+                            retired_component_count: receipt.retired_component_count(),
+                            managed: receipt
+                                .managed_cleanup_receipt()
+                                .map(super::cleanup_description::describe),
+                        };
+                        record.released_cleanup = Some(receipt);
+                        outcome
+                    }
+                    Err(cause) => refused(&command, cause),
+                }
+            }
+        }
         MutationCommand::Close => match record.custody.close(&request) {
-            Ok(()) => {
-                return BankHttpMutationOutcome::Closed {
-                    request_id: command.request_id,
-                    custody_id: command.custody_id,
+            Ok(custody) => {
+                record.custody = custody;
+                BankHttpMutationOutcome::Closed {
+                    request_id: command.request_id.clone(),
+                    custody_id: command.custody_id.clone(),
                     sequence: command.sequence,
                 }
             }
@@ -200,7 +229,16 @@ pub(super) async fn execute<A: BankHttpApplicationAuthenticator>(
         },
         MutationCommand::Create { .. } => unreachable!("create returned before record lookup"),
     };
-    records.insert(command.custody_id, MutationRecord::Source(record));
+    match super::closed_mutation_custody::ClosedMutationRecord::from_source(record) {
+        Ok(record) => {
+            if !record.may_release() {
+                records.insert(command.custody_id, MutationRecord::Closed(record));
+            }
+        }
+        Err(record) => {
+            records.insert(command.custody_id, MutationRecord::Source(record));
+        }
+    }
     outcome
 }
 fn describe(
@@ -240,6 +278,17 @@ fn describe(
             recovered,
             commit,
             source: source.into(),
+        },
+        CustodyDescription::Recorded(commit) => BankHttpMutationOutcome::Recorded {
+            request_id,
+            custody_id,
+            sequence,
+            commit,
+        },
+        CustodyDescription::Closed => BankHttpMutationOutcome::Closed {
+            request_id,
+            custody_id,
+            sequence,
         },
         CustodyDescription::Terminal => BankHttpMutationOutcome::Terminal {
             request_id,

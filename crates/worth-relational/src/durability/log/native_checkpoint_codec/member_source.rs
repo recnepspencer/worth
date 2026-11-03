@@ -88,7 +88,7 @@ impl RelationalDurableColdSource for InlineCheckpointSource {
         output
             .extend_from_slice(bytes.bytes())
             .map_err(Refusal::Buffer)?;
-        Ok(output.seal_immutable_bytes().map_err(Refusal::Buffer)?)
+        output.seal_immutable_bytes().map_err(Refusal::Buffer)
     }
 
     fn validate_member_custody_retirement(

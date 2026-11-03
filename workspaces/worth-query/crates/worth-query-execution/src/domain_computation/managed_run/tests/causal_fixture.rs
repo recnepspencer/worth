@@ -64,8 +64,8 @@ impl CausalManagedAdmissionContext {
 pub(crate) fn managed_admission_context(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> CausalManagedAdmissionContext {
-    let mut runtime = relational_runtime();
-    let committed = create_fixture_entity(execution, &mut runtime);
+    let runtime = relational_runtime();
+    let committed = create_fixture_entity(execution, &runtime);
     let identity = runtime.main_branch_identity();
     let (descriptor, basis) = runtime.observe_branch(&identity).unwrap();
     assert!(runtime
@@ -89,8 +89,8 @@ pub(crate) fn managed_admission_context(
 pub(super) fn source_profile_substitution_context(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> SourceProfileSubstitutionContext {
-    let mut runtime = relational_runtime();
-    let committed = create_fixture_entity(execution, &mut runtime);
+    let runtime = relational_runtime();
+    let committed = create_fixture_entity(execution, &runtime);
     let identity = runtime.main_branch_identity();
     let (descriptor, basis) = runtime.observe_branch(&identity).unwrap();
     assert!(runtime
@@ -196,8 +196,8 @@ fn relational_source_and_lease(
     TruthBranchIdentity,
     TruthSnapshotIdentity,
 ) {
-    let mut runtime = relational_runtime();
-    let committed = create_fixture_entity(execution, &mut runtime);
+    let runtime = relational_runtime();
+    let committed = create_fixture_entity(execution, &runtime);
     let branch_identity = runtime.main_branch_identity();
     let (_, bridge_basis) = runtime.observe_branch(&branch_identity).unwrap();
     let substitute_basis = runtime

@@ -1,3 +1,4 @@
+use super::recorded_workflow_receipt as recorded;
 pub(crate) use worth_query_testkit_certification_application_graph::facade::certification::application_graph::workflow_retirement::*;
 
 #[test]
@@ -24,20 +25,14 @@ fn retirement_stops_new_starts_while_pinned_work_completes_and_the_lineage_reope
     );
 
     let retired = expect_retired(retire_definition(&application, second.clone(), 404));
-    assert!(!retired.replayed());
+    assert!(retired.receipt().changed_record_count() > 0);
     assert_eq!(retired.definition(), &second);
     expect_retired_start(start_instance(&application, second.clone(), 405));
     expect_retired_start(start_instance(&application, first.clone(), 406));
 
-    let replay = expect_retired(retire_definition(&application, second.clone(), 404));
-    assert!(
-        replay.replayed(),
-        "an exact retirement retry recovers its receipt"
-    );
-    assert_eq!(
-        replay.receipt().product_branch(),
-        retired.receipt().product_branch()
-    );
+    let replay =
+        recorded::retirement(retire_definition(&application, second.clone(), 404).unwrap());
+    recorded::original(&replay, retired.receipt());
     expect_stale_retirement(retire_definition(&application, second.clone(), 407));
     expect_stale_retirement(retire_definition(&application, first.clone(), 408));
 
@@ -76,10 +71,11 @@ fn retirement_stops_new_starts_while_pinned_work_completes_and_the_lineage_reope
         "a refused start names the reopened definition"
     );
 
-    let replay_after_reopen = expect_retired(retire_definition(&application, second, 404));
-    assert!(
-        replay_after_reopen.replayed(),
-        "reopening the lineage must not hide an exact retirement replay"
+    let replay_after_reopen =
+        recorded::retirement(retire_definition(&application, second, 404).unwrap());
+    assert_eq!(
+        replay_after_reopen, replay,
+        "reopening the lineage cannot hide the exact original retirement"
     );
     expect_stale_publication(publish_definition(
         &application,

@@ -25,6 +25,22 @@ pub struct WorthQueryGranularInvalidationInstallation {
 }
 
 impl WorthQueryGranularInvalidationInstallation {
+    pub(in crate::domain_computation::primary_graph) fn preflight_home_retirement(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(), super::super::WorthQueryHomeRetirementDenial> {
+        self.integration.preflight_home_retirement(request)
+    }
+    pub(in crate::domain_computation::primary_graph) fn advance_home_retirement(
+        &mut self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        native: &worth_relational::facade::runtime::RelationalRuntime,
+    ) -> Result<
+        super::super::WorthQueryOperationHomeRetirementProgress,
+        super::super::WorthQueryHomeRetirementDenial,
+    > {
+        self.integration.advance_home_retirement(request, native)
+    }
     pub(in crate::domain_computation::primary_graph) fn new(
         binding_identity: ApplicationSchemaBindingIdentity,
         integration: super::super::WorthQueryPrimaryGraphIntegrationHandle,

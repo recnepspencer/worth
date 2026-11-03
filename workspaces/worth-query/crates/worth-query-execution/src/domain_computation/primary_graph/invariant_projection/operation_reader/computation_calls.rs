@@ -185,7 +185,7 @@ impl<Schema, Operation>
     ) -> Result<ObservedRetained, WorthQueryApplicationAttemptDenial> {
         observe_admitted_fact(
             execution,
-            &*self.reader.runtime,
+            self.reader.runtime,
             self.reader.snapshot,
             self.reader.layout,
             key,

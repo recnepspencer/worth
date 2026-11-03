@@ -38,9 +38,7 @@ pub(in crate::http::server) fn request_mutation_denial(
         ),
         // State already moved on, by a later workflow step or by the key's
         // earlier commit; reading current state shows it.
-        Denial::WorkflowAuthoritySpent
-        | Denial::WorkflowTransitionCurrentness
-        | Denial::IdempotencyReceiptNotRetained => {
+        Denial::WorkflowAuthoritySpent | Denial::WorkflowTransitionCurrentness => {
             BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh)
         }
         // The same request can never pass these, so a retry would loop forever:
@@ -215,14 +213,6 @@ mod tests {
                 "{kind:?}"
             );
         }
-    }
-
-    #[test]
-    fn a_key_committed_before_a_restore_asks_for_a_refresh_not_a_retry() {
-        assert_eq!(
-            request_mutation_denial(Denial::IdempotencyReceiptNotRetained),
-            BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh),
-        );
     }
 }
 

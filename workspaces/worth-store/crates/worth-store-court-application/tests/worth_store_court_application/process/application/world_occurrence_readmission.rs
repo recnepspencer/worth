@@ -4,7 +4,7 @@ use worth_foundational::facade::DurableCompositeCommitIdentity;
 use worth_runtime_world::facade::*;
 use worth_store_application::{ApplicationHomeCheckpointDenial, ApplicationHomeCloseOutcome};
 
-fn open(
+pub(super) fn open(
     location: &std::path::Path,
     execution: &ExecutionRequest<'_, '_>,
 ) -> worth_store_testkit_application_oracle::world_home::WorldHomeFixture {
@@ -17,20 +17,28 @@ fn open(
     )
     .expect("actual filesystem Home readmission")
 }
-fn close(
+pub(super) fn close(
     home: worth_store_application::WorldReadmittedApplicationHome<(), (), (), (), ()>,
     execution: &ExecutionRequest<'_, '_>,
 ) {
     match home.close(execution) {
         Ok(ApplicationHomeCloseOutcome::Closed {
-            checkpoint: Err(ApplicationHomeCheckpointDenial::WorldSectionRequired),
+            checkpoint: Ok(checkpoint),
             ..
-        }) => {}
+        }) => {
+            assert!(checkpoint.generation > 0);
+            assert!(checkpoint.bytes > 0);
+        }
+        Ok(ApplicationHomeCloseOutcome::Closed {
+            checkpoint: Err(cause),
+            ..
+        }) => {
+            panic!("actual attached World Home checkpoint refused: {cause:?}")
+        }
         Ok(ApplicationHomeCloseOutcome::CloseRefused { reason, .. }) => {
             panic!("actual Native close refused: {reason:?}")
         }
         Err(refused) => panic!("actual World close refused: {:?}", refused.reason()),
-        _ => panic!("World checkpoint coverage remains explicitly unavailable"),
     }
 }
 
@@ -173,6 +181,32 @@ fn ordinary_occurrences_reopen_original_history_after_later_native_advance() {
     );
     for (index, (commit, attempt, semantic, position)) in originals.iter().enumerate() {
         let original = observation.readmitted_publication(commit).unwrap();
+        let native = fixture.home.relational().runtime();
+        let subjects = native
+            .durability_authority()
+            .discover_all_associated_effects(&execution)
+            .unwrap();
+        let subject = subjects
+            .iter()
+            .find(|subject| subject.receipt() == original.native_receipt())
+            .expect("the original reopened Native artifact remains source-backed");
+        let effect = native
+            .durability_authority()
+            .readmit_associated_effect(&execution, subject)
+            .unwrap();
+        let exact = observation
+            .readmitted_native_publication(&execution, effect)
+            .unwrap();
+        assert_eq!(exact.semantic_result(), original.semantic_result());
+        assert_eq!(exact.before(), original.before());
+        assert_eq!(exact.after(), original.after());
+        assert_eq!(exact.attempt_identity(), original.attempt_identity());
+        assert_eq!(
+            exact.native_artifact_digest(),
+            original.native_artifact_digest()
+        );
+        assert_eq!(exact.artifact_digest(), original.artifact_digest());
+        assert_eq!(exact.admitted_incarnation(), first_incarnation);
         assert_eq!(
             original.after().selected_commit().ordinal(),
             commit.ordinal()
@@ -186,7 +220,7 @@ fn ordinary_occurrences_reopen_original_history_after_later_native_advance() {
         assert_eq!(&semantics(original.semantic_result()), semantic);
         assert_eq!(original.native_patch_position(), *position);
         assert_eq!(original.journal_position(), index as u64 + 1);
-        assert_eq!(original.admitted_incarnation(), fixture.home.incarnation());
+        assert_eq!(original.admitted_incarnation(), first_incarnation);
         assert!(
             fixture
                 .home

@@ -10,11 +10,7 @@ fn evidence_past_the_ceiling_is_refused_and_leaves_the_instance_waiting() {
         .release_workflow_instance_progress_for_test();
     evidence_refused(&application, &instance, 95_020);
     assert_awaiting(&application, &instance, 95_030);
-    let ended = cancelled(cancel_instance(&application, instance, 95_040));
-    assert!(
-        !ended.replayed(),
-        "a refused assessment leaves the instance live"
-    );
+    let _ended = cancelled(cancel_instance(&application, instance, 95_040));
 }
 
 #[test]
@@ -22,23 +18,27 @@ fn a_lineage_retains_evidence_only_up_to_its_ceiling() {
     let application = bounded(EVIDENCE_BUDGET);
     let (_, instance) = proposed(&application, 95_100);
     let (retained, last) = spend_until_refused(&application, &instance, 95_103, 0);
-    let (last, acceptance_key) = last.expect("the installed budget admits real evidence");
+    let (last, acceptance_key, original) = last.expect("the installed budget admits real evidence");
     let before_replay = application
         .runtime()
         .workflow_instance_progress_counters()
         .incremental_evidence_bytes();
-    assert!(
-        accept(&application, &instance, &last, acceptance_key),
-        "a retry of the accepted assessment replays",
-    );
+    let WorkflowProgressOutcome::RecoveredCommitted(retry) =
+        accept_assessment(&application, instance.clone(), &last, acceptance_key).unwrap()
+    else {
+        panic!("assessment retry must return its original data");
+    };
+    crate::recorded_receipt::assert_agrees(&retry, original.receipt());
     evidence_refused(&application, &instance, 95_170);
     application
         .runtime()
         .release_workflow_instance_progress_for_test();
-    assert!(
-        accept(&application, &instance, &last, acceptance_key),
-        "a cold retry of the accepted assessment replays",
-    );
+    let WorkflowProgressOutcome::RecoveredCommitted(retry) =
+        accept_assessment(&application, instance.clone(), &last, acceptance_key).unwrap()
+    else {
+        panic!("assessment retry must return its original data");
+    };
+    crate::recorded_receipt::assert_agrees(&retry, original.receipt());
     assert_eq!(
         application
             .runtime()

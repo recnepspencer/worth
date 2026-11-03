@@ -21,7 +21,7 @@ fn authored_body_assigns_the_once_encoded_input_not_a_later_serialization() {
 fn authored_body_input_replay_and_intent_drift_preserve_the_first_value() {
     let app = install::<100>();
     assert!(matches!(invoke(&app, 1001), Outcome::Committed { .. }));
-    assert!(matches!(invoke(&app, 1001), Outcome::AlreadyCommitted(_)));
+    assert!(matches!(invoke(&app, 1001), Outcome::RecoveredCommitted(_)));
     let drift = invoke_input(
         &app,
         1001,

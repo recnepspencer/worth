@@ -93,6 +93,8 @@ fn shared_frame_and_segment_keep_actual_capacity_charge_until_last_owner() {
     let (_directory, media, coordination, observed) = fixture();
     let (owner, _, _) = coordination.sampling_allocation_basis().unwrap();
     let ports = owner.ports().clone();
+    let serving = ports.counters().active_operation_bytes_for(Scope::Recovery);
+    assert_eq!(serving, crate::physical_runtime::PhysicalRecoveryCoordinationCapacity::serving_evidence_backing_bytes());
     let observer = ports.allocation_events();
     let mut builder = coordination
         .begin_recovery_wal_segment(&observed[0], artifact())
@@ -125,7 +127,7 @@ fn shared_frame_and_segment_keep_actual_capacity_charge_until_last_owner() {
     assert_eq!(segment.owned_heap_bytes(), Some(roster_bytes + frame_bytes));
     assert_eq!(
         ports.counters().active_operation_bytes_for(Scope::Recovery),
-        roster_bytes + frame_bytes
+        serving + roster_bytes + frame_bytes
     );
     let shared = segment.clone();
     let escaped_frame = segment.frames()[0].clone();
@@ -161,9 +163,14 @@ fn first_frame_native_pressure_denies_before_admission_and_retries_exactly() {
     let (_directory, _media, coordination, observed) = fixture();
     let (owner, _, _) = coordination.sampling_allocation_basis().unwrap();
     let ports = owner.ports().clone();
+    let serving = ports.counters().active_operation_bytes_for(Scope::Recovery);
+    assert_eq!(serving, crate::physical_runtime::PhysicalRecoveryCoordinationCapacity::serving_evidence_backing_bytes());
     let limit = owner.admitted_policy().operation_bytes();
     let held = ports
-        .begin_operation(Scope::Maintenance, NonZeroU64::new(limit - 1).unwrap())
+        .begin_operation(
+            Scope::Maintenance,
+            NonZeroU64::new(limit - serving - 1).unwrap(),
+        )
         .unwrap();
     let before = ports.allocation_events().snapshot();
     let (validation, _) = validate_wal_frame_prefix(
@@ -213,9 +220,11 @@ fn first_frame_native_pressure_denies_before_admission_and_retries_exactly() {
     let admitted = frame(&coordination, &observed[0], 0);
     assert_eq!(
         ports.counters().active_operation_bytes_for(Scope::Recovery),
-        admitted.charged_bytes()
+        serving + admitted.charged_bytes()
     );
     drop(admitted);
+    assert_eq!(ports.counters().active_operation_bytes(), serving);
+    drop(coordination);
     assert_eq!(ports.counters().active_operation_bytes(), 0);
 }
 
@@ -224,6 +233,8 @@ fn roster_growth_native_denial_preserves_old_capacity_then_retry_and_cancel_rele
     let (_directory, _media, coordination, observed) = fixture();
     let (owner, original, _) = coordination.sampling_allocation_basis().unwrap();
     let ports = owner.ports().clone();
+    let serving = ports.counters().active_operation_bytes_for(Scope::Recovery);
+    assert_eq!(serving, crate::physical_runtime::PhysicalRecoveryCoordinationCapacity::serving_evidence_backing_bytes());
     let first = frame(&coordination, &observed[0], 0);
     let second = frame(
         &coordination,
@@ -277,6 +288,8 @@ fn roster_growth_native_denial_preserves_old_capacity_then_retry_and_cancel_rele
     builder.push(second_retry).unwrap();
     assert_eq!(builder.len(), 2);
     drop(builder);
+    assert_eq!(ports.counters().active_operation_bytes(), serving);
+    drop(coordination);
     assert_eq!(ports.counters().active_operation_bytes(), 0);
 }
 
@@ -285,6 +298,8 @@ fn oversized_allocator_result_is_disposed_and_builder_cannot_reuse_it() {
     let (_directory, _media, coordination, observed) = fixture();
     let (owner, _, _) = coordination.sampling_allocation_basis().unwrap();
     let ports = owner.ports().clone();
+    let serving = ports.counters().active_operation_bytes_for(Scope::Recovery);
+    assert_eq!(serving, crate::physical_runtime::PhysicalRecoveryCoordinationCapacity::serving_evidence_backing_bytes());
     let admitted = frame(&coordination, &observed[0], 0);
     let retained = admitted.clone();
     let retained_charge = retained.charged_bytes();
@@ -309,7 +324,7 @@ fn oversized_allocator_result_is_disposed_and_builder_cannot_reuse_it() {
     assert!(builder.grant.is_none());
     assert_eq!(
         ports.counters().active_operation_bytes_for(Scope::Recovery),
-        retained_charge
+        serving + retained_charge
     );
     assert_eq!(
         builder.push(retained.clone()),
@@ -318,5 +333,7 @@ fn oversized_allocator_result_is_disposed_and_builder_cannot_reuse_it() {
     assert!(matches!(builder.finish(), Err(Denial::Allocation(found)) if found == cause));
     assert_eq!(retained.payload(), b"redo-payload");
     drop(retained);
+    assert_eq!(ports.counters().active_operation_bytes(), serving);
+    drop(coordination);
     assert_eq!(ports.counters().active_operation_bytes(), 0);
 }

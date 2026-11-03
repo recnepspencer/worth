@@ -16,12 +16,7 @@ impl DurableProductBranchIdentity {
         owner: DurableWorldOwnerIdentity,
         name: String,
     ) -> Result<Self, DurableProductBranchNameDenial> {
-        if name.trim().is_empty() {
-            return Err(DurableProductBranchNameDenial::Empty);
-        }
-        if name.len() > 256 {
-            return Err(DurableProductBranchNameDenial::TooLong);
-        }
+        validate_name(&name)?;
         Ok(Self { owner, name })
     }
     pub const fn owner(&self) -> DurableWorldOwnerIdentity {
@@ -30,6 +25,15 @@ impl DurableProductBranchIdentity {
     pub fn name(&self) -> &str {
         &self.name
     }
+}
+pub(super) fn validate_name(name: &str) -> Result<(), DurableProductBranchNameDenial> {
+    if name.trim().is_empty() {
+        return Err(DurableProductBranchNameDenial::Empty);
+    }
+    if name.len() > 256 {
+        return Err(DurableProductBranchNameDenial::TooLong);
+    }
+    Ok(())
 }
 impl identity_seal::Sealed for DurableProductBranchIdentity {}
 impl DurableIdentity for DurableProductBranchIdentity {}

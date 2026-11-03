@@ -9,6 +9,8 @@ mod event_page;
 mod event_residency;
 mod node_page;
 mod page_admission;
+mod source_close;
+mod source_retirement;
 pub(crate) use event_residency::ResidentLineageEventPage;
 mod node_residency;
 mod resolution_indexes;

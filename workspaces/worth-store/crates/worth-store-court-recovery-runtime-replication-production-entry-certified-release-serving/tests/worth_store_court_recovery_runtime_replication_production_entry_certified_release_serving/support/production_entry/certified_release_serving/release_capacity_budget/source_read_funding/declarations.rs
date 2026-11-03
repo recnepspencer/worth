@@ -42,12 +42,13 @@ pub(crate) fn recovery_policy_with_scope(
         worth_store::physical_runtime::PhysicalOperationAllocationScope::Verification,
         worth_store::physical_runtime::PhysicalOperationAllocationScope::Blob,
     ] {
-        let maximum =
-            if scope == worth_store::physical_runtime::PhysicalOperationAllocationScope::Recovery {
-                PROGRESS_HEADROOM + usable_recovery
-            } else {
-                canonical.scope_bytes(scope)
-            };
+        let maximum = if scope
+            == worth_store::physical_runtime::PhysicalOperationAllocationScope::Recovery
+        {
+            PROGRESS_HEADROOM + worth_store::physical_runtime::PhysicalRecoveryCoordinationCapacity::serving_evidence_backing_bytes() + usable_recovery
+        } else {
+            canonical.scope_bytes(scope)
+        };
         builder = builder.scope_bytes(scope, bytes(maximum));
     }
     for kind in [

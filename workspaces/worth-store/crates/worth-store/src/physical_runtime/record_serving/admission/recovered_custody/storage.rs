@@ -1,5 +1,6 @@
 //! Actual serving evidence, prepared under the original Store recovery grant.
 use super::{RecoveredCheckpointCustodyEvidence, RecoveredCheckpointCustodyPayload};
+#[cfg(feature = "recovery-runtime-owner")]
 use crate::physical_runtime::{
     PhysicalRecoveryReadAllocation, PhysicalRecoveryRejoinResidentDenial,
 };
@@ -16,6 +17,7 @@ impl PreparedRecoveredCustodyBacking {
         std::mem::size_of::<RecoveredCheckpointCustodyPayload>() as u64
     }
 
+    #[cfg(feature = "recovery-runtime-owner")]
     pub(in crate::physical_runtime) fn prepare(
         window: &PhysicalRecoveryReadAllocation<'_>,
     ) -> Result<Self, PhysicalRecoveryRejoinResidentDenial> {

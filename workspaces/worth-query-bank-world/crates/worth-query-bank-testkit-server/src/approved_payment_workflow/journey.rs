@@ -1,11 +1,12 @@
 pub use bank_domain::schema::ApprovePayment;
 pub use bank_server::{BankApprovedPaymentWorkflow, BankPaymentAssessmentSettlement};
 pub use worth_query_host::facade::application_entry::{
-    PerformedWorkflowProposal, PublishedWorkflowInstanceRef, PublishedWorkflowProposalRef,
-    RequiredWorkflowApproval, RequiredWorkflowCondition, RequiredWorkflowOperation,
-    WorkflowDefinitionExpectedPredecessor, WorkflowDefinitionPublicationOutcome,
-    WorkflowInstanceStartOutcome, WorkflowProgressOutcome, WorkflowProposalOutcome,
-    WorthQueryOrdinaryWorkflowRunStop, WorthQueryWorkflowAssessmentDemandProgress,
+    PerformedWorkflowDefinitionPublication, PerformedWorkflowProposal,
+    PublishedWorkflowInstanceRef, PublishedWorkflowProposalRef, RequiredWorkflowApproval,
+    RequiredWorkflowCondition, RequiredWorkflowOperation, WorkflowDefinitionExpectedPredecessor,
+    WorkflowDefinitionPublicationOutcome, WorkflowInstanceStartOutcome, WorkflowProgressOutcome,
+    WorkflowProposalOutcome, WorthQueryOrdinaryWorkflowRunStop,
+    WorthQueryWorkflowAssessmentDemandProgress,
 };
 
 pub use super::approval::require_authenticated_approval_and_replay;
@@ -19,14 +20,17 @@ pub fn prepare_approved_payment_approval(
     PublishedWorkflowProposalRef,
     RequiredWorkflowApproval,
 ) {
-    let instance = start_approved_payment_instance(workflow, authority);
+    let (_definition, instance) = start_approved_payment_instance(workflow, authority);
     prepare_approved_payment_approval_on_instance(workflow, instance, authority)
 }
 
 pub fn start_approved_payment_instance(
     starter: &BankApprovedPaymentWorkflow<'_, '_, '_>,
     starter_authority: &ApprovePayment,
-) -> PublishedWorkflowInstanceRef {
+) -> (
+    PerformedWorkflowDefinitionPublication,
+    PublishedWorkflowInstanceRef,
+) {
     let published = match starter
         .publish_definition(
             starter_authority.clone(),
@@ -50,7 +54,7 @@ pub fn start_approved_payment_instance(
         other => panic!("expected workflow instance, got {other:?}"),
     };
 
-    started.instance().clone()
+    (published, started.instance().clone())
 }
 
 pub fn prepare_approved_payment_approval_on_instance(
@@ -214,8 +218,14 @@ pub fn reach_approval_limit(
 pub fn prepare_approved_payment_operation(
     workflow: &BankApprovedPaymentWorkflow<'_, '_, '_>,
     authority: &ApprovePayment,
-) -> (PublishedWorkflowInstanceRef, RequiredWorkflowOperation) {
-    let (instance, proposal, approval) = prepare_approved_payment_approval(workflow, authority);
+) -> (
+    PerformedWorkflowDefinitionPublication,
+    PublishedWorkflowInstanceRef,
+    RequiredWorkflowOperation,
+) {
+    let (definition, instance) = start_approved_payment_instance(workflow, authority);
+    let (instance, proposal, approval) =
+        prepare_approved_payment_approval_on_instance(workflow, instance, authority);
     require_authenticated_approval_and_replay(workflow, &instance, &approval, &proposal, authority);
 
     let keys = [key("approved-payment:advance:operation")];
@@ -228,5 +238,5 @@ pub fn prepare_approved_payment_operation(
         )) => required.clone(),
         other => panic!("expected typed payment operation wait, got {other:?}"),
     };
-    (instance, operation)
+    (definition, instance, operation)
 }

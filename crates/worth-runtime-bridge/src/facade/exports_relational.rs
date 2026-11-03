@@ -30,5 +30,5 @@ pub use crate::relational_source::{
     RelationalOpaqueAspectWideningAdmission, RelationalOpaqueAspectWideningAdmissionDenial,
     RetiredRelationalBridgeBranchHead, RetiredRelationalBridgeCanonicalSubscription,
     RetiredRelationalBridgeObservation, RetiredRelationalBridgeRetainedSnapshot,
-    RuntimeBridgeRelationalSource,
+    RetiredRuntimeBridgeRelationalSource, RuntimeBridgeRelationalSource,
 };

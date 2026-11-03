@@ -86,7 +86,7 @@ impl RelationalRuntimeCloseAuthority {
 
     /// Issued only by the authentic memory owner after actual quiescence and
     /// obligation retirement. Heap destruction remains ordinary unbudgeted Drop.
-    pub(super) fn complete_memory_business(&self) {
+    pub(super) fn complete_stopped_business(&self) {
         self.business_complete
             .store(true, std::sync::atomic::Ordering::Release);
     }

@@ -2,6 +2,7 @@ use std::sync::Arc;
 use std::sync::Mutex;
 mod attachment;
 mod home_retirement;
+pub(in crate::domain_computation) use home_retirement::RetiringRelationalSource;
 
 use worth_relational::facade::runtime::RelationalRuntime;
 use worth_runtime_bridge::facade::RelationalBridgeBranchHeadLease;

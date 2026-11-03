@@ -72,7 +72,7 @@ fn restart_cycles_keep_full_history_input_bounded_with_headroom() {
         consolidations += usize::from(layers < prior);
         let source = counted(members, captured.leaf.history);
         cold = RelationalColdRegion {
-            source,
+            source: Some(source),
             head: captured.leaf.head,
             history: captured.leaf.history,
             history_members: directory,
@@ -149,7 +149,7 @@ fn consolidation_damage_is_sticky_and_a_stopped_capture_is_retryable() {
     // A different cold cell must actually read the corrupt prefix at compaction.
     let damaged_source = counted(archive(&cold), cold.history);
     let damaged = RelationalRegionResidency::cold(RelationalColdRegion {
-        source: damaged_source.clone(),
+        source: Some(damaged_source.clone()),
         ..cold.clone()
     })
     .unwrap();
@@ -180,7 +180,16 @@ fn archive(cold: &RelationalColdRegion) -> BTreeMap<RelationalDurableMemberLocat
         .members(cold.history)
         .into_iter()
         .chain([cold.head])
-        .map(|member| (member, cold.source.read_member(member, 1 << 24).unwrap()))
+        .map(|member| {
+            (
+                member,
+                cold.source
+                    .as_ref()
+                    .unwrap()
+                    .read_member(member, 1 << 24)
+                    .unwrap(),
+            )
+        })
         .collect()
 }
 
@@ -210,7 +219,7 @@ fn reopened(
         captured.leaf.history,
     );
     RelationalColdRegion {
-        source,
+        source: Some(source),
         head: captured.leaf.head,
         history: captured.leaf.history,
         history_members: Arc::new(

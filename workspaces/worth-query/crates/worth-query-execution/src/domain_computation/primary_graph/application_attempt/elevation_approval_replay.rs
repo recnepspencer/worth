@@ -45,8 +45,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .into_resolution();
         let outcome = match resolution {
             WorthQueryApplicationIdempotencyResolution::Unseen => return Ok(None),
-            WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(receipt) => {
-                WorthQueryApplicationCommitOutcome::AlreadyCommitted(receipt)
+            WorthQueryApplicationIdempotencyResolution::RecoveredCommitted(receipt) => {
+                WorthQueryApplicationCommitOutcome::RecoveredCommitted(receipt)
             }
             WorthQueryApplicationIdempotencyResolution::ProductPreparationPending(owner) => {
                 WorthQueryApplicationCommitOutcome::ProductPreparationPending(owner)
@@ -101,8 +101,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .into_resolution();
         let outcome = match resolution {
             WorthQueryApplicationIdempotencyResolution::Unseen => return Ok(None),
-            WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(receipt) => {
-                WorthQueryApplicationCommitOutcome::AlreadyCommitted(receipt)
+            WorthQueryApplicationIdempotencyResolution::RecoveredCommitted(receipt) => {
+                WorthQueryApplicationCommitOutcome::RecoveredCommitted(receipt)
             }
             WorthQueryApplicationIdempotencyResolution::ProductPreparationPending(owner) => {
                 WorthQueryApplicationCommitOutcome::ProductPreparationPending(owner)

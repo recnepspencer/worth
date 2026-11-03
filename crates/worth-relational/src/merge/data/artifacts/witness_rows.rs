@@ -27,15 +27,6 @@ impl<T> MergeWitnessRows<T> {
             .pad_to_align();
         u64::try_from(layout.size()).ok()
     }
-
-    pub(crate) fn storage_bytes(count: usize) -> Option<u64> {
-        let rows = std::alloc::Layout::new::<(usize, usize)>()
-            .extend(std::alloc::Layout::array::<T>(count).ok()?)
-            .ok()?
-            .0
-            .pad_to_align();
-        Self::control_bytes()?.checked_add(u64::try_from(rows.size()).ok()?)
-    }
 }
 
 impl<T> From<Arc<[T]>> for MergeWitnessRows<T> {

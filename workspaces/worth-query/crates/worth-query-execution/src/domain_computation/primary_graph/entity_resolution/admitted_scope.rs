@@ -19,23 +19,6 @@ use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 
 impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
-    /// The installed selector has already been checked and its cloning
-    /// admitted by resolve_retained_query_scope. This child owns the actual
-    /// selected-index, snapshot and bounded Native lookup Work.
-    pub(super) fn resolve_encoded_entity_admitted<Entity>(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        entity: &str,
-        field: &str,
-        encoded: AspectValue,
-        request: &WorthQueryRequestScope,
-        index: DerivedIndexId,
-        layout: &crate::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryFieldLayout,
-    ) -> Result<WorthQueryApplicationEntityIdentity<Schema, Entity>, WorthQueryEntityResolutionDenial>
-    {
-        self.resolve_encoded_entity_admitted_with_native_access(execution, entity, field, encoded, request, index, layout, &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess::acquire())
-    }
-
     pub(super) fn resolve_encoded_entity_admitted_with_native_access<Entity>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

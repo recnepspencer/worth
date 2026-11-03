@@ -33,7 +33,7 @@ impl StoreColdSource {
         let memory =
             request.reserve_retained_memory(std::mem::size_of::<StoreCheckpointReadCut>() as u64)?;
         let reader =
-            self.serving
+            self.serving()
                 .try_records_for_checkpoint(request)
                 .map_err(|cause| match cause {
                     Capture::Busy => Refusal::Busy,
@@ -41,19 +41,19 @@ impl StoreColdSource {
                     Capture::Protection(_) => Refusal::Storage(Cause::SourceUnavailable),
                 })?;
         let canonical = self
-            .serving
+            .serving()
             .canonical_commits()
             .map_err(|_| Refusal::Storage(Cause::SourceUnavailable))?
             .head_position_from(&reader)
             .map_err(|failure| super::owned_read::journal_failure(failure, 0))?;
         let transitions = self
-            .serving
+            .serving()
             .branch_transitions()
             .map_err(|_| Refusal::Storage(Cause::SourceUnavailable))?
             .head_position_from(&reader)
             .map_err(|failure| super::owned_read::journal_failure(failure, 0))?;
         let membership = self
-            .serving
+            .serving()
             .anchored_records()
             .map_err(|_| Refusal::Storage(Cause::SourceUnavailable))?
             .protected_membership_from(
@@ -90,7 +90,7 @@ impl StoreColdSource {
                 membership,
                 issuer: self.weak_self.clone(),
                 bounds,
-                serving: self.serving.clone(),
+                serving: Arc::clone(self.serving()),
                 _memory: memory,
             }),
         ))
@@ -102,7 +102,7 @@ impl StoreColdSource {
         let cut = original
             .downcast_ref::<StoreCheckpointReadCut>()
             .ok_or(Refusal::ForeignProtection)?;
-        if cut.issuer.as_ptr() != self as *const Self || !Arc::ptr_eq(&cut.serving, &self.serving) {
+        if !std::ptr::eq(cut.issuer.as_ptr(), self) || !Arc::ptr_eq(&cut.serving, self.serving()) {
             return Err(Refusal::ForeignSource);
         }
         Ok(cut)

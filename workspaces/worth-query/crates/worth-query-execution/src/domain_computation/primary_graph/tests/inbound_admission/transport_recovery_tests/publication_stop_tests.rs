@@ -32,7 +32,7 @@ fn publication_stop_transport_completion_remains_ready_without_redispatch() {
         .unwrap()
         .unwrap();
     let transport = CompletingTransport(AtomicUsize::new(0));
-    let completed = dispatch_external_effect(&transport, admitted).unwrap();
+    let completed = dispatch_external_effect(&transport, admitted, || {}).unwrap();
     let evidence = InstalledTransportCompletion::from_observed_dispatch(owner, &completed).unwrap();
     world
         .application

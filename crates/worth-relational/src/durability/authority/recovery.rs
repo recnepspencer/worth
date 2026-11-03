@@ -40,7 +40,12 @@ impl<'runtime> DurabilityRecoveryAuthority<'runtime> {
     fn restored_runtime_authority(
         &self,
         recovered_roots: super::runtime_rebuild::RecoveredRootInventory,
-    ) -> RecoveredRelationalRuntimeAuthority {
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<RecoveredRelationalRuntimeAuthority, RelationalRecoveryStop> {
+        let recovered_roots = recovered_roots.into_readmission(execution)?;
+        self.runtime
+            .durability
+            .install_source_root_inventory(recovered_roots.clone());
         let recovered_branch_images = self
             .runtime
             .history()
@@ -48,13 +53,13 @@ impl<'runtime> DurabilityRecoveryAuthority<'runtime> {
             .into_iter()
             .map(|cell| (cell.branch_id, (cell.observation, cell.truth_version)))
             .collect();
-        RecoveredRelationalRuntimeAuthority {
+        Ok(RecoveredRelationalRuntimeAuthority {
             runtime_instance_id: self.runtime.runtime_instance_id(),
             recovered_branch_images,
-            recovered_roots: recovered_roots.into_readmission(),
+            recovered_roots,
             codec_transition: None,
             performed_codec_retirement: None,
-        }
+        })
     }
 
     pub fn restore_native_checkpoint(
@@ -117,7 +122,10 @@ impl<'runtime> DurabilityRecoveryAuthority<'runtime> {
         declared_schema::require_declared_schema_of_recovered_main(&material.restored)?;
         move_durable_medium(self.runtime, &mut material.restored)?;
         let (outcome, recovered_roots) = publish_recovered_runtime(self.runtime, material);
-        Ok((outcome, self.restored_runtime_authority(recovered_roots)))
+        Ok((
+            outcome,
+            self.restored_runtime_authority(recovered_roots, execution)?,
+        ))
     }
 }
 

@@ -17,6 +17,19 @@ pub(crate) struct HistoryRetentionObligation {
     signal: ComponentBasisPinObligation,
 }
 impl HistoryRetentionObligation {
+    pub(crate) fn try_begin_close_retirement(
+        &mut self,
+    ) -> Result<super::RetiringHistoryComponents, ()> {
+        let relational = self.relational.claim.as_ref().ok_or(())?;
+        let signal = self.signal.claim.as_ref().ok_or(())?;
+        let retired = relational
+            .control
+            .try_take_history_pair_for_close(relational, signal)?;
+        self.relational.claim = None;
+        self.signal.claim = None;
+        Ok(retired)
+    }
+
     fn fork(
         basis: &AdmittedCompositeRuntimeWorldBasis,
         relational: &ComponentBasisPinObligation,

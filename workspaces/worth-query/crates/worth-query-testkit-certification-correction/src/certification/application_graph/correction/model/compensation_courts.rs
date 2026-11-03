@@ -103,21 +103,28 @@ pub fn arithmetic_and_replay() {
         .prepare()
         .unwrap();
     let WorthQueryApplicationCorrectionPreparation::Settled(
-        WorthQueryApplicationMutationOutcome::AlreadyCommitted(replayed),
+        WorthQueryApplicationMutationOutcome::RecoveredCommitted(replayed),
     ) = retry
     else {
         panic!("exact compensation replay must return the original receipt");
     };
     assert_eq!(replayed.commit_reference(), receipt.commit_reference());
     assert_eq!(
-        replayed.committed_product_publication().composite_commit(),
-        receipt.committed_product_publication().composite_commit()
+        replayed
+            .new_product_head()
+            .memory()
+            .unwrap()
+            .selected_commit(),
+        receipt
+            .committed_product_publication()
+            .composite_commit()
+            .ordinal()
     );
     assert_eq!(
         replayed
             .aftermath_causality()
             .unwrap()
-            .recorded_source()
+            .source()
             .relational(),
         source.commit_reference()
     );

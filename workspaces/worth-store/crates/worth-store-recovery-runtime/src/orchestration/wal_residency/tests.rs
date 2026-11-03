@@ -10,7 +10,8 @@ use worth_store::physical_runtime::{
     PhysicalRuntimeAdmission, PhysicalStore, QualifiedRecoveryFilesystemMedia,
 };
 
-const ORIGINAL: u64 = 16 << 10;
+const SERVING: u64 = PhysicalRecoveryCoordinationCapacity::serving_evidence_backing_bytes();
+const ORIGINAL: u64 = SERVING + (16 << 10);
 
 #[test]
 fn growth_requires_old_and_new_capacity_and_preserves_prefix_on_native_denial() {
@@ -19,7 +20,7 @@ fn growth_requires_old_and_new_capacity_and_preserves_prefix_on_native_denial() 
     let dimension = Dimension::OperationScope(Scope::Recovery);
     assert_eq!(
         observer.snapshot().for_dimension(dimension).active_units(),
-        0
+        SERVING
     );
     let mut roster = NativeWalRoster::<u64>::with_capacity(&coordination, 2).unwrap();
     roster.push_reserved(17);
@@ -35,7 +36,7 @@ fn growth_requires_old_and_new_capacity_and_preserves_prefix_on_native_denial() 
     let prospective_bytes = (4 * std::mem::size_of::<u64>()) as u64;
     let held = coordination
         .certification_begin_recovery_allocation(
-            NonZeroU64::new(ORIGINAL - old_bytes - prospective_bytes + 1).unwrap(),
+            NonZeroU64::new(ORIGINAL - SERVING - old_bytes - prospective_bytes + 1).unwrap(),
         )
         .unwrap();
     let before = observer.snapshot().for_dimension(dimension);
@@ -77,7 +78,7 @@ fn growth_requires_old_and_new_capacity_and_preserves_prefix_on_native_denial() 
         retry.released_units() - retry_before.released_units(),
         old_bytes
     );
-    assert_eq!(retry.active_units(), retained);
+    assert_eq!(retry.active_units(), SERVING + retained);
     roster.push_reserved(41);
     roster.as_mut_slice()[0] = 53;
     assert_eq!(roster.as_slice(), &[53, 29, 41]);
@@ -112,12 +113,12 @@ fn empty_roster_has_no_backing_and_shared_storage_is_prefunded_with_first_slot()
     assert_eq!(roster.owned_heap_bytes(), Some(expected));
     assert_eq!(
         observer.snapshot().for_dimension(dimension).active_units(),
-        expected
+        SERVING + expected
     );
     drop(roster);
     assert_eq!(
         observer.snapshot().for_dimension(dimension).active_units(),
-        0
+        SERVING
     );
     drop(coordination);
     drop(media);

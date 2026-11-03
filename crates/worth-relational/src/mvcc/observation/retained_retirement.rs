@@ -18,6 +18,17 @@ pub(crate) struct RelationalRetainedObservationShares {
 }
 
 impl RelationalRetainedObservationShares {
+    pub(crate) fn single(observation: RelationalBranchObservation) -> Self {
+        Self {
+            first: None,
+            second: Some(observation),
+            inner: None,
+            observation_released: false,
+            registry_released: false,
+            observation_custody: RelationalRetentionRetirementCustody::default(),
+            registry_custody: RelationalBasisRegistryRetirementCustody::default(),
+        }
+    }
     pub(crate) fn new(
         first: RelationalBranchObservation,
         second: RelationalBranchObservation,

@@ -24,10 +24,10 @@ impl SourceTree {
                     write(&mut parents, &mut parent_count, child, None, control)?;
                 }
             }
-            if let Some(slot) = old.source {
-                if edit.region.and_then(|region| region.source) != Some(slot) {
-                    maps::remove(&mut sources, &slot, execution, control)?;
-                }
+            if let Some(slot) = old.source
+                && edit.region.and_then(|region| region.source) != Some(slot)
+            {
+                maps::remove(&mut sources, &slot, execution, control)?;
             }
             if edit.region.is_none() {
                 // Keep parents[ordinal] independent for the final retired-edge check.

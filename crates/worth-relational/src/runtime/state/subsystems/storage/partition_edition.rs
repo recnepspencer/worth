@@ -6,6 +6,7 @@ use crate::storage::overlay::{PartitionAccess, PartitionState};
 use crate::storage::residency::{Full, RelationalRegionRetention, RelationalResidencyLease};
 
 mod resident;
+mod source_retirement;
 mod symbol_read;
 pub(crate) use resident::ResidentPartitionEdition;
 

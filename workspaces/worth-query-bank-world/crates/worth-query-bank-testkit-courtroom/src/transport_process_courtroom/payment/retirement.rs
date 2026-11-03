@@ -8,8 +8,9 @@ pub use bank_server::{
 };
 pub use worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope;
 pub use worth_query_host::facade::application_entry::{
-    WorkflowDefinitionExpectedPredecessor, WorkflowDefinitionPublicationOutcome,
-    WorthQueryApplicationRequestMutationDenial, WorthQueryBranchAdoptionPublicationOutcome,
+    PerformedWorkflowDefinitionPublication, WorkflowDefinitionExpectedPredecessor,
+    WorkflowDefinitionPublicationOutcome, WorthQueryApplicationRequestMutationDenial,
+    WorthQueryBranchAdoptionPublicationOutcome,
 };
 pub use worth_query_host::facade::declaration::application_program::{
     ApplicationFeatureSpec, ApplicationProgramDefinition,
@@ -23,10 +24,11 @@ pub fn adopt_p2_after_completed_payment(
     approver: &BankAuthenticatedPrincipal,
     scope: &WorthQueryRequestScope,
     branch: WorthQueryProductBranch,
+    original: &PerformedWorkflowDefinitionPublication,
     authority: ApprovePayment,
 ) {
     let workflow = runtime.approved_business_payment(approver, scope);
-    let definition = match workflow
+    match workflow
         .publish_definition(
             authority.clone(),
             WorkflowDefinitionExpectedPredecessor::Absent,
@@ -34,9 +36,15 @@ pub fn adopt_p2_after_completed_payment(
         )
         .expect("definition replay remains inspectable")
     {
-        WorkflowDefinitionPublicationOutcome::Published(published) => {
-            assert!(published.replayed());
-            published.definition().clone()
+        WorkflowDefinitionPublicationOutcome::RecoveredCommitted(data) => {
+            assert_eq!(
+                data.commit_reference(),
+                original.receipt().commit_reference()
+            );
+            assert_eq!(
+                Some(data.outcome_identity()),
+                original.receipt().outcome_identity()
+            );
         }
         other => panic!("expected original definition replay, got {other:?}"),
     };
@@ -48,7 +56,7 @@ pub fn adopt_p2_after_completed_payment(
             approver,
             scope,
             branch,
-            &definition,
+            original.definition(),
             4_096,
         )
         .expect("settled payment operation permits program adoption");

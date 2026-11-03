@@ -59,6 +59,10 @@ impl<P, R, S> Drop for PredicateTree<P, R, S> {
 /// Backing (including an empty last map) closes before its last original grant.
 pub(super) struct Retired<P, R, S> {
     _empty_backing: Option<BTreeMap<WatchSlot, Record<P, R, S>>>,
+    #[allow(
+        dead_code,
+        reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it"
+    )]
     pub(super) record: Record<P, R, S>,
 }
 
@@ -124,7 +128,7 @@ impl<P, R, S: Summary> PredicateTree<P, R, S> {
             .ok_or(Stop::CapacityOverflow)?;
         let memory = execution
             .reserve_retained_memory(bytes)
-            .map_err(|cause| Stop::Request(cause.into()))?;
+            .map_err(Stop::Request)?;
         control.poll()?;
         self.attach(
             slot,

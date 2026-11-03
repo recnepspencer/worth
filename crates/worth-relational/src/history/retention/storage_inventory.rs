@@ -10,8 +10,8 @@ pub(crate) struct RelationalRetiredRootStorageSnapshot {
 impl super::RelationalBranchRetentionOwner {
     pub(crate) fn storage_inventory(&self) -> Vec<RelationalRetiredRootStorageSnapshot> {
         self.inner
-            .retired_roots
-            .iter()
+            .read_retired_roots()
+            .values()
             .map(|entry| {
                 // Inspect BEFORE adding this diagnostic's Arc. No obligation is
                 // issued, released or inferred from the observation.

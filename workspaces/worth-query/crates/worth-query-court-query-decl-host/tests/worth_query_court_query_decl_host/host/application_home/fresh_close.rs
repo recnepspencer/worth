@@ -1,4 +1,4 @@
-//! Exact pre-seal alias and opaque-supplier refusals after the business journey.
+//! Exact pre-seal alias refusal followed by genuine ordinary-handler close.
 use super::*;
 use worth_query_host::facade::WorthQueryApplicationHome;
 
@@ -14,7 +14,6 @@ pub(super) fn verify(
         .expect("the actual retained Query runtime refuses before World seal");
     use worth_query_host::facade::primary_graph::{
         WorthQueryHomeRetirementDenial as CloseDenial, WorthQueryHomeRetirementOwner as CloseOwner,
-        WorthQueryOperationHomeRetirementDenial as HandlerDenial,
     };
     assert!(
         matches!(
@@ -52,15 +51,9 @@ pub(super) fn verify(
         WorthQueryConditionalRuntimeInstallationDenialKind::RuntimeKeepaliveRetained,
     );
     drop(retained_runtime);
-    let refused = refused
-        .try_close(execution)
-        .err()
-        .expect("the actual opaque supplier cannot claim completed retirement");
-    use worth_query_decl::facade::application_operation::ApplicationMutationBinding;
-    assert!(matches!(refused.query_denial(),
-        Some(CloseDenial::Handler { binding, cause: HandlerDenial::Unsupported })
-        if *binding == fixture::native_mutation::SetBalanceBinding::IDENTITY));
-    let home = refused.resume().unwrap();
-    assert!(home.is_directory());
-    drop(home);
+    let closed = refused.try_close(execution).unwrap_or_else(|refused| {
+        panic!("ordinary handler retires after alias release: {refused:?}")
+    });
+    assert!(closed.is_closed());
+    closed.reclaim();
 }

@@ -17,6 +17,7 @@ where
 {
     pub(crate) fn finish_publication(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         outcome: crate::publication::OwnerExecutionOutcome,
         cancellation: &crate::publication::RuntimeWorldCancellationToken,
     ) -> RuntimeWorldPublicationOutcome {
@@ -37,6 +38,20 @@ where
         let ready = match settlement.ready(successor) {
             Ok(ready) => ready,
             Err(record) => return RuntimeWorldPublicationOutcome::ProductUnpublished(record),
+        };
+        let ready = match ready.capture_memory_original(
+            execution,
+            &self.state.history,
+            &self.state.relational_services().basis_port(),
+        ) {
+            Ok(ready) => ready,
+            Err((ready, cause)) => {
+                let cause = match cause {
+                    worth_relational::facade::branch::RelationalRecordedComponentRefusal::Request(stop) => crate::recovery::ProductUnpublishedCause::OriginalObservationStopped(stop),
+                    _ => crate::recovery::ProductUnpublishedCause::OriginalObservationUnavailable,
+                };
+                return ready.retain(cause);
+            }
         };
         let Some(cell) = self
             .state

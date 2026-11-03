@@ -7,6 +7,15 @@ pub(in crate::domain_computation) struct QueryDurablePreparationGuard {
     preparation: Option<RetainedQueryDurablePreparation>,
 }
 
+impl std::fmt::Debug for QueryDurablePreparationGuard {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("QueryDurablePreparationGuard")
+            .field("preparation", &self.preparation)
+            .finish_non_exhaustive()
+    }
+}
+
 impl WorthQueryUnpublishedIdempotencyReservation {
     pub(in crate::domain_computation::primary_graph::provider) fn begin_query_preparation(
         mut self,

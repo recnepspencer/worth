@@ -7,21 +7,19 @@ use super::{
 };
 
 impl WorthQueryApplicationCommitDenial {
-    pub(in crate::domain_computation::primary_graph::application_attempt) const fn idempotency_preparation_busy(
+    pub(in crate::domain_computation::primary_graph::application_attempt) const fn idempotency_foreign_affinity(
     ) -> Self {
         Self {
-            kind: WorthQueryApplicationCommitDenialKind::IdempotencyPreparationBusy,
+            kind: WorthQueryApplicationCommitDenialKind::IdempotencyForeignAffinity,
             stage: WorthQueryApplicationCommitDenialStage::Idempotency,
             detail: None,
             cause: None,
         }
     }
-
-    pub(in crate::domain_computation::primary_graph::application_attempt) const fn idempotency_receipt_not_retained(
-        commit: worth_relational::facade::history::CommitId,
+    pub(in crate::domain_computation::primary_graph::application_attempt) const fn idempotency_preparation_busy(
     ) -> Self {
         Self {
-            kind: WorthQueryApplicationCommitDenialKind::IdempotencyReceiptNotRetained { commit },
+            kind: WorthQueryApplicationCommitDenialKind::IdempotencyPreparationBusy,
             stage: WorthQueryApplicationCommitDenialStage::Idempotency,
             detail: None,
             cause: None,

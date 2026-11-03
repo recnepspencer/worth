@@ -36,9 +36,7 @@ pub enum BankCommitDenialKind {
     SnapshotIdentityExhausted,
     CandidateIdentityExhausted,
     IdempotencyIntentDrift,
-    /// The key is recorded with the same intent and that commit took effect,
-    /// but the runtime no longer holds its receipt, as after a restore.
-    IdempotencyReceiptNotRetained,
+    IdempotencyForeignAffinity,
     /// The key's recorded intent was written by an earlier encoding that
     /// cannot be checked against this request.
     IdempotencyIntentUnverifiable,
@@ -146,9 +144,7 @@ pub(crate) const fn denial_kind(
         Query::SnapshotIdentityExhausted => BankCommitDenialKind::SnapshotIdentityExhausted,
         Query::CandidateIdentityExhausted => BankCommitDenialKind::CandidateIdentityExhausted,
         Query::IdempotencyIntentDrift => BankCommitDenialKind::IdempotencyIntentDrift,
-        Query::IdempotencyReceiptNotRetained { .. } => {
-            BankCommitDenialKind::IdempotencyReceiptNotRetained
-        }
+        Query::IdempotencyForeignAffinity => BankCommitDenialKind::IdempotencyForeignAffinity,
         Query::IdempotencyIntentUnverifiable => BankCommitDenialKind::IdempotencyIntentUnverifiable,
         Query::MutationBindingMismatch => BankCommitDenialKind::MutationBindingMismatch,
         Query::MutationInputMismatch => BankCommitDenialKind::MutationInputMismatch,

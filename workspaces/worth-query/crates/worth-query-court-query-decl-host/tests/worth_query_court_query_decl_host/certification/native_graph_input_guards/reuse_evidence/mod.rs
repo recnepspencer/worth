@@ -16,8 +16,8 @@ fn complete_content_reuses_actual_identity_but_independent_effects_and_replay_st
     assert_eq!(original, identity(&app));
     assert_eq!(values(&app), (30, 21)); // Scope and parent-path writes are not skipped.
     match select(&app, request, 401) {
-        Outcome::AlreadyCommitted(replay) => {
-            assert_eq!(replay.outcome_identity(), receipt.outcome_identity())
+        Outcome::RecoveredCommitted(replay) => {
+            assert_eq!(Some(replay.outcome_identity()), receipt.outcome_identity())
         }
         other => panic!("{other:?}"),
     }

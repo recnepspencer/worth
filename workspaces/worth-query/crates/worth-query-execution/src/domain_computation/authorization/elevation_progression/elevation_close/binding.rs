@@ -54,22 +54,6 @@ impl WorthQueryElevationCloseBinding {
     pub(in crate::domain_computation) const fn closed_status(&self) -> &AspectValue {
         &self.draft.closed_status
     }
-    pub(in crate::domain_computation) fn restore_committed_close(
-        mut self,
-        status: AspectValue,
-        closed_at: AspectValue,
-    ) -> Result<Self, Self> {
-        self.draft.closure_kind = if status == self.draft.revoked_status {
-            WorthQueryElevationClosureKind::Revoked
-        } else if status == self.draft.expired_status {
-            WorthQueryElevationClosureKind::Expired
-        } else {
-            return Err(self);
-        };
-        self.draft.closed_status = status;
-        self.draft.closed_at = closed_at;
-        Ok(self)
-    }
     pub(in crate::domain_computation) const fn approved_status(&self) -> &AspectValue {
         &self.draft.approved_status
     }

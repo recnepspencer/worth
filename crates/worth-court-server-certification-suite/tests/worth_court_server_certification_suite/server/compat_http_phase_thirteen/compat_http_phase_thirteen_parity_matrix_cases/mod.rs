@@ -16,9 +16,9 @@ use {
     crate::shared_support_compat_http_phase_thirteen_runtime::direct_and_compat_mutation,
     crate::shared_support_compat_http_phase_thirteen_runtime::direct_and_compat_read,
     crate::shared_support_compat_http_phase_thirteen_runtime::finished_incremental_export,
-    crate::shared_support_compat_http_phase_thirteen_runtime::idempotent_mutation,
     crate::shared_support_compat_http_phase_thirteen_runtime::phase_thirteen_counting_server,
     crate::shared_support_compat_http_phase_thirteen_runtime::phase_thirteen_server,
+    crate::shared_support_compat_http_phase_thirteen_runtime::unconfigured_keyed_mutation_refusal,
 };
 
 #[test]
@@ -237,10 +237,16 @@ fn compat_http_cross_surface_parity_matrix_stays_narrow_and_retry_honest() {
     let (counting_server, attempted_writes) = phase_thirteen_counting_server();
     let (direct_mutation, compat_mutation) =
         direct_and_compat_mutation(&counting_server, "phase-thirteen-cross-surface");
-    let first_retry_attempt =
-        idempotent_mutation(&counting_server, "phase-thirteen-retry", "phase-13-idem");
-    let resolved_retry =
-        idempotent_mutation(&counting_server, "phase-thirteen-retry", "phase-13-idem");
+    let first_retry_attempt = unconfigured_keyed_mutation_refusal(
+        &counting_server,
+        "phase-thirteen-retry",
+        "phase-13-idem",
+    );
+    let resolved_retry = unconfigured_keyed_mutation_refusal(
+        &counting_server,
+        "phase-thirteen-retry",
+        "phase-13-idem",
+    );
 
     let direct_mutation_bundle = crate::shared_support_compat_http_phase_thirteen_bundle::WorthServerPhaseThirteenBundle::new()
         .with_digest(
@@ -275,57 +281,13 @@ fn compat_http_cross_surface_parity_matrix_stays_narrow_and_retry_honest() {
                 compat_mutation.envelope().direct_context().provenance(),
             ),
         );
+    // D9 removes process-only retry responses and their envelope projections.
+    // Preserve the refusal at this synthetic boundary; the real Home Server
+    // court proves complete original receipt equality after later history.
     let first_retry_bundle = crate::shared_support_compat_http_phase_thirteen_bundle::WorthServerPhaseThirteenBundle::new()
-        .with_digest(
-            MUTATION_RESULT_DIGEST,
-            first_retry_attempt.mutation_result().result_digest(),
-        )
-        .with_digest(
-            RESPONSE_DIGEST,
-            first_retry_attempt
-                .envelope()
-                .response_envelope()
-                .canonical_digest(),
-        )
-        .with_digest(
-            SUPPORT_POSTURE_DIGEST,
-            first_retry_attempt
-                .envelope()
-                .direct_context()
-                .support_posture_digest(),
-        )
-        .with_digest(
-            PROVENANCE_DIGEST,
-            worth_testkit_server::shared_support_worth_native_assertions::direct_provenance_digest(
-                first_retry_attempt.envelope().direct_context().provenance(),
-            ),
-        );
+        .with_digest(FAILURE_DIGEST, format!("{:?}:{}", first_retry_attempt.code(), first_retry_attempt.detail()));
     let resolved_retry_bundle = crate::shared_support_compat_http_phase_thirteen_bundle::WorthServerPhaseThirteenBundle::new()
-        .with_digest(
-            MUTATION_RESULT_DIGEST,
-            resolved_retry.mutation_result().result_digest(),
-        )
-        .with_digest(
-            RESPONSE_DIGEST,
-            resolved_retry
-                .envelope()
-                .response_envelope()
-                .canonical_digest(),
-        )
-        .with_digest(
-            SUPPORT_POSTURE_DIGEST,
-            resolved_retry
-                .envelope()
-                .direct_context()
-                .support_posture_digest(),
-        )
-        .with_digest(
-            PROVENANCE_DIGEST,
-            worth_testkit_server::shared_support_worth_native_assertions::direct_provenance_digest(
-                resolved_retry.envelope().direct_context().provenance(),
-            ),
-        );
-
+        .with_digest(FAILURE_DIGEST, format!("{:?}:{}", resolved_retry.code(), resolved_retry.detail()));
     assert_bundle_digests_equal(
         &direct_mutation_bundle,
         &compat_mutation_bundle,
@@ -339,25 +301,19 @@ fn compat_http_cross_surface_parity_matrix_stays_narrow_and_retry_honest() {
     assert_bundle_digests_equal(
         &first_retry_bundle,
         &resolved_retry_bundle,
-        &[
-            MUTATION_RESULT_DIGEST,
-            RESPONSE_DIGEST,
-            SUPPORT_POSTURE_DIGEST,
-            PROVENANCE_DIGEST,
-        ],
+        &[FAILURE_DIGEST],
     );
-    assert!(!first_retry_attempt
-        .envelope()
-        .retry_receipt()
-        .is_previously_completed());
-    assert!(resolved_retry
-        .envelope()
-        .retry_receipt()
-        .is_previously_completed());
+    for refusal in [&first_retry_attempt, &resolved_retry] {
+        assert_denial_contains(
+            refusal,
+            worth_server::WorthServerQueryHandoffDenialCode::WorkspaceBindingFailed,
+            "no Query application mutation binding is installed",
+        );
+    }
     assert_eq!(
         attempted_writes.load(std::sync::atomic::Ordering::Relaxed),
-        3,
-        "direct write, compat write, and the first idempotent mutation should be the only authority effects",
+        2,
+        "only the direct and unkeyed compatibility writes can execute on the synthetic backend"
     );
 
     assert_denial_contains(

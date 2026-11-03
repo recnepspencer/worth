@@ -1,3 +1,5 @@
+mod retirement;
+pub(crate) use retirement::CompositeBasisRetirement;
 use std::sync::Arc;
 
 use worth_proof::AuthorityWitness;

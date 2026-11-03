@@ -77,7 +77,7 @@ pub(super) fn prepare_attempt(
             }
         })
         .map_err(Denial::Execution)?
-        .unwrap_or_else(|CaptureRefused| ());
+        .unwrap_or(());
     let (native, world, input) = captured
         .expect("completed preparation retained its original capture")?
         .into_parts();

@@ -231,7 +231,7 @@ struct OldCell {
     state: Mutex<OldState>,
 }
 #[test]
-fn memory_frame_layout_preserves_scalar_tuple_observations() {
+fn memory_frame_preserves_original_payload_and_scalar_tuple_observations() {
     let host = crate::test_execution_policy::serial_request();
     let execution = ExecutionRequest::serial(&host);
     let runtime = runtime_with_test_schema();

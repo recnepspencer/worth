@@ -26,7 +26,7 @@ impl StoreColdSource {
         #[cfg(test)]
         self.record_canonical_journal_attempt();
         let journal = self
-            .serving
+            .serving()
             .canonical_commits()
             .map_err(|_| Refusal::Storage(Cause::SourceUnavailable))?;
         let stream = journal
@@ -50,7 +50,7 @@ impl StoreColdSource {
             return Err(Refusal::Bounds);
         }
         let journal = self
-            .serving
+            .serving()
             .branch_transitions()
             .map_err(|_| Refusal::Storage(Cause::SourceUnavailable))?;
         let stream = journal
@@ -85,7 +85,7 @@ impl StoreColdSource {
             let member = membership
                 .member(locator.sha256, locator.length)
                 .ok_or(Refusal::Storage(Cause::MissingMember))?;
-            self.serving
+            self.serving()
                 .anchored_records()
                 .map_err(|_| Refusal::Storage(Cause::SourceUnavailable))?
                 .open_protected_member(&cut.reader, membership, member, limit)
@@ -118,7 +118,7 @@ impl StoreColdSource {
         if builder.len() != length {
             return Err(Refusal::Storage(Cause::Damaged));
         }
-        Ok(builder.seal_immutable_bytes().map_err(Refusal::Buffer)?)
+        builder.seal_immutable_bytes().map_err(Refusal::Buffer)
     }
 }
 fn copy_journal(
@@ -151,7 +151,7 @@ fn copy_journal(
     if builder.len() != length {
         return Err(Refusal::Storage(Cause::Damaged));
     }
-    Ok(builder.seal_immutable_bytes().map_err(Refusal::Buffer)?)
+    builder.seal_immutable_bytes().map_err(Refusal::Buffer)
 }
 pub(super) fn journal_failure(failure: Failure, limit: u64) -> Refusal {
     match failure {

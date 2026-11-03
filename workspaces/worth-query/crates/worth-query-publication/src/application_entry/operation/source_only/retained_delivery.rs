@@ -15,22 +15,34 @@ where
         let SourceState::<S, I>::RetainedPending(evidence) = &self.state else {
             unreachable!("retained delivery owns recovered evidence")
         };
-        let WorthQuerySourceCompletion::Recovered { receipt, .. } = evidence else {
-            unreachable!("fresh completion already retains its exact observation")
-        };
-        let retained = request
-            .at_commit(phase, receipt, maximum_history_work)
-            .map_err(WorthQuerySourceOnlyDenial::History)?
-            .retained_observation();
+        let retained = match evidence {
+            WorthQuerySourceCompletion::Recovered { receipt, .. } => {
+                request.at_commit(phase, receipt, maximum_history_work)
+            }
+            WorthQuerySourceCompletion::Recorded { receipt, .. } => {
+                request.at_original_receipt(phase, receipt, maximum_history_work)
+            }
+            WorthQuerySourceCompletion::Fresh { .. } => {
+                unreachable!("fresh completion already retains its exact observation")
+            }
+        }
+        .map_err(WorthQuerySourceOnlyDenial::History)?
+        .retained_observation();
         let SourceState::<S, I>::RetainedPending(evidence) = &mut self.state else {
             unreachable!()
         };
-        if let WorthQuerySourceCompletion::Recovered {
-            retained: destination,
-            ..
-        } = evidence
-        {
-            *destination = Some(retained);
+        match evidence {
+            WorthQuerySourceCompletion::Recovered {
+                retained: destination,
+                ..
+            }
+            | WorthQuerySourceCompletion::Recorded {
+                retained: destination,
+                ..
+            } => *destination = Some(retained),
+            WorthQuerySourceCompletion::Fresh { .. } => {
+                unreachable!("fresh evidence has its observation")
+            }
         }
         Ok(())
     }

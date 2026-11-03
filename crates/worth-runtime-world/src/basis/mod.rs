@@ -7,3 +7,8 @@ pub(crate) use admission::validate_current;
 pub use admission::AdmittedCompositeRuntimeWorldBasis;
 pub(crate) use admission::{admit_current, admit_validated, CompositeBasisAdmissionDenial};
 pub(crate) use equivalence::compare_exact;
+
+pub(crate) use admission::CompositeBasisRetirement;
+
+mod native_retirement;
+pub(crate) use native_retirement::NativeBasisRetirement;

@@ -162,7 +162,7 @@ pub(super) fn apply(
             .state
             .retained_relation_extra(intent.relation_id.partition_id, slot)
     });
-    Ok(MutationOutcome::relation_updated(
+    MutationOutcome::relation_updated(
         &workspace.execution(),
         intent.relation_id,
         kind_id,
@@ -173,7 +173,7 @@ pub(super) fn apply(
         old_authoritative_aspect_state,
         authoritative_aspect_state,
         record_aspect_patch::published_patch(authoritative_patch),
-    )?)
+    )
 }
 
 fn resolve_relation_endpoint(

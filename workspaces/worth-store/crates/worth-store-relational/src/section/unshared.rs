@@ -1,4 +1,5 @@
 //! Concrete Home construction phases precede the Native owner's first Arc.
+mod close;
 use super::*;
 mod source_attachment;
 use std::sync::Arc;
@@ -89,24 +90,6 @@ impl UnrecoveredRelationalSection {
             })
             .map_err(|cause| Denial::from_initial_inputs(Input::Request(cause.into())))?
             .map_err(Denial::from_initial_inputs)
-    }
-    pub fn prepare_close(
-        self,
-    ) -> Result<ClosingRelationalSection, (Self, RelationalSectionCloseDenial)> {
-        let Self {
-            attached,
-            prepared_source,
-        } = self;
-        match super::close::prepare_attached_close(attached) {
-            Ok(closing) => Ok(closing),
-            Err((attached, cause)) => Err((
-                Self {
-                    attached,
-                    prepared_source,
-                },
-                cause,
-            )),
-        }
     }
     pub(super) fn attach_with_source(
         definition: RelationalRuntimeDefinition,
@@ -199,18 +182,6 @@ impl UnrecoveredRelationalSection {
     }
 }
 impl UnsharedReadmittedRelationalSection {
-    pub fn prepare_close(
-        self,
-    ) -> Result<ClosingRelationalSection, (Self, RelationalSectionCloseDenial)> {
-        let Self { attached, source } = self;
-        match super::close::prepare_attached_close(attached) {
-            Ok(mut closing) => {
-                closing.source = Some(source);
-                Ok(closing)
-            }
-            Err((attached, cause)) => Err((Self { attached, source }, cause)),
-        }
-    }
     pub fn home_fresh_query_finalization_parts(
         &mut self,
     ) -> Result<

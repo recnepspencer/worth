@@ -4,10 +4,10 @@ pub(crate) use worth_query_testkit_certification_application_graph::facade::cert
 fn an_instance_that_used_its_whole_capacity_still_cancels_and_replays() {
     let (application, instance) = at_capacity(90_000);
     let ended = cancelled(cancel_instance(&application, instance.clone(), 90_030));
-    assert!(!ended.replayed());
     assert!(ended.performed_node_paths().is_empty());
-    let replay = cancelled(cancel_instance(&application, instance.clone(), 90_030));
-    assert!(replay.replayed());
+    let replay =
+        crate::recorded_receipt::cancelled(cancel_instance(&application, instance.clone(), 90_030));
+    crate::recorded_receipt::assert_agrees(&replay, ended.receipt());
     assert_eq!(
         cancellation_denial(cancel_instance(&application, instance, 90_031)),
         WorthQueryApplicationAttemptDenialKind::WorkflowInstanceCancelled,
@@ -31,13 +31,10 @@ fn a_cold_full_instance_cancels_and_replays_from_settled_history() {
         other => panic!("a cold full instance takes no further step: {other:?}"),
     }
     let ended = cancelled(cancel_instance(&application, instance.clone(), 90_130));
-    assert!(!ended.replayed());
     application
         .runtime()
         .release_workflow_instance_progress_for_test();
-    let replay = cancelled(cancel_instance(&application, instance, 90_130));
-    assert!(
-        replay.replayed(),
-        "the replay reads a full history in bounds"
-    );
+    let replay =
+        crate::recorded_receipt::cancelled(cancel_instance(&application, instance, 90_130));
+    crate::recorded_receipt::assert_agrees(&replay, ended.receipt());
 }

@@ -97,8 +97,13 @@ where
         BankEstateMandatoryReviewOutcome::Reviewed(authority) => {
             (authority, BankHttpCommitDisposition::Committed)
         }
-        BankEstateMandatoryReviewOutcome::AlreadyReviewed(authority) => {
-            (authority, BankHttpCommitDisposition::AlreadyCommitted)
+        BankEstateMandatoryReviewOutcome::RecoveredCommitted { receipt, mandatory } => {
+            registry.restore_mandatory_review(&request.token, mandatory);
+            return BankHttpMandatoryReviewOutcome::Recorded {
+                request_id,
+                commit: super::super::mutation_custody::describe_recorded(&receipt),
+            }
+            .into();
         }
         BankEstateMandatoryReviewOutcome::Stale { mandatory, .. } => {
             registry.restore_mandatory_review(&request.token, mandatory);

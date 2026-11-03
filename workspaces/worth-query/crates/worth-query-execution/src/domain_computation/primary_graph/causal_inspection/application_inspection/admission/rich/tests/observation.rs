@@ -13,7 +13,6 @@ use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedApplicationCapabilityAccess, WorthQueryApplicationQueryAccessContext,
     WorthQueryPrincipalResolutionMode, WorthQueryProductQueryControls,
 };
-use std::num::NonZeroUsize;
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
 };

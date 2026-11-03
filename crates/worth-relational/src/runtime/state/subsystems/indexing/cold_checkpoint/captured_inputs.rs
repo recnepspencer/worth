@@ -8,11 +8,11 @@ impl DeferredIndexImage {
         &self,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<captured_decode::CapturedCheckpointGenerations, RelationalRecoveryStop> {
-        let key = self.directory.manifest.derived_indexes;
-        let bytes = self
-            .directory
+        let directory = self.directory();
+        let key = directory.manifest.derived_indexes;
+        let bytes = directory
             .canonical_read
-            .read_member(&self.directory.source, request, key, 1 << 30)
+            .read_member(&directory.source, request, key, 1 << 30)
             .map_err(|cause| {
                 crate::durability::checkpoint_history::capture::owned_stop(
                     cause,
@@ -39,8 +39,7 @@ impl DeferredIndexImage {
             }
             seen.insert_cloned_native_for_request(&generation.generation_id, &(), *request)
                 .map_err(crate::durability::checkpoint_history::capture::map_stop)?;
-            let definition = self
-                .directory
+            let definition = directory
                 .manifest
                 .index_definitions
                 .iter()
@@ -49,7 +48,7 @@ impl DeferredIndexImage {
                 generation,
                 definition.map(AsRef::as_ref),
                 &self.history,
-                self.directory.manifest.index_generation_frontier,
+                directory.manifest.index_generation_frontier,
             )?;
         }
         Ok(captured)

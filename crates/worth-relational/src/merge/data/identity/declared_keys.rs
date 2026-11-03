@@ -29,6 +29,7 @@ impl DeclaredIdentityKeys {
             .pad_to_align();
         u64::try_from(layout.size()).ok()
     }
+    #[cfg(test)]
     pub(crate) fn storage_bytes(count: usize) -> Option<u64> {
         let layout = std::alloc::Layout::new::<(usize, usize)>()
             .extend(std::alloc::Layout::array::<Element>(count).ok()?)

@@ -15,8 +15,10 @@ use worth_store::physical_runtime::{
 };
 
 mod frame_prefix;
+mod home_retirement;
 mod initial_inputs;
 mod initial_selection;
+pub(crate) use home_retirement::{RetiredStoreColdSource, StoreColdSourceClose};
 mod member_custody;
 mod member_read;
 mod owned_read;
@@ -51,7 +53,7 @@ pub(crate) struct StoreColdSource {
     commit_read_observer:
         Option<Box<dyn Fn(PatchStreamPosition, RelationalStoreColdReadCounters) + Send + Sync>>,
     // Local selected readers/pins retire before a possible final pool-owner Drop.
-    serving: Arc<ServingPhysicalRuntime>,
+    serving: Option<Arc<ServingPhysicalRuntime>>,
     _allocation_memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
@@ -72,6 +74,17 @@ impl StoreColdSource {
             observer(position, self.counters());
         }
     }
+    fn serving(&self) -> &Arc<ServingPhysicalRuntime> {
+        self.serving
+            .as_ref()
+            .expect("only a serving cold source exposes physical ports")
+    }
+    pub(crate) fn belongs_to(&self, serving: &Arc<ServingPhysicalRuntime>) -> bool {
+        self.serving
+            .as_ref()
+            .is_some_and(|original| Arc::ptr_eq(original, serving))
+    }
+
     pub(crate) fn new(serving: Arc<ServingPhysicalRuntime>) -> Arc<Self> {
         Self::new_admitted(serving, None, None)
     }
@@ -103,7 +116,7 @@ impl StoreColdSource {
             #[cfg(test)]
             canonical_journal_attempts: AtomicU64::new(0),
             commit_read_observer: observer,
-            serving,
+            serving: Some(serving),
             _allocation_memory: memory,
         })
     }
@@ -153,6 +166,7 @@ impl StoreColdSource {
     > {
         self.custody.protect_selection_for_request(next, request)
     }
+    #[cfg(test)]
     pub(crate) fn member_locators(&self) -> Vec<RelationalDurableMemberLocator> {
         self.members
             .read()
@@ -168,7 +182,7 @@ impl StoreColdSource {
         members: &[RelationalDurableMemberLocator],
     ) -> Result<member_custody::MemberCustodyOwner, Cause> {
         self.custody
-            .retain(members, self.serving.clone(), |selected| {
+            .retain(members, Arc::clone(self.serving()), |selected| {
                 let current = self
                     .members
                     .read()
@@ -299,8 +313,11 @@ impl RelationalDurableColdSource for StoreColdSource {
             return Err(Refusal::ForeignSource);
         }
         RelationalDurableMemberCustody::try_new_from_source_for_request(issuer, request, || {
-            self.custody
-                .retain_for_request(members, self.serving.clone(), request, |selected| {
+            self.custody.retain_for_request(
+                members,
+                Arc::clone(self.serving()),
+                request,
+                |selected| {
                     let current = match self.members.try_read() {
                         Ok(current) => current,
                         Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
@@ -314,7 +331,8 @@ impl RelationalDurableColdSource for StoreColdSource {
                     } else {
                         Err(Refusal::Storage(Cause::MissingMember))
                     }
-                })
+                },
+            )
         })
     }
 
@@ -341,7 +359,7 @@ impl RelationalDurableColdSource for StoreColdSource {
         #[cfg(test)]
         self.record_canonical_journal_attempt();
         let bytes = self
-            .serving
+            .serving()
             .canonical_commits()
             .map_err(|_| Cause::SourceUnavailable)?
             .read(position.0, limit)

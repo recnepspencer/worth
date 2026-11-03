@@ -125,9 +125,9 @@ pub use inbound_completion::{
     BankPaymentRailCompletionRoute,
 };
 pub use operation_commit::{
-    BankApplicationAttemptDenialKind, BankCommitCanonicalWorkEvidence,
-    BankCommitCanonicalWorkPhases, BankCommitDenialKind, BankCommitDenialStage,
-    BankCommitPreparationDenial, BankCommitReceipt, BankCommitRecoveryKind,
+    BankApplicationAttemptDenialKind, BankClosedCapabilityCommand, BankClosedSourceCompletion,
+    BankCommitCanonicalWorkEvidence, BankCommitCanonicalWorkPhases, BankCommitDenialKind,
+    BankCommitDenialStage, BankCommitPreparationDenial, BankCommitReceipt, BankCommitRecoveryKind,
     BankMutationCommitOutcome, BankProviderFailureKind, BankProviderFailureStage,
     BankUnresolvedCommitEvidence,
 };

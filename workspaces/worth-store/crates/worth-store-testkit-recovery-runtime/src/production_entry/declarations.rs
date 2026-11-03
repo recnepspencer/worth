@@ -58,7 +58,7 @@ pub use {
 pub fn run_entry(root: &Path) -> std::process::Output {
     std::process::Command::new(worth_store_testkit_executables::physical_store_recover())
         .arg(root)
-        .arg("--bounded-profile=c8-phase2-admission-v1")
+        .arg("--bounded-profile=c8-phase2-admission-v2")
         .output()
         .expect("run production recovery entry")
 }

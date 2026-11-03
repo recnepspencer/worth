@@ -46,7 +46,7 @@ where
                 "dependent output edge does not leave this settled program feature",
             ));
         }
-        if !parent.retained.belongs_to(&self.backing.runtime()) {
+        if !parent.retained.belongs_to(self.backing.runtime()) {
             return Err(WorthQueryOutputDemandDenial::new(
                 crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ForeignSettlement,
                 "dependent output parent belongs to another installed application",

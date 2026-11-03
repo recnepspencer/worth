@@ -16,6 +16,15 @@ pub(crate) struct RelationalRegionRetention {
 }
 
 impl RelationalRegionRetention {
+    pub(crate) fn retire_native_leases(&self) {
+        if let Some(lease) = self.full.get() {
+            lease.retire_native();
+        }
+        if let Some(lease) = self.head.get() {
+            lease.retire_native();
+        }
+    }
+
     pub(crate) fn new(
         cell: Arc<RelationalRegionResidency>,
         authority: Option<Arc<super::RelationalRegionKindAuthority>>,

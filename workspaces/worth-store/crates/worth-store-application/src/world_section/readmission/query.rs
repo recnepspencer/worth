@@ -54,6 +54,8 @@ pub fn readmit_query_world(
             let (signal, publication, correspondence) = {
                 let mut conditional = composition
                     .conditional
+                    .as_ref()
+                    .expect("Query owns its actual conditional assembly")
                     .write()
                     .unwrap_or_else(std::sync::PoisonError::into_inner);
                 (
@@ -104,7 +106,11 @@ impl WorldReadmittedApplicationHome<(), (), (), (), ()> {
         Ok((
             composition.source.clone(),
             composition.ordinary.clone(),
-            composition.conditional.clone(),
+            composition
+                .conditional
+                .as_ref()
+                .ok_or(ApplicationHomeQueryCompositionDenial::QueryCompositionNotAttached)?
+                .clone(),
         ))
     }
 }

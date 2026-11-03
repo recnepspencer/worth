@@ -116,7 +116,7 @@ fn two_bindings_sharing_key_namespace_operation_and_input_type_never_replay_each
                 original,
                 crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation
             ),
-            WorthQueryApplicationCommitOutcome::AlreadyCommitted(_)
+            WorthQueryApplicationCommitOutcome::RecoveredCommitted(_)
         ),
         "the same binding replays its own commit"
     );

@@ -130,7 +130,6 @@ fn original_request_loss_after_root_replacement_retains_the_same_journal_entry()
     assert_eq!(sealed.entry(), actual);
     assert_eq!(sealed.source(), observed.source());
     assert_eq!(sealed.terminal().mutation_identity(), Some(identity));
-    drop(journal);
     let root = world.retained_root();
     let _closed = world.close();
     let cold=worth_store_testkit_recovery_runtime::production_entry::ordered_journals::canonical_journal_oracle::serve(root.path(),"owned journal cold read");

@@ -26,9 +26,8 @@ pub enum BankMutationCommitOutcome {
     ProductUnpublished(WorthQueryProductUnpublishedApplication),
     NoEffect(WorthQueryApplicationNoEffectCause),
     Committed(BankCommitReceipt),
-    AlreadyCommitted(BankCommitReceipt),
-    PreviouslyCommitted(
-        worth_query_host::facade::primary_graph::WorthQueryHistoricalApplicationCommit,
+    RecoveredCommitted(
+        worth_query_host::facade::primary_graph::WorthQueryRecoveredApplicationCommitReceipt,
     ),
     Stale {
         stale_fact_count: usize,
@@ -88,8 +87,8 @@ impl From<WorthQueryApplicationCommitOutcome> for BankMutationCommitOutcome {
             WorthQueryApplicationCommitOutcome::Committed(receipt) => {
                 Self::Committed(commit_receipt(receipt))
             }
-            WorthQueryApplicationCommitOutcome::AlreadyCommitted(receipt) => {
-                Self::AlreadyCommitted(commit_receipt(receipt))
+            WorthQueryApplicationCommitOutcome::RecoveredCommitted(receipt) => {
+                Self::RecoveredCommitted(receipt)
             }
             WorthQueryApplicationCommitOutcome::Stale(stale) => Self::Stale {
                 stale_fact_count: stale.stale_fact_count(),

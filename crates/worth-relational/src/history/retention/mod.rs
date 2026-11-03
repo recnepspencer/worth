@@ -7,7 +7,7 @@ pub(crate) use historical_retirement::RelationalHistoricalObservationRetirement;
 mod index_liveness;
 mod lane;
 #[cfg(test)]
-pub(crate) use lane::assert_external_cut_and_lane_busy;
+pub(crate) use lane::{assert_external_cut_and_lane_busy, assert_recovered_cut_and_lane_busy};
 mod lease;
 mod obligation;
 mod owner;

@@ -226,7 +226,7 @@ fn managed_cleanup_discharge_does_not_settle_uncertain_business_outcome() {
     };
     assert!(matches!(
         completed.evidence(),
-        WorthQuerySourceCompletion::Recovered {
+        WorthQuerySourceCompletion::Recorded {
             initial_posture: Some(WorthQueryApplicationUncommitted::Indeterminate(_)),
             ..
         }

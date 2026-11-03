@@ -52,28 +52,18 @@ where
             ))
         }
         Ok(Ok(WorthQueryProviderIdempotencyResolution::Absent)) => None,
-        Ok(Ok(WorthQueryProviderIdempotencyResolution::Equivalent(receipt))) => {
-            let Ok(causality) = resolve_exact_committed_aftermath(aftermath_causality, &receipt)
-            else {
-                return Some(WorthQueryApplicationCommitOutcome::Denied(
+        Ok(Ok(WorthQueryProviderIdempotencyResolution::Readmitted(receipt))) => Some(
+            if super::super::super::aftermath_resolution::recovered_answers_aftermath(
+                aftermath_causality,
+                &receipt,
+            ) {
+                WorthQueryApplicationCommitOutcome::RecoveredCommitted(receipt)
+            } else {
+                WorthQueryApplicationCommitOutcome::Denied(
                     WorthQueryApplicationCommitDenial::idempotency_intent_drift(),
-                ));
-            };
-            let projection = match WorthQueryCommittedReceiptProjection::resolve(receipt) {
-                Ok(projection) => projection,
-                Err(_) => return Some(denied(DenialStage::Idempotency)),
-            };
-            let receipt = WorthQueryApplicationCommitReceipt::from_early_equivalent(
-                WorthQueryEarlyEquivalentCommitReceiptPermit::mint(),
-                projection,
-                recover_equivalent_commit_evidence(admission.mutation_preconditions()),
-                admission.canonical_work(),
-                WorthQueryApplicationCommitAuthorityBinding::from_admission(admission, idempotency),
-            );
-            Some(WorthQueryApplicationCommitOutcome::AlreadyCommitted(
-                receipt.with_aftermath_causality(causality),
-            ))
-        }
+                )
+            },
+        ),
         Ok(Ok(WorthQueryProviderIdempotencyResolution::Drift)) => {
             Some(WorthQueryApplicationCommitOutcome::Denied(
                 WorthQueryApplicationCommitDenial::idempotency_intent_drift(),
@@ -107,9 +97,9 @@ where
             )),
         ),
         Ok(Err(IdempotencyDenial::Unavailable)) => Some(denied(DenialStage::Idempotency)),
-        Ok(Err(IdempotencyDenial::CommittedReceiptNotRetained { commit })) => {
+        Ok(Err(IdempotencyDenial::ForeignAffinity)) => {
             Some(WorthQueryApplicationCommitOutcome::Denied(
-                WorthQueryApplicationCommitDenial::idempotency_receipt_not_retained(commit),
+                WorthQueryApplicationCommitDenial::idempotency_foreign_affinity(),
             ))
         }
         Ok(Err(IdempotencyDenial::RecordedIntentUnverifiable)) => {

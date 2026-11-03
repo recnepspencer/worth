@@ -61,7 +61,7 @@ fn row(
     assert!(matches!(
         retry,
         WorthQueryApplicationMutationOutcome::AlreadyCommitted(_)
-            | WorthQueryApplicationMutationOutcome::PreviouslyCommitted(_)
+            | WorthQueryApplicationMutationOutcome::RecoveredCommitted(_)
     ));
     assert_eq!(
         request.retain_current_read().unwrap().selected_commit(),

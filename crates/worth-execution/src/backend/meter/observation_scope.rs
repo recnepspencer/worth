@@ -16,7 +16,7 @@ impl ObservationScope {
             active
                 .borrow()
                 .iter()
-                .any(|meter| self.0.as_ptr() == std::rc::Rc::as_ptr(meter))
+                .any(|meter| self.0.ptr_eq(&std::rc::Rc::downgrade(meter)))
         })
     }
 }

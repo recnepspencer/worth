@@ -39,7 +39,7 @@ impl RelationalDurableColdSource for NodeMemberExport {
         &self,
         members: &[RelationalDurableMemberLocator],
     ) -> Result<RelationalDurableMemberCustody, Cause> {
-        self.owner.source.retain_members(members)
+        self.owner.source()?.retain_members(members)
     }
     fn read_member(
         &self,
@@ -61,7 +61,7 @@ impl RelationalDurableColdSource for NodeMemberExport {
                 limit,
             })
         } else {
-            self.owner.source.read_member(member, limit)
+            self.owner.source()?.read_member(member, limit)
         }
         .and_then(|bytes| {
             member_frame::decode(&bytes, member, MemberKind::Lineage)?;
@@ -80,6 +80,6 @@ impl RelationalDurableColdSource for NodeMemberExport {
         position: crate::publication::patch::data::PatchStreamPosition,
         limit: u64,
     ) -> Result<Vec<u8>, Cause> {
-        self.owner.source.read_commit(position, limit)
+        self.owner.source()?.read_commit(position, limit)
     }
 }

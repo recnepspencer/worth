@@ -30,7 +30,7 @@ impl RelationalDurableColdSource for HistoryUnavailable {
 
 fn edition(fixture: &RegionFixture) -> crate::runtime::PartitionEdition {
     let mut cold = fixture.cold.clone();
-    cold.source = Arc::new(HistoryUnavailable(fixture.source.clone()));
+    cold.source = Some(Arc::new(HistoryUnavailable(fixture.source.clone())));
     crate::runtime::PartitionEdition::new(BTreeMap::from([(
         fixture.entity.partition_id,
         RelationalRegionRetention::new(RelationalRegionResidency::cold(cold).unwrap(), None),

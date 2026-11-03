@@ -28,12 +28,13 @@ pub(super) fn capture(
     let funding = request
         .reserve_retained_memory(std::mem::size_of::<ApplicationWorldCheckpointSource>() as u64)
         .map_err(Denial::Request)?;
-    let selected = crate::checkpoint::SelectedHomeSource::capture(&medium.serving, request)
-        .map_err(read::denial)?;
+    let serving = medium.serving()?;
+    let selected =
+        crate::checkpoint::SelectedHomeSource::capture(&serving, request).map_err(read::denial)?;
     // From here the actual reader is retained before another fallible action.
     Ok(Box::new(ApplicationWorldCheckpointSource {
         selected,
-        serving: medium.serving.clone(),
+        serving,
         owner: medium.checkpoint.clone(),
         _funding: funding,
     }))

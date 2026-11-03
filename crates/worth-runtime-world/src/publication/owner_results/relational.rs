@@ -42,7 +42,7 @@ impl CompositeRelationalOwnerResult {
         Self {
             result: CompositeRelationalOwnerResultKind::Published {
                 commit_identity,
-                successor_basis,
+                successor_basis: Some(successor_basis),
                 settlement: Some(result.outcome().commit.clone()),
                 result: Some(result),
             },
@@ -67,7 +67,7 @@ impl CompositeRelationalOwnerResult {
         Self {
             result: CompositeRelationalOwnerResultKind::SettlementRequired {
                 commit_identity,
-                successor_basis,
+                successor_basis: Some(successor_basis),
             },
         }
     }
@@ -80,7 +80,7 @@ impl CompositeRelationalOwnerResult {
         Self {
             result: CompositeRelationalOwnerResultKind::Published {
                 commit_identity,
-                successor_basis,
+                successor_basis: Some(successor_basis),
                 settlement: Some(receipt),
                 result: None,
             },
@@ -96,7 +96,7 @@ impl CompositeRelationalOwnerResult {
         Self {
             result: CompositeRelationalOwnerResultKind::Forked {
                 fork,
-                successor_basis,
+                successor_basis: Some(successor_basis),
             },
         }
     }

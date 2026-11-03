@@ -31,6 +31,7 @@ mod batch_acquisition;
 #[cfg(test)]
 mod canonical_reclamation;
 mod capacity_reservation;
+mod checkpoint_retirement;
 mod claim_lifecycle;
 mod component_basis_order;
 mod history_claims;

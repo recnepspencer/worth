@@ -15,8 +15,8 @@ use super::{BridgeInstalledSemanticCorrespondence, RuntimeBridge};
 /// mapping, Signal, or Relational construction surface.
 #[derive(Clone)]
 pub struct RuntimeWorldCorrespondencePort {
-    runtime: RuntimeBridge,
-    inspection: Arc<RuntimeWorldCorrespondenceInspectionLedger>,
+    pub(crate) runtime: RuntimeBridge,
+    pub(crate) inspection: Arc<RuntimeWorldCorrespondenceInspectionLedger>,
 }
 
 impl std::fmt::Debug for RuntimeWorldCorrespondencePort {

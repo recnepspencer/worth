@@ -90,6 +90,12 @@ pub(crate) struct SemanticDependencyExtensionDenial {
 }
 
 impl AdmittedSemanticDependencyRegistry {
+    pub(crate) fn is_empty_for_home_stop(&self) -> bool {
+        self.authoritative.is_empty()
+            && self.index.is_empty()
+            && self.by_authority.is_empty()
+            && self.currentness_index.generations.is_empty()
+    }
     pub(crate) fn freeze(
         mut registrations: Vec<BridgeSemanticCorrespondenceRegistration>,
     ) -> Result<Self, BridgeBuildError> {

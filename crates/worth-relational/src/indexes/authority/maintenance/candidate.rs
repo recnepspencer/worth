@@ -132,8 +132,17 @@ impl IndexAuthority<'_> {
             branch_id: branch_id.clone(),
             index_ids: index_ids.to_vec(),
         };
-        let after =
-            prepared_projection(self.runtime, branch_id.clone(), Arc::clone(&prepared_root));
+        // The prepared root may contain unpublished text. Its authenticated,
+        // already-built dictionary stays candidate-owned until acceptance.
+        let symbols = candidate
+            .index_preparation_symbols()
+            .ok_or(Denial::CandidateUnavailable)?;
+        let after = prepared_projection(
+            self.runtime,
+            branch_id.clone(),
+            Arc::clone(&prepared_root),
+            symbols,
+        );
         let before = before
             .map(|snapshot| {
                 if snapshot.branch_id() != &request.branch_id {
@@ -194,10 +203,12 @@ fn prepared_projection(
     runtime: &crate::runtime::RelationalRuntime,
     branch_id: BranchId,
     root: Arc<RelationalBranchRoot>,
+    symbols: crate::runtime::RuntimeSymbolTable,
 ) -> VisibilityProjectionView {
-    VisibilityProjectionView::new(
+    VisibilityProjectionView::with_symbols(
         runtime,
         SnapshotStateBasis::Exact(VisibilitySnapshotBasis::from_prepared_root(branch_id, root)),
+        symbols,
     )
 }
 

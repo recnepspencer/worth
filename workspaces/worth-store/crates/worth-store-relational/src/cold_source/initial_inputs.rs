@@ -13,7 +13,7 @@ impl StoreColdSource {
     ) -> Result<Option<ExecutionImmutableBytes>, Refusal> {
         let cut = self.validate_native_read(original)?;
         let records = self
-            .serving
+            .serving()
             .anchored_records()
             .map_err(|_| Refusal::Storage(Cause::SourceUnavailable))?;
         let Some(mut stream) = records

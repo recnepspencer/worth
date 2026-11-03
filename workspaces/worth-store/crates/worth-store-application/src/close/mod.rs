@@ -15,6 +15,7 @@ pub enum ApplicationHomeCloseOutcome {
         store: ServingShutdownOutcome<ClosedRuntime>,
         checkpoint:
             Result<crate::ApplicationHomeCheckpoint, crate::ApplicationHomeCheckpointDenial>,
+        allocation: RetiredApplicationHomeAllocation,
     },
     CloseRefused {
         reason: ApplicationHomeCloseDenial,
@@ -22,9 +23,33 @@ pub enum ApplicationHomeCloseOutcome {
     },
 }
 
+/// Actual retired Home allocations remain alive through physical Closed.
+/// Final destruction, including arbitrary supplier payloads, is unbudgeted.
+pub struct RetiredApplicationHomeAllocation {
+    _location: std::path::PathBuf,
+    _descriptor: crate::descriptor::HomeDescriptor,
+    _world: Option<crate::world_section::RetiredHomeBridgeComposition>,
+    _world_owner: Option<worth_runtime_world::facade::RetiredRuntimeWorldHome>,
+    _world_origin: Option<worth_runtime_world::facade::WorldCheckpointOriginRetirement>,
+    _world_report: Option<worth_runtime_world::facade::RuntimeWorldCloseReport>,
+    _checkpoint: std::sync::Arc<crate::checkpoint::owner::HomeCheckpointOwner>,
+    _publications: std::sync::Arc<crate::world_section::WorldPublications>,
+    _native: Option<worth_store_relational::RetiredRelationalSectionAllocation>,
+}
+impl RetiredApplicationHomeAllocation {
+    pub fn reclaim(self) {
+        drop(self);
+    }
+}
+
 #[derive(Debug)]
 pub enum ApplicationHomeCloseDenial {
+    ForeignCheckpointOperation,
+    UnsupportedHomeMaintenance,
+    Bridge(worth_runtime_bridge::facade::BridgeHomeRetirementDenial),
     WorldCompositionRetained,
+    WorldOwnerRetirement(worth_runtime_world::facade::RuntimeWorldHomeRetirementDenial),
+    WorldCheckpointOrigin(worth_runtime_world::facade::WorldCheckpointOriginRetirementDenial),
     CheckpointSettlement(crate::ApplicationHomeCheckpointDenial),
     WorldResultSnapshot(worth_runtime_world::facade::RuntimeWorldResultSnapshotCleanupDenial),
     World(
@@ -83,7 +108,7 @@ impl crate::ReadmittedApplicationHome {
         }
         let Self {
             relational,
-            context,
+            mut context,
         } = self;
         let prior_checkpoint = match crate::checkpoint::close_settlement::settle(
             &context.serving,
@@ -102,16 +127,26 @@ impl crate::ReadmittedApplicationHome {
                 };
             }
         };
-        let closing = match relational.prepare_close() {
+        let preparation = context
+            .world_close_checkpoint
+            .get_mut()
+            .unwrap_or_else(|error| error.into_inner())
+            .take_native_retirement();
+        let closing = match relational.prepare_close(preparation, execution) {
             Ok(closing) => closing,
-            Err((relational, reason)) => {
+            Err((relational, preparation, reason)) => {
+                context
+                    .world_close_checkpoint
+                    .get_mut()
+                    .unwrap_or_else(|error| error.into_inner())
+                    .restore_native_retirement(preparation);
                 return ApplicationHomeCloseOutcome::CloseRefused {
                     reason: ApplicationHomeCloseDenial::Relational(reason),
                     posture: ApplicationHomeClosePosture::Serving(Self {
                         relational,
                         context,
                     }),
-                }
+                };
             }
         };
         let checkpoint = if let Some(result) = prior_checkpoint {

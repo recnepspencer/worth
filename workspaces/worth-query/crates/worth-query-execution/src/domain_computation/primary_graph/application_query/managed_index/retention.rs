@@ -84,6 +84,10 @@ enum RetainedIndexImage<S: ApplicationSchema, I: ApplicationManagedIndexBinding<
     Completed(Arc<ReadyIndex<S, I>>),
     // Status owns one observation directly. The funded registration header
     // includes this slot; replacing it creates no accumulating header charge.
+    #[allow(
+        dead_code,
+        reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it"
+    )]
     Maintained(worth_relational::facade::runtime::ManagedIndexSourceObservation),
 }
 

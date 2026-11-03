@@ -93,8 +93,8 @@ fn competing_rows_publish_parent_row_and_audit_once_and_replay_does_not_incremen
         .execute_in_program(&app, ExecutionAllocationPolicy::SystemAllocation)
         .unwrap();
     match replay {
-        Outcome::AlreadyCommitted(replay) => {
-            assert_eq!(replay.outcome_identity(), receipt.outcome_identity())
+        Outcome::RecoveredCommitted(replay) => {
+            assert_eq!(Some(replay.outcome_identity()), receipt.outcome_identity())
         }
         other => panic!("original source replay: {other:?}"),
     }

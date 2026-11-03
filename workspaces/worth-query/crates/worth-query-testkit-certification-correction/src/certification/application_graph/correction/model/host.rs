@@ -262,6 +262,9 @@ pub fn edit_on(
     match evidence {
         WorthQuerySourceCompletion::Fresh { receipt, .. } => receipt,
         WorthQuerySourceCompletion::Recovered { receipt, .. } => receipt,
+        WorthQuerySourceCompletion::Recorded { .. } => panic!(
+            "this fixture requires an actual fresh correction source, not original receipt data"
+        ),
     }
 }
 pub fn edit_other(

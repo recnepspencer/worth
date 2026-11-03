@@ -38,6 +38,8 @@ impl NodeLineage {
 
     pub(super) fn issue(&self, control: &WorthQueryManagedIndexControl<'_>) -> Result<usize, Stop> {
         control.checkpoint(1)?;
+        // try_update requires Rust 1.95; this crate supports Rust 1.94.
+        #[allow(deprecated)]
         self.next
             .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |next| {
                 next.checked_add(1)

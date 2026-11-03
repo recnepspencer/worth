@@ -24,6 +24,15 @@ pub struct DynamicIdentity {
 }
 
 impl DynamicIdentity {
+    /// Equal workload recipes include equal authenticated principal seed bytes.
+    /// Each installed runtime still admits its own real authentication owner.
+    pub fn from_recipe(scenario: &str) -> Self {
+        Self {
+            issuer: "https://issuer.test.invalid/bank-recipe".to_owned(),
+            subject: scenario.to_owned(),
+        }
+    }
+
     pub fn new(scenario: &str) -> Self {
         let unique = format!(
             "{}-{}",

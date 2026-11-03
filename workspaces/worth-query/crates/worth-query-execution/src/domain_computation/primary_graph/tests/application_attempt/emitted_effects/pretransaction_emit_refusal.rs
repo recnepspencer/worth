@@ -41,7 +41,7 @@ fn rejection_before_transaction_publishes_no_emit_causality() {
         !matches!(
             outcome,
             WorthQueryApplicationCommitOutcome::Committed(_)
-                | WorthQueryApplicationCommitOutcome::AlreadyCommitted(_)
+                | WorthQueryApplicationCommitOutcome::RecoveredCommitted(_)
         ),
         "rejected transaction claimed commit: {outcome:?}"
     );

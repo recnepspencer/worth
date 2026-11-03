@@ -10,7 +10,6 @@ use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 enum OccurrenceEvidence {
     Prepared,
     Held(WorldCheckpointOrigin),
-    Retired([RuntimeWorldRetentionKey; 2]),
 }
 #[derive(Debug)]
 struct OccurrenceNode {
@@ -53,7 +52,6 @@ impl PreparedCheckpointOccurrence {
         match &self.values[0].evidence {
             OccurrenceEvidence::Prepared => true,
             OccurrenceEvidence::Held(_) => false,
-            OccurrenceEvidence::Retired(_) => unreachable!("attempt custody has not retired"),
         }
     }
     pub(crate) fn bind(
@@ -72,6 +70,7 @@ impl PreparedCheckpointOccurrence {
 #[derive(Debug, Default)]
 pub(super) struct CheckpointOccurrences {
     first: Option<PreparedCheckpointOccurrence>,
+    retired: Option<PreparedCheckpointOccurrence>,
 }
 impl CheckpointOccurrences {
     pub(super) fn retain(&mut self, mut prepared: PreparedCheckpointOccurrence) {
@@ -82,36 +81,41 @@ impl CheckpointOccurrences {
         prepared.values[0].next = self.first.take();
         self.first = Some(prepared);
     }
-    pub(super) fn retire(&mut self) {
-        let mut next = self.first.as_mut();
-        while let Some(prepared) = next {
+    pub(super) fn advance_retirement(
+        &mut self,
+        request: &ExecutionRequest<'_, '_>,
+        native: &worth_relational::facade::runtime::RelationalRuntime,
+    ) -> Result<bool, crate::lifecycle::RuntimeWorldCloseDenial> {
+        while let Some(prepared) = self.first.as_mut() {
+            request
+                .consult()
+                .map_err(crate::lifecycle::RuntimeWorldCloseDenial::Execution)?;
             let node = &mut prepared.values[0];
-            let OccurrenceEvidence::Held(origin) =
-                std::mem::replace(&mut node.evidence, OccurrenceEvidence::Prepared)
-            else {
-                unreachable!("only a held recipe can retire");
-            };
-            let WorldCheckpointOrigin {
-                basis,
-                pins,
-                occurrences,
-            } = origin;
-            assert!(occurrences.first.is_none());
-            let keys = pins.retention_keys();
-            drop(pins);
-            drop(basis);
-            node.evidence = OccurrenceEvidence::Retired(keys);
-            next = node.next.as_mut();
+            match &mut node.evidence {
+                OccurrenceEvidence::Held(origin) => {
+                    if !origin.advance_retirement(request, native)? {
+                        return Ok(false);
+                    }
+                }
+                OccurrenceEvidence::Prepared => unreachable!("only a held recipe can retire"),
+            }
+            // Move one original prepaid link after completion. A retry starts
+            // at the first unfinished occurrence, regardless of prefix length.
+            let mut completed = self.first.take().expect("completed first occurrence");
+            self.first = completed.values[0].next.take();
+            completed.values[0].next = self.retired.take();
+            self.retired = Some(completed);
         }
+        Ok(true)
     }
     pub(super) fn retired_keys(&self) -> impl Iterator<Item = &RuntimeWorldRetentionKey> {
-        let mut next = self.first.as_ref();
+        let mut next = self.retired.as_ref();
         std::iter::from_fn(move || {
             let prepared = next?;
             let node = &prepared.values[0];
             next = node.next.as_ref();
             match &node.evidence {
-                OccurrenceEvidence::Retired(keys) => Some(keys.iter()),
+                OccurrenceEvidence::Held(origin) if origin.complete => Some(origin.keys.iter()),
                 OccurrenceEvidence::Prepared | OccurrenceEvidence::Held(_) => {
                     unreachable!("retirement exposes released keys only")
                 }
@@ -122,14 +126,16 @@ impl CheckpointOccurrences {
 }
 impl Drop for CheckpointOccurrences {
     fn drop(&mut self) {
-        let mut next = self.first.take();
-        while let Some(mut prepared) = next {
-            let node = prepared
-                .values
-                .pop()
-                .expect("one originally funded occurrence slot");
-            next = node.next;
-            drop(node.evidence);
+        for chain in [self.first.take(), self.retired.take()] {
+            let mut next = chain;
+            while let Some(mut prepared) = next {
+                let node = prepared
+                    .values
+                    .pop()
+                    .expect("one originally funded occurrence slot");
+                next = node.next;
+                drop(node.evidence);
+            }
         }
     }
 }

@@ -19,11 +19,11 @@ impl StoreColdSource {
         let selected = original
             .downcast_ref::<StoreSelectedRead>()
             .ok_or(R::ForeignCustody)?;
-        if selected.issuer.as_ptr() != self as *const Self
+        if !std::ptr::eq(selected.issuer.as_ptr(), self)
             || !selected
                 .serving
                 .as_ref()
-                .is_some_and(|serving| Arc::ptr_eq(serving, &self.serving))
+                .is_some_and(|serving| Arc::ptr_eq(serving, self.serving()))
         {
             return Err(R::ForeignCustody);
         }
@@ -49,7 +49,7 @@ impl StoreColdSource {
             };
             selected.retirement = Some(read.into_retirement());
         }
-        let records = match self.serving.anchored_records() {
+        let records = match self.serving().anchored_records() {
             Ok(records) => records,
             Err(_) => return O::Refused(R::ProviderUnavailable),
         };

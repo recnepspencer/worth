@@ -129,7 +129,7 @@ pub(super) fn run(
         matches!(
             replay,
             WorthQueryApplicationMutationOutcome::AlreadyCommitted(_)
-                | WorthQueryApplicationMutationOutcome::PreviouslyCommitted(_)
+                | WorthQueryApplicationMutationOutcome::RecoveredCommitted(_)
         ),
         "completed replay must reach actual recorded resolution: {replay:?}"
     );

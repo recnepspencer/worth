@@ -10,7 +10,7 @@ pub(crate) use {
     crate::phase_eight_process::history::physical_history::ParentPhysicalHistory,
 };
 
-pub(crate) const C8_RECOVERY_MEMORY_BUDGET_BYTES: u64 = 512 * 1024;
+pub(crate) const C8_RECOVERY_MEMORY_BUDGET_BYTES: u64 = 2 * 1024 * 1024;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum RecoveryObserverDisagreement {

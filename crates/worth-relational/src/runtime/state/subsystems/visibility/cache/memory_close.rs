@@ -19,6 +19,16 @@ impl CachedSnapshotState {
 }
 
 impl VisibilityCache {
+    /// Observe the actual original table under its nonwaiting owner gate.
+    pub(crate) fn try_has_memory_states(&self) -> Result<bool, ()> {
+        let states = match self.states.try_read() {
+            Ok(states) => states,
+            Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
+            Err(std::sync::TryLockError::WouldBlock) => return Err(()),
+        };
+        Ok(!states.is_empty())
+    }
+
     /// No allocation, rehash, shrink or ordinary payload Drop. Called only
     /// after authentic owner admission is stopped and all operations returned.
     pub(crate) fn try_retire_memory_state(&self, index: usize) -> Result<Option<bool>, ()> {

@@ -27,6 +27,13 @@ fn scope() -> worth_query_host::facade::admission::authenticated_principal::Wort
     WorthQueryRequestScope::new(None, WorthQueryCancellationSource::new().token())
 }
 pub(super) fn set(runtime: &Runtime, value: u64) -> WorthQueryApplicationMutationOutcome<(), u64> {
+    set_key(runtime, 0x9911, value)
+}
+pub(super) fn set_key(
+    runtime: &Runtime,
+    key: u64,
+    value: u64,
+) -> WorthQueryApplicationMutationOutcome<(), u64> {
     let scope = scope();
     let principal = identity::inspection_authentication::authenticate(
         runtime.runtime().installed_schema(),
@@ -40,7 +47,7 @@ pub(super) fn set(runtime: &Runtime, value: u64) -> WorthQueryApplicationMutatio
             balance: value,
         })
         .without_source()
-        .idempotency(&0x9911_u64)
+        .idempotency(&key)
         .execute_in_program(
             runtime,
             worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,

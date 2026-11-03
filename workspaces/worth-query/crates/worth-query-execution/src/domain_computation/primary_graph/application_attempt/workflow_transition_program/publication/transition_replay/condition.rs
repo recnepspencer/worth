@@ -16,12 +16,9 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
-        let (admission, selected_occurrence, locator, replays) = match self {
+        let (admission, selected_occurrence, replays) = match self {
             Self::Transition {
-                program,
-                transition_identity_locator,
-                replays,
-                ..
+                program, replays, ..
             } => (
                 &program.read_set.admission,
                 program
@@ -30,7 +27,6 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
                     .product()
                     .product_branch()
                     .occurrence(),
-                transition_identity_locator,
                 replays,
             ),
             Self::AwaitingAssessment(prepared) => (
@@ -42,7 +38,6 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
                     .product()
                     .product_branch()
                     .occurrence(),
-                &prepared.layout.transition.identity,
                 &prepared.replays,
             ),
             Self::AwaitingCondition(prepared) => (
@@ -54,7 +49,6 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
                     .product()
                     .product_branch()
                     .occurrence(),
-                &prepared.layout.transition.identity,
                 &prepared.replays,
             ),
             Self::AwaitingOperation(prepared) => (
@@ -66,36 +60,22 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
                     .product()
                     .product_branch()
                     .occurrence(),
-                &prepared.layout.transition.identity,
                 &prepared.replays,
             ),
             Self::AwaitingEvidence {
-                read_set,
-                transition_identity_locator,
-                replays,
-                ..
+                read_set, replays, ..
             }
             | Self::AwaitingProposal {
-                read_set,
-                transition_identity_locator,
-                replays,
-                ..
+                read_set, replays, ..
             }
             | Self::AwaitingApproval {
-                read_set,
-                transition_identity_locator,
-                replays,
-                ..
+                read_set, replays, ..
             }
             | Self::ReplayOnly {
-                read_set,
-                transition_identity_locator,
-                replays,
-                ..
+                read_set, replays, ..
             } => (
                 &read_set.admission,
                 read_set.lease.product().product_branch().occurrence(),
-                transition_identity_locator,
                 replays,
             ),
         };
@@ -162,26 +142,9 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
                     WorthQueryApplicationCommitDenial::idempotency_intent_drift(),
                 )),
             ),
-            WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(receipt) => Some(
-                runtime
-                    .primary_provider
-                    .graph
-                    .with_runtime(execution, |relational| {
-                        super::super::project(
-                            execution,
-                            relational,
-                            receipt,
-                            replay.identity.clone(),
-                            locator.clone(),
-                            replay.node_path.clone(),
-                            replay.terminal,
-                            None,
-                            None,
-                            None,
-                            true,
-                        )
-                    }),
-            ),
+            WorthQueryApplicationIdempotencyResolution::RecoveredCommitted(receipt) => {
+                return Ok(Some(WorkflowProgressOutcome::RecoveredCommitted(receipt)))
+            }
         })
     }
 }

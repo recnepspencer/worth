@@ -90,12 +90,7 @@ where
                 after,
                 attempt,
                 occurrence.location().clone(),
-                self.state
-                    .durable
-                    .as_ref()
-                    .expect("attached owner")
-                    .binding()
-                    .incarnation(),
+                occurrence.publishing_incarnation(),
                 native,
             )),
         }

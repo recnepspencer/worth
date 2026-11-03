@@ -25,6 +25,9 @@ pub(super) const FACTORIES: &[&str] = &[
     "recovered_query_finalization_parts",
     "readmit_prepared_home",
     "begin_after_world_seal",
+    "retire_home_maintenance",
+    "with_query_retirement_owners",
+    "prepare_initial_empty_home_stop",
     "world_composition_runtime",
     "world_recovery_authority",
     "discover_recovered_associated_effects",
@@ -134,7 +137,17 @@ pub(super) fn ownership(name: &str) -> (&'static str, &'static str) {
             "native-world-readmission",
             "workspaces/worth-store/crates/worth-store-relational/",
         )
-    } else if name == "begin_after_world_seal" {
+    } else if name == "prepare_initial_empty_home_stop" {
+        (
+            "application-home-bridge-stop",
+            "crates/worth-runtime-bridge/",
+        )
+    } else if name == "with_query_retirement_owners" {
+        (
+            "query-home-retirement",
+            "workspaces/worth-store/crates/worth-store-application/",
+        )
+    } else if matches!(name, "begin_after_world_seal" | "retire_home_maintenance") {
         (
             "query-home-retirement",
             "workspaces/worth-query/crates/worth-query-execution/",

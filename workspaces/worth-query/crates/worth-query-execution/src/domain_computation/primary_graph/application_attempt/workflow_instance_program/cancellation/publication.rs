@@ -28,7 +28,6 @@ pub struct PreparedWorkflowInstanceCancellation<Schema, Operation, Input, Scope>
 pub struct PerformedWorkflowInstanceCancellation {
     instance: PublishedWorkflowInstanceRef,
     receipt: WorthQueryApplicationCommitReceipt,
-    replayed: bool,
     performed: Vec<String>,
 }
 
@@ -39,10 +38,6 @@ impl PerformedWorkflowInstanceCancellation {
 
     pub const fn receipt(&self) -> &WorthQueryApplicationCommitReceipt {
         &self.receipt
-    }
-
-    pub const fn replayed(&self) -> bool {
-        self.replayed
     }
 
     /// The path of each node whose effect the instance, or the source it was
@@ -56,8 +51,9 @@ impl PerformedWorkflowInstanceCancellation {
 /// commit landed but its receipt does not record this cancellation on the instance.
 #[derive(Debug)]
 pub enum WorkflowInstanceCancellationOutcome {
+    RecoveredCommitted(crate::domain_computation::primary_graph::provider::WorthQueryRecoveredApplicationCommitReceipt),
     Cancelled(PerformedWorkflowInstanceCancellation),
-    /// The commit did not land. A landed commit, first or replayed, is the
+    /// The commit did not land. A fresh landed commit is the
     /// performed variant.
     Application(WorthQueryApplicationUncommitted),
     ProjectionDenied(WorthQueryApplicationCommitReceipt),
@@ -111,7 +107,7 @@ where
                 );
             }
         };
-        let (receipt, replayed) = match self
+        let receipt = match self
             .compare_and_commit_application_for_program_action(execution,
                 phase,
                 &presented,
@@ -122,7 +118,8 @@ where
             )
             .landed()
         {
-            Ok(landed) => landed,
+            Ok(crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationLandedCommit::Live { receipt }) => receipt,
+            Ok(crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationLandedCommit::Recovered(receipt)) => return WorkflowInstanceCancellationOutcome::RecoveredCommitted(receipt),
             Err(uncommitted) => {
                 return WorkflowInstanceCancellationOutcome::Application(uncommitted)
             }
@@ -139,7 +136,6 @@ where
         WorkflowInstanceCancellationOutcome::Cancelled(PerformedWorkflowInstanceCancellation {
             instance,
             receipt,
-            replayed,
             performed,
         })
     }

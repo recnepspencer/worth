@@ -92,7 +92,7 @@ pub(super) fn apply(
             .state
             .retained_relation_extra(intent.relation_id.partition_id, slot)
     });
-    Ok(MutationOutcome::relation_updated(
+    MutationOutcome::relation_updated(
         &workspace.execution(),
         intent.relation_id,
         kind_id,
@@ -103,7 +103,7 @@ pub(super) fn apply(
         old_state,
         new_state,
         Some(patch),
-    )?)
+    )
 }
 
 fn missing(

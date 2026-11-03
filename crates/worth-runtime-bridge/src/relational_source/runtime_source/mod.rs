@@ -24,10 +24,12 @@ mod lock_observation;
 mod observation_bindings;
 mod retained_entity_projection;
 mod retained_snapshot;
+mod retirement;
 mod selected_commit_resolution;
 mod snapshot_reads;
 mod source_adapter;
 mod source_profile;
+pub use retirement::RetiredRuntimeBridgeRelationalSource;
 
 pub use branch_head_bindings::{
     RelationalBridgeBranchHeadLease, RelationalBridgeBranchHeadReleaseReceipt,

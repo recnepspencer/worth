@@ -291,6 +291,22 @@ where
                     ))
                 }
                 Ok(PublicationOutcome::Performed((publication, definition_generation))) => {
+                    let original_owner = publication
+                        .new_product_head()
+                        .branch_identity()
+                        .owner_identity();
+                    let original_world_commit =
+                        publication.new_product_head().selected_commit().ordinal();
+                    let native = publication
+                        .new_product_head()
+                        .basis()
+                        .relational_basis()
+                        .reference()
+                        .target()
+                        .as_basis()
+                        .expect("actual performed Native successor");
+                    let original_native_commit = native.selected_commit_id();
+                    let original_native_version = native.version_id();
                     let session = guard
                         .take_attempt()
                         .complete(publication, definition_generation);
@@ -334,6 +350,11 @@ where
                     Ok((
                         WorthQueryManagedApplicationRecoveryOutcome::Performed(
                             WorthQueryManagedApplicationRecoveryPerformed {
+                                original_owner,
+                                original_world_commit,
+                                original_native_commit,
+                                original_native_version,
+                                original_key: *bound.key_identity(),
                                 conditional_definition_identity: definition_identity,
                                 read,
                                 publication_failure,

@@ -74,6 +74,7 @@ pub(in crate::http::server) async fn execute_notification<A: BankHttpApplication
     };
     NativeRouteResult::Estate {
         record: EstateSourceRecord {
+            released_cleanup: None,
             owner,
             sequence: 1,
             custody,

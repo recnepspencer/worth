@@ -39,6 +39,7 @@ pub(super) fn bind(
     Ok(())
 }
 
+#[derive(Debug)]
 pub(super) enum ManagedSourcePreparationDenial {
     Currentness(crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure),
     Native(worth_relational::facade::mvcc::CompanionPreflightStop),

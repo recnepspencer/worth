@@ -4,16 +4,25 @@ use crate::lifecycle::owner::RuntimeWorldOwnerState;
 use worth_execution::ExecutionRequest;
 
 #[derive(Debug, Default)]
-pub(super) struct CloseProgress {
+pub(in crate::lifecycle) struct CloseProgress {
+    pub(super) home: super::home_owner_progress::HomeOwnerRetirementProgress,
+    pub(super) pending_recovered: Option<super::recovered::RecoveredCloseRetirement>,
+    pub(super) retired_recovered: Vec<super::recovered::RecoveredCloseRetirement>,
+    pub(super) recovered_position: usize,
+    _retired_recovered_funding: Option<worth_execution::ExecutionMemoryReservation>,
     pending: Option<crate::branch::registry::PendingProductHeadClose>,
     released_heads: usize,
     report: Option<RuntimeWorldCloseReport>,
+    recovered: Vec<super::RuntimeWorldRecoveredCustodyReport>,
+    recovered_funding: Option<worth_execution::ExecutionMemoryReservation>,
     _metadata_funding: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
 impl CloseProgress {
     pub(super) fn prepare_task(
         request: &ExecutionRequest<'_, '_>,
+        recovery: &crate::recovery::RecoveryCatalog,
+        history: &crate::history::CompositeHistoryCatalog,
     ) -> Result<std::sync::Arc<std::sync::Mutex<Self>>, Denial> {
         let (layout, _) = std::alloc::Layout::new::<[std::sync::atomic::AtomicUsize; 2]>()
             .extend(std::alloc::Layout::new::<std::sync::Mutex<Self>>())
@@ -21,12 +30,34 @@ impl CloseProgress {
         let funding = request
             .reserve_retained_memory(layout.pad_to_align().size() as u64)
             .map_err(Denial::Execution)?;
+        let (recovered, recovered_funding) = recovery.prepare_close_reports(request)?;
+        let (retired_recovered, retired_recovered_funding) =
+            super::recovered::prepare(request, recovered.len())?;
         Ok(std::sync::Arc::new(std::sync::Mutex::new(Self {
+            home: super::home_owner_progress::HomeOwnerRetirementProgress::prepare(
+                request, history,
+            )?,
+            pending_recovered: None,
+            retired_recovered,
+            recovered_position: 0,
+            _retired_recovered_funding: retired_recovered_funding,
             pending: None,
             released_heads: 0,
             report: None,
+            recovered,
+            recovered_funding,
             _metadata_funding: funding,
         })))
+    }
+
+    pub(super) fn validate_recovered(
+        &self,
+        recovery: &crate::recovery::RecoveryCatalog,
+        history: &crate::history::CompositeHistoryCatalog,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<(), Denial> {
+        self.home.validate(history)?;
+        recovery.validate_close_reports(&self.recovered, request)
     }
 }
 
@@ -71,7 +102,9 @@ where
         std::sync::TryLockError::Poisoned(_) => Denial::CloseProgressPoisoned,
     })?;
     drain_heads(state, request, &mut progress)?;
-    finish_report(&state.close, &mut progress)
+    let mut report = finish_report(&state.close, &mut progress)?;
+    report.retain_close_task(task.clone());
+    Ok(report)
 }
 
 fn drain_heads<D, I, E, Ctx, T>(
@@ -100,12 +133,13 @@ where
             drop(progress.pending.take());
             continue;
         }
-        // This minimum slice refused unresolved business custody before seal.
-        // These rows are therefore empty because the actual catalog was empty,
-        // not because descriptive inspection substituted for retained custody.
+        state
+            .recovery
+            .validate_close_reports(&progress.recovered, request)?;
         progress.report = Some(RuntimeWorldCloseReport::new(
             Vec::new(),
-            Vec::new(),
+            std::mem::take(&mut progress.recovered),
+            progress.recovered_funding.take(),
             super::report::RuntimeWorldCloseReleaseCounts {
                 released_product_head_pins: progress.released_heads,
                 ..Default::default()

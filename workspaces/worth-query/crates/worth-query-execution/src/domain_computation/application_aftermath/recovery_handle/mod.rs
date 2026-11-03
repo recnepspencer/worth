@@ -5,6 +5,7 @@ mod denial;
 mod handle;
 mod identity;
 mod mint;
+mod recorded_status;
 
 #[cfg(test)]
 pub(crate) use binding::WorthQueryRecoveryHandleBindingAxisProbe;

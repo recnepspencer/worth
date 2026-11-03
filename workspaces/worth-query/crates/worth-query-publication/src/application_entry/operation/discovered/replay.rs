@@ -43,17 +43,18 @@ where
             let prepared =
                 native.authorize_discovered_source::<P, R>(phase, &self.runtime, None)?;
             let read = native.read_recovery_idempotency(phase, &prepared)?;
-            let Resolution::AlreadyCommitted(receipt) = read.into_resolution() else {
+            let Resolution::RecoveredCommitted(receipt) = read.into_resolution() else {
                 return Err(WorthQueryApplicationRecoveryRequestDenial::Recovery(
                     Recovery::BindingMismatch,
                 ));
             };
-            if !receipt.is_same_authoritative_commit(original) {
+            if !super::super::receipt_correspondence::matches_retained_original(original, &receipt)
+            {
                 return Err(WorthQueryApplicationRecoveryRequestDenial::Recovery(
                     Recovery::BindingMismatch,
                 ));
             }
-            Ok((prepared, receipt))
+            Ok((prepared, original.clone()))
         })();
         let (prepared, receipt) = match admitted {
             Ok(admitted) => admitted,

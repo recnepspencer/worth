@@ -26,9 +26,10 @@ fn checkpoint_read_and_source_root_funding_deny_before_effects_and_retry() {
             let native_configuration = worth_store_recovery_runtime::PhysicalRecoveryStaticConfiguration::current().with_residency_policy(
                 crate::production_entry::certified_release_serving::release_capacity_budget::source_read_funding::recovery_policy_with_scope(checkpoint_bytes - 1),
             ).unwrap();
+            let serving = worth_store::physical_runtime::PhysicalRecoveryCoordinationCapacity::serving_evidence_backing_bytes();
             for (memory, expected_boundary, configuration) in [
-                (checkpoint_bytes - 1, worth_store_recovery_runtime::PhysicalRecoverySourceReadAllocationBoundary::ReadBuffer, worth_store_recovery_runtime::PhysicalRecoveryStaticConfiguration::current()),
-                (checkpoint_bytes, worth_store_recovery_runtime::PhysicalRecoverySourceReadAllocationBoundary::ParserRecords, worth_store_recovery_runtime::PhysicalRecoveryStaticConfiguration::current()),
+                (serving + checkpoint_bytes - 1, worth_store_recovery_runtime::PhysicalRecoverySourceReadAllocationBoundary::ReadBuffer, worth_store_recovery_runtime::PhysicalRecoveryStaticConfiguration::current()),
+                (serving + checkpoint_bytes, worth_store_recovery_runtime::PhysicalRecoverySourceReadAllocationBoundary::ParserRecords, worth_store_recovery_runtime::PhysicalRecoveryStaticConfiguration::current()),
                 (24 << 20, worth_store_recovery_runtime::PhysicalRecoverySourceReadAllocationBoundary::ReadBuffer, native_configuration),
             ] {
                 let outcome = worth_store_recovery_runtime::WorthStoreRecovery::recover(
@@ -50,14 +51,14 @@ fn checkpoint_read_and_source_root_funding_deny_before_effects_and_retry() {
                     worth_store_recovery_runtime::PhysicalRecoverySourceReadAllocationDenial::Observation(worth_store::physical_runtime::PhysicalRecoveryObservationAllocationDenial::Residency(worth_store::physical_runtime::PhysicalRecoveryRejoinResidentDenial::BudgetExceeded { required, admitted }))
                     | worth_store_recovery_runtime::PhysicalRecoverySourceReadAllocationDenial::Residency(worth_store::physical_runtime::PhysicalRecoveryRejoinResidentDenial::BudgetExceeded { required, admitted }) => {
                         assert_eq!(*admitted, memory);
-                        assert_eq!(*required, checkpoint_bytes + if expected_boundary == worth_store_recovery_runtime::PhysicalRecoverySourceReadAllocationBoundary::ParserRecords { *requested } else { 0 });
+                        assert_eq!(*required, serving + checkpoint_bytes + if expected_boundary == worth_store_recovery_runtime::PhysicalRecoverySourceReadAllocationBoundary::ParserRecords { *requested } else { 0 });
                     }
                     worth_store_recovery_runtime::PhysicalRecoverySourceReadAllocationDenial::Observation(worth_store::physical_runtime::PhysicalRecoveryObservationAllocationDenial::Residency(worth_store::physical_runtime::PhysicalRecoveryRejoinResidentDenial::OperationAllocation(failure))) => {
                         let pressure = failure.pressure().expect("actual native scope pressure");
-                        assert_eq!(pressure.limit(), checkpoint_bytes - 1);
+                        assert_eq!(pressure.limit(), serving + checkpoint_bytes - 1);
                         assert_eq!(pressure.requested(), checkpoint_bytes);
                         assert!(!pressure.effect_may_have_started());
-                        assert_eq!(pressure.admitted(), 0, "the earlier root read window has ended");
+                        assert_eq!(pressure.admitted(), serving, "the earlier root read window has ended; prepaid serving custody remains");
                         assert_eq!(pressure.dimension(), worth_store::physical_runtime::PhysicalResidencyDimension::OperationScope(worth_store::physical_runtime::PhysicalOperationAllocationScope::Recovery));
                     }
                     other => panic!("original native ceiling cause lost: {other:?}"),

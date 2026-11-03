@@ -114,9 +114,12 @@ where
                     .identities
                     .lock()
                     .unwrap_or_else(|error| error.into_inner()),
-                &self.state.relational.basis_port(),
+                &self.state.relational_services().basis_port(),
                 &self.state.signal.basis_port(),
-                &self.state.bridge,
+                self.state
+                    .bridge
+                    .as_ref()
+                    .expect("serving World owns correspondence"),
                 relational,
                 signal,
                 correspondence,

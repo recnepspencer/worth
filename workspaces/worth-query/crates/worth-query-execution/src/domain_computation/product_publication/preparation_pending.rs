@@ -81,6 +81,7 @@ impl std::fmt::Debug for WorthQueryProductPreparationPending {
         f.debug_struct("WorthQueryProductPreparationPending")
             .field("stage", &self.stage)
             .field("recovery", &self.recovery)
+            .field("preparation", &self.preparation)
             .finish()
     }
 }

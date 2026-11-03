@@ -42,8 +42,7 @@ pub(crate) fn main() {
     let _ = with_brand(|brand| brand.bind(1_u8).into_value());
     let _ = evaluate_freshness(1_u64, &Source, &Policy).unwrap();
     let _ = Performed::<Action, owner::Authority>::record(&owner::witness(), ());
-    let comparison: () = Binding::new(RuntimeBinding { runtime: 1 })
+    let _comparison: () = Binding::new(RuntimeBinding { runtime: 1 })
         .ensure_matches(&Binding::new(RuntimeBinding { runtime: 1 }))
         .unwrap();
-    let _ = comparison;
 }

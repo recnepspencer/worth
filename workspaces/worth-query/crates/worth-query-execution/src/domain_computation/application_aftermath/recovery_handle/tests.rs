@@ -15,14 +15,16 @@ fn concurrent_receipt_claims_register_exactly_one_handle() {
     let claim = real_claim(7);
     let left_registry = Arc::clone(&registry);
     let left_claim = claim.clone();
-    let left = std::thread::spawn(move || left_registry.register_once(left_claim));
-    let right_registry = Arc::clone(&registry);
-    let right = std::thread::spawn(move || right_registry.register_once(claim));
+    let results = std::thread::scope(|scope| {
+        let left = scope.spawn(move || left_registry.register_once(left_claim));
+        let right_registry = Arc::clone(&registry);
+        let right = scope.spawn(move || right_registry.register_once(claim));
 
-    let results = [
-        left.join().expect("left claim"),
-        right.join().expect("right claim"),
-    ];
+        [
+            left.join().expect("left claim"),
+            right.join().expect("right claim"),
+        ]
+    });
     assert_eq!(results.iter().filter(|result| result.is_ok()).count(), 1);
     assert_eq!(results.iter().filter(|result| result.is_err()).count(), 1);
     let slot = results.into_iter().find_map(Result::ok).expect("one slot");

@@ -41,7 +41,7 @@ fn direct_admission_rejects_a_same_relational_different_signal_product() {
     let rejection = match world
         .application
         .runtime
-        .managed_run_admission(&bridge, &world.application.product_runtime.source)
+        .managed_run_admission(&bridge, world.application.product_runtime.source())
         .admit_direct(
             &operation,
             attempt,
@@ -99,7 +99,7 @@ fn workflow_admission_rejects_a_same_relational_different_signal_product() {
     let rejection = match world
         .application
         .runtime
-        .managed_run_admission(&bridge, &world.application.product_runtime.source)
+        .managed_run_admission(&bridge, world.application.product_runtime.source())
         .admit_workflow(
             &operation,
             attempt,

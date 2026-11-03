@@ -114,3 +114,5 @@ fn commit_with_observation(
         unexpected => panic!("real recoverable fixture must commit through World: {unexpected:?}"),
     }
 }
+
+mod recorded_recovery_status;

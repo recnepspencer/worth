@@ -8,7 +8,7 @@ impl CompositeHistoryCatalog {
         let state = self.state.try_lock().map_err(|_| ())?;
         let slot = state.entries.get(snapshot.selected_commit()).ok_or(())?;
         let entry = slot.get().ok_or(())?;
-        if !std::ptr::eq(entry.commit.as_ref(), snapshot.commit())
+        if !std::ptr::eq(entry.commit(), snapshot.commit())
             || !entry.pins.matches_basis(snapshot.basis())
         {
             return Err(());

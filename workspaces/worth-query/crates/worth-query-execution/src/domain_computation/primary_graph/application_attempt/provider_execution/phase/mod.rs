@@ -3,15 +3,11 @@ mod prepared;
 // whose private state they consume. This parent exposes only the opaque permits needed by
 // the surrounding application-attempt owner.
 
-pub(in crate::domain_computation::primary_graph::application_attempt) use prepared::WorthQueryEarlyEquivalentCommitReceiptPermit;
 pub(super) use prepared::{
     prepare_application_commit, WorthQueryApplicationCommitPreparation,
     WorthQueryApplicationCommitPreparationRequest,
 };
-pub(in crate::domain_computation::primary_graph::application_attempt) use prepared::running::progression::{
-    WorthQueryFreshCommitReceiptPermit, WorthQueryManagedEquivalentCommitReceiptPermit,
-    WorthQueryRegisteredEquivalentCommitReceiptPermit,
-};
+pub(in crate::domain_computation::primary_graph::application_attempt) use prepared::running::progression::WorthQueryFreshCommitReceiptPermit;
 pub(in crate::domain_computation) use prepared::running::progression::{
     WorthQueryProviderAttemptRegistrationContext, WorthQueryRegisteredProviderAttempt,
 };

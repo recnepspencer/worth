@@ -138,13 +138,13 @@ fn intact_history_member_with_relabelled_content_is_refused_against_the_leaf() {
     let mut members = fixture.source.members.clone();
     members.insert(locator, bytes);
     cold.history = locator;
-    cold.source = Arc::new(CountedSource {
+    cold.source = Some(Arc::new(CountedSource {
         members,
         reads: AtomicUsize::new(0),
         history_reads: AtomicUsize::new(0),
         history: locator,
         corrupt: AtomicBool::new(false),
-    });
+    }));
     let cell = RelationalRegionResidency::cold(cold).unwrap();
     let head = head_demand(&cell, 1 << 24).unwrap();
     assert!(head.head_view().entity(fixture.entity).is_some());

@@ -16,8 +16,8 @@ fn history_basis_requires_same_owner_branch_version_and_live_candidate() {
     let host_request = crate::test_request_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut runtime = history_runtime();
-    let first = commit(execution, &mut runtime, "first");
+    let runtime = history_runtime();
+    let first = commit(execution, &runtime, "first");
     let retained = runtime
         .admit_branch_basis(&runtime.main_branch_identity())
         .unwrap();
@@ -77,7 +77,7 @@ fn history_basis_requires_same_owner_branch_version_and_live_candidate() {
         },
         1
     ));
-    let changed = commit(execution, &mut runtime, "second");
+    let changed = commit(execution, &runtime, "second");
     for (owner, candidate) in [(&runtime, &fork_snapshot), (&runtime, &changed)] {
         assert!(!remains_equal(
             owner,
@@ -105,8 +105,8 @@ fn history_basis_requires_same_owner_branch_version_and_live_candidate() {
         },
         1
     ));
-    let mut foreign = history_runtime();
-    let foreign_snapshot = commit(execution, &mut foreign, "first");
+    let foreign = history_runtime();
+    let foreign_snapshot = commit(execution, &foreign, "first");
     assert!(!remains_equal(
         &foreign,
         &foreign_snapshot,
@@ -133,7 +133,7 @@ fn history_basis_requires_same_owner_branch_version_and_live_candidate() {
         },
         1
     ));
-    crate::relational_snapshot_release::release_query_snapshot(&mut runtime, &second_lease);
+    crate::relational_snapshot_release::release_query_snapshot(&runtime, &second_lease);
     assert!(!remains_equal(
         &runtime,
         &second_lease,
@@ -163,10 +163,10 @@ fn history_basis_requires_same_owner_branch_version_and_live_candidate() {
         ),
         Err(super::super::AdjacencyObservationDenial::SnapshotUnavailable)
     );
-    crate::relational_snapshot_release::release_query_snapshot(&mut runtime, &first);
-    crate::relational_snapshot_release::release_query_snapshot(&mut runtime, &changed);
-    crate::relational_snapshot_release::release_query_snapshot(&mut runtime, &fork_snapshot);
-    crate::relational_snapshot_release::release_query_snapshot(&mut foreign, &foreign_snapshot);
+    crate::relational_snapshot_release::release_query_snapshot(&runtime, &first);
+    crate::relational_snapshot_release::release_query_snapshot(&runtime, &changed);
+    crate::relational_snapshot_release::release_query_snapshot(&runtime, &fork_snapshot);
+    crate::relational_snapshot_release::release_query_snapshot(&foreign, &foreign_snapshot);
 }
 
 fn history_runtime() -> RelationalRuntime {

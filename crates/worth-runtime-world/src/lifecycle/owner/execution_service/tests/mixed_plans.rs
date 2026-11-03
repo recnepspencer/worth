@@ -17,7 +17,7 @@ fn disjoint_owner_attempts_both_execute_and_only_one_product_head_moves() {
         // the independently observed product reference still selects the root.
         assert!(owner
             .state
-            .relational
+            .relational_services()
             .basis_port()
             .compare_current_exact(expected.basis().relational_basis())
             .is_err());
@@ -33,7 +33,7 @@ fn disjoint_owner_attempts_both_execute_and_only_one_product_head_moves() {
         let signal_basis = signal.successor_basis().unwrap().clone();
         owner
             .state
-            .relational
+            .relational_services()
             .basis_port()
             .compare_current_exact(relational_basis.relational_basis())
             .unwrap();

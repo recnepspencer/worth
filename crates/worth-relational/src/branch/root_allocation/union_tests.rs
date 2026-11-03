@@ -114,7 +114,7 @@ fn cold_region_union_refuses_without_demanding_any_payload() {
         history: [0; 32],
     };
     let cell = RelationalRegionResidency::cold(RelationalColdRegion {
-        source: source.clone(),
+        source: Some(source.clone()),
         partition_id: PartitionId(7),
         head: locator,
         history: locator,

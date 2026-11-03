@@ -1,3 +1,4 @@
+use super::recorded_workflow_receipt as recorded;
 pub(crate) use worth_query_testkit_certification_application_graph::facade::certification::application_graph::workflow_receipt_lifecycle::*;
 
 #[test]
@@ -43,7 +44,7 @@ fn historical_workflow_receipts_do_not_retain_live_world_observations() {
         let WorkflowProposalOutcome::Published(performed) = outcome else {
             panic!("occurrence {occurrence} must publish");
         };
-        assert!(!performed.replayed());
+        assert!(performed.receipt().changed_record_count() > 0);
         receipts.push(performed);
     }
     let before = application.runtime().workflow_instance_progress_counters();
@@ -54,18 +55,13 @@ fn historical_workflow_receipts_do_not_retain_live_world_observations() {
             20_002 + occurrence,
         )
         .expect("historical retry retains no live admission and must reauthorize");
-        let WorkflowProposalOutcome::Published(replayed) = outcome else {
+        let WorkflowProposalOutcome::RecoveredCommitted(replayed) = outcome else {
             panic!("historical receipt must replay");
         };
-        assert!(replayed.replayed());
-        assert_eq!(
-            replayed.transition(),
-            receipts[occurrence as usize].transition()
-        );
-        assert_eq!(
-            replayed.proposal(),
-            receipts[occurrence as usize].proposal()
-        );
+        let original = &receipts[occurrence as usize];
+        recorded::original(&replayed, original.receipt());
+        recorded::creates(&replayed, original.transition());
+        recorded::creates(&replayed, original.proposal().entity_id());
     }
     assert_eq!(
         application

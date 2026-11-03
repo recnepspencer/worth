@@ -27,13 +27,16 @@ pub(super) fn publish(
     if let Some(terminal) = task.observation() {
         return terminal;
     }
+    let serving = match medium.serving() {
+        Ok(serving) => serving,
+        Err(cause) => return no_effect(cause),
+    };
     let mut returned = None;
     let mut run = |lease: Option<&ExecutionResourceLease<'_>>| {
         execution
             .run_native_with_checkpoint(|context| {
                 returned = Some((|| {
-                    let journal = medium
-                        .serving
+                    let journal = serving
                         .ordered_journal(
                             OrderedJournalName::new(subject.journal().name())
                                 .expect("closed World journal"),
@@ -51,7 +54,7 @@ pub(super) fn publish(
                                 recovery,
                             } => {
                                 let valid = matches_source(
-                                    medium,
+                                    &serving,
                                     subject,
                                     position,
                                     operation.observe().source(),
@@ -67,7 +70,7 @@ pub(super) fn publish(
                             }
                             OrderedJournalPublicationStart::AlreadyCommitted(committed) => {
                                 let valid =
-                                    matches_source(medium, subject, position, committed.source());
+                                    matches_source(&serving, subject, position, committed.source());
                                 task.committed(committed);
                                 if !valid {
                                     task.invalidate();
@@ -171,13 +174,13 @@ fn prepare(
     Ok((position, publication))
 }
 fn matches_source(
-    medium: &ApplicationWorldMedium,
+    serving: &ServingPhysicalRuntime,
     subject: &WorldDurableArtifact,
     position: u64,
     source: OrderedJournalPublicationSource,
 ) -> bool {
     let digest: [u8; 32] = Sha256::digest(subject.as_bytes()).into();
-    source.runtime_identity() == medium.serving.runtime_identity()
+    source.runtime_identity() == serving.runtime_identity()
         && source.journal().as_str() == subject.journal().name()
         && source.position() == position
         && source.payload_bytes() == subject.as_bytes().len() as u64

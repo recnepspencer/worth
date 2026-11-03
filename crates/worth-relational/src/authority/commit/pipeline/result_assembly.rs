@@ -150,7 +150,7 @@ impl CommitResultMaterial {
         let structural = semantic_result.structural();
         let mut structural_summary = self.public_structural_summary;
         structural_summary.invariant_groups = structural.invariant_groups;
-        structural_summary.commit_topology = structural.commit_topology.clone();
+        structural_summary.commit_topology = structural.commit_topology;
         structural_summary.touched_partitions = structural.touched_partitions.clone();
         structural_summary.descriptor_semantics_version = structural.descriptor_semantics_version;
         let mut commit_summary = self.commit_log.summary().clone();

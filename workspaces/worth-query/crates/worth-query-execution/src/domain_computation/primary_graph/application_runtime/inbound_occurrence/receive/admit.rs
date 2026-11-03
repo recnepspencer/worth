@@ -108,7 +108,7 @@ where
         if owner.relational_runtime_instance_id()
             != self
                 .product_runtime
-                .source
+                .source()
                 .authoritative_source_profile()
                 .runtime_instance_id()
             || publication.product_branch().owner_identity()

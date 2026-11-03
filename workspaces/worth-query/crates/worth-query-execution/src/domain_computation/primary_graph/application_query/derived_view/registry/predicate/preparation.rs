@@ -34,6 +34,10 @@ struct Descriptor {
 enum Child {
     Empty,
     Bound(ManagedIndexSourceContextShare<round::Round>),
+    #[allow(
+        dead_code,
+        reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it"
+    )]
     Refused(round::Round),
 }
 struct RoundLink {
@@ -146,18 +150,18 @@ impl PredicatePreparationFactory {
             }
             children = link.next.take();
             let funding = link.allocation.clone();
-            if let Child::Bound(child) = &link.child {
-                if child.value().identity == *accepted.interpretation() {
-                    if promoted.is_some() {
-                        link.next = children;
-                        *self
-                            .children
-                            .get_mut()
-                            .unwrap_or_else(std::sync::PoisonError::into_inner) = Some(link);
-                        return Err(Denial::ForeignSource);
-                    }
-                    promoted = Some(child.clone());
+            if let Child::Bound(child) = &link.child
+                && child.value().identity == *accepted.interpretation()
+            {
+                if promoted.is_some() {
+                    link.next = children;
+                    *self
+                        .children
+                        .get_mut()
+                        .unwrap_or_else(std::sync::PoisonError::into_inner) = Some(link);
+                    return Err(Denial::ForeignSource);
                 }
+                promoted = Some(child.clone());
             }
             drop(link);
             drop(funding);

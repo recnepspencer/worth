@@ -6,6 +6,11 @@ mod codec_recovery_destination;
 mod configuration;
 mod core_access;
 mod memory_close;
+mod source_close;
+pub use source_close::{
+    PreparedRelationalSourceClose, RelationalSourceClose, RelationalSourceCloseDenial,
+    RelationalSourceCloseProgress, RetiredSourceRelationalAllocation,
+};
 mod merge_authority;
 mod owner_lifecycle;
 mod partition_edition_access;
@@ -98,6 +103,7 @@ pub struct RelationalRuntime {
     pub(crate) schema_contract_runtime: std::sync::Arc<super::SchemaContractRuntimeSubsystem>,
     state: std::sync::Arc<RelationalRuntimeState>,
     tenure: RelationalRuntimeTenure,
+    _outer_memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
 impl RelationalRuntime {
@@ -113,6 +119,7 @@ impl RelationalRuntime {
             schema_contract_runtime: installed.schema_contract_runtime,
             state: std::sync::Arc::new(state),
             tenure: RelationalRuntimeTenure::Owner(close),
+            _outer_memory: None,
         }
     }
 
@@ -130,6 +137,7 @@ impl RelationalRuntime {
             schema_contract_runtime: installed.schema_contract_runtime,
             state,
             tenure: RelationalRuntimeTenure::Admitted(operation),
+            _outer_memory: None,
         }
     }
 
