@@ -2,6 +2,7 @@
 use super::*;
 use crate::lifecycle::{RuntimeWorldOwnerLifecycleObservation, RuntimeWorldOwnerRoot};
 use worth_execution::{CancellationToken, SerialMemoryBudget, SerialRequest, WorkCeilingDenial};
+use worth_relational::facade::history::{BranchId, CommitId, RelationalCommitReceipt};
 
 struct Clock;
 impl crate::lifecycle::RuntimeWorldClockSource for Clock {
@@ -75,4 +76,66 @@ fn prepared_close_task_retains_original_metadata_grant_until_owner_release() {
     assert_eq!(memory.charged_memory_bytes(), retained);
     drop(task);
     assert_eq!(memory.charged_memory_bytes(), 0);
+}
+
+#[test]
+fn recovered_receipt_storage_refuses_short_grants_and_stays_funded_until_drop() {
+    // Descriptive data tests copying only; it issues no Native authority.
+    let original = RelationalCommitReceipt {
+        commit_id: CommitId(7),
+        version_id: worth_relational::facade::identity::VersionId(8),
+        branch_id: BranchId("original-recovered-branch".into()),
+        parents: vec![CommitId(3), CommitId(5)],
+    };
+    let needed = original.branch_id.0.len() as u64 + 2 * std::mem::size_of::<CommitId>() as u64;
+    // The successful original grant also covers ExecutionRequest's
+    // transient scope storage. Only the receipt's exact owned bytes may
+    // remain charged after the copy returns.
+    for budget in [needed - 1, needed + 64 * 1024] {
+        let memory = SerialMemoryBudget::new(Some(budget));
+        let policy = SerialRequest::from_memory(memory.clone(), CancellationToken::new(), None);
+        let request = ExecutionRequest::serial(&policy);
+        let copied = RecoveredCloseReceipt::copy_for_request(&request, &original);
+        if budget < needed {
+            assert!(matches!(
+                copied,
+                Err(Denial::Execution(
+                    worth_execution::WorkCeilingDenial::Admission(_)
+                ))
+            ));
+            assert_eq!(memory.charged_memory_bytes(), 0);
+        } else {
+            let copied = copied.unwrap();
+            assert_eq!(copied.receipt(), &original);
+            assert_eq!(memory.charged_memory_bytes(), needed);
+            drop(copied);
+            assert_eq!(memory.charged_memory_bytes(), 0);
+        }
+    }
+}
+
+#[test]
+fn recovered_receipt_copy_observes_the_original_work_stop_before_allocating() {
+    let policy = worth_foundational::ExecutionRequestPolicy::new(
+        worth_foundational::ExecutionPosture::Serial,
+        worth_foundational::DeterminismContract::CanonicalBitwise,
+        worth_foundational::ExecutionBudget::new(
+            std::num::NonZeroUsize::MIN,
+            Some(1 << 20),
+            Some(0),
+        ),
+    );
+    let policy = SerialRequest::from_policy(&policy, CancellationToken::new(), None);
+    let request = ExecutionRequest::serial(&policy);
+    let original = RelationalCommitReceipt {
+        commit_id: CommitId(7),
+        version_id: worth_relational::facade::identity::VersionId(8),
+        branch_id: BranchId("original-recovered-branch".into()),
+        parents: vec![CommitId(3), CommitId(5)],
+    };
+    assert!(matches!(
+        RecoveredCloseReceipt::copy_for_request(&request, &original),
+        Err(Denial::Stopped(worth_execution::MapKernelStop::WorkCeiling))
+    ));
+    assert_eq!(policy.memory().unwrap().charged_memory_bytes(), 0);
 }

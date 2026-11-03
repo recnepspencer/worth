@@ -12,7 +12,6 @@ mod active;
 mod slots;
 use slots::{RecoveryEntry, RecoveryRecordSlots};
 mod close;
-pub(crate) use close::RecoveredCloseReceipt;
 mod initialization;
 mod page;
 mod recovered_publication;

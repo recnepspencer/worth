@@ -3,6 +3,7 @@ mod admission;
 #[path = "close/drain.rs"]
 mod drain;
 pub use admission::RuntimeWorldPreCloseAdmission;
+pub(crate) use admission::{checkpoint as checkpoint_close_step, RecoveredCloseReceipt};
 #[path = "close/report.rs"]
 mod report;
 mod result_snapshots;

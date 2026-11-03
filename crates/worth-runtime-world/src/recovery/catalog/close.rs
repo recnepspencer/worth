@@ -1,25 +1,11 @@
 //! Durable recovered obligations survive close; live work still refuses it.
 use super::{ProductUnpublishedRecoveryCatalog, RecoveryEntry};
-use crate::lifecycle::{RuntimeWorldCloseDenial as Denial, RuntimeWorldRecoveredCustodyReport};
+use crate::lifecycle::{
+    checkpoint_close_step as checkpoint, RecoveredCloseReceipt, RuntimeWorldCloseDenial as Denial,
+    RuntimeWorldRecoveredCustodyReport,
+};
 use crate::recovery::recovered_publication::RecoveredNativeCustody;
 use worth_execution::ExecutionRequest;
-mod receipt;
-pub(crate) use receipt::RecoveredCloseReceipt;
-
-fn checkpoint(request: &ExecutionRequest<'_, '_>, units: u64) -> Result<(), Denial> {
-    let mut stopped = None;
-    let scope = request.run_native_with_checkpoint(|context| {
-        stopped = Some(if context.has_accounting() {
-            context.checkpoint(units)
-        } else {
-            context.poll()
-        });
-    });
-    if let Some(Err(cause)) = stopped {
-        return Err(Denial::Stopped(cause));
-    }
-    scope.map(|_| ()).map_err(Denial::Execution)
-}
 
 impl ProductUnpublishedRecoveryCatalog {
     pub(crate) fn try_close_recovered_count(

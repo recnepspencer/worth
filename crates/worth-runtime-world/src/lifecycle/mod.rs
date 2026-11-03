@@ -1,5 +1,6 @@
 mod clock;
 mod close;
+pub(crate) use close::{checkpoint_close_step, RecoveredCloseReceipt};
 pub mod owner;
 mod owner_inputs;
 mod ports;

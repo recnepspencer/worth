@@ -11,7 +11,7 @@ pub struct RuntimeWorldRecoveredCustodyReport {
     pub(crate) identity: ProductUnpublishedOwnerEffectsIdentity,
     pub(crate) attempt: crate::identity::CompositePublicationAttemptIdentity,
     pub(crate) commit: crate::identity::CompositeCommitIdentity,
-    pub(crate) native_receipt: Option<crate::recovery::RecoveredCloseReceipt>,
+    pub(crate) native_receipt: Option<crate::lifecycle::RecoveredCloseReceipt>,
 }
 impl RuntimeWorldRecoveredCustodyReport {
     pub fn identity(&self) -> &ProductUnpublishedOwnerEffectsIdentity {
@@ -28,7 +28,7 @@ impl RuntimeWorldRecoveredCustodyReport {
     ) -> Option<&worth_relational::facade::history::RelationalCommitReceipt> {
         self.native_receipt
             .as_ref()
-            .map(crate::recovery::RecoveredCloseReceipt::receipt)
+            .map(crate::lifecycle::RecoveredCloseReceipt::receipt)
     }
 }
 
