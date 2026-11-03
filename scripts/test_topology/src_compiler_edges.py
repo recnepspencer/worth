@@ -43,13 +43,26 @@ PRIVATE_FIELDS = re.compile(r'fields? (`\w+`(?:, `\w+`)*(?: and `\w+`)?) of (?:s
 PRIVATE_TYPE = re.compile(r'^type `([\w:]+)(?:<[^`]*>)?` is private')
 
 
+_DECLARATIONS = {}
+
+
+def type_declarations(tree):
+    """Type name -> modules declaring it, indexed once per tree."""
+    from src_scope import scope_items
+    if id(tree) not in _DECLARATIONS:
+        index = {}
+        for node in tree.walk():
+            for _a, _v, keyword, item, _s, _e in scope_items(node.own_text()):
+                if keyword in ('struct', 'enum', 'union', 'type', 'trait'):
+                    index.setdefault(item, []).append(node.names)
+        _DECLARATIONS[id(tree)] = index
+    return _DECLARATIONS[id(tree)]
+
+
 def declaration_of(tree, path):
     """The one library module declaring `path[-1]` whose module names end with `path[:-1]`."""
-    from src_scope import scope_items
     *qualifier, name = [p for p in path if p not in ('worth_query_execution', 'crate')]
-    declaring = [node.names for node in tree.walk()
-                 if any(item == name and keyword in ('struct', 'enum', 'union', 'type', 'trait')
-                        for _a, _v, keyword, item, _s, _e in scope_items(node.own_text()))]
+    declaring = type_declarations(tree).get(name, [])
     # The path may name a re-export: fall back to the one declaration of the name.
     qualified = [n for n in declaring if qualifier and n[len(n) - len(qualifier):] == tuple(qualifier)]
     for found in (qualified, declaring):
