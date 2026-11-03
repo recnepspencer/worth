@@ -9,6 +9,9 @@ the classifier has no method edges. When compiled library code calls a method on
 `cfg(test)` module defines, `cargo check` reports E0599 at the call. This records
 `caller module -> defining test module` under `compiler_method_edges` in the reviewed overrides
 file, on the original (unapplied) tree, so the next plan classifies the caller correctly.
+When moved code calls a method a staying test family defines, that family is recorded under
+`compiler_forced_families` and moves too. Privacy errors (E0446/E0603/E0624/E0616/E0451 and
+`type is private`) record the declarations the moved code needs public.
 """
 import argparse
 import json
@@ -19,7 +22,7 @@ from module_tree import read_tree
 from src_families import families
 
 LIB = 'workspaces/worth-query/crates/worth-query-execution/src/lib.rs'
-METHOD = re.compile(r'no method named `(\w+)` found')
+METHOD = re.compile(r'no (?:method|associated function or constant|function or associated item) named `(\w+)` found')
 
 
 def module_of_file(tree, path):
@@ -104,7 +107,7 @@ def widenings(check_json, root, tree):
 def harvest(check_json, root):
     tree, found = families(root / LIB)
     family_nodes = [(f.names, node) for f in found for node in f.node.walk()]
-    edges = {}
+    edges, forced = {}, set()
     for line in Path(check_json).read_text(encoding='utf-8').splitlines():
         try:
             message = json.loads(line)
@@ -121,14 +124,17 @@ def harvest(check_json, root):
             continue
         workspace = root / 'workspaces/worth-query'
         caller = module_of_file(tree, (workspace / span['file_name']).resolve())
-        if caller is None:
-            continue
         pattern = re.compile(r'\bfn\s+' + match.group(1) + r'\b')
         definers = sorted({names for names, node in family_nodes if pattern.search(node.own_text())})
+        if caller is None:
+            # Moved code calling a method a staying test family defines: that family moves too.
+            if re.match(r'crates/worth-query-(court|testkit)-', span['file_name']):
+                forced.update('::'.join(d) for d in definers)
+            continue
         for definer in definers:
             if caller[:len(definer)] != definer:
                 edges.setdefault('::'.join(caller), set()).add('::'.join(definer))
-    return {k: sorted(v) for k, v in edges.items()}
+    return {k: sorted(v) for k, v in edges.items()}, sorted(forced)
 
 
 def main(argv=None):
@@ -140,15 +146,17 @@ def main(argv=None):
     overrides = json.loads(args.overrides.read_text(encoding='utf-8'))
     merged = {k: set(v) for k, v in overrides.get('compiler_method_edges', {}).items()}
     root = args.root.resolve()
-    for caller, definers in harvest(args.check, root).items():
+    harvested, forced = harvest(args.check, root)
+    for caller, definers in harvested.items():
         merged.setdefault(caller, set()).update(definers)
+    overrides['compiler_forced_families'] = sorted(set(overrides.get('compiler_forced_families', [])) | set(forced))
     overrides['compiler_method_edges'] = {k: sorted(v) for k, v in sorted(merged.items())}
     items, methods, fields = widenings(args.check, root, read_tree(root / LIB))
     for key, found in (('compiler_widen_items', items), ('compiler_widen_methods', methods),
                        ('compiler_widen_fields', fields)):
         overrides[key] = sorted(set(overrides.get(key, [])) | set(found))
     args.overrides.write_text(json.dumps(overrides, indent=2, sort_keys=True) + '\n', encoding='utf-8', newline='\n')
-    print(json.dumps({k: overrides.get(k) for k in ('compiler_method_edges', 'compiler_widen_items',
+    print(json.dumps({k: overrides.get(k) for k in ('compiler_method_edges', 'compiler_forced_families', 'compiler_widen_items',
                                                     'compiler_widen_methods', 'compiler_widen_fields')}, indent=1))
     return 0
 

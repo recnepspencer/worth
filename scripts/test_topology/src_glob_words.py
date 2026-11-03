@@ -18,7 +18,14 @@ def inherited_words(model, names, cache):
             for segments, glob, _alias in use_trees(text):
                 resolved = resolve(segments, child.names, model.index) if glob else None
                 if resolved is not None and resolved[0] == names and not resolved[1]:
-                    cache[names] |= {t.value for t in tokens(text) if t.kind == 'ident'}
+                    stream = tokens(text)
+                    cache[names] |= {t.value for k, t in enumerate(stream)
+                                     if t.kind == 'ident' and not path_tail(stream, k)}
                     cache[names] |= inherited_words(model, child.names, cache)
                     break
     return cache[names]
+
+
+def path_tail(stream, k):
+    """Whether token `k` continues a path (`a::k`): a glob binds only path heads and bare names."""
+    return k >= 2 and stream[k - 1].value == ':' and stream[k - 2].value == ':'

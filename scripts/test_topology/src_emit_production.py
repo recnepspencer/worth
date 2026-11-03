@@ -150,7 +150,8 @@ def apply_edits(text, changes, source=''):
     removals = [(a, b) for a, b, replacement in unique if b > a and (replacement == '' or 'mod ' in replacement)]
     # An edit inside a removed span is moot: the whole span leaves production.
     unique = [(a, b, x) for a, b, x in unique
-              if not any(ra <= a and b <= rb and (ra, rb) != (a, b) for ra, rb in removals)]
+              if not any((ra < a < rb) if a == b else (ra <= a and b <= rb and (ra, rb) != (a, b))
+                         for ra, rb in removals)]
     for (a, b, x), (c, d, y) in zip(unique, unique[1:]):
         if c < b:
             raise ValueError(f'overlapping production edits in {source}: {(a, b, x)!r} {(c, d, y)!r}: '

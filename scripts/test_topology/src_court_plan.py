@@ -33,7 +33,9 @@ def product_aliases(data):
 
 
 def build(lib, repository, baseline, admissions, workspace_manifest, overrides, ceiling=CEILING):
-    model = MoveModel(lib, repository, baseline, admissions)
+    # Test families the moved code calls into by associated path (compiler evidence) move too.
+    evidenced = sorted(overrides.get('compiler_forced_families', []))
+    model = MoveModel(lib, repository, baseline, admissions, evidenced)
     data = metadata(workspace_manifest)
     aliases = product_aliases(data)
     ids = {p['name']: p['id'] for p in data['packages']}
@@ -114,7 +116,7 @@ def build(lib, repository, baseline, admissions, workspace_manifest, overrides, 
                 'kit_products': kit_products}
 
     prepare(model, library_root)
-    forced, excluded = set(), set()
+    forced, excluded = set(evidenced), set()
     method_edges = {tuple(m.split('::')): [tuple(f.split('::')) for f in fs]
                     for m, fs in overrides.get('compiler_method_edges', {}).items()}
     dev = dev_only_aliases(Path(lib).resolve().parent.parent / 'Cargo.toml')
