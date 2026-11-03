@@ -38,7 +38,7 @@ pub(crate) mod publication_request_denial;
 pub(crate) use conditional_operation::classify_bridge_signal;
 pub use conditional_operation::conditional_intent_read_is_active_for_test;
 mod denial;
-mod entity_key;
+pub(crate) mod entity_key;
 pub(crate) mod entity_resolution;
 mod entity_resolution_denial;
 pub(crate) mod exact_basis_access;

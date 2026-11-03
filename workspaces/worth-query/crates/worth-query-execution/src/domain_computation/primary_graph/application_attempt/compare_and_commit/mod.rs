@@ -5,7 +5,7 @@ pub use cleanup_required::{
 };
 
 mod commit_deferred;
-mod commit_outcome;
+pub(crate) mod commit_outcome;
 mod commit_receipt;
 mod committed_publication;
 

@@ -28,7 +28,7 @@
 - `domain_computation::primary_graph::application_output_demand::registry::WorthQueryAcceptedOutputAuthority -> domain_computation::primary_graph::application_output_demand::registry::WorthQueryAcceptedOutputAuthority`
 - `domain_computation::primary_graph::application_query::basis::historical_authority::WorthQueryApplicationHistoricalRead -> domain_computation::primary_graph::application_query::basis::historical_authority::WorthQueryApplicationHistoricalRead`
 
-## item_doors (774)
+## item_doors (777)
 
 - `domain_computation::WorthQueryConverged -> domain_computation::WorthQueryConverged`
 - `domain_computation::WorthQueryIndeterminate -> domain_computation::WorthQueryIndeterminate`
@@ -102,6 +102,9 @@
 - `domain_computation::operation_binding::authority::topology::WorthQueryExecutionResourceTopology -> domain_computation::operation_binding::authority::topology::WorthQueryExecutionResourceTopology`
 - `domain_computation::operation_binding::authority::topology::resource_topology -> domain_computation::operation_binding::authority::topology::resource_topology`
 - `domain_computation::operation_binding::authority::topology::test_topology -> domain_computation::operation_binding::authority::topology::test_topology`
+- `domain_computation::primary_graph::WorthQueryApplicationCommitDenialKind -> domain_computation::primary_graph::application_attempt::compare_and_commit::commit_outcome::denial::WorthQueryApplicationCommitDenialKind`
+- `domain_computation::primary_graph::WorthQueryApplicationCommitOutcome -> domain_computation::primary_graph::application_attempt::compare_and_commit::commit_outcome::WorthQueryApplicationCommitOutcome`
+- `domain_computation::primary_graph::WorthQueryApplicationEntityKey -> domain_computation::primary_graph::entity_key::WorthQueryApplicationEntityKey`
 - `domain_computation::primary_graph::admitted_capture::CaptureStop -> domain_computation::primary_graph::admitted_capture::CaptureStop`
 - `domain_computation::primary_graph::admitted_capture::checkpoint -> domain_computation::primary_graph::admitted_capture::checkpoint`
 - `domain_computation::primary_graph::admitted_capture::retained_stage::run_retained_stage -> domain_computation::primary_graph::admitted_capture::retained_stage::run_retained_stage`

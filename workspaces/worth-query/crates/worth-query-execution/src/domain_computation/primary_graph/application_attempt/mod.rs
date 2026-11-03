@@ -12,7 +12,7 @@ mod capability_revocation_program;
 pub(crate) mod commit_authority_binding;
 mod commit_outcome_identity;
 mod commit_terminal;
-mod compare_and_commit;
+pub(crate) mod compare_and_commit;
 mod delegation_activation_program;
 mod denial;
 pub(crate) mod dependency_identity;
