@@ -8,9 +8,9 @@
 //! read that window through the ordinary application entry: a held read or a
 //! held receipt keeps its commit selectable across many publications,
 //! releasing it lets that history go, and inspection of a retired commit fails
-//! closed. Replay answers from the commit's completed evidence, which outlives
+//! closed. Replay reads the original owner artifacts, which outlive
 //! its history and holds none of it, so a retired commit's replay still
-//! returns its receipt and never runs the request again.
+//! returns recorded meaning and never runs the request again.
 
 pub use worth_query_host::facade::application_entry::{
     WorthQueryApplicationHistorySelectionDenial, WorthQueryApplicationMutationOutcome,
@@ -18,6 +18,7 @@ pub use worth_query_host::facade::application_entry::{
 };
 pub use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationCommitReceipt, WorthQueryPrimaryGraphApplicationRuntime,
+    WorthQueryRecoveredApplicationCommitReceipt,
 };
 pub use worth_query_host::facade::product::WorthQueryProductBranch;
 
@@ -107,26 +108,25 @@ pub fn read_at_commit(
         .expect("installed host call opens")
 }
 
-pub fn selectable(
+/// Observe the real retained World history without turning recorded data into a selector.
+pub fn recorded_is_retained(
     runtime: &Runtime,
     branch: WorthQueryProductBranch,
-    receipt: &WorthQueryApplicationCommitReceipt,
+    receipt: &WorthQueryRecoveredApplicationCommitReceipt,
 ) -> bool {
-    let scope = request_scope();
-    let principal = authenticate_operator(runtime.installed_schema(), &scope);
-    match runtime
-        .with_host_advancement(|host_phase| {
-            runtime
-                .request(&principal, &scope)
-                .on_branch(branch)
-                .at_commit(&host_phase, receipt, None)
-        })
-        .expect("installed host call opens")
-    {
-        Ok(_) => true,
-        Err(WorthQueryApplicationHistorySelectionDenial::CommitUnavailable) => false,
-        Err(other) => panic!("history selection is only ever unavailable here: {other:?}"),
-    }
+    let head = receipt
+        .new_product_head()
+        .memory()
+        .expect("explicit memory World fixture");
+    let history = runtime
+        .with_host_advancement(|phase| runtime.branches().history(&phase, branch, None))
+        .expect("fresh installed history authority")
+        .expect("the live branch exposes actual history");
+    history.entries().any(|entry| {
+        let commit = entry.selected_commit();
+        assert_eq!(commit.owner_identity().get(), head.owner());
+        commit.ordinal() == head.selected_commit()
+    })
 }
 
 pub fn replay(
@@ -134,9 +134,9 @@ pub fn replay(
     branch: WorthQueryProductBranch,
     retention: u64,
     key: u64,
-) -> WorthQueryApplicationCommitReceipt {
+) -> WorthQueryRecoveredApplicationCommitReceipt {
     match set_retention(host, branch, retention, key).expect("the replay settles") {
-        WorthQueryApplicationMutationOutcome::AlreadyCommitted(receipt) => receipt,
+        WorthQueryApplicationMutationOutcome::RecoveredCommitted(receipt) => receipt,
         other => panic!("a committed key answers its replay: {other:?}"),
     }
 }

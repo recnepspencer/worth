@@ -66,7 +66,7 @@ fn lost_reply_bounded_retry_reads_original_commit_despite_new_current_truth() {
     assert_eq!(historical.rows()[0].retention_days, 18);
     assert!(matches!(
         completed.evidence(),
-        WorthQuerySourceCompletion::Recovered {
+        WorthQuerySourceCompletion::Recorded {
             publication: None,
             ..
         }
