@@ -78,7 +78,9 @@ fn concurrent_program_transfers_cannot_overspend_one_account() {
                     assert!(terminal.close(&request).is_ok());
                     Err(denial)
                 }
-                _ => panic!("unexpected transfer custody"),
+                worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Refused { denial, .. } => panic!("unexpected transfer refusal: {denial:?}"),
+                worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Progress(operation) => panic!("unexpected transfer progress: {:?}", operation.posture()),
+                worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Terminal(_) => panic!("unexpected terminal transfer custody"),
             }
         })
     };

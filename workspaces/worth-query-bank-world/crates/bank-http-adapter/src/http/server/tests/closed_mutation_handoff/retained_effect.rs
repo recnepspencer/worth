@@ -140,12 +140,13 @@ async fn abandoned_http_close_handoff_preserves_original_dispatch_and_recovery()
             .await,
         DeathNoticeStatus::NotificationRequested
     );
-    assert!(matches!(
-        continuation
-            .execute(decode(command("retained-first-send", "close", 5)))
-            .await,
-        Outcome::Recorded { .. }
-    ));
+    let closed = continuation
+        .execute(decode(command("retained-first-send", "close", 5)))
+        .await;
+    assert!(
+        matches!(closed, Outcome::Recorded { .. }),
+        "actual close outcome: {closed:?}"
+    );
     assert!(
         matches!(continuation.execute(decode(create("before-handoff", 17))).await, Outcome::Rejected { denial, .. } if denial.kind == BankHttpDenialKind::Saturated)
     );
