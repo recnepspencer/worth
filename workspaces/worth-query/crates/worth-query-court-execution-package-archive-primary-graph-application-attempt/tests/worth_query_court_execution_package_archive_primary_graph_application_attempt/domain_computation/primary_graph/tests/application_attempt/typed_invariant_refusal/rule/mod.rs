@@ -25,7 +25,7 @@ pub struct Refusal {
     pub rule: u64,
     pub observed: String,
 }
-worth_query_declaration::worth_query_value_binding!(pub(super) RefusalBinding for Refusal {
+worth_query_declaration::worth_query_value_binding!(pub RefusalBinding for Refusal {
     identity: "tests.account-refusal.v1", scalar: String,
     canonical: ValueDecodeBounds::new(128, 128, 4, 4),
 });
