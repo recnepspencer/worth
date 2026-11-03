@@ -3,6 +3,7 @@ pub use std::sync::Arc;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::projection::retained_projection::body::OriginalProjection;
 pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationOneShotDenial;
 pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationOneShotDenialKind;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::projection::retained_projection::body;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::projection::retained_projection::retain;
 pub use crate::domain_computation::primary_graph::application_query::projection::retained_projection::tests;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;

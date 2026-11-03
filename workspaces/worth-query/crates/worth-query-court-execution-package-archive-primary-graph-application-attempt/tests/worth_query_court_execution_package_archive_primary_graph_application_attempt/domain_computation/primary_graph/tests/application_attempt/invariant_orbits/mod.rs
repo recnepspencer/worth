@@ -5,6 +5,7 @@ pub use worth_query_testkit_execution_primary_graph_application_attempt_2::domai
 pub use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::exact_violation;
 
 pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitOutcome;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::root;
 pub use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::schema::Node;
 pub use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::schema::OrbitSchema;
 pub use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::world::World;

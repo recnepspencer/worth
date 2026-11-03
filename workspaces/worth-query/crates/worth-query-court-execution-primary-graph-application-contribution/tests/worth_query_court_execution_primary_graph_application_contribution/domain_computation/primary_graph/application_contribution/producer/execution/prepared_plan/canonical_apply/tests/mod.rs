@@ -6,7 +6,9 @@ pub use worth_query_execution::court_doors_for_test::domain_computation::primary
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::computation::prepared_request::PreparedCompute;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::QueryRequestExecution;
 pub use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::execution::denial;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::execution::denial::failed;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::execution::outcome;
 pub use std::cell::Cell;
 pub use std::cell::RefCell;
 pub use std::rc::Rc;

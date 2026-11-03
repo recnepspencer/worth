@@ -16,6 +16,14 @@ pub use worth_query_execution::court_doors_for_test::domain_computation::primary
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::WorthQueryApplicationOutputLineage;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::WorthQueryCurrentOutputFamilyResolution;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::WorthQueryPriorOutputBindingResolution;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::denial;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::native_output_witness;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::native_prior_checkpoint;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::required_publication;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::retained_computation;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::settlement_identity;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::source_facts;
 pub use crate::domain_computation::primary_graph::output_lineage::tests::checkpoint_identity;
 pub use crate::domain_computation::primary_graph::output_lineage::tests::source_facts;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::prior_absence::PriorAbsence;

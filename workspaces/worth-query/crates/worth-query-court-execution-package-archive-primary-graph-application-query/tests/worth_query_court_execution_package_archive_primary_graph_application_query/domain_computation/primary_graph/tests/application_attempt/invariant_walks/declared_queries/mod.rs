@@ -20,6 +20,8 @@ pub use worth_query_execution::facade::application_invariants::WorthQueryInvaria
 pub use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandDenialKind;
 pub use worth_query_execution::facade::domain_computation::WorthQueryPrincipalResolutionMode;
 pub use worth_query_execution::facade::domain_computation::WorthQueryProductQueryControls;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::root;
 pub use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::tests::application_attempt::invariant_walks::declared_queries::declarations::*;
 
 #[path = "currentness/mod.rs"]

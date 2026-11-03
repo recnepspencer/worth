@@ -37,6 +37,11 @@ pub use worth_query_execution::court_doors_for_test::domain_computation::primary
 pub use worth_query_execution::facade::domain_computation::WorthQueryObservedSource;
 pub use worth_query_execution::facade::domain_computation::WorthQueryPrincipalResolutionMode;
 pub use worth_query_execution::facade::domain_computation::WorthQueryProductQueryControls;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::component_selection;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::denial;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::facade;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::root;
 pub use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::declared_queries::declarations::*;
 #[test]
 fn complete_declared_orbit_keeps_anchor_order_identity_and_original_result_custody() {

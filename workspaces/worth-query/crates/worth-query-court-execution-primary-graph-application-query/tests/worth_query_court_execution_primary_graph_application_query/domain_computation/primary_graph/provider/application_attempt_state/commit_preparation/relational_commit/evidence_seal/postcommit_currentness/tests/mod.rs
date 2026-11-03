@@ -23,6 +23,7 @@ pub use worth_query_execution::facade::application_inspection::RebaseVerificatio
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::RebasedSourceFacts;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::rebase;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::selected;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::movement::FactMovement;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::movement::Movement;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::source_currentness::WorthQuerySourceCurrentnessFailure;

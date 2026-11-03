@@ -28,7 +28,7 @@
 - `domain_computation::primary_graph::application_output_demand::registry::WorthQueryAcceptedOutputAuthority -> domain_computation::primary_graph::application_output_demand::registry::WorthQueryAcceptedOutputAuthority`
 - `domain_computation::primary_graph::application_query::basis::historical_authority::WorthQueryApplicationHistoricalRead -> domain_computation::primary_graph::application_query::basis::historical_authority::WorthQueryApplicationHistoricalRead`
 
-## item_doors (777)
+## item_doors (785)
 
 - `domain_computation::WorthQueryConverged -> domain_computation::WorthQueryConverged`
 - `domain_computation::WorthQueryIndeterminate -> domain_computation::WorthQueryIndeterminate`
@@ -92,6 +92,12 @@
 - `domain_computation::execution_runtime::product_world::relational_publication::delivery::preserve_delivery_authority -> domain_computation::execution_runtime::product_world::relational_publication::delivery::preserve_delivery_authority`
 - `domain_computation::execution_runtime::product_world::request_control::WorthQueryPreparedProductPublication -> domain_computation::execution_runtime::product_world::request_control::WorthQueryPreparedProductPublication`
 - `domain_computation::execution_runtime::product_world::resources::test_product_world_resources -> domain_computation::execution_runtime::product_world::resources::test_product_world_resources`
+- `domain_computation::managed_run::readmission::WorthQueryWorkflowReadmissionCleanupInspection -> domain_computation::managed_run::readmission::WorthQueryWorkflowReadmissionCleanupInspection`
+- `domain_computation::managed_run::readmission::WorthQueryWorkflowReadmissionCleanupOutcome -> domain_computation::managed_run::readmission::WorthQueryWorkflowReadmissionCleanupOutcome`
+- `domain_computation::managed_run::readmission::WorthQueryWorkflowReadmissionCleanupPending -> domain_computation::managed_run::readmission::WorthQueryWorkflowReadmissionCleanupPending`
+- `domain_computation::managed_run::readmission::WorthQueryWorkflowReadmissionCleanupPendingInspection -> domain_computation::managed_run::readmission::WorthQueryWorkflowReadmissionCleanupPendingInspection`
+- `domain_computation::managed_run::readmission::WorthQueryWorkflowReadmissionCleanupReceipt -> domain_computation::managed_run::readmission::WorthQueryWorkflowReadmissionCleanupReceipt`
+- `domain_computation::managed_run::readmission::WorthQueryWorkflowReadmissionCleanupRequired -> domain_computation::managed_run::readmission::WorthQueryWorkflowReadmissionCleanupRequired`
 - `domain_computation::managed_run::readmission::direct_lane::preflight::preparation::prepare_direct_provider_restore -> domain_computation::managed_run::readmission::direct_lane::preflight::preparation::prepare_direct_provider_restore`
 - `domain_computation::managed_run::readmission::direct_lane::preflight::preparation::progression::restore_direct -> domain_computation::managed_run::readmission::direct_lane::preflight::preparation::progression::restore_direct`
 - `domain_computation::managed_run::recovery_registry::WorthQueryRecoveryHandleRegistry -> domain_computation::managed_run::recovery_registry::WorthQueryRecoveryHandleRegistry`
@@ -354,6 +360,8 @@
 - `domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement -> domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement`
 - `domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_bootstrap_advancement -> domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_bootstrap_advancement`
 - `domain_computation::primary_graph::application_contribution::request_execution::test_placement::FixturePlacement -> domain_computation::primary_graph::application_contribution::request_execution::test_placement::FixturePlacement`
+- `domain_computation::primary_graph::application_contribution::request_execution::test_placement::PLACEMENT -> domain_computation::primary_graph::application_contribution::request_execution::test_placement::PLACEMENT`
+- `domain_computation::primary_graph::application_contribution::request_execution::test_placement::REQUEST_BUDGET -> domain_computation::primary_graph::application_contribution::request_execution::test_placement::REQUEST_BUDGET`
 - `domain_computation::primary_graph::application_contribution::request_execution::test_placement::certification_failure -> domain_computation::primary_graph::application_contribution::request_execution::test_placement::certification_failure`
 - `domain_computation::primary_graph::application_contribution::request_execution::test_placement::certify -> domain_computation::primary_graph::application_contribution::request_execution::test_placement::certify`
 - `domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy -> domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy`
@@ -808,13 +816,15 @@
 - `execution_digest::test_hash_parts_domains_since -> execution_digest::test_hash_parts_domains_since`
 - `relational_snapshot_release::release_query_snapshot -> relational_snapshot_release::release_query_snapshot`
 
-## unresolved (8)
+## unresolved (10)
 
 - `domain_computation::WorthQueryConverged`
 - `domain_computation::WorthQueryIndeterminate`
 - `domain_computation::WorthQueryOscillating`
 - `domain_computation::WorthQueryStableWithoutProof`
 - `domain_computation::application_aftermath::recovery_progression::binding_axis::WorthQueryRecoveryBindingCurrentTruth`
+- `domain_computation::primary_graph::application_contribution::request_execution::test_placement::PLACEMENT`
+- `domain_computation::primary_graph::application_contribution::request_execution::test_placement::REQUEST_BUDGET`
 - `domain_computation::primary_graph::application_invariant::WorthQueryEmptyInvariantRefusal`
 - `domain_computation::primary_graph::causal_inspection::identity::CausalInspectionOutcomeIdentity`
 - `domain_computation::primary_graph::causal_inspection::observation_identity::CausalObservationAnchorDigest`
