@@ -3,6 +3,7 @@
     "domain_computation::primary_graph::tests::inbound_admission::fixture::cost": ""
   },
   "compiler_forced_families": [
+    "domain_computation::primary_graph::application_contribution::computation::tests",
     "domain_computation::primary_graph::application_query::observed_source::source_identity::membership::tests",
     "domain_computation::primary_graph::output_lineage::input_reuse_key::tests"
   ],
