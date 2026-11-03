@@ -1309,6 +1309,7 @@ dependencies = [
  "worth-query-testkit-certification-canonical",
  "worth-query-testkit-certification-operation",
  "worth-query-testkit-document-retention",
+ "worth-query-testkit-host",
  "worth-relational",
 ]
 
