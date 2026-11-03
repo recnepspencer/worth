@@ -12,14 +12,14 @@ use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphCo
 use crate::domain_computation::primary_graph::schema_layout::WorthQueryProviderIdempotencyLayout;
 
 mod lookup_key;
-mod product_affinity;
+pub mod product_affinity;
 pub(in crate::domain_computation::primary_graph) use lookup_key::WorthQueryIdempotencyLookupKey;
 pub(in crate::domain_computation::primary_graph) use product_affinity::WorthQueryProductIdempotencyAffinity;
-mod snapshot_resolution;
+pub mod snapshot_resolution;
 use snapshot_resolution::resolve_at_snapshot;
 
 #[derive(Debug)]
-pub(in crate::domain_computation::primary_graph) enum WorthQueryProviderIdempotencyResolution {
+pub enum WorthQueryProviderIdempotencyResolution {
     Absent,
     Equivalent(WorthQueryPrimaryGraphCommittedApplication),
     Drift,
@@ -37,8 +37,7 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryProviderGuardedW
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum WorthQueryProviderIdempotencyResolutionDenial
-{
+pub enum WorthQueryProviderIdempotencyResolutionDenial {
     ActiveSnapshotCapacityExhausted {
         maximum_active_snapshots: usize,
     },
@@ -68,7 +67,7 @@ impl From<&'static str> for WorthQueryProviderIdempotencyResolutionDenial {
     }
 }
 
-pub(super) fn idempotency_create_intent(
+pub fn idempotency_create_intent(
     layout: &WorthQueryProviderIdempotencyLayout,
     binding: WorthQueryApplicationIdempotencyBinding,
     outcome_identity: WorthQueryApplicationCommitOutcomeIdentity,

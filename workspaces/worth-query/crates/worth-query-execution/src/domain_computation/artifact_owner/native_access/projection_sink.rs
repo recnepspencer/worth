@@ -7,12 +7,12 @@ use super::WorthQueryArtifactProviderAccessDenial;
 pub struct WorthQueryArtifactProjectionSink {
     fields: Vec<AspectContract>,
     max_rows: usize,
-    values: Vec<AspectValue>,
-    pending_row: Vec<AspectValue>,
+    pub values: Vec<AspectValue>,
+    pub pending_row: Vec<AspectValue>,
 }
 
 impl WorthQueryArtifactProjectionSink {
-    pub(crate) fn new(
+    pub fn new(
         fields: Vec<AspectContract>,
         max_rows: usize,
         required_alignment: WorthQueryArtifactNativeAlignment,
@@ -99,6 +99,3 @@ impl WorthQueryArtifactProjectionSink {
             && (self.pending_row.as_ptr() as usize).is_multiple_of(bytes)
     }
 }
-
-#[cfg(test)]
-mod tests;

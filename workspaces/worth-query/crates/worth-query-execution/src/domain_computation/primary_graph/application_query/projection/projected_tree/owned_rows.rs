@@ -5,7 +5,7 @@ use worth_execution::ExecutionRequest;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
 
 #[derive(Default)]
-pub(in crate::domain_computation::primary_graph::application_query) struct OwnedProjectionRows {
+pub struct OwnedProjectionRows {
     rows: Vec<WorthQueryApplicationProjectionNode>,
     managed: Option<ManagedProjectionStorage>,
 }
@@ -14,7 +14,7 @@ struct ManagedProjectionStorage {
     payload_bytes: usize,
     _allocation: Arc<SourceFactsAllocation>,
 }
-pub(in crate::domain_computation::primary_graph::application_query) struct ProjectionDisposal {
+pub struct ProjectionDisposal {
     stack: Vec<DropFrame>,
 }
 struct DropFrame {
@@ -30,7 +30,7 @@ impl OwnedProjectionRows {
             managed: None,
         }
     }
-    pub(in crate::domain_computation::primary_graph::application_query) fn managed(
+    pub fn managed(
         rows: Vec<WorthQueryApplicationProjectionNode>,
         disposal: ProjectionDisposal,
         payload_bytes: usize,
@@ -74,7 +74,7 @@ impl Drop for OwnedProjectionRows {
     }
 }
 impl ProjectionDisposal {
-    pub(in crate::domain_computation::primary_graph::application_query) fn admitted(
+    pub fn admitted(
         execution: &ExecutionRequest<'_, '_>,
         allocation: &SourceFactsAllocation,
         maximum_depth: usize,

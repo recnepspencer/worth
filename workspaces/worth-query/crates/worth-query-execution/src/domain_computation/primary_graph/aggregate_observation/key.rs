@@ -33,7 +33,7 @@ impl AggregateKey {
     ) -> worth_relational::facade::runtime::PinnedAggregateReadScope<'static> {
         self.selection.scope(self.member)
     }
-    pub(in crate::domain_computation::primary_graph) fn member(&self) -> EntityId {
+    pub fn member(&self) -> EntityId {
         self.member
     }
     pub(in crate::domain_computation::primary_graph) fn write_locator(

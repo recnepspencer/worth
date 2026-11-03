@@ -86,8 +86,7 @@ pub(super) struct PreparedObservedInspection<'original> {
 }
 
 impl CompletedInspection {
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph::causal_inspection::application_inspection) fn assert_completion_facts(
+    pub fn assert_completion_facts(
         &mut self,
         other: &mut Self,
         execution: &ExecutionRequest<'_, '_>,

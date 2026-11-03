@@ -10,7 +10,7 @@ mod visit;
 pub(in super::super) use visit::ClosedRowNote;
 pub(in super::super) use visit::QueuedClosedRow;
 
-pub(in super::super) struct ClosedCleanupLinks(Arc<ClosedNoteBacking>);
+pub struct ClosedCleanupLinks(Arc<ClosedNoteBacking>);
 pub(in super::super) struct ClosedNoteBacking {
     pub(in super::super) claim_owner: super::super::claim_readthrough::OwnerState,
     pub(in super::super) claimants:
@@ -43,11 +43,10 @@ impl ClosedCleanupLinks {
         self.queued()
             .then(|| QueuedClosedRow::new(Arc::clone(&self.0)))
     }
-    pub(in super::super) fn queued(&self) -> bool {
+    pub fn queued(&self) -> bool {
         self.0.closed_note.lock().unwrap().queued
     }
 }
-#[cfg(test)]
 impl Default for ClosedCleanupLinks {
     fn default() -> Self {
         Self(Arc::new(ClosedNoteBacking {
@@ -62,7 +61,6 @@ impl Default for ClosedCleanupLinks {
 enum ClosedNoteKey {
     // Keeping the original owner keeps its key-allocation credit alive too.
     Native(Arc<super::super::required_work::RequiredWorkMembership>),
-    #[cfg(test)]
     Fixture(Arc<WorthQueryOutputDemandKey>),
 }
 impl ClosedNoteBacking {
@@ -75,7 +73,6 @@ impl ClosedNoteBacking {
             .expect("noted key was admitted")
         {
             ClosedNoteKey::Native(member) => Arc::clone(member.key_arc()),
-            #[cfg(test)]
             ClosedNoteKey::Fixture(key) => Arc::clone(key),
         }
     }
@@ -97,12 +94,10 @@ struct ClosedOrder {
     len: usize,
 }
 impl ClosedCleanupQueue {
-    #[cfg(test)]
-    pub(in super::super) fn len(&self) -> usize {
+    pub fn len(&self) -> usize {
         self.0.lock().unwrap().len
     }
-    #[cfg(test)]
-    pub(in super::super) fn head(&self) -> Option<Arc<WorthQueryOutputDemandKey>> {
+    pub fn head(&self) -> Option<Arc<WorthQueryOutputDemandKey>> {
         self.front().map(|note| note.key())
     }
     pub(in super::super) fn front(&self) -> Option<QueuedClosedRow> {
@@ -116,7 +111,6 @@ impl ClosedCleanupQueue {
     pub(in super::super) fn bind(&self, key: &WorthQueryOutputDemandKey, row: &DemandRecord) {
         let node = &row.closed_cleanup.0;
         *node.order.lock().unwrap() = Arc::downgrade(&self.0);
-        #[cfg(test)]
         if node.key.lock().unwrap().is_none() {
             *node.key.lock().unwrap() = Some(ClosedNoteKey::Fixture(Arc::new(key.clone())));
         }
@@ -137,8 +131,7 @@ impl ClosedCleanupQueue {
     fn unlink(&self, node: &Arc<ClosedNoteBacking>) {
         self.0.lock().unwrap().unlink(node);
     }
-    #[cfg(test)]
-    pub(in super::super) fn valid_order(&self) -> bool {
+    pub fn valid_order(&self) -> bool {
         self.0.lock().unwrap().valid_order()
     }
 }
@@ -182,12 +175,11 @@ impl ClosedOrder {
         }
         self.len -= 1;
     }
-    #[cfg(test)]
     #[expect(
         clippy::disallowed_methods,
         reason = "Addresses serve live allocation lookup and custody; canonical order uses declared identity"
     )]
-    pub(in super::super) fn valid_order(&self) -> bool {
+    pub fn valid_order(&self) -> bool {
         let mut node = self.first.clone();
         let mut previous = None;
         let mut count = 0;
@@ -214,16 +206,12 @@ impl Drop for ClosedOrder {
     }
 }
 impl DemandRegistryState {
-    #[cfg(test)]
-    pub(in super::super) fn note_closed_row(&mut self, key: &WorthQueryOutputDemandKey) {
+    pub fn note_closed_row(&mut self, key: &WorthQueryOutputDemandKey) {
         // Fixture issuer only: production notes come exclusively from the transition.
         let node = self.records[key].closed_cleanup.node();
         self.closed_cleanup.enqueue(node);
     }
-    pub(in super::super) fn remove_record(
-        &mut self,
-        key: &WorthQueryOutputDemandKey,
-    ) -> Option<DemandRecord> {
+    pub fn remove_record(&mut self, key: &WorthQueryOutputDemandKey) -> Option<DemandRecord> {
         let row = self.records.remove(key)?;
         if matches!(
             row.idle_disposition(false),

@@ -11,14 +11,13 @@ use worth_query_installation::facade::OperationReads;
 #[path = "resolution/candidate_verification.rs"]
 mod candidate_verification;
 #[path = "resolution/cardinality.rs"]
-mod cardinality;
+pub mod cardinality;
 mod current_identity;
 #[path = "resolution/decision_plan_denial.rs"]
 mod decision_plan_denial;
 #[path = "resolution/source_liveness.rs"]
 mod source_liveness;
-#[cfg(test)]
-mod tests;
+
 mod verification_denial;
 use cardinality::classify_current_entities;
 use cardinality::CurrentOutputCardinality;

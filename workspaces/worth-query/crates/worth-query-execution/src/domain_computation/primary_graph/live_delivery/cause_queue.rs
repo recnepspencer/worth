@@ -112,7 +112,7 @@ impl<Payload> WorthQueryLiveCauseQueue<Payload> {
 }
 
 impl<Payload: 'static> WorthQueryLiveCauseQueue<Payload> {
-    pub(in crate::domain_computation::primary_graph) fn fill<Schema, Effect>(
+    pub fn fill<Schema, Effect>(
         &mut self,
         source: &WorthQueryLiveDeliverySource,
         basis: &mut WorthQueryManagedLowerExecutionBasis,

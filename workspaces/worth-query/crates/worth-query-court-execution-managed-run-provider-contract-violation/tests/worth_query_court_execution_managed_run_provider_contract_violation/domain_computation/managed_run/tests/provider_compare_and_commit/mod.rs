@@ -1,0 +1,237 @@
+use std::sync::Arc;
+use std::sync::Mutex;
+
+use worth_query_installation::facade::WorthQueryInstalledInvariantExecutionRequirement;
+use worth_query_installation::facade::WorthQueryInvariantEnforcement;
+
+use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::managed_run::tests::invariant_execution::locator;
+use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::managed_run::tests::invariant_execution::requirement;
+use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::managed_run::tests::invariant_execution_fixture::invariant_run;
+use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::managed_run::tests::provisional_attempt_fixture::cleanup;
+use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::managed_run::tests::provisional_attempt_fixture::effect_step;
+use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::managed_run::tests::provisional_attempt_fixture::staged_with_fresh_read_set;
+use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::managed_run::tests::provisional_attempt_fixture::ProvisionalProviderState;
+use worth_query_execution::facade::domain_computation::WorthQueryInvariantReceipt;
+use worth_query_execution::facade::domain_computation::WorthQueryProviderCommitAdmissionDenial;
+use worth_query_execution::facade::domain_computation::WorthQueryProviderCompareAndCommitOutcome;
+use worth_query_execution::facade::domain_computation::WorthQueryProvisionalEffectAction;
+
+#[test]
+fn exact_invariant_progression_is_consumed_by_provider_commit() {
+    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
+        let phase = &active_phase;
+        let execution = phase;
+
+        let state = provider_state();
+        let requirements = blocking_requirements();
+        let (mut running, graph) =
+            invariant_run(Arc::clone(&state), requirements, resource_request);
+        let inspection = proposed_inspection(execution, &mut running, &graph);
+        let receipt = execute_installed_invariant(&inspection);
+        let progression = inspection
+            .admit_invariant_progression([receipt])
+            .expect("exact installed invariant must admit progression");
+        let candidate = match inspection.bind_invariant_progression(progression) {
+            Ok(candidate) => candidate,
+            Err(_) => panic!("progression must bind to its exact proposed state"),
+        };
+
+        let outcome = candidate.compare_and_commit(
+            &phase.borrowed_request_for_test(),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        );
+        let WorthQueryProviderCompareAndCommitOutcome::Committed(committed) = outcome else {
+            panic!("fresh invariant-approved state must commit")
+        };
+        assert_eq!(
+            committed.provider_description().as_str(),
+            "provisional commit completed"
+        );
+        assert_eq!(
+            state.lock().unwrap().authoritative.get("base").unwrap(),
+            "replaced"
+        );
+        cleanup(running);
+    });
+}
+
+#[test]
+fn identical_provider_text_cannot_substitute_for_terminal_owner_binding() {
+    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
+        let phase = &active_phase;
+        let execution = phase;
+
+        let first = committed_provider_session(execution, resource_request);
+        let second = committed_provider_session(execution, resource_request);
+
+        assert_eq!(first.provider_description(), second.provider_description());
+        assert!(
+            !first
+                .terminal_binding()
+                .same_session(second.terminal_binding()),
+            "equal provider-authored descriptions must not identify a terminal owner"
+        );
+    });
+}
+
+#[test]
+fn relevant_drift_stales_before_provider_commit() {
+    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
+        let phase = &active_phase;
+        let execution = phase;
+
+        let state = provider_state();
+        let (mut running, graph) = invariant_run(
+            Arc::clone(&state),
+            blocking_requirements(),
+            resource_request,
+        );
+        let inspection = proposed_inspection(execution, &mut running, &graph);
+        let receipt = execute_installed_invariant(&inspection);
+        let progression = inspection.admit_invariant_progression([receipt]).unwrap();
+        let candidate = match inspection.bind_invariant_progression(progression) {
+            Ok(candidate) => candidate,
+            Err(_) => panic!("exact progression must bind"),
+        };
+        state.lock().unwrap().decision_version = Some("base-v2".to_owned());
+
+        let outcome = candidate.compare_and_commit(
+            &phase.borrowed_request_for_test(),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        );
+        let WorthQueryProviderCompareAndCommitOutcome::Stale(stale) = outcome else {
+            panic!("changed decision evidence must stale")
+        };
+        assert_eq!(stale.stale_fact_count(), 9);
+        assert_eq!(
+            state.lock().unwrap().authoritative.get("base").unwrap(),
+            "base-value"
+        );
+        cleanup(running);
+    });
+}
+
+#[test]
+fn equivalent_proposal_from_another_session_rejects_foreign_progression() {
+    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
+        let phase = &active_phase;
+        let execution = phase;
+
+        let first_state = provider_state();
+        let (mut first_run, first_graph) = invariant_run(
+            Arc::clone(&first_state),
+            blocking_requirements(),
+            resource_request,
+        );
+        let first = proposed_inspection(execution, &mut first_run, &first_graph);
+        let receipt = execute_installed_invariant(&first);
+        let progression = first.admit_invariant_progression([receipt]).unwrap();
+        first.discard();
+        cleanup(first_run);
+
+        let second_state = provider_state();
+        let (mut second_run, second_graph) = invariant_run(
+            Arc::clone(&second_state),
+            blocking_requirements(),
+            resource_request,
+        );
+        let second = proposed_inspection(execution, &mut second_run, &second_graph);
+        let (denial, second) = match second.bind_invariant_progression(progression) {
+            Ok(_) => panic!("equivalent state from another session needs its own progression"),
+            Err(denial) => denial,
+        };
+        assert_eq!(
+            denial,
+            WorthQueryProviderCommitAdmissionDenial::ForeignInvariantProgression
+        );
+        second.discard();
+        cleanup(second_run);
+    });
+}
+
+pub fn proposed_inspection<'run>(
+    execution: &'run worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+
+    running: &'run mut worth_query_execution::facade::domain_computation::WorthQueryRunningDirectRun,
+    graph: &worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
+) -> worth_query_execution::facade::domain_computation::WorthQueryProposedStateInspection<'run> {
+    let (staged, fresh) = staged_with_fresh_read_set(execution, running, graph);
+    let program = staged
+        .effect_authority()
+        .lower_provisional_program(
+            &fresh,
+            [effect_step(WorthQueryProvisionalEffectAction::Replace {
+                target_identity: "base".into(),
+            })],
+        )
+        .unwrap();
+    staged
+        .begin_provisional_attempt(fresh, program)
+        .unwrap()
+        .materialize_proposed_state()
+        .inspect()
+}
+
+pub fn execute_installed_invariant(
+    inspection: &worth_query_execution::facade::domain_computation::WorthQueryProposedStateInspection<'_>,
+) -> WorthQueryInvariantReceipt {
+    inspection
+        .select_installed_invariant("closed-loop")
+        .unwrap()
+        .admit_state_load_plan([locator("base")], None)
+        .unwrap()
+        .execute()
+        .unwrap()
+}
+
+pub fn blocking_requirements() -> Vec<WorthQueryInstalledInvariantExecutionRequirement> {
+    vec![requirement(
+        "closed-loop",
+        WorthQueryInvariantEnforcement::Blocking,
+        4,
+    )]
+}
+
+pub fn provider_state() -> Arc<Mutex<ProvisionalProviderState>> {
+    worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::managed_run::tests::invariant_execution::state()
+}
+
+pub fn committed_provider_session(
+    execution: &worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
+) -> worth_query_execution::facade::domain_computation::WorthQueryCommittedProviderSession {
+    let state = provider_state();
+    let (mut running, graph) = invariant_run(
+        Arc::clone(&state),
+        blocking_requirements(),
+        resource_request,
+    );
+    let inspection = proposed_inspection(execution, &mut running, &graph);
+    let receipt = execute_installed_invariant(&inspection);
+    let progression = inspection.admit_invariant_progression([receipt]).unwrap();
+    let candidate = inspection
+        .bind_invariant_progression(progression)
+        .unwrap_or_else(|_| panic!("exact progression must bind"));
+    let WorthQueryProviderCompareAndCommitOutcome::Committed(committed) = candidate
+        .compare_and_commit(
+            &resource_request,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+    else {
+        panic!("fresh invariant-approved state must commit")
+    };
+    cleanup(running);
+    committed
+}

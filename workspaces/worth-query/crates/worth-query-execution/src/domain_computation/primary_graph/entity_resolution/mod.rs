@@ -4,15 +4,52 @@ use crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalK
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as NativeReadStop;
 mod admitted_scope;
 mod freshness;
-#[cfg(test)]
-pub(in crate::domain_computation::primary_graph) mod interruption_control;
+pub mod interruption_control {
+    use std::{
+        cell::{Cell, RefCell},
+        rc::Rc,
+    };
+    use worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource;
+    thread_local! { pub static PENDING: RefCell<Option<Pending>> = const { RefCell::new(None) }; }
+    pub enum Action {
+        Cancel(WorthQueryCancellationSource),
+        Deadline(std::time::Instant),
+    }
+    pub struct Pending {
+        pub action: Action,
+        pub remaining: usize,
+        pub triggered: Rc<Cell<bool>>,
+    }
+    pub fn cancel_before_lookup_for_test() {
+        let pending = PENDING.with(|slot| {
+            let mut slot = slot.borrow_mut();
+            let pending = slot.as_mut()?;
+            if pending.remaining > 0 {
+                pending.remaining -= 1;
+                return None;
+            }
+            slot.take()
+        });
+        if let Some(pending) = pending {
+            pending.triggered.set(true);
+            match pending.action {
+                Action::Cancel(source) => source.cancel(),
+                Action::Deadline(deadline) => {
+                    // Reach the caller's actual deadline; no elapsed-time assertion.
+                    std::thread::sleep(
+                        deadline.saturating_duration_since(std::time::Instant::now()),
+                    );
+                }
+            }
+        }
+    }
+}
+
 mod product;
 pub(in crate::domain_computation) use product::WorthQueryIssuedSelectedScope;
 mod resolved;
 mod retained_selector;
 pub(in crate::domain_computation) use retained_selector::WorthQueryObservedScopeSelector;
-#[cfg(test)]
-mod tests;
 
 pub use resolved::WorthQueryApplicationEntityIdentity;
 use resolved::WorthQueryEntityResolutionSubject;
@@ -54,9 +91,7 @@ pub(in crate::domain_computation) struct WorthQueryEntityResolutionTruth<'truth>
 }
 
 impl WorthQueryPrimaryGraph {
-    pub(in crate::domain_computation) fn retain_entity_resolution_context(
-        &self,
-    ) -> WorthQueryInstalledEntityResolutionContext {
+    pub fn retain_entity_resolution_context(&self) -> WorthQueryInstalledEntityResolutionContext {
         WorthQueryInstalledEntityResolutionContext {
             runtime_authority: self.runtime_authority(),
             relational_runtime_instance_id: self.relational_runtime_instance_id(),
@@ -67,7 +102,7 @@ impl WorthQueryPrimaryGraph {
 }
 
 impl WorthQueryInstalledEntityResolutionContext {
-    pub(in crate::domain_computation) fn at_snapshot<'truth>(
+    pub fn at_snapshot<'truth>(
         &'truth self,
         relational: &'truth worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &'truth worth_relational::facade::snapshots::SnapshotHandle,
@@ -93,7 +128,7 @@ impl WorthQueryInstalledEntityResolutionContext {
 }
 
 impl WorthQueryEntityResolutionTruth<'_> {
-    pub(in crate::domain_computation) fn resolve(
+    pub fn resolve(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity: &str,
@@ -147,7 +182,6 @@ impl WorthQueryEntityResolutionTruth<'_> {
                 2,
             )
             .map_err(|denial| map_index_denial(denial.kind(), field))?;
-            #[cfg(test)]
             interruption_control::cancel_before_lookup_for_test();
             let lookup = self
                 .relational
@@ -182,7 +216,7 @@ impl WorthQueryEntityResolutionTruth<'_> {
         (result, examined_candidate_count)
     }
 
-    pub(in crate::domain_computation) fn validate_entity_freshness<Schema, Entity>(
+    pub fn validate_entity_freshness<Schema, Entity>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         identity: &WorthQueryApplicationEntityIdentity<Schema, Entity>,

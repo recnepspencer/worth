@@ -1,7 +1,7 @@
 //! Named responsibilities for committing one prepared provider session.
 
 mod evidence;
-mod outbox_commit;
+pub mod outbox_commit;
 mod receipt_basis_retention;
 
 pub(crate) use super::application_attempt_state::WorthQueryRetainedPreImageSeal;

@@ -15,10 +15,10 @@ use crate::domain_computation::{
     WorthQueryFreshDecisionReadSet, WorthQueryProviderSessionView,
 };
 
-mod indexed;
+pub mod indexed;
 use indexed::PreparedSelections;
 
-pub(in crate::domain_computation) struct PrimaryDecisionReadSetComparison<'provider> {
+pub struct PrimaryDecisionReadSetComparison<'provider> {
     provider: &'provider WorthQueryPrimaryGraphProvider,
     facts: Arc<crate::domain_computation::primary_graph::ApplicationFactTable>,
     registration: crate::domain_computation::primary_graph::RegisteredPrimaryRead,
@@ -27,7 +27,7 @@ pub(in crate::domain_computation) struct PrimaryDecisionReadSetComparison<'provi
 }
 
 impl WorthQueryPrimaryGraphProvider {
-    pub(in crate::domain_computation::primary_graph) fn capture_application_read_set(
+    pub fn capture_application_read_set(
         &self,
         _execution: &worth_execution::ExecutionRequest<'_, '_>,
         authority: &WorthQuerySessionReadAuthority<'_>,
@@ -52,7 +52,7 @@ impl WorthQueryPrimaryGraphProvider {
         check_control(control)?;
         Ok(receipt)
     }
-    pub(in crate::domain_computation::primary_graph) fn compare_application_read_set(
+    pub fn compare_application_read_set(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         authority: &WorthQuerySessionReadAuthority<'_>,
@@ -69,7 +69,7 @@ impl WorthQueryPrimaryGraphProvider {
         authority.compare_primary_read_set(execution, receipt, &mut comparison, control)
     }
 
-    pub(in crate::domain_computation::primary_graph) fn recompare_application_read_set(
+    pub fn recompare_application_read_set(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         authority: &WorthQuerySessionReadAuthority<'_>,
@@ -141,7 +141,7 @@ impl<'provider> PrimaryDecisionReadSetComparison<'provider> {
         check_control(control)?;
         Ok(same)
     }
-    fn acquire(
+    pub fn acquire(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         provider: &'provider WorthQueryPrimaryGraphProvider,
         session: WorthQueryProviderSessionView<'_>,
@@ -175,7 +175,7 @@ impl<'provider> PrimaryDecisionReadSetComparison<'provider> {
         Ok(comparison)
     }
 
-    pub(in crate::domain_computation) fn compare(
+    pub fn compare(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         session: WorthQueryProviderSessionView<'_>,
@@ -243,6 +243,3 @@ fn check_control(control: StorageControl<'_, '_>) -> Result<(), WorthQueryDecisi
         .check_live()
         .map_err(WorthQueryDecisionReadSetFailure::allocation_denied)
 }
-
-#[cfg(test)]
-mod tests;

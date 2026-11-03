@@ -2,10 +2,10 @@
 
 mod admitted;
 mod component;
-mod follower;
+pub mod follower;
 mod history;
-mod registry;
-mod retirement;
+pub mod registry;
+pub mod retirement;
 pub(crate) use retirement::OwnerCleanupRetirements;
 
 use worth_runtime_world::facade::{
@@ -19,13 +19,13 @@ pub(crate) use registry::WorthQueryProductBranchOwnerCleanupReservation;
 pub(super) use registry::{CleanupScope, WorthQueryProductBranchOwnerCleanupRegistry};
 
 #[derive(Clone)]
-pub(crate) struct WorthQueryRetiredProductOccurrence {
+pub struct WorthQueryRetiredProductOccurrence {
     branch: worth_runtime_world::facade::ProductBranchIdentity,
     incarnation: worth_runtime_world::facade::ProductBranchIncarnation,
 }
 
 impl WorthQueryRetiredProductOccurrence {
-    pub(crate) const fn new(
+    pub const fn new(
         branch: worth_runtime_world::facade::ProductBranchIdentity,
         incarnation: worth_runtime_world::facade::ProductBranchIncarnation,
     ) -> Self {
@@ -35,13 +35,11 @@ impl WorthQueryRetiredProductOccurrence {
         }
     }
 
-    pub(crate) const fn branch(&self) -> &worth_runtime_world::facade::ProductBranchIdentity {
+    pub const fn branch(&self) -> &worth_runtime_world::facade::ProductBranchIdentity {
         &self.branch
     }
 
-    pub(crate) const fn incarnation(
-        &self,
-    ) -> worth_runtime_world::facade::ProductBranchIncarnation {
+    pub const fn incarnation(&self) -> worth_runtime_world::facade::ProductBranchIncarnation {
         self.incarnation
     }
 }
@@ -105,7 +103,7 @@ impl std::fmt::Debug for WorthQueryProductBranchOwnerCleanup {
 }
 
 impl WorthQueryProductBranchOwnerCleanup {
-    pub(crate) fn new(runtime: WorthQueryProductRuntime, identity: u64) -> Self {
+    pub fn new(runtime: WorthQueryProductRuntime, identity: u64) -> Self {
         Self { runtime, identity }
     }
 
@@ -284,7 +282,7 @@ impl WorthQueryProductRuntime {
             .reserve(CleanupScope::ApplicationRetirement(occurrence))
     }
 
-    pub(crate) fn reserve_owner_cleanup_for_creation(
+    pub fn reserve_owner_cleanup_for_creation(
         &self,
     ) -> Result<
         WorthQueryProductBranchOwnerCleanupReservation,
@@ -302,7 +300,7 @@ impl WorthQueryProductRuntime {
         self.owner_cleanup.reserve(CleanupScope::Application)
     }
 
-    pub(crate) fn pending_owner_cleanup(&self) -> Vec<WorthQueryProductBranchOwnerCleanup> {
+    pub fn pending_owner_cleanup(&self) -> Vec<WorthQueryProductBranchOwnerCleanup> {
         self.owner_cleanup
             .pending_identities()
             .into_iter()
@@ -327,16 +325,11 @@ impl WorthQueryProductRuntime {
             .pending_application_retired_product_occurrences()
     }
 
-    #[cfg(test)]
-    pub(crate) fn replace_owner_cleanup_after_install_hook(&self, hook: Option<Box<dyn Fn()>>) {
+    pub fn replace_owner_cleanup_after_install_hook(&self, hook: Option<Box<dyn Fn()>>) {
         self.owner_cleanup.replace_after_install_hook(hook);
     }
 
-    #[cfg(test)]
-    pub(crate) fn replace_owner_cleanup_after_component_progress_hook(
-        &self,
-        hook: Option<Box<dyn Fn()>>,
-    ) {
+    pub fn replace_owner_cleanup_after_component_progress_hook(&self, hook: Option<Box<dyn Fn()>>) {
         self.owner_cleanup
             .replace_after_component_progress_hook(hook);
     }

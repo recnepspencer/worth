@@ -15,14 +15,14 @@ use crate::domain_computation::primary_graph::application_attempt::{
 /// assessment evidence bytes they retain and the earliest total deadline any
 /// definition it ran declared.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) struct WorkflowLineageCarry {
+pub struct WorkflowLineageCarry {
     pub(in crate::domain_computation::primary_graph) inherited_steps: u64,
     pub(in crate::domain_computation::primary_graph) inherited_evidence_bytes: u64,
     /// Unix-epoch milliseconds.
     pub(in crate::domain_computation::primary_graph) deadline: Option<u64>,
 }
 
-pub(in crate::domain_computation::primary_graph) fn visit_instance_start_facts<Error>(
+pub fn visit_instance_start_facts<Error>(
     layout: &WorthQueryWorkflowLayout,
     compiled: &CompiledWorkflowDefinition,
     instance_identity: &str,
@@ -46,7 +46,7 @@ pub(in crate::domain_computation::primary_graph) fn visit_instance_start_facts<E
     )
 }
 
-pub(in crate::domain_computation::primary_graph) fn visit_instance_birth_facts<Error>(
+pub fn visit_instance_birth_facts<Error>(
     layout: &WorthQueryWorkflowLayout,
     compiled: &CompiledWorkflowDefinition,
     instance_identity: &str,

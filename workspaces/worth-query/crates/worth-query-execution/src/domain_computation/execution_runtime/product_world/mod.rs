@@ -1,20 +1,20 @@
-pub(crate) mod activation;
+pub mod activation;
 mod admission;
 mod application_publication;
 mod bootstrap;
-mod branch_close;
+pub mod branch_close;
 mod clock;
 mod conditional_recovery;
 mod creation;
 mod history;
 mod installation_denial;
 mod owned_async;
-mod owner_cleanup;
+pub mod owner_cleanup;
 mod publication_binding;
 mod receipt;
-mod relational_publication;
-mod request_control;
-mod resources;
+pub mod relational_publication;
+pub mod request_control;
+pub mod resources;
 mod retirement;
 mod runtime;
 mod shared_root;
@@ -40,7 +40,6 @@ pub(crate) use receipt::{
     WorthQueryCommitHistoryHold, WorthQueryProductPublicationReceipt,
     WorthQueryReservedProductPublicationReceipt,
 };
-#[cfg(test)]
 pub(in crate::domain_computation) use relational_publication::preserve_delivery_authority;
 pub use relational_publication::{
     WorthQueryPerformedRelationalProductChange,
@@ -68,15 +67,12 @@ pub use read_observation::installed_source_reads_on_this_thread_for_test;
 
 pub(crate) use read_observation::record_read_for_test as record_installed_source_read_for_test;
 
-pub(crate) mod publication_denial;
+pub mod publication_denial;
 
 mod adoption_preparation;
 
 pub(crate) mod read_consult;
-#[cfg(test)]
 mod read_lock_probe;
-#[cfg(test)]
 pub(in crate::domain_computation) use read_lock_probe::ReadLockProbeForTest;
 
-#[cfg(test)]
 pub(in crate::domain_computation) use resources::test_product_world_resources;

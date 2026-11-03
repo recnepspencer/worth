@@ -1,0 +1,173 @@
+use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::managed_run::tests::yield_fixture::YieldProvider;
+use crate::process::domain_computation::managed_run::tests::*;
+use worth_runtime_bridge::facade::BridgeExecutionBasisSignalTerminal;
+use worth_runtime_bridge::facade::BridgeManagedExecutionCancellationReason;
+
+#[test]
+fn signal_terminalized_after_safe_point_cannot_be_relabelled_as_yielded() {
+    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
+        let phase = &active_phase;
+        let execution = phase;
+
+        let (running, graph) = managed_graph_run_with_provider(
+            WorthQueryOperationGraphAccess::Observe,
+            YieldProvider::installed(5),
+            resource_request,
+        );
+        let installed_running_phase = execution.phase_for_direct(&running);
+
+        let active = running
+            .begin_graph_execution(
+                &installed_running_phase,
+                &graph,
+                WorthQueryManagedGraphCallRequest::new(
+                    WorthQueryGraphProviderCallKind::Observe,
+                    "direct-yield-signal-race",
+                ),
+            )
+            .unwrap();
+        let paused = match active.advance(&installed_running_phase) {
+            WorthQueryDirectGraphStepOutcome::Continue(paused) => paused,
+            _ => panic!("provider did not pause"),
+        };
+        paused
+            .active
+            .request_cancellation(BridgeManagedExecutionCancellationReason::HostRequested)
+            .expect("host should terminalize the exact Signal attempt");
+        let recovery = match paused.yield_run() {
+            worth_query_execution::facade::domain_computation::WorthQueryDirectYieldOutcome::RecoveryRequired(recovery) => {
+                recovery
+            }
+            _ => panic!("pre-terminalized Signal attempt minted yielded authority"),
+        };
+        assert!(!recovery.running_attempt_recoverable());
+        assert_eq!(
+            recovery.kind(),
+            worth_query_execution::facade::domain_computation::WorthQueryYieldRecoveryKind::SignalAttemptAlreadyTerminal(
+                BridgeExecutionBasisSignalTerminal::Cancelled,
+            )
+        );
+        let cleanup = match recovery.cleanup_terminalized() {
+            Ok(cleanup) => cleanup,
+            Err(_) => panic!("terminalized Signal race did not preserve cleanup authority"),
+        };
+        assert!(!cleanup.inspection().bridge_signal_transition_performed());
+        assert_eq!(
+            cleanup.inspection().bridge_signal_terminal(),
+            BridgeExecutionBasisSignalTerminal::Cancelled
+        );
+        assert_eq!(
+            cleanup
+                .inspection()
+                .provider_work()
+                .interrupted_call_count(),
+            1
+        );
+        assert_eq!(
+            cleanup.inspection().provider_work().abandoned_call_count(),
+            0
+        );
+    });
+}
+
+#[test]
+fn timeout_and_rejection_after_safe_point_cannot_mint_yielded_authority() {
+    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
+        let phase = &active_phase;
+        let execution = phase;
+
+        let (timed_out, timeout_bridge) =
+            paused_direct_yield_target(execution, "direct-yield-timeout-race", resource_request);
+        timeout_bridge
+            .advance_managed_execution_clock(1)
+            .expect("host clock should advance");
+        timed_out
+            .active
+            .admit_ready_timeout()
+            .expect("ready timeout should terminalize the exact Signal attempt");
+        assert_preterminalized_yield_recovery(
+            timed_out,
+            BridgeExecutionBasisSignalTerminal::TimedOut,
+        );
+
+        let (rejected, _) =
+            paused_direct_yield_target(execution, "direct-yield-rejection-race", resource_request);
+        rejected
+        .active
+        .reject_execution(
+            worth_runtime_bridge::facade::BridgeManagedExecutionRejectionReason::SemanticFailure,
+        )
+        .expect("rejection should terminalize the exact Signal attempt");
+        assert_preterminalized_yield_recovery(
+            rejected,
+            BridgeExecutionBasisSignalTerminal::Rejected,
+        );
+    });
+}
+
+pub fn paused_direct_yield_target(
+    execution: &worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+
+    scope: &str,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
+) -> (
+    worth_query_execution::facade::domain_computation::WorthQueryPausedDirectGraphExecution,
+    RuntimeBridge,
+) {
+    let (running, graph, bridge) = managed_graph_run_with_provider_and_bridge(
+        WorthQueryOperationGraphAccess::Observe,
+        YieldProvider::installed(5),
+        resource_request,
+    );
+    let installed_running_phase = execution.phase_for_direct(&running);
+
+    let active = running
+        .begin_graph_execution(
+            &installed_running_phase,
+            &graph,
+            WorthQueryManagedGraphCallRequest::new(WorthQueryGraphProviderCallKind::Observe, scope),
+        )
+        .unwrap();
+    let paused = match active.advance(&installed_running_phase) {
+        WorthQueryDirectGraphStepOutcome::Continue(paused) => paused,
+        _ => panic!("provider did not pause"),
+    };
+    (paused, bridge)
+}
+
+pub fn assert_preterminalized_yield_recovery(
+    paused: worth_query_execution::facade::domain_computation::WorthQueryPausedDirectGraphExecution,
+    terminal: BridgeExecutionBasisSignalTerminal,
+) {
+    let recovery = match paused.yield_run() {
+        worth_query_execution::facade::domain_computation::WorthQueryDirectYieldOutcome::RecoveryRequired(recovery) => {
+            recovery
+        }
+        _ => panic!("pre-terminalized Signal attempt minted yielded authority"),
+    };
+    assert_eq!(
+        recovery.kind(),
+        worth_query_execution::facade::domain_computation::WorthQueryYieldRecoveryKind::SignalAttemptAlreadyTerminal(
+            terminal,
+        )
+    );
+    let cleanup = match recovery.cleanup_terminalized() {
+        Ok(cleanup) => cleanup,
+        Err(_) => panic!("pre-terminalized Signal attempt lost cleanup authority"),
+    };
+    assert!(!cleanup.inspection().bridge_signal_transition_performed());
+    assert_eq!(cleanup.inspection().bridge_signal_terminal(), terminal);
+    assert_eq!(
+        cleanup
+            .inspection()
+            .provider_work()
+            .interrupted_call_count(),
+        1
+    );
+}

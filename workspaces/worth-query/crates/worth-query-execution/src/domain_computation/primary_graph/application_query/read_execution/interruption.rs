@@ -10,12 +10,34 @@ use super::{
 mod native;
 pub(super) use native::NativeReadInterruption;
 
-#[cfg(test)]
-mod tests;
+pub mod tests {
+    use std::{
+        cell::{Cell, RefCell},
+        num::NonZeroUsize,
+        rc::Rc,
+        time::{Duration, Instant},
+    };
+    use worth_query_admission::facade::authenticated_principal::{
+        WorthQueryCancellationSource, WorthQueryRequestScope,
+    };
+    use worth_query_declaration::facade::application_query::ApplicationQueryParameterSet;
+    thread_local! {
+        // Schedules an external cancellation at a real kernel safe point. It cannot
+        // forge admission, substitute rows, or bypass the production meter.
+        pub static CHECKPOINT: RefCell<Option<Box<dyn FnMut(&str)>>> = RefCell::new(None);
+    }
+    pub fn visit_checkpoint(subject: &str) {
+        CHECKPOINT.with(|slot| {
+            if let Some(callback) = slot.borrow_mut().as_mut() {
+                callback(subject);
+            }
+        });
+    }
+}
 
 /// A safe point between bounded kernel/native steps, never an interrupt inside
 /// an opaque native call. Every meter uses the same request-owned authority.
-pub(super) fn checkpoint(
+pub fn checkpoint(
     request: &WorthQueryRequestScope,
     subject: &str,
 ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {

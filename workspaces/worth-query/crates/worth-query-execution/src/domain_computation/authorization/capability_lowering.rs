@@ -28,8 +28,6 @@ mod accumulator;
 mod elevation;
 mod installed_plan;
 mod resource_extent;
-#[cfg(test)]
-mod semantic_model_tests;
 
 use accumulator::WorthQueryCapabilityRuleLoweringAccumulator;
 pub(super) use accumulator::WorthQueryCapabilityRuleSet;

@@ -20,7 +20,7 @@ pub use suspension::{
     WorthQueryGeneratedOutputSuspensionRecoveryStage,
 };
 mod preparation_execution;
-mod restoration;
+pub mod restoration;
 mod suspend;
 mod suspension_failure;
 pub(in crate::domain_computation::primary_graph) use restoration::admit_required_invariants;
@@ -42,7 +42,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationProducerProvider,
 };
 
-pub(super) struct ProducerQualification {
+pub struct ProducerQualification {
 
     binding_type: TypeId,
     output_binding_type: TypeId,

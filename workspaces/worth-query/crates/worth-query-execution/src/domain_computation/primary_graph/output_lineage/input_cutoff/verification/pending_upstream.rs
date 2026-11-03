@@ -32,7 +32,7 @@ pub(super) fn resolve<'edges>(
     Ok(Resolution::Resolved(ResolvedPendingUpstreams(())))
 }
 
-fn upstream_settled(current: ConsumedOutputCurrentness) -> bool {
+pub fn upstream_settled(current: ConsumedOutputCurrentness) -> bool {
     match current {
         ConsumedOutputCurrentness::Direct(SourceSettlementCurrentness::Clean)
         | ConsumedOutputCurrentness::CanonicallyEqualClean(_) => true,
@@ -44,30 +44,5 @@ fn upstream_settled(current: ConsumedOutputCurrentness) -> bool {
         )
         | ConsumedOutputCurrentness::PendingEqualSuccessor
         | ConsumedOutputCurrentness::FullVerificationRequired => false,
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::domain_computation::primary_graph::output_lineage::own_write_fixture::with_committed_own_write;
-
-    #[test]
-    fn only_a_settled_upstream_can_resolve_a_pending_mark() {
-        with_committed_own_write(|_, _, cell, _| {
-            let identity = Arc::clone(&cell.get().unwrap().settlement_identity);
-            assert!(upstream_settled(
-                ConsumedOutputCurrentness::CanonicallyEqualClean(identity)
-            ));
-            assert!(upstream_settled(ConsumedOutputCurrentness::Direct(
-                SourceSettlementCurrentness::Clean
-            )));
-            assert!(!upstream_settled(
-                ConsumedOutputCurrentness::PendingEqualSuccessor
-            ));
-            assert!(!upstream_settled(ConsumedOutputCurrentness::Direct(
-                SourceSettlementCurrentness::Dirty(OrdSet::new())
-            )));
-        });
     }
 }

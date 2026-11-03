@@ -7,7 +7,7 @@ use crate::domain_computation::application_aftermath::ExternalEffectCorrelationI
 use crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxObservation;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum WorthQueryOutstandingInFlightDenial {
+pub enum WorthQueryOutstandingInFlightDenial {
     Missing,
     PendingPublication,
     OriginalMismatch,

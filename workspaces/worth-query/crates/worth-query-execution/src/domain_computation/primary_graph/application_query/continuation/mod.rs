@@ -9,8 +9,6 @@ mod authority;
 mod denial;
 mod outcome;
 mod readmission;
-#[cfg(test)]
-mod tests;
 
 pub use authority::WorthQueryApplicationQueryContinuation;
 pub use denial::{

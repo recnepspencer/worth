@@ -90,7 +90,7 @@ fn fresh<'a>(
     })
 }
 impl ComputationFactAttribution {
-    pub(in crate::domain_computation::primary_graph) fn normalize_adjacencies(
+    pub fn normalize_adjacencies(
         &mut self,
         handler: &mut BTreeSet<Key>,
         execution: &ExecutionRequest<'_, '_>,

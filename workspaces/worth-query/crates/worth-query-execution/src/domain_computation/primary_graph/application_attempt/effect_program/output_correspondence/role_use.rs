@@ -16,7 +16,7 @@ use worth_query_declaration::facade::application_operation::{
 use worth_query_declaration::facade::application_schema::ApplicationEntityMarkerIdentity;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) struct OutputRoleUse {
+pub struct OutputRoleUse {
     pub(in crate::domain_computation::primary_graph) name: String,
     pub(in crate::domain_computation::primary_graph) posture: ApplicationMutationOutputPosture,
     pub(in crate::domain_computation::primary_graph) cardinality:
@@ -29,7 +29,7 @@ pub(in crate::domain_computation::primary_graph) struct OutputRoleUse {
 impl OutputRoleUse {
     /// The use of one fixed role, checked against its contract at compile
     /// time.
-    pub(in crate::domain_computation::primary_graph) fn fixed<Role>() -> Self
+    pub fn fixed<Role>() -> Self
     where
         Role: WorthQueryApplicationOutputRole,
     {
@@ -48,7 +48,7 @@ impl OutputRoleUse {
     /// The use of the family member named by `suffix` with `Action`. The
     /// family and the action's posture are checked against the contract at
     /// compile time; the suffix is validated here.
-    pub(in crate::domain_computation::primary_graph) fn member<Family, Action>(
+    pub fn member<Family, Action>(
         suffix: &str,
     ) -> Result<Self, WorthQueryApplicationOutputRoleNameDenial>
     where

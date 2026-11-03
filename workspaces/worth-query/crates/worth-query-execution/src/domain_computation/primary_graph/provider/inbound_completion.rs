@@ -13,7 +13,7 @@ use super::WorthQueryPrimaryGraphProvider;
 use crate::domain_computation::application_aftermath::WorthQueryAcceptedInboundOccurrence;
 
 mod history_read;
-mod preparation_denial;
+pub mod preparation_denial;
 mod read;
 mod transport;
 pub(in crate::domain_computation::primary_graph) use read::{
@@ -22,7 +22,7 @@ pub(in crate::domain_computation::primary_graph) use read::{
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) enum WorthQueryInboundCompletionPreparationDenial {
+pub enum WorthQueryInboundCompletionPreparationDenial {
     ExecutionDenied {
         stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
         kind: crate::domain_computation::WorthQueryProviderSessionDenialKind,
@@ -215,7 +215,6 @@ fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
-#[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use preparation_denial::{
     preparation_denial as completion_preparation_denial,
     validation_denial as completion_validation_denial,

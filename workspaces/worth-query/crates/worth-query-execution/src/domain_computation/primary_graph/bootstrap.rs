@@ -30,7 +30,7 @@ use super::{
 mod advancement_publication;
 mod binding_denial;
 mod checkpoint;
-pub(in crate::domain_computation::primary_graph) mod checkpoint_transition;
+pub mod checkpoint_transition;
 mod initial_installation;
 mod managed_source_initialization;
 mod preparation;
@@ -64,7 +64,7 @@ pub struct WorthQueryPrimaryGraphBootstrap<Schema> {
     pub(super) runtime_authority: WorthQueryRuntimeAuthorityIdentity,
     installed_packages: Arc<WorthQueryInstalledPackageIndex>,
     pub(super) value_bindings: worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
-    pub(super) graph: WorthQueryPrimaryGraph,
+    pub graph: WorthQueryPrimaryGraph,
     pub(super) resource_support: super::provider::WorthQueryPrimaryGraphResourceSupport,
     pub(super) product_world_resources:
         crate::domain_computation::execution_runtime::product_world::WorthQueryProductWorldResources,
@@ -90,9 +90,9 @@ pub struct WorthQueryPrimaryGraphBootstrap<Schema> {
         Option<worth_relational::facade::durability::RecoveredRelationalRuntimeAuthority>,
     recovered_checkpoint_restore_work:
         Option<worth_relational::facade::durability::CheckpointRestoreWork>,
-    pub(super) mutation_handlers: super::handler::PendingMutationHandlerRegistry<Schema>,
+    pub mutation_handlers: super::handler::PendingMutationHandlerRegistry<Schema>,
     pub(super) resources: super::application_resource::installation::PendingResourceRegistry<Schema>,
-    pub(super) managed_indexes: super::application_query::managed_index::ManagedIndexProviderCatalog<Schema>,
+    pub managed_indexes: super::application_query::managed_index::ManagedIndexProviderCatalog<Schema>,
     /// The initial program this installation activates, seeded before any
     /// ordinary bootstrap row so those rows are validated under its rules.
     pub(super) program_activation_seed: Option<WorthQueryProgramActivationSeed>,
@@ -228,7 +228,7 @@ where
         Ok(())
     }
 
-    pub(crate) fn publish(
+    pub fn publish(
         self,
         phase: &super::WorthQueryBootstrapAdvancementPhase<'_>,
         runtime: &mut WorthQueryExecutionRuntime,

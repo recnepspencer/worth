@@ -1,6 +1,6 @@
 use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial;
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum FactDecodeDenial {
+pub enum FactDecodeDenial {
     Format(String),
     Retention(StoreDenial),
     Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),

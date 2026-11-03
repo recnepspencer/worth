@@ -32,13 +32,13 @@ impl WorthQueryOutputReadinessDeliveryEvidence {
         self.output_evaluation.as_ref()
     }
 
-    pub(in crate::domain_computation::primary_graph) fn causal_observation(
+    pub fn causal_observation(
         &self,
     ) -> Option<&worth_runtime_bridge::facade::BridgeConditionalCausalObservation> {
         self.causal_observation.as_ref()
     }
 
-    pub(in crate::domain_computation::primary_graph) const fn without_execution() -> Self {
+    pub const fn without_execution() -> Self {
         Self {
             producer_contacts: 0,
             delivery_contacts: 0,
@@ -53,8 +53,7 @@ impl WorthQueryOutputReadinessDeliveryEvidence {
         }
     }
 
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) const fn for_test() -> Self {
+    pub const fn for_test() -> Self {
         Self {
             producer_contacts: 1,
             delivery_contacts: 0,

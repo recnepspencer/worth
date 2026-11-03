@@ -174,7 +174,6 @@ impl<Schema, Operation, Input, Scope, Phase>
             content,
             effect_routes,
             consumed_outputs: self.consumed_outputs,
-            #[cfg(test)]
             computation_facts: Some(metadata),
             computation_fact_ordinals,
             workflow_authority_binding: None,

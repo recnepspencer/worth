@@ -18,9 +18,7 @@ pub use operation::{
     WorthQueryGovernedTemporalOperationAuthorization,
     WorthQueryPublicTemporalOperationAuthorization, WorthQueryTemporalOperationAuthorization,
 };
-#[cfg(test)]
-#[path = "authorization_sources/tests.rs"]
-mod tests;
+
 /// Refusal to admit a conditional operation's reconstruction query.
 ///
 /// Nothing was read.

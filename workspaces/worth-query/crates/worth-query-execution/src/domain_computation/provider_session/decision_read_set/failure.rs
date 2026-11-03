@@ -32,11 +32,12 @@ pub enum WorthQueryDecisionReadSetDenialKind {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryDecisionReadSetFailure {
     kind: WorthQueryDecisionReadSetDenialKind,
-    detail: Arc<str>,
+    pub detail: Arc<str>,
     allocation: Option<ExecutionAllocationDenial>,
     managed_index:
         Option<crate::domain_computation::primary_graph::WorthQueryManagedIndexWorkDenial>,
-    native_query_read_stop: Option<Arc<worth_relational::facade::runtime::QueryReadExecutionStop>>,
+    pub native_query_read_stop:
+        Option<Arc<worth_relational::facade::runtime::QueryReadExecutionStop>>,
 }
 
 impl WorthQueryDecisionReadSetFailure {
@@ -69,7 +70,7 @@ impl WorthQueryDecisionReadSetFailure {
         }
     }
 
-    pub(in crate::domain_computation) fn with_native_query_read_stop(
+    pub fn with_native_query_read_stop(
         mut self,
         stop: worth_relational::facade::runtime::QueryReadExecutionStop,
     ) -> Self {
@@ -120,40 +121,5 @@ impl ChargedBytes for WorthQueryDecisionReadSetFailure {
             + native
             + self.allocation.additional_charged_bytes()
             + self.managed_index.additional_charged_bytes()
-    }
-}
-
-#[cfg(test)]
-mod footprint_tests {
-    use super::*;
-
-    #[test]
-    fn decision_failure_retains_its_original_detail_and_native_cause_allocations() {
-        let detail: Arc<str> = Arc::from("original owned admission detail");
-        let failure = WorthQueryDecisionReadSetFailure::new(
-            WorthQueryDecisionReadSetDenialKind::ProviderRejected,
-            Arc::clone(&detail),
-        );
-        let header = std::mem::size_of::<[usize; 2]>() as u64;
-        assert!(Arc::ptr_eq(&failure.detail, &detail));
-        assert_eq!(
-            failure.additional_charged_bytes(),
-            header + detail.len() as u64
-        );
-        let failure = failure.with_native_query_read_stop(
-            worth_relational::facade::runtime::QueryReadExecutionStop::ReadRequest(
-                worth_relational::facade::indexes::RelationalExecutionDenialCause::Cancelled,
-            ),
-        );
-        let native = failure.native_query_read_stop.as_ref().unwrap();
-        assert_eq!(
-            failure.additional_charged_bytes(),
-            header
-                + detail.len() as u64
-                + header
-                + std::mem::size_of_val(native.as_ref()) as u64
-                + native.additional_charged_bytes(),
-        );
-        assert!(Arc::ptr_eq(&failure.detail, &detail));
     }
 }

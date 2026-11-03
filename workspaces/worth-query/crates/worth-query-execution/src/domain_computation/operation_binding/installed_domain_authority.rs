@@ -15,7 +15,7 @@ pub struct WorthQueryInstalledDomainExecutionAuthority {
 }
 
 impl WorthQueryInstalledDomainExecutionAuthority {
-    pub(crate) fn mint(
+    pub fn mint(
         runtime_authority: WorthQueryRuntimeAuthorityIdentity,
         owner: &str,
         generation: WorthQueryInstallationGeneration,

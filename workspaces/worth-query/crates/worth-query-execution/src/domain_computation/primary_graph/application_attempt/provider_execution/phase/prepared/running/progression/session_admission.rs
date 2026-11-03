@@ -2,7 +2,7 @@ use crate::domain_computation::primary_graph::application_attempt::provider_exec
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitDenialStage as DenialStage;
 
 pub(super) struct WorthQueryAdmittedProviderSession<'run> {
-    staged: crate::domain_computation::WorthQuerySessionBoundReadsAndEffects<'run>,
+    pub staged: crate::domain_computation::WorthQuerySessionBoundReadsAndEffects<'run>,
     mutation_run:
         crate::domain_computation::provider_session::WorthQueryProviderSessionBoundMutationRun,
 }
@@ -12,8 +12,8 @@ pub(super) struct WorthQueryProviderSessionAdmissionFailure {
     mutation_run: crate::domain_computation::provider_session::WorthQueryMutationRunBinding,
 }
 
-pub(super) struct WorthQueryRegisteredProviderSession<'run> {
-    registered: super::WorthQueryRegisteredProviderAttempt<'run>,
+pub struct WorthQueryRegisteredProviderSession<'run> {
+    pub registered: super::WorthQueryRegisteredProviderAttempt<'run>,
     mutation_run:
         crate::domain_computation::provider_session::WorthQueryProviderSessionBoundMutationRun,
 }
@@ -24,7 +24,7 @@ pub(super) struct WorthQueryProviderSessionRegistrationFailure {
         crate::domain_computation::provider_session::WorthQueryProviderSessionBoundMutationRun,
 }
 
-pub(super) fn admit_provider_session<'run>(
+pub fn admit_provider_session<'run>(
     phase: &'run crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     running: &'run mut crate::domain_computation::WorthQueryRunningDirectRun,
     graph: &worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
@@ -74,7 +74,7 @@ impl<'run> WorthQueryAdmittedProviderSession<'run> {
         self.staged.provider_session_terminal_binding()
     }
 
-    pub(super) fn register<Schema, Operation, Input, Scope>(
+    pub fn register<Schema, Operation, Input, Scope>(
         self,
         authorization: &mut crate::domain_computation::authorization::WorthQueryProviderCommitAuthorization,
         prepared: super::WorthQueryPreparedApplicationProviderAttempt,
@@ -110,17 +110,8 @@ impl<'run> WorthQueryAdmittedProviderSession<'run> {
     }
 }
 
-#[cfg(test)]
-mod registration_conflict_tests {
-    include!("registration_conflict_tests.rs");
-    // A child, so the court reuses these private helpers without widening them.
-    mod interrupted_registration_tests {
-        include!("session_admission/interrupted_registration_tests.rs");
-    }
-}
-
 impl WorthQueryProviderSessionAdmissionFailure {
-    pub(super) fn into_completion(self) -> super::WorthQueryProviderProgressionCompletion {
+    pub fn into_completion(self) -> super::WorthQueryProviderProgressionCompletion {
         super::WorthQueryProviderProgressionCompletion {
             outcome: self.outcome,
             cleanup: super::WorthQueryApplicationMutationCleanupOwner::Unbound(self.mutation_run),
@@ -129,7 +120,7 @@ impl WorthQueryProviderSessionAdmissionFailure {
 }
 
 impl WorthQueryProviderSessionRegistrationFailure {
-    pub(super) fn into_completion(self) -> super::WorthQueryProviderProgressionCompletion {
+    pub fn into_completion(self) -> super::WorthQueryProviderProgressionCompletion {
         super::WorthQueryProviderProgressionCompletion {
             outcome: self.outcome,
             cleanup: super::WorthQueryApplicationMutationCleanupOwner::ProviderBound(
@@ -152,7 +143,7 @@ impl<'run> WorthQueryRegisteredProviderSession<'run> {
         }
     }
 
-    pub(super) fn progress<Schema, Operation, Input, Scope>(
+    pub fn progress<Schema, Operation, Input, Scope>(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         authority: &super::WorthQueryApplicationCommitProgressionAuthority<
@@ -179,14 +170,3 @@ impl<'run> WorthQueryRegisteredProviderSession<'run> {
         }
     }
 }
-
-#[cfg(test)]
-#[path = "session_admission/overlay_conflict_tests.rs"]
-mod overlay_conflict_tests;
-
-#[cfg(test)]
-#[path = "session_admission/comparison_scope_tests.rs"]
-mod comparison_scope_tests;
-
-#[cfg(test)]
-mod principal_comparison_tests;

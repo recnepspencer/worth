@@ -76,19 +76,17 @@ impl WorthQueryAdvancementDenial {
 }
 
 mod phase_custody;
-mod runner;
+pub mod runner;
 pub use phase_custody::{WorthQueryAdvancementPhase, WorthQueryForeignAdvancementPhase};
 mod bootstrap_opening;
 pub use bootstrap_opening::with_bootstrap_advancement_from_request;
 mod bootstrap_custody;
 pub use bootstrap_custody::WorthQueryBootstrapAdvancementPhase;
-mod opening_custody;
+pub mod opening_custody;
 use opening_custody::OpeningCustody;
 
 impl QueryRequestExecution<'_> {
-    pub(in crate::domain_computation::primary_graph) fn execution_request(
-        &self,
-    ) -> Result<ExecutionRequest<'_, '_>, Resource> {
+    pub fn execution_request(&self) -> Result<ExecutionRequest<'_, '_>, Resource> {
         match &self.form {
             Form::Leased { lease, .. } | Form::Serial { lease, .. } => lease
                 .as_ref()
@@ -97,7 +95,7 @@ impl QueryRequestExecution<'_> {
         }
     }
 
-    fn run_advancement<R>(
+    pub fn run_advancement<R>(
         &self,
         owner: Option<worth_runtime_world::facade::RuntimeWorldOwnerIdentity>,
         source_instance: Option<u64>,
@@ -229,7 +227,7 @@ impl WorthQueryAdvancementDenial {
     }
 }
 
-pub(in crate::domain_computation::primary_graph) mod observation;
+pub mod observation;
 
 pub use observation::{
     advancement_observations_on_this_thread_for_test, advancement_requests_on_this_thread_for_test,
@@ -238,8 +236,7 @@ pub use observation::{
     WorthQueryAdvancementObservationForTest,
 };
 
-#[cfg(test)]
-pub(crate) fn with_test_advancement<R>(
+pub fn with_test_advancement<R>(
     body: impl for<'scope> FnOnce(test_host_policy::TestHostRequest<'scope>) -> R,
 ) -> R {
     let policy =
@@ -251,12 +248,8 @@ pub(crate) fn with_test_advancement<R>(
     .expect("the declared fixture policy admits its host call")
 }
 
-#[cfg(test)]
-mod standalone_test_custody;
-
 /// Positive fixture authoring has its own finite allowance, outside measured host calls.
-#[cfg(test)]
-pub(crate) fn with_test_bootstrap_advancement<R>(
+pub fn with_test_bootstrap_advancement<R>(
     work: u64,
     body: impl for<'scope> FnOnce(test_host_policy::TestHostRequest<'scope>) -> R,
 ) -> R {
@@ -271,12 +264,7 @@ pub(crate) fn with_test_bootstrap_advancement<R>(
     .expect("the declared fixture bootstrap allowance admits authoring")
 }
 
-#[cfg(test)]
-mod tests;
-
 pub(in crate::domain_computation::primary_graph) use observation::record_caller_pass_for_test;
 
-#[cfg(test)]
-mod test_host_policy;
-#[cfg(test)]
+pub mod test_host_policy;
 pub(crate) use test_host_policy::TestHostRequest;

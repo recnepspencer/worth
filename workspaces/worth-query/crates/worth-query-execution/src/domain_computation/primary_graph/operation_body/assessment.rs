@@ -25,7 +25,7 @@ impl WorthQueryCurrentBodyRequirementAssessment {
     pub fn findings(&self) -> &[WorthQueryOperationBodyRequirementFinding] {
         &self.findings
     }
-    pub(in crate::domain_computation::primary_graph::operation_body) fn new(
+    pub fn new(
         findings: Vec<WorthQueryOperationBodyRequirementFinding>,
         memory: crate::domain_computation::primary_graph::application_contribution::QueryMemoryReservation,
     ) -> Self {
@@ -91,7 +91,3 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         findings.map_err(WorthQueryOperationBodyAssessmentDenial::Observation)
     }
 }
-
-#[cfg(test)]
-#[path = "assessment/tests.rs"]
-mod tests;

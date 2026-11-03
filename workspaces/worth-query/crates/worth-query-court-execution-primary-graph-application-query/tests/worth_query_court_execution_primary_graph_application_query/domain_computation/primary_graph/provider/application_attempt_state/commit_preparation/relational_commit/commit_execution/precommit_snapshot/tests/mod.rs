@@ -1,0 +1,44 @@
+use worth_query_execution::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::commit_execution::precommit_snapshot::WorthQueryPrecommitSnapshot;
+
+#[test]
+fn unwind_releases_only_its_precommit_snapshot() {
+    let host_request = worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let world =
+            worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(
+                true,
+            );
+    let selected = world
+        .application
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
+        .expect("the fixture read owns its installed host call");
+    let product = selected.product().publication_binding();
+    let graph = world.application.primary_provider.graph.clone();
+    let count = || {
+        graph.with_runtime(request_execution, |runtime| {
+            runtime.retention().active_snapshot_count()
+        })
+    };
+    let baseline = count();
+    let peer = WorthQueryPrecommitSnapshot::acquire(
+        request_execution,
+        graph.clone(),
+        product.observation().basis().relational_basis(),
+    )
+    .unwrap();
+    let unwind = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        let _attempt = WorthQueryPrecommitSnapshot::acquire(
+            request_execution,
+            graph.clone(),
+            product.observation().basis().relational_basis(),
+        )
+        .unwrap();
+        assert_eq!(count(), baseline + 2);
+        panic!("owner call interrupted before Query publication");
+    }));
+    assert!(unwind.is_err());
+    assert_eq!(count(), baseline + 1);
+    drop(peer);
+    assert_eq!(count(), baseline);
+}

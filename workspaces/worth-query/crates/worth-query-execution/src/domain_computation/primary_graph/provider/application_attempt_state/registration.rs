@@ -18,7 +18,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationAtt
 }
 
 impl WorthQueryPrimaryGraphProvider {
-    pub(in crate::domain_computation::primary_graph) fn reserve_application_attempt(
+    pub fn reserve_application_attempt(
         &self,
         affinity: &WorthQueryApplicationAttemptAffinity,
     ) -> Result<WorthQueryApplicationAttemptReservationOwner<'_>, &'static str> {

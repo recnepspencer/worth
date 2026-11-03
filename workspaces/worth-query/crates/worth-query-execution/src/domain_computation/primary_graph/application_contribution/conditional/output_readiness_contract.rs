@@ -3,7 +3,7 @@ use worth_query_declaration::facade::{
     domain_computation::WorthQueryCancellationSafePointFamily,
 };
 use worth_query_installation::facade as domain;
-pub(super) mod typed;
+pub mod typed;
 use super::super::native_field_contract::FieldExpectation;
 pub use typed::{WorthQueryOutputReadinessContract, WorthQueryReadinessFieldUse};
 
@@ -283,7 +283,7 @@ fn support_contract() -> domain::WorthQueryOperationSupportRequirements {
     }
 }
 
-fn denial(detail: impl Into<String>) -> WorthQueryOutputReadinessContractDenial {
+pub fn denial(detail: impl Into<String>) -> WorthQueryOutputReadinessContractDenial {
     WorthQueryOutputReadinessContractDenial {
         detail: detail.into(),
         locus: None,

@@ -4,7 +4,7 @@ use crate::domain_computation::primary_graph::{
     application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity,
 };
 use std::sync::Arc;
-pub(super) enum SettlementProducerIdentity {
+pub enum SettlementProducerIdentity {
     Current(String),
     Recovered {
         text: Arc<String>,
@@ -23,7 +23,7 @@ impl SettlementProducerIdentity {
             _funding: identity.metadata.clone(),
         }
     }
-    pub(super) fn as_str(&self) -> &str {
+    pub fn as_str(&self) -> &str {
         match self {
             Self::Current(text) => text,
             Self::Recovered { text, .. } => text,

@@ -5,7 +5,7 @@
 //! correlation and owner admission.
 
 mod claims;
-mod custody;
+pub mod custody;
 mod terminal;
 mod verifier;
 

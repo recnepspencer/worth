@@ -3,14 +3,14 @@ mod retention;
 pub(in crate::domain_computation::primary_graph) use output_availability_candidate::{
     ObservedOutputCandidate, ObservedOutputPosture,
 };
-mod admission_denial;
+pub mod admission_denial;
 mod aggregate;
 mod aggregate_read;
-mod component;
+pub mod component;
 mod graph_member;
 mod logical_projection;
 pub use component::WorthQueryInvariantProjectionComponent;
-pub(in crate::domain_computation::primary_graph) mod consumed_output;
+pub mod consumed_output;
 mod entity_resident;
 #[path = "invariant_projection/field_projection.rs"]
 mod field_projection;
@@ -23,7 +23,7 @@ mod orbit;
 pub use orbit::WorthQueryInvariantProjectionOrbit;
 mod locked_reader;
 mod operation_projection_denial;
-mod operation_reader;
+pub mod operation_reader;
 pub(in crate::domain_computation::primary_graph) use operation_reader::native_index_decision_cause;
 pub(in crate::domain_computation::primary_graph) use operation_reader::BorrowedOperationProjection;
 pub use operation_reader::{
@@ -37,9 +37,9 @@ mod realized_scope;
 mod relation_field;
 mod relation_identity;
 pub use relation_identity::WorthQueryInvariantRelation;
-mod traversal;
+pub mod traversal;
 mod walk;
-mod work;
+pub mod work;
 pub(in crate::domain_computation::primary_graph) use consumed_output::EvidenceView;
 pub use walk::{
     WorthQueryInvariantProjectionWalk, WorthQueryInvariantProjectionWalkIter,
@@ -112,8 +112,8 @@ static NEXT_INVARIANT_PROJECTION_AUTHORITY: std::sync::atomic::AtomicU64 =
 /// move-only primary-graph bootstrap. Ordinary consumers cannot construct it
 /// from runtime identities or application admissions.
 pub struct WorthQueryApplicationInvariantProjectionAuthority<Schema> {
-    graph: WorthQueryPrimaryGraphIntegrationHandle,
-    layout: Arc<WorthQueryPrimaryGraphLayout>,
+    pub graph: WorthQueryPrimaryGraphIntegrationHandle,
+    pub layout: Arc<WorthQueryPrimaryGraphLayout>,
     runtime_authority: WorthQueryRuntimeAuthorityIdentity,
     binding_identity: ApplicationSchemaBindingIdentity,
     entity_resolution: WorthQueryInstalledEntityResolutionContext,
@@ -153,10 +153,10 @@ pub struct WorthQueryApplicationInvariantProjectionSnapshot<Schema> {
 /// reader refuses it as foreign.
 #[derive(Clone, Debug)]
 pub struct WorthQueryInvariantEntityIdentity<Schema, Entity> {
-    entity_id: EntityId,
+    pub entity_id: EntityId,
     kind: KindId,
-    entity: Arc<str>,
-    authority_identity: u64,
+    pub entity: Arc<str>,
+    pub authority_identity: u64,
     _marker: PhantomData<fn() -> (Schema, Entity)>,
 }
 
@@ -187,8 +187,7 @@ where
         self.runtime_authority == runtime_authority && &self.binding_identity == binding_identity
     }
 
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn active_snapshot_count(
+    pub fn active_snapshot_count(
         &self,
         request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> usize {
@@ -277,7 +276,7 @@ where
         )
     }
 
-    pub(in crate::domain_computation::primary_graph) fn into_lease_and_realized_scope(
+    pub fn into_lease_and_realized_scope(
         mut self,
         product: crate::basis::WorthQueryProductBranchLease,
     ) -> (

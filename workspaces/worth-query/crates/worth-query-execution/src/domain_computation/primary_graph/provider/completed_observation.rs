@@ -4,7 +4,7 @@ use super::{
 };
 
 impl WorthQueryPrimaryGraphProvider {
-    pub(in crate::domain_computation::primary_graph) fn capture_correction_witness(
+    pub fn capture_correction_witness(
         &self,
         execution: worth_execution::ExecutionRequest<'_, '_>,
         commit: &worth_relational::facade::history::RelationalCommitReceipt,
@@ -18,7 +18,7 @@ impl WorthQueryPrimaryGraphProvider {
             .capture_correction_witness(execution, commit)
     }
 
-    pub(in crate::domain_computation::primary_graph) fn observe_completed_application(
+    pub fn observe_completed_application(
         &self,
         commit: &worth_relational::facade::history::RelationalCommitReceipt,
     ) -> Option<WorthQueryPrimaryGraphCommittedApplication> {
@@ -38,8 +38,7 @@ impl WorthQueryPrimaryGraphProvider {
             .observe_session(session)
     }
 
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn retained_application_commit_basis(
+    pub fn retained_application_commit_basis(
         &self,
         commit: &worth_relational::facade::history::RelationalCommitReceipt,
     ) -> Option<super::WorthQueryRetainedApplicationCommitBasis> {
@@ -70,10 +69,7 @@ impl WorthQueryPrimaryGraphProvider {
         })
     }
 
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn retained_receipt_basis_count(
-        &self,
-    ) -> usize {
+    pub fn retained_receipt_basis_count(&self) -> usize {
         self.receipt_basis_retention
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())

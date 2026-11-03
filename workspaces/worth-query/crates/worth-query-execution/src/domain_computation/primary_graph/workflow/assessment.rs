@@ -16,12 +16,9 @@ use crate::domain_computation::primary_graph::application_attempt::{
 };
 
 #[path = "assessment/dependency.rs"]
-mod dependency;
-#[cfg(test)]
-#[path = "assessment/tests.rs"]
-mod tests;
+pub mod dependency;
 
-pub(in crate::domain_computation::primary_graph) struct WorkflowAssessmentEvidenceMeaning {
+pub struct WorkflowAssessmentEvidenceMeaning {
     pub(in crate::domain_computation::primary_graph) identity: String,
     pub(in crate::domain_computation::primary_graph) producer: String,
     pub(in crate::domain_computation::primary_graph) family: String,
@@ -167,7 +164,7 @@ pub(in crate::domain_computation::primary_graph) fn visit_workflow_assessment_fa
 /// summed semantic widths of the fields of an evidence or evidence-dependency
 /// entity, zero for anything else. A `u64` field's width does not depend on
 /// its value, so the evidence can record its own charge exactly.
-pub(in crate::domain_computation::primary_graph) fn workflow_evidence_retained_bytes(
+pub fn workflow_evidence_retained_bytes(
     layout: &WorthQueryWorkflowLayout,
     effect: &WorthQueryApplicationRealizedEffect,
 ) -> u64 {
@@ -184,6 +181,6 @@ pub(in crate::domain_computation::primary_graph) fn workflow_evidence_retained_b
     }
 }
 
-fn text(value: &str) -> AspectValue {
+pub fn text(value: &str) -> AspectValue {
     AspectValue::String(InternedString::Raw(value.to_owned()))
 }

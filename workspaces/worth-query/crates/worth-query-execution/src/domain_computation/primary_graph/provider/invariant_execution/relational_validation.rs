@@ -27,7 +27,6 @@ impl WorthQueryPrimaryGraphProvider {
         } else {
             batch
         };
-        #[cfg(test)]
         let batch = if self.take_undeclared_application_touch() {
             batch.push(undeclared_application_touch_probe(
                 &self.graph.layout,
@@ -79,7 +78,6 @@ impl WorthQueryPrimaryGraphProvider {
             transaction
                 .push_batch(batch, allocation_control.policy())
                 .map_err(map_transaction_staging_failure)?;
-            #[cfg(test)]
             self.fault_port.candidate_staged_for_validation();
             Ok::<_, WorthQueryInvariantExecutionFailure>(match &factory {
                 Some(factory) => runtime.validate_branch_transaction_with_source_context(

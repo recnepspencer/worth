@@ -13,7 +13,7 @@ use worth_relational::facade::identity::KindId;
 
 /// Borrowed installed meaning, never a read permission or a rewritten descriptor.
 #[derive(Clone, Copy, Debug)]
-pub(in crate::domain_computation::primary_graph) struct InstalledFieldCoordinate<'a> {
+pub struct InstalledFieldCoordinate<'a> {
     field: &'a WorthQueryPrimaryFieldLayout,
     native: &'a WorthQueryInstalledApplicationAspectContract,
 }
@@ -26,22 +26,20 @@ impl InstalledFieldCoordinate<'_> {
     ) -> &WorthQueryInstalledApplicationAspectContract {
         self.native
     }
-    pub(in crate::domain_computation::primary_graph) fn same_field(&self, other: &Self) -> bool {
+    pub fn same_field(&self, other: &Self) -> bool {
         std::ptr::eq(self.field, other.field) && std::ptr::eq(self.native, other.native)
     }
-    pub(in crate::domain_computation::primary_graph) fn entity_kind(&self) -> KindId {
+    pub fn entity_kind(&self) -> KindId {
         self.field.entity_kind
     }
-    pub(in crate::domain_computation::primary_graph) fn contract_revision(
-        &self,
-    ) -> AspectContractRevision {
+    pub fn contract_revision(&self) -> AspectContractRevision {
         self.native.contract().revision()
     }
 }
 
 impl WorthQueryPrimaryGraphLayout {
     /// O(installed fields + selected contract fields), diagnostic only; no allocation.
-    pub(in crate::domain_computation::primary_graph) fn resolve_field_coordinate<'a>(
+    pub fn resolve_field_coordinate<'a>(
         &'a self,
         contracts: &'a WorthQueryInstalledApplicationSchemaContractCatalog,
         entity: &str,

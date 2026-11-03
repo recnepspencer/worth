@@ -12,7 +12,7 @@ use worth_runtime_world::facade::ProductBranchIncarnation;
 
 /// A completed physical attempt paired with its exact committed outbox owner.
 /// The transport observation carries no inbound signature or verifier claim.
-pub(in crate::domain_computation::primary_graph) struct InstalledTransportCompletion {
+pub struct InstalledTransportCompletion {
     committed: WorthQueryCommittedDispatchOutboxObservation,
     dispatch: WorthQueryExternalEffectDispatch,
 }
@@ -177,7 +177,7 @@ pub(in crate::domain_computation::primary_graph) enum InstalledTransportPublicat
 }
 
 #[must_use = "retain actual dispatch evidence and any World recovery custody"]
-pub(in crate::domain_computation::primary_graph) enum InstalledTransportPublicationOutcome {
+pub enum InstalledTransportPublicationOutcome {
     AlreadyCompleted,
     Performed(PerformedInstalledTransportCompletion),
     ProductUnpublished(UnpublishedInstalledTransportCompletion),

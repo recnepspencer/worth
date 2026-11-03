@@ -7,8 +7,7 @@ use im::OrdSet;
 use std::sync::Arc;
 
 #[derive(Debug)]
-pub(in crate::domain_computation::primary_graph::output_lineage::invalidation) struct PostingProjection
-{
+pub struct PostingProjection {
     pub(in crate::domain_computation::primary_graph::output_lineage::invalidation) id: u64,
     pub(in crate::domain_computation::primary_graph::output_lineage::invalidation) ordinals:
         OrdMap<Arc<FactPostingKey>, OrdSet<usize>>,

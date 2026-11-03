@@ -24,7 +24,7 @@ use crate::domain_computation::primary_graph::{
 };
 use crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession;
 
-mod observation;
+pub mod observation;
 mod preflight;
 
 pub use observation::WorthQueryAdmittedApplicationCapabilityAccess;

@@ -6,7 +6,7 @@ impl WorthQueryPrimaryGraph {
     /// Internal selected-read owners borrow the existing Native runtime
     /// directly. Constructing a full integration handle here would rebuild
     /// every installed index ID for a one-field currency check.
-    pub(in crate::domain_computation::primary_graph) fn with_runtime<T>(
+    pub fn with_runtime<T>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         read: impl FnOnce(&RelationalRuntime) -> T,

@@ -19,7 +19,7 @@ use worth_query_declaration::facade::application_schema::{
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 mod admitted;
-mod current_control;
+pub mod current_control;
 mod permission;
 mod read_closure;
 mod same_scope;
@@ -51,7 +51,7 @@ pub(in crate::domain_computation::primary_graph) struct SourceQueryReaderAccess<
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum SourceQueryObservationStop {
+pub enum SourceQueryObservationStop {
     CurrentControl(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial),
     ManagedIndex(Arc<super::managed_index::WorthQueryManagedIndexDenial>),
     Installation(worth_query_installation::facade::WorthQueryApplicationQueryInstallationDenial),
@@ -69,7 +69,7 @@ pub(in crate::domain_computation::primary_graph) enum SourceQueryObservationStop
 
 /// Diagnostic location on the original read; it grants no admission or state.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum SourceQueryPreparationPhase {
+pub enum SourceQueryPreparationPhase {
     Parameters,
     Permission,
     Session,

@@ -35,16 +35,14 @@ impl WorthQueryProductObservationLease {
         }
     }
 
-    pub(crate) fn retained_clone(&self) -> Self {
+    pub fn retained_clone(&self) -> Self {
         Self {
             observation: self.observation.clone(),
             current_security_guard: self.current_security_guard.clone(),
         }
     }
 
-    pub(crate) const fn observation(
-        &self,
-    ) -> &worth_runtime_world::facade::ProductBranchObservation {
+    pub const fn observation(&self) -> &worth_runtime_world::facade::ProductBranchObservation {
         &self.observation
     }
 
@@ -54,7 +52,7 @@ impl WorthQueryProductObservationLease {
         self.current_security_guard.as_ref()
     }
 
-    pub(crate) fn relational_basis(
+    pub fn relational_basis(
         &self,
     ) -> &worth_relational::facade::branch::AdmittedRelationalBranchBasis {
         self.observation.basis().relational_basis()
@@ -87,7 +85,7 @@ impl WorthQueryProductBranchLease {
     pub(crate) const fn read_lease_ref(&self) -> &WorthQueryProductObservationLease {
         &self.read
     }
-    pub(crate) fn retained_clone(&self) -> Self {
+    pub fn retained_clone(&self) -> Self {
         Self {
             publication: self.publication.clone(),
             read: self.read.retained_clone(),
@@ -117,11 +115,11 @@ impl WorthQueryProductBranchLease {
         }
     }
 
-    pub(crate) fn observation(&self) -> &worth_runtime_world::facade::ProductBranchObservation {
+    pub fn observation(&self) -> &worth_runtime_world::facade::ProductBranchObservation {
         self.read.observation()
     }
 
-    pub(crate) fn relational_basis(
+    pub fn relational_basis(
         &self,
     ) -> &worth_relational::facade::branch::AdmittedRelationalBranchBasis {
         self.observation().basis().relational_basis()
@@ -166,7 +164,7 @@ impl WorthQueryProductBranchLease {
         self.observation().basis().signal_basis()
     }
 
-    pub(crate) fn publication_binding(
+    pub fn publication_binding(
         &self,
     ) -> crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding{
         self.publication.clone()

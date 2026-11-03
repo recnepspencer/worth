@@ -31,14 +31,10 @@ impl<Schema, Relation, Entity> WorthQueryInvariantProjectionOrbit<Schema, Relati
             identity,
         }
     }
-    pub(in crate::domain_computation::primary_graph) fn aggregate(
-        &self,
-    ) -> &Arc<AggregateObservation> {
+    pub fn aggregate(&self) -> &Arc<AggregateObservation> {
         &self.aggregate
     }
-    pub(in crate::domain_computation::primary_graph::invariant_projection) fn walk(
-        &self,
-    ) -> &WorthQueryInvariantProjectionWalk<Schema, Relation, Entity> {
+    pub fn walk(&self) -> &WorthQueryInvariantProjectionWalk<Schema, Relation, Entity> {
         &self.walk
     }
     pub fn identity(&self) -> &WorthQueryAggregateIdentity<Schema, Relation> {

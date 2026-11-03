@@ -21,13 +21,13 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationR
 /// }
 /// ```
 pub struct WorthQueryApplicationQueryBatchReadPlan {
-    runtime: u64,
-    schema: ApplicationSchemaBindingIdentity,
+    pub runtime: u64,
+    pub schema: ApplicationSchemaBindingIdentity,
 
-    query: WorthQueryInstalledApplicationQueryIdentity,
+    pub query: WorthQueryInstalledApplicationQueryIdentity,
     count: usize,
 
-    roots: usize,
+    pub roots: usize,
 }
 
 pub(super) struct InstalledBatchPlan {
@@ -53,10 +53,7 @@ pub(in crate::domain_computation::primary_graph) struct PlannedBatchItem {
 }
 
 impl PlannedBatchItem {
-    pub(in crate::domain_computation::primary_graph::application_query) fn belongs_to(
-        &self,
-        batch: &WorthQueryApplicationQueryBatchAdmission,
-    ) -> bool {
+    pub fn belongs_to(&self, batch: &WorthQueryApplicationQueryBatchAdmission) -> bool {
         Arc::ptr_eq(&self.plan, &batch.plan)
     }
 }
@@ -225,7 +222,7 @@ impl WorthQueryApplicationQueryBatchAdmission {
         Ok(())
     }
 
-    pub(in crate::domain_computation::primary_graph) fn take_planned_read(
+    pub fn take_planned_read(
         &self,
         runtime: u64,
         schema: &ApplicationSchemaBindingIdentity,
@@ -259,6 +256,3 @@ impl WorthQueryApplicationQueryBatchAdmission {
         }))
     }
 }
-
-#[cfg(test)]
-mod tests;

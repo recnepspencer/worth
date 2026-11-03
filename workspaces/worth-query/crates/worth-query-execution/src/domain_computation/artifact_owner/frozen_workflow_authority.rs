@@ -37,7 +37,7 @@ impl WorthQueryFrozenWorkflowArtifactAuthority {
         }
     }
 
-    pub(crate) fn registry(&self) -> Arc<WorthQueryWorkflowArtifactRegistry> {
+    pub fn registry(&self) -> Arc<WorthQueryWorkflowArtifactRegistry> {
         self.authority().registry()
     }
 

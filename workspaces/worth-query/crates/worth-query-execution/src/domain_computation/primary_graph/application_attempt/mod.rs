@@ -9,18 +9,18 @@ pub(in crate::domain_computation::primary_graph) use fact::{
 };
 pub use output_field_capture::{OutputFieldCaptureFailure, StoreDenial};
 mod capability_revocation_program;
-mod commit_authority_binding;
+pub mod commit_authority_binding;
 mod commit_outcome_identity;
 mod commit_terminal;
-mod compare_and_commit;
+pub mod compare_and_commit;
 mod delegation_activation_program;
-mod denial;
-mod dependency_identity;
+pub mod denial;
+pub mod dependency_identity;
 pub(in crate::domain_computation::primary_graph) use dependency_identity::{
     FactContent, OutputCurrentnessFacts, WorthQueryProducerIdentityDenial,
 };
-mod effect_program;
-mod effect_validation;
+pub mod effect_program;
+pub mod effect_validation;
 mod elevation_approval_outcome;
 mod elevation_approval_program;
 mod elevation_approval_replay;
@@ -32,40 +32,37 @@ mod elevation_lifecycle_emission;
 mod elevation_lifecycle_facts;
 mod elevation_request_outcome;
 mod elevation_request_program;
-mod fact;
+pub mod fact;
 mod idempotency;
 mod idempotency_resolution;
 mod mandatory_review_outcome;
 mod mandatory_review_program;
 mod mandatory_review_replay;
 mod migration;
-mod observation;
+pub mod observation;
 pub(in crate::domain_computation::primary_graph) use observation::observe_aspect_presence;
-#[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use observation::take_native_field_contacts;
-#[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use observation::ReadRendezvous;
 pub(in crate::domain_computation::primary_graph) use observation::{
     observe_aspect_absence, observe_field, observe_field_value_borrowed,
     observe_field_value_borrowed_admitted, WorthQueryApplicationFieldObservation,
 };
 pub(in crate::domain_computation::primary_graph) mod precondition_binding;
-mod provider_binding;
+pub mod provider_binding;
 pub(in crate::domain_computation::primary_graph) use provider_binding::WorthQueryExpectedEffectStepPreparationWork;
 pub(in crate::domain_computation::primary_graph) use provider_binding::WorthQueryPrimaryGraphApplicationAttempt;
-pub(in crate::domain_computation::primary_graph) mod provider_compare_denial;
-mod provider_execution;
+pub mod provider_compare_denial;
+pub mod provider_execution;
 mod provider_recomparison;
 mod read_phase;
 mod read_scope;
-mod read_set;
+pub mod read_set;
 pub(in crate::domain_computation::primary_graph) use dependency_identity::CompletedFactRoutes;
 pub(in crate::domain_computation::primary_graph) mod signed_creation;
 mod signed_selection;
 mod signing_lifecycle;
 pub(in crate::domain_computation::primary_graph) use read_set::request_liveness::check_request_live;
 pub(in crate::domain_computation) use read_set::CompletedHandlerFactBoundary;
-#[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use read_set::ComputationFactReaders;
 pub(in crate::domain_computation::primary_graph) use read_set::FactRoutes;
 pub(in crate::domain_computation::primary_graph) use read_set::{
@@ -78,17 +75,16 @@ pub use signed_creation::{
     WorthQuerySignedCreationAdapter, WorthQuerySignedCreationPreparationDenial,
 };
 mod retained_commit;
-pub(in crate::domain_computation::primary_graph) mod retained_decision_facts;
-pub(super) mod snapshot_lease;
-mod workflow_deadline;
+pub mod retained_decision_facts;
+pub mod snapshot_lease;
+pub mod workflow_deadline;
 mod workflow_definition_program;
-pub(in crate::domain_computation::primary_graph) mod workflow_instance_observation;
-#[cfg(test)]
+pub mod workflow_instance_observation;
 pub(in crate::domain_computation::primary_graph) use workflow_instance_observation::decode_field_revision_fact;
 pub(in crate::domain_computation::primary_graph) use workflow_instance_observation::WorkflowStepAllowance;
-mod workflow_instance_program;
+pub mod workflow_instance_program;
 mod workflow_proposal_program;
-pub(in crate::domain_computation) mod workflow_transition_program;
+pub mod workflow_transition_program;
 pub(in crate::domain_computation) use snapshot_lease::{
     WorthQueryApplicationSnapshotLease, WorthQueryApplicationSnapshotLeaseDenial,
     WorthQueryApplicationSnapshotRelease,
@@ -232,7 +228,6 @@ pub use workflow_transition_program::{
 
 pub use retained_decision_facts::endpoints::AdmittedAdjacencyEndpoints as WorthQueryApplicationSourceAdjacencyEndpoints;
 
-#[cfg(test)]
 pub(in crate::domain_computation) use fact::consult_observation;
 
 pub(in crate::domain_computation::primary_graph) use fact::observe_indexed_entity_selection;

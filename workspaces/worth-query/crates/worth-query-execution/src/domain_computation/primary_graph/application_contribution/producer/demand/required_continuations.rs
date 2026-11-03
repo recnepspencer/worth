@@ -23,7 +23,7 @@ use super::WorthQueryOutputDemandDenial;
 use super::WorthQueryProducerOutputFamily;
 mod awaited_delivery;
 mod contacts;
-mod held;
+pub mod held;
 mod owned_refresh;
 pub(super) use owned_refresh::resume_owned_refresh;
 pub(super) use owned_refresh::OwnedRefreshStop;
@@ -126,7 +126,7 @@ trait ErasedRequiredSuccessor<Schema: ApplicationSchema>: Send + Sync {
     fn into_any(self: Box<Self>) -> Box<dyn Any>;
 }
 
-struct TypedRequiredSuccessor<Schema, Family>
+pub struct TypedRequiredSuccessor<Schema, Family>
 where
     Schema: ApplicationSchema,
     Family: WorthQueryProducerOutputFamily<Schema>,
@@ -321,7 +321,7 @@ where
 
 /// One caller's actual unresolved dependent work. The Vec backing has its
 /// own final-owner ticket; each entry separately funds its erased Box.
-pub(super) struct RequiredContinuations<Schema>
+pub struct RequiredContinuations<Schema>
 where
     Schema: ApplicationSchema,
 {

@@ -1,0 +1,256 @@
+pub use std::collections::BTreeMap;
+pub use std::sync::atomic::AtomicUsize;
+pub use std::sync::atomic::Ordering;
+pub use std::sync::Arc;
+
+pub use worth_runtime_bridge::facade::BridgeExecutionBasisSignalTerminal;
+
+pub use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::managed_run::tests::yield_fixture::YieldProvider;
+pub use crate::domain_computation::managed_run::tests::*;
+
+#[test]
+fn workflow_yield_retains_operation_and_stage_capacity_until_cleanup() {
+    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
+        let phase = &active_phase;
+        let execution = phase;
+
+        let installer = WorthQueryExecutionRuntimeInstaller::new();
+        let provider_anchor = Arc::new(
+        worth_query_execution::facade::integration::WorthQueryGraphProviderAnchor::install::<ManagedGraph, _>(
+            YieldProvider::installed(7),
+        ),
+    );
+        let provider_support = provider_anchor.resource_support().clone();
+        let graph = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::managed_run::tests::workflow_provider_steps::installed_graph(
+            &installer,
+            "workflow-yield-graph",
+            provider_anchor,
+        );
+        let runtime =
+            worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::managed_run::tests::workflow_provider_steps::installed_runtime(installer, "workflow yield");
+        let operation_resources =
+            worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::provider_session::tests::admitted_yield_plan("workflow-yield", 8);
+        let stage_resources = admitted_plan_with_graph_support(
+            "workflow-yield:stage",
+            8,
+            graph.role(),
+            provider_support,
+        );
+        let resources = WorthQueryAdmittedWorkflowResourcePlan::assemble(
+            operation_resources,
+            BTreeMap::from([("stage".to_owned(), stage_resources)]),
+        );
+        let operation = workflow_authority_with_stage_graph(
+            &runtime,
+            &resources,
+            "stage",
+            &graph,
+            WorthQueryOperationGraphAccess::Observe,
+        );
+        let running = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::managed_run::tests::workflow_provider_steps::admitted_workflow(
+            &runtime,
+            &operation,
+            resources,
+            resource_request,
+        );
+        let installed_running_phase = execution.phase_for_workflow(&running);
+
+        let logical_run_identity = running.logical_run_identity().to_owned();
+        let attempt_identity = running.identity().to_owned();
+        let active = running
+            .begin_stage_graph_execution(
+                &installed_running_phase,
+                "stage",
+                &graph,
+                WorthQueryManagedGraphCallRequest::new(
+                    WorthQueryGraphProviderCallKind::Observe,
+                    "workflow-yield",
+                ),
+            )
+            .unwrap();
+        let paused = match active.advance(&installed_running_phase) {
+            WorthQueryWorkflowGraphStepOutcome::Continue(paused) => paused,
+            _ => panic!("workflow provider did not pause"),
+        };
+
+        let yielded = match paused.yield_run() {
+            worth_query_execution::facade::domain_computation::WorthQueryWorkflowYieldOutcome::Yielded(yielded) => yielded,
+            _ => panic!("eligible workflow did not yield"),
+        };
+        assert_eq!(
+            yielded.inspection().logical_run_identity(),
+            logical_run_identity
+        );
+        assert_eq!(
+            yielded.inspection().yielded_attempt_identity(),
+            attempt_identity
+        );
+        assert_eq!(yielded.inspection().checkpoint().retained_bytes(), 7);
+        assert_eq!(
+            yielded.inspection().retained_capacity_reservation_count(),
+            3
+        );
+        assert_eq!(
+            yielded
+                .inspection()
+                .provider_work()
+                .interrupted_call_count(),
+            1
+        );
+        assert_eq!(
+            yielded
+                .inspection()
+                .artifact_evidence()
+                .retained_artifact_count(),
+            0
+        );
+
+        let cleanup = match yielded.cleanup() {
+            worth_query_execution::facade::domain_computation::WorthQueryWorkflowYieldCleanupOutcome::Complete(receipt) => {
+                receipt
+            }
+            worth_query_execution::facade::domain_computation::WorthQueryWorkflowYieldCleanupOutcome::Pending(_) => {
+                panic!("artifact-free yielded workflow reported pending cleanup")
+            }
+            worth_query_execution::facade::domain_computation::WorthQueryWorkflowYieldCleanupOutcome::RecoveryRequired(
+                _,
+            ) => {
+                panic!("ordinary checkpoint release unexpectedly required recovery")
+            }
+        };
+        assert_eq!(
+            cleanup.inspection().logical_run_identity(),
+            logical_run_identity
+        );
+        assert!(cleanup.inspection().resources_released());
+        assert_eq!(cleanup.inspection().released_reservation_count(), 3);
+        assert_eq!(cleanup.inspection().checkpoint().retained_bytes(), 7);
+    });
+}
+
+#[test]
+fn workflow_suspension_failure_returns_terminalized_release_authority() {
+    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
+        let phase = &active_phase;
+        let execution = phase;
+
+        let installer = WorthQueryExecutionRuntimeInstaller::new();
+        let provider_anchor = Arc::new(
+        worth_query_execution::facade::integration::WorthQueryGraphProviderAnchor::install::<ManagedGraph, _>(
+            YieldProvider::suspension_failure(),
+        ),
+    );
+        let provider_support = provider_anchor.resource_support().clone();
+        let graph = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::managed_run::tests::workflow_provider_steps::installed_graph(
+            &installer,
+            "workflow-yield-failure-graph",
+            provider_anchor,
+        );
+        let runtime =
+            worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::managed_run::tests::workflow_provider_steps::installed_runtime(installer, "workflow yield failure");
+        let operation_resources = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::provider_session::tests::admitted_yield_plan(
+            "workflow-yield-failure",
+            8,
+        );
+        let stage_resources = admitted_plan_with_graph_support(
+            "workflow-yield-failure:stage",
+            8,
+            graph.role(),
+            provider_support,
+        );
+        let resources = WorthQueryAdmittedWorkflowResourcePlan::assemble(
+            operation_resources,
+            BTreeMap::from([("stage".to_owned(), stage_resources)]),
+        );
+        let operation = workflow_authority_with_stage_graph(
+            &runtime,
+            &resources,
+            "stage",
+            &graph,
+            WorthQueryOperationGraphAccess::Observe,
+        );
+        let running = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::managed_run::tests::workflow_provider_steps::admitted_workflow(
+            &runtime,
+            &operation,
+            resources,
+            resource_request,
+        );
+        let installed_running_phase = execution.phase_for_workflow(&running);
+
+        let active = running
+            .begin_stage_graph_execution(
+                &installed_running_phase,
+                "stage",
+                &graph,
+                WorthQueryManagedGraphCallRequest::new(
+                    WorthQueryGraphProviderCallKind::Observe,
+                    "workflow-yield-failure",
+                ),
+            )
+            .unwrap();
+        let paused = match active.advance(&installed_running_phase) {
+            WorthQueryWorkflowGraphStepOutcome::Continue(paused) => paused,
+            _ => panic!("workflow provider did not pause"),
+        };
+        let recovery = match paused.yield_run() {
+            worth_query_execution::facade::domain_computation::WorthQueryWorkflowYieldOutcome::RecoveryRequired(
+                recovery,
+            ) => recovery,
+            _ => panic!("workflow suspension failure did not preserve recovery authority"),
+        };
+        assert!(!recovery.running_attempt_recoverable());
+        assert_eq!(
+        recovery.kind(),
+        worth_query_execution::facade::domain_computation::WorthQueryYieldRecoveryKind::ProviderCheckpointSuspension(
+            worth_query_execution::facade::domain_computation::WorthQueryProviderCheckpointSuspensionFailureKind::ProviderRejected,
+        )
+    );
+        let release = match recovery.release_terminalized() {
+        Ok(worth_query_execution::facade::domain_computation::WorthQueryWorkflowYieldRecoveryReleaseOutcome::Complete(
+            release,
+        )) => release,
+        Ok(worth_query_execution::facade::domain_computation::WorthQueryWorkflowYieldRecoveryReleaseOutcome::Pending(
+            _,
+        )) => {
+            panic!("artifact-free workflow recovery reported pending cleanup")
+        }
+        Ok(
+            worth_query_execution::facade::domain_computation::WorthQueryWorkflowYieldRecoveryReleaseOutcome::RecoveryRequired(_),
+        ) => panic!("artifact-free workflow recovery gained artifact recovery"),
+        Err(_) => panic!("artifact-free workflow recovery did not release"),
+    };
+        assert_eq!(
+            release.inspection().bridge_signal_terminal(),
+            BridgeExecutionBasisSignalTerminal::Cancelled
+        );
+        assert!(release.inspection().resources_released());
+        assert_eq!(release.inspection().released_reservation_count(), 3);
+    });
+}
+
+pub struct YieldArtifactResource(Arc<AtomicUsize>);
+
+impl WorthQueryArtifactProviderResource for YieldArtifactResource {
+    const PROVIDER_FAMILY: &'static str = "WORTH.tests.affinity.provider";
+
+    fn canonical_semantic_projection(&self) -> Vec<u8> {
+        b"yield-artifact".to_vec()
+    }
+
+    fn retained_bytes(&self) -> usize {
+        64
+    }
+
+    fn dispose(&mut self) {
+        self.0.fetch_add(1, Ordering::AcqRel);
+    }
+}
+
+#[path = "workflow_yield_cleanup_waits_for_retained_artifact_owners/mod.rs"]
+pub mod workflow_yield_cleanup_waits_for_retained_artifact_owners;

@@ -4,7 +4,7 @@ use super::{
 };
 use worth_execution::{ExecutionArray, ExecutionArrayBuilder};
 
-pub(in crate::domain_computation::primary_graph) struct RetainedFactStore<T> {
+pub struct RetainedFactStore<T> {
     seed: Option<Run<T>>,
     chunk: Option<Run<T>>,
     directory: Option<RunDirectory<T>>,
@@ -12,9 +12,7 @@ pub(in crate::domain_computation::primary_graph) struct RetainedFactStore<T> {
     failure: Option<StoreDenial>,
 }
 impl<T> RetainedFactStore<T> {
-    pub(in crate::domain_computation::primary_graph) fn new(
-        policy: super::StorageControl<'_, '_>,
-    ) -> Result<Self, StoreDenial> {
+    pub fn new(policy: super::StorageControl<'_, '_>) -> Result<Self, StoreDenial> {
         policy.check_live()?;
         Ok(Self::vacant())
     }
@@ -29,7 +27,7 @@ impl<T> RetainedFactStore<T> {
     }
     /// Re-author a sealed canonical payload only when new facts must merge.
     /// The old owning iterator and its charge coexist with the admitted slots.
-    pub(in crate::domain_computation::primary_graph) fn from_sorted_records(
+    pub fn from_sorted_records(
         records: ExecutionArray<RetainedFact<T>>,
         policy: super::StorageControl<'_, '_>,
     ) -> Result<Self, StoreDenial> {
@@ -54,7 +52,7 @@ impl<T> RetainedFactStore<T> {
             .unwrap_or(&[])
     }
 
-    pub(in crate::domain_computation::primary_graph) fn insert(
+    pub fn insert(
         &mut self,
         key: AdmittedFactKey,
         value: T,
@@ -113,7 +111,6 @@ impl<T> RetainedFactStore<T> {
         let record = RetainedFact {
             key,
             value,
-            #[cfg(test)]
             ordinal: self.count,
         };
         let chunk = self.chunk.as_mut().unwrap();
@@ -242,7 +239,7 @@ impl<T> RetainedFactStore<T> {
             level = level.checked_add(1).ok_or(StoreDenial::Representability)?;
         }
     }
-    pub(in crate::domain_computation::primary_graph) fn finish(
+    pub fn finish(
         self,
         policy: super::StorageControl<'_, '_>,
     ) -> Result<ExecutionArray<RetainedFact<T>>, StoreDenial> {

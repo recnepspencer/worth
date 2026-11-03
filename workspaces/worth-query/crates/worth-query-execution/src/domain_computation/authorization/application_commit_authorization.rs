@@ -43,7 +43,7 @@ impl<'serialization, 'admission, Schema, Operation, Input, Scope>
         }
     }
 
-    pub(in crate::domain_computation) fn govern<Subject, Outcome>(
+    pub fn govern<Subject, Outcome>(
         self,
         subject: Subject,
         transition: impl FnOnce(Subject) -> Outcome,

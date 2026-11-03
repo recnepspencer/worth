@@ -2,7 +2,7 @@
 use super::*;
 use crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding;
 
-pub(in crate::domain_computation::primary_graph) enum CorrectionIdempotencyObservation {
+pub enum CorrectionIdempotencyObservation {
     Unseen,
     Completed(
         WorthQueryApplicationIdempotencyBinding,

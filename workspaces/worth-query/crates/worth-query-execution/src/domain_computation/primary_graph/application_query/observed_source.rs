@@ -11,7 +11,7 @@ use super::resource_lifecycle::WorthQueryApplicationBasisSelectionIdentity;
 pub(in crate::domain_computation::primary_graph::application_query) mod comparison;
 mod denial;
 mod expression_context;
-mod fact_conversion;
+pub mod fact_conversion;
 pub(in crate::domain_computation::primary_graph) use fact_conversion::SourceFactExpansionControl;
 mod fact_sources;
 mod footprint_accounting;
@@ -21,8 +21,8 @@ pub(in crate::domain_computation) use query_context_binding::ObservedQueryExpres
 mod realized_footprint;
 mod result_set;
 pub(crate) mod retained_dependencies;
-mod retained_parameters;
-mod root_selection;
+pub mod retained_parameters;
+pub mod root_selection;
 mod scope_selector;
 mod workflow_capture;
 pub use denial::{WorthQuerySourceExpectationDenial, WorthQuerySourceExpectationDenialKind};
@@ -77,7 +77,7 @@ impl WorthQueryBoundSourceExpectation {
             .bind_source_partition(&self.partition_identity)
     }
 }
-pub(in crate::domain_computation::primary_graph) mod source_identity;
+pub mod source_identity;
 pub(in crate::domain_computation::primary_graph) use super::super::entity_resolution::WorthQueryObservedScopeSelector;
 pub(in crate::domain_computation::primary_graph::application_query) use retained_parameters::WorthQueryRetainedObservedParameters;
 pub(in crate::domain_computation::primary_graph) use root_selection::WorthQueryObservedRootSelection;
@@ -95,30 +95,28 @@ pub(in crate::domain_computation) use super::super::source_facts::{
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) struct WorthQueryObservedSourceFootprint {
-    pub(in crate::domain_computation::primary_graph) root: EntityId,
-    pub(in crate::domain_computation::primary_graph) complete: bool,
-    pub(in crate::domain_computation::primary_graph) entities: Vec<EntityId>,
-    pub(in crate::domain_computation::primary_graph) aspects: Vec<WorthQueryObservedFieldRevision>,
-    pub(in crate::domain_computation::primary_graph) adjacencies:
-        Vec<WorthQueryObservedAdjacencyRevision>,
-    pub(in crate::domain_computation::primary_graph) root_selection:
-        Option<std::sync::Arc<WorthQueryObservedRootSelection>>,
+pub struct WorthQueryObservedSourceFootprint {
+    pub root: EntityId,
+    pub complete: bool,
+    pub entities: Vec<EntityId>,
+    pub aspects: Vec<WorthQueryObservedFieldRevision>,
+    pub adjacencies: Vec<WorthQueryObservedAdjacencyRevision>,
+    pub root_selection: Option<std::sync::Arc<WorthQueryObservedRootSelection>>,
 }
 
 /// Opaque proof of the native source projected into one public query row.
 /// It is descriptive input to a later governed mutation, not read authority.
 pub struct WorthQueryObservedSource<Query> {
     pub(super) expression_context: Option<std::sync::Arc<RetainedExpressionContext>>,
-    pub(in crate::domain_computation) runtime_authority: u64,
-    pub(in crate::domain_computation) schema_binding: ApplicationSchemaBindingIdentity,
-    pub(in crate::domain_computation) query_identity: WorthQueryInstalledApplicationQueryIdentity,
+    pub runtime_authority: u64,
+    pub schema_binding: ApplicationSchemaBindingIdentity,
+    pub query_identity: WorthQueryInstalledApplicationQueryIdentity,
     pub(in crate::domain_computation) parameter_binding_identity: CanonicalDigestId,
-    pub(super) parameters: std::sync::Arc<WorthQueryRetainedObservedParameters>,
-    pub(in crate::domain_computation) query_identifier: std::sync::Arc<String>,
-    pub(in crate::domain_computation) branch: std::sync::Arc<BranchId>,
-    pub(in crate::domain_computation) selection: WorthQueryApplicationBasisSelectionIdentity,
-    pub(in crate::domain_computation) model_root: EntityId,
+    pub parameters: std::sync::Arc<WorthQueryRetainedObservedParameters>,
+    pub query_identifier: std::sync::Arc<String>,
+    pub branch: std::sync::Arc<BranchId>,
+    pub selection: WorthQueryApplicationBasisSelectionIdentity,
+    pub model_root: EntityId,
     // The current invocation's actual Source custody cannot be replaced by an
     // interned semantic Meaning retaining an older admitted footprint.
     pub(super) invocation_source_authorization: Option<
@@ -131,7 +129,7 @@ pub struct WorthQueryObservedSource<Query> {
             crate::domain_computation::primary_graph::application_attempt::ManagedSourceRead,
         >,
     >,
-    pub(super) source_meaning: std::sync::Arc<source_identity::WorthQueryObservedSourceMeaning>,
+    pub source_meaning: std::sync::Arc<source_identity::WorthQueryObservedSourceMeaning>,
     pub(super) scope_selector: std::sync::Arc<WorthQueryObservedScopeSelector>,
 
     pub(in crate::domain_computation) _marker: PhantomData<fn() -> Query>,
@@ -207,7 +205,7 @@ impl<Query> WorthQueryObservedSource<Query> {
         }
     }
 
-    pub(in crate::domain_computation) fn validate_completeness(
+    pub fn validate_completeness(
         &self,
         subject: &str,
     ) -> Result<(), WorthQuerySourceExpectationDenial> {
@@ -223,9 +221,7 @@ impl<Query> WorthQueryObservedSource<Query> {
             })
     }
 
-    pub(in crate::domain_computation::primary_graph) fn output_source_epoch(
-        &self,
-    ) -> Option<source_identity::WorthQueryObservedSourceEpoch> {
+    pub fn output_source_epoch(&self) -> Option<source_identity::WorthQueryObservedSourceEpoch> {
         source_identity::WorthQueryObservedSourceEpoch::from_observation(
             self.query_identity.as_bytes(),
             self.parameter_binding_identity.bytes(),
@@ -241,14 +237,11 @@ impl<Query> WorthQueryObservedSource<Query> {
         self.source_meaning.checkpoint_identity().bytes()
     }
 
-    pub(in crate::domain_computation::primary_graph) fn source_root(&self) -> EntityId {
+    pub fn source_root(&self) -> EntityId {
         self.source_meaning.footprint().root
     }
 
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn footprint_for_test(
-        &self,
-    ) -> &WorthQueryObservedSourceFootprint {
+    pub fn footprint_for_test(&self) -> &WorthQueryObservedSourceFootprint {
         self.source_meaning.footprint()
     }
 }

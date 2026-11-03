@@ -1,0 +1,101 @@
+//! Canceling a prepared publication leaves the captured prior and its ticket intact.
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::output_lineage::registry_fixture::recorded_settlement;
+use worth_query_execution::domain_computation::primary_graph::output_lineage::retained_computation::PriorComputationRecord;
+use worth_query_execution::domain_computation::primary_graph::output_lineage::retained_computation::RecordedComputation;
+use std::sync::Arc;
+use worth_query_execution::domain_computation::primary_graph::output_lineage::prepared_slot::CancelledLineageSlot;
+use std::sync::Mutex;
+use std::sync::OnceLock;
+use worth_query_execution::domain_computation::primary_graph::output_lineage::prepared_slot::computation::PreparedComputationCustody;
+use worth_query_execution::domain_computation::primary_graph::output_lineage::prepared_slot::PreparedOutputLineageSlot;
+use worth_query_execution::domain_computation::primary_graph::output_lineage::ProductCoordinate;
+use worth_query_execution::domain_computation::primary_graph::output_lineage::settlement_identity::RecordedSettlementIdentity;
+use worth_query_execution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::prior_absence::SealedComputationRetention;
+use worth_query_execution::domain_computation::primary_graph::output_lineage::prepared_slot::cancellation;
+use worth_query_execution::domain_computation::primary_graph::output_lineage::prepared_slot::computation;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::sealed_run_for_lineage_test;
+
+#[test]
+fn a_canceled_prepared_publication_cannot_take_its_priors_custody() {
+    let _observation =
+        worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation::install_on_this_thread();
+    let (mut lineage, prior_identity) = recorded_settlement();
+    let source = prior_identity.source().clone();
+    let (occurrence, generation, old_slot) = prior_identity.address();
+    let captured = Arc::clone(&lineage.by_source[&source][&occurrence][&generation][old_slot]);
+    let retained = lineage.retain_computation(sealed_run_for_lineage_test());
+    let RecordedComputation::Retained(state) = &retained else {
+        panic!("prior retained");
+    };
+    let mut sealed = sealed_run_for_lineage_test();
+    sealed.cloned_from = Some(Arc::clone(state));
+    captured.get().unwrap().mutable.lock().unwrap().computation = retained;
+    let coordinate = ProductCoordinate {
+        occurrence,
+        generation: generation + 1,
+    };
+
+    // A private vacancy grants no publication authority. It is prepaid and
+    // exercises the production slot's assignment and cancellation lifecycle.
+
+    let identity = RecordedSettlementIdentity::retain(&source, coordinate, 0);
+    let record_cell = Arc::new(OnceLock::new());
+    lineage
+        .by_source
+        .entry(source.clone())
+        .or_default()
+        .entry(occurrence)
+        .or_default()
+        .insert(coordinate.generation, vec![Arc::clone(&record_cell)]);
+    let partition_cell = lineage
+        .partition_index
+        .insert_vacancy(source.clone(), coordinate, None);
+
+    let output_binding_type = lineage.binding_type(&source.output_binding);
+    let owner = Arc::new(Mutex::new(lineage));
+    let mut prepared = PreparedOutputLineageSlot {
+        owner: Arc::clone(&owner),
+        output_binding_type,
+        source,
+        coordinate,
+        partition: None,
+        identity: Arc::clone(&identity),
+        record_cell,
+        partition_cell,
+
+        cancellation: Some(Box::new(CancelledLineageSlot {
+            identity,
+            partition: None,
+            next: None,
+        })),
+        completed_handler_facts: None,
+        completed_decision_reuse: None,
+        prepared_input_reuse_key: None,
+        native_output_witness: None,
+        required_publication: None,
+        native_prior_checkpoint: None,
+
+        prior_computation: None,
+        filled: false,
+        computation: PreparedComputationCustody::Unassigned,
+    };
+    prepared.retain_computation(
+        SealedComputationRetention::Produced(sealed),
+        Some(PriorComputationRecord::from_recorded_cell_for_test(
+            Arc::clone(&captured),
+        )),
+    );
+
+    drop(prepared);
+    let mut lineage = owner.lock().unwrap();
+
+    assert!(matches!(
+        captured.get().unwrap().mutable.lock().unwrap().computation,
+        RecordedComputation::Retained(_)
+    ));
+    lineage.cancelled_slots.take();
+
+    lineage.by_source.clear();
+    lineage.partition_index = Default::default();
+    drop(captured);
+}

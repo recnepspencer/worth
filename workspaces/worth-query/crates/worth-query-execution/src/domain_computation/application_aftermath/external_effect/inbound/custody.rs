@@ -12,7 +12,7 @@ use super::WorthQueryInboundTerminalOwnerResult;
 use crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxObservation;
 
 mod acceptance;
-mod publication_permit;
+pub mod publication_permit;
 mod recovery;
 mod terminal_state;
 pub(in crate::domain_computation) use publication_permit::{
@@ -131,7 +131,7 @@ enum PublicationState {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) enum WorthQueryInboundPublicationClaim {
+pub enum WorthQueryInboundPublicationClaim {
     Claimed,
     AtCapacity,
     Publishing,

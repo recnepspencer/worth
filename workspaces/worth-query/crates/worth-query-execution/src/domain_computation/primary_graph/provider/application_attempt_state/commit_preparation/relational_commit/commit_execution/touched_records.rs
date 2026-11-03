@@ -12,12 +12,12 @@ use crate::domain_computation::WorthQueryProviderSessionCommitStop;
 /// Exact prepared native identities, physically admitted and sealed before any
 /// publication. The same immutable backing follows every receipt and recovery
 /// holder; Arc headers remain outside the array's payload charge.
-pub(in crate::domain_computation::primary_graph::provider) struct PreparedTouchedRecords {
-    records: Arc<ExecutionArray<WorthQueryTouchedRecordIdentity>>,
+pub struct PreparedTouchedRecords {
+    pub records: Arc<ExecutionArray<WorthQueryTouchedRecordIdentity>>,
 }
 
 impl PreparedTouchedRecords {
-    pub(super) fn prepare(
+    pub fn prepare(
         candidate: &PreparedRelationalCommitCandidate,
 
         allocation_policy: ExecutionAllocationPolicy<'_, '_>,
@@ -48,7 +48,7 @@ impl PreparedTouchedRecords {
 
     /// Publication already occurred. This only checks the native performed
     /// identities and moves sealed custody; it cannot allocate or poll a stop.
-    pub(in crate::domain_computation::primary_graph::provider) fn verify_performed(
+    pub fn verify_performed(
         self,
         exact: &[RecordRef],
     ) -> Arc<ExecutionArray<WorthQueryTouchedRecordIdentity>> {
@@ -75,6 +75,3 @@ fn allocation_denied(
         crate::domain_computation::WorthQueryProviderSessionFailure::allocation_denied(denial),
     )
 }
-
-#[cfg(test)]
-mod tests;

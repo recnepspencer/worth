@@ -5,7 +5,6 @@ use super::semantic_basis::{
     validate_managed_semantic_basis, WorthQueryManagedSemanticBasisDenial,
     WorthQueryManagedSemanticBasisObservation,
 };
-#[cfg(test)]
 use super::WorthQueryAdmittedDirectRun;
 use super::{
     WorthQueryManagedRunCounters, WorthQueryManagedRunDenial, WorthQueryManagedRunDenialKind,
@@ -16,8 +15,7 @@ use crate::domain_computation::{
 };
 
 impl WorthQueryExecutionRuntime {
-    #[cfg(test)]
-    pub(in crate::domain_computation) fn admit_direct_run(
+    pub fn admit_direct_run(
         &self,
         operation: &WorthQueryExecutionBoundOperationAuthority,
         resource_attempt: WorthQueryDirectExecutionResourceAttempt,
@@ -51,7 +49,6 @@ impl WorthQueryExecutionRuntime {
     }
 }
 
-#[cfg(test)]
 fn validate_direct_run(
     runtime: &WorthQueryExecutionRuntime,
     operation: &WorthQueryExecutionBoundOperationAuthority,
@@ -172,26 +169,23 @@ fn validate_run_lower(
     Ok(counters)
 }
 
-#[cfg(test)]
-pub(crate) struct WorthQueryManagedRunAdmissionRejection {
+pub struct WorthQueryManagedRunAdmissionRejection {
     denial: WorthQueryManagedRunDenial,
     resource_attempt: WorthQueryDirectExecutionResourceAttempt,
     bridge_basis: BridgeBoundExecutionBasis,
     relational_basis: WorthQueryManagedRelationalObservation,
 }
 
-#[cfg(test)]
 impl WorthQueryManagedRunAdmissionRejection {
-    pub(crate) fn denial(&self) -> &WorthQueryManagedRunDenial {
+    pub fn denial(&self) -> &WorthQueryManagedRunDenial {
         &self.denial
     }
 
-    pub(crate) fn into_resource_attempt(self) -> WorthQueryDirectExecutionResourceAttempt {
+    pub fn into_resource_attempt(self) -> WorthQueryDirectExecutionResourceAttempt {
         self.resource_attempt
     }
 }
 
-#[cfg(test)]
 impl std::fmt::Debug for WorthQueryManagedRunAdmissionRejection {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         formatter

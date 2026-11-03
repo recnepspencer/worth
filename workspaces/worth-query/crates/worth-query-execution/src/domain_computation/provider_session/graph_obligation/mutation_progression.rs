@@ -17,7 +17,7 @@ use super::{
 
 /// Private proof that the legacy managed-run engine is a worker of one exact
 /// graph-work session rather than a second application-mutation authority.
-pub(in crate::domain_computation) struct WorthQueryMutationRunBinding {
+pub struct WorthQueryMutationRunBinding {
     session: WorthQueryGraphWorkSessionIdentity,
     managed_run: WorthQueryGraphWorkManagedRunIdentity,
     plan: WorthQueryGraphWorkPlanIdentity,
@@ -105,7 +105,7 @@ impl WorthQueryMutationRunBinding {
         clippy::disallowed_methods,
         reason = "certification-harness thread-spawn=1: A receiver-owned compiled cleanup scheduling guard joins one foreign native cleanup actor and returns the real lower terminal failure to its Signal owner; unarmed cleanup stays on its original thread and no query computation is parallelized."
     )]
-    pub(in crate::domain_computation) fn finish(
+    pub fn finish(
         self,
         running: crate::domain_computation::WorthQueryRunningDirectRun,
         terminal: crate::domain_computation::WorthQueryManagedRunTerminalKind,
@@ -168,7 +168,7 @@ impl WorthQueryMutationRunBinding {
 }
 
 impl WorthQueryProviderSessionBoundMutationRun {
-    pub(in crate::domain_computation) fn finish(
+    pub fn finish(
         self,
         running: crate::domain_computation::WorthQueryRunningDirectRun,
         terminal: crate::domain_computation::WorthQueryManagedRunTerminalKind,

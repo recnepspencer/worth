@@ -28,7 +28,7 @@ impl DecodedApprovalLineage {
     }
 }
 
-pub(in crate::domain_computation) fn decode_principal(
+pub fn decode_principal(
     execution: &ExecutionRequest<'_, '_>,
     encoded: &str,
 ) -> Result<DecodedApprovalPrincipal, Denial> {
@@ -44,7 +44,7 @@ pub(in crate::domain_computation) fn decode_principal(
     })
 }
 
-pub(in crate::domain_computation) fn decode_lineage(
+pub fn decode_lineage(
     execution: &ExecutionRequest<'_, '_>,
     encoded: &str,
 ) -> Result<DecodedApprovalLineage, Denial> {

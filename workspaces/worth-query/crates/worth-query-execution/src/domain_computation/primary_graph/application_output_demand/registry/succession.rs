@@ -20,14 +20,14 @@ use super::WorthQueryOutputProgress;
 
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
 
-pub(super) struct Succession {
+pub struct Succession {
     predecessor: [u8; 32],
     reopened: Option<WorthQueryOutputProgress>,
 }
 
 impl Succession {
     /// A new row admitted as the successor of `predecessor`'s key.
-    pub(super) fn new(predecessor: [u8; 32]) -> Self {
+    pub fn new(predecessor: [u8; 32]) -> Self {
         Self {
             predecessor,
             reopened: None,
@@ -42,12 +42,12 @@ impl Succession {
         }
     }
 
-    pub(super) fn predecessor(&self) -> [u8; 32] {
+    pub fn predecessor(&self) -> [u8; 32] {
         self.predecessor
     }
 
     /// The key identity a successor row replaces, if the row is one.
-    pub(super) fn predecessor_of(succession: &Option<Self>) -> Option<[u8; 32]> {
+    pub fn predecessor_of(succession: &Option<Self>) -> Option<[u8; 32]> {
         succession.as_ref().map(Self::predecessor)
     }
 }
@@ -111,7 +111,7 @@ impl super::WorthQueryOutputDemandRegistry {
 impl DemandRecord {
     /// A row admitted under a new key that has not published: it holds no
     /// output of its own and reopened none.
-    pub(super) fn unpublished_new_key(&self) -> bool {
+    pub fn unpublished_new_key(&self) -> bool {
         !matches!(self.state, DemandState::Output(_))
             && self
                 .successor_of
@@ -129,7 +129,7 @@ impl super::DemandRegistryState {
     /// answers, revived here or earlier. Rows of one source order by their
     /// refresh, so a refreshed alias is newer than the row it refreshed.
     /// Terminal cleanup selects the replaced Ready before reviving it.
-    pub(super) fn revive_replaced_ready(&mut self, key: &super::WorthQueryOutputDemandKey) -> bool {
+    pub fn revive_replaced_ready(&mut self, key: &super::WorthQueryOutputDemandKey) -> bool {
         let replaced = replaced_ready_key(&self.records, key);
         self.revive_ready_at(replaced)
     }

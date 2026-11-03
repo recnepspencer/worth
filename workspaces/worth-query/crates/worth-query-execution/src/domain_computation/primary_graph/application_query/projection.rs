@@ -21,14 +21,14 @@ pub use denial::{
     WorthQueryApplicationProjectionDenial, WorthQueryApplicationProjectionDenialKind,
 };
 mod optional_aspect;
-mod projected_tree;
+pub mod projected_tree;
 pub(in crate::domain_computation::primary_graph::application_query) use projected_tree::content::ContentWriter;
 pub(in crate::domain_computation::primary_graph) use projected_tree::content_storage::ContentScratch;
 pub(in crate::domain_computation::primary_graph) use projected_tree::content_storage::ProjectionContentStorageFault;
 pub(in crate::domain_computation::primary_graph::application_query) use projected_tree::{
     OwnedProjectionRows, ProjectionDisposal,
 };
-pub(in crate::domain_computation::primary_graph) mod retained_projection;
+pub mod retained_projection;
 
 pub use disclosed::{WorthQueryApplicationDisclosed, WorthQueryApplicationOmission};
 

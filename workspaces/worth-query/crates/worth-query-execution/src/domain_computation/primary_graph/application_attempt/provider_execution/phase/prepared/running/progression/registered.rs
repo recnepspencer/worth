@@ -4,15 +4,15 @@ use crate::domain_computation::primary_graph::application_attempt::provider_exec
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding;
 use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider;
 
-pub(in crate::domain_computation) struct WorthQueryRegisteredProviderAttempt<'run> {
-    staged: crate::domain_computation::WorthQuerySessionBoundReadsAndEffects<'run>,
+pub struct WorthQueryRegisteredProviderAttempt<'run> {
+    pub staged: crate::domain_computation::WorthQuerySessionBoundReadsAndEffects<'run>,
 
-    steps: std::sync::Arc<[crate::domain_computation::WorthQueryProvisionalEffectStep]>,
-    dispatch_outbox:
+    pub steps: std::sync::Arc<[crate::domain_computation::WorthQueryProvisionalEffectStep]>,
+    pub dispatch_outbox:
         Option<crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxRecord>,
 }
 
-pub(in crate::domain_computation) struct WorthQueryProviderAttemptRegistrationContext<
+pub struct WorthQueryProviderAttemptRegistrationContext<
     'a,
     Schema,
     Operation,
@@ -39,7 +39,7 @@ pub(in crate::domain_computation) struct WorthQueryProviderAttemptRegistrationCo
 impl<'a, Schema, Operation, Input, Scope>
     WorthQueryProviderAttemptRegistrationContext<'a, Schema, Operation, Input, Scope>
 {
-    pub(super) fn new(
+    pub fn new(
         provider: &'a std::sync::Arc<WorthQueryPrimaryGraphProvider>,
         admission: &'a crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<
             Schema,
@@ -187,14 +187,3 @@ impl<'run> WorthQueryRegisteredProviderAttempt<'run> {
         )
     }
 }
-
-#[cfg(test)]
-#[path = "registered/overlay_conflict_tests.rs"]
-mod overlay_conflict_tests;
-
-#[cfg(test)]
-pub(super) use overlay_conflict_tests::assert_second_real_overlay_is_rejected;
-
-#[cfg(test)]
-#[path = "registered/comparison_tests.rs"]
-mod comparison_tests;

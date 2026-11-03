@@ -54,7 +54,7 @@ impl WorthQueryGraphProviderCallRequest {
         }
     }
 
-    pub(in crate::domain_computation) fn with_managed_execution_snapshot(
+    pub fn with_managed_execution_snapshot(
         mut self,
         snapshot_identity: impl Into<Arc<str>>,
     ) -> Self {
@@ -254,7 +254,7 @@ impl WorthQueryGraphProviderCall {
         )
     }
 
-    pub(crate) fn streamed(
+    pub fn streamed(
         &self,
         provider_receipt: impl Into<Arc<str>>,
         stream: WorthQueryExecutionGraphReadStreamEvidence,

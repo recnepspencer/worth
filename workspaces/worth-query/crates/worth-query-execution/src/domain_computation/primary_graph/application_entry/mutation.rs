@@ -7,7 +7,7 @@ pub use decision_plan::WorthQueryDecisionPlan;
 mod completed_candidate;
 mod execution;
 mod execution_report;
-mod failure;
+pub mod failure;
 pub use completed_candidate::WorthQueryCompletedMutationCandidate;
 pub(in crate::domain_computation::primary_graph) use execution::build_handler_candidate;
 pub use execution::MutationHandlerExecutionDenial;

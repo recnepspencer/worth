@@ -6,7 +6,7 @@ use super::*;
 const CLAIM_OVERFLOW: &str = "output advancement claim identity exhausted";
 
 impl WorthQueryOutputDemandRegistry {
-    pub(in crate::domain_computation::primary_graph) fn begin(
+    pub fn begin(
         &self,
         interest: &WorthQueryOutputDemandInterest,
     ) -> WorthQueryOutputDemandAdvanceAdmission {

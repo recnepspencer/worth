@@ -2,12 +2,12 @@
 use super::WorthQueryMemberExecution;
 use std::any::Any;
 
-pub(in crate::domain_computation::primary_graph) struct PreparedCompute {
+pub struct PreparedCompute {
     run: Box<dyn for<'a> FnOnce(WorthQueryMemberExecution<'a>) -> ComputedSlot + Send>,
 }
 
 impl PreparedCompute {
-    pub(in crate::domain_computation::primary_graph) fn new<T: Any + Send>(
+    pub fn new<T: Any + Send>(
         run: impl for<'a> FnOnce(WorthQueryMemberExecution<'a>) -> T + Send + 'static,
     ) -> Self {
         let callback = move |member: WorthQueryMemberExecution<'_>| {
@@ -59,7 +59,6 @@ impl ComputedSlot {
     }
 }
 
-#[cfg(test)]
 impl PreparedCompute {
     pub(in crate::domain_computation::primary_graph) fn declared_test_request(
         rank: usize,

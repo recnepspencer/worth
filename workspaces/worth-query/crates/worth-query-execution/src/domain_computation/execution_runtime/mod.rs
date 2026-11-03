@@ -2,13 +2,10 @@ mod application_query_resources;
 mod branch_coordination_resources;
 mod installation_authority;
 mod output_demand_resources;
-pub(crate) mod product_world;
+pub mod product_world;
 mod runtime_identity;
 mod runtime_root;
 pub(in crate::domain_computation) mod source_invalidation;
-
-#[cfg(test)]
-mod tests;
 
 pub use application_query_resources::WorthQueryApplicationQueryResourceProfile;
 pub use branch_coordination_resources::WorthQueryBranchCoordinationResourceProfile;

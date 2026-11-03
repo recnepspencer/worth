@@ -10,7 +10,7 @@ pub(super) struct DetachedRequiredMember {
     pub(super) _key: Option<Arc<WorthQueryOutputDemandKey>>,
 }
 
-pub(super) struct PreparedRequiredMember {
+pub struct PreparedRequiredMember {
     key: Arc<WorthQueryOutputDemandKey>,
 }
 
@@ -33,7 +33,7 @@ impl DemandRegistryState {
         Ok(!observation.required && !observation.awaited)
     }
 
-    pub(super) fn prepare_required_member(
+    pub fn prepare_required_member(
         &self,
         key: &WorthQueryOutputDemandKey,
     ) -> Result<Option<PreparedRequiredMember>, WorthQueryOutputDemandDenial> {
@@ -45,7 +45,7 @@ impl DemandRegistryState {
         }))
     }
 
-    pub(super) fn install_required_member(&mut self, prepared: Option<PreparedRequiredMember>) {
+    pub fn install_required_member(&mut self, prepared: Option<PreparedRequiredMember>) {
         if let Some(prepared) = prepared {
             debug_assert!(self.records.contains_key(prepared.key.as_ref()));
             let membership = self
@@ -60,7 +60,7 @@ impl DemandRegistryState {
         }
     }
 
-    pub(super) fn remove_required_member_if_released(&mut self, key: &WorthQueryOutputDemandKey) {
+    pub fn remove_required_member_if_released(&mut self, key: &WorthQueryOutputDemandKey) {
         let retired = self.remove_required_member_if_released_detached(key);
         drop(retired);
     }

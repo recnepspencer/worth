@@ -2,35 +2,30 @@
 use std::cell::RefCell;
 use worth_execution::{ExecutionAllocationDenial, ExecutionArray};
 
-mod canonical_key;
-mod control;
-mod directory;
+pub mod canonical_key;
+pub mod control;
+pub mod directory;
 pub(in crate::domain_computation::primary_graph) mod endpoints;
-mod fact_store;
-#[cfg(test)]
-mod handoff;
-mod run;
-mod storage;
+pub mod fact_store;
+pub mod handoff;
+pub mod run;
+pub mod storage;
 mod streaming;
-#[cfg(test)]
-mod tests;
 
 pub(in crate::domain_computation::primary_graph) use canonical_key::AdmittedFactKey;
 pub(in crate::domain_computation) use control::StorageControl;
-#[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use handoff::restore_authored_order;
 pub(in crate::domain_computation::primary_graph) use storage::RetainedFactStore;
 
-type Slot<T> = RefCell<Option<RetainedFact<T>>>;
+pub type Slot<T> = RefCell<Option<RetainedFact<T>>>;
 
 /// Algorithmic author/merge granule, not an admission or request count limit.
-const AUTHOR_CHUNK: usize = 32;
+pub const AUTHOR_CHUNK: usize = 32;
 
-pub(in crate::domain_computation::primary_graph) struct RetainedFact<T> {
-    pub(in crate::domain_computation::primary_graph) key: AdmittedFactKey,
-    pub(in crate::domain_computation::primary_graph) value: T,
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) ordinal: usize,
+pub struct RetainedFact<T> {
+    pub key: AdmittedFactKey,
+    pub value: T,
+    pub ordinal: usize,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -43,7 +38,6 @@ pub enum StoreDenial {
     Representability,
     PhysicalAllocation,
     ConflictingBody,
-    #[cfg(test)]
     InvalidOrdinal,
 }
 
@@ -75,7 +69,7 @@ pub(in crate::domain_computation::primary_graph) use fact_store::{
 };
 
 impl StoreDenial {
-    pub(in crate::domain_computation::primary_graph) fn into_attempt_denial(
+    pub fn into_attempt_denial(
         self,
         subject: &str,
     ) -> crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial {
@@ -112,7 +106,6 @@ impl worth_execution::ChargedBytes for StoreDenial {
                 0
             }
             Self::Representability | Self::ConflictingBody | Self::PhysicalAllocation => 0,
-            #[cfg(test)]
             Self::InvalidOrdinal => 0,
         }
     }

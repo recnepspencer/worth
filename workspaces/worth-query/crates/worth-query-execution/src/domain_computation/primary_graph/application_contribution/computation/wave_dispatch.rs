@@ -8,17 +8,17 @@ use worth_foundational::PartitionIdentity;
 
 // A member outcome cannot stop the map; only its request can.
 enum NoMemberFailure {}
-pub(in crate::domain_computation::primary_graph) struct PreparedMember {
+pub struct PreparedMember {
     pub requests: Vec<PreparedCompute>,
 }
-pub(in crate::domain_computation::primary_graph) struct ComputedMember {
+pub struct ComputedMember {
     slots: Vec<ComputedSlot>,
 }
 
 /// Interruption already present at dispatch has width-independent settlement.
 /// An interruption arriving during compute can be seen by an earlier running
 /// member: only the canonical-prefix safety law is promised across widths.
-pub(in crate::domain_computation::primary_graph) fn dispatch(
+pub fn dispatch(
     execution: &QueryRequestExecution<'_>,
     members: Vec<PreparedMember>,
 ) -> Vec<Result<ComputedMember, WorthQueryAdvancementDenial>> {
@@ -136,8 +136,7 @@ impl ComputedMember {
     ) -> T {
         complete(self.slots)
     }
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn into_slots(self) -> Vec<ComputedSlot> {
+    pub fn into_slots(self) -> Vec<ComputedSlot> {
         self.finish(|slots| slots)
     }
 }
@@ -156,5 +155,27 @@ fn from_checkpoint(stop: worth_execution::MapKernelStop) -> WorthQueryAdvancemen
     }
 }
 
-#[cfg(test)]
-mod tests;
+pub mod tests {
+    use super::*;
+    use crate::domain_computation::primary_graph::application_contribution::request_execution::query_test_execution_authority_for_test as test_authority;
+    use std::{
+        num::NonZeroUsize,
+        sync::{Arc, Mutex},
+        time::{Duration, Instant},
+    };
+    use worth_query_admission::facade::authenticated_principal::{
+        WorthQueryCancellationSource, WorthQueryRequestScope,
+    };
+    use worth_runtime_world::facade::RuntimeWorldExecutionPlacement;
+    pub mod seeded_dispatch {
+        use super::*;
+use crate::domain_computation::primary_graph::application_contribution::request_execution::{
+    place_managed_computations_on_this_thread_for_test as place,
+    WorthQueryExecutionPlacementForTest as Placement,
+};
+        thread_local! { pub static ORDERS: std::cell::RefCell<Vec<Vec<usize>>> = const { std::cell::RefCell::new(Vec::new()) }; }
+        pub fn record(order: Vec<usize>) {
+            ORDERS.with(|orders| orders.borrow_mut().push(order));
+        }
+    }
+}

@@ -31,14 +31,14 @@
 /// assert!(members.contains(&identity::EqualityTypeId::of::<u8>()));
 /// ```
 #[derive(PartialEq, Eq, Hash)]
-pub(crate) struct EqualityTypeId(std::any::TypeId);
+pub struct EqualityTypeId(std::any::TypeId);
 
 impl EqualityTypeId {
     #[expect(
         clippy::disallowed_methods,
         reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
     )]
-    pub(crate) fn of<T: ?Sized + 'static>() -> Self {
+    pub fn of<T: ?Sized + 'static>() -> Self {
         Self(std::any::TypeId::of::<T>())
     }
 

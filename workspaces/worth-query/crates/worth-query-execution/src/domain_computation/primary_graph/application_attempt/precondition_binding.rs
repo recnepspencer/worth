@@ -163,7 +163,7 @@ impl WorthQueryBoundMutationPreconditions {
         })
     }
 
-    pub(in crate::domain_computation) fn identity(&self) -> Option<&[u8; 32]> {
+    pub fn identity(&self) -> Option<&[u8; 32]> {
         self.canonical_digest.as_ref().map(CanonicalDigestId::bytes)
     }
 

@@ -38,7 +38,7 @@ impl WorthQueryProductBranchOwnerCleanup {
         Ok(execution)
     }
 
-    pub(crate) fn retry_in_request_with_retirements(
+    pub fn retry_in_request_with_retirements(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         retirements: &mut OwnerCleanupRetirements,

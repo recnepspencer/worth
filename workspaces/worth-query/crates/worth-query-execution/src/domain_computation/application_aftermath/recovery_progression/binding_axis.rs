@@ -85,7 +85,6 @@ impl WorthQueryRecoveryBindingCurrentTruth {
             .map_err(|drift| map_binding_drift(drift, self, binding))
     }
 
-    #[cfg(test)]
     pub(crate) fn axis_probe(binding: &WorthQueryRecoveryHandleBinding) -> Self {
         Self::from_handle_binding(binding)
     }
@@ -126,7 +125,3 @@ where
 {
     WorthQueryRecoveryBindingCurrentTruth::from_admitted(admission)?.check(binding)
 }
-
-#[cfg(test)]
-#[path = "binding_axis_tests.rs"]
-mod tests;

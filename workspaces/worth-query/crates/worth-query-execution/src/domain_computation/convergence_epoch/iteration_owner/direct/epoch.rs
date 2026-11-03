@@ -40,8 +40,7 @@ pub struct WorthQueryIteratingDirectConvergenceEpoch {
 }
 
 impl WorthQueryIteratingDirectConvergenceEpoch {
-    #[cfg(test)]
-    pub(crate) fn fixture_phase<'scope>(
+    pub fn fixture_phase<'scope>(
         &self,
         host: &crate::domain_computation::primary_graph::TestHostRequest<'scope>,
     ) -> crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'scope> {
@@ -196,5 +195,4 @@ fn admit_associated_step(
     }
 }
 
-#[cfg(test)]
 mod test_phase_custody;

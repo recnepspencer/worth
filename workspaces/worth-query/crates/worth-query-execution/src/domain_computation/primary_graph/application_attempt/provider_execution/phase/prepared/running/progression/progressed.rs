@@ -11,9 +11,7 @@ use super::WorthQueryProgressedApplicationCommit;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::domain_computation::WorthQueryManagedRunTerminalKind;
 
-pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) fn finish_application_commit<
-    Schema,
->(
+pub fn finish_application_commit<Schema>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     phase: &WorthQueryAdvancementPhase<'_>,
 
@@ -88,7 +86,3 @@ const fn terminal_for(
         }
     }
 }
-
-#[cfg(test)]
-#[path = "association_tests.rs"]
-mod association_tests;

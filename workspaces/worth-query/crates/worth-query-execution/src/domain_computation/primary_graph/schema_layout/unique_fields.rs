@@ -42,15 +42,14 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryUniqueFieldIndex
 
 /// The unique fields one installed layout declares.
 #[derive(Clone, Copy)]
-pub(in crate::domain_computation::primary_graph) struct WorthQueryUniqueFields<'layout> {
+pub struct WorthQueryUniqueFields<'layout> {
     names: &'layout BTreeMap<KindId, BTreeMap<AspectFieldLocator, FieldName>>,
     fields: &'layout BTreeMap<FieldName, WorthQueryPrimaryFieldLayout>,
 }
 
 impl<'layout> WorthQueryUniqueFields<'layout> {
     /// A schema that declares no unique field.
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn none() -> WorthQueryUniqueFields<'static> {
+    pub fn none() -> WorthQueryUniqueFields<'static> {
         static NAMES: BTreeMap<KindId, BTreeMap<AspectFieldLocator, FieldName>> = BTreeMap::new();
         static FIELDS: BTreeMap<FieldName, WorthQueryPrimaryFieldLayout> = BTreeMap::new();
         WorthQueryUniqueFields {
@@ -86,15 +85,13 @@ impl<'layout> WorthQueryUniqueFields<'layout> {
 }
 
 /// One unique field on one kind, owned, for lowering tests.
-#[cfg(test)]
-pub(in crate::domain_computation::primary_graph) struct WorthQueryUniqueFieldFixture {
+pub struct WorthQueryUniqueFieldFixture {
     names: BTreeMap<KindId, BTreeMap<AspectFieldLocator, FieldName>>,
     fields: BTreeMap<FieldName, WorthQueryPrimaryFieldLayout>,
 }
 
-#[cfg(test)]
 impl WorthQueryUniqueFieldFixture {
-    pub(in crate::domain_computation::primary_graph) fn new(
+    pub fn new(
         kind: KindId,
         locator: AspectFieldLocator,
         equality_index_id: Option<DerivedIndexId>,
@@ -114,9 +111,7 @@ impl WorthQueryUniqueFieldFixture {
         }
     }
 
-    pub(in crate::domain_computation::primary_graph) fn fields(
-        &self,
-    ) -> WorthQueryUniqueFields<'_> {
+    pub fn fields(&self) -> WorthQueryUniqueFields<'_> {
         WorthQueryUniqueFields {
             names: &self.names,
             fields: &self.fields,

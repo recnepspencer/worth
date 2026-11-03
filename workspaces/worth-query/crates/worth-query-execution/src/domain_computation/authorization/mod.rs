@@ -2,15 +2,15 @@ use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRe
 mod admission;
 pub(in crate::domain_computation) mod admitted_request;
 mod application_commit_authorization;
-pub(in crate::domain_computation) mod application_disclosure;
+pub mod application_disclosure;
 mod authorization_revalidation;
 mod bridge_binding;
 mod bridge_observation;
 mod capability_binding_lowering;
 mod capability_decision_fact;
-mod capability_elevation_projection;
+pub mod capability_elevation_projection;
 mod capability_lowering;
-mod capability_observation;
+pub mod capability_observation;
 mod capability_registry;
 mod capability_revalidation;
 mod capability_revocation_progression;
@@ -28,21 +28,21 @@ pub(in crate::domain_computation) use graph_work_session::start_selected_operati
 pub(in crate::domain_computation) use graph_work_session::SelectedOperationGraphWorkStop;
 mod installed_policy;
 mod lowering;
-mod operation_progression;
+pub mod operation_progression;
 mod operation_scope_binding;
 pub(in crate::domain_computation) use operation_scope_binding::WorthQueryDecisionScopeWitness;
-mod retained_capability_request;
+pub mod retained_capability_request;
 pub(in crate::domain_computation) use retained_capability_request::WorkflowApprovalRequestDecodingDenial;
 pub(in crate::domain_computation) use retained_capability_request::WorkflowApprovalRequestEncodingDenial;
 pub(in crate::domain_computation) use retained_capability_request::WorthQueryCapabilityUseIdentity;
 pub(in crate::domain_computation) use retained_capability_request::WorthQueryRetainedCapabilityRequest;
 pub(in crate::domain_computation) use retained_capability_request::MAXIMUM_PORTABLE_BYTES;
 mod retained_capability_support;
-mod workflow_approval_authority;
+pub mod workflow_approval_authority;
 pub(in crate::domain_computation) use workflow_approval_authority::decoding::decode_lineage;
 pub(in crate::domain_computation) use workflow_approval_authority::decoding::decode_principal;
 pub(in crate::domain_computation) use workflow_approval_authority::decoding::DecodedApprovalLineage;
-mod workflow_approval_dependencies;
+pub mod workflow_approval_dependencies;
 pub(in crate::domain_computation) use workflow_approval_authority::decode_workflow_approval_support;
 pub(in crate::domain_computation) use workflow_approval_authority::encode_workflow_approval_support;
 pub(in crate::domain_computation) use workflow_approval_authority::WorthQueryWorkflowApprovalAuthorityBasis;
@@ -56,7 +56,6 @@ pub(in crate::domain_computation) use application_commit_authorization::WorthQue
 pub(super) use bridge_binding::bridge_authorization_binding_identity;
 pub(in crate::domain_computation) use capability_decision_fact::WorthQueryCapabilityCommitBasis;
 pub(in crate::domain_computation) use capability_decision_fact::WorthQueryRetainedCapabilityAuthorization;
-#[cfg(test)]
 pub(in crate::domain_computation) use capability_elevation_projection::validate_elevation_projection;
 pub use capability_registry::WorthQueryCapabilityPlanCompilationEvidence;
 pub(in crate::domain_computation) use capability_revocation_progression::WorthQueryCapabilityRevocationBinding;
@@ -115,5 +114,4 @@ fn authorization_denial(
     )
 }
 
-#[cfg(test)]
 pub(in crate::domain_computation) use capability_observation::CancelGrantSelectionGuardForTest;

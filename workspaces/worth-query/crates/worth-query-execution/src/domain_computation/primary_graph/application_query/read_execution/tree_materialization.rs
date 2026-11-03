@@ -35,7 +35,7 @@ pub(in crate::domain_computation::primary_graph::application_query) use relation
 mod relation_distribution;
 mod relation_occurrence;
 mod relation_target_filter;
-mod source_footprint;
+pub mod source_footprint;
 mod work;
 use fields::{direct_projections, project_fields, projection_scope};
 

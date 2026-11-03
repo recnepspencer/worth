@@ -3,8 +3,6 @@ use super::super::super::native_field_contract::FieldExpectation;
 use super::super::WorthQueryApplicationConditionalPackageContract;
 use super::*;
 use worth_query_declaration::facade::application_schema as schema;
-#[cfg(test)]
-mod tests;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryReadinessFieldUse {

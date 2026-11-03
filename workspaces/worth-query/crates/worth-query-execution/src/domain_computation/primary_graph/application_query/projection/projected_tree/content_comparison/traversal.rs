@@ -30,9 +30,7 @@ struct Frames<'a> {
     _reservation: Option<ExecutionMemoryReservation>,
 }
 impl WorthQueryApplicationDisclosedProjectionTree {
-    pub(in crate::domain_computation::primary_graph::application_query) fn same_source_content<
-        E,
-    >(
+    pub fn same_source_content<E>(
         &self,
         other: &Self,
         maximum_depth: usize,

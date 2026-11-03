@@ -28,7 +28,7 @@ impl WorthQueryProviderCommitAuthorization {
         self
     }
 
-    pub(in crate::domain_computation) fn authorize_application_commit<
+    pub fn authorize_application_commit<
         'serialization,
         'admission,
         Schema,
@@ -87,9 +87,7 @@ impl WorthQueryProviderCommitAuthorization {
         prepared.register(staged, provider, attempt_basis, context, allocation_policy)
     }
 
-    pub(in crate::domain_computation) fn finish_registration(
-        self,
-    ) -> Option<WorthQueryRegisteredCommitAuthorization> {
+    pub fn finish_registration(self) -> Option<WorthQueryRegisteredCommitAuthorization> {
         self.provider
             .is_none()
             .then_some(WorthQueryRegisteredCommitAuthorization {
@@ -103,7 +101,7 @@ pub(in crate::domain_computation) struct WorthQueryRegisteredCommitAuthorization
 }
 
 impl WorthQueryRegisteredCommitAuthorization {
-    pub(in crate::domain_computation) fn authorize_application_commit<
+    pub fn authorize_application_commit<
         'serialization,
         'admission,
         Schema,

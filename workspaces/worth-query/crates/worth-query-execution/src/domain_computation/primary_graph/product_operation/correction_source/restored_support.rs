@@ -1,9 +1,9 @@
 //! Correction-only restoration: complete authored overlap, exact cancellation,
 //! then actual retained original-root support. Ordinary reuse stays unchanged.
 mod cancellation;
-mod eligibility;
-mod history;
-mod overlap;
+pub mod eligibility;
+pub mod history;
+pub mod overlap;
 pub(super) use eligibility::require;
 
 #[derive(Debug)]

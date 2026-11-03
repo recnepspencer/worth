@@ -18,7 +18,7 @@ where
     Schema: ApplicationSchema,
 {
     #[allow(clippy::type_complexity)]
-    pub(in crate::domain_computation::primary_graph) fn field_with_predecode_admission<
+    pub fn field_with_predecode_admission<
         Entity,
         Aspect,
         Field,

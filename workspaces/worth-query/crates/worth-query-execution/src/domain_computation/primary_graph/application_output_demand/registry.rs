@@ -8,46 +8,45 @@ use std::sync::Mutex;
 
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
 
-type SourceEpoch =
+pub type SourceEpoch =
     crate::domain_computation::primary_graph::application_query::WorthQueryObservedSourceEpoch;
 
 #[derive(Clone)]
-pub(in crate::domain_computation::primary_graph) struct WorthQueryPerformedOutputDemandSource {
-    pub(in crate::domain_computation::primary_graph) receipt:
+pub struct WorthQueryPerformedOutputDemandSource {
+    pub receipt:
         crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
-    pub(in crate::domain_computation::primary_graph) change: Arc<
+    pub change: Arc<
         crate::domain_computation::execution_runtime::product_world::WorthQueryPerformedRelationalProductChange,
     >,
-    pub(in crate::domain_computation::primary_graph) observation:
+    pub observation:
         worth_runtime_world::facade::ProductBranchObservation,
-    pub(in crate::domain_computation::primary_graph) output_source_identity: Option<SourceEpoch>,
+    pub output_source_identity: Option<SourceEpoch>,
 }
 
-struct DiscoveredSourceRecovery {
+pub struct DiscoveredSourceRecovery {
     receipt: crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
     observation: worth_runtime_world::facade::ProductBranchObservation,
     discovery: Arc<dyn std::any::Any + Send + Sync>,
 }
 
-struct SourceCustody {
-    cleanup: cleanup::CustodyCleanupLinks,
-    occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
-    root_kind: PreparedOutputRootKind,
-    source: Option<WorthQueryPerformedOutputDemandSource>,
-    discovery: Option<DiscoveredSourceRecovery>,
-    bound_sources: Option<Vec<BoundOutputSource>>,
-    consumed_sources: Vec<SourceEpoch>,
-    retired_sources: Vec<(SourceEpoch, WorthQueryOutputDemandDenial)>,
-    retired: Option<WorthQueryOutputDemandDenial>,
-    token_count: usize,
-    completed: bool,
+pub struct SourceCustody {
+    pub cleanup: cleanup::CustodyCleanupLinks,
+    pub occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
+    pub root_kind: PreparedOutputRootKind,
+    pub source: Option<WorthQueryPerformedOutputDemandSource>,
+    pub discovery: Option<DiscoveredSourceRecovery>,
+    pub bound_sources: Option<Vec<BoundOutputSource>>,
+    pub consumed_sources: Vec<SourceEpoch>,
+    pub retired_sources: Vec<(SourceEpoch, WorthQueryOutputDemandDenial)>,
+    pub retired: Option<WorthQueryOutputDemandDenial>,
+    pub token_count: usize,
+    pub completed: bool,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) struct BoundOutputSource {
-    pub(in crate::domain_computation::primary_graph) scope:
-        crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
-    pub(in crate::domain_computation::primary_graph) identity: SourceEpoch,
+pub struct BoundOutputSource {
+    pub scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+    pub identity: SourceEpoch,
 }
 
 impl SourceCustody {
@@ -70,7 +69,7 @@ impl SourceCustody {
                 .any(|(retired, _)| retired == identity)
     }
 
-    fn prepared_count(&self) -> usize {
+    pub fn prepared_count(&self) -> usize {
         if self.retired.is_some() || self.source.is_none() {
             return 0;
         }
@@ -89,7 +88,7 @@ impl SourceCustody {
         self.consumed_sources.push(identity);
     }
 
-    fn source_denial(&self, identity: &SourceEpoch) -> Option<WorthQueryOutputDemandDenial> {
+    pub fn source_denial(&self, identity: &SourceEpoch) -> Option<WorthQueryOutputDemandDenial> {
         self.retired_sources
             .iter()
             .find(|(retired, _)| retired == identity)
@@ -98,26 +97,25 @@ impl SourceCustody {
 }
 
 #[derive(Clone)]
-pub(in crate::domain_computation::primary_graph) enum WorthQueryAcceptedOutputAuthority {
+pub enum WorthQueryAcceptedOutputAuthority {
     Committed(crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt),
     Stable(crate::domain_computation::primary_graph::output_lineage::PublishedStableLineage),
     Restored(WorthQueryRestoredAcceptedOutput),
 }
 
 #[derive(Clone)]
-pub(in crate::domain_computation::primary_graph) struct WorthQueryCompletedOutputDemand {
-    pub(in crate::domain_computation::primary_graph) authority: WorthQueryAcceptedOutputAuthority,
-    pub(in crate::domain_computation::primary_graph) readiness:
-        super::WorthQueryOutputReadinessDeliveryEvidence,
+pub struct WorthQueryCompletedOutputDemand {
+    pub authority: WorthQueryAcceptedOutputAuthority,
+    pub readiness: super::WorthQueryOutputReadinessDeliveryEvidence,
 }
 
-pub(in crate::domain_computation::primary_graph) enum WorthQueryOutputSchedulingResult {
+pub enum WorthQueryOutputSchedulingResult {
     Scheduled,
     Deferred,
     NoEffect(WorthQueryOutputDemandDenial),
 }
 
-mod demand_key;
+pub mod demand_key;
 pub(in crate::domain_computation::primary_graph) use demand_key::WorthQueryOutputDemandKey;
 
 /// Wake-up signal for one output demand's progress.
@@ -127,51 +125,51 @@ pub(in crate::domain_computation::primary_graph) use demand_key::WorthQueryOutpu
 /// advance the demand with a fresh request. It carries no demand state itself.
 #[derive(Clone)]
 pub struct WorthQueryOutputDemandNotifications {
-    wake: Arc<DemandWake>,
+    pub wake: Arc<DemandWake>,
 }
 
 mod accepted_checkpoint;
-mod accepted_checkpoint_identity;
+pub mod accepted_checkpoint_identity;
 pub(in crate::domain_computation::primary_graph) use accepted_checkpoint::AcceptedCheckpointFactSource;
 pub(in crate::domain_computation::primary_graph) use accepted_checkpoint_identity::CheckpointOutputSlot;
 pub(in crate::domain_computation::primary_graph) use accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointIdentity;
 pub(in crate::domain_computation::primary_graph) use accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointPosture;
-mod admission;
-mod checkpoint;
-mod cleanup;
-mod disposition;
-mod publication_head;
+pub mod admission;
+pub mod checkpoint;
+pub mod cleanup;
+pub mod disposition;
+pub mod publication_head;
 use disposition::IdleRowDisposition;
 use disposition::RowRetirement;
 pub(in crate::domain_computation::primary_graph) use publication_head::LivePublicationHead;
 pub(in crate::domain_computation::primary_graph) use publication_head::PublicationHeadSelection;
-mod held_successor;
+pub mod held_successor;
 mod read_close;
 mod successor_release;
 pub(in crate::domain_computation::primary_graph) use held_successor::RequiredUpstreamSuccessor;
-mod lifecycle;
-mod notifications;
+pub mod lifecycle;
+pub mod notifications;
 mod obligations;
-mod post_commit;
-mod prerequisite_claims;
-mod progression;
+pub mod post_commit;
+pub mod prerequisite_claims;
+pub mod progression;
 mod unavailable;
 pub(in crate::domain_computation::primary_graph) use progression::CheckpointFinishStop;
 pub(in crate::domain_computation::primary_graph) use progression::PreparedSelectedCheckpointFinish;
-mod claim_readthrough;
+pub mod claim_readthrough;
 mod custody_visibility;
-mod ready_backing;
+pub mod ready_backing;
 
 pub(in crate::domain_computation::primary_graph) mod join_observation;
-mod record_map;
+pub mod record_map;
 mod record_preparation;
-mod refresh_predecessor;
-mod refreshed_rejoin;
+pub mod refresh_predecessor;
+pub mod refreshed_rejoin;
 mod required_context;
 
 mod required_members;
-mod required_stop;
-mod required_work;
+pub mod required_stop;
+pub mod required_work;
 pub(in crate::domain_computation::primary_graph) use admission::SelectedOutputAdmission;
 pub(in crate::domain_computation::primary_graph) use held_successor::HeldRequiredSuccessor;
 pub(in crate::domain_computation::primary_graph) use required_work::AdmittedRequiredWave;
@@ -186,23 +184,22 @@ pub(in crate::domain_computation::primary_graph) use required_work::SelectedRead
 pub(in crate::domain_computation::primary_graph) use required_work::SelectedRequiredRefreshClaim;
 pub(in crate::domain_computation::primary_graph) use required_work::SelectedRequiredWork;
 pub(in crate::domain_computation::primary_graph) use required_work::SelectedRequiredWorkKind;
-mod restoration;
+pub mod restoration;
 pub(in crate::domain_computation::primary_graph) use restoration::WorthQueryRestoredAcceptedOutput;
 mod consumer_custody;
-mod settlement_index;
+pub mod settlement_index;
 mod settlement_progression;
 pub(in crate::domain_computation::primary_graph) use consumer_custody::ConsumerCustody;
-mod settlement_retirement;
-mod succession;
+pub mod settlement_retirement;
+pub mod succession;
 use settlement_retirement::SupersededSettlements;
-mod row_stage;
+pub mod row_stage;
 pub(in crate::domain_computation::primary_graph) use row_stage::OutputRowStage;
-mod source_custody;
-mod source_readmission;
+pub mod source_custody;
+pub mod source_readmission;
 pub(in crate::domain_computation::primary_graph) use source_readmission::RetainedOutputReadmissionSource;
-mod supersession;
-#[cfg(test)]
-mod tests;
+pub mod supersession;
+
 use checkpoint::WorthQueryOutputAdvancement;
 pub(in crate::domain_computation::primary_graph) use checkpoint::WorthQueryOutputCheckpoint;
 pub(in crate::domain_computation::primary_graph) use checkpoint::WorthQueryOutputClaimIdentity;
@@ -218,12 +215,12 @@ pub(in crate::domain_computation) use required_context::RequiredOutputExecution;
 
 use supersession::supersede_predecessors;
 
-struct DemandWake {
-    generation: Mutex<u64>,
-    changed: Condvar,
+pub struct DemandWake {
+    pub generation: Mutex<u64>,
+    pub changed: Condvar,
 }
 
-enum DemandState {
+pub enum DemandState {
     Admitted,
     Scheduling,
     Scheduled,
@@ -233,7 +230,7 @@ enum DemandState {
 }
 
 #[derive(Clone, Copy, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum DemandAdmissionKind {
+pub enum DemandAdmissionKind {
     Ordinary,
     Required,
     Recovery,
@@ -245,67 +242,68 @@ impl DemandAdmissionKind {
     }
 }
 
-struct DemandRecord {
-    closed_cleanup: cleanup::ClosedCleanupLinks,
-    work_membership: Option<Arc<required_work::RequiredWorkMembership>>,
-    interests: usize,
-    required_interests: usize,
-    performed_obligations: Vec<PerformedOutputObligation>,
-    framework_required_count: usize,
-    prerequisites: Vec<Arc<WorthQueryOutputDemandKey>>,
-    claim_batch: Option<claim_readthrough::ClaimBatch>,
-    checkpoint_prerequisites: Option<prerequisite_claims::CheckpointPrerequisiteClaims>,
-    prepared_prerequisite_claims: usize,
-    pending_cleanup_next: Option<Arc<WorthQueryOutputDemandKey>>,
-    pending_cleanup_queued: bool,
+pub struct DemandRecord {
+    pub closed_cleanup: cleanup::ClosedCleanupLinks,
+    pub work_membership: Option<Arc<required_work::RequiredWorkMembership>>,
+    pub interests: usize,
+    pub required_interests: usize,
+    pub performed_obligations: Vec<PerformedOutputObligation>,
+    pub framework_required_count: usize,
+    pub prerequisites: Vec<Arc<WorthQueryOutputDemandKey>>,
+    pub claim_batch: Option<claim_readthrough::ClaimBatch>,
+    pub checkpoint_prerequisites: Option<prerequisite_claims::CheckpointPrerequisiteClaims>,
+    pub prepared_prerequisite_claims: usize,
+    pub pending_cleanup_next: Option<Arc<WorthQueryOutputDemandKey>>,
+    pub pending_cleanup_queued: bool,
 
-    settlements: Vec<
+    pub settlements: Vec<
         Arc<crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity>,
     >,
-    product_occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
-    source_scope:
+    pub product_occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
+    pub source_scope:
         Option<crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding>,
-    source_commits: Vec<worth_runtime_world::facade::CompositeCommitIdentity>,
-    state: DemandState,
-    performed_source: Option<WorthQueryPerformedOutputDemandSource>,
-    readmission_source: Option<Arc<source_readmission::RequiredOutputReadmission>>,
-    successor_of: Option<succession::Succession>,
+    pub source_commits: Vec<worth_runtime_world::facade::CompositeCommitIdentity>,
+    pub state: DemandState,
+    pub performed_source: Option<WorthQueryPerformedOutputDemandSource>,
+    pub readmission_source: Option<Arc<source_readmission::RequiredOutputReadmission>>,
+    pub successor_of: Option<succession::Succession>,
     /// A terminal stop met while certifying or refreshing this row as required
     /// work. Dependents still pending on it, or on an older row of its
     /// occurrence, fail with it instead of waiting for work no advance runs.
-    required_stop:
+    pub required_stop:
         Option<crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind>,
     /// A queue frame's unfinished successor of this row; see `held_successor`.
-    held_successor: Option<held_successor::HeldRequiredSuccessor>,
-    wake: Arc<DemandWake>,
+    pub held_successor: Option<held_successor::HeldRequiredSuccessor>,
+    pub wake: Arc<DemandWake>,
 }
 
 /// An obligation admitted from an actual retained performed source. Its
 /// source commit is kept until settlement or terminal retirement.
-struct PerformedOutputObligation {
-    source_commit: worth_runtime_world::facade::CompositeCommitIdentity,
-    source: SourceEpoch,
+pub struct PerformedOutputObligation {
+    pub source_commit: worth_runtime_world::facade::CompositeCommitIdentity,
+    pub source: SourceEpoch,
 }
 
-struct DemandRegistryState {
+pub struct DemandRegistryState {
     last_selection_frozen: Option<bool>,
     join_pause: Option<(
         worth_relational::facade::identity::EntityId,
         join_observation::JoinLatch,
     )>,
-    records: record_map::DemandRecords,
+    pub records: record_map::DemandRecords,
     // May remain after the last row is removed until the map itself drops.
-    required_keys: std::collections::BTreeSet<Arc<WorthQueryOutputDemandKey>>,
-    required_work_queue: Option<Arc<required_work::RequiredWorkQueue>>,
+    pub required_keys: std::collections::BTreeSet<Arc<WorthQueryOutputDemandKey>>,
+    pub required_work_queue: Option<Arc<required_work::RequiredWorkQueue>>,
     discontinuity_cursors: required_work::DiscontinuityCursors,
     settlement_keys: settlement_index::SettlementIndex,
     pending_cleanup_head: Option<Arc<WorthQueryOutputDemandKey>>,
-    closed_cleanup: cleanup::ClosedCleanupQueue,
-    custody_cleanup: cleanup::CustodyCleanupQueue,
+    pub closed_cleanup: cleanup::ClosedCleanupQueue,
+    pub custody_cleanup: cleanup::CustodyCleanupQueue,
     retention_reservation: Option<Arc<std::sync::atomic::AtomicBool>>,
-    source_preparations:
+    pub source_preparations:
         HashMap<worth_runtime_world::facade::ProductBranchIncarnation, SourcePreparationState>,
-    source_custody: BTreeMap<worth_runtime_world::facade::CompositeCommitIdentity, SourceCustody>,
+    pub source_custody:
+        BTreeMap<worth_runtime_world::facade::CompositeCommitIdentity, SourceCustody>,
 }
 
 impl Default for DemandRegistryState {
@@ -334,21 +332,20 @@ pub(in crate::domain_computation::primary_graph) use source_custody::PreparedOut
 use source_custody::SourcePreparationState;
 
 #[derive(Clone, Default)]
-pub(in crate::domain_computation::primary_graph) struct WorthQueryOutputDemandRegistry {
-    state: Arc<Mutex<DemandRegistryState>>,
+pub struct WorthQueryOutputDemandRegistry {
+    pub state: Arc<Mutex<DemandRegistryState>>,
 }
 
-pub(in crate::domain_computation::primary_graph) struct WorthQueryOutputDemandInterest {
-    key: WorthQueryOutputDemandKey,
-    requires_output: bool,
-    notifications: WorthQueryOutputDemandNotifications,
-    owner: WorthQueryOutputDemandRegistry,
+pub struct WorthQueryOutputDemandInterest {
+    pub key: WorthQueryOutputDemandKey,
+    pub requires_output: bool,
+    pub notifications: WorthQueryOutputDemandNotifications,
+    pub owner: WorthQueryOutputDemandRegistry,
 }
 
 #[derive(Clone)]
-pub(in crate::domain_computation::primary_graph) struct WorthQueryReadmittedAcceptedOutput {
-    pub(in crate::domain_computation::primary_graph) checkpoint:
-        WorthQueryAcceptedOutputCheckpointIdentity,
+pub struct WorthQueryReadmittedAcceptedOutput {
+    pub checkpoint: WorthQueryAcceptedOutputCheckpointIdentity,
     pub(in crate::domain_computation::primary_graph) correspondence: std::sync::Arc<
         crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence,
     >,
@@ -359,7 +356,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryRequiredOutput
     owner: WorthQueryOutputDemandRegistry,
 }
 
-mod advance_admission;
+pub mod advance_admission;
 mod fulfillment;
 mod performed_join;
 pub(in crate::domain_computation::primary_graph) use advance_admission::WorthQueryOutputDemandAdvanceAdmission;

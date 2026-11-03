@@ -2,7 +2,7 @@
 use super::funding::shape_bound;
 use super::*;
 impl ComputationCallSequence {
-    pub(in crate::domain_computation::primary_graph) fn build<'a, I>(
+    pub fn build<'a, I>(
         calls: impl Fn() -> I,
         execution: &QueryRequestExecution<'_>,
     ) -> Result<Arc<Self>, CallSequenceDenial>
@@ -93,7 +93,6 @@ impl ComputationCallSequence {
             .has_accounting()
             .then(|| execution.reserve((size_of::<Self>() + 2 * size_of::<usize>()) as u64))
             .transpose()?;
-        #[cfg(test)]
         let bytes = memory.as_ref().and_then(|memory| {
             memory
                 .bytes()
@@ -105,7 +104,6 @@ impl ComputationCallSequence {
             shape,
             root,
             reached,
-            #[cfg(test)]
             bytes,
             _memory: memory,
         }))

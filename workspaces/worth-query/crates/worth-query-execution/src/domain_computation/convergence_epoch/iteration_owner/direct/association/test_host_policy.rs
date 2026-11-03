@@ -1,7 +1,7 @@
 //! Fixture custody is borrowed from the epoch's actual managed run.
 use super::*;
 impl DirectIteratingEpochAssociation {
-    pub(in crate::domain_computation::convergence_epoch) fn fixture_phase<'scope>(
+    pub fn fixture_phase<'scope>(
         &self,
         host: &crate::domain_computation::primary_graph::TestHostRequest<'scope>,
     ) -> crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'scope> {
@@ -10,7 +10,7 @@ impl DirectIteratingEpochAssociation {
 }
 
 impl DirectIterationAssociation<crate::domain_computation::WorthQueryActiveDirectGraphExecution> {
-    pub(in crate::domain_computation::convergence_epoch) fn fixture_phase<'scope>(
+    pub fn fixture_phase<'scope>(
         &self,
         host: &crate::domain_computation::primary_graph::TestHostRequest<'scope>,
     ) -> crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'scope> {
@@ -19,7 +19,7 @@ impl DirectIterationAssociation<crate::domain_computation::WorthQueryActiveDirec
 }
 
 impl DirectIterationAssociation<crate::domain_computation::WorthQueryPausedDirectGraphExecution> {
-    pub(in crate::domain_computation::convergence_epoch) fn fixture_phase<'scope>(
+    pub fn fixture_phase<'scope>(
         &self,
         host: &crate::domain_computation::primary_graph::TestHostRequest<'scope>,
     ) -> crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'scope> {
@@ -28,7 +28,7 @@ impl DirectIterationAssociation<crate::domain_computation::WorthQueryPausedDirec
 }
 
 impl DirectIterationAssociation<crate::domain_computation::WorthQueryYieldedDirectRun> {
-    pub(in crate::domain_computation::convergence_epoch) fn fixture_phase<'scope>(
+    pub fn fixture_phase<'scope>(
         &self,
         host: &crate::domain_computation::primary_graph::TestHostRequest<'scope>,
     ) -> crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'scope> {

@@ -5,7 +5,7 @@ use super::{
 };
 
 impl WorthQueryApplicationObservedFact {
-    pub(crate) fn remains_equal_in(
+    pub fn remains_equal_in(
         &self,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

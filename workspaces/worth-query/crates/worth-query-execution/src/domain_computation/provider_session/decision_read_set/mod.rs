@@ -1,6 +1,6 @@
 mod capture;
 mod fact;
-mod failure;
+pub mod failure;
 pub use failure::*;
 
 pub use capture::*;

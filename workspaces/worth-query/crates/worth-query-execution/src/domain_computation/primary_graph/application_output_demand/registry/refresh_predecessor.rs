@@ -16,7 +16,7 @@ use crate::domain_computation::primary_graph::{
 /// The accepted source being replaced. A Stable alias is identified by its
 /// own published cell and Product observation, never by its performed origin.
 #[derive(Clone, Copy)]
-pub(in crate::domain_computation::primary_graph) enum OutputRefreshPredecessor<'a> {
+pub enum OutputRefreshPredecessor<'a> {
     Committed(&'a WorthQueryApplicationCommitReceipt),
     Stable {
         interest: &'a WorthQueryOutputDemandInterest,
@@ -27,7 +27,7 @@ pub(in crate::domain_computation::primary_graph) enum OutputRefreshPredecessor<'
 }
 
 impl<'a> OutputRefreshPredecessor<'a> {
-    pub(in crate::domain_computation::primary_graph) fn of(
+    pub fn of(
         authority: &'a WorthQueryAcceptedOutputAuthority,
         interest: &'a WorthQueryOutputDemandInterest,
     ) -> Self {

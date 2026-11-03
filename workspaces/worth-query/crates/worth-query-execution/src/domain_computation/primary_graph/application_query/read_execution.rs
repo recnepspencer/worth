@@ -1,24 +1,22 @@
 use crate::domain_computation::primary_graph::read_observation::WorthQueryInvariantProjectionWork;
 use worth_query_declaration::facade::application_query::ApplicationQueryCardinality;
 mod cardinality;
-mod denial;
-#[cfg(test)]
-pub(in crate::domain_computation::primary_graph) mod dispatch_witness;
+pub mod denial;
+pub mod dispatch_witness;
 use cardinality::{validate_cardinality_and_limit, validate_read_cardinality};
-mod entry_observation;
-mod interruption;
+pub mod entry_observation;
+pub mod interruption;
 pub(super) use interruption::ReadInterruption;
 mod kernel_capacity;
 mod kernel_outcome;
-mod live_target;
+pub mod live_target;
 mod pinning;
 pub(super) mod prepared_pair;
-pub(super) mod read_plan;
+pub mod read_plan;
 use pinning::pin_runtime_read;
 mod root_selection;
-mod tree_materialization;
+pub mod tree_materialization;
 mod work_observation;
-#[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use entry_observation::component_native_acquisitions_on_this_thread_for_test;
 pub use entry_observation::{
     query_read_kernel_entries_by_root_on_this_thread_for_test,
@@ -52,7 +50,7 @@ pub(super) struct RawOneShotRows {
             crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation,
         >,
     >,
-    pub(super) rows: WorthQueryApplicationDisclosedProjectionTree,
+    pub rows: WorthQueryApplicationDisclosedProjectionTree,
     pub(super) source_footprints: Vec<super::observed_source::WorthQueryObservedSourceFootprint>,
     pub(super) result_set_source:
         Option<std::sync::Arc<super::observed_source::WorthQueryObservedRootSelection>>,
@@ -74,14 +72,14 @@ pub(super) struct RawOneShotRows {
 }
 
 pub(super) struct RawNonLiveKernelOutcome {
-    pub(super) raw: RawOneShotRows,
+    pub raw: RawOneShotRows,
 }
 
 pub(super) struct RawLiveKernelOutcome {
     pub(super) raw: RawOneShotRows,
 }
 
-pub(super) fn read_bounded_root_rows<
+pub fn read_bounded_root_rows<
     Schema,
     Query,
     Parameters,
@@ -204,7 +202,7 @@ pub(super) fn read_prepared_root_rows(
     })
 }
 
-mod continuation_page;
+pub mod continuation_page;
 pub(super) use continuation_page::read_continuation_page;
 
 pub(in crate::domain_computation::primary_graph::application_query) use tree_materialization::validate_relation_cardinality;

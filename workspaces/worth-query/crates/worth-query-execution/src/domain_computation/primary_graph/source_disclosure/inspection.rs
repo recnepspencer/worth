@@ -4,7 +4,7 @@ use crate::domain_computation::primary_graph::WorthQueryObservedScopeSelector;
 use std::sync::Arc;
 use worth_query_installation::facade::InstalledSourceDisclosureBinding;
 
-pub(in crate::domain_computation) struct OriginalSourceInspectionDisclosure {
+pub struct OriginalSourceInspectionDisclosure {
     schema: worth_query_installation::facade::ApplicationSchemaBindingIdentity,
     association: Arc<InstalledSourceDisclosureBinding>,
     scope: Arc<WorthQueryObservedScopeSelector>,

@@ -5,7 +5,7 @@ use crate::domain_computation::primary_graph::{
 };
 
 #[derive(Clone)]
-pub(in crate::domain_computation::primary_graph::output_lineage) struct StableFactSpans {
+pub struct StableFactSpans {
     body: FactPayload,
     handler_end: usize,
     witness_end: usize,

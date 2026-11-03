@@ -9,7 +9,7 @@ impl super::WorthQueryPrimaryGraphLayout {
         self.application_relation_kinds.contains(&kind)
     }
 
-    pub(in crate::domain_computation) fn entity_kind(&self, entity: &str) -> Option<KindId> {
+    pub fn entity_kind(&self, entity: &str) -> Option<KindId> {
         self.entity_kinds.get(entity).copied()
     }
 
@@ -24,10 +24,7 @@ impl super::WorthQueryPrimaryGraphLayout {
         u64::try_from(comparisons.checked_mul(bytes_per_comparison)?).ok()
     }
 
-    pub(in crate::domain_computation::primary_graph) fn entity_name(
-        &self,
-        kind: KindId,
-    ) -> Option<&str> {
+    pub fn entity_name(&self, kind: KindId) -> Option<&str> {
         self.entity_kinds
             .iter()
             .find_map(|(name, candidate)| (*candidate == kind).then_some(name.as_str()))

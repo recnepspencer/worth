@@ -1,12 +1,12 @@
 pub(in crate::domain_computation::primary_graph) use selected_execution_finish::RunningSelectedExecution;
 mod cached_reclaim;
 
-mod closed_retirement;
-pub(super) mod completed_custody;
+pub mod closed_retirement;
+pub mod completed_custody;
 
 mod performed_release;
 pub(super) mod release;
-mod selected_execution_finish;
+pub mod selected_execution_finish;
 
 use super::*;
 
@@ -51,7 +51,7 @@ impl WorthQueryOutputDemandRegistry {
         )
     }
 
-    pub(in crate::domain_computation::primary_graph) fn discard_prepared_source(
+    pub fn discard_prepared_source(
         &self,
         source_commit: &worth_runtime_world::facade::CompositeCommitIdentity,
     ) {
@@ -62,7 +62,7 @@ impl WorthQueryOutputDemandRegistry {
         state.discard_custody(source_commit);
     }
 
-    pub(in crate::domain_computation::primary_graph) fn complete_prepared_source(
+    pub fn complete_prepared_source(
         &self,
         receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
     ) {
@@ -85,7 +85,7 @@ impl WorthQueryOutputDemandRegistry {
         state.note_custody(receipt.committed_product_publication().composite_commit());
     }
 
-    pub(in crate::domain_computation::primary_graph) fn begin_source_preparation(
+    pub fn begin_source_preparation(
         &self,
         occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
     ) -> WorthQueryRequiredOutputSourcePreparation {
@@ -113,9 +113,7 @@ impl WorthQueryOutputDemandRegistry {
 
     // Completed cleanup notes contain coordinates, not a performed source or
     // its observation. The paid drain may retain those notes after release.
-    pub(in crate::domain_computation::primary_graph) fn retained_source_custody_count(
-        &self,
-    ) -> usize {
+    pub fn retained_source_custody_count(&self) -> usize {
         self.state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
@@ -158,11 +156,7 @@ impl WorthQueryOutputDemandRegistry {
             })
     }
 
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn relinquish_execution(
-        &self,
-        interest: &WorthQueryOutputDemandInterest,
-    ) {
+    pub fn relinquish_execution(&self, interest: &WorthQueryOutputDemandInterest) {
         let mut state = self
             .state
             .lock()

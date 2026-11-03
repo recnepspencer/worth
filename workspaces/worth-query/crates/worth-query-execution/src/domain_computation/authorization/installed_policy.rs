@@ -174,11 +174,11 @@ impl WorthQueryInstalledAuthorizationRegistry {
             })
     }
 
-    pub(in crate::domain_computation) const fn bridge(&self) -> &BridgeAuthorizationRuntime {
+    pub const fn bridge(&self) -> &BridgeAuthorizationRuntime {
         &self.bridge
     }
 
-    pub(super) fn capability_plan<Schema, Capability, Operation, Input>(
+    pub fn capability_plan<Schema, Capability, Operation, Input>(
         &self,
         capability: &worth_query_installation::facade::WorthQueryInstalledApplicationCapability<
             Schema,
@@ -197,7 +197,7 @@ impl WorthQueryInstalledAuthorizationRegistry {
         self.capabilities.plan_by_identity(capability_identity)
     }
 
-    pub(in crate::domain_computation) fn elevation_lifecycle_operation<Schema, Operation>(
+    pub fn elevation_lifecycle_operation<Schema, Operation>(
         &self,
         operation: &str,
         input_type: &str,

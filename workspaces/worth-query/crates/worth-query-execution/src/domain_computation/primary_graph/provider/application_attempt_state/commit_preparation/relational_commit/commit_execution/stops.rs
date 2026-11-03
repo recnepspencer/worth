@@ -72,7 +72,7 @@ pub(super) fn index_preparation_stop(
 }
 
 /// Used only for `prepare_validated_proposal`, before product publication.
-pub(super) fn transaction_commit_stop(
+pub fn transaction_commit_stop(
     error: worth_relational::facade::mvcc::TransactionCommitError,
 ) -> crate::domain_computation::WorthQueryProviderSessionCommitStop {
     use crate::domain_computation::WorthQueryProviderSessionCommitStop as Stop;
@@ -208,8 +208,6 @@ fn publication_failure(
     )
 }
 
-#[cfg(test)]
-mod leased_requests;
 #[cfg(test)]
 mod tests;
 

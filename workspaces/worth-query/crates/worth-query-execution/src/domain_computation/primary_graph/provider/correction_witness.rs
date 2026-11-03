@@ -10,11 +10,11 @@ pub(in crate::domain_computation::primary_graph) struct CorrectionPerformedWitne
     pub world: CompositeCommitIdentity,
     pub aftermath: Option<WorthQueryCommittedAftermathCausality>,
     // Last: copied causality and the Arc allocation drop before their payer.
-    pub(super) _memory: Option<ExecutionMemoryReservation>,
+    pub _memory: Option<ExecutionMemoryReservation>,
 }
 
 #[derive(Debug)]
-pub(in crate::domain_computation::primary_graph) enum CorrectionWitnessDenial {
+pub enum CorrectionWitnessDenial {
     Request(WorkCeilingDenial),
     CopyAdmission(WorkCeilingDenial),
     Interrupted(MapKernelStop),
@@ -54,6 +54,3 @@ pub(super) fn admit(
         context.poll().map_err(CorrectionWitnessDenial::Interrupted)
     }
 }
-
-#[cfg(test)]
-mod tests;

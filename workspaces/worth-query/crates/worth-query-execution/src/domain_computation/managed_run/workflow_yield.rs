@@ -17,10 +17,6 @@ use crate::domain_computation::artifact_owner::{
 };
 use crate::domain_computation::WorthQueryExecutionResourceAttemptEvidence;
 
-#[cfg(test)]
-#[path = "workflow_yield/corruption_tests.rs"]
-mod corruption_tests;
-
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryWorkflowYieldDenialKind {
     InstallationGenerationStale,
@@ -71,7 +67,7 @@ pub struct WorthQueryYieldedWorkflowRun {
     relational_basis: WorthQueryManagedRelationalObservation,
     bridge: BridgeYieldedExecutionBasis,
     execution: WorthQueryRetainedManagedGraphExecution,
-    artifacts: WorthQueryFrozenWorkflowArtifactAuthority,
+    pub artifacts: WorthQueryFrozenWorkflowArtifactAuthority,
     artifact_evidence: WorthQueryWorkflowArtifactRegistryEvidence,
     run_counters: WorthQueryManagedRunCounters,
     provider_artifact_occurrences: Arc<WorthQueryArtifactOccurrenceLedger>,
@@ -302,6 +298,5 @@ impl WorthQueryYieldedWorkflowCleanupAssociation {
     }
 }
 
-#[cfg(test)]
 #[path = "workflow_yield/test_phase_custody.rs"]
 mod test_phase_custody;

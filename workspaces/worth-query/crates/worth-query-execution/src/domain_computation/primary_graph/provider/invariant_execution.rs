@@ -278,7 +278,6 @@ fn invariant_violation_probe() -> worth_relational::facade::transactions::Mutati
     ))
 }
 
-#[cfg(test)]
 fn undeclared_application_touch_probe(
     layout: &super::super::schema_layout::WorthQueryPrimaryGraphLayout,
     touches: &worth_query_installation::facade::WorthQueryOperationTouchContract,

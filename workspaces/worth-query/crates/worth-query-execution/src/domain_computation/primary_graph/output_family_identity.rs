@@ -2,10 +2,10 @@
 use std::borrow::{Borrow, Cow};
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub(super) struct OutputFamilyIdentity(Cow<'static, str>);
+pub struct OutputFamilyIdentity(Cow<'static, str>);
 
 impl OutputFamilyIdentity {
-    pub(super) const fn declared(identity: &'static str) -> Self {
+    pub const fn declared(identity: &'static str) -> Self {
         Self(Cow::Borrowed(identity))
     }
 

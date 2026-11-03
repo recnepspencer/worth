@@ -10,9 +10,8 @@ use worth_relational::facade::runtime::RelationalRuntime;
 use super::schema_layout::WorthQueryPrimaryGraphLayout;
 use crate::domain_computation::execution_runtime::product_world::WorthQueryRelationalSourceOwner;
 
-mod index_installation;
+pub mod index_installation;
 mod selected_runtime;
-#[cfg(test)]
 mod test_inspection;
 use index_installation::{
     primary_index_inventory, register_primary_graph_indexes, IndexInstallationPosture,
@@ -30,7 +29,7 @@ pub struct WorthQueryPrimaryGraph {
         crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
     relational_runtime_instance_id: u64,
     binding_identity: ApplicationSchemaBindingIdentity,
-    pub(super) layout: Arc<WorthQueryPrimaryGraphLayout>,
+    pub layout: Arc<WorthQueryPrimaryGraphLayout>,
     source_owner: WorthQueryRelationalSourceOwner,
     aggregate_projections: Arc<Mutex<super::aggregate_projection::WorthQueryAggregateProjections>>,
     output_lineage: Arc<Mutex<super::output_lineage::WorthQueryApplicationOutputLineage>>,
@@ -157,7 +156,7 @@ impl WorthQueryPrimaryGraph {
         self.relational_runtime_instance_id
     }
 
-    pub(in crate::domain_computation) fn layout(&self) -> &WorthQueryPrimaryGraphLayout {
+    pub fn layout(&self) -> &WorthQueryPrimaryGraphLayout {
         &self.layout
     }
 
@@ -165,13 +164,13 @@ impl WorthQueryPrimaryGraph {
         Arc::clone(&self.layout)
     }
 
-    pub(in crate::domain_computation::primary_graph) fn managed_derived_views(
+    pub fn managed_derived_views(
         &self,
     ) -> Arc<super::application_query::derived_view::ManagedDerivedViewRegistry> {
         Arc::clone(&self.managed_derived_views)
     }
 
-    pub(crate) fn integration_handle(&self) -> WorthQueryPrimaryGraphIntegrationHandle {
+    pub fn integration_handle(&self) -> WorthQueryPrimaryGraphIntegrationHandle {
         let primary_index_ids = primary_index_inventory(&self.layout);
         WorthQueryPrimaryGraphIntegrationHandle {
             application_publication: self.application_publication.clone(),
@@ -214,15 +213,13 @@ impl std::fmt::Debug for WorthQueryPrimaryGraph {
 #[doc(hidden)]
 #[derive(Clone)]
 pub struct WorthQueryPrimaryGraphIntegrationHandle {
-    pub(super) application_publication:
-        Option<Arc<application_publication::ApplicationPublication>>,
-    pub(super) source_owner: WorthQueryRelationalSourceOwner,
-    pub(super) layout: Arc<WorthQueryPrimaryGraphLayout>,
-    pub(super) primary_index_ids: Arc<[worth_relational::facade::indexes::DerivedIndexId]>,
-    pub(super) aggregate_projections:
+    pub application_publication: Option<Arc<application_publication::ApplicationPublication>>,
+    pub source_owner: WorthQueryRelationalSourceOwner,
+    pub layout: Arc<WorthQueryPrimaryGraphLayout>,
+    pub primary_index_ids: Arc<[worth_relational::facade::indexes::DerivedIndexId]>,
+    pub aggregate_projections:
         Arc<Mutex<super::aggregate_projection::WorthQueryAggregateProjections>>,
-    pub(in crate::domain_computation::primary_graph) output_lineage:
-        Arc<Mutex<super::output_lineage::WorthQueryApplicationOutputLineage>>,
+    pub output_lineage: Arc<Mutex<super::output_lineage::WorthQueryApplicationOutputLineage>>,
     pub(in crate::domain_computation::primary_graph) managed_derived_views:
         Arc<super::application_query::derived_view::ManagedDerivedViewRegistry>,
     pub(in crate::domain_computation::primary_graph) workflow_compilation_reuse:
@@ -233,7 +230,7 @@ pub struct WorthQueryPrimaryGraphIntegrationHandle {
 }
 
 impl WorthQueryPrimaryGraphIntegrationHandle {
-    pub(in crate::domain_computation::primary_graph) fn managed_derived_views(
+    pub fn managed_derived_views(
         &self,
     ) -> Arc<super::application_query::derived_view::ManagedDerivedViewRegistry> {
         Arc::clone(&self.managed_derived_views)

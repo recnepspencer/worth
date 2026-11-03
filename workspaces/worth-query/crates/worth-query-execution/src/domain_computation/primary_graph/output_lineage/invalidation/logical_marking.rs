@@ -7,7 +7,6 @@ use worth_relational::facade::history::CommitId;
 
 use super::super::RecordedSettlementIdentity;
 
-#[cfg(test)]
 mod read_observation;
 
 /// Native matching and closure diagnostics. Posting visits precede filtering;

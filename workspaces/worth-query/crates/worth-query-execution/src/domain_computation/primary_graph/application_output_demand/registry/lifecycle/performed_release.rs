@@ -29,7 +29,7 @@ pub(in super::super) struct ReleasedPerformedSource {
 impl DemandRegistryState {
     /// Release the oldest retained performed source that no prepared token
     /// and no demand of a row it admitted holds.
-    pub(in super::super) fn release_unheld_performed_source(
+    pub fn release_unheld_performed_source(
         &mut self,
     ) -> Result<Option<ReleasedPerformedSource>, WorthQueryOutputDemandDenial> {
         let mut oldest = None;

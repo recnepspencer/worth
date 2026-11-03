@@ -10,7 +10,7 @@ use std::{
 };
 
 mod commit_completion;
-mod commit_preparation;
+pub mod commit_preparation;
 pub(in crate::domain_computation::primary_graph::provider) use commit_preparation::publish_recovered;
 pub(in crate::domain_computation::primary_graph::provider) use commit_preparation::ManagedUnpublishedAttempt;
 mod phase;
@@ -31,7 +31,6 @@ pub(in crate::domain_computation::primary_graph) use commit_preparation::{
     WorthQueryMutationWorkCommitSeal, WorthQueryPreImageRetentionWork,
     WorthQueryPrimaryGraphCommittedApplication,
 };
-#[cfg(test)]
 use phase::WorthQueryApplicationAttemptPhase;
 use phase::{WorthQueryApplicationAttemptState, WorthQueryPrimaryGraphOverlay};
 pub(super) use retained_basis::{
@@ -57,7 +56,7 @@ impl WorthQueryApplicationAttemptLookupKey {
 }
 
 #[derive(Default)]
-pub(super) struct WorthQueryPrimaryGraphApplicationAttemptStore {
+pub struct WorthQueryPrimaryGraphApplicationAttemptStore {
     attempts: BTreeMap<WorthQueryApplicationAttemptLookupKey, WorthQueryApplicationAttemptEntry>,
     next_registration: u64,
     next_overlay: u64,
@@ -127,7 +126,7 @@ impl WorthQueryPrimaryGraphApplicationAttemptStore {
         ))
     }
 
-    pub(super) fn shared_observed_facts(
+    pub fn shared_observed_facts(
         &self,
         session: WorthQueryProviderSessionView<'_>,
     ) -> Option<(
@@ -303,7 +302,6 @@ impl WorthQueryPrimaryGraphApplicationAttemptStore {
             .flatten()
     }
 
-    #[cfg(test)]
     pub(super) fn resource_count(&self) -> usize {
         self.attempts
             .values()

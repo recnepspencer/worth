@@ -4,7 +4,7 @@ pub(in crate::domain_computation::primary_graph) use predicate_queue::{
     WorthQueryLivePredicatePoll, WorthQueryLivePredicateQueue,
 };
 mod controls;
-mod source;
+pub mod source;
 
 pub(in crate::domain_computation::primary_graph) use cause_queue::{
     WorthQueryLiveCauseFillPosture, WorthQueryLiveCauseQueue,

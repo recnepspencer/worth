@@ -2,7 +2,7 @@ use worth_relational::facade::mvcc::CompanionPreflightStop;
 mod comparison;
 use super::{FactMovement, WorthQueryApplicationObservedFact};
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum WorthQuerySourceCurrentnessFailure {
+pub enum WorthQuerySourceCurrentnessFailure {
     /// The fact's own recorded bound refuses the comparison.
     WorkBudgetExceeded,
     Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
@@ -76,7 +76,7 @@ impl WorthQueryApplicationObservedFact {
     }
 
     /// Compare at the genuine selected snapshot under the original execution request.
-    pub(in crate::domain_computation::primary_graph) fn source_currentness_in(
+    pub fn source_currentness_in(
         &self,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

@@ -10,8 +10,6 @@
 //! gives its Ready back. The outputs the dependent consumed stay recorded
 //! in its lineage, which is what certifies it when it reopens.
 
-#[cfg(test)]
-mod walk_bounds;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
@@ -90,7 +88,7 @@ impl DemandRegistryState {
 
     /// Remove `key`'s row with its claims, which it returns. A superseded
     /// row first hands its settlements to the newest row of its occurrence.
-    pub(in super::super) fn retire_row(
+    pub fn retire_row(
         &mut self,
         key: &WorthQueryOutputDemandKey,
         retired: &mut Vec<DemandRecord>,
@@ -143,7 +141,7 @@ impl DemandRegistryState {
     /// Move `dependent`'s claim on `upstream` to the newest row of its
     /// occurrence when `upstream` is superseded, its own demands closed, and
     /// that newest row settled Ready. Returns the row the claim left.
-    pub(in super::super) fn follow_newest(
+    pub fn follow_newest(
         &mut self,
         dependent: &WorthQueryOutputDemandKey,
         upstream: &WorthQueryOutputDemandKey,
@@ -215,7 +213,7 @@ pub(super) fn closed_superseded(record: &DemandRecord) -> bool {
 }
 
 /// The newest row of `key`'s occurrence holds a Ready no refresh replaced.
-pub(super) fn newest_ready(records: &Records, key: &WorthQueryOutputDemandKey) -> bool {
+pub fn newest_ready(records: &Records, key: &WorthQueryOutputDemandKey) -> bool {
     ready_at_newest(records, newest_of_occurrence(records, key))
 }
 
@@ -262,11 +260,7 @@ pub(super) fn claimants_where(
 }
 
 /// A demand, a dependent's claim, or unfinished work still holds the row.
-pub(super) fn held(
-    records: &Records,
-    key: &WorthQueryOutputDemandKey,
-    record: &DemandRecord,
-) -> bool {
+pub fn held(records: &Records, key: &WorthQueryOutputDemandKey, record: &DemandRecord) -> bool {
     held_by_row(record) || awaited_by_stale_owner(records, key)
 }
 

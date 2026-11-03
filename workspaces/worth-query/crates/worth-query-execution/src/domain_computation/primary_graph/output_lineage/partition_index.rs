@@ -258,7 +258,7 @@ impl WorthQueryApplicationOutputLineage {
             slot,
         ))
     }
-    pub(super) fn latest_output_in_partition(
+    pub fn latest_output_in_partition(
         &self,
         source: &SemanticSource,
         coordinate: ProductCoordinate,

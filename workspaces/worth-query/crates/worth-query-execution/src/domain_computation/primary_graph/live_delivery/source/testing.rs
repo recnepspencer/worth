@@ -17,7 +17,7 @@ impl WorthQueryLiveDeliverySource {
             .unwrap_or_else(std::sync::PoisonError::into_inner) = hook;
     }
 
-    pub(crate) fn emissions(
+    pub fn emissions(
         &self,
         publication: &WorthQueryCommittedProductPublication,
     ) -> Vec<WorthQueryApplicationEmission> {
@@ -39,7 +39,7 @@ impl WorthQueryLiveDeliverySource {
             .published_commit_count
     }
 
-    pub(crate) fn active_partition_count(&self) -> usize {
+    pub fn active_partition_count(&self) -> usize {
         self.state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)

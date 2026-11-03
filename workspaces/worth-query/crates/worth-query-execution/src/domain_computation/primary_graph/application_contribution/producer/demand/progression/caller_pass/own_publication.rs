@@ -10,7 +10,6 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         let Some(publication) = publication else {
             return Ok(true);
         };
-        #[cfg(test)]
         own_effect_observation::record(Stage::OwnPublicationContinuation);
         self.primary_provider
             .application_attempt_operation_control
@@ -28,7 +27,6 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         let current = publication
             .0
             .is_selected_at(selected.product().observation());
-        #[cfg(test)]
         if !current {
             own_effect_observation::record(Stage::OwnPublicationReplaced);
         }

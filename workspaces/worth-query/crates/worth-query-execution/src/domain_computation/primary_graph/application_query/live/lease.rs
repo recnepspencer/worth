@@ -72,21 +72,21 @@ pub struct WorthQueryApplicationLiveLease<
     query: WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
     scope: WorthQueryApplicationEntityIdentity<Schema, Scope>,
     parameters: ApplicationQueryParameterSet<Query>,
-    controls: WorthQueryApplicationLiveControls,
+    pub controls: WorthQueryApplicationLiveControls,
     _opening_product: crate::basis::WorthQueryProductBranchLease,
     governance: super::super::disclosure::WorthQueryApplicationQueryGovernance,
     scope_identity: AspectValue,
-    basis: Option<WorthQueryManagedLowerExecutionBasis>,
+    pub basis: Option<WorthQueryManagedLowerExecutionBasis>,
     graph_work:
         Option<crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession>,
     read_proof:
         Option<crate::domain_computation::provider_session::WorthQuerySessionGraphReadProof>,
-    initial_read_work:
+    pub initial_read_work:
         Option<crate::domain_computation::provider_session::WorthQueryObservedGraphReadWork>,
     basis_release: Option<super::super::WorthQueryApplicationBasisReleaseReceipt>,
     read_completion:
         Option<crate::domain_computation::provider_session::WorthQueryGraphReadCompletion>,
-    queue: WorthQueryLiveCauseQueue<
+    pub queue: WorthQueryLiveCauseQueue<
         <Binding::PayloadBinding as ApplicationStructuredValueBinding>::Value,
     >,
     _target: PhantomData<fn() -> (Principal, PrincipalIdentity, Target, Binding)>,
@@ -134,8 +134,7 @@ where
         self.queue.buffered_cause_count()
     }
 
-    #[cfg(test)]
-    pub(crate) fn fixture_phase<'scope>(
+    pub fn fixture_phase<'scope>(
         &self,
         host: &crate::domain_computation::primary_graph::TestHostRequest<'scope>,
     ) -> crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'scope> {
@@ -274,17 +273,3 @@ where
         }
     }
 }
-
-#[cfg(test)]
-#[path = "lease/delivery_tests.rs"]
-mod delivery_tests;
-#[cfg(test)]
-#[path = "lease/reservation_race_tests.rs"]
-mod reservation_race_tests;
-#[cfg(test)]
-#[path = "lease/sibling_delivery_tests.rs"]
-mod sibling_delivery_tests;
-
-#[cfg(test)]
-#[path = "lease/foreign_phase_tests.rs"]
-mod foreign_phase_tests;

@@ -9,7 +9,7 @@ use super::{
 };
 
 impl WorthQueryApplicationOutputLineage {
-    pub(in crate::domain_computation::primary_graph) fn qualified_output<Binding: 'static>(
+    pub fn qualified_output<Binding: 'static>(
         &self,
         runtime_authority: u64,
         schema: &ApplicationSchemaBindingIdentity,

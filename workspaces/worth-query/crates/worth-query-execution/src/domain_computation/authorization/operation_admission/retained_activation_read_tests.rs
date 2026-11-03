@@ -6,7 +6,7 @@ use worth_relational::facade::{runtime::RelationalRuntime, snapshots::SnapshotHa
 impl<Schema, Operation, Input, Scope>
     WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>
 {
-    pub(in crate::domain_computation) fn assert_fact_dispatch_stop_oracle(
+    pub fn assert_fact_dispatch_stop_oracle(
         &self,
         runtime: &RelationalRuntime,
         execution: &ExecutionRequest<'_, '_>,
@@ -100,7 +100,7 @@ impl<Schema, Operation, Input, Scope>
             assert_eq!(answer.unwrap_err().kind(), Kind::ExecutionRequest(crate::domain_computation::WorthQueryProviderSessionDenialKind::ExecutionResource { denial: crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::WorkExhausted, partition_identity: None, policy_ancestor: None }));
         }
     }
-    pub(in crate::domain_computation) fn assert_cancelled_retained_activation_read(
+    pub fn assert_cancelled_retained_activation_read(
         &self,
         runtime: &RelationalRuntime,
         execution: &ExecutionRequest<'_, '_>,

@@ -1,7 +1,7 @@
 //! Admitting a performed source and its required output obligation.
 use super::*;
 impl WorthQueryOutputDemandRegistry {
-    pub(in crate::domain_computation::primary_graph) fn admit_performed(
+    pub fn admit_performed(
         &self,
         requested_key: WorthQueryOutputDemandKey,
         source_commit: &worth_runtime_world::facade::CompositeCommitIdentity,

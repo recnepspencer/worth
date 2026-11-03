@@ -7,7 +7,6 @@ use worth_relational::facade::identity::EntityId;
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(super) enum SealedReadLayout {
     Checked(Arc<CheckedReadLayout>),
-    #[cfg(test)]
     OwnerFixture,
 }
 
@@ -62,7 +61,6 @@ impl SealedReadLayout {
     pub(super) fn checked(&self) -> Option<&Arc<CheckedReadLayout>> {
         match self {
             Self::Checked(layout) => Some(layout),
-            #[cfg(test)]
             Self::OwnerFixture => None,
         }
     }

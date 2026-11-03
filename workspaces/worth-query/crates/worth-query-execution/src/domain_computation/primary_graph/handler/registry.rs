@@ -91,7 +91,7 @@ impl<Schema> PendingMutationHandlerRegistry<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub(in crate::domain_computation::primary_graph) fn seal(
+    pub fn seal(
         &self,
         installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
         binding_identity: &ApplicationSchemaBindingIdentity,

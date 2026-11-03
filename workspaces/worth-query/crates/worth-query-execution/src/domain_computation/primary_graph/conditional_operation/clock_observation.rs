@@ -6,7 +6,7 @@ use super::installation::WorthQueryConditionalClockHandle;
 use super::lifecycle::WorthQueryConditionalOperationCell;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
-mod erased;
+pub mod erased;
 mod product_admission;
 pub(in crate::domain_computation::primary_graph) use erased::{
     ErasedClockObservationOutcome, ErasedClockObservationReceipt,
@@ -305,6 +305,3 @@ where
             })
     }
 }
-
-#[cfg(test)]
-mod tests;

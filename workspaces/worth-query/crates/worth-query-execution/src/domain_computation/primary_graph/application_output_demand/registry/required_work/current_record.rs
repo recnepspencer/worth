@@ -2,10 +2,7 @@
 use super::*;
 use crate::domain_computation::primary_graph::application_contribution::CurrentBasis;
 impl RequiredWorkMembership {
-    pub(in crate::domain_computation::primary_graph) fn certify_current_basis(
-        self: &Arc<Self>,
-        basis: CurrentBasis,
-    ) -> Arc<Self> {
+    pub fn certify_current_basis(self: &Arc<Self>, basis: CurrentBasis) -> Arc<Self> {
         self.state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
@@ -38,7 +35,7 @@ impl WorthQueryOutputDemandRegistry {
     /// to the live Ready that now answers that occurrence, including the
     /// installed Initial-to-Preserve succession. Pin it before certification;
     /// a foreign record or basis still cannot acknowledge either cause.
-    pub(in super::super) fn pin_current_required_successor(
+    pub fn pin_current_required_successor(
         &self,
         work: &mut SelectedRequiredWork,
     ) -> Result<(), WorthQueryOutputDemandDenial> {

@@ -4,8 +4,7 @@ use super::*;
 use worth_runtime_world::facade::CompositeCommitIdentity;
 
 impl DemandRegistryState {
-    #[cfg(test)]
-    pub(in super::super) fn drain_completed_custody(&mut self) {
+    pub fn drain_completed_custody(&mut self) {
         let visits = self.custody_cleanup.len;
         for _ in 0..visits {
             let Some(commit) = self.custody_cleanup.head.clone() else {
@@ -53,7 +52,7 @@ impl DemandRegistryState {
     }
 
     /// Reclaim the next queued source at its existing cleanup owner.
-    pub(in super::super) fn drain_next_foreign_custody(&mut self) {
+    pub fn drain_next_foreign_custody(&mut self) {
         if let Some(commit) = self.custody_cleanup.head.clone() {
             self.prune_custody_entry(&commit);
         }

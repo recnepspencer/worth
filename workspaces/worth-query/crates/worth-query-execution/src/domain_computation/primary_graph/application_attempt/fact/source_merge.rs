@@ -38,7 +38,7 @@ impl Fact {
     /// Combines observations of the same dependency at one native revision.
     /// Adjacency endpoints and comparison limits describe each read boundary;
     /// they may differ even when both reads observed the same structural truth.
-    pub(in crate::domain_computation::primary_graph) fn merge_same_source_fact(
+    pub fn merge_same_source_fact(
         &mut self,
         duplicate: Self,
         control: super::super::retained_decision_facts::StorageControl<'_, '_>,

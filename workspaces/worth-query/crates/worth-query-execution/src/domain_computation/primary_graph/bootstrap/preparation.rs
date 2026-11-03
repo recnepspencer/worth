@@ -24,7 +24,7 @@ impl WorthQueryExecutionInstallationAuthority {
         )
     }
 
-    pub(crate) fn prepare_primary_graph_with_relational_runtime<Schema>(
+    pub fn prepare_primary_graph_with_relational_runtime<Schema>(
         &self,
         phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
         runtime: &WorthQueryExecutionRuntime,
@@ -47,7 +47,7 @@ impl WorthQueryExecutionInstallationAuthority {
         )
     }
 
-    pub(crate) fn prepare_primary_graph_with_relational_runtime_and_invariants<Schema>(
+    pub fn prepare_primary_graph_with_relational_runtime_and_invariants<Schema>(
         &self,
         phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
         runtime: &WorthQueryExecutionRuntime,

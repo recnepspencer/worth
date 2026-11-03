@@ -25,7 +25,7 @@ pub struct WorthQueryProductWorldResources {
 #[derive(Clone)]
 pub(crate) struct WorthQueryProductExecution {
     pub(crate) authority: Option<Arc<ExecutionAuthority>>,
-    pub(crate) policy: ExecutionRequestPolicy,
+    pub policy: ExecutionRequestPolicy,
 }
 
 impl WorthQueryProductWorldResources {
@@ -78,7 +78,7 @@ impl WorthQueryProductWorldResources {
         self.invalidation.clone()
     }
 
-    pub(crate) fn into_parts(
+    pub fn into_parts(
         self,
     ) -> (
         RuntimeWorldBudgets,
@@ -89,15 +89,12 @@ impl WorthQueryProductWorldResources {
         (self.budgets, self.clock, self.invalidation, self.execution)
     }
 
-    #[cfg(test)]
-    pub(crate) const fn budgets(&self) -> &RuntimeWorldBudgets {
+    pub const fn budgets(&self) -> &RuntimeWorldBudgets {
         &self.budgets
     }
 }
 
-#[cfg(test)]
-pub(in crate::domain_computation) fn test_product_world_resources(
-) -> WorthQueryProductWorldResources {
+pub fn test_product_world_resources() -> WorthQueryProductWorldResources {
     test_product_world_resources_with_history_limit_for_test(1_024)
 }
 

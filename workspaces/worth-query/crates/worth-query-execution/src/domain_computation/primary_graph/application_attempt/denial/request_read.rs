@@ -11,7 +11,7 @@ impl From<worth_relational::facade::transactions::RelationalExecutionDenialCause
     }
 }
 impl WorthQueryApplicationAttemptDenial {
-    pub(in crate::domain_computation::primary_graph) fn native_storage_unavailable(
+    pub fn native_storage_unavailable(
         cause: worth_relational::facade::storage::RelationalStorageUnavailable,
         subject: &str,
     ) -> Self {
@@ -79,7 +79,7 @@ impl WorthQueryApplicationAttemptDenial {
         )
     }
 
-    pub(in crate::domain_computation::primary_graph) fn query_read_denial(
+    pub fn query_read_denial(
         stop: worth_relational::facade::runtime::QueryReadExecutionStop,
         subject: &str,
     ) -> Self {

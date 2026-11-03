@@ -97,7 +97,7 @@ impl WorthQueryFreshDecisionReadSet {
         self.receipt.session_binding_identity.as_ref() == binding_identity
     }
 
-    pub(crate) fn contains_locator(&self, identity: &str) -> bool {
+    pub fn contains_locator(&self, identity: &str) -> bool {
         if let Some(table) = &self.receipt.primary {
             return table.facts().contains_key(identity);
         }
@@ -128,8 +128,7 @@ impl WorthQueryStaleDecisionReadSet {
         self.counters
     }
 
-    #[cfg(test)]
-    pub(crate) fn stale_fact_identities_for_test(&self) -> &[Arc<str>] {
+    pub fn stale_fact_identities_for_test(&self) -> &[Arc<str>] {
         &self.stale_evidence_identities
     }
 }
@@ -198,7 +197,7 @@ impl WorthQuerySessionReadAuthority<'_> {
         })
     }
 
-    pub(crate) fn compare_decision_read_set_with(
+    pub fn compare_decision_read_set_with(
         &self,
         receipt: WorthQueryCompleteDecisionReadSetReceipt,
         mut compare: impl FnMut(

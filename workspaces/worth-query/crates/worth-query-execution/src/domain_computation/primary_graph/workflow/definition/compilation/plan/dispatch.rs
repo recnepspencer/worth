@@ -7,7 +7,7 @@ pub(super) struct CompiledWorkflowDispatchEdge {
 }
 
 #[derive(Debug, Eq, PartialEq)]
-pub(in super::super) struct CompiledWorkflowDispatch {
+pub struct CompiledWorkflowDispatch {
     outgoing: Box<[Box<[CompiledWorkflowDispatchEdge]>]>,
     incoming: Box<[Box<[CompiledWorkflowDispatchEdge]>]>,
 }

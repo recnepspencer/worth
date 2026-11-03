@@ -12,7 +12,7 @@ use super::super::RecordedSettlementIdentity;
 use super::fact_key::FactPostingKey;
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub(super) struct FactPosting {
+pub struct FactPosting {
     pub(super) settlement: Arc<RecordedSettlementIdentity>,
     pub(super) ordinal: usize,
 }
@@ -21,7 +21,7 @@ pub(super) struct FactPosting {
 /// reason a row can record. A stop ends the request that meets it instead,
 /// so none is here.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum FullVerificationReason {
+pub enum FullVerificationReason {
     NativeRevisionUnavailable,
     NativeFactRevisionUnavailable(usize),
     IndexedSelectionDenied(crate::domain_computation::primary_graph::application_attempt::IndexedSelectionReobserveDenial),
@@ -134,7 +134,7 @@ pub(super) struct EqualOutputLink {
 }
 
 #[derive(Clone, Debug)]
-pub(super) struct MarkState {
+pub struct MarkState {
     pub(super) source_publications: OrdMap<Arc<crate::domain_computation::primary_graph::application_contribution::OutputSourceAddress>, Arc<super::output_availability::SourcePublicationState>>,
     pub(super) source_publication_postings: OrdMap<super::output_availability::PublicationSourceKey, OrdSet<Arc<crate::domain_computation::primary_graph::application_contribution::OutputSourceAddress>>>,
     pub(super) source_publication_posting_count: usize,
@@ -160,7 +160,7 @@ pub(super) struct MarkState {
     pub(super) equal_links: OrdMap<Arc<RecordedSettlementIdentity>, Arc<EqualOutputLink>>,
 }
 
-pub(super) enum SettlementCurrentness<'state> {
+pub enum SettlementCurrentness<'state> {
     Clean,
     Dirty(&'state OrdSet<usize>),
     PendingUpstream(&'state OrdSet<Arc<RecordedSettlementIdentity>>),

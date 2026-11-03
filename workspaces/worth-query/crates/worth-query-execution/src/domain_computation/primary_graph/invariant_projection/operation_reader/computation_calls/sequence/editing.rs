@@ -10,7 +10,7 @@ impl ComputationCallSequence {
         self.edit_core(changes, &ExecutionOrderedMap::default(), None, execution)
     }
     /// Settle the exact previously prepared shape with actual measured calls.
-    pub(in crate::domain_computation::primary_graph) fn edited<'a>(
+    pub fn edited<'a>(
         self: &Arc<Self>,
         transition: &CallShapeTransition,
         changes: impl Iterator<Item = (ComputationRead, &'a ComputationCallCharge, Option<u64>)>,
@@ -106,7 +106,6 @@ impl ComputationCallSequence {
             .has_accounting()
             .then(|| execution.reserve((size_of::<Self>() + 2 * size_of::<usize>()) as u64))
             .transpose()?;
-        #[cfg(test)]
         let bytes = memory.as_ref().and_then(|memory| {
             memory
                 .bytes()
@@ -118,7 +117,6 @@ impl ComputationCallSequence {
             shape,
             root,
             reached,
-            #[cfg(test)]
             bytes,
             _memory: memory,
         }))

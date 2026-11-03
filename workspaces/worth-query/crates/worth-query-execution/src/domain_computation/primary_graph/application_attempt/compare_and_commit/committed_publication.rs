@@ -276,7 +276,7 @@ impl WorthQueryCommittedProductPublication {
         self.performed()?.take_live_successor_observation()
     }
 
-    pub(in crate::domain_computation::primary_graph) fn take_output_demand_observation(
+    pub fn take_output_demand_observation(
         &self,
     ) -> Option<worth_runtime_world::facade::ProductBranchObservation> {
         self.performed()?.take_output_demand_observation()

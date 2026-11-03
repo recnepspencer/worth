@@ -19,14 +19,14 @@ impl DemandRecord {
         self.performed_obligations = Vec::new();
     }
 
-    pub(super) fn is_required(&self) -> bool {
+    pub fn is_required(&self) -> bool {
         self.interests != 0
             || self.required_interests != 0
             || !self.performed_obligations.is_empty()
             || self.framework_required_count != 0
     }
 
-    pub(super) fn has_cached_ready(&self) -> bool {
+    pub fn has_cached_ready(&self) -> bool {
         matches!(&self.state, DemandState::Output(output)
             if matches!(output.checkpoint, Some(WorthQueryOutputCheckpoint::Ready(_))))
     }
@@ -35,7 +35,7 @@ impl DemandRecord {
 impl DemandRegistryState {
     /// Release one terminal output's framework claims while the registry lock
     /// is held. Return the old Arc pointers for destruction after that lock.
-    pub(super) fn release_record_prerequisites(
+    pub fn release_record_prerequisites(
         &mut self,
         key: &WorthQueryOutputDemandKey,
     ) -> Vec<Arc<WorthQueryOutputDemandKey>> {
@@ -154,7 +154,6 @@ impl DemandRegistryState {
             .records
             .iter()
             .filter(|(key, record)| {
-                #[cfg(test)]
                 super::post_commit::record_sweep_contact();
                 retired(key, record)
                     && record.prepared_prerequisite_claims == 0
@@ -166,7 +165,6 @@ impl DemandRegistryState {
         let mut released = Vec::with_capacity(count);
         let mut settlements = Vec::with_capacity(count);
         for (key, mut record) in &mut self.records {
-            #[cfg(test)]
             super::post_commit::record_sweep_contact();
             if retired(key, &record)
                 && record.prepared_prerequisite_claims == 0

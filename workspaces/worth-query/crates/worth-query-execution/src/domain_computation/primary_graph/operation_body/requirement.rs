@@ -69,10 +69,7 @@ pub struct WorthQueryOperationBodyRequirementFinding {
 }
 
 impl WorthQueryOperationBodyRequirementFinding {
-    pub(in crate::domain_computation::primary_graph) fn new(
-        field: ApplicationFieldBindingLocus,
-        met: bool,
-    ) -> Self {
+    pub fn new(field: ApplicationFieldBindingLocus, met: bool) -> Self {
         Self {
             target: WorthQueryOperationBodyRequirementTarget::Field(field),
             identity: None,

@@ -1,0 +1,46 @@
+//! Width is witnessed by computing members, including a perturbed real wave.
+use crate::domain_computation::primary_graph::application_contribution::computation::wave_dispatch::tests::*;
+use std::sync::Condvar;
+pub const VALUES: [u64; 2] = [3, 7];
+pub const HANG_GUARD: Duration = Duration::from_secs(60);
+#[test]
+fn certified_wave_really_overlaps_computing_members() {
+    let _owned=worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation::install_on_this_thread();
+    worth_query_execution::facade::domain_computation::place_managed_computations_on_this_thread_for_test(worth_query_execution::facade::domain_computation::WorthQueryExecutionPlacementForTest::Certified{workers:NonZeroUsize::new(2).unwrap(),seed:0});
+    let state = Arc::new((Mutex::new((0usize, 0usize, 0usize, false)), Condvar::new()));
+    let members = VALUES
+        .into_iter()
+        .map(|value| {
+            let state = state.clone();
+            PreparedMember {
+                requests: vec![PreparedCompute::new(move |member| {
+                    let (mut held, wake) = (state.0.lock().unwrap(), &state.1);
+                    held.0 += 1;
+                    held.1 += 1;
+                    held.2 = held.2.max(held.1);
+                    wake.notify_all();
+                    let (mut held, guard) = wake
+                        .wait_timeout_while(held, HANG_GUARD, |s| s.0 < 2)
+                        .unwrap();
+                    held.3 |= guard.timed_out() && held.0 < 2;
+                    drop(held);
+                    let (_, poll) = member.into_parts();
+                    poll().unwrap();
+                    state.0.lock().unwrap().1 -= 1;
+                    value
+                })],
+            }
+        })
+        .collect();
+    let (settled, report) = run(Some(2), members);
+    let state = state.0.lock().unwrap();
+    assert_eq!(
+        state.2, 2,
+        "leased certified wave has two computing members in flight"
+    );
+    assert!(!state.3, "computing-member rendezvous hang guard expired");
+    assert_eq!(settled.len(), 2);
+
+    assert_eq!(report.accounted_cost(), None);
+    assert!(report.physical().active_workers_high_watermark() >= 2);
+}

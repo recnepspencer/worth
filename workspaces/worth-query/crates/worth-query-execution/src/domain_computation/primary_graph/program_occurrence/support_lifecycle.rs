@@ -130,7 +130,7 @@ impl WorthQueryProgramSupportLifecycle {
         *count = remaining;
     }
 
-    pub(in crate::domain_computation::primary_graph) fn begin_retirement(
+    pub fn begin_retirement(
         &self,
         revision: &ApplicationProgramRevision,
     ) -> Result<WorthQueryProgramSupportRetirementAttempt, WorthQueryProgramSupportRetirementDenial>
@@ -181,10 +181,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryProgramSupport
 }
 
 impl WorthQueryProgramSupportInterpretation {
-    pub(in crate::domain_computation::primary_graph) fn same_support_as(
-        &self,
-        other: &Self,
-    ) -> bool {
+    pub fn same_support_as(&self, other: &Self) -> bool {
         self.revision == other.revision
             && Arc::ptr_eq(&self.lifecycle.state, &other.lifecycle.state)
     }
@@ -253,7 +250,7 @@ impl WorthQueryProgramSupportRetirementAttempt {
         WorthQueryProgramSupportRetirementDenial::InventoryUnavailable(inventory)
     }
 
-    pub(in crate::domain_computation::primary_graph) fn finish(
+    pub fn finish(
         mut self,
         current_branches: usize,
         retained_program_bytes: usize,

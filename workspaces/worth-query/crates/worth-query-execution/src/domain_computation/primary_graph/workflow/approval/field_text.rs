@@ -10,7 +10,7 @@ use worth_relational::facade::{
     symbols::{RelationalFieldText, RelationalFieldTextAdmissionDenial as Native},
 };
 
-pub(in crate::domain_computation::primary_graph) struct WorkflowApprovalFieldText {
+pub struct WorkflowApprovalFieldText {
     pub(super) request: RelationalFieldText,
     pub(super) principal: RelationalFieldText,
     pub(super) lineage: RelationalFieldText,
@@ -20,7 +20,7 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowApprovalFieldTex
 impl WorkflowApprovalFieldText {
     // Admission is once per preparation, not once per projection or effect visit.
     // Earlier dictionary admissions may survive a later refusal; the table owns them.
-    pub(in crate::domain_computation::primary_graph) fn admit(
+    pub fn admit(
         runtime: &RelationalRuntime,
         execution: &ExecutionRequest<'_, '_>,
         basis: &AdmittedRelationalBranchBasis,

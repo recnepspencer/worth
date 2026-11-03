@@ -17,7 +17,7 @@ use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture;
 
 /// Prepared before Running and consumed by exactly one execution outcome.
-pub(in crate::domain_computation::primary_graph) struct PreparedSelectedExecutionFinish<'a> {
+pub struct PreparedSelectedExecutionFinish<'a> {
     registry: &'a WorthQueryOutputDemandRegistry,
     key: Arc<super::super::WorthQueryOutputDemandKey>,
     member: Arc<RequiredWorkMembership>,
@@ -26,13 +26,11 @@ pub(in crate::domain_computation::primary_graph) struct PreparedSelectedExecutio
 
 /// Holds only this invocation's Running claim. Abandoning a prepared suffix
 /// releases it back to Scheduled before its last Interest can be destroyed.
-pub(in crate::domain_computation::primary_graph) struct RunningSelectedExecution<'a> {
+pub struct RunningSelectedExecution<'a> {
     finish: Option<PreparedSelectedExecutionFinish<'a>>,
 }
 impl<'a> RunningSelectedExecution<'a> {
-    pub(in crate::domain_computation::primary_graph) fn new(
-        finish: PreparedSelectedExecutionFinish<'a>,
-    ) -> Self {
+    pub fn new(finish: PreparedSelectedExecutionFinish<'a>) -> Self {
         Self {
             finish: Some(finish),
         }
@@ -40,7 +38,7 @@ impl<'a> RunningSelectedExecution<'a> {
     pub(in crate::domain_computation::primary_graph) fn relinquish(mut self) {
         self.finish.take().expect("one Running finish").relinquish();
     }
-    pub(in crate::domain_computation::primary_graph) fn publish(
+    pub fn publish(
         mut self,
         checkpoint: WorthQueryOutputCheckpoint,
     ) -> Result<(), (WorthQueryOutputDemandDenial, WorthQueryOutputCheckpoint)> {
@@ -49,10 +47,7 @@ impl<'a> RunningSelectedExecution<'a> {
             .expect("one Running finish")
             .publish(checkpoint)
     }
-    pub(in crate::domain_computation::primary_graph) fn failure(
-        mut self,
-        denial: &mut WorthQueryOutputDemandDenial,
-    ) {
+    pub fn failure(mut self, denial: &mut WorthQueryOutputDemandDenial) {
         self.finish
             .take()
             .expect("one Running finish")
@@ -68,7 +63,7 @@ impl Drop for RunningSelectedExecution<'_> {
 }
 
 impl WorthQueryOutputDemandRegistry {
-    pub(in crate::domain_computation::primary_graph) fn prepare_selected_execution_finish<'a>(
+    pub fn prepare_selected_execution_finish<'a>(
         &'a self,
         interest: &WorthQueryOutputDemandInterest,
     ) -> Result<PreparedSelectedExecutionFinish<'a>, WorthQueryOutputDemandDenial> {
@@ -134,7 +129,7 @@ impl PreparedSelectedExecutionFinish<'_> {
 
     /// The checkpoint stays with the caller if another owner moved this
     /// exact row before installation. The registry never clones its receipt.
-    pub(in crate::domain_computation::primary_graph) fn publish(
+    pub fn publish(
         self,
         checkpoint: WorthQueryOutputCheckpoint,
     ) -> Result<(), (WorthQueryOutputDemandDenial, WorthQueryOutputCheckpoint)> {
@@ -178,10 +173,7 @@ impl PreparedSelectedExecutionFinish<'_> {
     /// Return the complete producer stop to its typed demand owner. The row
     /// stores diagnostics only; failed managed cleanup is never cloned here.
     /// Retired delivery obligations are detached under the guard and dropped afterward.
-    pub(in crate::domain_computation::primary_graph) fn failure(
-        self,
-        denial: &mut WorthQueryOutputDemandDenial,
-    ) {
+    pub fn failure(self, denial: &mut WorthQueryOutputDemandDenial) {
         let retryable = execution_failure_is_retryable(denial);
         let rescheduled = execution_failure_reschedules(denial);
         denial.recovery_posture = if retryable {

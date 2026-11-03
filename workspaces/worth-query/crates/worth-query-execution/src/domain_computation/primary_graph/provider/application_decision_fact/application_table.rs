@@ -9,7 +9,7 @@ use std::{collections::BTreeMap, sync::Arc};
 
 mod preimage;
 
-pub(in crate::domain_computation) struct ApplicationFactTable {
+pub struct ApplicationFactTable {
     prefix: Option<Prefix>,
     overlay: BTreeMap<String, Decision>,
     count: usize,
@@ -23,13 +23,13 @@ struct Prefix {
     original: Option<Arc<CompletedOriginalRead>>,
 }
 impl ApplicationFactTable {
-    pub(in crate::domain_computation) fn full_capture_bytes(&self) -> Option<u64> {
+    pub fn full_capture_bytes(&self) -> Option<u64> {
         self.prefix
             .as_ref()
             .map_or(Some(0), |p| p.projection.bytes().checked_mul(4))
             .and_then(|n| n.checked_add(self.binding_bytes))
     }
-    pub(in crate::domain_computation) fn requests(
+    pub fn requests(
         &self,
     ) -> impl Iterator<Item = crate::domain_computation::WorthQueryDecisionFactRequest> + '_ {
         self.values().map(|fact| {
@@ -126,7 +126,7 @@ impl ApplicationFactTable {
         self.count += 1;
         Ok(())
     }
-    pub(in crate::domain_computation) fn len(&self) -> usize {
+    pub fn len(&self) -> usize {
         self.count
     }
     pub(in crate::domain_computation) fn contains_key(&self, key: &str) -> bool {
@@ -136,7 +136,7 @@ impl ApplicationFactTable {
                 .as_ref()
                 .is_some_and(|p| p.projection.ordinal(key).is_some())
     }
-    pub(in crate::domain_computation) fn get(&self, key: &str) -> Option<Decision> {
+    pub fn get(&self, key: &str) -> Option<Decision> {
         self.overlay.get(key).cloned().or_else(|| {
             let prefix = self.prefix.as_ref()?;
             let ordinal = prefix.projection.ordinal(key)?;
@@ -146,7 +146,7 @@ impl ApplicationFactTable {
             ))
         })
     }
-    pub(in crate::domain_computation) fn values(&self) -> impl Iterator<Item = Decision> + '_ {
+    pub fn values(&self) -> impl Iterator<Item = Decision> + '_ {
         let mut prefix = self
             .prefix
             .iter()
@@ -179,7 +179,7 @@ impl ApplicationFactTable {
     pub(in crate::domain_computation) fn explicit_values(&self) -> impl Iterator<Item = &Decision> {
         self.overlay.values()
     }
-    pub(in crate::domain_computation) fn closed_prefix(
+    pub fn closed_prefix(
         &self,
     ) -> Option<(&Arc<CompletedFactProjection>, &Arc<CompletedOriginalRead>)> {
         let prefix = self.prefix.as_ref()?;

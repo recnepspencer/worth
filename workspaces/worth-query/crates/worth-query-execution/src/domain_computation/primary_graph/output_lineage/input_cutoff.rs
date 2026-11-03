@@ -1,17 +1,16 @@
 //! A prior performed output selected through its retained partition locator.
 
 mod generation_append;
-mod selected_basis;
+pub mod selected_basis;
 mod stable_cutover;
-pub(super) mod stable_publication;
-mod verification;
+pub mod stable_publication;
+pub mod verification;
 pub(in crate::domain_computation::primary_graph) use stable_cutover::PublishedStableLineage;
 pub(in crate::domain_computation::primary_graph) use stable_cutover::StablePublicationStop;
 pub(super) use stable_publication::performed_fact_sequence;
 pub(in crate::domain_computation::primary_graph) use stable_publication::prepare_stable_address;
 pub(in crate::domain_computation::primary_graph) use stable_publication::PreparedStableLineageAddress;
 pub(in crate::domain_computation::primary_graph) use stable_publication::StableEqualityConsequence;
-#[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use verification::InputCutoffDecision;
 
 pub(in crate::domain_computation::primary_graph) use selected_basis::PreparedInputCutoffBasis;
@@ -40,7 +39,7 @@ use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutp
 /// Pins the exact owner-selected record, including its retained capacity and
 /// source evidence. A restored row may lack the proofs needed for input reuse.
 #[derive(Clone)]
-pub(in crate::domain_computation::primary_graph) struct RetainedInputCutoffCandidate {
+pub struct RetainedInputCutoffCandidate {
     cell: Arc<OnceLock<RecordedOutput>>,
 }
 

@@ -14,7 +14,7 @@ use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
 /// The live demand record selected for a producer operation. This is a
 /// move-only carrier; the source epoch and installed producer are the registry
 /// key, while the registry remains the sole owner of prerequisite claims.
-pub(in crate::domain_computation) struct RequiredOutputDemandContext {
+pub struct RequiredOutputDemandContext {
     family: &'static str,
     owner: WorthQueryOutputDemandRegistry,
     key: Arc<WorthQueryOutputDemandKey>,
@@ -216,7 +216,7 @@ impl RequiredOutputDemandContext {
 }
 
 impl WorthQueryOutputDemandInterest {
-    pub(in crate::domain_computation::primary_graph) fn required_context(
+    pub fn required_context(
         &self,
         family: &'static str,
         source_owner: &SourceInvalidationOwner,

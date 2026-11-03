@@ -196,7 +196,7 @@ impl WorthQueryApplicationQueryGovernance {
         }
     }
 
-    pub(in crate::domain_computation) fn computation_matches(
+    pub fn computation_matches(
         &self,
         graph_work: &WorthQueryManagedGraphWorkSession,
         runtime: WorthQueryRuntimeAuthorityIdentity,
@@ -216,7 +216,7 @@ impl WorthQueryApplicationQueryGovernance {
         }
     }
 
-    pub(in crate::domain_computation) fn readmission_matches(
+    pub fn readmission_matches(
         &self,
         runtime: WorthQueryRuntimeAuthorityIdentity,
         query: &WorthQueryInstalledApplicationQueryIdentity,

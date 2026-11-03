@@ -10,7 +10,7 @@ use worth_relational::facade::{runtime::RelationalRuntime, snapshots::SnapshotHa
 impl<Schema, Operation, Input, Scope>
     WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>
 {
-    pub(in crate::domain_computation) fn assert_cancelled_fact_dispatch(
+    pub fn assert_cancelled_fact_dispatch(
         &self,
         runtime: &RelationalRuntime,
         execution: &ExecutionRequest<'_, '_>,
@@ -45,7 +45,7 @@ impl<Schema, Operation, Input, Scope>
             );
         }
     }
-    pub(in crate::domain_computation) fn assert_retained_activation_read_at_every_consult(
+    pub fn assert_retained_activation_read_at_every_consult(
         &self,
         runtime: &RelationalRuntime,
         execution: &ExecutionRequest<'_, '_>,

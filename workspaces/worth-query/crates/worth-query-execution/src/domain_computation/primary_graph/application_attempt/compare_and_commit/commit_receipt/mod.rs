@@ -1,7 +1,5 @@
 //! Closed application commit receipt.
 
-#[cfg(test)]
-mod certification;
 mod committed_changes;
 mod construction;
 mod description;
@@ -45,7 +43,7 @@ pub struct WorthQueryApplicationCommitReceipt {
     pub(super) authoritative_provider_session:
         crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding,
     pub(super) outcome_identity: Option<super::super::WorthQueryApplicationCommitOutcomeIdentity>,
-    pub(super) provider_runtime_instance_id: u64,
+    pub provider_runtime_instance_id: u64,
     pub(super) commit: RelationalCommitReceipt,
     pub(super) committed_product_publication: super::WorthQueryCommittedProductPublication,
     pub(super) basis_descriptor: worth_relational::facade::branch::RelationalBranchBasisDescriptor,
@@ -62,7 +60,7 @@ pub struct WorthQueryApplicationCommitReceipt {
     pub(super) external_dispatch_preparation_denial:
         Option<super::super::WorthQueryExternalDispatchPreparationDenial>,
     /// R8.62 / C1 — derived from admission at construction; never caller-supplied.
-    pub(super) authority_binding: WorthQueryApplicationCommitAuthorityBinding,
+    pub authority_binding: WorthQueryApplicationCommitAuthorityBinding,
     /// R8.2 — exact inverse pre-image slice retained from the decision read-set.
     pub(super) retained_preimage: Option<WorthQueryRetainedPreImage>,
     pub(super) aftermath_causality: Option<WorthQueryCommittedAftermathCausality>,
@@ -76,7 +74,7 @@ pub struct WorthQueryApplicationCommitReceipt {
     pub(super) performed_input_facts: Option<crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload>,
     pub(super) performed_output_fields: Option<Result<crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload, crate::domain_computation::primary_graph::application_attempt::OutputFieldCaptureFailure>>,
     pub(super) output_correspondence: std::sync::Arc<WorthQueryApplicationOutputCorrespondence>,
-    pub(super) exact_output_settlement: Option<std::sync::Arc<
+    pub exact_output_settlement: Option<std::sync::Arc<
         crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity,
     >>,
     /// Set where the rebase of this commit failed, so it retains no fact.
@@ -205,9 +203,7 @@ impl WorthQueryApplicationCommitReceipt {
         self.output_correspondence.outputs_of()
     }
 
-    pub(in crate::domain_computation::primary_graph) fn output_correspondence(
-        &self,
-    ) -> &WorthQueryApplicationOutputCorrespondence {
+    pub fn output_correspondence(&self) -> &WorthQueryApplicationOutputCorrespondence {
         self.output_correspondence.as_ref()
     }
 
@@ -217,7 +213,7 @@ impl WorthQueryApplicationCommitReceipt {
         std::sync::Arc::clone(&self.output_correspondence)
     }
 
-    pub(in crate::domain_computation::primary_graph) fn exact_output_settlement(
+    pub fn exact_output_settlement(
         &self,
     ) -> Option<
         &std::sync::Arc<
@@ -281,7 +277,7 @@ impl WorthQueryApplicationCommitReceipt {
         self.authority_binding.installed_operation()
     }
 
-    pub(crate) const fn runtime_authority(
+    pub const fn runtime_authority(
         &self,
     ) -> crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity {
         self.authority_binding.runtime_authority()
@@ -324,7 +320,7 @@ impl WorthQueryApplicationCommitReceipt {
         self.authority_binding.idempotency_binding()
     }
 
-    pub(crate) const fn retained_preimage(&self) -> Option<&WorthQueryRetainedPreImage> {
+    pub const fn retained_preimage(&self) -> Option<&WorthQueryRetainedPreImage> {
         self.retained_preimage.as_ref()
     }
 

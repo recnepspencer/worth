@@ -7,7 +7,7 @@ impl Drop for PreviewDiscardFaultForTest {
     }
 }
 impl WorthQueryApplicationPreviewSession {
-    pub(super) fn reject_discard_for_test(&mut self) -> PreviewDiscardFaultForTest {
+    pub fn reject_discard_for_test(&mut self) -> PreviewDiscardFaultForTest {
         self.discard_fault.set(true);
         PreviewDiscardFaultForTest(std::rc::Rc::clone(&self.discard_fault))
     }

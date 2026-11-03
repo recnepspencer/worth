@@ -5,7 +5,7 @@ impl SourceCustody {
     /// Closing the sole delivery owner leaves no answer for this consumption.
     /// A semantic join retains the row's older key, but the bound source is
     /// the actual identity consumed by admission. Only that source is returned.
-    pub(in super::super) fn return_undelivered_root(
+    pub fn return_undelivered_root(
         &mut self,
         identity: &SourceEpoch,
         scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,

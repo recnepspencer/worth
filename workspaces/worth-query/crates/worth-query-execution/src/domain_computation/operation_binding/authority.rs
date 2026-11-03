@@ -19,7 +19,7 @@ use crate::domain_computation::WorthQueryInstalledOperationExecutionSupport;
 mod application_binding;
 mod provider_plan;
 mod runtime_binding;
-mod topology;
+pub mod topology;
 
 pub(crate) use application_binding::WorthQueryApplicationOperationBindingInput;
 use topology::operation_workflow_topology;
@@ -27,35 +27,37 @@ use topology::WorthQueryExecutionResourceTopology;
 
 #[derive(Clone)]
 pub struct WorthQueryExecutionBoundOperationAuthority {
-    runtime_authority: WorthQueryRuntimeAuthorityIdentity,
-    installation_runtime_ordinal: u64,
-    binding_identity: Arc<str>,
-    operation_identity: Arc<str>,
-    basis_identity: Arc<str>,
-    semantic_basis: worth_query_admission::facade::basis::NormalizedBasisIntent,
-    canonical_query_digest: Arc<str>,
-    operation_resource_contract_identity: Arc<str>,
-    provider_plan_declarations:
+    pub runtime_authority: WorthQueryRuntimeAuthorityIdentity,
+    pub installation_runtime_ordinal: u64,
+    pub binding_identity: Arc<str>,
+    pub operation_identity: Arc<str>,
+    pub basis_identity: Arc<str>,
+    pub semantic_basis: worth_query_admission::facade::basis::NormalizedBasisIntent,
+    pub canonical_query_digest: Arc<str>,
+    pub operation_resource_contract_identity: Arc<str>,
+    pub provider_plan_declarations:
         Arc<crate::domain_computation::provider_session::WorthQueryProviderPlanDeclarations>,
-    commit_posture: WorthQueryExecutionCommitPosture,
-    direct_resource_topology: WorthQueryExecutionResourceTopology,
-    workflow_stage_resources: Option<BTreeMap<Arc<str>, WorthQueryWorkflowStageResourceAuthority>>,
-    operation_evidence_contract:
+    pub commit_posture: WorthQueryExecutionCommitPosture,
+    pub direct_resource_topology: WorthQueryExecutionResourceTopology,
+    pub workflow_stage_resources:
+        Option<BTreeMap<Arc<str>, WorthQueryWorkflowStageResourceAuthority>>,
+    pub operation_evidence_contract:
         Option<Arc<worth_query_installation::facade::WorthQueryInstalledArtifactContractAuthority>>,
-    installed_support: WorthQueryInstalledOperationExecutionSupport,
-    installed_domain: Arc<WorthQueryInstalledDomainExecutionAuthority>,
-    graph_work_affinity: Option<WorthQueryApplicationGraphWorkAffinity>,
-    application_operation_attempt:
+    pub installed_support: WorthQueryInstalledOperationExecutionSupport,
+    pub installed_domain: Arc<WorthQueryInstalledDomainExecutionAuthority>,
+    pub graph_work_affinity: Option<WorthQueryApplicationGraphWorkAffinity>,
+    pub application_operation_attempt:
         Option<crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity>,
-    application_operation_slot: Option<Arc<str>>,
-    application_schema_binding:
+    pub application_operation_slot: Option<Arc<str>>,
+    pub application_schema_binding:
         Option<worth_query_installation::facade::ApplicationSchemaBindingIdentity>,
-    application_snapshot: Option<worth_relational::facade::snapshots::SnapshotHandle>,
-    application_product_observation: Option<worth_runtime_world::facade::ProductBranchObservation>,
+    pub application_snapshot: Option<worth_relational::facade::snapshots::SnapshotHandle>,
+    pub application_product_observation:
+        Option<worth_runtime_world::facade::ProductBranchObservation>,
 }
 
 #[derive(Clone, Copy)]
-pub(crate) struct WorthQueryApplicationGraphWorkAffinity {
+pub struct WorthQueryApplicationGraphWorkAffinity {
     pub(crate) session:
         crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
     pub(crate) managed_run:
@@ -73,11 +75,11 @@ impl std::fmt::Debug for WorthQueryExecutionBoundOperationAuthority {
 }
 
 #[derive(Clone)]
-struct WorthQueryWorkflowStageResourceAuthority {
-    contract_identity: Arc<str>,
-    topology: WorthQueryExecutionResourceTopology,
-    predecessors: Arc<[String]>,
-    artifact_contracts: WorthQueryInstalledWorkflowArtifactContracts,
+pub struct WorthQueryWorkflowStageResourceAuthority {
+    pub contract_identity: Arc<str>,
+    pub topology: WorthQueryExecutionResourceTopology,
+    pub predecessors: Arc<[String]>,
+    pub artifact_contracts: WorthQueryInstalledWorkflowArtifactContracts,
 }
 
 impl WorthQueryExecutionBoundOperationAuthority {
@@ -392,6 +394,3 @@ impl WorthQueryExecutionBoundOperationAuthority {
             })
     }
 }
-
-#[cfg(test)]
-pub(crate) mod tests;

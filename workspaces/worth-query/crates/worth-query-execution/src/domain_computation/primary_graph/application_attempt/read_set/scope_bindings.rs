@@ -45,12 +45,11 @@ impl InstalledScopePosition {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum CompletedReadScopes {
+pub enum CompletedReadScopes {
     Installed {
         contracts: Arc<Contracts>,
         positions: Arc<ExecutionArray<InstalledScopePosition>>,
     },
-    #[cfg(test)]
     EmptyOwnerFixture,
 }
 impl CompletedReadScopes {
@@ -65,7 +64,6 @@ impl CompletedReadScopes {
                 }
                 InstalledCorrectionMechanism::Compensation(_) => None,
             },
-            #[cfg(test)]
             Self::EmptyOwnerFixture => None,
         }
     }
@@ -81,7 +79,6 @@ impl CompletedReadScopes {
     pub(in crate::domain_computation::primary_graph) fn len(&self) -> usize {
         match self {
             Self::Installed { positions, .. } => positions.len(),
-            #[cfg(test)]
             Self::EmptyOwnerFixture => 0,
         }
     }
@@ -94,7 +91,6 @@ impl CompletedReadScopes {
                 contracts,
                 positions,
             } => positions.get(ordinal)?.resolve(contracts),
-            #[cfg(test)]
             Self::EmptyOwnerFixture => None,
         }
     }
@@ -104,14 +100,12 @@ impl CompletedReadScopes {
     ) -> bool {
         match self {
             Self::Installed { contracts, .. } => Arc::ptr_eq(contracts, current),
-            #[cfg(test)]
             Self::EmptyOwnerFixture => false,
         }
     }
     pub(super) fn position(&self, ordinal: usize) -> Option<InstalledScopePosition> {
         match self {
             Self::Installed { positions, .. } => positions.get(ordinal).copied(),
-            #[cfg(test)]
             Self::EmptyOwnerFixture => None,
         }
     }

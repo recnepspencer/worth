@@ -4,7 +4,7 @@ use crate::domain_computation::primary_graph::application_attempt::WorthQueryApp
 use std::sync::Arc;
 
 impl SealedComputationFacts {
-    pub(super) fn at_seal(
+    pub fn at_seal(
         attribution: ComputationFactAttribution,
         observed: &BTreeMap<WorthQueryApplicationFactKey, WorthQueryApplicationObservedFact>,
     ) -> Self {
@@ -17,7 +17,7 @@ impl SealedComputationFacts {
         .bind_fixture(Arc::<[_]>::from(observed.values().cloned().collect::<Vec<_>>()).into())
     }
 
-    pub(in crate::domain_computation::primary_graph) fn replace_fact(
+    pub fn replace_fact(
         &mut self,
         key: &WorthQueryApplicationFactKey,
         fact: WorthQueryApplicationObservedFact,
@@ -34,7 +34,7 @@ impl SealedComputationFacts {
         self.layout = super::layout::SealedReadLayout::OwnerFixture;
     }
 
-    pub(in crate::domain_computation::primary_graph) fn copy_keys(
+    pub fn copy_keys(
         &mut self,
         key: &WorthQueryApplicationFactKey,
         destinations: impl IntoIterator<Item = WorthQueryApplicationFactKey>,
@@ -42,7 +42,7 @@ impl SealedComputationFacts {
         self.move_keys(key, destinations, false);
     }
 
-    pub(in crate::domain_computation::primary_graph) fn rename_key(
+    pub fn rename_key(
         &mut self,
         key: &WorthQueryApplicationFactKey,
         to: WorthQueryApplicationFactKey,

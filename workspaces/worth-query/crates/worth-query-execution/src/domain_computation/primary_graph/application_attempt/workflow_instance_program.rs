@@ -32,7 +32,7 @@ pub use birth::{
 mod discovery_intent;
 pub use discovery_intent::WorthQueryWorkflowInstanceDiscoveryIntent;
 mod intent_identity;
-mod migration;
+pub mod migration;
 mod performed;
 mod preparation;
 mod publication;

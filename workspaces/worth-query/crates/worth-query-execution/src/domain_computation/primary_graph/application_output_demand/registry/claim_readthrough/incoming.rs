@@ -23,7 +23,7 @@ struct Links {
     next: Option<Arc<ClaimLink>>,
     linked: bool,
 }
-pub(in super::super) struct ClaimBatch {
+pub struct ClaimBatch {
     edges: Vec<Arc<ClaimLink>>,
     published: Arc<AtomicBool>,
 }
@@ -44,15 +44,15 @@ impl ClaimBatch {
         }
         Self { edges, published }
     }
-    pub(in super::super) fn install(&self) {
+    pub fn install(&self) {
         for edge in &self.edges {
             edge.link();
         }
     }
-    pub(in super::super) fn deactivate(&self) {
+    pub fn deactivate(&self) {
         self.published.store(false, Ordering::Release);
     }
-    pub(in super::super) fn publish(&self) {
+    pub fn publish(&self) {
         self.published.store(true, Ordering::Release);
     }
     pub(in super::super) fn retarget(

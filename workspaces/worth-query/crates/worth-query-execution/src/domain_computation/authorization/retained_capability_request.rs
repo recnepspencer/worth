@@ -10,11 +10,11 @@ use super::operation_progression::{
     WorthQueryCapabilityContextKey, WorthQueryResolvedCapabilityRequest,
 };
 
-mod context;
+pub mod context;
 pub(super) mod material;
-mod use_identity;
+pub mod use_identity;
 pub(in crate::domain_computation) use use_identity::WorthQueryCapabilityUseIdentity;
-mod portable;
+pub mod portable;
 use context::RetainedContext;
 pub(in crate::domain_computation) use portable::MAXIMUM_PORTABLE_BYTES;
 pub(in crate::domain_computation) use portable::{
@@ -22,26 +22,26 @@ pub(in crate::domain_computation) use portable::{
 };
 
 #[derive(Clone)]
-pub(in crate::domain_computation) struct WorthQueryRetainedCapabilityRequest {
+pub struct WorthQueryRetainedCapabilityRequest {
     pub(super) recorded_actor: Option<Arc<crate::domain_computation::primary_graph::application_attempt::workflow_transition_program::WorkflowRecordedActorObservation>>,
     principal: worth_relational::facade::identity::EntityId,
     capability_identity: [u8; 32],
     resource: worth_relational::facade::identity::EntityId,
-    data: Arc<RetainedCapabilityRequestData>,
+    pub data: Arc<RetainedCapabilityRequestData>,
 }
-pub(in crate::domain_computation) struct RetainedCapabilityRequestData {
+pub struct RetainedCapabilityRequestData {
     resource_entity: Arc<str>,
-    elevation: Option<worth_relational::facade::identity::EntityId>,
-    action: AspectValue,
+    pub elevation: Option<worth_relational::facade::identity::EntityId>,
+    pub action: AspectValue,
     purpose: AspectValue,
     related_relation: Option<ApplicationCapabilityRelationBinding>,
-    related: Option<worth_relational::facade::identity::EntityId>,
+    pub related: Option<worth_relational::facade::identity::EntityId>,
     field: Option<AspectValue>,
     magnitude: Option<AspectValue>,
     cardinality: u32,
     context_name: Arc<str>,
     context_type: Arc<str>,
-    context: RetainedContext,
+    pub context: RetainedContext,
     // Payload fields are destroyed before their original admission.
     _codec_funding: Option<(
         Arc<crate::domain_computation::primary_graph::workflow::actor::ActorCodecFunding>,
@@ -140,7 +140,7 @@ impl WorthQueryRetainedCapabilityRequest {
         }
     }
 
-    pub(in crate::domain_computation::authorization) fn matches_elevated_request(
+    pub fn matches_elevated_request(
         &self,
         candidate: &Self,
         elevation: worth_relational::facade::identity::EntityId,
@@ -148,7 +148,7 @@ impl WorthQueryRetainedCapabilityRequest {
         candidate.elevation == Some(elevation) && self.same_request_except_elevation(candidate)
     }
 
-    fn matches_use(&self, candidate: &Self) -> bool {
+    pub fn matches_use(&self, candidate: &Self) -> bool {
         self.elevation == candidate.elevation && self.same_request_except_elevation(candidate)
     }
 

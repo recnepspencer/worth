@@ -1,7 +1,7 @@
 mod capacity;
-mod denial;
+pub mod denial;
 mod gate;
-mod registry;
+pub mod registry;
 
 pub(crate) use denial::WorthQueryProductActivationDenial;
 pub(crate) use registry::WorthQueryProductActivationRegistry;

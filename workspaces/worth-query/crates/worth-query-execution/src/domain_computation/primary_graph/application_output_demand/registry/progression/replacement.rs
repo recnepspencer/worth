@@ -3,7 +3,7 @@ use super::super::*;
 mod preparation;
 
 impl WorthQueryOutputDemandRegistry {
-    pub(in crate::domain_computation::primary_graph) fn finish_replaced_interest(
+    pub fn finish_replaced_interest(
         &self,
         replaced: &WorthQueryOutputDemandInterest,
         replacement: &WorthQueryOutputDemandInterest,

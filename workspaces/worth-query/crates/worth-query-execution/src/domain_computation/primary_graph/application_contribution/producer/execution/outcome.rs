@@ -65,9 +65,6 @@ impl ProducerCommitReceipt {
     }
 }
 
-#[cfg(test)]
-mod publication_record_tests;
-
 /// A successful producer returns its original pre-effect Ready storage.
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) struct PreparedProducerExecutionOutcome
 {
@@ -129,7 +126,7 @@ where
 }
 
 /// Maps a producer commit to its receipt or to the demand denial it settles as.
-pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn commit_receipt(
+pub fn commit_receipt(
     identity: &str,
     outcome: WorthQueryApplicationCommitOutcome,
 ) -> Result<ProducerCommitReceipt, WorthQueryOutputDemandDenial> {
@@ -292,9 +289,6 @@ fn refused_preflight(
             .with_publication_companion_stop(stop),
     )
 }
-
-#[cfg(test)]
-mod tests;
 
 #[cfg(test)]
 mod invariant_refusal_tests;

@@ -83,27 +83,3 @@ fn clear_observations() {
     PUBLICATIONS.with(|records| *records.borrow_mut() = Default::default());
     PUBLICATION_RECORDS.with(|records| *records.borrow_mut() = Default::default());
 }
-
-#[cfg(test)]
-mod scope_tests {
-    #[test]
-    fn dropping_the_arming_guard_clears_the_interleaving() {
-        let guard = crate::domain_computation::execution_observation::WorthQueryExecutionObservation::install_on_this_thread();
-        let world =
-            crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
-                true,
-            );
-        world
-            .application
-            .interleave_before_owned_reobservation_for_test(|| {
-                panic!("a dropped arm must never run")
-            });
-        drop(guard);
-        let control = &world
-            .application
-            .primary_provider
-            .application_attempt_operation_control
-            .caller_pass;
-        control.run_interleaving();
-    }
-}

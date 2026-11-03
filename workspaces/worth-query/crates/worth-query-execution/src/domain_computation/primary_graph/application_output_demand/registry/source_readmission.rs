@@ -37,14 +37,13 @@ impl<Query> RetainedOutputReadmissionSource<Query> {
 
 /// Erasure transports an owner-issued source to its installed typed executor.
 /// It does not authorize a read, a branch selection, or producer execution.
-pub(in crate::domain_computation::primary_graph) struct RequiredOutputReadmission {
-    pub(in crate::domain_computation::primary_graph) source: Arc<dyn Any + Send + Sync>,
+pub struct RequiredOutputReadmission {
+    pub source: Arc<dyn Any + Send + Sync>,
     /// Transport the immutable installed entry selected for this exact row.
     /// The typed demand validates its family and identity after downcasting.
-    pub(in crate::domain_computation::primary_graph) producer:
-        std::sync::OnceLock<Arc<dyn Any + Send + Sync>>,
-    pub(in crate::domain_computation::primary_graph) limits: WorthQueryOutputDemandLimits,
-    pub(in crate::domain_computation::primary_graph) retained_program_basis:
+    pub producer: std::sync::OnceLock<Arc<dyn Any + Send + Sync>>,
+    pub limits: WorthQueryOutputDemandLimits,
+    pub retained_program_basis:
         Option<Arc<crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation>>,
 }
 

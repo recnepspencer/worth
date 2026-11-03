@@ -1,7 +1,7 @@
 //! Whether a row still owes work, keeps an answer, or can retire.
 use super::{DemandRecord, DemandState, WorthQueryOutputAdvancement, WorthQueryOutputCheckpoint};
 
-pub(super) enum IdleRowDisposition {
+pub enum IdleRowDisposition {
     InFlight,
     KeptAnswer,
     HeldForStaleOwner,
@@ -20,7 +20,7 @@ impl DemandRecord {
     /// its last interest and last awaiting stale owner close, an undelivered
     /// checkpoint answers nobody. The caller supplies the occurrence owner's
     /// awaited fact; claims, cleanup and performed-source holds are separate.
-    pub(super) fn idle_disposition(&self, awaited_by_stale_owner: bool) -> IdleRowDisposition {
+    pub fn idle_disposition(&self, awaited_by_stale_owner: bool) -> IdleRowDisposition {
         use IdleRowDisposition::{InFlight, KeptAnswer, Retired};
         match &self.state {
             DemandState::Scheduling | DemandState::Running => InFlight,
@@ -101,7 +101,7 @@ impl RowRetirement {
 }
 
 impl DemandRecord {
-    pub(super) fn terminal(&self) -> bool {
+    pub fn terminal(&self) -> bool {
         matches!(
             self.idle_disposition(false),
             IdleRowDisposition::Retired(RowRetirement::Finished)

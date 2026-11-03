@@ -27,7 +27,6 @@ impl WorthQueryAuthenticationClock {
         self.source.current_time() >= valid_until
     }
 
-    #[cfg(test)]
     pub(super) fn fixed(now: Instant) -> Self {
         Self {
             source: Box::new(WorthQueryFixedAuthenticationTimeSource { now }),
@@ -35,12 +34,10 @@ impl WorthQueryAuthenticationClock {
     }
 }
 
-#[cfg(test)]
 struct WorthQueryFixedAuthenticationTimeSource {
     now: Instant,
 }
 
-#[cfg(test)]
 impl WorthQueryAuthenticationTimeSource for WorthQueryFixedAuthenticationTimeSource {
     fn current_time(&self) -> Instant {
         self.now

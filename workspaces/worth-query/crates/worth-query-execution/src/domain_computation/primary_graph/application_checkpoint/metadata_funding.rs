@@ -6,13 +6,11 @@ use worth_execution::{
 };
 
 #[derive(Debug)]
-pub(in crate::domain_computation::primary_graph) struct CheckpointMetadataFunding {
+pub struct CheckpointMetadataFunding {
     held: ExecutionMemoryReservation,
 }
 impl CheckpointMetadataFunding {
-    pub(in crate::domain_computation::primary_graph) fn new(
-        execution: &ExecutionRequest<'_, '_>,
-    ) -> Result<Self, CheckpointDecodeDenial> {
+    pub fn new(execution: &ExecutionRequest<'_, '_>) -> Result<Self, CheckpointDecodeDenial> {
         execution
             .consult()
             .map_err(CheckpointDecodeDenial::execution)?;
@@ -32,7 +30,7 @@ impl CheckpointMetadataFunding {
             .consult()
             .map_err(CheckpointDecodeDenial::execution)
     }
-    pub(in crate::domain_computation::primary_graph) fn slots<T>(
+    pub fn slots<T>(
         &mut self,
         count: usize,
         execution: &ExecutionRequest<'_, '_>,
@@ -42,7 +40,7 @@ impl CheckpointMetadataFunding {
             .ok_or_else(CheckpointDecodeDenial::capacity)?;
         self.bytes(bytes, execution)
     }
-    pub(in crate::domain_computation::primary_graph) fn bytes(
+    pub fn bytes(
         &mut self,
         bytes: usize,
         execution: &ExecutionRequest<'_, '_>,

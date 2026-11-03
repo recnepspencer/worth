@@ -17,7 +17,7 @@ pub use history_outputs::WorthQueryHistoryOutputControlDenial;
 pub use history_outputs::WorthQueryHistoryOutputReadDenial;
 pub use history_outputs::WorthQueryHistoryRootOutputRead;
 mod preview;
-mod retained;
+pub mod retained;
 pub use batch::WorthQueryRetainedBatchQueryAdmissionDenial;
 
 /// Result cardinality and request scope for an already selected product. These controls
@@ -373,7 +373,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
 }
 
 /// Preserve the original request stop instead of relabeling it as a basis mismatch.
-fn selection_denial(
+pub fn selection_denial(
     stop: crate::basis::WorthQueryProductBranchAdmissionDenial,
     query_name: &str,
 ) -> WorthQueryApplicationQueryAdmissionDenial {

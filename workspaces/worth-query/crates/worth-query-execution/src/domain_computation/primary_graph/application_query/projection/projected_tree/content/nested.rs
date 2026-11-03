@@ -23,9 +23,7 @@ struct Scratch<'a> {
     _reservation: Option<ExecutionMemoryReservation>,
 }
 impl WorthQueryApplicationDisclosedProjectionTree {
-    pub(in crate::domain_computation::primary_graph::application_query) fn append_tree_content<
-        E,
-    >(
+    pub fn append_tree_content<E>(
         &self,
         writer: &mut ContentWriter<'_, E>,
         maximum_depth: usize,

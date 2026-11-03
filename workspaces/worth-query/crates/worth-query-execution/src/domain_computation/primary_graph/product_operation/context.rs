@@ -4,7 +4,6 @@ use crate::basis::{
 };
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use worth_query_installation::facade::ApplicationSchema;
-#[cfg(test)]
 use worth_runtime_world::facade::ProductBranchIdentity;
 
 /// How the live selected snapshot entered this operation. This is selection
@@ -59,8 +58,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         &self.product_runtime
     }
 
-    #[cfg(test)]
-    pub(crate) fn select_product_branch(
+    pub fn select_product_branch(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         identity: &ProductBranchIdentity,
@@ -97,7 +95,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         }
     }
 
-    pub(crate) fn on_product(
+    pub fn on_product(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         product: WorthQueryProductBranchLease,
@@ -274,13 +272,13 @@ impl<'runtime, Schema> WorthQuerySelectedProductOperation<'runtime, Schema> {
         self.application
     }
 
-    pub(crate) fn application_basis(
+    pub fn application_basis(
         &self,
     ) -> &super::super::application_query::resource_lifecycle::WorthQueryApplicationBasisLease {
         &self.application_basis
     }
 
-    pub(in crate::domain_computation::primary_graph) fn original_settled_producer(
+    pub fn original_settled_producer(
         &self,
     ) -> Option<
         &std::sync::Arc<
@@ -297,7 +295,7 @@ impl<'runtime, Schema> WorthQuerySelectedProductOperation<'runtime, Schema> {
         &mut self.application_basis
     }
 
-    pub(in crate::domain_computation::primary_graph) fn into_parts(
+    pub fn into_parts(
         self,
     ) -> (
         &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
@@ -322,7 +320,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         self
     }
 
-    pub(in crate::domain_computation::primary_graph) fn retain_selection(
+    pub fn retain_selection(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Self, WorthQueryProductBranchAdmissionDenial> {

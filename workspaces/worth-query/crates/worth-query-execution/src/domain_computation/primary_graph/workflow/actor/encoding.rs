@@ -39,7 +39,7 @@ impl AsRef<str> for FundedActorText {
     }
 }
 
-pub(in crate::domain_computation) fn encode(
+pub fn encode(
     execution: &ExecutionRequest<'_, '_>,
     value: &impl Serialize,
     maximum: usize,

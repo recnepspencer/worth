@@ -1,7 +1,7 @@
 use super::WorthQueryPrimaryGraph;
 
 impl WorthQueryPrimaryGraph {
-    pub(in crate::domain_computation) fn registered_provider_aspect_identities(
+    pub fn registered_provider_aspect_identities(
         &self,
         request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> [worth_foundational::facade::AspectIdentity; 3] {
@@ -29,7 +29,7 @@ impl WorthQueryPrimaryGraph {
             })
     }
 
-    pub(in crate::domain_computation) fn registered_entity_aspect(
+    pub fn registered_entity_aspect(
         &self,
         request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity: &str,

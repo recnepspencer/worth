@@ -84,8 +84,7 @@ impl DeclaredProducerBinding {
         self.same_binding_declaration(&expected)
     }
 
-    #[cfg(test)]
-    pub(super) fn has_same_meaning_as(&self, expected: &Self) -> bool {
+    pub fn has_same_meaning_as(&self, expected: &Self) -> bool {
         self.same_binding_declaration(expected)
             && self.installed_output_equivalence == expected.installed_output_equivalence
     }

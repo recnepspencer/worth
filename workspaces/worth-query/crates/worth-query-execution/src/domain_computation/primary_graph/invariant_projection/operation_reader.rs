@@ -16,11 +16,11 @@ mod prepared_inputs;
 pub(in crate::domain_computation::primary_graph) use borrowed::BorrowedOperationProjection;
 pub(in crate::domain_computation::primary_graph) use prepared_inputs::PreparedCurrentInputs;
 mod component_reads;
-mod computation_calls;
-mod current_output;
+pub mod computation_calls;
+pub mod current_output;
 pub(super) use current_output::CertifiedOutputCorrespondence;
-mod decision_plan;
-mod decision_reads;
+pub mod decision_plan;
+pub mod decision_reads;
 mod derived_relation;
 pub use derived_relation::{
     WorthQueryInvariantDerivedMemberRelation, WorthQueryInvariantDerivedRelation,
@@ -79,21 +79,21 @@ pub struct WorthQueryApplicationOperationInvariantProjectionReader<
     Schema,
     Operation,
 > {
-    reader: &'reader mut WorthQueryApplicationInvariantProjectionReader<'runtime, Schema>,
+    pub reader: &'reader mut WorthQueryApplicationInvariantProjectionReader<'runtime, Schema>,
     source_query: Option<&'reader crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess<'reader, Schema>>,
     source_context_use: Option<&'reader std::cell::Cell<crate::domain_computation::primary_graph::handler::DecisionContextUse>>,
-    admitted_contracts: Option<Arc<WorthQueryCompiledApplicationOperationContracts>>,
+    pub admitted_contracts: Option<Arc<WorthQueryCompiledApplicationOperationContracts>>,
     runtime_authority:
         crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
     binding_identity: &'reader worth_query_installation::facade::ApplicationSchemaBindingIdentity,
-    admission_identity: Option<WorthQueryOperationAdmissionIdentity>,
+    pub admission_identity: Option<WorthQueryOperationAdmissionIdentity>,
     selected_product: Option<&'reader crate::basis::WorthQueryProductBranchLease>,
     admitted_root: Option<admitted::AdmittedReadRoot>,
     admitted_principal: Option<worth_relational::facade::identity::EntityId>,
     query_context: Option<&'reader super::super::application_query::ObservedQueryExpressionContext>,
     operation_scope:
         Option<crate::domain_computation::authorization::WorthQueryOperationScopeBinding>,
-    decision_facts: &'reader mut DecisionReads,
+    pub decision_facts: &'reader mut DecisionReads,
     _operation: PhantomData<fn() -> Operation>,
     request_local: RequestLocal,
 }
@@ -295,12 +295,7 @@ where
         )
     }
 
-    pub(in crate::domain_computation::primary_graph) fn project_admitted_operation_with_request<
-        Operation,
-        Input,
-        Scope,
-        Output,
-    >(
+    pub fn project_admitted_operation_with_request<Operation, Input, Scope, Output>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,

@@ -130,7 +130,7 @@ where
         work_budget_exceeded(relation)
     }
 
-    pub(in crate::domain_computation::primary_graph::invariant_projection) fn endpoint<Entity>(
+    pub fn endpoint<Entity>(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_id: worth_relational::facade::identity::EntityId,
@@ -223,8 +223,5 @@ fn work_budget_exceeded(relation: &str) -> WorthQueryInvariantProjectionTraversa
         relation,
     )
 }
-
-#[cfg(test)]
-mod tests;
 
 mod adjacency;

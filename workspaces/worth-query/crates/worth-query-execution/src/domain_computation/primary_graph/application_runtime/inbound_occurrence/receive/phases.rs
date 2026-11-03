@@ -209,8 +209,7 @@ impl<Schema: ApplicationSchema> WorthQueryAdmittedInboundOccurrence<'_, Schema> 
             .execute_inbound_admission(&execution, phase, admission, self.envelope, request)
     }
 
-    #[cfg(test)]
-    pub(in crate::domain_computation) fn progress_for_test(
+    pub fn progress_for_test(
         &mut self,
         request: &WorthQueryRequestScope,
     ) -> Result<WorthQueryInboundReceipt, Denial> {
@@ -222,7 +221,6 @@ impl<Schema: ApplicationSchema> WorthQueryAdmittedInboundOccurrence<'_, Schema> 
             .map_err(Denial::advancement)?
     }
 
-    #[cfg(test)]
     pub(in crate::domain_computation) fn into_admission(mut self) -> WorthQueryInboundAdmission {
         self.admission.take().expect("sealed admitted phase")
     }

@@ -9,8 +9,7 @@ use crate::domain_computation::primary_graph::application_output_demand::WorthQu
 use crate::domain_computation::primary_graph::application_query::WorthQueryObservedSourceEpoch;
 use crate::domain_computation::primary_graph::output_lineage::AcceptedCurrentCandidate;
 
-pub(in crate::domain_computation::primary_graph::application_contribution::producer) struct PerformedMembers
-{
+pub struct PerformedMembers {
     entries: Vec<PerformedMember>,
     // Counts new committed producer publications, not checkpoint delivery or replay.
     commit_generation: u64,
@@ -40,22 +39,21 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
 }
 
 mod captured_input;
-pub(super) mod certification;
+pub mod certification;
 pub(super) use certification::certify_required_ready;
 pub(in crate::domain_computation::primary_graph) use certification::CurrentBasis;
 pub(in crate::domain_computation::primary_graph) use certification::CurrentProof;
 mod member_keys;
 use captured_input::CapturedDecisionInput;
-mod ordinary;
-mod publication;
-mod reinspection;
+pub mod ordinary;
+pub mod publication;
+pub mod reinspection;
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) use ordinary::DecisionInput;
 pub(super) use reinspection::InspectionStamp;
 pub(super) use reinspection::ReinspectionCredit;
 
 impl PerformedMembers {
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand) fn start(
-    ) -> Self {
+    pub fn start() -> Self {
         Self {
             entries: Vec::new(),
             commit_generation: 0,
@@ -144,11 +142,7 @@ impl PerformedMembers {
     }
 }
 
-pub(in crate::domain_computation::primary_graph::application_contribution::producer) struct SelectedDecisionInput<
-    'a,
-    'runtime,
-    Schema,
-> {
+pub struct SelectedDecisionInput<'a, 'runtime, Schema> {
     pub shared: &'a SharedSelectedProductOperation<'runtime, Schema>,
     pub positioned: &'a PositionedRelationalSnapshot,
     pub runtime: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,

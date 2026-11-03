@@ -28,16 +28,15 @@ mod application_projection;
 pub(in crate::domain_computation) use application_projection::CompletedFactProjection;
 mod original_read;
 pub(in crate::domain_computation) use original_read::CompletedOriginalRead;
-mod admitted_arrays;
+pub mod admitted_arrays;
 mod completed_facts;
 pub(in crate::domain_computation::primary_graph::application_attempt) use completed_facts::admit_completed_facts;
 mod authority_facts;
 mod binding_proof;
 mod completion;
-mod computation_routing;
+pub mod computation_routing;
 mod native_completion;
 mod value_decode;
-#[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use computation_routing::ComputationFactReaders;
 pub(in crate::domain_computation::primary_graph) use computation_routing::{
     CheckedCallShape, ComputationFactAttribution, ComputationFactIndex, ComputationRead,
@@ -45,29 +44,29 @@ pub(in crate::domain_computation::primary_graph) use computation_routing::{
 };
 pub(in crate::domain_computation::primary_graph) mod request_liveness;
 mod retained_facts;
-mod scope_bindings;
+pub mod scope_bindings;
 pub(in crate::domain_computation::primary_graph::application_attempt) use admitted_arrays::admit_array;
 pub(in crate::domain_computation::primary_graph) use scope_bindings::{
     CompletedReadScopes, InstalledScopePosition,
 };
-mod decision_reuse;
-mod fact_observation;
+pub mod decision_reuse;
+pub mod fact_observation;
 pub(in crate::domain_computation::primary_graph) use decision_reuse::{
     CompletedDecisionReuseProof, PreparedDecisionReuseContext,
 };
 pub(in crate::domain_computation::primary_graph) use fact_observation::observe_admitted_fact;
-mod handler_fact_boundary;
+pub mod handler_fact_boundary;
 pub(in crate::domain_computation) use handler_fact_boundary::CompletedHandlerFactBoundary;
-mod aggregate;
+pub mod aggregate;
 mod components;
 mod observation_admission;
 mod observations;
 mod projected_completion;
 mod projected_extension;
 mod relation_observation;
-mod source_facts;
-mod structural_walk;
-mod unique_write_dependencies;
+pub mod source_facts;
+pub mod structural_walk;
+pub mod unique_write_dependencies;
 
 pub(super) use binding_proof::{MutationHandlerBindingProof, WorkflowOperationBindingProof};
 pub use relation_observation::WorthQueryObservedApplicationRelation;
@@ -94,12 +93,12 @@ pub struct WorthQueryApplicationReadAttempt<
 > {
     execution: worth_execution::ExecutionRequest<'request, 'authority>,
     value_decode: super::super::value_decode::ValueDecodeState,
-    admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
-    lease: WorthQueryApplicationSnapshotLease,
+    pub admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+    pub lease: WorthQueryApplicationSnapshotLease,
     layout: Arc<super::super::schema_layout::WorthQueryPrimaryGraphLayout>,
     entity_resolution: WorthQueryInstalledEntityResolutionContext,
-    read_scope: WorthQueryApplicationReadScope,
-    expected_facts: Option<crate::domain_computation::primary_graph::invariant_projection::ExpectedFactKeys>,
+    pub read_scope: WorthQueryApplicationReadScope,
+    pub expected_facts: Option<crate::domain_computation::primary_graph::invariant_projection::ExpectedFactKeys>,
     /// What a partitioned computation read of the expected facts, and where
     /// it left its completed run when a producer ran it.
     computation_reads: (
@@ -134,7 +133,7 @@ pub struct WorthQueryCompleteApplicationReadSet<
     pub(super) application_projection: Option<Arc<CompletedFactProjection>>,
     pub(super) original_read: Option<Arc<CompletedOriginalRead>>,
     pub(super) installed_read_scopes: CompletedReadScopes,
-    pub(super) facts: FactPayload,
+    pub facts: FactPayload,
     pub(super) content: Option<super::FactContent>,
     pub(super) effect_routes: super::CompletedFactRoutes,
     pub(super) postcondition_carry: Option<
@@ -143,7 +142,6 @@ pub struct WorthQueryCompleteApplicationReadSet<
     pub(super) consumed_outputs: Vec<super::super::invariant_projection::ConsumedOutputEvidence>,
     /// The facts the owner calls read, when the handler ran one partitioned
     /// computation.
-    #[cfg(test)]
     pub(super) computation_facts: Option<SealedComputationFacts>,
     /// The ordinals in `facts`, ascending, of the facts an owner call read.
     pub(super) computation_fact_ordinals: Arc<[usize]>,
@@ -387,7 +385,7 @@ where
 mod entity_resolution;
 mod workflow_actor;
 
-fn denial(
+pub fn denial(
     kind: WorthQueryApplicationAttemptDenialKind,
     subject: impl Into<String>,
 ) -> WorthQueryApplicationAttemptDenial {

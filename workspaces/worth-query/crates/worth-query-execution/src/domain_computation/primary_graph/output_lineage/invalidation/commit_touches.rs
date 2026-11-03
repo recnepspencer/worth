@@ -18,14 +18,14 @@ use super::owner::SourceInvalidationOwner;
 /// The records a reader watches. Conditional source records are entities;
 /// `every_commit` covers whole-graph dependencies and bootstrap catch-up.
 #[derive(Clone, Copy)]
-pub(in crate::domain_computation::primary_graph) struct CommitTouchInterest<'a> {
+pub struct CommitTouchInterest<'a> {
     pub(in crate::domain_computation::primary_graph) entities: CommitTouchEntities<'a>,
     pub(in crate::domain_computation::primary_graph) every_commit: bool,
 }
 
 /// Borrowed interest uses the same canonical touch stream for sets and bounded read dependencies.
 #[derive(Clone, Copy)]
-pub(in crate::domain_computation::primary_graph) enum CommitTouchEntities<'a> {
+pub enum CommitTouchEntities<'a> {
     Set(&'a BTreeSet<EntityId>),
     Slice(&'a [EntityId]),
 }

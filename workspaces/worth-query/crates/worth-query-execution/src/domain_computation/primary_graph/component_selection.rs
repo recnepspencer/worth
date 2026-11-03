@@ -22,7 +22,7 @@ pub(in crate::domain_computation::primary_graph) use key::{
 use origin::ComponentSelectionOrigin;
 
 #[derive(Debug)]
-pub(in crate::domain_computation) struct ComponentSelection {
+pub struct ComponentSelection {
     key: ComponentSelectionKey,
     origin: ComponentSelectionOrigin,
     layout: ComponentSetLayout,
@@ -102,10 +102,7 @@ impl ComponentSelection {
     pub(in crate::domain_computation::primary_graph) fn source(&self) -> &SnapshotHandle {
         &self.source
     }
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn operation_scope(
-        &self,
-    ) -> Option<&WorthQueryOperationComponentReadScope> {
+    pub fn operation_scope(&self) -> Option<&WorthQueryOperationComponentReadScope> {
         match &self.origin {
             ComponentSelectionOrigin::Operation(scope) => Some(scope),
             ComponentSelectionOrigin::Query { .. } | ComponentSelectionOrigin::Derived(_) => None,
@@ -127,10 +124,7 @@ impl ComponentSelection {
             _ => None,
         }
     }
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn aggregates(
-        &self,
-    ) -> &[Arc<AggregateObservation>] {
+    pub fn aggregates(&self) -> &[Arc<AggregateObservation>] {
         self.physical_aggregates()
             .expect("physical-only component fixture")
     }

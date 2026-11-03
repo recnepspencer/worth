@@ -21,13 +21,12 @@ mod certification_controls;
 mod certification_cost;
 mod conditional_cleanup;
 mod execution_memory;
-mod external_dispatch_attempt;
+pub mod external_dispatch_attempt;
 mod mutation_partition;
 pub use execution_memory::WorthQueryExecutionLeaseDenial;
-mod inbound_occurrence;
-#[cfg(test)]
+pub mod inbound_occurrence;
 pub(in crate::domain_computation::primary_graph) use inbound_occurrence::WorthQueryInboundAdmission;
-mod inbound_publication;
+pub mod inbound_publication;
 pub use certification_cost::{
     WorthQueryCertificationApplicationWork, WorthQueryCertificationCostObservation,
     WorthQueryCertificationCostRuntimeExt, WorthQueryCertificationCostScope,
@@ -115,19 +114,19 @@ pub(in crate::domain_computation) use external_dispatch_attempt::{
 /// }
 /// ```
 pub struct WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    pub(in crate::domain_computation) runtime: WorthQueryExecutionRuntime,
-    pub(in crate::domain_computation) installed_schema:
+    pub runtime: WorthQueryExecutionRuntime,
+    pub installed_schema:
         WorthQueryInstalledApplicationSchema<Schema>,
     pub(super) application_readiness_schema_token: String,
     publication: WorthQueryPrimaryGraphPublication,
     checkpoint_restore_work: Option<worth_relational::facade::durability::CheckpointRestoreWork>,
-    pub(in crate::domain_computation) authorization: Arc<WorthQueryInstalledAuthorizationRegistry>,
+    pub authorization: Arc<WorthQueryInstalledAuthorizationRegistry>,
     pub(in crate::domain_computation) authorization_clock: Arc<WorthQueryRuntimeClock>,
     authentication_clock: WorthQueryAuthenticationClock,
     pub(super) relational_branch_identity:
         worth_relational::facade::branch::RelationalBranchIdentity,
-    pub(crate) bridge: super::managed_bridge::WorthQueryInstalledApplicationBridge,
-    pub(crate) product_runtime:
+    pub bridge: super::managed_bridge::WorthQueryInstalledApplicationBridge,
+    pub product_runtime:
         crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime,
     pub(super) recovered_program_source_delivery:
         super::provider::recovered_program_source_delivery::RecoveredProgramSourceDeliveryRegistration,
@@ -137,8 +136,8 @@ pub struct WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub(super) conditional_operations: std::sync::Mutex<
         super::conditional_operation::WorthQueryConditionalOperationRegistry<Schema>,
     >,
-    pub(crate) primary_provider: std::sync::Arc<WorthQueryPrimaryGraphProvider>,
-    pub(super) primary_graph_authority:
+    pub primary_provider: std::sync::Arc<WorthQueryPrimaryGraphProvider>,
+    pub primary_graph_authority:
         worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
 
     pub(super) source_meanings:
@@ -172,12 +171,12 @@ pub struct WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         super::application_contribution::WorthQueryInstalledOutputReadinessRoutes,
     pub(super) next_output_producer_attempt: AtomicU64,
     pub(super) next_application_mutation_partition: AtomicU32,
-    pub(super) output_demands: super::application_output_demand::WorthQueryOutputDemandRegistry,
+    pub output_demands: super::application_output_demand::WorthQueryOutputDemandRegistry,
     pub(super) recovered_outputs: super::application_output_demand::WorthQueryRecoveredOutputs,
     pub(super) program_required_bindings: std::collections::HashSet<TypeId>,
-    pub(super) program_required_operations: std::collections::HashSet<TypeId>,
+    pub program_required_operations: std::collections::HashSet<TypeId>,
     pub(super) workflow_guarded_operations: std::collections::HashSet<TypeId>,
-    pub(super) program_support:
+    pub program_support:
         Option<super::program_occurrence::WorthQueryInstalledProgramSupport<Schema>>,
     pub(super) signing_owners: std::sync::Mutex<std::collections::BTreeMap<worth_query_declaration::facade::application_program::ApplicationProgramRevision, worth_query_admission::facade::authentication_event::WorthQueryAuthenticationEventSigningOwner<Schema>>>,
     pub(super) installed_conditionals:
@@ -228,7 +227,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
 
     /// The immutable program support this host admitted at installation, when
     /// it admitted any.
-    pub(super) fn installed_program_support(
+    pub fn installed_program_support(
         &self,
     ) -> Option<&super::program_occurrence::WorthQueryInstalledProgramSupport<Schema>> {
         self.program_support.as_ref()
@@ -243,8 +242,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         self.authentication_clock.is_expired(valid_until)
     }
 
-    #[cfg(test)]
-    pub(crate) fn fix_authentication_time(&mut self, now: std::time::Instant) {
+    pub fn fix_authentication_time(&mut self, now: std::time::Instant) {
         self.authentication_clock = WorthQueryAuthenticationClock::fixed(now);
     }
 }
@@ -330,7 +328,7 @@ where
         self.primary_provider.application_resource_support()
     }
 
-    pub(in crate::domain_computation) fn graph_work_resource_support_ref(
+    pub fn graph_work_resource_support_ref(
         &self,
     ) -> &worth_query_admission::facade::resource_admission::WorthQueryExecutionResourceSupportSnapshot
 {
@@ -370,7 +368,6 @@ impl WorthQueryApplicationLiveDeliveryCloseReceipt {
     }
 }
 
-#[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use inbound_publication::{
     authenticated_completion_candidate, transport_completion_candidate,
     InstalledTransportPublicationOutcome,

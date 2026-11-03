@@ -136,7 +136,7 @@ where
         validate_controls(query, controls)
     }
 
-    fn validate_installed_query<Query, Parameters, QueryResult, Scope>(
+    pub fn validate_installed_query<Query, Parameters, QueryResult, Scope>(
         &self,
         query: &WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
     ) -> Result<(), WorthQueryApplicationQueryAdmissionDenial> {
@@ -249,6 +249,3 @@ fn denial(
 ) -> WorthQueryApplicationQueryAdmissionDenial {
     WorthQueryApplicationQueryAdmissionDenial::new(kind, subject)
 }
-
-#[cfg(test)]
-mod tests;

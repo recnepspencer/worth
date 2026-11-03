@@ -6,14 +6,13 @@ use super::WorthQueryObservedSourceFootprint;
 use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
 
 mod checkpoint_commitment;
-#[cfg(test)]
 #[path = "source_identity/tests/epoch_construction.rs"]
 mod epoch_construction;
-mod identity_kind;
+pub mod identity_kind;
 mod interning;
 mod material_storage;
 pub(in crate::domain_computation::primary_graph::application_query) use material_storage::admit_footprint_comparison;
-mod membership;
+pub mod membership;
 mod ordering;
 mod runtime_commitment;
 pub(in crate::domain_computation::primary_graph) use identity_kind::{
@@ -37,7 +36,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryObservedSource
 }
 
 /// Runtime-owned exact meaning retained by observed sources and output epochs.
-pub(in crate::domain_computation::primary_graph) struct WorthQueryObservedSourceMeaning {
+pub struct WorthQueryObservedSourceMeaning {
     coordinate: WorthQueryObservedSourceCoordinate,
     footprint: WorthQueryObservedSourceFootprint,
     identity: [u8; 32],
@@ -49,21 +48,19 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryObservedSource
 }
 
 impl WorthQueryObservedSourceMeaning {
-    pub(in crate::domain_computation::primary_graph::application_query) fn footprint(
-        &self,
-    ) -> &WorthQueryObservedSourceFootprint {
+    pub fn footprint(&self) -> &WorthQueryObservedSourceFootprint {
         &self.footprint
     }
 
-    pub(super) const fn identity(&self) -> &[u8; 32] {
+    pub const fn identity(&self) -> &[u8; 32] {
         &self.identity
     }
 
-    pub(super) const fn checkpoint_identity(&self) -> WorthQueryCheckpointSourceIdentity {
+    pub const fn checkpoint_identity(&self) -> WorthQueryCheckpointSourceIdentity {
         WorthQueryCheckpointSourceIdentity::new(self.checkpoint_identity)
     }
 
-    pub(super) const fn runtime_idempotency_identity(&self) -> WorthQueryRuntimeSourceIdentity {
+    pub const fn runtime_idempotency_identity(&self) -> WorthQueryRuntimeSourceIdentity {
         WorthQueryRuntimeSourceIdentity::new(self.runtime_idempotency_identity)
     }
 }
@@ -103,19 +100,18 @@ impl Drop for WorthQueryObservedSourceMeaning {
 }
 
 struct WorthQueryObservedSourceMeaningRegistryState {
-    next_ordinal: u64,
-    meanings: BTreeMap<WorthQueryObservedSourceCoordinate, material_storage::CoordinateMeanings>,
+    pub next_ordinal: u64,
+    pub meanings:
+        BTreeMap<WorthQueryObservedSourceCoordinate, material_storage::CoordinateMeanings>,
 }
 
-pub(in crate::domain_computation::primary_graph) struct WorthQueryObservedSourceMeaningRegistry {
+pub struct WorthQueryObservedSourceMeaningRegistry {
     runtime_authority: WorthQueryRuntimeAuthorityIdentity,
-    state: Arc<Mutex<WorthQueryObservedSourceMeaningRegistryState>>,
+    pub state: Arc<Mutex<WorthQueryObservedSourceMeaningRegistryState>>,
 }
 
 impl WorthQueryObservedSourceMeaningRegistry {
-    pub(in crate::domain_computation::primary_graph) fn new(
-        runtime_authority: WorthQueryRuntimeAuthorityIdentity,
-    ) -> Self {
+    pub fn new(runtime_authority: WorthQueryRuntimeAuthorityIdentity) -> Self {
         Self {
             runtime_authority,
             state: Arc::new(Mutex::new(WorthQueryObservedSourceMeaningRegistryState {
@@ -139,7 +135,7 @@ fn source_identity(
 
 /// Complete runtime coordinate of one observed source.
 #[derive(Clone, Debug)]
-pub(in crate::domain_computation::primary_graph) struct WorthQueryObservedSourceEpoch {
+pub struct WorthQueryObservedSourceEpoch {
     query: [u8; 32],
     parameters: [u8; 32],
     root: worth_relational::facade::identity::EntityId,
@@ -149,7 +145,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryObservedSource
 }
 
 impl WorthQueryObservedSourceEpoch {
-    pub(in crate::domain_computation::primary_graph) fn from_observation(
+    pub fn from_observation(
         query: &[u8; 32],
         parameters: &[u8; 32],
         root: worth_relational::facade::identity::EntityId,
@@ -177,26 +173,18 @@ impl WorthQueryObservedSourceEpoch {
         })
     }
 
-    pub(in crate::domain_computation::primary_graph) fn occurrence_coordinate(
-        &self,
-    ) -> WorthQueryObservedSourceCoordinate {
+    pub fn occurrence_coordinate(&self) -> WorthQueryObservedSourceCoordinate {
         self.meaning.coordinate.clone()
     }
 
-    pub(in crate::domain_computation::primary_graph) fn same_occurrence(
-        &self,
-        other: &Self,
-    ) -> bool {
+    pub fn same_occurrence(&self, other: &Self) -> bool {
         self.query == other.query
             && self.parameters == other.parameters
             && self.root == other.root
             && self.occurrence == other.occurrence
     }
 
-    pub(in crate::domain_computation::primary_graph) fn same_semantic_source(
-        &self,
-        other: &Self,
-    ) -> bool {
+    pub fn same_semantic_source(&self, other: &Self) -> bool {
         self.same_occurrence(other) && self.meaning.identity() == other.meaning.identity()
     }
 
@@ -220,29 +208,21 @@ impl WorthQueryObservedSourceEpoch {
         self.root
     }
 
-    pub(in crate::domain_computation::primary_graph) const fn observation_generation(&self) -> u64 {
+    pub const fn observation_generation(&self) -> u64 {
         self.observation_generation
     }
 
-    pub(in crate::domain_computation::primary_graph) fn checkpoint_identity(
-        &self,
-    ) -> WorthQueryCheckpointSourceIdentity {
+    pub fn checkpoint_identity(&self) -> WorthQueryCheckpointSourceIdentity {
         self.meaning.checkpoint_identity()
     }
 
-    pub(in crate::domain_computation::primary_graph) fn runtime_idempotency_identity(
-        &self,
-    ) -> [u8; 32] {
+    pub fn runtime_idempotency_identity(&self) -> [u8; 32] {
         self.meaning.runtime_idempotency_identity().bytes()
     }
 
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) const fn checkpoint_occurrence(
+    pub const fn checkpoint_occurrence(
         &self,
     ) -> worth_runtime_world::facade::ProductBranchIncarnation {
         self.occurrence
     }
 }
-
-#[cfg(test)]
-mod tests;

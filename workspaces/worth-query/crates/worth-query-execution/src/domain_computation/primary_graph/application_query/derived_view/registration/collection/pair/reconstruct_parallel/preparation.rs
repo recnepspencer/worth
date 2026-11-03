@@ -1,7 +1,6 @@
 //! Owner-side admission mints the concrete read capability and raw scope binding.
 
 use super::super::Denial;
-#[cfg(test)]
 use crate::domain_computation::primary_graph::application_query::DispatchWitness;
 use crate::domain_computation::primary_graph::application_query::{
     authorized_read::{
@@ -27,7 +26,7 @@ use worth_relational::facade::identity::EntityId;
 impl<'a, S: ApplicationSchema, FQ, FP, FR, SQ, SP, SR, A, I, C>
     WorthQueryDerivedPairReadPlans<'a, S, FQ, FP, FR, SQ, SP, SR, A, I, C>
 {
-    pub(super) fn admit(
+    pub fn admit(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         application: &WorthQueryPrimaryGraphApplicationRuntime<S>,
@@ -103,8 +102,7 @@ impl<'a, S: ApplicationSchema, FQ, FP, FR, SQ, SP, SR, A, I, C>
         }
     }
 
-    #[cfg(test)]
-    pub(super) fn worker(
+    pub fn worker(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
 
@@ -112,7 +110,7 @@ impl<'a, S: ApplicationSchema, FQ, FP, FR, SQ, SP, SR, A, I, C>
     ) -> Result<PreparedPair<'_>, Denial> {
         self.worker_with_pins(execution, root, &mut Default::default())
     }
-    pub(super) fn worker_with_pins(
+    pub fn worker_with_pins(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
 
@@ -178,7 +176,6 @@ impl<'a, S: ApplicationSchema, FQ, FP, FR, SQ, SP, SR, A, I, C>
         pins.second = Some(second.retained_pin());
         Ok(PreparedPair {
             root,
-            #[cfg(test)]
             witness: DispatchWitness::carried(),
             first: PreparedRead {
                 plan: ReadPlan::public_worker(&self.first),

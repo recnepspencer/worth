@@ -5,7 +5,7 @@ impl WorthQueryApplicationOutputLineage {
     /// The exact committed record supplies its producer facts and original
     /// native output witness. Neither a query footprint nor a current head can
     /// substitute for these expectations when capturing reusable output.
-    pub(in crate::domain_computation::primary_graph) fn checkpoint_facts_for_receipt(
+    pub fn checkpoint_facts_for_receipt(
         &self,
         receipt: &WorthQueryApplicationCommitReceipt,
     ) -> Option<(

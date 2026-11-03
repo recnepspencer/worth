@@ -7,7 +7,7 @@ impl WorthQueryApplicationIdempotencyBinding {
     ) -> Option<RequiredOutputProducingImplementation> {
         self.producing_implementation
     }
-    pub(in crate::domain_computation::primary_graph) fn bind_producing_implementation(
+    pub fn bind_producing_implementation(
         mut self,
         implementation: RequiredOutputProducingImplementation,
     ) -> Self {

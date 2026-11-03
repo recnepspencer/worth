@@ -16,11 +16,11 @@ pub use completed_read::WorthQueryCompletedReadOutputs;
 mod fulfilled_root;
 pub use fulfilled_root::WorthQueryFulfilledRequiredRoot;
 mod readiness_delivery;
-mod recovered_outputs;
-mod registry;
+pub mod recovered_outputs;
+pub mod registry;
 pub(in crate::domain_computation::primary_graph) use registry::AdmittedRequiredWave;
 pub(in crate::domain_computation::primary_graph) use registry::PreparedRequiredInputs;
-mod settlement;
+pub mod settlement;
 pub(in crate::domain_computation::primary_graph) use settlement::OriginalProducingPublication;
 
 pub use readiness_delivery::WorthQueryOutputReadinessDeliveryEvidence;

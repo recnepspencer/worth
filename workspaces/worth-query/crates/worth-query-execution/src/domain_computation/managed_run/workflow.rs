@@ -251,14 +251,11 @@ impl WorthQueryRunningWorkflowRun {
         Ok(self.terminal(WorthQueryManagedRunTerminalKind::Completed))
     }
 
-    pub(super) fn terminal(
-        self,
-        kind: WorthQueryManagedRunTerminalKind,
-    ) -> WorthQueryWorkflowRunTerminal {
+    pub fn terminal(self, kind: WorthQueryManagedRunTerminalKind) -> WorthQueryWorkflowRunTerminal {
         WorthQueryWorkflowRunTerminal::from_running(self, kind)
     }
 
-    pub(crate) fn terminate_for_convergence(
+    pub fn terminate_for_convergence(
         self,
         kind: WorthQueryManagedRunTerminalKind,
     ) -> WorthQueryWorkflowRunTerminal {

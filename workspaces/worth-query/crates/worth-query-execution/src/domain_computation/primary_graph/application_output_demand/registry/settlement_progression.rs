@@ -60,8 +60,7 @@ impl WorthQueryOutputDemandRegistry {
     /// Observe an exact Ready checkpoint without advancing any other demand
     /// state. A pre-disclosure currentness probe must leave a non-Ready record
     /// untouched for the normal source-query progression.
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn peek_ready(
+    pub fn peek_ready(
         &self,
         interest: &WorthQueryOutputDemandInterest,
     ) -> Result<Option<super::ReadyCompletion>, WorthQueryOutputDemandDenial> {
@@ -91,7 +90,7 @@ impl WorthQueryOutputDemandRegistry {
 
     /// Discharge only the performed obligation whose accepted publication is
     /// still the current Ready checkpoint of this exact demand record.
-    pub(in crate::domain_computation::primary_graph) fn finish_settlement(
+    pub fn finish_settlement(
         &self,
         interest: &WorthQueryOutputDemandInterest,
         accepted: &WorthQueryAcceptedOutputAuthority,

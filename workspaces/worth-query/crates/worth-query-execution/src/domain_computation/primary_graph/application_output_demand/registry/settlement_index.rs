@@ -37,7 +37,7 @@ pub(super) struct PendingVacancyCleanup {
 }
 
 #[derive(Default)]
-pub(super) struct SettlementIndex {
+pub struct SettlementIndex {
     sources: BTreeMap<SemanticSource, SourcePostings>,
     cancelled_head: Option<Box<PendingVacancyCleanup>>,
 }
@@ -73,7 +73,7 @@ impl SettlementIndex {
         Ok((recorded.as_ref() == identity).then(|| Arc::clone(key)))
     }
 
-    pub(super) fn fill_prepared(
+    pub fn fill_prepared(
         posting: &Posting,
         expected: &RecordedSettlementIdentity,
         identity: Arc<RecordedSettlementIdentity>,
@@ -156,7 +156,7 @@ impl DemandRegistryState {
         }
     }
 
-    pub(super) fn reserve_settlement_vacancy(
+    pub fn reserve_settlement_vacancy(
         &mut self,
         identity: &Arc<RecordedSettlementIdentity>,
     ) -> Result<(Posting, Box<PendingVacancyCleanup>), WorthQueryOutputDemandDenial> {

@@ -31,7 +31,7 @@ struct ConfiguredProviders<S> {
     registration_order: Vec<EqualityTypeId>,
 }
 
-pub(in crate::domain_computation::primary_graph) struct ManagedIndexProviderCatalog<S> {
+pub struct ManagedIndexProviderCatalog<S> {
     providers: Arc<ConfiguredProviders<S>>,
     marker: PhantomData<fn() -> S>,
 }
@@ -119,7 +119,7 @@ impl<S: ApplicationSchema> ManagedIndexProviderCatalog<S> {
 }
 
 impl<S: ApplicationSchema + 'static> ManagedIndexProviderCatalog<S> {
-    pub(in crate::domain_computation::primary_graph) fn register<I, P>(
+    pub fn register<I, P>(
         &mut self,
         schema: &WorthQueryInstalledApplicationSchema<S>,
         owner: &str,

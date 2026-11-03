@@ -7,8 +7,8 @@ use std::marker::PhantomData;
 /// source and target entities.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryInvariantRelation<Schema, Relation, From, To> {
-    pub(super) relation_id: RelationId,
-    pub(super) from: WorthQueryInvariantEntityIdentity<Schema, From>,
+    pub relation_id: RelationId,
+    pub from: WorthQueryInvariantEntityIdentity<Schema, From>,
     pub(super) to: WorthQueryInvariantEntityIdentity<Schema, To>,
     pub(super) _relation: PhantomData<fn() -> Relation>,
 }

@@ -22,14 +22,14 @@ pub use alternatives::{
 };
 pub(in crate::domain_computation::primary_graph) use authored_identity::AuthoredCorrectionCandidateDenial;
 mod compatibility;
-mod restored_support;
+pub mod restored_support;
 pub use restored_support::WorthQueryCorrectionRestoredSupportDenial;
 mod derivation;
 mod inspection;
 mod intent;
 mod key;
 mod lineage;
-pub(in crate::domain_computation::primary_graph) mod material;
+pub mod material;
 mod preparation;
 mod reapplication;
 mod replay;

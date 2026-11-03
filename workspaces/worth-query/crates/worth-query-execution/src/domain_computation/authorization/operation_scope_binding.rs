@@ -14,7 +14,7 @@ pub struct WorthQueryOperationScopeEntityBinding {
 }
 
 impl WorthQueryOperationScopeEntityBinding {
-    pub(crate) fn from_entity(entity: worth_relational::facade::identity::EntityId) -> Self {
+    pub fn from_entity(entity: worth_relational::facade::identity::EntityId) -> Self {
         Self {
             partition_id: entity.partition_value(),
             local_slot: entity.local_slot_value(),
@@ -53,7 +53,7 @@ pub struct WorthQueryOperationScopeBinding {
 /// Fixed descriptive affinity used only to compare completed producer
 /// decisions. The admitted operation remains the authority to execute.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) struct WorthQueryDecisionScopeWitness {
+pub struct WorthQueryDecisionScopeWitness {
     runtime_authority: u64,
     binding_identity: ApplicationSchemaBindingIdentity,
     operation_authority_identity: [u8; 32],
@@ -112,7 +112,6 @@ impl WorthQueryOperationScopeBinding {
     }
 
     /// Raw scope parts for per-axis drift proof (R8.28). Not production.
-    #[cfg(test)]
     pub(crate) fn axis_probe_scope(
         runtime_authority: u64,
         binding_identity: ApplicationSchemaBindingIdentity,

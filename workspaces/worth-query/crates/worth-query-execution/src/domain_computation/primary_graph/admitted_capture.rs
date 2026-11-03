@@ -1,5 +1,5 @@
 //! One original-request capture posture for opaque authored projections.
-mod retained_stage;
+pub mod retained_stage;
 pub(in crate::domain_computation) mod storage;
 pub(in crate::domain_computation) use retained_stage::{run_retained_stage, RetainedStorageDenial};
 use worth_execution::{
@@ -8,15 +8,12 @@ use worth_execution::{
     WorkCeilingDenial,
 };
 
-pub(in crate::domain_computation) enum CaptureStop<E> {
+pub enum CaptureStop<E> {
     Request(WorkCeilingDenial),
     Kernel(ScopeStop<E>),
 }
 
-pub(in crate::domain_computation) fn checkpoint(
-    context: &mut MapKernelContext<'_, '_>,
-    work: u64,
-) -> Result<(), MapKernelStop> {
+pub fn checkpoint(context: &mut MapKernelContext<'_, '_>, work: u64) -> Result<(), MapKernelStop> {
     if context.has_accounting() {
         context.checkpoint(work)
     } else {

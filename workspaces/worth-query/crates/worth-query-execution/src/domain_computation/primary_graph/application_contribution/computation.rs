@@ -34,16 +34,16 @@ where
     ) -> Result<Self::Output, Self::Stopped>;
 }
 
-mod checkpoint;
+pub mod checkpoint;
 mod member_execution;
-pub(in crate::domain_computation::primary_graph) mod nested_failure;
-pub(in crate::domain_computation::primary_graph) mod worker_custody;
+pub mod nested_failure;
+pub mod worker_custody;
 pub use member_execution::WorthQueryMemberExecution;
-mod decision_plan;
-mod denial;
+pub mod decision_plan;
+pub mod denial;
 mod preparation_loans;
-pub(in crate::domain_computation::primary_graph) mod prepared_request;
-pub(in crate::domain_computation::primary_graph) mod wave_dispatch;
+pub mod prepared_request;
+pub mod wave_dispatch;
 
 pub use checkpoint::{
     WorthQueryManagedComputationCheckpoint, WorthQueryManagedComputationExecution,
@@ -103,10 +103,6 @@ where
     }
 }
 
-#[cfg(test)]
-#[path = "computation_tests.rs"]
-mod tests;
-
 pub struct WorthQueryPreparedManagedComputation<Schema, Feature, Computation, Owner>
 where
     Schema: ApplicationSchema,
@@ -143,7 +139,6 @@ where
                     charge: execution.request.has_accounting().then_some(&mut charge),
                     poll: &mut poll,
                     refused: None,
-                    #[cfg(test)]
                     native: None,
                 })
             })

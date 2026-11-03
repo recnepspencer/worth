@@ -25,7 +25,7 @@ pub struct WorthQueryOutputDemandDenial {
     cleanup: Option<cleanup_custody::DemandCleanupCustody>,
     pub(super) subject: std::borrow::Cow<'static, str>,
     domain: Option<Box<producer_value::ProducerDomainDenial>>,
-    pub(in crate::domain_computation::primary_graph) readmission_failure: Option<&'static str>,
+    pub readmission_failure: Option<&'static str>,
     pub(in crate::domain_computation::primary_graph) recovery_posture:
         WorthQueryOutputDemandRecoveryPosture,
 }
@@ -146,7 +146,7 @@ impl WorthQueryOutputDemandDenial {
         self
     }
 
-    pub(in crate::domain_computation::primary_graph) fn take_requested_output(
+    pub fn take_requested_output(
         &mut self,
     ) -> Option<crate::domain_computation::primary_graph::invariant_projection::RequestedOutputRead>
     {
@@ -299,7 +299,7 @@ impl WorthQueryOutputDemandDenial {
         self.recovery_posture
     }
 
-    pub(in crate::domain_computation::primary_graph) fn new(
+    pub fn new(
         kind: WorthQueryOutputDemandDenialKind,
         subject: impl Into<std::borrow::Cow<'static, str>>,
     ) -> Self {
@@ -315,7 +315,7 @@ impl WorthQueryOutputDemandDenial {
         }
     }
 
-    pub(in crate::domain_computation::primary_graph) fn producer_domain_denied(
+    pub fn producer_domain_denied(
         subject: impl Into<std::borrow::Cow<'static, str>>,
         reason: Option<&'static str>,
         value: super::super::WorthQueryProducerDenialValue,
@@ -347,7 +347,7 @@ impl WorthQueryOutputDemandDenial {
         Self::new(kind, subject)
     }
 
-    pub(in crate::domain_computation::primary_graph) fn with_recovery_posture(
+    pub fn with_recovery_posture(
         mut self,
         recovery_posture: WorthQueryOutputDemandRecoveryPosture,
     ) -> Self {

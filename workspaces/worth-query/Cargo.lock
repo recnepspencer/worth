@@ -767,6 +767,44 @@ dependencies = [
 ]
 
 [[package]]
+name = "worth-query-court-decl-execution"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "worth-execution",
+ "worth-foundational",
+ "worth-query-decl",
+ "worth-query-execution",
+ "worth-query-installation",
+ "worth-query-testkit-execution-decl",
+ "worth-query-testkit-execution-primary-graph-application-attempt-2",
+ "worth-relational",
+ "worth-runtime-bridge",
+]
+
+[[package]]
+name = "worth-query-court-decl-execution-package-archive"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "worth-execution",
+ "worth-foundational",
+ "worth-query-admission",
+ "worth-query-decl",
+ "worth-query-declaration",
+ "worth-query-execution",
+ "worth-query-installation",
+ "worth-query-package-archive",
+ "worth-query-testkit-execution-decl",
+ "worth-query-testkit-execution-primary-graph-application-attempt",
+ "worth-query-testkit-execution-primary-graph-application-contribution",
+ "worth-relational",
+ "worth-runtime-bridge",
+ "worth-signal",
+]
+
+[[package]]
 name = "worth-query-court-decl-host"
 version = "0.1.0"
 dependencies = [
@@ -814,6 +852,221 @@ dependencies = [
  "worth-query-testkit-document-retention",
  "worth-query-testkit-host",
  "worth-relational",
+]
+
+[[package]]
+name = "worth-query-court-execution"
+version = "0.1.0"
+dependencies = [
+ "im",
+ "sha2",
+ "worth-execution",
+ "worth-foundational",
+ "worth-query-admission",
+ "worth-query-declaration",
+ "worth-query-execution",
+ "worth-query-installation",
+ "worth-query-testkit-execution-primary-graph-application-attempt",
+ "worth-query-testkit-execution-primary-graph-application-attempt-2",
+ "worth-query-testkit-execution-primary-graph-application-contribution",
+ "worth-relational",
+ "worth-runtime-world",
+]
+
+[[package]]
+name = "worth-query-court-execution-convergence-epoch-fixture"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "stats_alloc",
+ "worth-execution",
+ "worth-foundational",
+ "worth-query-admission",
+ "worth-query-declaration",
+ "worth-query-execution",
+ "worth-query-installation",
+ "worth-query-testkit-execution-primary-graph-application-attempt",
+ "worth-query-testkit-execution-primary-graph-application-attempt-2",
+ "worth-query-testkit-execution-primary-graph-application-contribution",
+ "worth-relational",
+ "worth-runtime-bridge",
+ "worth-signal",
+ "worth-testkit-relational",
+]
+
+[[package]]
+name = "worth-query-court-execution-managed-run-provider-contract-violation"
+version = "0.1.0"
+dependencies = [
+ "stats_alloc",
+ "worth-execution",
+ "worth-foundational",
+ "worth-query-admission",
+ "worth-query-declaration",
+ "worth-query-execution",
+ "worth-query-installation",
+ "worth-query-testkit-execution-primary-graph-application-attempt",
+ "worth-query-testkit-execution-primary-graph-application-attempt-2",
+ "worth-query-testkit-execution-primary-graph-application-contribution",
+ "worth-relational",
+ "worth-runtime-bridge",
+ "worth-runtime-world",
+]
+
+[[package]]
+name = "worth-query-court-execution-package-archive"
+version = "0.1.0"
+dependencies = [
+ "worth-execution",
+ "worth-foundational",
+ "worth-query-admission",
+ "worth-query-declaration",
+ "worth-query-execution",
+ "worth-query-installation",
+ "worth-query-testkit-execution-primary-graph-application-attempt",
+ "worth-query-testkit-execution-primary-graph-application-attempt-2",
+ "worth-query-testkit-execution-primary-graph-application-contribution",
+ "worth-relational",
+ "worth-runtime-bridge",
+ "worth-runtime-world",
+ "worth-signal",
+]
+
+[[package]]
+name = "worth-query-court-execution-package-archive-primary-graph-application-attempt"
+version = "0.1.0"
+dependencies = [
+ "sha2",
+ "stats_alloc",
+ "worth-execution",
+ "worth-foundational",
+ "worth-proof",
+ "worth-query-admission",
+ "worth-query-declaration",
+ "worth-query-execution",
+ "worth-query-installation",
+ "worth-query-package-archive",
+ "worth-query-testkit-execution-primary-graph-application-attempt",
+ "worth-query-testkit-execution-primary-graph-application-attempt-2",
+ "worth-query-testkit-execution-primary-graph-application-contribution",
+ "worth-relational",
+ "worth-runtime-bridge",
+ "worth-runtime-world",
+ "worth-signal",
+]
+
+[[package]]
+name = "worth-query-court-execution-package-archive-primary-graph-application-query"
+version = "0.1.0"
+dependencies = [
+ "worth-execution",
+ "worth-foundational",
+ "worth-query-admission",
+ "worth-query-declaration",
+ "worth-query-execution",
+ "worth-query-installation",
+ "worth-query-testkit-execution-primary-graph-application-attempt",
+ "worth-query-testkit-execution-primary-graph-application-attempt-2",
+ "worth-query-testkit-execution-primary-graph-application-contribution",
+ "worth-relational",
+]
+
+[[package]]
+name = "worth-query-court-execution-package-archive-primary-graph-authorization"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "worth-execution",
+ "worth-foundational",
+ "worth-query-admission",
+ "worth-query-declaration",
+ "worth-query-execution",
+ "worth-query-installation",
+ "worth-query-testkit-execution-primary-graph-application-attempt",
+ "worth-query-testkit-execution-primary-graph-application-attempt-2",
+ "worth-query-testkit-execution-primary-graph-application-contribution",
+ "worth-relational",
+]
+
+[[package]]
+name = "worth-query-court-execution-primary-graph-application-attempt"
+version = "0.1.0"
+dependencies = [
+ "stats_alloc",
+ "worth-execution",
+ "worth-foundational",
+ "worth-query-admission",
+ "worth-query-declaration",
+ "worth-query-execution",
+ "worth-query-installation",
+ "worth-query-testkit-execution-primary-graph-application-attempt",
+ "worth-query-testkit-execution-primary-graph-application-attempt-2",
+ "worth-query-testkit-execution-primary-graph-application-contribution",
+ "worth-relational",
+ "worth-runtime-world",
+ "worth-signal",
+]
+
+[[package]]
+name = "worth-query-court-execution-primary-graph-application-contribution"
+version = "0.1.0"
+dependencies = [
+ "im",
+ "serde",
+ "sha2",
+ "stats_alloc",
+ "worth-execution",
+ "worth-foundational",
+ "worth-proof",
+ "worth-query-admission",
+ "worth-query-declaration",
+ "worth-query-execution",
+ "worth-query-installation",
+ "worth-query-testkit-execution-primary-graph-application-attempt",
+ "worth-query-testkit-execution-primary-graph-application-attempt-2",
+ "worth-query-testkit-execution-primary-graph-application-contribution",
+ "worth-relational",
+ "worth-runtime-bridge",
+ "worth-runtime-world",
+ "worth-signal",
+]
+
+[[package]]
+name = "worth-query-court-execution-primary-graph-application-output-demand"
+version = "0.1.0"
+dependencies = [
+ "stats_alloc",
+ "worth-execution",
+ "worth-foundational",
+ "worth-proof",
+ "worth-query-admission",
+ "worth-query-execution",
+ "worth-query-installation",
+ "worth-query-testkit-execution-primary-graph-application-attempt",
+ "worth-query-testkit-execution-primary-graph-application-attempt-2",
+ "worth-query-testkit-execution-primary-graph-application-contribution",
+ "worth-relational",
+ "worth-runtime-bridge",
+ "worth-runtime-world",
+]
+
+[[package]]
+name = "worth-query-court-execution-primary-graph-application-query"
+version = "0.1.0"
+dependencies = [
+ "worth-execution",
+ "worth-foundational",
+ "worth-query-admission",
+ "worth-query-declaration",
+ "worth-query-execution",
+ "worth-query-installation",
+ "worth-query-testkit-execution-primary-graph-application-attempt",
+ "worth-query-testkit-execution-primary-graph-application-attempt-2",
+ "worth-query-testkit-execution-primary-graph-application-contribution",
+ "worth-relational",
+ "worth-runtime-bridge",
+ "worth-runtime-world",
 ]
 
 [[package]]
@@ -940,16 +1193,12 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2",
- "stats_alloc",
  "worth-execution",
  "worth-foundational",
- "worth-harness",
  "worth-proof",
  "worth-query-admission",
- "worth-query-decl",
  "worth-query-declaration",
  "worth-query-installation",
- "worth-query-package-archive",
  "worth-relational",
  "worth-runtime-bridge",
  "worth-runtime-world",
@@ -1137,6 +1386,75 @@ dependencies = [
  "worth-foundational",
  "worth-query-decl",
  "worth-query-host",
+]
+
+[[package]]
+name = "worth-query-testkit-execution-decl"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "worth-foundational",
+ "worth-query-admission",
+ "worth-query-decl",
+ "worth-query-declaration",
+ "worth-query-execution",
+ "worth-query-installation",
+ "worth-query-testkit-execution-primary-graph-application-contribution",
+ "worth-relational",
+ "worth-runtime-bridge",
+ "worth-signal",
+]
+
+[[package]]
+name = "worth-query-testkit-execution-primary-graph-application-attempt"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "worth-execution",
+ "worth-foundational",
+ "worth-query-admission",
+ "worth-query-declaration",
+ "worth-query-execution",
+ "worth-query-installation",
+ "worth-relational",
+ "worth-runtime-bridge",
+]
+
+[[package]]
+name = "worth-query-testkit-execution-primary-graph-application-attempt-2"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "worth-execution",
+ "worth-foundational",
+ "worth-harness",
+ "worth-query-admission",
+ "worth-query-declaration",
+ "worth-query-execution",
+ "worth-query-installation",
+ "worth-query-testkit-execution-primary-graph-application-attempt",
+ "worth-query-testkit-execution-primary-graph-application-contribution",
+ "worth-relational",
+ "worth-runtime-bridge",
+ "worth-runtime-world",
+ "worth-signal",
+]
+
+[[package]]
+name = "worth-query-testkit-execution-primary-graph-application-contribution"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "worth-execution",
+ "worth-foundational",
+ "worth-query-admission",
+ "worth-query-declaration",
+ "worth-query-execution",
+ "worth-query-installation",
+ "worth-query-testkit-execution-primary-graph-application-attempt",
+ "worth-relational",
+ "worth-runtime-world",
+ "worth-signal",
 ]
 
 [[package]]

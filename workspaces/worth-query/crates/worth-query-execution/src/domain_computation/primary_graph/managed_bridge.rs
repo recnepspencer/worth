@@ -52,19 +52,17 @@ impl WorthQueryApplicationBridgeInstallation {
     }
 }
 
-pub(crate) struct WorthQueryInstalledApplicationBridge {
+pub struct WorthQueryInstalledApplicationBridge {
     ordinary: RuntimeBridge,
     conditional: std::sync::Arc<std::sync::RwLock<BridgeSealedRuntimeAssembly>>,
 }
 
 impl WorthQueryInstalledApplicationBridge {
-    pub(super) fn ordinary(&self) -> &RuntimeBridge {
+    pub fn ordinary(&self) -> &RuntimeBridge {
         &self.ordinary
     }
 
-    pub(crate) fn conditional(
-        &self,
-    ) -> std::sync::RwLockReadGuard<'_, BridgeSealedRuntimeAssembly> {
+    pub fn conditional(&self) -> std::sync::RwLockReadGuard<'_, BridgeSealedRuntimeAssembly> {
         self.conditional
             .read()
             .unwrap_or_else(std::sync::PoisonError::into_inner)

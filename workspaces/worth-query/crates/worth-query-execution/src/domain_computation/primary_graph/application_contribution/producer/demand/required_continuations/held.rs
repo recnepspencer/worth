@@ -2,8 +2,7 @@
 //! successors to registry custody on their own rows.
 
 mod local_resume;
-#[cfg(test)]
-mod state_unavailable;
+
 use super::super::progression::PerformedMembers;
 use super::*;
 use crate::domain_computation::primary_graph::application_output_demand::HeldRequiredSuccessor;

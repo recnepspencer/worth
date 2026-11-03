@@ -2,7 +2,7 @@ use super::WorthQueryApplicationEffectProgram;
 
 mod canonical_encoding;
 mod content_rule;
-mod content_tree;
+pub mod content_tree;
 mod output_postcondition;
 mod producing_implementation;
 
@@ -10,17 +10,15 @@ use super::retained_decision_facts::StorageControl;
 use super::retained_decision_facts::StoreDenial;
 pub(super) use canonical_encoding::authentication_observation_identity;
 use canonical_encoding::lineage_identity;
-#[cfg(test)]
 use content_tree::dependency_identity;
 pub(in crate::domain_computation::primary_graph) use content_tree::CompletedFactRoutes;
 pub(in crate::domain_computation::primary_graph) use content_tree::FactContent;
 use output_postcondition::complete_content_currentness_facts;
-#[cfg(test)]
 use output_postcondition::normalized_output_facts;
 pub(in crate::domain_computation::primary_graph) use output_postcondition::OutputCurrentnessFacts;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum WorthQueryProducerIdentityDenial {
+pub enum WorthQueryProducerIdentityDenial {
     DependencyStorage(StoreDenial),
     DependencyCanonicalizationRejected,
     MissingSourcePartition,
@@ -32,9 +30,7 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryProducerIdentity
 impl<Schema, Operation, Input, Scope>
     WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>
 {
-    pub(in crate::domain_computation::primary_graph) fn producer_idempotency_identities<
-        OutputBinding,
-    >(
+    pub fn producer_idempotency_identities<OutputBinding>(
         &mut self,
         runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
             Schema,

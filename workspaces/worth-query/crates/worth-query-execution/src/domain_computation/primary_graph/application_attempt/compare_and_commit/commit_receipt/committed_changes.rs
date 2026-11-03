@@ -32,7 +32,7 @@ impl WorthQueryApplicationCommittedChanges {
         Arc::ptr_eq(&self.envelope, &other.envelope)
     }
 
-    pub(in crate::domain_computation::primary_graph) fn from_commit(commit: &CommitResult) -> Self {
+    pub fn from_commit(commit: &CommitResult) -> Self {
         Self {
             envelope: Arc::clone(&commit.publication().envelope),
         }
@@ -58,7 +58,7 @@ impl WorthQueryApplicationCommittedChanges {
         self.envelope.lineage_events()
     }
 
-    pub(in crate::domain_computation::primary_graph) fn committed_field_values(
+    pub fn committed_field_values(
         &self,
         entity: EntityId,
         fields: &[&AspectFieldLocator],

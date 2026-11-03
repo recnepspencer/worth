@@ -54,25 +54,23 @@ impl WorthQueryCapabilityRuleBinding {
             recorded_actor: Some((requirement, identity)),
         }
     }
-    pub(in crate::domain_computation::authorization) const fn bridge(
-        &self,
-    ) -> &BridgeAuthorizationRuleContract {
+    pub const fn bridge(&self) -> &BridgeAuthorizationRuleContract {
         &self.bridge
     }
 
-    pub(in crate::domain_computation::authorization) fn path_requirements(&self) -> &[Vec<usize>] {
+    pub fn path_requirements(&self) -> &[Vec<usize>] {
         &self.path_requirements
     }
 }
 
 #[derive(Clone)]
 pub(in crate::domain_computation::authorization) struct WorthQueryCapabilityDecisionRuleBindings {
-    pub(in crate::domain_computation::authorization) grant: usize,
-    pub(in crate::domain_computation::authorization) allow: usize,
-    pub(in crate::domain_computation::authorization) deny: Option<usize>,
-    pub(in crate::domain_computation::authorization) conflict: Option<usize>,
-    pub(in crate::domain_computation::authorization) separation_of_duty: Option<usize>,
-    pub(in crate::domain_computation::authorization) distinct_actor: Option<usize>,
+    pub grant: usize,
+    pub allow: usize,
+    pub deny: Option<usize>,
+    pub conflict: Option<usize>,
+    pub separation_of_duty: Option<usize>,
+    pub distinct_actor: Option<usize>,
     pub(in crate::domain_computation::authorization) recorded_actor: Option<usize>,
 }
 
@@ -104,7 +102,7 @@ impl WorthQueryCapabilityGrantWitnessBinding {
 
 pub(in crate::domain_computation::authorization) struct WorthQueryCapabilityPathTemplate {
     pub(in crate::domain_computation::authorization) plan: RelationalAuthorizationPathPlan,
-    pub(in crate::domain_computation::authorization) identity: [u8; 32],
+    pub identity: [u8; 32],
     pub(in crate::domain_computation::authorization) guard: WorthQueryCapabilityRequestGuard,
     pub(in crate::domain_computation::authorization) grant_ordinal: Option<usize>,
     pub(in crate::domain_computation::authorization) elevation_ordinals: Vec<usize>,

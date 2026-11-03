@@ -41,7 +41,7 @@ impl WorthQueryProductRuntime {
         gate.with_admission(|| self.lease_from_observation(observation))
     }
 
-    pub(crate) fn admit_product_occurrence(
+    pub fn admit_product_occurrence(
         &self,
         occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
     ) -> Result<WorthQueryProductBranchLease, WorthQueryProductBranchAdmissionDenial> {
@@ -80,8 +80,7 @@ impl WorthQueryProductRuntime {
         self.admit_product_occurrence(branch.occurrence())
     }
 
-    #[cfg(test)]
-    pub(crate) fn admit_product_branch(
+    pub fn admit_product_branch(
         &self,
         identity: &worth_runtime_world::facade::ProductBranchIdentity,
     ) -> Result<WorthQueryProductBranchLease, WorthQueryProductBranchAdmissionDenial> {
@@ -110,7 +109,7 @@ impl WorthQueryProductRuntime {
 
     /// Resolve through World once while the selected executable package is stable.
     /// The caller composes only the custody needed by its own entry purpose.
-    pub(crate) fn with_product_observation<Output>(
+    pub fn with_product_observation<Output>(
         &self,
         identity: &worth_runtime_world::facade::ProductBranchIdentity,
         admit: impl FnOnce(

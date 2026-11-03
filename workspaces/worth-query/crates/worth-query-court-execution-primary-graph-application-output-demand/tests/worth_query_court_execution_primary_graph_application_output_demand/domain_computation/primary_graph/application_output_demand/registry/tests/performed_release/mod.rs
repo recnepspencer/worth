@@ -1,0 +1,77 @@
+//! Observation-pressure release follows declared commit order, with native custody.
+
+use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::source_custody::PreparedOutputRootKind;
+use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::SourceCustody;
+use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::WorthQueryPerformedOutputDemandSource;
+use crate::domain_computation::primary_graph::application_output_demand::registry::tests::*;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture;
+use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::recoverable_commit_support;
+use worth_query_execution::equality_type_id::EqualityTypeId as TypeId;
+
+#[test]
+fn unheld_performed_sources_release_the_oldest_in_commit_order() {
+    let world = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(true);
+    let mut sources = Vec::new();
+    let mut current = "open".to_owned();
+    for index in 0..8 {
+        let replacement = format!("release-source-{index}");
+        let mut receipt =
+            worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::recoverable_commit_support::commit_on_world_with_output_demand_observation(
+                &world,
+                170 + index,
+                &current,
+                &replacement,
+            );
+        let change = Arc::new(receipt.take_performed_relational_product_change().unwrap());
+        let observation = receipt
+            .committed_product_publication()
+            .take_output_demand_observation()
+            .unwrap();
+        sources.push(WorthQueryPerformedOutputDemandSource {
+            receipt,
+            change,
+            observation,
+            output_source_identity: None,
+        });
+        current = replacement;
+    }
+    let oldest = sources[0].change.product_commit().clone();
+    let occurrence = sources[0].receipt.product_branch().occurrence();
+    assert!(sources
+        .windows(2)
+        .all(|pair| pair[0].change.product_commit() < pair[1].change.product_commit()));
+    let mut state = DemandRegistryState::default();
+    for index in [7, 3, 5, 1, 6, 2, 4, 0] {
+        let source = sources[index].clone();
+        state.source_custody.insert(
+            source.change.product_commit().clone(),
+            SourceCustody {
+                occurrence,
+                root_kind: PreparedOutputRootKind::Required(TypeId::of::<()>()),
+                source: Some(source),
+                discovery: None,
+                bound_sources: None,
+                consumed_sources: Vec::new(),
+                retired_sources: Vec::new(),
+                retired: None,
+                token_count: 0,
+                cleanup: Default::default(),
+                completed: false,
+            },
+        );
+    }
+    for slot in 1..=3 {
+        let mut row = record(occurrence, DemandState::Admitted, 0);
+        row.source_commits.push(oldest.clone());
+        state.records.insert(key("release-proof", 1, slot), row);
+    }
+
+    let released = state.release_unheld_performed_source().unwrap();
+    assert!(released.is_some());
+    assert!(!state.source_custody.contains_key(&oldest));
+    assert_eq!(state.source_custody.len(), 7);
+    assert!(state
+        .records
+        .values()
+        .all(|row| !row.source_commits.contains(&oldest)));
+}

@@ -1,6 +1,6 @@
 use super::*;
 
-pub(super) enum SettlementReceiptCustody {
+pub enum SettlementReceiptCustody {
     Owned(WorthQueryApplicationCommitReceipt),
     Ready(ReadyCompletion),
 }

@@ -7,7 +7,7 @@ use worth_runtime_bridge::facade::{
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) struct WorthQueryManagedRelationalObservationIdentity {
+pub struct WorthQueryManagedRelationalObservationIdentity {
     descriptor: RelationalBranchBasisDescriptor,
     snapshot: TruthSnapshotIdentity,
 }
@@ -22,7 +22,7 @@ impl WorthQueryManagedRelationalObservationIdentity {
     }
 }
 
-pub(in crate::domain_computation) struct WorthQueryManagedRelationalObservation {
+pub struct WorthQueryManagedRelationalObservation {
     identity: WorthQueryManagedRelationalObservationIdentity,
     current_at_admission: bool,
     owner_identity: Option<worth_runtime_world::facade::RuntimeWorldOwnerIdentity>,
@@ -30,7 +30,7 @@ pub(in crate::domain_computation) struct WorthQueryManagedRelationalObservation 
 }
 
 impl WorthQueryManagedRelationalObservation {
-    pub(super) fn retain(
+    pub fn retain(
         source: &RuntimeBridgeRelationalSource,
         basis: AdmittedRelationalBranchBasis,
         current_at_admission: bool,

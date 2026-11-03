@@ -92,7 +92,7 @@ pub struct WorthQueryApplicationOneShotDenial {
 }
 
 #[derive(Debug)]
-struct OneShotDenialPayload {
+pub struct OneShotDenialPayload {
     authorization_denial: Option<Box<WorthQueryOperationAuthorizationDenial>>,
     query: String,
     subject: String,
@@ -109,7 +109,7 @@ impl PartialEq for WorthQueryApplicationOneShotDenial {
 }
 impl Eq for WorthQueryApplicationOneShotDenial {}
 
-pub(in crate::domain_computation::primary_graph::application_query) fn denial(
+pub fn denial(
     kind: WorthQueryApplicationOneShotDenialKind,
     query: impl Into<String>,
     subject: impl Into<String>,
@@ -125,7 +125,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn denial(
     }
 }
 
-pub(super) fn authorization_denial(
+pub fn authorization_denial(
     denial: WorthQueryOperationAuthorizationDenial,
     query: &str,
 ) -> WorthQueryApplicationOneShotDenial {
@@ -186,7 +186,7 @@ impl WorthQueryApplicationOneShotDenial {
 
 /// Owner stages and the complete reconstruction return through this boundary.
 /// A worker's map allowance ends before its returned payload acquires custody.
-pub(in crate::domain_computation::primary_graph) fn retain_reconstruction_result<T>(
+pub fn retain_reconstruction_result<T>(
     lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
     result: Result<T, super::super::WorthQueryManagedDerivedViewDenial>,
     on_admission_denial: impl FnOnce(
@@ -256,6 +256,3 @@ impl worth_execution::ChargedBytes for WorthQueryApplicationOneShotDenial {
             }))
     }
 }
-
-#[cfg(test)]
-mod capacity_tests;

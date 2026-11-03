@@ -2,11 +2,7 @@ use super::*;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    pub(in crate::domain_computation::primary_graph) fn compare_and_commit_application_for_required_output_source<
-        Operation,
-        Input,
-        Scope,
-    >(
+    pub fn compare_and_commit_application_for_required_output_source<Operation, Input, Scope>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -46,11 +42,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         )
     }
 
-    pub(in crate::domain_computation::primary_graph) fn compare_and_commit_application_for_program_output_producer<
-        Operation,
-        Input,
-        Scope,
-    >(
+    pub fn compare_and_commit_application_for_program_output_producer<Operation, Input, Scope>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -92,11 +84,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         )
     }
 
-    pub(in crate::domain_computation::primary_graph) fn compare_and_commit_application_for_program_action<
-        Operation,
-        Input,
-        Scope,
-    >(
+    pub fn compare_and_commit_application_for_program_action<Operation, Input, Scope>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,

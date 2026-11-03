@@ -190,7 +190,7 @@ impl WorthQueryRunningDirectRun {
             .bind_graph_provider_call(graph_authority, request)
     }
 
-    pub(crate) fn execution_snapshot_reference(&self) -> String {
+    pub fn execution_snapshot_reference(&self) -> String {
         let parts = self
             .bridge_basis
             .observation()
@@ -256,10 +256,7 @@ impl WorthQueryRunningDirectRun {
         self.affinity.yield_is_installed()
     }
 
-    pub(super) fn terminal(
-        self,
-        kind: WorthQueryManagedRunTerminalKind,
-    ) -> WorthQueryDirectRunTerminal {
+    pub fn terminal(self, kind: WorthQueryManagedRunTerminalKind) -> WorthQueryDirectRunTerminal {
         let (affinity, provider_work, provider_cleanup) = self.affinity.into_terminal_parts();
         WorthQueryDirectRunTerminal {
             affinity,
@@ -272,7 +269,7 @@ impl WorthQueryRunningDirectRun {
         }
     }
 
-    pub(crate) fn terminate_for_convergence(
+    pub fn terminate_for_convergence(
         self,
         kind: WorthQueryManagedRunTerminalKind,
     ) -> WorthQueryDirectRunTerminal {

@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex, Weak};
 
 const MAXIMUM_REGISTERED_VIEWS: usize = 64;
-mod index_directory;
+pub mod index_directory;
 mod managed_index;
 mod managed_source;
 mod native_count;
@@ -18,9 +18,7 @@ pub(in crate::domain_computation::primary_graph) use predicate::{
     PredicateWorld, PreparedPredicateNotices, PreparedPredicatePublication, SourcePredicateAxis,
 };
 
-pub(in crate::domain_computation::primary_graph::application_query) trait RegisteredManagedIndex:
-    Send + Sync
-{
+pub trait RegisteredManagedIndex: Send + Sync {
     fn dispose(&self);
 }
 
@@ -48,10 +46,7 @@ pub(in crate::domain_computation::primary_graph) struct PreparedManagedViewPubli
 }
 
 impl PreparedManagedViewPublication {
-    pub(in crate::domain_computation::primary_graph) fn apply(
-        self,
-        after: &worth_runtime_world::facade::CompositeCommitIdentity,
-    ) {
+    pub fn apply(self, after: &worth_runtime_world::facade::CompositeCommitIdentity) {
         for (view, prepared) in self.views {
             view.apply_transition(prepared, after);
         }
@@ -119,7 +114,7 @@ impl ManagedDerivedViewRegistry {
             .any(|view| view.strong_count() > 0)
     }
 
-    pub(in crate::domain_computation::primary_graph) fn prepare_publication(
+    pub fn prepare_publication(
         &self,
         basis: super::publication::ViewPublicationBasis<'_>,
         changes: &[super::publication::ViewChange],

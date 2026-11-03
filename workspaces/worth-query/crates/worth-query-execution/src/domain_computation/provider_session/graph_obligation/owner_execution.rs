@@ -51,16 +51,13 @@ impl WorthQueryGraphReadOwnerPort {
         let read = self
             .source
             .with_runtime_mut_unwind_isolated(execution, |runtime| {
-                #[cfg(test)]
                 let replacement = pin_control::snapshot();
-                #[cfg(test)]
                 let snapshot = replacement.as_ref().unwrap_or(snapshot);
                 let result = runtime.read_truth().pin_read_capability(
                     snapshot,
                     &selected_indexes,
                     execution,
                 );
-                #[cfg(test)]
                 pin_panic::panic_if_armed();
                 result
             })
@@ -134,8 +131,7 @@ impl WorthQuerySessionGraphReadProof {
     }
 }
 
-#[cfg(test)]
-pub(in crate::domain_computation) mod pin_panic {
+pub mod pin_panic {
     use std::cell::Cell;
     thread_local! { static ARMED: Cell<bool> = const { Cell::new(false) }; }
     pub(in crate::domain_computation) struct PanicDuringPinGuardForTest(bool);
@@ -155,5 +151,4 @@ pub(in crate::domain_computation) mod pin_panic {
     }
 }
 
-#[cfg(test)]
-pub(in crate::domain_computation) mod pin_control;
+pub mod pin_control;

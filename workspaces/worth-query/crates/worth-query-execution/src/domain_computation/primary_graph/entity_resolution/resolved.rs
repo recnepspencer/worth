@@ -110,15 +110,15 @@ impl WorthQueryResolvedEntity {
         }
     }
 
-    pub(in crate::domain_computation) const fn entity_id(&self) -> EntityId {
+    pub const fn entity_id(&self) -> EntityId {
         self.entity_id
     }
 
-    pub(in crate::domain_computation) const fn entity_kind(&self) -> KindId {
+    pub const fn entity_kind(&self) -> KindId {
         self.entity_kind
     }
 
-    pub(in crate::domain_computation) fn into_application_identity<Schema, Entity>(
+    pub fn into_application_identity<Schema, Entity>(
         self,
     ) -> WorthQueryApplicationEntityIdentity<Schema, Entity> {
         WorthQueryApplicationEntityIdentity {
@@ -167,11 +167,11 @@ impl<Schema, Entity> WorthQueryApplicationEntityIdentity<Schema, Entity> {
         )
     }
 
-    pub(crate) const fn entity_id(&self) -> EntityId {
+    pub const fn entity_id(&self) -> EntityId {
         self.entity_id
     }
 
-    pub(crate) const fn entity_kind(&self) -> KindId {
+    pub const fn entity_kind(&self) -> KindId {
         self.entity_kind
     }
 
@@ -183,14 +183,11 @@ impl<Schema, Entity> WorthQueryApplicationEntityIdentity<Schema, Entity> {
         self.runtime_authority
     }
 
-    pub(crate) const fn identity_index_id(&self) -> DerivedIndexId {
+    pub const fn identity_index_id(&self) -> DerivedIndexId {
         self.identity_index_id
     }
 
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) const fn identity_index_generation(
-        &self,
-    ) -> DerivedIndexGenerationId {
+    pub const fn identity_index_generation(&self) -> DerivedIndexGenerationId {
         self.identity_index_generation
     }
 
@@ -198,7 +195,7 @@ impl<Schema, Entity> WorthQueryApplicationEntityIdentity<Schema, Entity> {
         &self.identity_locator
     }
 
-    pub(crate) fn identity_value(&self) -> &AspectValue {
+    pub fn identity_value(&self) -> &AspectValue {
         &self.identity_value
     }
 

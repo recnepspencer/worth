@@ -53,7 +53,7 @@ impl PartialEq for WorthQueryRetainedApplicationCommitBasis {
 impl Eq for WorthQueryRetainedApplicationCommitBasis {}
 
 #[derive(Default)]
-pub(in crate::domain_computation::primary_graph) struct WorthQueryReceiptBasisRetentionStore {
+pub struct WorthQueryReceiptBasisRetentionStore {
     order: VecDeque<CommitId>,
     by_commit: BTreeMap<CommitId, WorthQueryRetainedApplicationCommitBasis>,
     mandatory: BTreeMap<CommitId, WorthQueryRetainedApplicationCommitBasis>,
@@ -95,7 +95,7 @@ impl WorthQueryReceiptBasisRetentionStore {
         }
     }
 
-    pub(in crate::domain_computation::primary_graph::provider) fn retain(
+    pub fn retain(
         &mut self,
         commit: CommitId,
         lease: RelationalBranchRetentionLease,
@@ -133,7 +133,6 @@ impl WorthQueryReceiptBasisRetentionStore {
             .cloned()
     }
 
-    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn retained_count(&self) -> usize {
         self.by_commit.len() + self.mandatory.len()
     }

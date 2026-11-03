@@ -84,7 +84,6 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowInstanceProgress
 }
 
 impl WorkflowInstanceProgressRetention {
-    #[cfg(test)]
     fn new(maximum_retained_charge_bytes: usize) -> Self {
         Self::with_budget(maximum_retained_charge_bytes)
     }
@@ -293,7 +292,6 @@ impl WorkflowInstanceProgressRetention {
         self.least_recently_used.insert((last_use, key));
     }
 
-    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn replays(
         &mut self,
         key: WorkflowInstanceProgressKey,

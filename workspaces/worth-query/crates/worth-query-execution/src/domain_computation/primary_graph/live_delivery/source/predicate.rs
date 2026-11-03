@@ -34,7 +34,7 @@ impl Stamp {
     }
 }
 impl WorthQueryLiveDeliverySource {
-    pub(in crate::domain_computation::primary_graph) fn begin_predicate_preparation(
+    pub fn begin_predicate_preparation(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         observation: &ProductBranchObservation,
@@ -74,7 +74,7 @@ impl WorthQueryLiveDeliverySource {
         })
     }
     /// Call before the Parent read, then re-observe actual World currentness.
-    pub(in crate::domain_computation::primary_graph) fn open_predicate(
+    pub fn open_predicate(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         observation: &ProductBranchObservation,
@@ -125,7 +125,7 @@ impl WorthQueryLiveDeliverySource {
         })
     }
     /// Only this atomic join permits installing the read's predicate record.
-    pub(in crate::domain_computation::primary_graph) fn join_predicate_opening(
+    pub fn join_predicate_opening(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         subscription: &WorthQueryLivePredicateSubscription,
@@ -176,7 +176,7 @@ impl WorthQueryLiveDeliverySource {
         Arc::ptr_eq(&self.state, &subscription.subscription.state)
             && subscription.subscription.key == WorthQueryLiveProductKey::from_observation(current)
     }
-    pub(in crate::domain_computation::primary_graph) fn validate_predicate_progress(
+    pub fn validate_predicate_progress(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         subscription: &WorthQueryLivePredicateSubscription,
@@ -206,11 +206,7 @@ impl WorthQueryLiveDeliverySource {
         Ok(())
     }
     /// Owner court injects an untracked movement; production publishes exact predicate notices.
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn invalidate_predicates(
-        &self,
-        observation: &ProductBranchObservation,
-    ) {
+    pub fn invalidate_predicates(&self, observation: &ProductBranchObservation) {
         let key = WorthQueryLiveProductKey::from_observation(observation);
         let mut state = self
             .state

@@ -56,7 +56,7 @@ impl Drop for SharedOriginalSnapshot {
     }
 }
 impl SnapshotCustody {
-    fn snapshot(&self) -> &SnapshotHandle {
+    pub fn snapshot(&self) -> &SnapshotHandle {
         match self {
             Self::Owned { snapshot, .. } => snapshot,
             Self::Shared(basis) => basis.snapshot_handle(),
@@ -67,7 +67,7 @@ impl SnapshotCustody {
                 .snapshot(),
         }
     }
-    fn handle(&self) -> &WorthQueryPrimaryGraphIntegrationHandle {
+    pub fn handle(&self) -> &WorthQueryPrimaryGraphIntegrationHandle {
         match self {
             Self::Owned { handle, .. } => handle,
             Self::Shared(basis) => basis.graph_handle(),
@@ -76,11 +76,11 @@ impl SnapshotCustody {
     }
 }
 
-pub(in crate::domain_computation) struct WorthQueryApplicationSnapshotLease {
+pub struct WorthQueryApplicationSnapshotLease {
     custody: Option<SnapshotCustody>,
     product: crate::basis::WorthQueryProductBranchLease,
     selection_origin: super::super::product_operation::SelectedQueryOrigin,
-    pub(super) layout: std::sync::Arc<super::super::schema_layout::WorthQueryPrimaryGraphLayout>,
+    pub layout: std::sync::Arc<super::super::schema_layout::WorthQueryPrimaryGraphLayout>,
 }
 
 impl WorthQueryApplicationSnapshotLease {
@@ -110,7 +110,7 @@ impl WorthQueryApplicationSnapshotLease {
         };
         Ok((self, retained))
     }
-    pub(in crate::domain_computation) fn acquire(
+    pub fn acquire(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         handle: WorthQueryPrimaryGraphIntegrationHandle,
         layout: std::sync::Arc<super::super::schema_layout::WorthQueryPrimaryGraphLayout>,
@@ -221,34 +221,29 @@ impl WorthQueryApplicationSnapshotLease {
         self.selection_origin
     }
 
-    pub(in crate::domain_computation) fn snapshot(&self) -> &SnapshotHandle {
+    pub fn snapshot(&self) -> &SnapshotHandle {
         self.custody
             .as_ref()
             .expect("snapshot lease retains custody")
             .snapshot()
     }
 
-    pub(in crate::domain_computation) fn product(
-        &self,
-    ) -> &crate::basis::WorthQueryProductBranchLease {
+    pub fn product(&self) -> &crate::basis::WorthQueryProductBranchLease {
         &self.product
     }
 
-    pub(in crate::domain_computation) fn handle(&self) -> &WorthQueryPrimaryGraphIntegrationHandle {
+    pub fn handle(&self) -> &WorthQueryPrimaryGraphIntegrationHandle {
         self.custody
             .as_ref()
             .expect("snapshot lease retains custody")
             .handle()
     }
 
-    #[cfg(test)]
-    pub(in crate::domain_computation) fn release(self) -> bool {
+    pub fn release(self) -> bool {
         self.release_custody().snapshot_released()
     }
 
-    pub(in crate::domain_computation) fn release_custody(
-        mut self,
-    ) -> WorthQueryApplicationSnapshotRelease {
+    pub fn release_custody(mut self) -> WorthQueryApplicationSnapshotRelease {
         release_custody(self.custody.take().expect("snapshot lease releases once"))
     }
 }

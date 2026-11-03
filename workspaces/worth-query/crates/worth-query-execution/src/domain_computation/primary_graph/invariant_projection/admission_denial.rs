@@ -76,7 +76,7 @@ impl WorthQueryInvariantProjectionDenial {
             | Decode::CodecRejected => Self::value_decode_stopped(cause, work),
         }
     }
-    pub(super) fn execution_request_stopped(
+    pub fn execution_request_stopped(
         cause: worth_relational::facade::transactions::RelationalExecutionDenialCause,
         work: Option<super::WorthQueryInvariantProjectionWork>,
     ) -> Self {
@@ -204,22 +204,4 @@ pub(super) fn from_snapshot_admission_denial(
         }
     };
     WorthQueryInvariantProjectionDenial::from_kind(kind)
-}
-
-#[cfg(test)]
-mod stack_size_tests {
-    use super::*;
-    #[test]
-    fn projection_request_stop_keeps_the_denial_stack_bound() {
-        use std::mem::size_of;
-        let bound = size_of::<Option<super::super::WorthQueryInvariantProjectionWork>>()
-            + 2 * size_of::<usize>();
-        assert!(size_of::<WorthQueryInvariantProjectionDenial>() <= bound);
-        let cause =
-            worth_relational::facade::transactions::RelationalExecutionDenialCause::Cancelled;
-        assert_eq!(
-            WorthQueryInvariantProjectionDenial::execution_request_stopped(cause, None).kind(),
-            WorthQueryInvariantProjectionDenialKind::ExecutionRequest(cause)
-        );
-    }
 }

@@ -28,7 +28,7 @@ pub(in crate::domain_computation::primary_graph) enum InstalledTransportCustodyD
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum InstalledTransportPendingReason {
+pub enum InstalledTransportPendingReason {
     ExecutionRequest(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
     UnknownCompletion,
     ConcurrentContinuation,
@@ -58,7 +58,7 @@ pub(in crate::domain_computation::primary_graph) enum InstalledTransportPendingR
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum InstalledTransportResumeOutcome {
+pub enum InstalledTransportResumeOutcome {
     Performed,
     Pending(InstalledTransportPendingReason),
 }

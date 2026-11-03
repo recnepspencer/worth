@@ -10,7 +10,7 @@ pub(super) struct RetirementMetadata {
     pub(super) deleted_at: VersionId,
 }
 
-pub(super) fn native_metadata(
+pub fn native_metadata(
     runtime: &RelationalRuntime,
     snapshot: &SnapshotHandle,
     entity: EntityId,

@@ -10,7 +10,7 @@ use worth_runtime_world::facade::ProductBranchObservation;
 mod contention;
 mod correction;
 pub use contention::WorthQueryApplicationBranchCommitContentionForTest;
-pub(super) struct WorthQueryApplicationBranchCommitCoordinator {
+pub struct WorthQueryApplicationBranchCommitCoordinator {
     corrections: correction::CorrectionCommitLanes,
     contention: Arc<contention::ContentionControl>,
     lanes: Mutex<BTreeMap<ProductBranchIncarnation, Weak<WorthQueryApplicationBranchCommitLane>>>,
@@ -25,7 +25,7 @@ pub(crate) struct WorthQueryApplicationBranchCommitCoordination<'lane> {
     _guard: MutexGuard<'lane, ()>,
 }
 impl WorthQueryApplicationBranchCommitCoordinator {
-    pub(super) fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             corrections: correction::CorrectionCommitLanes::default(),
             contention: Arc::default(),
@@ -37,7 +37,7 @@ impl WorthQueryApplicationBranchCommitCoordinator {
     ) -> WorthQueryApplicationBranchCommitContentionForTest {
         self.contention.arm()
     }
-    pub(super) fn lane_for(
+    pub fn lane_for(
         &self,
         observation: &ProductBranchObservation,
     ) -> Arc<WorthQueryApplicationBranchCommitLane> {
@@ -62,14 +62,13 @@ impl WorthQueryApplicationBranchCommitCoordinator {
         lanes.insert(occurrence, Arc::downgrade(&lane));
         lane
     }
-    pub(super) fn retire(&self, occurrence: ProductBranchIncarnation) {
+    pub fn retire(&self, occurrence: ProductBranchIncarnation) {
         self.lanes
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .remove(&occurrence);
     }
-    #[cfg(test)]
-    fn entry_count(&self) -> usize {
+    pub fn entry_count(&self) -> usize {
         self.lanes
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
@@ -92,7 +91,7 @@ impl WorthQueryApplicationBranchCommitLane {
         })
     }
 
-    pub(crate) fn enter(&self) -> WorthQueryApplicationBranchCommitCoordination<'_> {
+    pub fn enter(&self) -> WorthQueryApplicationBranchCommitCoordination<'_> {
         // Ordinary entry is the same blocking mutex. The receiver's armed
         // certification recorder only reports an actual native contention.
         let guard = if self.contention.armed() {
@@ -126,6 +125,3 @@ impl WorthQueryApplicationBranchCommitCoordination<'_> {
         self.occurrence == observation.lifecycle_incarnation()
     }
 }
-
-#[cfg(test)]
-mod tests;

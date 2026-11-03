@@ -12,7 +12,7 @@ use crate::domain_computation::primary_graph::application_query::derived_view::{
 use worth_runtime_world::facade::CompositeCommitIdentity;
 
 mod aftermath;
-pub(super) mod registry;
+pub mod registry;
 mod stops;
 pub(in crate::domain_computation::primary_graph) use registry::WorthQueryApplicationPublicationRecoveryReservation;
 use registry::WorthQueryPendingApplicationIdempotency;
@@ -46,24 +46,18 @@ impl WorthQueryPrimaryGraphProvider {
         })
     }
 
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn has_pending_application_publication_for_test(
-        &self,
-    ) -> bool {
+    pub fn has_pending_application_publication_for_test(&self) -> bool {
         self.pending_application_publication_count_for_test() != 0
     }
 
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn pending_application_publication_count_for_test(
-        &self,
-    ) -> usize {
+    pub fn pending_application_publication_count_for_test(&self) -> usize {
         self.pending_application_publications
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .active_slot_count()
     }
 
-    pub(in crate::domain_computation::primary_graph) fn reserve_application_publication_recovery(
+    pub fn reserve_application_publication_recovery(
         &self,
         observation: &worth_runtime_world::facade::ProductBranchObservation,
         binding: Option<
@@ -199,7 +193,6 @@ fn publish_with_snapshot(
         .bind_truth_head_basis_in_runtime(runtime, &pending.next_basis)
         .map_err(bridge_head_failure)?;
     aftermath::seal(execution, provider, runtime, pending, after)?;
-    #[cfg(test)]
     if provider.take_panicked_pending_application_publication() {
         panic!("injected unwind after performed World publication reached terminal cutover");
     }

@@ -9,7 +9,7 @@ mod retention_extent;
 /// This is carried proof, not a caller-authored touch assertion. Only the
 /// installation-owned projection reader can add identities.
 #[derive(Default)]
-pub(in crate::domain_computation::primary_graph) struct WorthQueryRealizedProjectionScope {
+pub struct WorthQueryRealizedProjectionScope {
     entity_ids: BTreeSet<EntityId>,
     /// Every identity one owner call of a partitioned computation reached,
     /// already reached or not, while that call holds the reader.

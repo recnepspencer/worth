@@ -3,8 +3,7 @@
 use super::*;
 
 #[derive(Clone, Debug)]
-pub(in crate::domain_computation::primary_graph::output_lineage::invalidation) enum PostingBindings
-{
+pub enum PostingBindings {
     Settlements(SettlementPostingBindings),
     QueryRead(super::super::query_coverage::QueryReadBinding),
 }
@@ -27,7 +26,7 @@ impl PostingBindings {
     }
 }
 
-pub(super) fn bind(
+pub fn bind(
     state: &mut MarkState,
     projection: &Arc<PostingProjection>,
     identity: &Arc<RecordedSettlementIdentity>,

@@ -116,6 +116,3 @@ pub use workflow_cleanup::{
     WorthQueryWorkflowConvergenceCleanupFailure, WorthQueryWorkflowConvergenceCleanupOutcome,
     WorthQueryWorkflowConvergenceCleanupPending, WorthQueryWorkflowConvergenceCleanupReceipt,
 };
-
-#[cfg(test)]
-mod tests;

@@ -47,17 +47,17 @@ pub(crate) struct WorthQueryDispatchOutboxRestoredFields {
 ///
 /// Keeping these together prevents the post-commit lane from reconstructing record identity
 /// from persisted field content.
-pub(crate) struct WorthQueryPendingDispatchOutbox {
+pub struct WorthQueryPendingDispatchOutbox {
     record: WorthQueryDispatchOutboxRecord,
     created_entity: CreatedEntityRef,
 }
 
 impl WorthQueryPendingDispatchOutbox {
-    pub(crate) const fn record(&self) -> &WorthQueryDispatchOutboxRecord {
+    pub const fn record(&self) -> &WorthQueryDispatchOutboxRecord {
         &self.record
     }
 
-    pub(crate) const fn created_entity(&self) -> &CreatedEntityRef {
+    pub const fn created_entity(&self) -> &CreatedEntityRef {
         &self.created_entity
     }
 }
@@ -68,7 +68,7 @@ impl WorthQueryDispatchOutboxRecord {
     /// Contract metadata is deliberately not accepted as independent
     /// parameters: the producer cannot combine the family, effect, wire
     /// identity, or byte bound from different declarations.
-    pub(crate) fn from_installed_contract(
+    pub fn from_installed_contract(
         correlation: ExternalEffectCorrelationIdentity,
         contract: &InstalledExternalEffectContract,
         payload: Vec<u8>,
@@ -197,8 +197,7 @@ pub struct WorthQueryDispatchOutboxLayout {
 
 /// Build a create intent for a declared external effect. Returns `None` when
 /// the operation declares no external effect (R8.4 — pay exactly zero).
-#[cfg(test)]
-pub(crate) fn dispatch_outbox_create_intent(
+pub fn dispatch_outbox_create_intent(
     layout: Option<&WorthQueryDispatchOutboxLayout>,
     record: Option<&WorthQueryDispatchOutboxRecord>,
 ) -> Option<MutationIntent> {
@@ -210,7 +209,7 @@ pub(crate) fn dispatch_outbox_create_intent(
     .map(|(intent, _)| intent)
 }
 
-pub(crate) fn bind_dispatch_outbox_create_intent(
+pub fn bind_dispatch_outbox_create_intent(
     layout: Option<&WorthQueryDispatchOutboxLayout>,
     record: Option<&WorthQueryDispatchOutboxRecord>,
     mutation_partition: worth_relational::facade::identity::PartitionId,

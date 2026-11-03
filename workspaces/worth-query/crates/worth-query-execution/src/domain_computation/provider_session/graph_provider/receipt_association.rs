@@ -14,11 +14,11 @@ use crate::domain_computation::WorthQueryConvergenceDomainEvidenceBindingDenial;
 use crate::execution_digest::hash_parts;
 
 #[derive(Clone, Eq, PartialEq)]
-pub(in crate::domain_computation) struct WorthQueryBoundGraphExecutionAssociation {
+pub struct WorthQueryBoundGraphExecutionAssociation {
     call_authority: WorthQueryGraphCallAuthorityIdentity,
     call_identity: Arc<str>,
-    provider_session: WorthQueryExecutionProviderSessionIdentity,
-    attempt: WorthQueryClosedExecutionAttemptIdentity,
+    pub provider_session: WorthQueryExecutionProviderSessionIdentity,
+    pub attempt: WorthQueryClosedExecutionAttemptIdentity,
     call: WorthQueryGraphProviderCallSpec,
 }
 
@@ -30,7 +30,7 @@ pub(in crate::domain_computation) struct WorthQueryCompletedDomainEvidenceDeriva
 }
 
 impl WorthQueryBoundGraphExecutionAssociation {
-    pub(super) fn capture(call: &WorthQueryGraphProviderCall) -> Self {
+    pub fn capture(call: &WorthQueryGraphProviderCall) -> Self {
         Self {
             call_authority: call.authority_identity(),
             call_identity: Arc::from(call.call_identity()),
@@ -142,7 +142,7 @@ impl WorthQueryBoundGraphExecutionAssociation {
         })
     }
 
-    fn admits_execution(
+    pub fn admits_execution(
         &self,
         authority: &crate::domain_computation::WorthQueryExecutionBoundOperationAuthority,
         session: &crate::domain_computation::WorthQueryExecutionProviderSession,
@@ -226,49 +226,5 @@ impl std::fmt::Debug for WorthQueryBoundGraphExecutionAssociation {
         formatter
             .debug_struct("WorthQueryBoundGraphExecutionAssociation")
             .finish_non_exhaustive()
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::super::tests::{attempt, call};
-    use super::*;
-    use crate::domain_computation::domain_evidence_binding::WorthQueryBoundExecutionSnapshotIdentity;
-
-    #[test]
-    fn exact_execution_association_denies_each_independent_owner_axis_swap() {
-        let exact_attempt = attempt();
-        let foreign_attempt = attempt();
-        let exact =
-            WorthQueryBoundGraphExecutionAssociation::capture(&call(&exact_attempt, "same-scope"));
-        let foreign = WorthQueryBoundGraphExecutionAssociation::capture(&call(
-            &foreign_attempt,
-            "same-scope",
-        ));
-        let expected_snapshot =
-            WorthQueryBoundExecutionSnapshotIdentity::capture(Arc::from("snapshot"));
-        let authority = exact_attempt.attempt.binding_authority();
-        let session = exact_attempt.attempt.provider_session_for_test();
-
-        assert!(exact.admits_execution(authority, session, None, &expected_snapshot));
-
-        let mut session_swap = exact.clone();
-        session_swap.provider_session = foreign.provider_session.clone();
-        assert!(!session_swap.admits_execution(authority, session, None, &expected_snapshot));
-
-        let mut attempt_swap = exact.clone();
-        attempt_swap.attempt = foreign.attempt.clone();
-        assert!(!attempt_swap.admits_execution(authority, session, None, &expected_snapshot));
-
-        assert!(!exact.admits_execution(
-            authority,
-            session,
-            Some("foreign-stage"),
-            &expected_snapshot,
-        ));
-
-        let foreign_snapshot =
-            WorthQueryBoundExecutionSnapshotIdentity::capture(Arc::from("foreign-snapshot"));
-        assert!(!exact.admits_execution(authority, session, None, &foreign_snapshot));
     }
 }

@@ -14,7 +14,7 @@ pub(super) struct Head {
 
 /// Only the registry's answer can issue a live-head witness.
 pub(in crate::domain_computation::primary_graph) struct LivePublicationHead(());
-pub(in crate::domain_computation::primary_graph) enum PublicationHeadSelection {
+pub enum PublicationHeadSelection {
     Live(LivePublicationHead),
     Frozen,
 }
@@ -131,11 +131,8 @@ impl WorthQueryOutputDemandRegistry {
     }
 }
 
-#[cfg(test)]
 impl WorthQueryOutputDemandRegistry {
-    pub(in crate::domain_computation::primary_graph) fn publication_counts_for_registry_test(
-        &self,
-    ) -> (usize, usize) {
+    pub fn publication_counts_for_registry_test(&self) -> (usize, usize) {
         let state = self.state.lock().unwrap();
         let scan = state.records.values().filter(|record| matches!(&record.state,
             DemandState::Output(output) if !matches!(output.advancement(), WorthQueryOutputAdvancement::Stopped { .. })

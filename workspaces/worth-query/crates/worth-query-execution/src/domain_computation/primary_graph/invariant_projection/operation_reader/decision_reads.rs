@@ -3,7 +3,7 @@
 
 use std::collections::BTreeSet;
 mod aggregates;
-mod aspect_presence;
+pub mod aspect_presence;
 mod components;
 mod computation_inputs;
 mod expected_keys;
@@ -27,7 +27,7 @@ use crate::domain_computation::primary_graph::application_contribution::{
 /// reader is recorded with that call, and one the handler read itself is
 /// recorded as the handler's. A key both read is both.
 #[derive(Default)]
-pub(in crate::domain_computation::primary_graph) struct DecisionReads {
+pub struct DecisionReads {
     handler: BTreeSet<WorthQueryApplicationFactKey>,
     source_publications: Option<std::sync::Arc<source_publications::IssuedSourcePublicationValues>>,
     managed_sources: managed_sources::IssuedManagedSourceValues,
@@ -37,8 +37,8 @@ pub(in crate::domain_computation::primary_graph) struct DecisionReads {
     /// not hold, so a handler or owner call that swallowed the failure has an
     /// outcome nothing retained, and the projection seals nothing.
     failed: Option<WorthQueryApplicationFactKey>,
-    pub(super) computation: ComputationFactAttribution,
-    reading: Option<ComputationRead>,
+    pub computation: ComputationFactAttribution,
+    pub reading: Option<ComputationRead>,
     runs: ComputationRuns,
     /// What the producer that runs the projection retained, for the first
     /// partitioned computation to take.
@@ -55,7 +55,7 @@ pub(in crate::domain_computation::primary_graph) struct DecisionReads {
 }
 
 #[derive(Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum FailedDecisionRead {
+pub enum FailedDecisionRead {
     Key(WorthQueryApplicationFactKey),
     StructuralWalk,
     ManagedSource,
@@ -107,7 +107,7 @@ impl ComputationPriorUnavailable {
 /// What became of one decision read. A field, entity or relation read
 /// records an absent value as its content, so only a traversal can fail.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(super) enum DecisionReadOutcome {
+pub enum DecisionReadOutcome {
     Observed,
     Failed,
 }
@@ -141,11 +141,7 @@ impl DecisionReads {
     }
 
     /// The one way a decision read is recorded, on every outcome of the read.
-    pub(super) fn record(
-        &mut self,
-        key: WorthQueryApplicationFactKey,
-        outcome: DecisionReadOutcome,
-    ) {
+    pub fn record(&mut self, key: WorthQueryApplicationFactKey, outcome: DecisionReadOutcome) {
         let key = self.aspect_presence.canonical_key(key);
         if outcome == DecisionReadOutcome::Failed && self.failed.is_none() {
             self.failed = Some(key.clone());
@@ -169,7 +165,7 @@ impl DecisionReads {
     /// The deposit is there only when exactly one partitioned computation
     /// ran under a producer. A projection with a failed read has no keys to
     /// re-observe: the key of the first failed read is returned instead.
-    pub(in crate::domain_computation::primary_graph) fn into_expected(
+    pub fn into_expected(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<
@@ -267,7 +263,7 @@ impl<Schema, Operation>
         self.decision_facts.computation.carry_native(read)
     }
     /// A partitioned computation begins reading through this reader.
-    pub(in crate::domain_computation::primary_graph) fn begin_computation_reads(&mut self) {
+    pub fn begin_computation_reads(&mut self) {
         let deposit = self
             .decision_facts
             .deposit
@@ -316,7 +312,7 @@ impl<Schema, Operation>
     }
 
     /// Runs one owner call, recording every fact key it reads as that call's.
-    pub(in crate::domain_computation::primary_graph) fn attributed<Output>(
+    pub fn attributed<Output>(
         &mut self,
         read: ComputationRead,
         call: impl FnOnce(&mut Self) -> Output,
@@ -327,6 +323,3 @@ impl<Schema, Operation>
         output
     }
 }
-
-#[cfg(test)]
-mod tests;

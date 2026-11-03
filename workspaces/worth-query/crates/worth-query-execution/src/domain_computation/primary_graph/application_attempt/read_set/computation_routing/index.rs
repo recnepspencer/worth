@@ -5,7 +5,7 @@ use worth_execution::{ExecutionAllocationPolicy, ExecutionOrderedMap};
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) struct ComputationFactIndex {
     pub(super) ordinals: std::sync::Arc<ExecutionOrderedMap<usize, WorthQueryApplicationFactKey>>,
-    pub(super) calls: ExecutionOrderedMap<ComputationRead, Vec<WorthQueryApplicationFactKey>>,
+    pub calls: ExecutionOrderedMap<ComputationRead, Vec<WorthQueryApplicationFactKey>>,
     pub(super) observation_work: Option<u64>,
     pub(super) structural_walk: bool,
     pub(super) aggregate: bool,
@@ -52,7 +52,7 @@ impl ComputationFactIndex {
             aggregate,
         })
     }
-    pub(in crate::domain_computation::primary_graph) fn keys(
+    pub fn keys(
         &self,
         read: ComputationRead,
     ) -> impl Iterator<Item = &WorthQueryApplicationFactKey> {

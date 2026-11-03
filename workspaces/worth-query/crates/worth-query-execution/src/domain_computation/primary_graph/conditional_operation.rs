@@ -6,18 +6,18 @@ pub use reentry_failure::WorthQueryConditionalReentryFailure;
 mod authoritative_delivery_failure;
 pub use authoritative_delivery_failure::WorthQueryConditionalAuthoritativeDeliveryFailure;
 mod access_validation;
-mod application_operation_reentry;
+pub mod application_operation_reentry;
 mod authoritative_reconsideration;
 mod authorization_sources;
 mod canonical_identity;
-mod clock_observation;
+pub mod clock_observation;
 mod definition;
 mod execution_provenance;
 mod input_validation;
 mod inspection;
-mod installation;
-mod lifecycle;
-mod lifecycle_inventory;
+pub mod installation;
+pub mod lifecycle;
+pub mod lifecycle_inventory;
 mod operation_invocation;
 mod pending_binding;
 mod predicate_admission;
@@ -28,14 +28,14 @@ mod predicate_observation;
 mod publication;
 mod reconstruction_authority;
 mod reinstallation;
-mod signal_decision_reentry;
+pub mod signal_decision_reentry;
 pub(crate) use signal_decision_reentry::classify_bridge_signal;
 pub(crate) use signal_decision_reentry::classify_bridge_signal_observation;
 pub(in crate::domain_computation::primary_graph) use signal_decision_reentry::{
     WorthQueryConditionalTruthBasis, WorthQuerySelectedSignalProjections,
 };
 mod temporal_intent_projection;
-mod temporal_reconstruction;
+pub mod temporal_reconstruction;
 
 pub use authorization_sources::{
     WorthQueryGovernedTemporalOperationAuthorization, WorthQueryGovernedTemporalQueryAuthorization,
@@ -76,6 +76,3 @@ pub use reconstruction_authority::{
     WorthQueryTemporalReconstructionAccess,
 };
 pub use reinstallation::WorthQueryConditionalRuntimeReinstallationReceipt;
-
-#[cfg(test)]
-pub(in crate::domain_computation::primary_graph) use application_operation_reentry::assert_preparation_retry;

@@ -11,7 +11,7 @@ use worth_relational::facade::{
 };
 
 /// Exact query meaning, not an admission or permission to manufacture evidence.
-pub(in crate::domain_computation::primary_graph) struct StructuralWalkQuery<'a> {
+pub struct StructuralWalkQuery<'a> {
     pub(in crate::domain_computation::primary_graph) relation: &'a str,
     pub(in crate::domain_computation::primary_graph) roots: &'a [EntityId],
     pub(in crate::domain_computation::primary_graph) entity_kind: KindId,
@@ -23,7 +23,7 @@ pub(in crate::domain_computation::primary_graph) struct StructuralWalkQuery<'a> 
 }
 
 impl StructuralWalkObservation {
-    pub(in crate::domain_computation::primary_graph) fn read(
+    pub fn read(
         pin: &RelationalPinnedRead,
         execution: &ExecutionRequest<'_, '_>,
         query: StructuralWalkQuery<'_>,

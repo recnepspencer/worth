@@ -13,7 +13,7 @@ struct Backing {
 
 /// One conservative read-batch grant, retained by its actual source witnesses.
 #[derive(Debug)]
-pub(in crate::domain_computation) struct SourceFactsAllocation {
+pub struct SourceFactsAllocation {
     backing: Mutex<Backing>,
 }
 
@@ -48,10 +48,7 @@ impl SourceFactsAllocation {
             (Ok(_), None) => unreachable!("completed source metadata checkpoint"),
         }
     }
-    pub(in crate::domain_computation::primary_graph) fn claim_arc<T>(
-        &self,
-        execution: &ExecutionRequest<'_, '_>,
-    ) -> Result<(), Cause> {
+    pub fn claim_arc<T>(&self, execution: &ExecutionRequest<'_, '_>) -> Result<(), Cause> {
         let bytes = std::alloc::Layout::new::<[usize; 2]>()
             .extend(std::alloc::Layout::new::<T>())
             .ok()
@@ -68,9 +65,7 @@ impl SourceFactsAllocation {
             .is_some()
     }
 
-    pub(in crate::domain_computation) fn open(
-        execution: &ExecutionRequest<'_, '_>,
-    ) -> Result<Arc<Self>, Cause> {
+    pub fn open(execution: &ExecutionRequest<'_, '_>) -> Result<Arc<Self>, Cause> {
         let bytes = (size_of::<Self>() + 2 * size_of::<usize>()) as u64;
         let result = execution.run_native_with_checkpoint(|context| {
             memory::reserve(execution, context.has_accounting(), bytes)
@@ -84,11 +79,7 @@ impl SourceFactsAllocation {
         }))
     }
 
-    pub(in crate::domain_computation) fn claim(
-        &self,
-        execution: &ExecutionRequest<'_, '_>,
-        bytes: u64,
-    ) -> Result<(), Cause> {
+    pub fn claim(&self, execution: &ExecutionRequest<'_, '_>, bytes: u64) -> Result<(), Cause> {
         let result = execution.run_native_with_checkpoint(|context| {
             StructuralWalkObservation::checkpoint(context)?;
             let mut backing = self

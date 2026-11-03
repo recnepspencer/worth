@@ -22,17 +22,17 @@ use crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact;
 mod equality;
 mod image_fence;
 mod native_evidence;
-mod root_source;
+pub mod root_source;
 use crate::domain_computation::primary_graph::invariant_projection::EvidenceView;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum FullVerificationDecision {
+pub enum FullVerificationDecision {
     Current,
     Changed,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum FullVerificationStop {
+pub enum FullVerificationStop {
     Alignment(FullVerificationReason),
     /// The selected source or a row it reaches belongs to another source.
     Foreign,
@@ -121,8 +121,7 @@ impl FullVerificationImage<'_> {
         )
     }
 
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn verify_root(
+    pub fn verify_root(
         &self,
         request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         identity: &Arc<RecordedSettlementIdentity>,

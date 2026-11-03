@@ -62,21 +62,19 @@ impl WorthQueryRecoveryHandle {
     }
 
     /// Execution-runtime authority identity this handle's registry belongs to (Q8.20).
-    pub(crate) fn runtime_authority(
+    pub fn runtime_authority(
         &self,
     ) -> crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity {
         self.registry.runtime_authority()
     }
 
     /// Owner-test observation of this handle's instance registry.
-    #[cfg(test)]
-    pub(crate) fn registry_arc(&self) -> Arc<WorthQueryRecoveryHandleRegistry> {
+    pub fn registry_arc(&self) -> Arc<WorthQueryRecoveryHandleRegistry> {
         Arc::clone(&self.registry)
     }
 
     /// Owner-test observation of this handle's opaque membership slot.
-    #[cfg(test)]
-    pub(crate) const fn registry_slot(&self) -> WorthQueryRecoveryRegistrySlot {
+    pub const fn registry_slot(&self) -> WorthQueryRecoveryRegistrySlot {
         self.slot
     }
 
@@ -106,7 +104,7 @@ impl WorthQueryRecoveryHandle {
             .id()
     }
 
-    pub(crate) fn authority_identity(&self) -> WorthQueryRecoveryHandleAuthorityIdentity {
+    pub fn authority_identity(&self) -> WorthQueryRecoveryHandleAuthorityIdentity {
         WorthQueryRecoveryHandleAuthorityIdentity::from_handle(self.identity())
     }
 
@@ -155,13 +153,11 @@ impl WorthQueryRecoveryHandle {
     }
 
     /// Named fixture handle for resolve binding proofs. Not production.
-    #[cfg(test)]
-    pub(crate) fn axis_probe(binding: WorthQueryRecoveryHandleBinding) -> Self {
+    pub fn axis_probe(binding: WorthQueryRecoveryHandleBinding) -> Self {
         let registry = Arc::new(WorthQueryRecoveryHandleRegistry::new());
         Self::axis_probe_in_registry(binding, registry)
     }
 
-    #[cfg(test)]
     pub(crate) fn axis_probe_in_registry(
         binding: WorthQueryRecoveryHandleBinding,
         registry: Arc<WorthQueryRecoveryHandleRegistry>,

@@ -2,17 +2,14 @@ use super::{AdmittedFactKey, RetainedFact, Slot, Slots, StoreDenial};
 use std::cell::{Cell, RefCell};
 use worth_execution::ExecutionArrayBuilder;
 
-pub(in crate::domain_computation::primary_graph) struct Run<T> {
-    pub(in crate::domain_computation::primary_graph) slots: Slots<T>,
-    pub(in crate::domain_computation::primary_graph) used: usize,
+pub struct Run<T> {
+    pub slots: Slots<T>,
+    pub used: usize,
     cursor: Cell<usize>,
 }
 
 impl<T> Run<T> {
-    pub(in crate::domain_computation::primary_graph) fn empty(
-        count: usize,
-        policy: super::StorageControl<'_, '_>,
-    ) -> Result<Self, StoreDenial> {
+    pub fn empty(count: usize, policy: super::StorageControl<'_, '_>) -> Result<Self, StoreDenial> {
         policy.check_live()?;
         let mut slots = ExecutionArrayBuilder::allocate(count, policy.policy())?;
         for _ in 0..count {
@@ -25,7 +22,7 @@ impl<T> Run<T> {
             cursor: Cell::new(0),
         })
     }
-    pub(in crate::domain_computation::primary_graph) fn locate(
+    pub fn locate(
         &self,
         key: &AdmittedFactKey,
         policy: super::StorageControl<'_, '_>,
@@ -77,7 +74,7 @@ impl<T> Run<T> {
         self.cursor.set(index + 1);
         self.slots[index].borrow_mut().take().unwrap()
     }
-    pub(in crate::domain_computation::primary_graph) fn merge(
+    pub fn merge(
         left: Self,
         right: Self,
         policy: super::StorageControl<'_, '_>,

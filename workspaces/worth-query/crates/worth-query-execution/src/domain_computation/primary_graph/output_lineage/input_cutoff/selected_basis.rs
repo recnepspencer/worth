@@ -8,7 +8,7 @@ use super::verification::InputCutoffVerificationStop;
 
 /// This is preparation evidence for cutoff verification, not mutation authority.
 /// Its private fields cannot pair an unrelated position with the issued handle.
-pub(in crate::domain_computation::primary_graph) struct PreparedInputCutoffBasis<'snapshot> {
+pub struct PreparedInputCutoffBasis<'snapshot> {
     snapshot: &'snapshot SnapshotHandle,
     positioned: PositionedRelationalSnapshot,
 }

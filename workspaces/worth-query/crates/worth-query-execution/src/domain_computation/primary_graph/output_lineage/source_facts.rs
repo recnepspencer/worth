@@ -2,7 +2,6 @@
 use super::{ComputationSourceEvidence, CurrentComputation};
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact;
 use std::ops::Deref;
-#[cfg(test)]
 use std::sync::Arc;
 type Fact = WorthQueryApplicationObservedFact;
 use crate::domain_computation::primary_graph::application_checkpoint::facts::{
@@ -12,7 +11,7 @@ use crate::domain_computation::primary_graph::application_checkpoint::facts::{
 /// Retained postconditions have no slice projection or Deref. Only the one
 /// computation-current door can expose them for comparison.
 #[derive(Clone, Debug)]
-pub(in crate::domain_computation::primary_graph) struct RetainedSourceFacts {
+pub struct RetainedSourceFacts {
     source: ComputationSourceEvidence,
     facts: FactPayload,
     payload_bytes: Option<u64>,
@@ -48,9 +47,7 @@ impl RetainedSourceFacts {
         self.payload_bytes = bytes;
         self
     }
-    pub(in crate::domain_computation::primary_graph) fn for_comparison(
-        &self,
-    ) -> Option<ComparableSourceFacts> {
+    pub fn for_comparison(&self) -> Option<ComparableSourceFacts> {
         Some(ComparableSourceFacts {
             computation: self.source.certify_current()?,
             facts: self.facts.clone(),
@@ -66,13 +63,12 @@ impl RetainedSourceFacts {
     pub(super) fn postconditions(&self) -> &FactPayload {
         &self.facts
     }
-    pub(in crate::domain_computation::primary_graph) fn len(&self) -> usize {
+    pub fn len(&self) -> usize {
         self.facts.len()
     }
     pub(in crate::domain_computation::primary_graph) fn is_empty(&self) -> bool {
         self.facts.is_empty()
     }
-    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn for_test(
         stale: bool,
         facts: Arc<[Fact]>,

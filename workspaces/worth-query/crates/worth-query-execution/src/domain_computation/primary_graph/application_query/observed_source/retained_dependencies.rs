@@ -14,7 +14,6 @@ mod comparison;
 mod coverage;
 use coverage::RetainedQuerySource;
 
-#[cfg(test)]
 mod storage_court;
 
 /// Move-only native ownership of all original set and row dependency descriptors.

@@ -5,7 +5,7 @@ mod selected_checkpoint_finish;
 mod selected_finish;
 mod supersession;
 pub(in crate::domain_computation::primary_graph) use selected_checkpoint_finish::PreparedSelectedCheckpointFinish;
-mod checkpoint_finish;
+pub mod checkpoint_finish;
 pub(in crate::domain_computation::primary_graph) use checkpoint_finish::CheckpointFinishStop;
 
 use super::post_commit::release_completed_member;
@@ -16,7 +16,7 @@ use super::*;
 impl WorthQueryOutputDemandRegistry {
     /// The selected required wave pays the first registry transition before
     /// changing the record. The ordinary entry retains its historical class.
-    pub(in crate::domain_computation::primary_graph) fn begin_admitted<'a>(
+    pub fn begin_admitted<'a>(
         &'a self,
         interest: &'a WorthQueryOutputDemandInterest,
     ) -> Result<
@@ -115,7 +115,7 @@ pub(super) fn begin_record(
 }
 
 impl WorthQueryOutputDemandRegistry {
-    pub(in crate::domain_computation::primary_graph) fn finish_scheduling(
+    pub fn finish_scheduling(
         &self,
         interest: &WorthQueryOutputDemandInterest,
         performed_source: Option<WorthQueryPerformedOutputDemandSource>,
@@ -183,8 +183,7 @@ impl WorthQueryOutputDemandRegistry {
         drop(released_prerequisites);
     }
 
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn finish_execution_failure(
+    pub fn finish_execution_failure(
         &self,
         interest: &WorthQueryOutputDemandInterest,
         denial: &mut WorthQueryOutputDemandDenial,
@@ -224,8 +223,7 @@ impl WorthQueryOutputDemandRegistry {
         drop(released_prerequisites);
     }
 
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn finish_checkpoint(
+    pub fn finish_checkpoint(
         &self,
         interest: &WorthQueryOutputDemandInterest,
         claim: WorthQueryOutputClaimIdentity,

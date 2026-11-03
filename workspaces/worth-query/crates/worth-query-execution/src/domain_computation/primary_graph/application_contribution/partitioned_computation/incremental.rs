@@ -21,20 +21,20 @@
 //! combines of the run's own tree, so a ceiling names the partition a full
 //! run would name.
 
-mod carriage;
+pub mod carriage;
 mod item_bounds;
-mod native_reads;
-mod prepare_ranges;
-mod prepare_rekeys;
+pub mod native_reads;
+pub mod prepare_ranges;
+pub mod prepare_rekeys;
 pub(in crate::domain_computation::primary_graph) use native_reads::NativeComputationReads;
 mod deposit;
-mod next_tree;
-mod observed;
+pub mod next_tree;
+pub mod observed;
 pub use observed::full_partitioned_computation_preparations_on_this_thread_for_test;
 pub(super) use observed::observe_full_preparation;
 mod prepare;
 use super::preparation_work::PreparationWork;
-mod prior_absence;
+pub mod prior_absence;
 mod published_state;
 pub(in crate::domain_computation) use published_state::observe_discarded;
 pub(in crate::domain_computation::primary_graph) use published_state::observe_published;
@@ -44,9 +44,9 @@ pub use published_state::{
     WorthQueryPublishedComputationStateForTest,
 };
 mod carried_partitions;
-mod partition_metadata;
-mod recording;
-mod retained;
+pub mod partition_metadata;
+pub mod recording;
+pub mod retained;
 mod sealing;
 mod typed_prior;
 pub(in crate::domain_computation::primary_graph) use deposit::ComputationDeposit;
@@ -54,11 +54,11 @@ pub(in crate::domain_computation::primary_graph) use prior_absence::CompletedCom
 pub(in crate::domain_computation) use prior_absence::{
     PriorAbsence, SealedComputationRetention, Suppression,
 };
-mod tree_attempt;
+pub mod tree_attempt;
 mod tree_edits;
 mod tree_membership;
-mod tree_report;
-mod tree_update;
+pub mod tree_report;
+pub mod tree_update;
 pub(in super::super) use observed::observe_retained_full_tree;
 pub use observed::partitioned_computation_tree_work_on_this_thread_for_test;
 pub use tree_report::{
@@ -88,7 +88,7 @@ use crate::domain_computation::primary_graph::application_attempt::{
 };
 use crate::domain_computation::primary_graph::WorthQueryApplicationOperationInvariantProjectionReader;
 
-type Reader<'reader, 'runtime, Schema, Operation> =
+pub type Reader<'reader, 'runtime, Schema, Operation> =
     WorthQueryApplicationOperationInvariantProjectionReader<'reader, 'runtime, Schema, Operation>;
 
 /// How a retained fact stands at this attempt's snapshot. Only the fact
@@ -106,7 +106,7 @@ enum KeyMovement {
 /// a retained call.
 pub(in crate::domain_computation::primary_graph) struct Comparator(());
 
-const COMPARATOR: Comparator = Comparator(());
+pub const COMPARATOR: Comparator = Comparator(());
 
 /// What the comparator decided before any owner call ran.
 pub(super) enum Begun<Key, Item, Reduced> {
@@ -121,11 +121,11 @@ pub(super) enum Begun<Key, Item, Reduced> {
 }
 
 /// The basis a full run retains its state under, opaque outside this module.
-pub(super) struct RetainedBasisToken(RetainedBasis);
+pub struct RetainedBasisToken(RetainedBasis);
 
 /// A comparison of a retained run under the same basis: which of its calls
 /// read a fact that moved, and the facts each call read.
-pub(super) struct IncrementalRun<Key, Item, Reduced> {
+pub struct IncrementalRun<Key, Item, Reduced> {
     basis: RetainedBasis,
     prior: TypedPrior<Key, Item, Reduced>,
     /// Whether a fact the membership read moved.
@@ -250,7 +250,6 @@ where
         .filter_map(|ordinal| retained.facts.at_ordinal(*ordinal));
     for (key, fact, readers) in all.chain(dirty) {
         super::super::super::fact_verification_observation::retained_computation();
-        #[cfg(test)]
         let _read = observed::RetainedFactComparison::enter();
         let movement = match reader.observe_retained(execution, &COMPARATOR, key) {
             Ok(observed) => match FactMovement::between(fact, &observed).movement() {
@@ -282,9 +281,6 @@ where
     Ok(Begun::Incremental(run))
 }
 
-#[cfg(test)]
-mod tests;
-
 /// Enters the facts a carried call read as that call's admitted reads.
 fn enter<'key, Schema, Operation>(
     reader: &mut Reader<'_, '_, Schema, Operation>,
@@ -297,10 +293,4 @@ fn enter<'key, Schema, Operation>(
     for key in keys {
         reader.enter_carried(&COMPARATOR, key.clone(), read);
     }
-}
-
-#[cfg(test)]
-pub(in crate::domain_computation::primary_graph) fn sealed_run_for_lineage_test(
-) -> SealedComputationRun {
-    tests::sealed_run_for_lineage_test()
 }

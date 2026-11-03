@@ -26,19 +26,19 @@ struct ReadyCell {
 /// Its weak control block prevents address reuse while an old row exists.
 pub(super) struct OutputCheckpointGeneration(Weak<ReadyCell>);
 impl OutputCheckpointGeneration {
-    pub(super) fn same(&self, other: &Self) -> bool {
+    pub fn same(&self, other: &Self) -> bool {
         Weak::ptr_eq(&self.0, &other.0)
     }
 }
 
 /// Prepared before an output effect. It cannot be read as a Ready completion.
-pub(in crate::domain_computation::primary_graph) struct PreparedReadyBacking {
+pub struct PreparedReadyBacking {
     cell: Arc<ReadyCell>,
 }
 
 /// The completed cell pins the original authority.
 #[derive(Clone)]
-pub(in crate::domain_computation::primary_graph) struct ReadyCompletion(Arc<ReadyCell>);
+pub struct ReadyCompletion(Arc<ReadyCell>);
 
 impl<Schema>
     crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>
@@ -61,11 +61,11 @@ impl<Schema>
 }
 
 impl PreparedReadyBacking {
-    pub(super) fn generation(&self) -> OutputCheckpointGeneration {
+    pub fn generation(&self) -> OutputCheckpointGeneration {
         OutputCheckpointGeneration(Arc::downgrade(&self.cell))
     }
 
-    pub(super) fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             cell: Arc::new(ReadyCell {
                 completion: OnceLock::new(),
@@ -76,8 +76,7 @@ impl PreparedReadyBacking {
         }
     }
 
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn for_test() -> Self {
+    pub fn for_test() -> Self {
         Self::new()
     }
 
@@ -114,10 +113,7 @@ impl PreparedReadyBacking {
         self
     }
 
-    pub(in crate::domain_computation::primary_graph) fn complete(
-        self,
-        completion: WorthQueryCompletedOutputDemand,
-    ) -> ReadyCompletion {
+    pub fn complete(self, completion: WorthQueryCompletedOutputDemand) -> ReadyCompletion {
         assert!(self.cell.completion.set(completion).is_ok());
         ReadyCompletion(self.cell)
     }
@@ -135,7 +131,7 @@ impl Deref for ReadyCompletion {
 }
 
 impl ReadyCompletion {
-    pub(super) fn generation(&self) -> OutputCheckpointGeneration {
+    pub fn generation(&self) -> OutputCheckpointGeneration {
         OutputCheckpointGeneration(Arc::downgrade(&self.0))
     }
 
@@ -167,16 +163,12 @@ impl ReadyCompletion {
     }
 }
 
-#[cfg(test)]
 impl ReadyCompletion {
-    pub(in crate::domain_computation::primary_graph) fn for_test(
-        completion: WorthQueryCompletedOutputDemand,
-    ) -> Self {
+    pub fn for_test(completion: WorthQueryCompletedOutputDemand) -> Self {
         PreparedReadyBacking::new().complete(completion)
     }
 }
 
-#[cfg(test)]
 impl PreparedReadyBacking {
     pub(in crate::domain_computation::primary_graph) fn for_registry_test() -> Self {
         Self::new()

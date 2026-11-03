@@ -5,7 +5,7 @@ use worth_relational::facade::runtime::{
     PinnedAggregateReadDenialKind as Denial, RelationalPinnedReadAdmissionDenial, RelationalRuntime,
 };
 impl AggregateObservation {
-    pub(in crate::domain_computation::primary_graph) fn remains_equal(
+    pub fn remains_equal(
         &self,
         runtime: &RelationalRuntime,
         execution: &ExecutionRequest<'_, '_>,
@@ -31,7 +31,7 @@ impl AggregateObservation {
             Err(stop) => Err(Failure::Execution(stop.into())),
         }
     }
-    pub(in crate::domain_computation::primary_graph) fn remains_equal_at(
+    pub fn remains_equal_at(
         &self,
         pin: &RelationalPinnedRead,
         execution: &ExecutionRequest<'_, '_>,

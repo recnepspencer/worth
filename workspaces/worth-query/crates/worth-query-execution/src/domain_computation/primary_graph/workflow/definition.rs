@@ -1,8 +1,8 @@
 mod codec;
-mod compilation;
+pub mod compilation;
 mod condition;
 mod dependencies;
-mod facts;
+pub mod facts;
 mod global_actions;
 mod inbound_codec;
 mod preparation;
@@ -21,7 +21,6 @@ pub use condition::WorkflowConditionOperand;
 pub(in crate::domain_computation::primary_graph) use condition::{
     encode_draft, encode_operands, CompiledWorkflowCondition, CompiledWorkflowConditionExpression,
 };
-#[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use dependencies::WorkflowRetainedNode;
 pub(in crate::domain_computation::primary_graph) use dependencies::{
     read_definition_dependencies, WorkflowDefinitionDependencies,

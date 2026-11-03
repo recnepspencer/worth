@@ -1,0 +1,377 @@
+//! Public leased preparation probes, isolated by process because execution
+//! admits exactly one physical authority for a process lifetime. Query's other
+//! unit-test owners have their own authority; this scope cannot replace it.
+
+pub use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_compare_denial::control_stopped_outcome;
+pub use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_compare_denial::provider_compare_denied;
+pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitDenialKind as Kind;
+pub use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::outcome::WorthQueryProviderProgressionOutcome as Outcome;
+pub use worth_query_execution::facade::application_contribution::WorthQueryManagedComputationResourceDenial as Resource;
+pub use worth_query_execution::facade::application_contribution::WorthQueryMemoryLimitLevel as Level;
+pub use worth_query_execution::facade::domain_computation::WorthQueryProviderCompareAndCommitDenial as Compare;
+pub use worth_query_execution::facade::domain_computation::WorthQueryProviderSessionCommitStop as Stop;
+pub use std::num::NonZeroUsize;
+pub use std::sync::OnceLock;
+pub use worth_execution::CancellationToken;
+pub use worth_execution::ExecutionAuthority;
+pub use worth_execution::ExecutionAuthorityConfig;
+pub use worth_execution::LeaseRequest;
+pub use worth_foundational::DeterminismContract;
+pub use worth_foundational::ExecutionBudget;
+pub use worth_foundational::ExecutionPosture;
+pub use worth_foundational::ExecutionRequestPolicy;
+pub use worth_relational::facade::config::CascadeDeletePolicy;
+pub use worth_relational::facade::config::CrossContextPolicy;
+pub use worth_relational::facade::history::BranchId;
+pub use worth_relational::facade::identity::KindId;
+pub use worth_relational::facade::identity::PartitionId;
+pub use worth_relational::facade::indexes::DerivedIndexBuildRequest;
+pub use worth_relational::facade::indexes::DerivedIndexDefinition;
+pub use worth_relational::facade::indexes::DerivedIndexExecutionDenialKind;
+pub use worth_relational::facade::indexes::DerivedIndexId;
+pub use worth_relational::facade::indexes::DerivedIndexKind;
+pub use worth_relational::facade::indexes::RelatedEntityEndpoint;
+pub use worth_relational::facade::mvcc::RelationalTransactionIntent;
+pub use worth_relational::facade::runtime::RelationalRuntime;
+pub use worth_relational::facade::runtime::RelationalRuntimeApi;
+pub use worth_relational::facade::schema::EntityKindRegistration;
+pub use worth_relational::facade::schema::KindAspectContractDeclarations;
+pub use worth_relational::facade::schema::RelationIntegrityDeclarations;
+pub use worth_relational::facade::schema::RelationKindRegistration;
+pub use worth_relational::facade::schema::RelationalSchemaRegistry;
+pub use worth_relational::facade::schema::SchemaId;
+pub use worth_relational::facade::schema::SchemaVersionId;
+pub use worth_relational::facade::symbols::ClientKey;
+pub use worth_relational::facade::transactions::AspectFieldPatch;
+pub use worth_relational::facade::transactions::CreateIntent;
+pub use worth_relational::facade::transactions::EntitySpec;
+pub use worth_relational::facade::transactions::MutationIntent;
+pub use worth_relational::facade::transactions::TransactionCommitError;
+pub use worth_relational::facade::transactions::WorkerIntentBatch;
+
+pub fn in_isolated_process(test_name: &str, run: impl FnOnce()) {
+    let test_name = test_name.split_once("::").unwrap().1;
+    const PROBE: &str = "WORTH_RELATIONAL_PROVIDER_STOP_PROBE";
+    if std::env::var(PROBE).as_deref() == Ok(test_name) {
+        run();
+        return;
+    }
+    let output = worth_query_testkit_execution_primary_graph_application_attempt_2::process_deadline::output(
+        std::process::Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", test_name, "--nocapture"])
+            .env(PROBE, test_name),
+    )
+    .expect("isolated authority probe starts");
+    assert!(
+        output.status.success(),
+        "isolated probe failed:\n{}\n{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert!(
+        String::from_utf8_lossy(&output.stdout).contains("1 passed"),
+        "probe ran its exact test"
+    );
+}
+
+pub fn authority() -> &'static ExecutionAuthority {
+    static AUTHORITY: OnceLock<ExecutionAuthority> = OnceLock::new();
+    AUTHORITY.get_or_init(|| {
+        ExecutionAuthority::try_construct(ExecutionAuthorityConfig {
+            max_workers: NonZeroUsize::new(2).unwrap(),
+            charged_memory_bytes: Some(64 * 1024 * 1024),
+        })
+        .expect("one authority in this probe process")
+    })
+}
+
+pub fn request(memory: u64, work: u64) -> LeaseRequest {
+    LeaseRequest {
+        policy: ExecutionRequestPolicy::new(
+            ExecutionPosture::Automatic,
+            DeterminismContract::CanonicalBitwise,
+            ExecutionBudget::new(NonZeroUsize::MIN, Some(memory), Some(work)),
+        ),
+        cancellation: CancellationToken::new(),
+        deadline: None,
+    }
+}
+
+pub fn schema() -> RelationalSchemaRegistry {
+    RelationalSchemaRegistry::new()
+        .register_entity_kind(EntityKindRegistration {
+            kind_id: KindId(1),
+            kind_name: "probe.entity".to_owned(),
+            schema_id: SchemaId("provider-stop-probe".to_owned()),
+            schema_version_id: SchemaVersionId(1),
+            aspect_contract_declarations: KindAspectContractDeclarations::default(),
+        })
+        .and_then(|registry| {
+            registry.register_relation_kind(RelationKindRegistration {
+                kind_id: KindId(2),
+                kind_name: "probe.relation".to_owned(),
+                schema_id: SchemaId("provider-stop-probe".to_owned()),
+                schema_version_id: SchemaVersionId(1),
+                cross_context_policy: CrossContextPolicy::AllowExplicit,
+                cascade_delete_policy: CascadeDeletePolicy::CascadeDeleteRelations,
+                aspect_contract_declarations: KindAspectContractDeclarations::default(),
+                relation_integrity: RelationIntegrityDeclarations::default(),
+            })
+        })
+        .expect("declared probe entity and relation kinds")
+}
+
+pub fn transaction(
+    runtime: &RelationalRuntime,
+    key: &str,
+) -> worth_relational::facade::mvcc::BranchBoundRelationalTransaction {
+    let (_, basis) = runtime
+        .observe_branch(&runtime.main_branch_identity())
+        .unwrap();
+    let mut transaction = runtime
+        .begin_branch_transaction(&basis, RelationalTransactionIntent::ordinary())
+        .unwrap();
+    transaction
+        .push_batch(
+            WorkerIntentBatch::new(key).push(MutationIntent::Create(CreateIntent::Entity(
+                EntitySpec {
+                    partition_id: PartitionId::main(),
+                    kind_id: KindId(1),
+                    client_key: ClientKey::raw(key),
+                    fields: AspectFieldPatch::default(),
+                },
+            ))),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
+    transaction
+}
+
+pub fn check_requests(request: LeaseRequest, check: impl Fn(Outcome)) {
+    let lease = authority().request_lease(request).unwrap();
+    let host = worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request();
+    check_lease(
+        &worth_execution::ExecutionRequest::serial(&host),
+        &lease,
+        |outcome, _| check(outcome),
+    );
+}
+
+pub fn related_index(runtime: &RelationalRuntime) -> DerivedIndexDefinition {
+    runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(0),
+            name: "probe.related".to_owned(),
+            branch_scoped: true,
+            kind: DerivedIndexKind::RelatedEntityOrdering {
+                relation_kind: KindId(2),
+                parent_endpoint: RelatedEntityEndpoint::SourceParent,
+                child_kind: KindId(1),
+                ordering: Vec::new(),
+            },
+        })
+        .expect("index fixture has identity capacity")
+}
+
+pub fn check_lease(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    lease: &worth_execution::ExecutionResourceLease<'_>,
+    check: impl Fn(Outcome, u32),
+) {
+    let runtime = RelationalRuntimeApi::builder()
+        .schema_registry(schema())
+        .build()
+        .expect("valid native runtime configuration");
+    let created = transaction(&runtime, "source")
+        .commit(execution, &runtime)
+        .unwrap();
+    let index = related_index(&runtime);
+    let index = runtime.index_authority().build_for_commit(
+        &worth_execution::ExecutionRequest::leased(lease),
+        DerivedIndexBuildRequest {
+            source_commit_id: created.commit.commit_id,
+            branch_id: BranchId("main".to_owned()),
+            index_ids: vec![index.index_id],
+        },
+    );
+    assert!(index.generations.is_empty());
+    let denial = index.execution_denial.expect("index preparation refused");
+    let DerivedIndexExecutionDenialKind::Cause(cause) = denial.kind;
+    // Direct index building exercises leased owner work and the same typed
+    // cause conversion as the bootstrap index-build boundary. RequestWorkBudget
+    // creates one child lease, so the full policy lease is ancestor 1.
+    let stop = worth_query_execution::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_stop(cause, denial.partition_identity);
+    let outcome = match stop {
+        Stop::PreEffectDenied(failure) => {
+            provider_compare_denied(Compare::ProviderSession(failure))
+        }
+        Stop::ControlStopped(stopped) => control_stopped_outcome(stopped),
+        _ => panic!("unexpected preparation stop"),
+    };
+    check(outcome, 1);
+
+    let before = runtime
+        .observe_branch(&runtime.main_branch_identity())
+        .unwrap()
+        .0;
+    let error = runtime
+        .prepare_branch_transaction(
+            &worth_execution::ExecutionRequest::leased(lease),
+            transaction(&runtime, "target"),
+        )
+        .expect_err("commit preparation refused");
+    assert!(matches!(error, TransactionCommitError::Execution { .. }));
+    let stop = worth_query_execution::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::commit_execution::stops::transaction_commit_stop(error);
+    let outcome = match stop {
+        Stop::PreEffectDenied(failure) => {
+            provider_compare_denied(Compare::ProviderSession(failure))
+        }
+        Stop::ControlStopped(stopped) => control_stopped_outcome(stopped),
+        _ => panic!("unexpected preparation stop"),
+    };
+    let Outcome::Denied(denial) = &outcome else {
+        panic!("preparation cause folded");
+    };
+    worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::conditional_operation::application_operation_reentry::sealed_commit::denial::tests::assert_preparation_retry(
+        denial,
+    );
+    // Footprint admission reserves directly on this full policy lease before
+    // creating a work child: no ancestors separate it from the policy (0).
+    check(outcome, 0);
+    assert_eq!(
+        runtime
+            .observe_branch(&runtime.main_branch_identity())
+            .unwrap()
+            .0,
+        before
+    );
+}
+
+pub fn resource(stop: Outcome) -> Resource {
+    let Outcome::Denied(failure) = stop else {
+        panic!("wrong provider stop")
+    };
+    let Kind::ExecutionResource { denial, .. } = failure.kind() else {
+        panic!("lost resource cause")
+    };
+    denial
+}
+
+#[test]
+fn work_through_both_public_doors() {
+    in_isolated_process(
+        concat!(module_path!(), "::work_through_both_public_doors"),
+        || {
+            check_requests(request(32 * 1024 * 1024, 0), |stop| {
+                assert_eq!(resource(stop), Resource::WorkExhausted)
+            });
+        },
+    );
+}
+
+#[test]
+fn policy_memory_through_both_public_doors() {
+    in_isolated_process(
+        concat!(module_path!(), "::policy_memory_through_both_public_doors"),
+        || {
+            check_requests(request(0, 1_000_000), |stop| {
+                let Outcome::Denied(failure) = stop else {
+                    panic!("wrong policy stop")
+                };
+                assert!(matches!(
+                    failure.kind(),
+                    Kind::ExecutionResource {
+                        denial: Resource::MemoryLimit {
+                            requested: 1..,
+                            admitted: 0,
+                            level: Level::Policy
+                        },
+                        policy_ancestor: Some(0),
+                        ..
+                    }
+                ));
+            });
+        },
+    );
+}
+
+#[test]
+fn process_memory_through_both_public_doors() {
+    in_isolated_process(
+        concat!(module_path!(), "::process_memory_through_both_public_doors"),
+        || {
+            let competing = authority()
+                .request_lease(request(64 * 1024 * 1024, 1_000_000))
+                .unwrap();
+            let _held = competing.reserve_memory(64 * 1024 * 1024).unwrap();
+            check_requests(request(32 * 1024 * 1024, 1_000_000), |stop| {
+                assert!(matches!(
+                    resource(stop),
+                    Resource::MemoryLimit {
+                        requested: 1..,
+                        admitted: 0,
+                        level: Level::Process,
+                    }
+                ));
+            });
+        },
+    );
+}
+
+#[test]
+fn healthy_fixture_completes_both_leased_preparations() {
+    in_isolated_process(
+        concat!(
+            module_path!(),
+            "::healthy_fixture_completes_both_leased_preparations"
+        ),
+        || {
+            let runtime = RelationalRuntimeApi::builder()
+                .schema_registry(schema())
+                .build()
+                .expect("valid native runtime configuration");
+            let created = transaction(&runtime, "source")
+                .commit(
+                    &worth_execution::ExecutionRequest::serial(
+                        &worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request(),
+                    ),
+                    &runtime,
+                )
+                .unwrap();
+            let index = related_index(&runtime);
+            let lease = authority()
+                .request_lease(request(32 * 1024 * 1024, 1_000_000))
+                .unwrap();
+            let outcome = runtime.index_authority().build_for_commit(
+                &worth_execution::ExecutionRequest::leased(&lease),
+                DerivedIndexBuildRequest {
+                    source_commit_id: created.commit.commit_id,
+                    branch_id: BranchId("main".to_owned()),
+                    index_ids: vec![index.index_id],
+                },
+            );
+            assert!(outcome.execution_denial.is_none());
+            assert!(outcome.basis_denial.is_none());
+            assert!(outcome.failed_indexes.is_empty());
+            assert_eq!(outcome.generations.len(), 1);
+            let before = runtime
+                .observe_branch(&runtime.main_branch_identity())
+                .unwrap()
+                .0;
+            let _prepared = runtime
+                .prepare_branch_transaction(
+                    &worth_execution::ExecutionRequest::leased(&lease),
+                    transaction(&runtime, "target"),
+                )
+                .expect("the same fixture admits ordinary leased preparation");
+            assert_eq!(
+                runtime
+                    .observe_branch(&runtime.main_branch_identity())
+                    .unwrap()
+                    .0,
+                before
+            );
+        },
+    );
+}

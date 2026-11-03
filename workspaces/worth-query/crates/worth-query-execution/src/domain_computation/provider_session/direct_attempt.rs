@@ -21,7 +21,7 @@ pub struct WorthQueryDirectExecutionResourceAttempt {
 }
 
 impl WorthQueryDirectExecutionResourceAttempt {
-    pub(crate) fn start(
+    pub fn start(
         mut reserved: WorthQueryCapacityReservedExecutionResourcePlan,
         binding_authority: &crate::domain_computation::operation_binding::WorthQueryExecutionBoundOperationAuthority,
     ) -> Self {
@@ -51,8 +51,7 @@ impl WorthQueryDirectExecutionResourceAttempt {
         &self.provider_session
     }
 
-    #[cfg(test)]
-    pub(crate) fn provider_session_for_test(&self) -> &WorthQueryExecutionProviderSession {
+    pub fn provider_session_for_test(&self) -> &WorthQueryExecutionProviderSession {
         &self.provider_session
     }
 
@@ -68,14 +67,14 @@ impl WorthQueryDirectExecutionResourceAttempt {
         self.reserved.reservation_count()
     }
 
-    pub(crate) fn binding_authority(
+    pub fn binding_authority(
         &self,
     ) -> &crate::domain_computation::operation_binding::WorthQueryExecutionBoundOperationAuthority
     {
         self.provider_session.binding_authority()
     }
 
-    pub(crate) fn release(self) -> WorthQueryDirectExecutionAttemptReleaseReceipt {
+    pub fn release(self) -> WorthQueryDirectExecutionAttemptReleaseReceipt {
         let provider_session_identity = self.provider_session.identity().to_owned();
         drop(self.provider_session);
         WorthQueryDirectExecutionAttemptReleaseReceipt {

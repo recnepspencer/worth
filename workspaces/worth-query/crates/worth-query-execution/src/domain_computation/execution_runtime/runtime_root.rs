@@ -165,7 +165,7 @@ impl WorthQueryExecutionRuntime {
         self.primary_graph = Some(graph);
     }
 
-    pub(crate) fn retain_current_generation(&self) -> Arc<AtomicU64> {
+    pub fn retain_current_generation(&self) -> Arc<AtomicU64> {
         Arc::clone(&self.current_generation)
     }
 

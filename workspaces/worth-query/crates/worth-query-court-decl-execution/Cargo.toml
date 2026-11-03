@@ -1,0 +1,28 @@
+[package]
+name = "worth-query-court-decl-execution"
+autotests = false
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+publish = false
+
+[dev-dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+worth-execution = { path = "../../../../crates/worth-execution" }
+worth-foundational = { path = "../../../../crates/worth-foundational" }
+worth-query-decl = { path = "../worth-query-decl" }
+worth-query-execution = { path = "../worth-query-execution" }
+worth-query-installation = { path = "../worth-query-installation" }
+worth-query-testkit-execution-decl = { path = "../worth-query-testkit-execution-decl" }
+worth-query-testkit-execution-primary-graph-application-attempt-2 = { path = "../worth-query-testkit-execution-primary-graph-application-attempt-2" }
+worth-relational = { path = "../../../../crates/worth-relational" }
+worth-runtime-bridge = { path = "../../../../crates/worth-runtime-bridge" }
+
+[[test]]
+name = "worth_query_court_decl_execution"
+path = "tests/worth_query_court_decl_execution.rs"
+
+[lints]
+workspace = true

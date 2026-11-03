@@ -23,13 +23,11 @@ impl<Query> WorthQueryObservedResultSet<Query> {
         Self { source }
     }
 
-    pub(in crate::domain_computation) fn idempotency_identity(&self) -> [u8; 32] {
+    pub fn idempotency_identity(&self) -> [u8; 32] {
         self.source.idempotency_identity().bytes()
     }
 
-    pub(in crate::domain_computation::primary_graph) fn source(
-        &self,
-    ) -> &WorthQueryObservedSource<Query> {
+    pub fn source(&self) -> &WorthQueryObservedSource<Query> {
         &self.source
     }
 
@@ -56,10 +54,7 @@ impl<Query> WorthQueryObservedResultSet<Query> {
             .components
             .as_ref()
     }
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn selection_for_test(
-        &self,
-    ) -> &super::WorthQueryObservedRootSelection {
+    pub fn selection_for_test(&self) -> &super::WorthQueryObservedRootSelection {
         self.source
             .source_meaning
             .footprint()

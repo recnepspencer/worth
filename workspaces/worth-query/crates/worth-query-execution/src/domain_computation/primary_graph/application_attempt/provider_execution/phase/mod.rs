@@ -1,4 +1,4 @@
-mod prepared;
+pub mod prepared;
 // The managed provider progression phases live beneath `prepared::running::progression`,
 // whose private state they consume. This parent exposes only the opaque permits needed by
 // the surrounding application-attempt owner.
@@ -22,5 +22,4 @@ pub(super) use prepared::running::progression::progressed::finish_application_co
 pub(super) use prepared::running::{
     start_managed_application_commit,
 };
-#[cfg(test)]
 pub(super) use prepared::running::WorthQueryRunningApplicationCommit;

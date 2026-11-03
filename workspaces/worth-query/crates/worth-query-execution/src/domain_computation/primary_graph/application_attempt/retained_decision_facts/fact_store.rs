@@ -4,20 +4,16 @@ use super::{AdmittedFactKey, RetainedFact, RetainedFactStore, StorageControl, St
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact as Fact;
 use worth_execution::{ExecutionArray, ExecutionArrayIntoIter};
 
-pub(in crate::domain_computation::primary_graph) struct AuthoringSourceFacts {
+pub struct AuthoringSourceFacts {
     store: RetainedFactStore<Fact>,
     failure: Option<StoreDenial>,
 }
-pub(in crate::domain_computation::primary_graph) struct RetainedSourceFacts(
-    ExecutionArray<RetainedFact<Fact>>,
-);
+pub struct RetainedSourceFacts(ExecutionArray<RetainedFact<Fact>>);
 pub(in crate::domain_computation::primary_graph) struct RetainedSourceFactValues(
     ExecutionArrayIntoIter<RetainedFact<Fact>>,
 );
 impl AuthoringSourceFacts {
-    pub(in crate::domain_computation::primary_graph) fn new(
-        control: StorageControl<'_, '_>,
-    ) -> Result<Self, StoreDenial> {
+    pub fn new(control: StorageControl<'_, '_>) -> Result<Self, StoreDenial> {
         Ok(Self {
             store: RetainedFactStore::new(control)?,
             failure: None,
@@ -38,7 +34,7 @@ impl AuthoringSourceFacts {
             failure: None,
         }
     }
-    pub(in crate::domain_computation::primary_graph) fn capture(
+    pub fn capture(
         &mut self,
         fact: Fact,
         control: StorageControl<'_, '_>,
@@ -108,7 +104,7 @@ impl AuthoringSourceFacts {
                     .ok_or(StoreDenial::ConflictingBody)
             })
     }
-    pub(in crate::domain_computation::primary_graph) fn finish(
+    pub fn finish(
         self,
         control: StorageControl<'_, '_>,
     ) -> Result<RetainedSourceFacts, StoreDenial> {
@@ -119,7 +115,7 @@ impl AuthoringSourceFacts {
     }
 }
 impl RetainedSourceFacts {
-    pub(in crate::domain_computation::primary_graph) fn len(&self) -> usize {
+    pub fn len(&self) -> usize {
         self.0.len()
     }
     pub(in crate::domain_computation::primary_graph) fn into_values(

@@ -48,7 +48,7 @@ impl WorthQueryProductBranchCloseReceipt {
     }
 }
 
-pub(crate) enum WorthQueryProductBranchCloseScope {
+pub enum WorthQueryProductBranchCloseScope {
     Workspace,
     Application,
 }
@@ -65,9 +65,7 @@ impl WorthQueryPendingProductBranchClose {
         &self.occurrence
     }
 
-    pub(crate) fn into_cleanup(
-        self,
-    ) -> (WorthQueryProductBranch, WorthQueryProductBranchOwnerCleanup) {
+    pub fn into_cleanup(self) -> (WorthQueryProductBranch, WorthQueryProductBranchOwnerCleanup) {
         (
             self.branch,
             WorthQueryProductBranchOwnerCleanup::new(self.runtime, self.cleanup_identity),
@@ -86,7 +84,7 @@ impl WorthQueryPendingProductBranchClose {
 }
 
 impl WorthQueryProductRuntime {
-    pub(crate) fn begin_product_branch_close(
+    pub fn begin_product_branch_close(
         &self,
         branch: WorthQueryProductBranch,
         scope: WorthQueryProductBranchCloseScope,

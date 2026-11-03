@@ -23,7 +23,7 @@ pub(in crate::domain_computation) struct WorthQueryPreparedQueryPin {
     binding: worth_query_installation::facade::ApplicationSchemaBindingIdentity,
 }
 impl WorthQueryManagedGraphWorkSession {
-    pub(in crate::domain_computation) fn prepare_query_read(
+    pub fn prepare_query_read(
         &self,
         basis: &WorthQueryApplicationBasisIdentity,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -58,7 +58,7 @@ impl WorthQueryManagedGraphWorkSession {
     /// Bind an existing side pin to this already admitted session's identity.
     /// Equal roots share immutable custody. A changed admitted root pins its
     /// own state, so post-read currentness retains its answer and work.
-    pub(in crate::domain_computation) fn prepare_query_read_from_pin(
+    pub fn prepare_query_read_from_pin(
         &self,
         basis: &WorthQueryApplicationBasisIdentity,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -107,12 +107,10 @@ impl WorthQueryManagedGraphWorkSession {
     }
 }
 impl WorthQueryPreparedSessionRead {
-    pub(in crate::domain_computation) fn retained_pin(
-        &self,
-    ) -> std::sync::Arc<WorthQueryPreparedQueryPin> {
+    pub fn retained_pin(&self) -> std::sync::Arc<WorthQueryPreparedQueryPin> {
         std::sync::Arc::clone(&self.pin)
     }
-    pub(in crate::domain_computation) fn execute<T>(
+    pub fn execute<T>(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         read: impl FnOnce(
@@ -182,20 +180,14 @@ impl worth_execution::ChargedBytes for WorthQueryPreparedReadCompletion {
     }
 }
 
-#[cfg(test)]
 impl WorthQueryPreparedQueryPin {
     /// Unit-owner substitution isolates correlated cached-root guards.
     /// The uniquely owned pin is the entire lifetime of this hostile test state.
-    pub(in crate::domain_computation) fn replace_basis_for_test(
-        &mut self,
-        basis: WorthQueryApplicationBasisIdentity,
-    ) {
+    pub fn replace_basis_for_test(&mut self, basis: WorthQueryApplicationBasisIdentity) {
         assert!(crate::domain_computation::execution_observation::is_installed());
         self.basis = basis;
     }
-    pub(in crate::domain_computation) fn basis_for_test(
-        &self,
-    ) -> &WorthQueryApplicationBasisIdentity {
+    pub fn basis_for_test(&self) -> &WorthQueryApplicationBasisIdentity {
         &self.basis
     }
 }

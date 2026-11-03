@@ -16,7 +16,7 @@ use crate::domain_computation::{
 ///
 /// This value is move-only and private to the application-attempt state
 /// machine. The provider session is joined exactly once by [`bind_session`].
-pub(in crate::domain_computation) struct WorthQueryApplicationAttemptBasis {
+pub struct WorthQueryApplicationAttemptBasis {
     core: WorthQueryApplicationAttemptCore,
     product: crate::basis::WorthQueryProductBranchLease,
 }
@@ -49,8 +49,7 @@ pub(in crate::domain_computation) struct WorthQueryApplicationAttemptAffinity {
 }
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub(in crate::domain_computation::primary_graph::application_attempt) enum WorthQueryApplicationAttemptAffinityMismatch
-{
+pub enum WorthQueryApplicationAttemptAffinityMismatch {
     Runtime,
     InstalledOperation,
     ResourceBinding,
@@ -63,8 +62,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) enum Worth
     Product,
 }
 
-pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) trait WorthQueryApplicationAttemptAffinityView
-{
+pub trait WorthQueryApplicationAttemptAffinityView {
     fn runtime_authority(&self) -> WorthQueryRuntimeAuthorityIdentity;
     fn installed_operation(&self) -> &str;
     fn resource_binding(&self) -> &str;
@@ -111,12 +109,7 @@ impl WorthQueryApplicationAttemptAffinityView for WorthQueryProviderSessionTermi
 }
 
 impl WorthQueryApplicationAttemptBasis {
-    pub(in crate::domain_computation::primary_graph::application_attempt) fn capture<
-        Schema,
-        Operation,
-        Input,
-        Scope,
-    >(
+    pub fn capture<Schema, Operation, Input, Scope>(
         application: &super::super::super::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         snapshot: &SnapshotHandle,
@@ -160,9 +153,7 @@ impl WorthQueryApplicationAttemptBasis {
         })
     }
 
-    pub(in crate::domain_computation) fn retained_product(
-        &self,
-    ) -> crate::basis::WorthQueryProductBranchLease {
+    pub fn retained_product(&self) -> crate::basis::WorthQueryProductBranchLease {
         self.product.retained_clone()
     }
 
@@ -181,7 +172,7 @@ impl WorthQueryApplicationAttemptBasis {
         })
     }
 
-    pub(super) fn affinity_mismatches(
+    pub fn affinity_mismatches(
         &self,
         provider_session: &WorthQueryProviderSessionTerminalBinding,
     ) -> std::collections::BTreeSet<WorthQueryApplicationAttemptAffinityMismatch> {
@@ -200,7 +191,7 @@ impl WorthQueryApplicationAttemptBasis {
         mismatches
     }
 
-    pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) fn affinity_mismatches_view(
+    pub fn affinity_mismatches_view(
         &self,
         plan: &impl WorthQueryApplicationAttemptAffinityView,
     ) -> std::collections::BTreeSet<WorthQueryApplicationAttemptAffinityMismatch> {

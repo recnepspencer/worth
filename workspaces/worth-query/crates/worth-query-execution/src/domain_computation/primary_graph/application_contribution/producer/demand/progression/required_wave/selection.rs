@@ -157,7 +157,7 @@ where
 }
 
 /// The same owner-issued Product/native basis for both kinds of wave anchor.
-pub(super) fn select_required_basis<'runtime, Schema>(
+pub fn select_required_basis<'runtime, Schema>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     branch: WorthQueryProductBranch,
@@ -218,6 +218,3 @@ pub(super) fn committed_ready(
         crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority::Committed(_)
     ))
 }
-
-#[cfg(test)]
-mod read_stop_tests;

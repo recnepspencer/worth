@@ -186,7 +186,7 @@ impl WorthQueryRegisteredProviderEffects {
         self.output_correspondence.binding_type()
     }
 
-    pub(super) fn expected_steps(&self) -> &[WorthQueryProvisionalEffectStep] {
+    pub fn expected_steps(&self) -> &[WorthQueryProvisionalEffectStep] {
         self.expected_steps.steps()
     }
 
@@ -200,7 +200,7 @@ impl WorthQueryRegisteredProviderEffects {
         self.expected_steps.preparation_work()
     }
 
-    pub(super) const fn batch(&self) -> &WorkerIntentBatch {
+    pub const fn batch(&self) -> &WorkerIntentBatch {
         &self.batch
     }
 
@@ -267,7 +267,7 @@ impl WorthQueryRegisteredProviderEffects {
         ))
     }
 
-    pub(super) fn into_emissions(self) -> WorthQueryAdmittedApplicationEmissionBatch {
+    pub fn into_emissions(self) -> WorthQueryAdmittedApplicationEmissionBatch {
         self.emissions
     }
 

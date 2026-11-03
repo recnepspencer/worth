@@ -1,7 +1,6 @@
 //! The real settlement's readonly seed, separate from its operational read lease.
-#[cfg(test)]
-mod court;
-mod provenance;
+
+pub mod provenance;
 use super::*;
 use crate::basis::WorthQueryProductBranchReadIdentity;
 use crate::domain_computation::primary_graph::{
@@ -11,8 +10,8 @@ use crate::domain_computation::primary_graph::{
 
 /// No variant asserts that a query row or field was produced by this source.
 /// Fresh metadata admission and exact revision/output overlap remain necessary.
-#[cfg_attr(test, derive(Clone))]
-pub(in crate::domain_computation::primary_graph) enum OriginalSettledProducerSource {
+#[derive(Clone)]
+pub enum OriginalSettledProducerSource {
     Committed {
         settlement: Option<Arc<RecordedSettlementIdentity>>,
         publication: Option<WorthQueryProductBranchReadIdentity>,
@@ -35,13 +34,13 @@ pub(in crate::domain_computation::primary_graph) enum OriginalSettledProducerSou
 
 /// One original-request funded header sharing only original immutable backings.
 /// It owns no Product observation, Native reader, Ready cell or commit receipt.
-pub(in crate::domain_computation::primary_graph) struct OriginalSettledProducerObservation {
-    runtime_authority: u64,
-    schema: ApplicationSchemaBindingIdentity,
-    read: WorthQueryProductBranchReadIdentity,
-    source: OriginalSettledProducerSource,
-    correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
-    _memory: Option<worth_execution::ExecutionMemoryReservation>,
+pub struct OriginalSettledProducerObservation {
+    pub runtime_authority: u64,
+    pub schema: ApplicationSchemaBindingIdentity,
+    pub read: WorthQueryProductBranchReadIdentity,
+    pub source: OriginalSettledProducerSource,
+    pub correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
+    pub _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
 impl std::fmt::Debug for OriginalSettledProducerObservation {
@@ -175,19 +174,13 @@ impl OriginalSettledProducerObservation {
         self.read.matches_observation(product)
     }
 
-    pub(in crate::domain_computation::primary_graph) fn read(
-        &self,
-    ) -> &WorthQueryProductBranchReadIdentity {
+    pub fn read(&self) -> &WorthQueryProductBranchReadIdentity {
         &self.read
     }
-    pub(in crate::domain_computation::primary_graph) fn source(
-        &self,
-    ) -> &OriginalSettledProducerSource {
+    pub fn source(&self) -> &OriginalSettledProducerSource {
         &self.source
     }
-    pub(in crate::domain_computation::primary_graph) fn correspondence(
-        &self,
-    ) -> &WorthQueryApplicationOutputCorrespondence {
+    pub fn correspondence(&self) -> &WorthQueryApplicationOutputCorrespondence {
         &self.correspondence
     }
     pub(in crate::domain_computation::primary_graph) fn retain_correspondence(

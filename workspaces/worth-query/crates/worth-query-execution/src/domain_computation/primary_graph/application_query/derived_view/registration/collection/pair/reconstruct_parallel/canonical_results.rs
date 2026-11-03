@@ -14,7 +14,6 @@ impl CanonicalPairResults {
         roots: CanonicalUniqueVec<EntityId>,
         outcome: MapOutcome<PairOutput, Denial>,
     ) -> (Self, Option<Denial>) {
-        #[cfg(test)]
         let charge = match &outcome {
             MapOutcome::Complete { report, .. } | MapOutcome::Stopped { report, .. } => {
                 report.charged_work()
@@ -31,7 +30,6 @@ impl CanonicalPairResults {
                 Some(super::denial::map(reason, roots.as_slice())),
             ),
         };
-        #[cfg(test)]
         crate::domain_computation::primary_graph::application_query::DispatchWitness::settled(
             charge,
             prefix.len(),

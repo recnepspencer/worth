@@ -17,8 +17,7 @@ use crate::domain_computation::primary_graph::conditional_operation::temporal_re
 /// binding itself remains retained. Whole-graph dependencies watch every
 /// commit; the owner's retained touches decide relevance against this set.
 #[derive(Clone, Default)]
-pub(in crate::domain_computation::primary_graph::conditional_operation) struct WorthQueryConditionalCommitWatchSet
-{
+pub struct WorthQueryConditionalCommitWatchSet {
     entities: Option<Arc<WatchEntries>>,
     whole_graph: bool,
 }
@@ -135,8 +134,6 @@ fn capacity() -> Denial {
         "conditional commit watch capacity is exhausted",
     )
 }
-#[cfg(test)]
-mod tests;
 
 fn check_request(execution: &worth_execution::ExecutionRequest<'_, '_>) -> Result<(), Denial> {
     use crate::domain_computation::primary_graph::{

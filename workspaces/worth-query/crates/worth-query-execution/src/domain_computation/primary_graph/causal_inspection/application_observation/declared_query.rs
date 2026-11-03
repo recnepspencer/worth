@@ -61,6 +61,3 @@ impl std::fmt::Debug for WorthQueryApplicationQueryObservation {
             .finish_non_exhaustive()
     }
 }
-
-#[cfg(test)]
-mod tests;

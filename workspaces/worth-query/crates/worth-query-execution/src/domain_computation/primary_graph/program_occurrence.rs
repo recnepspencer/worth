@@ -19,11 +19,11 @@ use worth_query_installation::facade::{
 
 use super::WorthQueryApplicationCommitDenial;
 
-mod activation_cell;
+pub mod activation_cell;
 mod original_meaning;
 mod presented_program;
 pub(in crate::domain_computation) use original_meaning::OriginalProgramMeaning;
-mod revision_rendering;
+pub mod revision_rendering;
 mod support_lifecycle;
 
 pub(in crate::domain_computation::primary_graph) use activation_cell::WorthQueryProgramActivationCell;
@@ -35,7 +35,7 @@ pub(in crate::domain_computation::primary_graph) use support_lifecycle::{
 };
 
 /// The program support one published application runtime retains.
-pub(in crate::domain_computation::primary_graph) struct WorthQueryInstalledProgramSupport<Schema> {
+pub struct WorthQueryInstalledProgramSupport<Schema> {
     native_programs: Box<[Arc<super::application_installation::WorthQuerySupportedProgramRecord>]>,
     roster: Arc<WorthQueryProgramSupportRoster<Schema>>,
     renderings: Box<[AspectValue]>,
@@ -51,7 +51,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryInstalledProgr
 }
 
 impl<Schema> WorthQueryInstalledProgramSupport<Schema> {
-    pub(in crate::domain_computation::primary_graph) fn installed(
+    pub fn installed(
         roster: Arc<WorthQueryProgramSupportRoster<Schema>>,
         activation: WorthQueryProgramActivationCell,
     ) -> Self {
@@ -71,7 +71,7 @@ impl<Schema> WorthQueryInstalledProgramSupport<Schema> {
     }
 
     /// Completes the existing support owner before the assembled runtime is published.
-    pub(in crate::domain_computation::primary_graph) fn complete_native_installation(
+    pub fn complete_native_installation(
         &mut self,
         programs: Box<[Arc<super::application_installation::WorthQuerySupportedProgramRecord>]>,
     ) {
@@ -121,9 +121,7 @@ impl<Schema> WorthQueryInstalledProgramSupport<Schema> {
         self.adoption_admissions.get(revision).copied()
     }
 
-    pub(in crate::domain_computation::primary_graph) const fn activation(
-        &self,
-    ) -> &WorthQueryProgramActivationCell {
+    pub const fn activation(&self) -> &WorthQueryProgramActivationCell {
         &self.activation
     }
 
@@ -131,7 +129,7 @@ impl<Schema> WorthQueryInstalledProgramSupport<Schema> {
     ///
     /// A revision this host never admitted resolves to nothing, so no caller
     /// can present meaning the roster does not carry.
-    pub(in crate::domain_computation::primary_graph) fn present(
+    pub fn present(
         &self,
         revision: &ApplicationProgramRevision,
     ) -> Option<WorthQueryPresentedProgram<'_>> {
@@ -156,7 +154,7 @@ impl<Schema> WorthQueryInstalledProgramSupport<Schema> {
     /// rostered revision whose support is retiring or retired is refused as
     /// retired support, so a caller holding a stale owner learns why it lost
     /// standing.
-    pub(in crate::domain_computation::primary_graph) fn present_for_commit(
+    pub fn present_for_commit(
         &self,
         revision: &ApplicationProgramRevision,
     ) -> Result<WorthQueryPresentedProgram<'_>, WorthQueryApplicationCommitDenial> {
@@ -189,7 +187,7 @@ impl<Schema> WorthQueryInstalledProgramSupport<Schema> {
     ///
     /// A rendering no rostered program answers to resolves to nothing, which is
     /// how a host refuses work it cannot attribute to admitted meaning.
-    pub(in crate::domain_computation::primary_graph) fn rostered_for_rendering(
+    pub fn rostered_for_rendering(
         &self,
         rendering: &AspectValue,
     ) -> Option<&WorthQueryProgramSupportEntry> {
@@ -216,7 +214,7 @@ impl<Schema> WorthQueryInstalledProgramSupport<Schema> {
         self.roster.entry(revision)
     }
 
-    pub(in crate::domain_computation::primary_graph) fn retain_interpretation(
+    pub fn retain_interpretation(
         &self,
         revision: &ApplicationProgramRevision,
     ) -> Option<WorthQueryProgramSupportInterpretation> {
@@ -231,9 +229,7 @@ impl<Schema> WorthQueryInstalledProgramSupport<Schema> {
         self.lifecycle.retain_custody(source, target)
     }
 
-    pub(in crate::domain_computation::primary_graph) const fn lifecycle(
-        &self,
-    ) -> &support_lifecycle::WorthQueryProgramSupportLifecycle {
+    pub const fn lifecycle(&self) -> &support_lifecycle::WorthQueryProgramSupportLifecycle {
         &self.lifecycle
     }
 

@@ -146,7 +146,7 @@ impl WorthQueryProviderSessionFailure {
         self.output_verification_capacity
     }
 
-    pub(in crate::domain_computation) fn checked_read_stopped(
+    pub fn checked_read_stopped(
         stop: Result<
             WorthQueryProviderSessionDenialKind,
             super::WorthQueryProviderSessionControlStopKind,
@@ -209,7 +209,7 @@ impl WorthQueryProviderSessionFailure {
         self.allocation.as_ref()
     }
 
-    pub(in crate::domain_computation) fn with_native_preparation_error(
+    pub fn with_native_preparation_error(
         mut self,
         error: worth_relational::facade::mvcc::TransactionCommitError,
     ) -> Self {

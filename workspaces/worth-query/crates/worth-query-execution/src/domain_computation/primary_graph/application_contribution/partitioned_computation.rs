@@ -21,13 +21,13 @@ mod compute;
 pub(super) use incremental::observe_retained_full_tree;
 mod certification_reuse;
 mod denial;
-mod incremental;
-mod installed;
+pub mod incremental;
+pub mod installed;
 mod items;
 mod plan;
-mod preparation_work;
+pub mod preparation_work;
 mod reader;
-mod routing;
+pub mod routing;
 
 pub use compute::{
     WorthQueryCompletedPartitionedComputation, WorthQueryPreparedPartitionedComputation,
@@ -186,12 +186,7 @@ impl<Reduced> WorthQueryDeterministicReducer<Reduced> {
 }
 
 #[cfg(test)]
-mod attribution_tests;
-#[cfg(test)]
 mod tests;
-
-#[cfg(test)]
-pub(in crate::domain_computation::primary_graph) use incremental::sealed_run_for_lineage_test;
 
 pub(in crate::domain_computation) use incremental::observe_discarded;
 pub(in crate::domain_computation::primary_graph) use incremental::observe_published;

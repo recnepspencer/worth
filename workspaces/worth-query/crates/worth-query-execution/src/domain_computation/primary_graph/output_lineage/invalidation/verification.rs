@@ -22,7 +22,7 @@ use super::source_alignment::SnapshotAlignedMarkState;
 use super::SourceInvalidationOwner;
 
 #[derive(Debug)]
-pub(in crate::domain_computation::primary_graph) enum SettlementVerificationStop {
+pub enum SettlementVerificationStop {
     Alignment,
     Admission(CompanionPreflightStop),
     SourceRead(WorthQuerySourceCurrentnessFailure),
@@ -48,7 +48,7 @@ impl From<super::SettlementRegistrationStop> for SettlementVerificationStop {
     }
 }
 
-pub(in crate::domain_computation::primary_graph) enum DirtyReverification {
+pub enum DirtyReverification {
     Verified(VerifiedDirtySettlement),
     HistoricalCurrent,
     AlreadyCurrent,

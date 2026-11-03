@@ -95,11 +95,11 @@ impl<'run> WorthQuerySessionBoundReadsAndEffects<'run> {
         self.counters
     }
 
-    pub(crate) fn provisional_binding_identity(&self) -> &str {
+    pub fn provisional_binding_identity(&self) -> &str {
         self.affinity.binding().canonical_identity()
     }
 
-    pub(crate) fn provisional_provider(&self) -> &WorthQueryGraphProviderAnchor {
+    pub fn provisional_provider(&self) -> &WorthQueryGraphProviderAnchor {
         self.affinity.provider()
     }
 
@@ -107,15 +107,15 @@ impl<'run> WorthQuerySessionBoundReadsAndEffects<'run> {
         self.affinity.provider_arc()
     }
 
-    pub(crate) fn execution_request(&self) -> worth_execution::ExecutionRequest<'run, 'run> {
+    pub fn execution_request(&self) -> worth_execution::ExecutionRequest<'run, 'run> {
         self.affinity.execution_request()
     }
 
-    pub(crate) fn provider_session_view(&self) -> WorthQueryProviderSessionView<'_> {
+    pub fn provider_session_view(&self) -> WorthQueryProviderSessionView<'_> {
         self.affinity.provider_session_view()
     }
 
-    pub(in crate::domain_computation) fn provider_session_terminal_binding(
+    pub fn provider_session_terminal_binding(
         &self,
     ) -> super::super::super::WorthQueryProviderSessionTerminalBinding {
         self.affinity.terminal_binding()
@@ -126,7 +126,7 @@ impl<'run> WorthQuerySessionBoundReadsAndEffects<'run> {
     /// The descriptive terminal projection is minted only inside the live
     /// session owner; possessing a copied terminal projection cannot admit an
     /// application attempt.
-    pub(in crate::domain_computation) fn bind_application_attempt(
+    pub fn bind_application_attempt(
         &self,
         basis: crate::domain_computation::primary_graph::WorthQueryApplicationAttemptBasis,
     ) -> Result<crate::domain_computation::primary_graph::WorthQueryApplicationAttemptAffinity, ()>
@@ -135,9 +135,7 @@ impl<'run> WorthQuerySessionBoundReadsAndEffects<'run> {
     }
 
     #[allow(dead_code)]
-    pub(in crate::domain_computation) fn provider_session_affinity(
-        &self,
-    ) -> WorthQueryProviderSessionAffinityView<'_> {
+    pub fn provider_session_affinity(&self) -> WorthQueryProviderSessionAffinityView<'_> {
         self.affinity.view()
     }
 
@@ -191,7 +189,7 @@ impl WorthQuerySessionReadAuthority<'_> {
     pub(crate) fn provider(&self) -> &WorthQueryGraphProviderAnchor {
         self.provider
     }
-    pub(crate) fn session(&self) -> WorthQueryProviderSessionView<'_> {
+    pub fn session(&self) -> WorthQueryProviderSessionView<'_> {
         self.session
     }
 }

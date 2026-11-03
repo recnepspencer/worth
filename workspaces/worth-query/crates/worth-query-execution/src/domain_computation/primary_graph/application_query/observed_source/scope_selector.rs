@@ -7,7 +7,7 @@ use crate::domain_computation::primary_graph::WorthQueryObservedScopeSelector;
 impl<Query> WorthQueryObservedSource<Query> {
     /// Original descriptive projection custody. Fresh inspection admission
     /// must precede checking availability or traversing its contents.
-    pub(in crate::domain_computation::primary_graph) fn original_projection(
+    pub fn original_projection(
         &self,
     ) -> Option<&Arc<super::super::projection::retained_projection::OriginalProjection>> {
         self.parameters.projection()
@@ -15,7 +15,7 @@ impl<Query> WorthQueryObservedSource<Query> {
 
     /// A genuine settlement seed, not proof of row or field production.
     /// Metadata must be freshly admitted before inspecting its availability.
-    pub(in crate::domain_computation::primary_graph) fn original_settled_producer(
+    pub fn original_settled_producer(
         &self,
     ) -> Option<&super::super::super::application_output_demand::OriginalSettledProducerObservation>
     {
@@ -24,7 +24,7 @@ impl<Query> WorthQueryObservedSource<Query> {
 
     /// Original completed rows, distinct from the result-set selection meaning.
     /// Descriptive custody only; callers must admit metadata before traversal.
-    pub(in crate::domain_computation::primary_graph) fn original_row_footprints(
+    pub fn original_row_footprints(
         &self,
     ) -> impl ExactSizeIterator<Item = &super::WorthQueryObservedSourceFootprint> {
         self.parameters.row_footprints()
@@ -68,9 +68,7 @@ impl<Query> WorthQueryObservedSource<Query> {
 
     /// The same source under another query marker. Only a caller that has
     /// already checked the query this source names may change its marker.
-    pub(in crate::domain_computation::primary_graph) fn retyped<Other>(
-        &self,
-    ) -> WorthQueryObservedSource<Other> {
+    pub fn retyped<Other>(&self) -> WorthQueryObservedSource<Other> {
         WorthQueryObservedSource {
             expression_context: self.expression_context.clone(),
             runtime_authority: self.runtime_authority,

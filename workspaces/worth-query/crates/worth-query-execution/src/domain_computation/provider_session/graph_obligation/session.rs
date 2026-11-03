@@ -221,9 +221,7 @@ impl WorthQueryManagedGraphWorkSession {
         }
     }
 
-    pub(in crate::domain_computation) fn mutation_product(
-        &self,
-    ) -> Option<&crate::basis::WorthQueryProductBranchLease> {
+    pub fn mutation_product(&self) -> Option<&crate::basis::WorthQueryProductBranchLease> {
         self.mutation_lease()
             .map(WorthQueryApplicationSnapshotLease::product)
     }

@@ -15,7 +15,7 @@ pub(in crate::domain_computation::primary_graph::application_query) struct Worth
 {
     admitted: WorthQueryAdmittedApplicationQueryParameters,
     binding: Option<WorthQueryInstalledApplicationQueryBindingObservation>,
-    rows: worth_execution::ExecutionArray<Arc<WorthQueryObservedSourceMeaning>>,
+    pub rows: worth_execution::ExecutionArray<Arc<WorthQueryObservedSourceMeaning>>,
     producer: Option<
         Arc<super::super::super::application_output_demand::OriginalSettledProducerObservation>,
     >,
@@ -72,9 +72,6 @@ impl WorthQueryRetainedObservedParameters {
         self.binding.as_ref()
     }
 }
-
-#[cfg(test)]
-mod tests;
 
 impl std::ops::Deref for WorthQueryRetainedObservedParameters {
     type Target = WorthQueryAdmittedApplicationQueryParameters;

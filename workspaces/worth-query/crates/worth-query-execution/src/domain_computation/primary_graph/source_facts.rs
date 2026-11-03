@@ -4,14 +4,14 @@ use super::derived_source::DerivedSourceDependencies;
 use super::structural_walk::StructuralWalkDependencies;
 use std::sync::Arc;
 use worth_relational::facade::identity::EntityId;
-mod allocation;
+pub mod allocation;
 mod authorization_currentness;
 pub(in crate::domain_computation::primary_graph) use authorization_currentness::map_source_authorization_currentness;
 pub(in crate::domain_computation) use authorization_currentness::validate_source_principal_facts;
 mod builder;
 mod descriptor;
 mod retention;
-mod revisions;
+pub mod revisions;
 pub(in crate::domain_computation) use allocation::SourceFactsAllocation;
 pub(in crate::domain_computation::primary_graph) use builder::{
     SourceFactReadDenial, SourceFactsBuilder,
@@ -23,15 +23,13 @@ pub(in crate::domain_computation) use revisions::{
 };
 
 #[derive(Debug)]
-pub(in crate::domain_computation::primary_graph) struct SourceFacts {
-    pub(in crate::domain_computation::primary_graph) entities: Vec<EntityId>,
-    pub(in crate::domain_computation::primary_graph) aspects: Vec<WorthQueryObservedFieldRevision>,
-    pub(in crate::domain_computation::primary_graph) adjacencies:
-        Vec<WorthQueryObservedAdjacencyRevision>,
-    pub(in crate::domain_computation::primary_graph) walks: Option<Arc<StructuralWalkDependencies>>,
-    pub(in crate::domain_computation::primary_graph) derived:
-        Option<Arc<DerivedSourceDependencies>>,
-    pub(in crate::domain_computation::primary_graph) allocation: Option<Arc<SourceFactsAllocation>>,
+pub struct SourceFacts {
+    pub entities: Vec<EntityId>,
+    pub aspects: Vec<WorthQueryObservedFieldRevision>,
+    pub adjacencies: Vec<WorthQueryObservedAdjacencyRevision>,
+    pub walks: Option<Arc<StructuralWalkDependencies>>,
+    pub derived: Option<Arc<DerivedSourceDependencies>>,
+    pub allocation: Option<Arc<SourceFactsAllocation>>,
 }
 
 impl PartialEq for SourceFacts {

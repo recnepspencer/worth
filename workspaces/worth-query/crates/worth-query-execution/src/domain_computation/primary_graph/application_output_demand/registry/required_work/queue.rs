@@ -9,21 +9,18 @@ struct QueueState {
     len: usize,
 }
 
-pub(in crate::domain_computation::primary_graph::application_output_demand::registry) struct RequiredWorkQueue
-{
+pub struct RequiredWorkQueue {
     state: Mutex<QueueState>,
 }
 
-pub(in crate::domain_computation::primary_graph::application_output_demand::registry) enum RequiredWorkPop
-{
+pub enum RequiredWorkPop {
     Empty,
     Stale,
     Claimed(RequiredWorkClaim),
 }
 
 impl RequiredWorkQueue {
-    pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn new(
-    ) -> Self {
+    pub fn new() -> Self {
         Self {
             state: Mutex::new(QueueState::default()),
         }
@@ -67,9 +64,7 @@ impl RequiredWorkQueue {
             .expect("funded required queue is finite");
     }
 
-    pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn pop(
-        &self,
-    ) -> RequiredWorkPop {
+    pub fn pop(&self) -> RequiredWorkPop {
         let mut queue = self
             .state
             .lock()

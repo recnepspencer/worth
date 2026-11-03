@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-mod comparison;
+pub mod comparison;
 pub(in crate::domain_computation) use comparison::PrimaryDecisionReadSetComparison;
 
 use super::WorthQueryPrimaryGraphProvider;
@@ -126,7 +126,7 @@ fn provider_rejected() -> WorthQueryDecisionReadSetFailure {
     )
 }
 
-pub(in crate::domain_computation::primary_graph::provider) fn fact_read_set_failure(
+pub fn fact_read_set_failure(
     denial: crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
 ) -> WorthQueryDecisionReadSetFailure {
     denial.into_decision_read_set_failure()

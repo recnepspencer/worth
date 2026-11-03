@@ -104,10 +104,7 @@ impl WorthQueryOutputDemandRegistry {
         }
     }
 
-    #[cfg(test)]
-    pub(in super::super) fn drain_closed_cleanup_admitted(
-        &self,
-    ) -> Result<(), WorthQueryOutputDemandDenial> {
+    pub fn drain_closed_cleanup_admitted(&self) -> Result<(), WorthQueryOutputDemandDenial> {
         let visits = self.state.lock().unwrap().closed_cleanup.len();
         for pass in 0..=visits {
             loop {

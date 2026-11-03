@@ -7,13 +7,8 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationObservedFact,
 };
 
-mod storage;
+pub mod storage;
 pub(super) use storage::SourceFacts;
-
-#[cfg(test)]
-mod indexed_selection;
-#[cfg(test)]
-mod merging;
 
 pub(super) fn validate_source_facts<Schema, Operation, Input, Scope>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -76,7 +71,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
     }
 }
 
-pub(super) fn merge_source_facts(
+pub fn merge_source_facts(
     admitted: Vec<WorthQueryApplicationObservedFact>,
     dependent: Option<RetainedSourceFacts>,
     operation: &str,

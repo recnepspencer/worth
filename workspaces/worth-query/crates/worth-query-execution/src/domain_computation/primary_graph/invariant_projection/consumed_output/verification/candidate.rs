@@ -35,7 +35,6 @@ impl ConsumedOutputEvidence {
         )
     }
 
-    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn verify_candidate_with_admission(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         identity: &Arc<RecordedSettlementIdentity>,

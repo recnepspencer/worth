@@ -1,57 +1,50 @@
 //! Product-local semantic output correspondence owned by Query publication.
 
 pub(in crate::domain_computation) use invalidation::HeadCellRegistrationStop;
-mod source_facts;
+pub mod source_facts;
 mod source_publication;
 pub(in crate::domain_computation::primary_graph) use source_facts::ComparableSourceFacts;
 pub(in crate::domain_computation::primary_graph) use source_facts::RetainedSourceFacts;
 pub(in crate::domain_computation::primary_graph) use source_publication::CoveredSourcePublication;
 pub(in crate::domain_computation::primary_graph) use source_publication::SourcePublication;
-mod computation_source;
+pub mod computation_source;
 mod implementation_build;
 pub(in crate::domain_computation::primary_graph) use computation_source::ComputationSourceEvidence;
 pub(in crate::domain_computation::primary_graph) use computation_source::CurrentComputation;
 mod current_candidate;
-mod current_output;
+pub mod current_output;
 pub(in crate::domain_computation::primary_graph) use current_output::RetainedOutputCurrentnessRead;
-mod denial;
-mod family_selection;
+pub mod denial;
+pub mod family_selection;
 pub(in crate::domain_computation::primary_graph) use family_selection::NativePriorCheckpointOutput;
-mod input_cutoff;
-mod input_reuse_key;
-pub(in crate::domain_computation::primary_graph) mod invalidation;
-mod native_output_witness;
-mod native_prior_checkpoint;
-#[cfg(test)]
-pub(in crate::domain_computation::primary_graph) mod own_write_fixture;
+pub mod input_cutoff;
+pub mod input_reuse_key;
+pub mod invalidation;
+pub mod native_output_witness;
+pub mod native_prior_checkpoint;
+
 mod partition_index;
-mod prepared_slot;
+pub mod prepared_slot;
 mod qualification;
-mod recorded_output;
-mod recorded_source_identity;
-mod required_publication;
-mod required_settlement;
+pub mod recorded_output;
+pub mod recorded_source_identity;
+pub mod required_publication;
+pub mod required_settlement;
 pub(in crate::domain_computation::primary_graph) use required_settlement::AcceptedCurrentCandidate;
 pub(in crate::domain_computation::primary_graph) use required_settlement::BoundCurrentAcceptedOutput;
 pub(in crate::domain_computation::primary_graph) use required_settlement::CurrentAcceptedResult;
 pub(in crate::domain_computation::primary_graph) use required_settlement::CurrentAcceptedStop;
 pub(in crate::domain_computation::primary_graph) use required_settlement::RequiredSettlementStop;
-mod resolution;
+pub mod resolution;
 mod resources;
 mod restoration;
-mod retained_computation;
+pub mod retained_computation;
 pub(in crate::domain_computation::primary_graph) use retained_computation::PriorComputationRecord;
 mod fork_origin;
 mod retention;
-mod settlement_identity;
+pub mod settlement_identity;
 
 pub(in crate::domain_computation) use invalidation::SourceInvalidationOwner;
-#[cfg(test)]
-pub(in crate::domain_computation::primary_graph) mod ownership_oracle;
-#[cfg(test)]
-pub(in crate::domain_computation::primary_graph) mod registry_fixture;
-#[cfg(test)]
-mod tests;
 
 use super::output_family_identity::OutputFamilyIdentity;
 use crate::equality_type_id::EqualityTypeId as TypeId;
@@ -90,13 +83,13 @@ use super::provider::WorthQueryPrimaryGraphCommittedApplication;
 use super::WorthQueryApplicationOutputCorrespondence;
 
 mod binding_inventory;
-mod semantic_source;
+pub mod semantic_source;
 pub(in crate::domain_computation::primary_graph) use semantic_source::SemanticSource;
 
 #[derive(Default)]
-pub(crate) struct WorthQueryApplicationOutputLineage {
+pub struct WorthQueryApplicationOutputLineage {
     implementation_build: Option<worth_foundational::facade::ApplicationBuildIdentity>,
-    by_source: BTreeMap<
+    pub by_source: BTreeMap<
         SemanticSource,
         BTreeMap<
             worth_runtime_world::facade::ProductBranchIncarnation,
@@ -115,18 +108,17 @@ pub(crate) struct WorthQueryApplicationOutputLineage {
 type RecordedGeneration = Vec<Arc<OnceLock<RecordedOutput>>>;
 
 pub(super) struct WorthQueryExactRecordedOutput {
-    pub(super) producing_implementation:
+    pub producing_implementation:
         Option<worth_relational::facade::mvcc::RequiredOutputProducingImplementation>,
-    pub(super) correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
-    pub(super) source_identity: RecordedSourceIdentity,
-    pub(super) source_partition_identity: [u8; 32],
-    pub(super) producer_dependency_identity: Option<[u8; 32]>,
-    pub(super) idempotency_key_identity: [u8; 32],
-    pub(super) runtime_authority: u64,
-    pub(super) schema: ApplicationSchemaBindingIdentity,
-    pub(super) scope:
-        crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
-    pub(super) observed_source_facts: RetainedSourceFacts,
+    pub correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
+    pub source_identity: RecordedSourceIdentity,
+    pub source_partition_identity: [u8; 32],
+    pub producer_dependency_identity: Option<[u8; 32]>,
+    pub idempotency_key_identity: [u8; 32],
+    pub runtime_authority: u64,
+    pub schema: ApplicationSchemaBindingIdentity,
+    pub scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+    pub observed_source_facts: RetainedSourceFacts,
 }
 
 #[derive(Clone)]
@@ -143,34 +135,34 @@ pub(super) struct WorthQueryProducerLineageHead {
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-struct ProductCoordinate {
-    occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
-    generation: u64,
+pub struct ProductCoordinate {
+    pub occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
+    pub generation: u64,
 }
 
-pub(super) struct WorthQueryPriorOutputBindingResolution {
+pub struct WorthQueryPriorOutputBindingResolution {
     pub(super) correspondence: Option<Arc<WorthQueryApplicationOutputCorrespondence>>,
 }
 
 pub(super) struct WorthQueryCurrentOutputCandidate {
     pub(super) consumed_outputs: Arc<[super::invariant_projection::ConsumedOutputEvidence]>,
-    pub(super) verification_requirement: Option<invalidation::FullVerificationReason>,
+    pub verification_requirement: Option<invalidation::FullVerificationReason>,
     pub(super) settlement_identity: Arc<RecordedSettlementIdentity>,
     pub(super) correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
     /// The role the producer of this correspondence outputs to its family.
     pub(super) output_role: String,
-    pub(super) observed_source_facts: RetainedSourceFacts,
+    pub observed_source_facts: RetainedSourceFacts,
     pub(super) native_output_witness: Option<Arc<OnceLock<SealedNativeOutputWitness>>>,
 }
 
-pub(super) struct WorthQueryCurrentOutputFamilyResolution {
+pub struct WorthQueryCurrentOutputFamilyResolution {
     pub(super) family_installed: bool,
     pub(super) ambiguous_publication: bool,
-    pub(super) candidates: Vec<WorthQueryCurrentOutputCandidate>,
+    pub candidates: Vec<WorthQueryCurrentOutputCandidate>,
 }
 
 impl WorthQueryApplicationOutputLineage {
-    pub(super) fn install_output_families(
+    pub fn install_output_families(
         &mut self,
         families: BTreeMap<OutputFamilyIdentity, Vec<(TypeId, String)>>,
     ) {

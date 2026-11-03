@@ -38,7 +38,7 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowPerformedEffect 
 
 /// How a successor relates to the instance whose work it takes over.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum WorkflowSuccession {
+pub enum WorkflowSuccession {
     /// The source's own branch, onto a newer definition of its workflow.
     Migration,
     /// A fork's copy of an instance started on another branch, onto the
@@ -47,7 +47,7 @@ pub(in crate::domain_computation::primary_graph) enum WorkflowSuccession {
 }
 
 /// Admits `resumed`, the target definition as the successor runs it.
-pub(in crate::domain_computation::primary_graph) fn admit_workflow_migration(
+pub fn admit_workflow_migration(
     succession: WorkflowSuccession,
     source: &CompiledWorkflowDefinition,
     resumed: &CompiledWorkflowDefinition,

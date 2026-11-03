@@ -1,5 +1,4 @@
 //! The producer's prior and test-only handoff of completed runs.
-#[cfg(test)]
 use super::retained::SealedComputationRun;
 use super::retained::WorthQueryPartitionedComputationFullCause;
 use crate::domain_computation::primary_graph::application_contribution::InstalledProducerEdition;
@@ -10,10 +9,9 @@ use std::sync::Arc;
 /// installed edition, the state the selected record retained, and that
 /// record.
 #[derive(Clone)]
-pub(in crate::domain_computation) struct ComputationPrior {
+pub struct ComputationPrior {
     pub(super) edition: InstalledProducerEdition,
-    pub(super) retained:
-        Result<Arc<RetainedComputation>, WorthQueryPartitionedComputationFullCause>,
+    pub retained: Result<Arc<RetainedComputation>, WorthQueryPartitionedComputationFullCause>,
     record: Option<PriorComputationRecord>,
     changes: Option<
         crate::domain_computation::primary_graph::output_lineage::invalidation::ComputationChanges,
@@ -21,7 +19,7 @@ pub(in crate::domain_computation) struct ComputationPrior {
 }
 
 impl ComputationPrior {
-    pub(in crate::domain_computation::primary_graph) const fn new(
+    pub const fn new(
         edition: InstalledProducerEdition,
         retained: Result<Arc<RetainedComputation>, WorthQueryPartitionedComputationFullCause>,
         record: Option<PriorComputationRecord>,
@@ -66,7 +64,6 @@ impl ComputationPrior {
     }
 }
 
-#[cfg(test)]
 thread_local! {
     static PRIOR_IN_TEST: std::cell::RefCell<Option<ComputationPrior>> =
         const { std::cell::RefCell::new(None) };
@@ -76,24 +73,22 @@ thread_local! {
 
 /// An attempt no producer runs has no prior and keeps no run. A test hands
 /// it both here.
-#[cfg(test)]
 impl ComputationPrior {
     pub(in crate::domain_computation) fn handed_in_test() -> Option<Self> {
         PRIOR_IN_TEST.with(|prior| prior.borrow().clone())
     }
 
-    pub(super) fn hand_in_test(prior: Option<Self>) {
+    pub fn hand_in_test(prior: Option<Self>) {
         PRIOR_IN_TEST.with(|handed| *handed.borrow_mut() = prior);
     }
 }
 
-#[cfg(test)]
 impl SealedComputationRun {
-    pub(in crate::domain_computation) fn keep_in_test(run: Option<Self>) {
+    pub fn keep_in_test(run: Option<Self>) {
         SEALED_IN_TEST.with(|kept| *kept.borrow_mut() = run);
     }
 
-    pub(super) fn kept_in_test() -> Option<Self> {
+    pub fn kept_in_test() -> Option<Self> {
         SEALED_IN_TEST.with(|kept| kept.borrow_mut().take())
     }
 }

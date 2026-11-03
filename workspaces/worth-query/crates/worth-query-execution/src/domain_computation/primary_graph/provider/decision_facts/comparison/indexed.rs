@@ -19,12 +19,12 @@ use worth_relational::facade::{
 
 // This directory is call-local and descriptive; its map backing is not charged
 // as ExecutionArray payload. Every value is the native owner's exact-root token.
-pub(super) struct PreparedSelections {
-    pub(super) selectors:
+pub struct PreparedSelections {
+    pub selectors:
         BTreeMap<(DerivedIndexId, KindId, AspectFieldLocator), PreparedEntityFieldLookup>,
 }
 impl PreparedSelections {
-    pub(super) fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             selectors: BTreeMap::new(),
         }
@@ -33,7 +33,7 @@ impl PreparedSelections {
         self.selectors.clear();
     }
 
-    pub(super) fn remains_equal(
+    pub fn remains_equal(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         fact: &WorthQueryApplicationObservedFact,
@@ -106,7 +106,7 @@ impl PreparedSelections {
     }
 }
 
-fn comparison_stop(
+pub fn comparison_stop(
     stop: BoundedEntityFieldLookupAdmissionStop<WorthQueryDecisionReadSetFailure>,
 ) -> Result<bool, WorthQueryDecisionReadSetFailure> {
     match stop {
@@ -118,22 +118,5 @@ fn comparison_stop(
         BoundedEntityFieldLookupAdmissionStop::AccountingOverflow => Err(super::super::fact_read_set_failure(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(
             crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::ExecutionRequest(crate::domain_computation::WorthQueryProviderSessionDenialKind::ExecutionResource { denial: crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::WorkCounterOverflow, partition_identity: None, policy_ancestor: None }), "prepared indexed comparison accounting"))),
         BoundedEntityFieldLookupAdmissionStop::ExactBasisRequired => Ok(false),
-    }
-}
-
-#[cfg(test)]
-mod read_fold_tests {
-    use super::*;
-    #[test]
-    fn read_fold_index_accounting_overflow_is_a_request_stop() {
-        let denied = comparison_stop(BoundedEntityFieldLookupAdmissionStop::AccountingOverflow)
-            .expect_err("accounting overflow cannot answer not equal");
-        assert_eq!(denied.kind(), crate::domain_computation::WorthQueryDecisionReadSetDenialKind::ExecutionRequest(crate::domain_computation::WorthQueryProviderSessionDenialKind::ExecutionResource {
-            denial: crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::WorkCounterOverflow,
-            partition_identity: None, policy_ancestor: None,
-        }));
-        assert!(
-            !comparison_stop(BoundedEntityFieldLookupAdmissionStop::ExactBasisRequired).unwrap()
-        );
     }
 }

@@ -143,7 +143,6 @@ impl WorthQueryApplicationAttemptPhase {
         }
     }
 
-    #[cfg(test)]
     pub(super) const fn resource_count(&self) -> usize {
         match &self.0 {
             PhaseState::Registered | PhaseState::InvariantApprovedAfterOverlayDiscard => 1,
@@ -237,7 +236,6 @@ impl WorthQueryApplicationAttemptState {
         self.attempt.affinity().admits_session(session)
     }
 
-    #[cfg(test)]
     pub(super) const fn resource_count(&self) -> usize {
         self.phase.resource_count()
     }

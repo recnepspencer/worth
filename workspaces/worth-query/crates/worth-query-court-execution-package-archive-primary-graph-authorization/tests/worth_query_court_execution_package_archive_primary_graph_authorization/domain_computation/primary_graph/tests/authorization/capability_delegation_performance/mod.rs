@@ -1,0 +1,171 @@
+use worth_query_execution::facade::domain_computation::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use worth_query_installation::facade::WorthQueryCanonicalWorkEvidence;
+use worth_relational::facade::authorization::RelationalAuthorizationObservationCounters;
+
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::authenticated_principal;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::capability_world_installation::installed_capability_world_with_exact_pair_population;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::capability_world_installation::installed_capability_world_with_same_resource_unrelated;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::capability_world_installation::installed_delegated_capability_world_at_depth;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::capability_world_installation::installed_delegated_capability_world_with_unrelated;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::authorization_world_installation::AuthorizationWorld;
+use crate::domain_computation::primary_graph::tests::authorization::capability_progression::admitted_capability_access;
+use crate::domain_computation::primary_graph::tests::authorization::capability_progression::time;
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct DelegationAdmissionWork {
+    pub relational: RelationalAuthorizationObservationCounters,
+    pub signal_dependencies: usize,
+    pub canonical: WorthQueryCanonicalWorkEvidence,
+}
+
+#[test]
+fn warm_work_has_an_exact_per_link_slope() {
+    let root = admission_work(installed_delegated_capability_world_at_depth(0));
+    let one_link = admission_work(installed_delegated_capability_world_at_depth(1));
+    let two_links = admission_work(installed_delegated_capability_world_at_depth(2));
+
+    assert_eq!(
+        root.relational,
+        RelationalAuthorizationObservationCounters {
+            paths_evaluated: 6,
+            adjacency_lists_read: 11,
+            adjacency_edges_inspected: 10,
+            relation_records_inspected: 12,
+            entity_records_inspected: 36,
+            predicate_fields_inspected: 19,
+            relation_join_index_lookups: 1,
+            relation_join_candidates_inspected: 1,
+            maximum_frontier_width: 1,
+        }
+    );
+    assert_eq!(one_link.relational.paths_evaluated, 13);
+    assert_eq!(two_links.relational.paths_evaluated, 20);
+    assert_same_link_delta(root, one_link, two_links);
+    assert_eq!(
+        [
+            root.relational.maximum_frontier_width,
+            one_link.relational.maximum_frontier_width,
+            two_links.relational.maximum_frontier_width,
+        ],
+        [1, 1, 1],
+    );
+    for work in [root, one_link, two_links] {
+        assert_eq!(work.relational.relation_join_index_lookups, 1);
+        assert_eq!(work.relational.relation_join_candidates_inspected, 1);
+        // The only canonical work is the governed input the admission encoded
+        // once, however many links the delegation has.
+        assert_eq!(work.canonical.basis_preparations(), 0);
+        assert_eq!(work.canonical.digest_derivations(), 1);
+        assert_eq!(work.canonical.canonical_entries(), 1);
+        assert_eq!(work.canonical.canonical_encoded_bytes(), 289);
+        assert_eq!(work.canonical.canonical_material_allocation_bytes(), 0);
+        assert_eq!(work.canonical.sha256_input_bytes(), 377);
+        assert_eq!(work.canonical.sha256_compression_blocks(), 7);
+        assert_eq!(work.canonical.digest_text_materializations(), 0);
+    }
+}
+
+#[test]
+fn complete_unrelated_grants_do_not_enter_warm_admission_work() {
+    let baseline = admission_work(installed_delegated_capability_world_with_unrelated(0));
+    let populated = admission_work(installed_delegated_capability_world_with_unrelated(256));
+
+    assert_eq!(populated, baseline);
+}
+
+#[test]
+fn same_resource_unrelated_grants_do_not_enter_exact_grant_selection() {
+    let baseline = admission_work(installed_capability_world_with_same_resource_unrelated(0));
+    let populated = admission_work(installed_capability_world_with_same_resource_unrelated(256));
+
+    assert_eq!(populated, baseline);
+}
+
+#[test]
+fn exact_pair_population_overflow_denies_before_authority() {
+    let world = installed_capability_world_with_exact_pair_population(65);
+    world.authorization_time.script([time(100)]);
+    let request = live_scope();
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+
+    let Err(denial) = world
+        .application
+        .with_host_advancement(|phase| {
+            admitted_capability_access(
+                &(phase).test_host_request(),
+                &world,
+                &principal,
+                &request,
+                100,
+            )
+        })
+        .expect("the fixture read owns its installed host call")
+    else {
+        panic!("an over-budget exact grant population must deny");
+    };
+
+    assert_eq!(
+        denial.kind(),
+        worth_query_execution::facade::domain_computation::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::GrantSelectionLimitExceeded)
+    );
+}
+
+pub fn admission_work(world: AuthorizationWorld) -> DelegationAdmissionWork {
+    world.authorization_time.script([time(100)]);
+    let request = live_scope();
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let custody = phase.test_host_request();
+            let phase_custody = &custody;
+            let principal =
+                authenticated_principal(&(phase_custody).test_host_request(), &world, &request);
+            let access =
+                admitted_capability_access(phase_custody, &world, &principal, &request, 100)
+                    .unwrap();
+            DelegationAdmissionWork {
+                relational: access.relational_counters(),
+                signal_dependencies: access.signal_dependency_count(),
+                canonical: access.admission_canonical_work(),
+            }
+        })
+        .expect("the fixture admission owns its host call")
+}
+
+pub fn assert_same_link_delta(
+    root: DelegationAdmissionWork,
+    one_link: DelegationAdmissionWork,
+    two_links: DelegationAdmissionWork,
+) {
+    assert_eq!(
+        additive_delta(one_link.relational, root.relational),
+        additive_delta(two_links.relational, one_link.relational),
+        "root={root:?}, one_link={one_link:?}, two_links={two_links:?}",
+    );
+    assert_eq!(
+        one_link.signal_dependencies - root.signal_dependencies,
+        two_links.signal_dependencies - one_link.signal_dependencies,
+    );
+}
+
+pub fn additive_delta(
+    greater: RelationalAuthorizationObservationCounters,
+    lesser: RelationalAuthorizationObservationCounters,
+) -> [usize; 8] {
+    [
+        greater.paths_evaluated - lesser.paths_evaluated,
+        greater.adjacency_lists_read - lesser.adjacency_lists_read,
+        greater.adjacency_edges_inspected - lesser.adjacency_edges_inspected,
+        greater.relation_records_inspected - lesser.relation_records_inspected,
+        greater.entity_records_inspected - lesser.entity_records_inspected,
+        greater.predicate_fields_inspected - lesser.predicate_fields_inspected,
+        greater.relation_join_index_lookups - lesser.relation_join_index_lookups,
+        greater.relation_join_candidates_inspected - lesser.relation_join_candidates_inspected,
+    ]
+}

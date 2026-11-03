@@ -7,9 +7,7 @@ use crate::domain_computation::primary_graph::conditional_operation::installatio
     ConditionalClockLease, WorthQueryConditionalRuntimeInstallationDenial,
 };
 
-pub(in crate::domain_computation::primary_graph) struct WorthQueryConditionalOperationRegistry<
-    Schema,
-> {
+pub struct WorthQueryConditionalOperationRegistry<Schema> {
     installed: Arc<BTreeMap<String, WorthQueryConditionalOperationCell<Schema>>>,
     marker: std::marker::PhantomData<fn() -> Schema>,
 }

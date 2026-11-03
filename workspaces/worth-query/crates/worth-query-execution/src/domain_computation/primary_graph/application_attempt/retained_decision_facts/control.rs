@@ -5,7 +5,7 @@ use worth_query_admission::facade::authenticated_principal::WorthQueryRequestSco
 /// Attempt-local borrowing only; this facet is never retained in a snapshot,
 /// prepared candidate, completed read set or commit authority.
 #[derive(Clone, Copy)]
-pub(in crate::domain_computation) struct StorageControl<'scope, 'authority> {
+pub struct StorageControl<'scope, 'authority> {
     execution: Option<worth_execution::ExecutionRequest<'scope, 'authority>>,
     policy: ExecutionAllocationPolicy<'scope, 'authority>,
     request: Option<&'scope WorthQueryRequestScope>,
@@ -13,7 +13,7 @@ pub(in crate::domain_computation) struct StorageControl<'scope, 'authority> {
 impl<'scope, 'authority> StorageControl<'scope, 'authority> {
     /// None is explicit only when the projection has no admitted Query request.
     /// Admitted projection MUST pass Some(admission.publication_request()).
-    pub(in crate::domain_computation) fn new(
+    pub fn new(
         policy: ExecutionAllocationPolicy<'scope, 'authority>,
         request: Option<&'scope WorthQueryRequestScope>,
     ) -> Self {
@@ -35,9 +35,7 @@ impl<'scope, 'authority> StorageControl<'scope, 'authority> {
     ) -> Option<worth_execution::ExecutionRequest<'scope, 'authority>> {
         self.execution
     }
-    pub(in crate::domain_computation) fn policy(
-        self,
-    ) -> ExecutionAllocationPolicy<'scope, 'authority> {
+    pub fn policy(self) -> ExecutionAllocationPolicy<'scope, 'authority> {
         self.policy
     }
     pub(in crate::domain_computation) fn request(

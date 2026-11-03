@@ -175,7 +175,7 @@ impl WorthQueryWorkflowExecutionResourceAttempt {
         self.provider_session.binding_authority()
     }
 
-    pub(crate) fn release(self) -> WorthQueryWorkflowExecutionAttemptReleaseReceipt {
+    pub fn release(self) -> WorthQueryWorkflowExecutionAttemptReleaseReceipt {
         let provider_session_identity = self.provider_session.identity().to_owned();
         drop(self.provider_session);
         WorthQueryWorkflowExecutionAttemptReleaseReceipt {

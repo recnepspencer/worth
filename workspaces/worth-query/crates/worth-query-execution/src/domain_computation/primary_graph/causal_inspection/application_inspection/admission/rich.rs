@@ -140,6 +140,3 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
         Ok(report)
     }
 }
-
-#[cfg(test)]
-mod tests;

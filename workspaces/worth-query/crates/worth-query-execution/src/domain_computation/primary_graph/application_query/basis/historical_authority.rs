@@ -5,7 +5,7 @@ use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt
 use worth_relational::facade::history::RelationalCommitReceipt;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(crate) struct WorthQueryApplicationHistoricalRead {
+pub struct WorthQueryApplicationHistoricalRead {
     source: WorthQueryApplicationHistoricalReadSource,
 }
 
@@ -25,7 +25,7 @@ pub(super) enum WorthQueryApplicationHistoricalRetention {
 }
 
 impl WorthQueryApplicationHistoricalRead {
-    pub(crate) fn at_application_commit(receipt: &WorthQueryApplicationCommitReceipt) -> Self {
+    pub fn at_application_commit(receipt: &WorthQueryApplicationCommitReceipt) -> Self {
         Self {
             source: WorthQueryApplicationHistoricalReadSource::ApplicationCommit {
                 provider_runtime_instance_id: receipt.provider_runtime_instance_id(),
@@ -53,11 +53,11 @@ pub(crate) struct WorthQueryApplicationHistoricalBasisReleaseReceipt {
 }
 
 impl<Schema> WorthQueryApplicationHistoricalBasis<Schema> {
-    pub(crate) fn version_id(&self) -> worth_relational::facade::identity::VersionId {
+    pub fn version_id(&self) -> worth_relational::facade::identity::VersionId {
         self.lease.version_id()
     }
 
-    pub(crate) fn release(self) -> WorthQueryApplicationHistoricalBasisReleaseReceipt {
+    pub fn release(self) -> WorthQueryApplicationHistoricalBasisReleaseReceipt {
         let release = self.lease.release();
         WorthQueryApplicationHistoricalBasisReleaseReceipt {
             released: release.released(),
@@ -66,7 +66,7 @@ impl<Schema> WorthQueryApplicationHistoricalBasis<Schema> {
 }
 
 impl WorthQueryApplicationHistoricalBasisReleaseReceipt {
-    pub(crate) const fn released(&self) -> bool {
+    pub const fn released(&self) -> bool {
         self.released
     }
 }

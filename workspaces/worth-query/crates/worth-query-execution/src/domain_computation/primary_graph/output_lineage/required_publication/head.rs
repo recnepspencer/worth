@@ -3,10 +3,7 @@ use super::*;
 use worth_relational::facade::mvcc::CompanionPreflightStop as Stop;
 use worth_relational::facade::mvcc::RelationalRequiredOutputPublication;
 
-#[cfg(test)]
-mod tests;
-
-pub(in crate::domain_computation::primary_graph) struct SelectedRequiredPublicationHead {
+pub struct SelectedRequiredPublicationHead {
     selected: Arc<OnceLock<RecordedOutput>>,
 }
 

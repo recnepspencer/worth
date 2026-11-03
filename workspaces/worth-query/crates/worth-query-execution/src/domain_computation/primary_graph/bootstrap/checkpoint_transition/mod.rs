@@ -1,6 +1,6 @@
 //! Native program transition before any World or ordinary writer exists.
 mod authoring;
-mod capture_funding;
+pub mod capture_funding;
 pub(super) mod codec;
 mod output_disposition;
 mod preserved_outputs;

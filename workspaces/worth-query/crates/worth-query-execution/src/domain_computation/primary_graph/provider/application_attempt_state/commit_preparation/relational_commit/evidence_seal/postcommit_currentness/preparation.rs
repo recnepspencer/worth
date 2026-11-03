@@ -44,7 +44,7 @@ impl PreparedSourceFactRebase {
     ) -> Result<Self, PreparedRebaseDenial> {
         Self::full_payload(facts, Arc::from([]), control)
     }
-    pub(in crate::domain_computation::primary_graph) fn admit(
+    pub fn admit(
         facts: Vec<WorthQueryApplicationObservedFact>,
         moved: Arc<[usize]>,
         control: StorageControl<'_, '_>,

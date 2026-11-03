@@ -8,7 +8,7 @@ use worth_foundational::facade::{
 impl AdmittedFactKey {
     /// The caller writes the existing locator grammar directly from borrowed
     /// identity fields. Predicate grammar belongs to Foundational, not this sink.
-    pub(in crate::domain_computation::primary_graph) fn from_borrowed(
+    pub fn from_borrowed(
         locator: impl Fn(&mut dyn fmt::Write) -> fmt::Result,
         predicate: Option<(&AspectValue, usize)>,
         policy: super::StorageControl<'_, '_>,

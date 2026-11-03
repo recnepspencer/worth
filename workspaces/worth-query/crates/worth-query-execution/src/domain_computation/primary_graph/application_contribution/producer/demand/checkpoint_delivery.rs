@@ -1,4 +1,3 @@
-#[cfg(test)]
 use super::own_effect_observation::{self, Stage};
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use worth_query_installation::facade::ApplicationSchema;
@@ -17,7 +16,7 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationR
 mod selected;
 mod unpublished;
 
-struct PreparedSelectedDelivery<'a> {
+pub struct PreparedSelectedDelivery<'a> {
     lowering: &'a std::sync::Arc<worth_runtime_bridge::facade::BridgeInstalledConditionalLowering>,
     ordinal: usize,
     preserved: bool,
@@ -65,7 +64,6 @@ where
             } => {
                 // A delivery that is still waiting leaves the checkpoint
                 // Published: nothing moved, so the caller does not spin on it.
-                #[cfg(test)]
                 own_effect_observation::record(Stage::DeliveryStarted);
                 let mut delivered = false;
                 self.deliver_output_checkpoint_with_finish(
@@ -81,7 +79,6 @@ where
                         self.finish_output_checkpoint(interest, claim, checkpoint, denial, returned)
                     },
                 )?;
-                #[cfg(test)]
                 own_effect_observation::record(if delivered {
                     Stage::Delivered
                 } else {
@@ -119,7 +116,6 @@ where
                             .map(|_| false)
                     }
                 };
-                #[cfg(test)]
                 own_effect_observation::record(Stage::Ready);
                 let completion = ready_backing.complete(WorthQueryCompletedOutputDemand {
                     authority: WorthQueryAcceptedOutputAuthority::Committed(receipt),
@@ -313,6 +309,3 @@ where
         }
     }
 }
-
-#[cfg(test)]
-mod stopped_delivery;

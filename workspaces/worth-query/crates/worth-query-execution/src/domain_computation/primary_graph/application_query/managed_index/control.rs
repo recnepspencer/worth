@@ -64,7 +64,7 @@ impl<'a> WorthQueryManagedIndexControl<'a> {
         }
     }
 
-    pub(super) fn reserve_content_memory(
+    pub fn reserve_content_memory(
         &self,
         bytes: u64,
     ) -> Result<Option<worth_execution::ExecutionMemoryReservation>, Stop> {

@@ -13,7 +13,7 @@ use worth_relational::facade::snapshots::SnapshotHandle;
 
 type Endpoints =
     crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints;
-pub(super) struct SelectedRebase {
+pub struct SelectedRebase {
     facts: FactPayload,
     posting_basis: Option<
         crate::domain_computation::primary_graph::output_lineage::invalidation::PostingRebaseBasis,
@@ -52,7 +52,7 @@ impl SelectedRebase {
         prepared.posting_basis = Some(posting_basis);
         Ok(prepared)
     }
-    pub(super) fn prepare_full(
+    pub fn prepare_full(
         facts: FactPayload,
         moved: Arc<[usize]>,
         control: StorageControl<'_, '_>,
@@ -116,7 +116,7 @@ impl SelectedRebase {
         })
     }
     #[allow(clippy::too_many_arguments)]
-    pub(super) fn rebase(
+    pub fn rebase(
         mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &RelationalRuntime,

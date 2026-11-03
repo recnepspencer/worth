@@ -18,14 +18,13 @@ use super::WorthQueryOutputDemandRegistry;
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
 
 /// The typed successor, erased so the registry stays independent of schema.
-pub(in crate::domain_computation::primary_graph) type HeldRequiredSuccessor =
-    Box<dyn Any + Send + Sync>;
+pub type HeldRequiredSuccessor = Box<dyn Any + Send + Sync>;
 
 impl WorthQueryOutputDemandRegistry {
     /// Keep `successor` on the row `key_of` names. Returns what the caller
     /// drops after this call: a replaced older successor of that row, or
     /// `successor` itself when its row no longer needs it.
-    pub(in crate::domain_computation::primary_graph) fn hold_required_successor(
+    pub fn hold_required_successor(
         &self,
         successor: HeldRequiredSuccessor,
         key_of: impl FnOnce(&HeldRequiredSuccessor) -> Option<&WorthQueryOutputDemandKey>,
@@ -48,7 +47,7 @@ impl WorthQueryOutputDemandRegistry {
     }
 
     /// Take the successor held on `key`'s row so a dependent can resume it.
-    pub(in crate::domain_computation::primary_graph) fn take_published_held_successor(
+    pub fn take_published_held_successor(
         &self,
         key: &WorthQueryOutputDemandKey,
     ) -> Result<Option<HeldRequiredSuccessor>, WorthQueryOutputDemandDenial> {

@@ -5,10 +5,10 @@ use worth_relational::facade::identity::{EntityId, PartitionId};
 
 /// Historical identity, not a grant or an execution right.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) struct WorkflowAdmittedActor(EntityId);
+pub struct WorkflowAdmittedActor(EntityId);
 
 impl WorkflowAdmittedActor {
-    pub(in crate::domain_computation::primary_graph) fn from_admission<S, O, I, C>(
+    pub fn from_admission<S, O, I, C>(
         admitted: &WorthQueryAdmittedApplicationOperation<S, O, I, C>,
     ) -> Self {
         let principal = admitted.operation_scope_binding().principal();
@@ -26,7 +26,7 @@ impl WorkflowAdmittedActor {
     pub(in crate::domain_computation) const fn entity(self) -> EntityId {
         self.0
     }
-    pub(in crate::domain_computation::primary_graph) fn append_fields(
+    pub fn append_fields(
         self,
         locators: &WorkflowActorFields,
         fields: &mut BTreeMap<AspectFieldLocator, AspectValue>,

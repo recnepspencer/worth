@@ -26,15 +26,9 @@ use crate::domain_computation::{
     WorthQueryManagedTruthReadRequest,
 };
 
-#[cfg(test)]
-#[path = "running/affinity_tests.rs"]
-mod affinity_tests;
-#[cfg(test)]
-#[path = "running/independent_axis_tests.rs"]
-mod independent_axis_tests;
-pub(in super::super) mod progression;
+pub mod progression;
 
-pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) struct WorthQueryRunningApplicationCommit<
+pub struct WorthQueryRunningApplicationCommit<
     Schema,
     Operation,
     Input,
@@ -46,26 +40,21 @@ pub(in crate::domain_computation::primary_graph::application_attempt::provider_e
         Input,
         Scope,
     >,
-    lease: WorthQueryApplicationSnapshotLease,
+    pub lease: WorthQueryApplicationSnapshotLease,
     provider_attempt: WorthQueryPreparedApplicationProviderAttempt,
     outcome_identity: crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitOutcomeIdentity,
     workflow_settlement_publication: Option<LocalWorkflowSettlementPublication>,
     authorization: crate::domain_computation::authorization::WorthQueryProviderCommitAuthorization,
     idempotency: WorthQueryApplicationIdempotencyBinding,
-    running: crate::domain_computation::WorthQueryRunningDirectRun,
-    mutation_run: crate::domain_computation::provider_session::WorthQueryMutationRunBinding,
+    pub running: crate::domain_computation::WorthQueryRunningDirectRun,
+    pub mutation_run: crate::domain_computation::provider_session::WorthQueryMutationRunBinding,
     attempt_basis: WorthQueryApplicationAttemptBasis,
     aftermath_causality: Option<
         crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
     >,
 }
 
-pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) fn start_managed_application_commit<
-    Schema,
-    Operation,
-    Input,
-    Scope,
->(
+pub fn start_managed_application_commit<Schema, Operation, Input, Scope>(
     phase: &WorthQueryAdvancementPhase<'_>,
 
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,

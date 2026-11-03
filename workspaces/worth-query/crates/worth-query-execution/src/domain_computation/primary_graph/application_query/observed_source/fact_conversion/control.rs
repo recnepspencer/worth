@@ -8,15 +8,12 @@ use worth_execution::{ExecutionRequest, WorkCeilingDenial};
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 
 #[derive(Clone, Copy)]
-pub(in crate::domain_computation::primary_graph) struct SourceFactExpansionControl<
-    'request,
-    'authority,
-> {
+pub struct SourceFactExpansionControl<'request, 'authority> {
     execution: Option<ExecutionRequest<'request, 'authority>>,
     storage: StorageControl<'request, 'authority>,
 }
 impl<'request, 'authority> SourceFactExpansionControl<'request, 'authority> {
-    pub(in crate::domain_computation::primary_graph) fn in_request(
+    pub fn in_request(
         execution: ExecutionRequest<'request, 'authority>,
         request: Option<&'request WorthQueryRequestScope>,
     ) -> Self {

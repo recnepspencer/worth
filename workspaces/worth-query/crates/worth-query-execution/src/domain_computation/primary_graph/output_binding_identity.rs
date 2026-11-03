@@ -3,10 +3,10 @@ use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::{collections::HashMap, sync::Arc};
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub(super) struct OutputBindingIdentity(Arc<str>);
+pub struct OutputBindingIdentity(Arc<str>);
 
 impl OutputBindingIdentity {
-    pub(super) fn declared(name: &str) -> Self {
+    pub fn declared(name: &str) -> Self {
         Self(Arc::from(name))
     }
     pub(super) fn as_str(&self) -> &str {

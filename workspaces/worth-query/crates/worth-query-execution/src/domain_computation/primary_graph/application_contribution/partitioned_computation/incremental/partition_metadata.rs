@@ -4,7 +4,7 @@ use std::{collections::BTreeMap, sync::Arc};
 use worth_execution::{ExecutionAllocationPolicy, ExecutionOrderedMap, ExecutionOrderedMapDenial};
 use worth_foundational::facade::PartitionIdentity;
 
-pub(super) struct PartitionMetadata<Key> {
+pub struct PartitionMetadata<Key> {
     entries: ExecutionOrderedMap<PartitionIdentity, RetainedPartition<Key>>,
 }
 impl<Key> PartitionMetadata<Key> {
@@ -51,15 +51,13 @@ impl<Key> PartitionMetadata<Key> {
     ) -> impl Iterator<Item = (&PartitionIdentity, &RetainedPartition<Key>)> {
         self.entries.iter()
     }
-    #[cfg(test)]
-    pub(super) fn values(&self) -> impl Iterator<Item = &RetainedPartition<Key>> {
+    pub fn values(&self) -> impl Iterator<Item = &RetainedPartition<Key>> {
         self.entries.values()
     }
     pub(super) fn keys(&self) -> impl Iterator<Item = &PartitionIdentity> {
         self.entries.keys()
     }
-    #[cfg(test)]
-    pub(super) fn bytes(&self) -> Option<u64> {
+    pub fn bytes(&self) -> Option<u64> {
         self.entries.accounted_bytes()
     }
 }

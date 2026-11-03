@@ -349,7 +349,6 @@ impl<Schema, Operation, Input, Scope, Phase>
             content,
             effect_routes,
             consumed_outputs: self.consumed_outputs,
-            #[cfg(test)]
             computation_facts,
             computation_fact_ordinals,
             workflow_authority_binding: None,
@@ -372,18 +371,12 @@ impl<Schema, Operation, Input, Scope, Phase>
     /// The facts the owner calls read and which calls read each, when the
     /// handler ran one partitioned computation.
     // Retention takes its own copy at seal; tests read this one.
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn computation_facts(
-        &self,
-    ) -> Option<&SealedComputationFacts> {
+    pub fn computation_facts(&self) -> Option<&SealedComputationFacts> {
         self.computation_facts.as_ref()
     }
 
     /// The facts the decision read, for tests outside the attempt.
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn decision_facts(
-        &self,
-    ) -> Vec<super::WorthQueryApplicationObservedFact> {
+    pub fn decision_facts(&self) -> Vec<super::WorthQueryApplicationObservedFact> {
         self.facts.iter().cloned().collect()
     }
 }

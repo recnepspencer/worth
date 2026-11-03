@@ -37,32 +37,30 @@ pub struct WorthQueryAdmittedApplicationQueryPlan<
     pub(super) planned_batch_item: Option<super::batch::PlannedBatchItem>,
     pub(super) retain_expression_context: bool,
     pub(super) retain_projection_for_inspection: bool,
-    pub(super) runtime_authority: WorthQueryRuntimeAuthorityIdentity,
+    pub runtime_authority: WorthQueryRuntimeAuthorityIdentity,
     pub(super) graph_authority_identity: String,
     pub(super) provider_identity: String,
-    pub(super) query:
+    pub query:
         &'a WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
-    pub(super) principal:
-        &'a WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
-    pub(super) scope: &'a WorthQueryApplicationEntityIdentity<Schema, Scope>,
-    pub(super) parameters: WorthQueryAdmittedApplicationQueryParameters,
+    pub principal: &'a WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
+    pub scope: &'a WorthQueryApplicationEntityIdentity<Schema, Scope>,
+    pub parameters: WorthQueryAdmittedApplicationQueryParameters,
     pub(super) controls: WorthQueryAdmittedApplicationQueryControls<'a>,
     pub(super) canonical_work: WorthQueryCanonicalWorkPhases,
-    pub(super) continuation_index_id: Option<DerivedIndexId>,
+    pub continuation_index_id: Option<DerivedIndexId>,
     pub(super) continuation_state: Option<WorthQueryAdmittedContinuationState>,
-    pub(super) basis: WorthQueryApplicationQueryBasisCustody,
+    pub basis: WorthQueryApplicationQueryBasisCustody,
     pub(super) index_posture: WorthQueryQueryIndexPosture,
     pub(super) security_product: crate::basis::WorthQueryProductObservationLease,
     pub(super) security_basis: Option<super::basis::WorthQueryApplicationQueryBasisCustody>,
-    pub(super) graph_work:
-        crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,
+    pub graph_work: crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,
     pub(super) authorization:
         crate::domain_computation::authorization::WorthQueryRetainedAuthorizationDecisionFacts,
     pub(super) authorization_work: super::WorthQueryApplicationAuthorizationWorkEvidence,
     pub(super) selected_access: Option<
         super::admission::SelectedIssuedAccessRoot<'a, Schema, Principal, PrincipalIdentity, Scope>,
     >,
-    pub(super) governance: super::disclosure::WorthQueryApplicationQueryGovernance,
+    pub governance: super::disclosure::WorthQueryApplicationQueryGovernance,
     pub(super) history_metadata: Option<super::history::HistoryMetadataAdmission>,
 }
 

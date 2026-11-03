@@ -16,14 +16,10 @@ impl RequestedOutputRead {
     ) -> Self {
         Self { identity, selected }
     }
-    pub(in crate::domain_computation::primary_graph) fn identity(
-        &self,
-    ) -> &RecordedSettlementIdentity {
+    pub fn identity(&self) -> &RecordedSettlementIdentity {
         &self.identity
     }
-    pub(in crate::domain_computation::primary_graph) fn selected(
-        &self,
-    ) -> &PositionedRelationalSnapshot {
+    pub fn selected(&self) -> &PositionedRelationalSnapshot {
         &self.selected
     }
 }

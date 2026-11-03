@@ -149,7 +149,7 @@ pub(super) fn map_bootstrap_staging_denial(
     )
 }
 
-mod commit_denial;
+pub mod commit_denial;
 pub(super) use commit_denial::map_bootstrap_commit_denial;
 
 pub(super) fn append_typed_rows(
@@ -283,7 +283,7 @@ pub(super) fn build_identity_indexes(
 }
 
 // The bootstrap caller's request owns this work, just as it owns its commit.
-fn build_requested_indexes(
+pub fn build_requested_indexes(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     request: DerivedIndexBuildRequest,
@@ -293,10 +293,7 @@ fn build_requested_indexes(
         .build_for_commit(execution, request)
 }
 
-#[cfg(test)]
-mod index_request_tests;
-
-fn identity_indexes_built(
+pub fn identity_indexes_built(
     build: DerivedIndexBuildOutcome,
     requested_indexes: usize,
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
@@ -343,14 +340,9 @@ fn installation_execution_kind(
     }
 }
 
-#[cfg(test)]
-pub(in crate::domain_computation::primary_graph) mod execution_refusals;
-
 fn primary_graph_denial(
     kind: WorthQueryPrimaryGraphInstallationDenialKind,
     subject: impl Into<String>,
 ) -> WorthQueryPrimaryGraphInstallationDenial {
     WorthQueryPrimaryGraphInstallationDenial::new(kind, subject)
 }
-#[cfg(test)]
-pub(in crate::domain_computation::primary_graph) mod commit_refusals;

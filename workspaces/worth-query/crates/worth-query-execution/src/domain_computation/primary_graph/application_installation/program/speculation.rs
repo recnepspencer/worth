@@ -22,9 +22,6 @@ pub struct WorthQueryApplicationPreviewRequest {
     identity: String,
 }
 
-#[cfg(test)]
-mod counted_read_stops;
-#[cfg(test)]
 mod discard_fault;
 
 impl WorthQueryApplicationPreviewRequest {
@@ -62,14 +59,13 @@ pub enum WorthQueryApplicationPreviewReadmissionDenial {
 /// send_sync::<WorthQueryReadmittedApplicationPreview>();
 /// ```
 pub struct WorthQueryApplicationPreviewSession {
-    handle: BridgeSpeculativeSessionHandle,
-    _source: std::sync::Arc<worth_runtime_bridge::facade::RelationalBridgeObservationLease>,
+    pub handle: BridgeSpeculativeSessionHandle,
+    pub _source: std::sync::Arc<worth_runtime_bridge::facade::RelationalBridgeObservationLease>,
     // One actual installed runtime clone, held solely for destruction custody.
     // Native handle and source above are destroyed before this backing is released.
     _runtime: Box<dyn PreviewRuntimeDestructionCustody>,
     runtime_authority: u64,
     source_commit: CompositeCommitIdentity,
-    #[cfg(test)]
     discard_fault: std::rc::Rc<std::cell::Cell<bool>>,
 }
 
@@ -86,7 +82,7 @@ impl std::fmt::Debug for WorthQueryApplicationPreviewSession {
 /// Promotion finalizes that evidence; it does not certify current Query output.
 #[derive(Debug)]
 pub struct WorthQueryReadmittedApplicationPreview {
-    session: WorthQueryApplicationPreviewSession,
+    pub session: WorthQueryApplicationPreviewSession,
 }
 
 impl WorthQueryApplicationPreviewSession {
@@ -255,7 +251,6 @@ where
             _runtime: Box::new(self.clone()),
             runtime_authority: self.runtime().runtime.authority_identity().as_u64(),
             source_commit: observation.selected_commit().clone(),
-            #[cfg(test)]
             discard_fault: Default::default(),
         })
     }

@@ -1,6 +1,6 @@
 mod cleanup_inspection;
 mod counters;
-mod direct_lane;
+pub mod direct_lane;
 mod direct_outcome;
 mod evidence;
 mod readmitted_execution;
@@ -8,7 +8,7 @@ mod recovery;
 mod workflow_outcome;
 pub(in crate::domain_computation::managed_run) use direct_lane::WorthQueryDirectYieldRestoredOwner;
 #[path = "workflow.rs"]
-mod workflow_progression;
+pub mod workflow_progression;
 #[path = "recovery/workflow.rs"]
 mod workflow_recovery;
 pub(in crate::domain_computation::managed_run::readmission) use workflow_progression::workflow_cleanup_owner as workflow_recovery_cleanup;

@@ -76,7 +76,7 @@ impl ExpectedFactKeys {
     > {
         self.managed_sources.get(key, admission, contracts, source)
     }
-    pub(in crate::domain_computation::primary_graph) fn aggregate(
+    pub fn aggregate(
         &self,
         key: &crate::domain_computation::primary_graph::aggregate_observation::AggregateKey,
         admission: crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity,
@@ -89,7 +89,7 @@ impl ExpectedFactKeys {
     > {
         self.aggregates.get(key, admission, contracts, snapshot)
     }
-    pub(in crate::domain_computation::primary_graph) fn structural_walk(
+    pub fn structural_walk(
         &self,
         key: &crate::domain_computation::primary_graph::structural_walk::StructuralWalkKey,
         admission: crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity,
@@ -105,7 +105,7 @@ impl ExpectedFactKeys {
     pub(in crate::domain_computation::primary_graph) fn source_publication(&self,key:&crate::domain_computation::primary_graph::application_attempt::SourcePublicationRead)->Option<&Arc<crate::domain_computation::primary_graph::output_lineage::invalidation::ObservedSourcePublication>>{
         self.source_publications.as_deref()?.get(key)
     }
-    pub(in crate::domain_computation::primary_graph) fn iter(&self) -> impl Iterator<Item = &Key> {
+    pub fn iter(&self) -> impl Iterator<Item = &Key> {
         union(self.refresh_keys(), self.computation.carried_keys())
     }
     pub(in crate::domain_computation::primary_graph) fn refresh_keys(
@@ -113,9 +113,7 @@ impl ExpectedFactKeys {
     ) -> impl Iterator<Item = &Key> {
         union(self.handler.iter(), self.computation.keys())
     }
-    pub(in crate::domain_computation::primary_graph) fn attribution(
-        &self,
-    ) -> &ComputationFactAttribution {
+    pub fn attribution(&self) -> &ComputationFactAttribution {
         &self.computation
     }
 }

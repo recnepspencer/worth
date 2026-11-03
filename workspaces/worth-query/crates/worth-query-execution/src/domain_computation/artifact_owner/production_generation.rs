@@ -6,7 +6,7 @@ use super::{WorthQueryArtifactDenial, WorthQueryWorkflowArtifactRegistry};
 pub struct WorthQueryArtifactProductionGeneration(u64);
 
 impl WorthQueryArtifactProductionGeneration {
-    pub(super) const fn initial() -> Self {
+    pub const fn initial() -> Self {
         Self(1)
     }
 

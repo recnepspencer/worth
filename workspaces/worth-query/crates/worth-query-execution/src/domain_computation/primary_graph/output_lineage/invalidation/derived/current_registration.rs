@@ -89,8 +89,7 @@ impl<'selected> StoppedCurrentSettlementRegistration<'selected> {
 }
 
 impl SourceInvalidationOwner {
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn prepare_current_settlement<'selected>(
+    pub fn prepare_current_settlement<'selected>(
         &self,
         registration: SettlementRegistration,
         selected: &'selected PositionedRelationalSnapshot,

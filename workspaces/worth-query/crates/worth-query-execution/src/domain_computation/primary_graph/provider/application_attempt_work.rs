@@ -20,20 +20,20 @@ pub(super) struct WorthQueryApplicationAttemptWorkLedger {
 }
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
-pub(crate) struct WorthQueryApplicationAttemptWorkSnapshot {
-    pub(crate) retained_resolutions: u64,
-    pub(crate) managed_bridge_plans: u64,
-    pub(crate) provider_session_readmissions: u64,
-    pub(crate) provider_session_preparations: u64,
-    pub(crate) staged_session_preparations: u64,
-    pub(crate) attempt_registrations: u64,
-    pub(crate) overlay_stagings: u64,
-    pub(crate) invariant_state_loads: u64,
-    pub(crate) invariant_executions: u64,
-    pub(crate) prepared_commits: u64,
-    pub(crate) attempt_aborts: u64,
-    pub(crate) managed_cleanups: u64,
-    pub(crate) external_dispatch_admissions: u64,
+pub struct WorthQueryApplicationAttemptWorkSnapshot {
+    pub retained_resolutions: u64,
+    pub managed_bridge_plans: u64,
+    pub provider_session_readmissions: u64,
+    pub provider_session_preparations: u64,
+    pub staged_session_preparations: u64,
+    pub attempt_registrations: u64,
+    pub overlay_stagings: u64,
+    pub invariant_state_loads: u64,
+    pub invariant_executions: u64,
+    pub prepared_commits: u64,
+    pub attempt_aborts: u64,
+    pub managed_cleanups: u64,
+    pub external_dispatch_admissions: u64,
 }
 
 macro_rules! observation {
@@ -91,7 +91,7 @@ impl WorthQueryApplicationAttemptWorkLedger {
 }
 
 impl WorthQueryApplicationAttemptWorkSnapshot {
-    pub(crate) fn since(self, earlier: Self) -> Self {
+    pub fn since(self, earlier: Self) -> Self {
         Self {
             retained_resolutions: self
                 .retained_resolutions

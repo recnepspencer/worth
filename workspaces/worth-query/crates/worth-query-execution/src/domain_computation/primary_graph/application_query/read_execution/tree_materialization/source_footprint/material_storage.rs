@@ -5,12 +5,12 @@ use std::sync::Arc;
 use worth_execution::ExecutionRequest;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
 
-pub(super) struct MaterialFootprintStorage<'a, 'request, 'authority> {
+pub struct MaterialFootprintStorage<'a, 'request, 'authority> {
     execution: &'a ExecutionRequest<'request, 'authority>,
     allocation: Option<&'a Arc<SourceFactsAllocation>>,
 }
 impl<'a, 'request, 'authority> MaterialFootprintStorage<'a, 'request, 'authority> {
-    pub(super) fn new(
+    pub fn new(
         execution: &'a ExecutionRequest<'request, 'authority>,
         allocation: Option<&'a Arc<SourceFactsAllocation>>,
     ) -> Self {
@@ -119,7 +119,7 @@ impl<'a, 'request, 'authority> MaterialFootprintStorage<'a, 'request, 'authority
             (Ok(_), None) => unreachable!("completed source footprint checkpoint"),
         }
     }
-    pub(super) fn normalize(
+    pub fn normalize(
         &self,
         footprint: &mut WorthQueryObservedSourceFootprint,
     ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {

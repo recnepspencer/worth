@@ -29,7 +29,7 @@ pub(in crate::domain_computation) use actor_selection::WorkflowRecordedActorObse
 mod advance;
 mod approval;
 mod approval_decision;
-mod assessment;
+pub mod assessment;
 mod assessment_applicability;
 mod assessment_coverage;
 mod assessment_materialization;
@@ -39,7 +39,7 @@ mod condition_materialization;
 mod evidence_join;
 mod local_actions;
 mod navigation;
-mod operation;
+pub mod operation;
 pub(in crate::domain_computation::primary_graph::application_attempt) use operation::LocalActionSettlementProof;
 pub(in crate::domain_computation::primary_graph) use operation::ValidatedWorkflowOperationReceipt;
 pub(super) use operation::{operation_receipt_requires_recovery, receipt_identity_from_outcome};

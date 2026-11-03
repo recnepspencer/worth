@@ -100,9 +100,7 @@ impl WorthQueryApplicationQueryBasisCustody {
             .then(|| self.application_basis.snapshot_handle())
     }
 
-    pub(in crate::domain_computation::primary_graph::application_query) fn identity(
-        &self,
-    ) -> &WorthQueryApplicationBasisIdentity {
+    pub fn identity(&self) -> &WorthQueryApplicationBasisIdentity {
         self.application_basis.identity()
     }
 
@@ -112,9 +110,7 @@ impl WorthQueryApplicationQueryBasisCustody {
         self.application_basis.version_id()
     }
 
-    pub(in crate::domain_computation::primary_graph) fn snapshot_handle(
-        &self,
-    ) -> &worth_relational::facade::snapshots::SnapshotHandle {
+    pub fn snapshot_handle(&self) -> &worth_relational::facade::snapshots::SnapshotHandle {
         self.application_basis.snapshot_handle()
     }
 

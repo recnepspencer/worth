@@ -1,6 +1,6 @@
 //! Exact-commit evidence minted only from the committed session stage.
 
-mod postcommit_currentness;
+pub mod postcommit_currentness;
 pub use postcommit_currentness::{FactlessCurrentness, OwnEffectOnReads, RebaseVerificationReason};
 pub(in crate::domain_computation::primary_graph) use postcommit_currentness::{
     FailedRebase, RebaseVerificationFailure,
@@ -15,7 +15,7 @@ use crate::domain_computation::primary_graph::provider::{
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphCommitEvidence {
+pub struct WorthQueryPrimaryGraphCommitEvidence {
     workflow_origin: Option<crate::domain_computation::primary_graph::workflow::operation_output::WorkflowOperationOrigin>,
     provider_session_binding:
         crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding,
@@ -170,7 +170,7 @@ impl WorthQueryPrimaryGraphCommitEvidence {
     }
     /// Original admitted meaning co-retained with the performed occurrence.
     /// This is historical evidence; current authority is admitted separately.
-    pub(in crate::domain_computation::primary_graph) fn original_authority(
+    pub fn original_authority(
         &self,
     ) -> &crate::domain_computation::primary_graph::WorthQueryApplicationCommitAuthorityBinding
     {
@@ -203,7 +203,7 @@ impl WorthQueryPrimaryGraphCommitEvidence {
         &self.mutation_work
     }
 
-    pub(in crate::domain_computation::primary_graph) const fn retained_preimage(
+    pub const fn retained_preimage(
         &self,
     ) -> Option<&crate::domain_computation::application_aftermath::WorthQueryRetainedPreImage> {
         self.retained_preimage.as_ref()
@@ -284,9 +284,7 @@ impl WorthQueryPrimaryGraphCommitEvidence {
     }
 
     /// Ordinals of the retained source facts the committed effect itself moved.
-    pub(in crate::domain_computation::primary_graph) fn source_facts_superseded_by_own_effect(
-        &self,
-    ) -> impl Iterator<Item = usize> + '_ {
+    pub fn source_facts_superseded_by_own_effect(&self) -> impl Iterator<Item = usize> + '_ {
         self.observed_source_facts.superseded_by_own_effect()
     }
 }

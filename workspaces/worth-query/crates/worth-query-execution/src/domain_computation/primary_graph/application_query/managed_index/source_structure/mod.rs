@@ -2,7 +2,7 @@
 mod admission;
 mod ancestry;
 mod capture;
-mod cold;
+pub mod cold;
 mod cold_columns;
 mod cold_postings;
 use super::nodes::pages::{NodePages, PageEdit};

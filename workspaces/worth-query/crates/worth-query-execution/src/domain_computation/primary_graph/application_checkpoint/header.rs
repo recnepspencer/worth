@@ -6,7 +6,7 @@ use crate::domain_computation::primary_graph::{
 };
 
 #[derive(Debug)]
-pub(in crate::domain_computation::primary_graph) struct CheckpointDecodeDenial {
+pub struct CheckpointDecodeDenial {
     kind: Kind,
     message: String,
 }
@@ -74,7 +74,6 @@ impl CheckpointDecodeDenial {
             FactDecodeDenial::Retention(StoreDenial::Representability) => Self::capacity(),
             FactDecodeDenial::Retention(StoreDenial::ConflictingBody) =>
                 "checkpoint facts contain conflicting bodies".to_owned().into(),
-            #[cfg(test)]
             FactDecodeDenial::Retention(StoreDenial::InvalidOrdinal) =>
                 "checkpoint facts contain an invalid fixture ordinal".to_owned().into(),
         }

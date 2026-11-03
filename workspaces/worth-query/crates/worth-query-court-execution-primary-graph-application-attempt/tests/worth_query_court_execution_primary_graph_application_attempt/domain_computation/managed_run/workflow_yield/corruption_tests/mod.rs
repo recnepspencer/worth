@@ -1,0 +1,177 @@
+use worth_query_execution::domain_computation::managed_run::readmission::workflow_progression::workflow_state::workflow_cleanup_owner as WorthQueryWorkflowReadmissionCleanupOutcome;
+use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::managed_run::tests::yield_fixture::YieldProvider;
+use worth_query_execution::facade::domain_computation::WorthQueryWorkflowGraphStepOutcome;
+use worth_query_execution::facade::domain_computation::WorthQueryWorkflowRunCleanupOutcome;
+
+#[test]
+fn workflow_checkpoint_failure_and_generation_disruption_become_cleanup_only_authority() {
+    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
+        let phase = &active_phase;
+        let execution = phase;
+        let active_request = execution;
+
+        let (provider, registry_slot) = YieldProvider::artifact_generation_rollback_failure(7);
+        let (yielded, bridge, runtime, _producer) =
+            worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::managed_run::tests::readmission_workflow::yielded_workflow(
+                execution,
+                provider,
+                resource_request,
+            );
+        let generation = yielded
+            .inspection()
+            .artifact_evidence()
+            .production_generation();
+        let registry = yielded.artifacts.registry();
+        *registry_slot
+            .lock()
+            .expect("workflow rollback fixture registry slot must remain available") =
+            Some(registry);
+
+        let recovery = {
+            let fixture_phase_result = {
+                let installed_fixture_phase = yielded.fixture_phase(active_request);
+                yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
+            };
+            match fixture_phase_result {
+            worth_query_execution::facade::domain_computation::WorthQueryWorkflowReadmissionOutcome::RecoveryRequired(
+                recovery,
+            ) => recovery,
+            _ => panic!("coupled checkpoint and generation failure must require recovery"),
+        }
+        };
+        assert_eq!(
+        recovery.kind(),
+        worth_query_execution::facade::domain_computation::WorthQueryWorkflowReadmissionRecoveryKind::ArtifactGenerationRollbackFailed
+    );
+        assert_eq!(
+        recovery.posture(),
+        worth_query_execution::facade::domain_computation::WorthQueryWorkflowReadmissionRecoveryPosture::ArtifactGenerationCleanupRequired
+    );
+        assert_eq!(
+            recovery
+                .checkpoint_release()
+                .expect("provider checkpoint release evidence must survive")
+                .disposition(),
+            worth_query_execution::facade::domain_computation::WorthQueryProviderCheckpointReleaseDisposition::Panicked
+        );
+
+        let recovery = match recovery {
+        worth_query_execution::facade::domain_computation::WorthQueryWorkflowReadmissionRecoveryRequired::TerminalCleanup(
+            recovery,
+        ) => recovery,
+        _ => panic!("failed generation rollback must expose only terminal cleanup authority"),
+    };
+        let cleanup = recovery.into_cleanup();
+        let receipt = match cleanup.finish() {
+        WorthQueryWorkflowReadmissionCleanupOutcome::RecoveryRequired(
+            receipt,
+        ) => receipt,
+        _ => panic!("typed generation and provider recovery evidence must survive cleanup"),
+    };
+        let inspection = receipt.inspection();
+        let rollback = inspection
+            .generation_rollback()
+            .expect("cleanup receipt must carry typed generation rollback evidence");
+        assert_eq!(rollback.prior_generation(), generation);
+        assert_eq!(rollback.pending_generation(), generation + 1);
+        assert_eq!(
+            rollback.denial_kind(),
+            worth_query_execution::facade::domain_computation::WorthQueryArtifactDenialKind::StaleLifecycleGeneration
+        );
+        assert_eq!(
+            inspection.checkpoint().release_disposition(),
+            worth_query_execution::facade::domain_computation::WorthQueryProviderCheckpointReleaseDisposition::Panicked
+        );
+        assert!(inspection.resources_released());
+        assert_eq!(inspection.released_reservation_count(), 3);
+        assert_eq!(inspection.artifact_evidence().retained_artifact_count(), 0);
+    });
+}
+
+#[test]
+fn workflow_generation_mismatch_denies_before_fresh_authority_and_rolls_back_cleanly() {
+    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
+        let phase = &active_phase;
+        let execution = phase;
+        let active_request = execution;
+
+        let (yielded, bridge, runtime, _producer) =
+            worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::managed_run::tests::readmission_workflow::yielded_workflow(
+                execution,
+                YieldProvider::installed(7),
+                resource_request,
+            );
+        let generation = yielded
+            .inspection()
+            .artifact_evidence()
+            .production_generation();
+        let pending = yielded
+            .artifacts
+            .registry()
+            .prepare_next_generation()
+            .expect("test delta should place the registry in a pending generation");
+        let denied = {
+            let fixture_phase_result = {
+                let installed_fixture_phase = yielded.fixture_phase(active_request);
+                yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
+            };
+            match fixture_phase_result {
+                worth_query_execution::facade::domain_computation::WorthQueryWorkflowReadmissionOutcome::Denied(denied) => {
+                    denied
+                }
+                _ => panic!("non-frozen yielded generation should deny during preflight"),
+            }
+        };
+        assert_eq!(
+        denied.kind(),
+        worth_query_execution::facade::domain_computation::WorthQueryWorkflowReadmissionDenialKind::ArtifactGenerationMismatch
+    );
+        let evidence = denied.readmission_evidence();
+        let counters = evidence.query_counters();
+        assert_eq!(counters.fresh_resource_attempt_count(), 0);
+        assert_eq!(counters.bridge_readmission_attempt_count(), 0);
+        assert_eq!(counters.provider_restore_attempt_count(), 0);
+        assert!(evidence.bridge_counters().is_none());
+        drop(pending);
+        let yielded = denied.into_yielded();
+        assert_eq!(
+            yielded
+                .inspection()
+                .artifact_evidence()
+                .production_generation(),
+            generation
+        );
+        let active = {
+            let fixture_phase_result = {
+                let installed_fixture_phase = yielded.fixture_phase(active_request);
+                yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
+            };
+            match fixture_phase_result {
+                worth_query_execution::facade::domain_computation::WorthQueryWorkflowReadmissionOutcome::Readmitted(
+                    readmitted,
+                ) => readmitted.into_active(),
+                _ => panic!("generation rollback should restore exact retry authority"),
+            }
+        };
+        let completion = {
+            let fixture_phase_result = {
+                let installed_fixture_phase = active.fixture_phase(execution);
+                active.advance(&installed_fixture_phase)
+            };
+            match fixture_phase_result {
+                WorthQueryWorkflowGraphStepOutcome::Completed(completion) => completion,
+                _ => panic!("restored workflow provider should complete"),
+            }
+        };
+        match completion.into_running().completed().unwrap().cleanup() {
+            WorthQueryWorkflowRunCleanupOutcome::Complete(_) => {}
+            _ => panic!("retried workflow should clean up"),
+        }
+    });
+}

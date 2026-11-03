@@ -11,7 +11,7 @@ impl WorthQueryOutputDemandRegistry {
     /// Keep the issued interest, Ready cell, source and producer in one registry
     /// pin. A Ready observation alone cannot be paired with another row's
     /// source or installed executor during a required wave.
-    pub(in crate::domain_computation::primary_graph) fn interest_ready_readmission(
+    pub fn interest_ready_readmission(
         &self,
         interest: &WorthQueryOutputDemandInterest,
     ) -> Result<Option<SelectedReadyReadmission>, WorthQueryOutputDemandDenial> {

@@ -117,7 +117,6 @@ pub(super) fn finish(
         receipt,
         ready_backing.bind_original_producing_publication(original_publication),
     );
-    #[cfg(test)]
     own_effect_observation::record(Stage::Published);
     let publication = OwnPublication(receipt.0.committed_product_publication().clone());
     let delivery = receipt.0

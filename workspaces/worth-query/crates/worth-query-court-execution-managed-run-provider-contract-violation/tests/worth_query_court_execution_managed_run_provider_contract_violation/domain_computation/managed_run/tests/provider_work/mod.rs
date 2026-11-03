@@ -1,0 +1,160 @@
+use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::managed_run::tests::provider_work::FailingProvider;
+use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::managed_run::tests::provider_work::TwoStepProvider;
+use worth_query_execution::facade::domain_computation::WorthQueryDirectGraphStepOutcome;
+use worth_query_execution::facade::domain_computation::WorthQueryGraphProviderCallKind;
+use worth_query_execution::facade::domain_computation::WorthQueryManagedGraphCallRequest;
+use worth_query_execution::facade::domain_computation::WorthQueryManagedProviderSessionDisposition;
+use worth_query_execution::facade::domain_computation::WorthQueryManagedRunCleanupDisposition;
+use worth_query_installation::facade::WorthQueryOperationGraphAccess;
+use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::managed_run::tests::managed_graph_run_with_provider;
+
+use crate::process::domain_computation::managed_run::tests::*;
+#[test]
+fn bounded_provider_steps_stream_exact_terminal_work_evidence() {
+    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
+        let phase = &active_phase;
+        let execution = phase;
+
+        let (running, graph) = managed_graph_run_with_provider(
+            WorthQueryOperationGraphAccess::Project,
+            TwoStepProvider,
+            resource_request,
+        );
+        let installed_running_phase = execution.phase_for_direct(&running);
+
+        let active = running
+            .begin_graph_execution(
+                &installed_running_phase,
+                &graph,
+                WorthQueryManagedGraphCallRequest::new(
+                    WorthQueryGraphProviderCallKind::Project,
+                    "managed-project",
+                ),
+            )
+            .expect("installed provider anchor should start exact execution");
+        let active = match active.advance(&installed_running_phase) {
+            WorthQueryDirectGraphStepOutcome::Continue(active) => active,
+            _ => panic!("first bounded step did not continue"),
+        };
+        let pending = match active.advance(&installed_running_phase) {
+            WorthQueryDirectGraphStepOutcome::ChunkReady(pending) => pending,
+            _ => panic!("second bounded step did not expose its bounded result chunk"),
+        };
+        assert_eq!(pending.chunk().rows().len(), 1);
+        let completion = match pending.acknowledge() {
+            WorthQueryDirectGraphStepOutcome::Completed(completion) => completion,
+            _ => panic!("acknowledged final chunk did not complete"),
+        };
+        let stream = completion
+            .receipt()
+            .graph_read_stream_evidence()
+            .expect("managed projection completion should carry stream evidence");
+        assert_eq!(stream.chunk_count(), 1);
+        assert_eq!(stream.row_count(), 1);
+        let product = completion
+            .receipt()
+            .graph_read_product()
+            .expect("acknowledged projection chunks must become the terminal read product");
+        assert_eq!(product.row_count(), 1);
+        assert_eq!(
+            product
+                .rows()
+                .next()
+                .expect("the terminal product must retain its emitted row")
+                .entity_identity(),
+            "managed-entity-0"
+        );
+        assert!(product.retained_bytes() > 0);
+        assert!(
+            stream.retained_bytes() > product.retained_bytes(),
+            "stream custody must account for both materialization and its evidence envelope"
+        );
+        assert_eq!(completion.receipt().work_report().completed_work_units(), 5);
+        assert_eq!(completion.receipt().work_report().scratch_bytes(), 8);
+        assert_eq!(
+            completion.receipt().work_report().retained_bytes(),
+            stream.retained_bytes()
+        );
+        assert_eq!(
+            completion.receipt().work_report().output_retained_bytes(),
+            stream.retained_bytes()
+        );
+
+        let terminal = completion
+            .into_running()
+            .completed()
+            .expect("Query-settled provider work should permit run completion");
+        let work = terminal.provider_work().clone();
+        assert_eq!(
+            work.session_disposition(),
+            WorthQueryManagedProviderSessionDisposition::ReceiptsAdmitted
+        );
+        assert_eq!(work.issued_call_count(), 1);
+        assert_eq!(work.admitted_receipt_count(), 1);
+        assert_eq!(work.completed_work_units(), 5);
+        assert_eq!(work.peak_scratch_bytes(), 8);
+        assert_eq!(work.retained_bytes(), 0);
+        assert!(work.peak_retained_bytes() >= 4);
+        assert_eq!(work.output_capacity_classification_count(), 2);
+        let last_safe_point = work
+            .last_safe_point()
+            .expect("terminal work retains the exact last Signal safe point");
+        assert_eq!(
+            last_safe_point.signal_state(),
+            worth_runtime_bridge::facade::BridgeExecutionSafePointSignalState::Active
+        );
+        assert_eq!(last_safe_point.queue_depth(), 0);
+        assert_eq!(last_safe_point.queue_capacity(), 8);
+        let cleanup = terminal.cleanup().expect("settled provider work cleans up");
+        assert_eq!(
+            cleanup.inspection().disposition(),
+            WorthQueryManagedRunCleanupDisposition::CleanupComplete
+        );
+    });
+}
+#[test]
+fn provider_failure_preserves_governed_work_and_recovery_authority() {
+    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
+        let phase = &active_phase;
+        let execution = phase;
+
+        let (running, graph) = managed_graph_run_with_provider(
+            WorthQueryOperationGraphAccess::Observe,
+            FailingProvider,
+            resource_request,
+        );
+        let installed_running_phase = execution.phase_for_direct(&running);
+
+        let active = running
+            .begin_graph_execution(
+                &installed_running_phase,
+                &graph,
+                WorthQueryManagedGraphCallRequest::new(
+                    WorthQueryGraphProviderCallKind::Observe,
+                    "failing-observe",
+                ),
+            )
+            .expect("failing provider should start before its bounded work");
+        let terminal = match active.advance(&installed_running_phase) {
+            WorthQueryDirectGraphStepOutcome::Failed(terminal) => terminal,
+            _ => panic!("provider failure did not terminalize the managed run"),
+        };
+        assert_eq!(terminal.provider_work().completed_work_units(), 2);
+        assert_eq!(terminal.provider_work().retained_bytes(), 0);
+        assert_eq!(terminal.provider_work().peak_retained_bytes(), 4);
+        assert_eq!(terminal.provider_work().abandoned_call_count(), 1);
+        let cleanup = terminal
+            .cleanup()
+            .expect("failed provider run retains cleanup authority");
+        assert_eq!(
+            cleanup.inspection().disposition(),
+            WorthQueryManagedRunCleanupDisposition::RecoveryRequired
+        );
+    });
+}

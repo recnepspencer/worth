@@ -331,7 +331,7 @@ impl WorthQueryActiveDirectGraphExecution {
 
 #[must_use = "paused graph execution must be advanced, yielded, or explicitly abandoned"]
 pub struct WorthQueryPausedDirectGraphExecution {
-    pub(super) active: WorthQueryActiveDirectGraphExecution,
+    pub active: WorthQueryActiveDirectGraphExecution,
     pub(super) safe_point: super::yield_eligibility::WorthQueryManagedYieldSafePoint,
 }
 

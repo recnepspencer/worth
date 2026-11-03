@@ -9,7 +9,7 @@ pub struct WorthQueryProductBranch {
 }
 
 impl WorthQueryProductBranch {
-    pub(crate) const fn from_occurrence(
+    pub const fn from_occurrence(
         occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
     ) -> Self {
         Self { occurrence }
@@ -23,7 +23,7 @@ impl WorthQueryProductBranch {
         self.occurrence.ordinal()
     }
 
-    pub(crate) const fn occurrence(self) -> worth_runtime_world::facade::ProductBranchIncarnation {
+    pub const fn occurrence(self) -> worth_runtime_world::facade::ProductBranchIncarnation {
         self.occurrence
     }
 }

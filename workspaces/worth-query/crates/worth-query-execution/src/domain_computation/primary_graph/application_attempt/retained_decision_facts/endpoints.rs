@@ -88,7 +88,7 @@ impl AdmittedAdjacencyEndpoints {
             sorted_unique,
         })
     }
-    pub(in crate::domain_computation::primary_graph) fn from_exact_iterator(
+    pub fn from_exact_iterator(
         count: usize,
         input: impl IntoIterator<Item = EntityId>,
         control: super::StorageControl<'_, '_>,
@@ -110,7 +110,7 @@ impl AdmittedAdjacencyEndpoints {
             sorted_unique,
         })
     }
-    pub(in crate::domain_computation::primary_graph) fn capture(
+    pub fn capture(
         input: &[EntityId],
         policy: super::StorageControl<'_, '_>,
     ) -> Result<Self, StoreDenial> {
@@ -148,7 +148,7 @@ impl AdmittedAdjacencyEndpoints {
             sorted_unique: true,
         })
     }
-    pub(in crate::domain_computation::primary_graph) fn union(
+    pub fn union(
         &self,
         other: &Self,
         policy: super::StorageControl<'_, '_>,
@@ -174,10 +174,7 @@ impl AdmittedAdjacencyEndpoints {
             sorted_unique: true,
         })
     }
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn charged_payload_bytes(
-        &self,
-    ) -> Option<u64> {
+    pub fn charged_payload_bytes(&self) -> Option<u64> {
         self.storage
             .as_ref()
             .and_then(|storage| storage.charged_payload_bytes())

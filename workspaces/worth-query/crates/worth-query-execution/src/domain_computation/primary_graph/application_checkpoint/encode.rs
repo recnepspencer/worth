@@ -5,13 +5,11 @@ use super::{
 };
 use sha2::{Digest, Sha256};
 
-mod body;
-mod sizing;
-#[cfg(test)]
-mod tests;
+pub mod body;
+pub mod sizing;
 
 impl WorthQueryApplicationCheckpoint {
-    pub(in crate::domain_computation::primary_graph) fn encode(
+    pub fn encode(
         native: worth_relational::facade::durability::RelationalNativeCheckpoint,
         publication: &super::super::WorthQueryPrimaryGraphPublication,
         accepted_outputs: &[super::super::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity],
@@ -62,7 +60,7 @@ impl WorthQueryApplicationCheckpoint {
     }
 }
 
-fn reserve_buffer(
+pub fn reserve_buffer(
     total: usize,
     policy: WorthQueryCheckpointCapturePolicy<'_, '_>,
 ) -> Result<worth_execution::ExecutionByteBuffer, WorthQueryCheckpointCaptureDenial> {

@@ -35,9 +35,7 @@ impl SealedComputationFacts {
         self.original.clone()
     }
 
-    pub(in crate::domain_computation::primary_graph::application_attempt::read_set) fn prepare<
-        'a,
-    >(
+    pub fn prepare<'a>(
         attribution: ComputationFactAttribution,
         ordered: impl Iterator<Item = &'a WorthQueryApplicationFactKey>,
         policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
@@ -96,20 +94,18 @@ impl SealedComputationFacts {
         })
     }
 
-    pub(in crate::domain_computation::primary_graph) fn fact(
+    pub fn fact(
         &self,
         key: &WorthQueryApplicationFactKey,
     ) -> Option<&WorthQueryApplicationObservedFact> {
         self.original.get(self.metadata.get(key)?.ordinal)
     }
 
-    pub(in crate::domain_computation::primary_graph) fn observation_work_bound(
-        &self,
-    ) -> Option<u64> {
+    pub fn observation_work_bound(&self) -> Option<u64> {
         self.index.observation_work
     }
 
-    pub(in crate::domain_computation::primary_graph) fn facts(
+    pub fn facts(
         &self,
     ) -> impl Iterator<
         Item = (
@@ -129,13 +125,11 @@ impl SealedComputationFacts {
         })
     }
 
-    pub(in crate::domain_computation::primary_graph) fn call_index(
-        &self,
-    ) -> Arc<ComputationFactIndex> {
+    pub fn call_index(&self) -> Arc<ComputationFactIndex> {
         Arc::clone(&self.index)
     }
 
-    pub(in crate::domain_computation::primary_graph) fn at_ordinal(
+    pub fn at_ordinal(
         &self,
         ordinal: usize,
     ) -> Option<(
@@ -195,8 +189,7 @@ impl PreparedComputationFacts {
         }
     }
 
-    #[cfg(test)]
-    pub(super) fn bind_fixture(self, original: FactPayload) -> SealedComputationFacts {
+    pub fn bind_fixture(self, original: FactPayload) -> SealedComputationFacts {
         self.finish(original, layout::SealedReadLayout::OwnerFixture, None)
     }
 }

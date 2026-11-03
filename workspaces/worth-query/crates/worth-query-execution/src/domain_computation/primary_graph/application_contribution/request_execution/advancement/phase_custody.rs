@@ -172,7 +172,7 @@ impl<'scope> WorthQueryAdvancementPhase<'scope> {
             .expect("admitted advancement")
     }
     /// Borrows execution only after the receiving installed runtime accepts custody.
-    pub(crate) fn execution_request_for(
+    pub fn execution_request_for(
         &self,
         runtime: &crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime,
     ) -> Result<ExecutionRequest<'scope, 'scope>, WorthQueryForeignAdvancementPhase> {
@@ -230,7 +230,7 @@ impl<'scope> WorthQueryAdvancementPhase<'scope> {
     }
 
     pub fn complete(self) {}
-    pub(in crate::domain_computation::primary_graph) fn execution_for(
+    pub fn execution_for(
         &self,
         runtime: &crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime,
     ) -> Result<&QueryRequestExecution<'scope>, WorthQueryForeignAdvancementPhase> {
@@ -239,14 +239,13 @@ impl<'scope> WorthQueryAdvancementPhase<'scope> {
     }
 }
 
-#[cfg(test)]
 impl<'scope> WorthQueryAdvancementPhase<'scope> {
-    pub(crate) fn test_host_request(&self) -> super::test_host_policy::TestHostRequest<'scope> {
+    pub fn test_host_request(&self) -> super::test_host_policy::TestHostRequest<'scope> {
         super::test_host_policy::TestHostRequest::from_installed(self)
     }
 
     /// Budget-only fixture controls borrow the existing host request.
-    pub(crate) fn borrowed_request_for_test(&self) -> ExecutionRequest<'_, '_> {
+    pub fn borrowed_request_for_test(&self) -> ExecutionRequest<'_, '_> {
         self.admitted_request()
     }
 }

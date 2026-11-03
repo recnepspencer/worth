@@ -15,13 +15,13 @@ type FamilySourceQuery<Schema, Family> =
 
 pub(in crate::domain_computation::primary_graph) use progression::CurrentBasis;
 pub(in crate::domain_computation::primary_graph) use progression::CurrentProof;
-pub(super) mod bridge_denial;
-mod checkpoint_delivery;
+pub mod bridge_denial;
+pub mod checkpoint_delivery;
 mod denial_diagnostic;
 mod denial_posture;
 pub(super) mod disclosure;
 mod fulfillment;
-mod progression;
+pub mod progression;
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) use progression::DecisionInput;
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) use progression::PerformedMembers;
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) use progression::SelectedDecisionInput;
@@ -29,11 +29,11 @@ pub(in crate::domain_computation::primary_graph) use progression::MatchedRequire
 pub(in crate::domain_computation::primary_graph) use progression::ReboundConsumedOutput;
 pub(in crate::domain_computation::primary_graph) use progression::ResolvedRequiredPredecessors;
 mod readiness;
-mod required_continuations;
+pub mod required_continuations;
 mod required_provenance;
-mod scheduling_progression;
+pub mod scheduling_progression;
 mod selected_source;
-mod selection;
+pub mod selection;
 pub(in crate::domain_computation::primary_graph) use required_continuations::PreparedRequiredFreshSlot;
 use required_continuations::RequiredContinuations;
 pub(in crate::domain_computation::primary_graph) use required_continuations::RequiredFreshOutcome;
@@ -242,7 +242,5 @@ where
 
 mod bridge_execution_denial;
 
-#[cfg(test)]
 mod own_effect_assertions;
-#[cfg(test)]
 mod own_effect_observation;

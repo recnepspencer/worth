@@ -102,16 +102,14 @@ where
     Ok(ValidatedWorkflowOperationReceipt { receipt, identity })
 }
 
-pub(in crate::domain_computation::primary_graph::application_attempt) fn operation_receipt_requires_recovery(
-    receipt: &WorthQueryApplicationCommitReceipt,
-) -> bool {
+pub fn operation_receipt_requires_recovery(receipt: &WorthQueryApplicationCommitReceipt) -> bool {
     receipt.dispatch_outbox().is_some()
         && !receipt
             .external_dispatch()
             .is_some_and(|dispatch| dispatch.is_external_completion())
 }
 
-pub(super) fn validate_operation_receipt_custody(
+pub fn validate_operation_receipt_custody(
     node_path: &str,
     receipt: &WorthQueryApplicationCommitReceipt,
     recovery: Option<
@@ -126,7 +124,7 @@ pub(super) fn validate_operation_receipt_custody(
     receipt_identity(receipt).ok_or_else(|| mismatch(node_path))
 }
 
-pub(super) fn receipt_identity(receipt: &WorthQueryApplicationCommitReceipt) -> Option<[u8; 32]> {
+pub fn receipt_identity(receipt: &WorthQueryApplicationCommitReceipt) -> Option<[u8; 32]> {
     Some(receipt_identity_from_outcome(
         receipt.runtime_authority().as_u64(),
         receipt.outcome_identity()?.get(),
@@ -134,7 +132,7 @@ pub(super) fn receipt_identity(receipt: &WorthQueryApplicationCommitReceipt) -> 
     ))
 }
 
-pub(in crate::domain_computation::primary_graph) fn receipt_identity_from_outcome(
+pub fn receipt_identity_from_outcome(
     runtime_authority: u64,
     outcome_identity: u64,
     installed_operation: &[u8; 32],

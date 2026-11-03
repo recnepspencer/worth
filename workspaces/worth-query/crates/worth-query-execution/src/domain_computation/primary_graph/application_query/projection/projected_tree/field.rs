@@ -25,9 +25,7 @@ impl WorthQueryApplicationProjectedField {
         &self.slot_key
     }
 
-    pub(in crate::domain_computation::primary_graph::application_query) fn value(
-        &self,
-    ) -> &AspectValue {
+    pub fn value(&self) -> &AspectValue {
         &self.value
     }
 

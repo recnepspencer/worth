@@ -350,6 +350,3 @@ fn denial(
 ) -> WorthQueryPrimaryGraphInstallationDenial {
     WorthQueryPrimaryGraphInstallationDenial::new(kind, subject)
 }
-
-#[cfg(test)]
-mod tests;

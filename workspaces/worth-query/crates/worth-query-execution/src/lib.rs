@@ -14,28 +14,12 @@
 #![recursion_limit = "256"]
 
 mod basis;
-mod domain_computation;
-mod equality_type_id;
-mod execution_digest;
-mod relational_snapshot_release;
+pub mod domain_computation;
+pub mod equality_type_id;
+pub mod execution_digest;
+pub mod relational_snapshot_release;
 
 pub mod facade;
 pub mod publication_boundary;
 
-#[cfg(test)]
-mod test_request_policy;
-
-#[cfg(test)]
-#[path = "test_support/bridge_host_request.rs"]
-mod bridge_host_request;
-
-#[cfg(test)]
-#[path = "test_support/process_deadline.rs"]
-mod process_deadline;
-
-#[cfg(test)]
-mod test_read_stops;
-
-#[cfg(test)]
-#[path = "test_support/published_checkpoint.rs"]
-mod published_checkpoint;
+pub mod test_read_stops;

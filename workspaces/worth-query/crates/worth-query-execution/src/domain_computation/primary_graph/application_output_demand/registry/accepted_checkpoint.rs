@@ -93,8 +93,7 @@ impl WorthQueryOutputDemandRegistry {
         accepted
     }
 
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn accepted_checkpoint_identities(
+    pub fn accepted_checkpoint_identities(
         &self,
     ) -> Vec<WorthQueryAcceptedOutputCheckpointIdentity> {
         self.accepted_checkpoint_records()

@@ -8,10 +8,6 @@ use worth_relational::facade::indexes::{
 
 use super::WorthQueryApplicationObservedFact;
 
-#[cfg(test)]
-#[path = "indexed_entity_selection/denials_tests.rs"]
-mod denials_tests;
-
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum IndexedSelectionReobserveDenial {
     UnexpectedFact,
@@ -30,7 +26,7 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryIndexedSelection
     Unavailable,
 }
 
-pub(in crate::domain_computation::primary_graph) fn observe_indexed_entity_selection(
+pub fn observe_indexed_entity_selection(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
@@ -99,7 +95,7 @@ fn selection_refusal(denial: IndexedSelectionReobserveDenial) -> WorthQueryIndex
     }
 }
 
-fn observe_checked(
+pub fn observe_checked(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
@@ -131,7 +127,7 @@ fn observe_checked(
     })
 }
 
-pub(super) fn remains_equal(
+pub fn remains_equal(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,

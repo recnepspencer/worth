@@ -11,7 +11,6 @@ use worth_execution::{
     ExecutionWorkCeiling, LeaseDenial, LeaseRequest, MapKernelContext, MapKernelFailure,
     MapKernelStop, WorkCeilingDenial,
 };
-#[cfg(test)]
 use worth_execution::{ChargedBytes, MapOutcome};
 use worth_foundational::{ExecutionReport, ExecutionRequestPolicy};
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
@@ -20,10 +19,8 @@ use worth_runtime_world::facade::RuntimeWorldExecutionPlacement;
 use super::execution_denial::{interruption_stop, lease_denial, memory_denial};
 use super::{WorthQueryManagedComputationInterruption, WorthQueryManagedComputationResourceDenial};
 
-mod test_placement;
-#[cfg(test)]
+pub mod test_placement;
 pub(in crate::domain_computation::primary_graph) use test_placement::test_policy;
-#[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use test_placement::FixturePlacement;
 pub use test_placement::{
     bound_advancement_requests_on_this_thread_for_test,
@@ -35,7 +32,7 @@ mod serial_placement;
 mod test_authority;
 pub use test_authority::query_test_execution_authority_for_test;
 
-type Resource = WorthQueryManagedComputationResourceDenial;
+pub type Resource = WorthQueryManagedComputationResourceDenial;
 
 mod accounting;
 mod decision_stage;
@@ -43,7 +40,7 @@ mod descendants;
 mod retained_dispatch;
 mod tree_charge;
 pub(in crate::domain_computation::primary_graph) use descendants::MemberRequestExecution;
-pub(in crate::domain_computation::primary_graph) mod advancement;
+pub mod advancement;
 pub(in crate::domain_computation::primary_graph) use advancement::advancement_denial;
 
 pub use advancement::{
@@ -52,7 +49,7 @@ pub use advancement::{
 
 /// One request's execution, borrowed from the World owner the request entry
 /// holds for the request's duration.
-pub(in crate::domain_computation::primary_graph) struct QueryRequestExecution<'a> {
+pub struct QueryRequestExecution<'a> {
     cancellation: worth_execution::CancellationToken,
     deadline: Option<std::time::Instant>,
     declared_work: Option<u64>,
@@ -89,7 +86,7 @@ impl<'a> QueryRequestExecution<'a> {
     /// The request's execution under `placement`. The request's cancellation
     /// is the one every lease and serial run observes, and its deadline is
     /// theirs.
-    pub(in crate::domain_computation::primary_graph) fn open(
+    pub fn open(
         placement: RuntimeWorldExecutionPlacement<'a>,
         request: &'a WorthQueryRequestScope,
     ) -> Self {
@@ -98,7 +95,7 @@ impl<'a> QueryRequestExecution<'a> {
         Self::open_control(placement, cancellation, deadline)
     }
 
-    fn open_control(
+    pub fn open_control(
         placement: RuntimeWorldExecutionPlacement<'a>,
         cancellation: worth_execution::CancellationToken,
         deadline: Option<std::time::Instant>,
@@ -137,10 +134,7 @@ impl<'a> QueryRequestExecution<'a> {
     }
 
     /// Holds `bytes` on the request's memory until the reservation drops.
-    pub(in crate::domain_computation::primary_graph) fn reserve(
-        &self,
-        bytes: u64,
-    ) -> Result<QueryMemoryReservation, Resource> {
+    pub fn reserve(&self, bytes: u64) -> Result<QueryMemoryReservation, Resource> {
         let lease = match &self.form {
             Form::Leased { lease, .. } | Form::Serial { lease, .. } => {
                 lease.as_ref().map_err(|denial| lease_denial(*denial))?
@@ -179,7 +173,7 @@ impl<'a> QueryRequestExecution<'a> {
 }
 
 /// Bytes held against the request's lease lineage until the reservation drops.
-pub(in crate::domain_computation::primary_graph) struct QueryMemoryReservation {
+pub struct QueryMemoryReservation {
     held: Option<ExecutionMemoryReservation>,
     bytes: u64,
 }
@@ -225,16 +219,14 @@ pub(super) struct QueryDispatch<'d> {
 }
 
 impl QueryDispatch<'_> {
-    #[cfg(test)]
-    pub(in super::super) fn native_lease_for_test(&self) -> &ExecutionResourceLease<'_> {
+    pub fn native_lease_for_test(&self) -> &ExecutionResourceLease<'_> {
         let DispatchForm::Leased(lease) = &self.form;
         lease
     }
     /// Maps every partition of `map` inside `ceiling`. The map's admission
     /// takes over `inputs`, the request memory held for its partitions, in
     /// one ledger step: no byte of them is unreserved between the two holds.
-    #[cfg(test)]
-    pub(super) fn map<T, K, R, E, Kernel>(
+    pub fn map<T, K, R, E, Kernel>(
         &self,
         ceiling: u64,
         map: &ExecutionMap<T, K>,
@@ -266,7 +258,6 @@ pub use advancement::{
     WorthQueryAdvancementObservationForTest,
 };
 
-#[cfg(test)]
 pub(crate) use advancement::{
     with_test_advancement, with_test_bootstrap_advancement, TestHostRequest,
 };

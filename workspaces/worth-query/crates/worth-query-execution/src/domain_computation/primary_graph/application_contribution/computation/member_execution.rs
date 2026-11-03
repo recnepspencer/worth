@@ -47,7 +47,6 @@ impl<'member> WorthQueryMemberExecution<'member> {
             charge: self.charge,
             poll: self.poll,
             refused: None,
-            #[cfg(test)]
             native: None,
         }
     }
@@ -75,8 +74,7 @@ impl<'member> WorthQueryMemberExecution<'member> {
         )
     }
 
-    #[cfg(test)]
-    pub(super) fn into_parts(
+    pub fn into_parts(
         self,
     ) -> (
         WorthQueryManagedComputationExecution<'member>,

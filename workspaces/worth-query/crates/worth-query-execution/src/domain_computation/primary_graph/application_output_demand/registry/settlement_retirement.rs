@@ -35,13 +35,13 @@ use super::post_commit::discovery;
 /// Returned by a settlement publication. Retiring needs the newest row
 /// registered with the invalidation owner, so the publisher calls it after.
 #[must_use = "superseded settlements stay retained until retired"]
-pub(in crate::domain_computation::primary_graph) struct SupersededSettlements {
+pub struct SupersededSettlements {
     registry: WorthQueryOutputDemandRegistry,
     key: Arc<WorthQueryOutputDemandKey>,
 }
 
 impl SupersededSettlements {
-    pub(super) fn new(
+    pub fn new(
         registry: WorthQueryOutputDemandRegistry,
         key: Arc<WorthQueryOutputDemandKey>,
     ) -> Self {
@@ -50,11 +50,7 @@ impl SupersededSettlements {
 
     /// `displaced` is the settlement of the generation the publication's
     /// record displaced in the lineage.
-    pub(in crate::domain_computation::primary_graph) fn retire(
-        self,
-        displaced: Option<Identity>,
-        owner: &SourceInvalidationOwner,
-    ) {
+    pub fn retire(self, displaced: Option<Identity>, owner: &SourceInvalidationOwner) {
         let named = self
             .registry
             .retire_superseded_settlements(&self.key, owner);
@@ -69,7 +65,7 @@ impl SupersededSettlements {
 
 impl WorthQueryOutputDemandRegistry {
     /// Whether a row posts `identity`.
-    pub(in crate::domain_computation::primary_graph) fn posts_settlement(
+    pub fn posts_settlement(
         &self,
         identity: &RecordedSettlementIdentity,
     ) -> Result<bool, crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial> {

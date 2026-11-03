@@ -8,7 +8,7 @@ use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 
 /// No driver can mint this from a dependency name, level or readiness flag.
 /// The pinned projection remains in owner completion while this token travels.
-pub(in crate::domain_computation::primary_graph) struct PreparedRequiredInputs {
+pub struct PreparedRequiredInputs {
     runtime: u64,
     root: u64,
     owner: WorthQueryOutputDemandRegistry,
@@ -30,9 +30,7 @@ impl WorthQueryOutputDemandRegistry {
     }
 
     // Only this registry owner can interpret sealed current-output evidence.
-    pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn admit_current_outputs<
-        'a,
-    >(
+    pub fn admit_current_outputs<'a>(
         &self,
         (runtime, root): (u64, u64),
         consumed: impl Iterator<Item = &'a crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence>,
@@ -143,13 +141,7 @@ impl<'basis, Key, Payload> AdmittedRequiredWave<'basis, Key, Payload> {
 type PreparedWave<'basis, 'owner, Key, Value, Stop> =
     AdmittedRequiredWave<'basis, Key, OwnerPlan<'owner, Value, Stop>>;
 impl WorthQueryOutputDemandRegistry {
-    pub(in crate::domain_computation::primary_graph) fn admit_prepared_wave<
-        'basis,
-        'owner,
-        Key,
-        Value: 'owner,
-        Stop: 'owner,
-    >(
+    pub fn admit_prepared_wave<'basis, 'owner, Key, Value: 'owner, Stop: 'owner>(
         &self,
         basis: &'basis PositionedRelationalSnapshot,
         keys: worth_proof::CanonicalUniqueVec<Key>,
@@ -196,5 +188,3 @@ fn require_committed(
         "prepared member awaits its committed upstream delivery",
     ))
 }
-#[cfg(test)]
-mod tests;

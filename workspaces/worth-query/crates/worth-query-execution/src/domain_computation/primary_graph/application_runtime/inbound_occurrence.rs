@@ -12,7 +12,7 @@ use super::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::domain_computation::application_aftermath::WorthQueryInboundOccurrenceVerifier;
 use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
 
-mod receive;
+pub mod receive;
 mod transport_binding;
 mod transport_publication_permit;
 pub(in crate::domain_computation) use transport_binding::WorthQueryInstalledTransportCompletionBinding;
@@ -28,7 +28,6 @@ pub use cost::WorthQueryInboundCostObservation;
 pub use maintenance::WorthQueryInboundMaintenanceReport;
 pub use observe::WorthQueryInboundTerminalObservation;
 pub use rebuild::WorthQueryInboundIndexRepairDenial;
-#[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use receive::WorthQueryInboundAdmission;
 pub use receive::{
     WorthQueryAdmittedInboundOccurrence, WorthQueryAuthenticatedInboundOccurrence,

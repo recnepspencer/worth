@@ -7,7 +7,7 @@ use super::{ProductCoordinate, SemanticSource};
 /// A fork may select an ancestor's settlement. Its identity therefore keeps the
 /// recorded coordinate, rather than the reader's coordinate or an Arc address.
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
-pub(in crate::domain_computation::primary_graph) struct RecordedSettlementIdentity {
+pub struct RecordedSettlementIdentity {
     source: SemanticSource,
     coordinate: ProductCoordinate,
     slot: usize,
@@ -33,7 +33,7 @@ impl RecordedSettlementIdentity {
     pub(in crate::domain_computation::primary_graph) fn source(&self) -> &SemanticSource {
         &self.source
     }
-    pub(in crate::domain_computation::primary_graph) const fn address(
+    pub const fn address(
         &self,
     ) -> (
         worth_runtime_world::facade::ProductBranchIncarnation,

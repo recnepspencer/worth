@@ -5,16 +5,13 @@ use super::super::{
 };
 use worth_runtime_world::facade::CompositeCommitIdentity;
 
-pub(in crate::domain_computation::primary_graph) struct SelectedOutputAdmission<'a> {
+pub struct SelectedOutputAdmission<'a> {
     pub(super) commit: &'a CompositeCommitIdentity,
     retained_key: Option<[u8; 32]>,
 }
 
 impl<'a> SelectedOutputAdmission<'a> {
-    pub(in crate::domain_computation::primary_graph) fn new(
-        commit: &'a CompositeCommitIdentity,
-        retained_key: Option<[u8; 32]>,
-    ) -> Self {
+    pub fn new(commit: &'a CompositeCommitIdentity, retained_key: Option<[u8; 32]>) -> Self {
         Self {
             commit,
             retained_key,

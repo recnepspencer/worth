@@ -54,10 +54,7 @@ pub struct WorthQueryProvisionalEffectProgramView<'a> {
 }
 
 impl<'a> WorthQueryProvisionalEffectProgramView<'a> {
-    pub(crate) fn new(
-        program: &'a WorthQueryLoweredProvisionalEffectProgram,
-        generation: u64,
-    ) -> Self {
+    pub fn new(program: &'a WorthQueryLoweredProvisionalEffectProgram, generation: u64) -> Self {
         Self {
             program,
             generation,
@@ -85,7 +82,7 @@ pub struct WorthQueryProvisionalOverlayAdmission {
 }
 
 impl WorthQueryProvisionalOverlayAdmission {
-    pub(in crate::domain_computation) fn new(
+    pub fn new(
         session: crate::domain_computation::provider_session::WorthQueryProviderSessionView<'_>,
         binding_identity: &str,
         program_identity: &str,
@@ -243,7 +240,7 @@ impl WorthQueryProvisionalOverlayEvidence {
         observed == expected.len()
     }
 
-    pub(crate) fn view(&self) -> WorthQueryProvisionalOverlayEvidenceView<'_> {
+    pub fn view(&self) -> WorthQueryProvisionalOverlayEvidenceView<'_> {
         WorthQueryProvisionalOverlayEvidenceView { evidence: self }
     }
 }

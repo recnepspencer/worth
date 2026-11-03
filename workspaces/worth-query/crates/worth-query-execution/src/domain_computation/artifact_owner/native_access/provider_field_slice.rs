@@ -70,7 +70,7 @@ impl<'a> WorthQueryArtifactProviderFieldSlice<'a> {
         self.len() == 0
     }
 
-    pub(crate) fn physical_bytes(self) -> usize {
+    pub fn physical_bytes(self) -> usize {
         match self {
             Self::Null(_) => 0,
             Self::Bool(values) => std::mem::size_of_val(values),

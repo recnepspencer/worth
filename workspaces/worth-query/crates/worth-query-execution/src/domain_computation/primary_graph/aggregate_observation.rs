@@ -11,20 +11,20 @@ mod currentness;
 mod key;
 mod member;
 pub(in crate::domain_computation::primary_graph) mod member_work;
-mod selection;
+pub mod selection;
 pub(in crate::domain_computation::primary_graph) use key::AggregateKey;
 pub(in crate::domain_computation::primary_graph) use selection::AggregateSelection;
 
 /// Only Native acquisition can construct this body. Source custody is separate
 /// from semantic truth: stored incident lineage is not part of an orbit answer.
 #[derive(Debug)]
-pub(in crate::domain_computation) struct AggregateObservation<Member = EntityId> {
+pub struct AggregateObservation<Member = EntityId> {
     key: AggregateKey<Member>,
     native: PinnedAggregateRead<Member>,
     source: SnapshotHandle,
     _allocation: Option<Arc<super::source_facts::SourceFactsAllocation>>,
 }
-pub(in crate::domain_computation::primary_graph) struct AggregateQuery<'a> {
+pub struct AggregateQuery<'a> {
     pub allocation: Option<&'a Arc<super::source_facts::SourceFactsAllocation>>,
     pub subject: &'a str,
     pub entity_kind: KindId,
@@ -34,7 +34,7 @@ pub(in crate::domain_computation::primary_graph) struct AggregateQuery<'a> {
     pub control: Option<&'a dyn Fn() -> Result<(), Cause>>,
 }
 impl AggregateObservation {
-    pub(in crate::domain_computation::primary_graph) fn read(
+    pub fn read(
         pin: &RelationalPinnedRead,
         execution: &ExecutionRequest<'_, '_>,
         query: AggregateQuery<'_>,
@@ -103,15 +103,13 @@ impl PartialEq for AggregateObservation {
 impl Eq for AggregateObservation {}
 
 impl<Member> AggregateObservation<Member> {
-    pub(in crate::domain_computation::primary_graph) fn key(&self) -> &AggregateKey<Member> {
+    pub fn key(&self) -> &AggregateKey<Member> {
         &self.key
     }
-    pub(in crate::domain_computation::primary_graph) fn native(
-        &self,
-    ) -> &PinnedAggregateRead<Member> {
+    pub fn native(&self) -> &PinnedAggregateRead<Member> {
         &self.native
     }
-    pub(in crate::domain_computation::primary_graph) fn source(&self) -> &SnapshotHandle {
+    pub fn source(&self) -> &SnapshotHandle {
         &self.source
     }
 }

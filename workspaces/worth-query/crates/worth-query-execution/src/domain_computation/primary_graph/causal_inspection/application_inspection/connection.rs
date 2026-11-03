@@ -1,7 +1,6 @@
 //! Exact original source/input and producer/output joins, after fresh diagnostics.
 use super::WorthQueryApplicationInspectionTarget;
 mod evaluation;
-#[cfg(test)]
 pub(in crate::domain_computation::primary_graph::causal_inspection::application_inspection) use evaluation::require_compared;
 mod output_refusal;
 pub use evaluation::{

@@ -64,7 +64,7 @@ impl WorthQueryApplicationAttemptDenial {
             }
         }
     }
-    pub(in crate::domain_computation) fn relational_execution_cause(
+    pub fn relational_execution_cause(
         &self,
     ) -> Option<worth_relational::facade::transactions::RelationalExecutionDenialCause> {
         match &self.meaning {
@@ -73,10 +73,7 @@ impl WorthQueryApplicationAttemptDenial {
         }
     }
 
-    pub(in crate::domain_computation::primary_graph) fn new(
-        kind: WorthQueryApplicationAttemptDenialKind,
-        subject: impl Into<String>,
-    ) -> Self {
+    pub fn new(kind: WorthQueryApplicationAttemptDenialKind, subject: impl Into<String>) -> Self {
         Self::from_cause(kind, subject.into(), AttemptDenialCause::None)
     }
 
@@ -103,7 +100,7 @@ impl WorthQueryApplicationAttemptDenial {
         )
     }
 
-    pub(in crate::domain_computation::primary_graph) fn allocation_denied(
+    pub fn allocation_denied(
         subject: impl Into<String>,
         denial: worth_execution::ExecutionAllocationDenial,
     ) -> Self {
@@ -231,20 +228,11 @@ impl std::error::Error for WorthQueryApplicationAttemptDenial {
     }
 }
 
-#[cfg(test)]
-mod allocation_error_source_tests;
-
-#[cfg(test)]
-mod native_query_cause;
-
 mod expression;
 mod request_read;
 
 mod capacity;
 mod indexed_lookup;
 mod managed_index;
-
-#[cfg(test)]
-mod native_storage_tests;
 
 mod decision_read_set;

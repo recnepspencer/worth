@@ -32,13 +32,13 @@ use super::demand::WorthQueryOutputDemandDenial;
 use super::demand::WorthQueryOutputDemandDenialKind;
 
 mod admitted;
-mod denial;
+pub mod denial;
 mod input_cutoff;
 mod input_reuse;
 mod installed;
-pub(in crate::domain_computation::primary_graph::application_contribution::producer) mod outcome;
+pub mod outcome;
 mod post_authorization;
-pub(in crate::domain_computation::primary_graph) mod prepared_plan;
+pub mod prepared_plan;
 pub(in crate::domain_computation::primary_graph) mod unpublished;
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) use prepared_plan::canonical_apply;
 mod required_cue;

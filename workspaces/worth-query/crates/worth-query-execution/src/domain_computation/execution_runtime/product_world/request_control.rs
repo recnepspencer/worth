@@ -16,7 +16,7 @@ use super::publication_denial::{
 use super::WorthQueryProductPublicationBinding;
 
 #[must_use = "a prepared product publication owns a reserved World attempt"]
-pub(crate) struct WorthQueryPreparedProductPublication {
+pub struct WorthQueryPreparedProductPublication {
     publication: RuntimeWorldPublicationPort<(), (), (), (), ()>,
     prepared: PreparedCompositePublicationWithoutSignal,
     control: WorthQueryProductPublicationRequestControl,
@@ -35,7 +35,7 @@ impl WorthQueryPreparedProductPublication {
         self.prepared.unpublished_recovery_handle()
     }
 
-    pub(crate) fn execute(
+    pub fn execute(
         self,
         execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Outcome, Denial<NoEffectCompositePublication>> {
@@ -168,7 +168,7 @@ impl WorthQueryProductPublicationBinding {
         }
     }
 
-    pub(crate) fn prepare_relational_candidate(
+    pub fn prepare_relational_candidate(
         &self,
         candidate: worth_relational::facade::mvcc::PreparedRelationalCommitCandidate,
         request: &WorthQueryRequestScope,

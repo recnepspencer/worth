@@ -3,7 +3,7 @@ use worth_relational::facade::indexes::DerivedIndexId;
 use super::{WorthQueryPrimaryFieldLayout, WorthQueryPrimaryGraphLayout};
 
 impl WorthQueryPrimaryGraphLayout {
-    pub(in crate::domain_computation) fn equality_field(
+    pub fn equality_field(
         &self,
         entity: &str,
         aspect: &str,
@@ -24,7 +24,7 @@ impl WorthQueryPrimaryGraphLayout {
             .and_then(|layout| layout.equality_index_id)
     }
 
-    pub(in crate::domain_computation::primary_graph) fn equality_fields_mut(
+    pub fn equality_fields_mut(
         &mut self,
     ) -> impl Iterator<Item = (&(String, String, String), &mut WorthQueryPrimaryFieldLayout)> {
         self.fields

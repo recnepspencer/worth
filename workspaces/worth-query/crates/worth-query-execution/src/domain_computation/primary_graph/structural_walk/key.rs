@@ -23,7 +23,7 @@ impl StructuralWalkKey {
     pub(in crate::domain_computation::primary_graph) fn relation(&self) -> &str {
         &self.0.relation
     }
-    pub(in crate::domain_computation::primary_graph) fn roots(&self) -> &[EntityId] {
+    pub fn roots(&self) -> &[EntityId] {
         &self.0.roots
     }
     pub(in crate::domain_computation::primary_graph) fn entity_kind(&self) -> KindId {

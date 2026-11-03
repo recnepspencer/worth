@@ -68,7 +68,7 @@ where
     }
 
     #[doc(hidden)]
-    pub(in crate::domain_computation) fn admit_required_output_demand<Family>(
+    pub fn admit_required_output_demand<Family>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         source_result: crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource<

@@ -18,12 +18,12 @@ use crate::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGr
 
 use crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact as Fact;
 
-mod checkpoint;
+pub mod checkpoint;
 mod equality;
 mod fact_coverage;
 mod fact_projection;
 mod preparation;
-mod retirement;
+pub mod retirement;
 use retirement::RetirementMetadata;
 
 #[derive(Debug)]
@@ -48,7 +48,7 @@ struct AspectProbe {
 /// Prepared role and aspect probes are constructed before the native commit.
 /// Their storage never authorizes a write.
 #[must_use = "the prepared output witness must be sealed or dropped"]
-pub(in crate::domain_computation::primary_graph) struct PreparedNativeOutputWitness {
+pub struct PreparedNativeOutputWitness {
     cell: Arc<OnceLock<SealedNativeOutputWitness>>,
     roles: Vec<RoleProbe>,
     aspects: Vec<AspectProbe>,
@@ -58,7 +58,7 @@ pub(in crate::domain_computation::primary_graph) struct PreparedNativeOutputWitn
 /// proves that the previously performed output has not changed. A revision
 /// change conservatively requests ordinary producer execution, even for ABA.
 #[derive(Debug)]
-pub(in crate::domain_computation::primary_graph) struct SealedNativeOutputWitness {
+pub struct SealedNativeOutputWitness {
     roles: Vec<RoleProbe>,
     aspects: Vec<AspectProbe>,
 }

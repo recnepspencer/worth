@@ -46,7 +46,7 @@ where
     QueryResult: WorthQueryApplicationProjection<Schema, Query>,
     Binding: ApplicationQueryLiveCauseBinding<Schema, Query, Scope, Target>,
 {
-    pub(super) fn handle_projection_denial(
+    pub fn handle_projection_denial(
         &mut self,
         kind: WorthQueryApplicationProjectionDenialKind,
     ) -> WorthQueryApplicationLiveOutcome<Query, QueryResult> {

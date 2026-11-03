@@ -10,7 +10,7 @@ use std::{
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, MapKernelFailure};
 use worth_query_installation::facade::WorthQueryInstalledApplicationInspectionContract;
 
-pub(in crate::domain_computation) struct WorthQueryApplicationInspectionTarget {
+pub struct WorthQueryApplicationInspectionTarget {
     original: InspectionOriginal,
     contract: WorthQueryInstalledApplicationInspectionContract,
     connection_source: Option<Arc<Self>>,

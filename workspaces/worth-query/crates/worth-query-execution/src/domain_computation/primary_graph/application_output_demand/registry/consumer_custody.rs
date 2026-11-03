@@ -13,10 +13,7 @@ pub(in crate::domain_computation::primary_graph) struct ConsumerHandoff {
     _interest: WorthQueryOutputDemandInterest,
 }
 impl ConsumerCustody {
-    pub(in crate::domain_computation::primary_graph) fn matches(
-        &self,
-        identity: &Arc<RecordedSettlementIdentity>,
-    ) -> bool {
+    pub fn matches(&self, identity: &Arc<RecordedSettlementIdentity>) -> bool {
         match self {
             Self::Handoff(handoff) => handoff.identity == *identity,
             Self::Released => false,
@@ -24,7 +21,7 @@ impl ConsumerCustody {
     }
 }
 impl WorthQueryOutputDemandRegistry {
-    pub(in crate::domain_computation::primary_graph) fn retain_consumer_handoff(
+    pub fn retain_consumer_handoff(
         &self,
         identity: &Arc<RecordedSettlementIdentity>,
     ) -> Result<ConsumerCustody, WorthQueryOutputDemandDenial> {

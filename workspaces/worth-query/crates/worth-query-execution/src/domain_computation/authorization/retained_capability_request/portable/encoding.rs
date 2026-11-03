@@ -44,7 +44,7 @@ impl Serialize for Context<'_> {
 }
 
 impl WorthQueryRetainedCapabilityRequest {
-    pub(in crate::domain_computation) fn encode_workflow_approval_request(
+    pub fn encode_workflow_approval_request(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<FundedActorText, WorkflowApprovalRequestEncodingDenial> {

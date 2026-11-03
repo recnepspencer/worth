@@ -295,7 +295,6 @@ where
                 }
                 AdvancePass::OwnPublication(receipt) => {
                     let Some(disclosed) = disclosure(&demand.observed_source)? else {
-                        #[cfg(test)]
                         own_effect_observation::record(Stage::DisclosureExhausted);
                         return Ok(AdvancePassProgress::Answer(
                             WorthQueryOutputDemandAdvance::Progressed,

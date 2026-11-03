@@ -25,5 +25,3 @@ impl PerformedMembers {
         Ok(None)
     }
 }
-#[cfg(test)]
-mod tests;

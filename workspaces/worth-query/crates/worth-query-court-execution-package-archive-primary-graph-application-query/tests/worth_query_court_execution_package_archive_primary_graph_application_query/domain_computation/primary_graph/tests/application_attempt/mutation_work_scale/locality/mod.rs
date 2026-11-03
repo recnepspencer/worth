@@ -1,0 +1,206 @@
+use std::num::NonZeroUsize;
+use std::time::Duration;
+use std::time::Instant;
+
+use worth_query_declaration::facade::application_query::ApplicationQueryParameterSet;
+
+use crate::domain_computation::primary_graph::tests::application_attempt::mutation_work_scale::*;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::application_queries::parameter_reference::status_parameter;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::AccountSummaryQuery;
+use worth_query_execution::facade::domain_computation::WorthQueryApplicationQueryAccessContext;
+use worth_query_execution::facade::domain_computation::WorthQueryProductQueryControls;
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct LocalWork {
+    pub source_query_before: usize,
+    pub source_query_after: usize,
+    pub mutation_decision_facts: usize,
+    pub mutation_proposed_facts: usize,
+    pub mutation_invariant_work: u64,
+    pub mutation_invariant_executions: usize,
+    pub mutation_touched_records: usize,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct LocalityRun {
+    pub work: LocalWork,
+    pub installation: Duration,
+    pub population: Duration,
+    pub local_edit: Duration,
+}
+
+#[test]
+fn same_kind_unrelated_population_keeps_source_query_and_local_edit_work_flat() {
+    assert_locality(&[1_000, 10_000]);
+}
+
+/// One disjoint Account is enough to expose a population-dependent charge.
+#[test]
+fn one_unrelated_account_cannot_widen_local_source_query_and_edit_work() {
+    assert_locality(&[0, 1]);
+}
+
+pub fn assert_locality(populations: &[usize]) {
+    let mut baseline = None;
+    for &count in populations {
+        let run = run_locality(count);
+        eprintln!(
+            "Query Account locality: unrelated={count} installation={:?} population={:?} local_edit={:?} work={:?}",
+            run.installation, run.population, run.local_edit, run.work
+        );
+        if let Some(baseline) = baseline {
+            assert_eq!(
+                run.work, baseline,
+                "same-kind population widened local work"
+            );
+        } else {
+            baseline = Some(run.work);
+        }
+    }
+}
+
+pub fn run_locality(count: usize) -> LocalityRun {
+    let installation_start = Instant::now();
+    let world = installed_authorization_world(true);
+    let installation = installation_start.elapsed();
+    let population_start = Instant::now();
+    {
+        use worth_query_execution::facade::domain_computation::bound_advancement_requests_on_this_thread_for_test as bound;
+        use worth_query_execution::facade::domain_computation::place_managed_computations_on_this_thread_for_test as place;
+        use worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation;
+        use worth_query_execution::facade::domain_computation::WorthQueryExecutionPlacementForTest as Placement;
+        let _controls = WorthQueryExecutionObservation::install_on_this_thread();
+        struct Restore(Placement, Option<worth_foundational::ExecutionBudget>);
+        impl Drop for Restore {
+            fn drop(&mut self) {
+                place(self.0);
+                bound(self.1);
+            }
+        }
+        let _restore = Restore(
+            place(Placement::Serial),
+            bound(Some(worth_foundational::ExecutionBudget::new(
+                NonZeroUsize::MIN,
+                None,
+                None,
+            ))),
+        );
+        world
+            .application
+            .with_host_advancement(|phase| {
+                grow_unrelated_accounts(
+                    &phase
+                        .execution_request_for(&world.application.product_runtime)
+                        .unwrap(),
+                    &world,
+                    count,
+                );
+            })
+            .expect("the fixture population owns its host call");
+    }
+    let population = population_start.elapsed();
+
+    let request = live_scope();
+    let (principal, source_query_before, program) = world
+        .application
+        .with_host_advancement(|phase| {
+            let custody = phase.test_host_request();
+            let phase_custody = &custody;
+            let principal =
+                authenticated_principal(&(phase_custody).test_host_request(), &world, &request);
+
+            let source_query_before =
+                source_query_work(phase_custody, &world, &principal, &request);
+            let unrelated = resolved_account(
+                &(phase_custody).test_host_request(),
+                &world,
+                "unrelated",
+                &request,
+            );
+            let program = admitted_program(
+                &phase_custody.phase_for_application(&world.application),
+                &world,
+                &principal,
+                &unrelated,
+                &request,
+                "local-edit",
+            );
+            (principal, source_query_before, program)
+        })
+        .expect("the fixture preparation owns its host call");
+    let local_edit_start = Instant::now();
+    let outcome = world.application.compare_and_commit_application(
+        program,
+        idempotency(101, 101),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    );
+    let local_edit = local_edit_start.elapsed();
+    let WorthQueryApplicationCommitOutcome::Committed(receipt) = outcome else {
+        panic!("the unrelated Account edit must commit");
+    };
+    let mutation = receipt
+        .mutation_work()
+        .expect("the local edit carries native mutation work");
+    let work = LocalWork {
+        source_query_before,
+        source_query_after: world
+            .application
+            .with_host_advancement(|phase| {
+                source_query_work(&phase.test_host_request(), &world, &principal, &request)
+            })
+            .expect("the fixture source read owns its host call"),
+        mutation_decision_facts: mutation.decision_fact_count(),
+        mutation_proposed_facts: mutation.proposed_fact_count(),
+        mutation_invariant_work: mutation.invariant_work_units(),
+        mutation_invariant_executions: mutation.relational_invariant_execution_count(),
+        mutation_touched_records: mutation.touched_record_count(),
+    };
+    LocalityRun {
+        work,
+        installation,
+        population,
+        local_edit,
+    }
+}
+
+pub fn source_query_work(
+    phase_custody: &worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    world: &worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::authorization_world_installation::AuthorizationWorld,
+    principal: &worth_query_execution::facade::domain_computation::WorthQueryAuthenticatedPrincipal<
+        IdentityExecutionSchema,
+        worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::Principal,
+        u64,
+    >,
+    request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+) -> usize {
+    let account = resolved_account(&(phase_custody).test_host_request(), world, "open", request);
+    let query = world
+        .application
+        .installed_schema()
+        .certification_query(AccountSummaryQuery::reference())
+        .expect("the source query is installed");
+    let access = WorthQueryApplicationQueryAccessContext::new(principal, &account);
+    let plan = world
+        .selected_product(&(phase_custody).test_host_request())
+        .admit_application_query(
+            &phase_custody.phase_for_application(&world.application),
+            &query,
+            &access,
+            ApplicationQueryParameterSet::new()
+                .bind(status_parameter(), "open".to_owned())
+                .expect("the source parameter is canonical"),
+            WorthQueryProductQueryControls::new(NonZeroUsize::new(10).unwrap(), request),
+        )
+        .expect("the source query admits at every population scale");
+    let result = world
+        .application
+        .execute_application_query_one_shot(
+            &phase_custody.phase_for_application(&world.application),
+            plan,
+        )
+        .expect("the source query executes at every population scale");
+    assert_eq!(result.rows().len(), 1);
+    assert_eq!(result.rows()[0].status(), "open");
+    assert_eq!(result.rows()[0].label(), "primary");
+    result.receipt().total_work_units()
+}

@@ -8,7 +8,7 @@ use worth_relational::facade::history::BranchId;
 use worth_relational::facade::mvcc::CompanionBranchCellSlot;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 use worth_relational::facade::mvcc::PublicationCompanionPreflight;
-pub(in crate::domain_computation) struct SourceInvalidationOwner {
+pub struct SourceInvalidationOwner {
     pub(super) runtime_instance_id: u64,
     pub(super) resources: WorthQueryInvalidationResources,
     pub(in crate::domain_computation::primary_graph) managed_views:
@@ -27,10 +27,7 @@ impl fmt::Debug for SourceInvalidationOwner {
     }
 }
 impl SourceInvalidationOwner {
-    pub(in crate::domain_computation) fn new(
-        resources: WorthQueryInvalidationResources,
-        runtime_instance_id: u64,
-    ) -> Self {
+    pub fn new(resources: WorthQueryInvalidationResources, runtime_instance_id: u64) -> Self {
         Self::with_managed_views(resources, runtime_instance_id, Arc::new(Default::default()))
     }
     pub(in crate::domain_computation::primary_graph) fn with_managed_views(

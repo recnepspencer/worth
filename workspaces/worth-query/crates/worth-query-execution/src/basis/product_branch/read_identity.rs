@@ -63,7 +63,7 @@ impl WorthQueryProductBranchReadIdentity {
         }
     }
 
-    pub(crate) fn from_observation(observation: &ProductBranchObservation) -> Self {
+    pub fn from_observation(observation: &ProductBranchObservation) -> Self {
         Self {
             position: super::read_position::WorthQueryProductBranchReadPosition::from_observation(
                 observation,

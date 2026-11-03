@@ -86,7 +86,7 @@ impl WorthQueryAggregateProjections {
             .insert(target, WorthQueryIncomingAggregate { sum, source_count });
     }
 
-    pub(super) fn refresh_after_commit(
+    pub fn refresh_after_commit(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &mut RelationalRuntime,

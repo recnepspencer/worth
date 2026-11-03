@@ -12,7 +12,7 @@ use worth_runtime_world::facade::ProductBranchIncarnation;
 use super::super::ProductCoordinate;
 use super::super::WorthQueryApplicationOutputLineage;
 
-mod denial;
+pub mod denial;
 mod materialization;
 pub(in crate::domain_computation::primary_graph) use denial::CheckpointPriorSelectionDenial;
 pub(in crate::domain_computation::primary_graph) use denial::CheckpointPriorStructure;
@@ -37,7 +37,7 @@ pub(in crate::domain_computation::primary_graph) struct OutputFamilyRole {
 
 /// A selected native family head, with a reusable locator only when that
 /// exact performed lineage retained one before its effect.
-pub(in crate::domain_computation::primary_graph) struct NativePriorCheckpointOutput<'a> {
+pub struct NativePriorCheckpointOutput<'a> {
     pub(in crate::domain_computation::primary_graph) family_role: OutputFamilyRole,
     pub(in crate::domain_computation::primary_graph) scope:
         crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,

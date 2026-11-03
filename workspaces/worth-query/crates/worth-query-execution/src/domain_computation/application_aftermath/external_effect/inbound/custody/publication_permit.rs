@@ -7,7 +7,7 @@ use worth_query_installation::facade::InstalledInboundOccurrenceContract;
 use super::WorthQueryInboundCustody;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) enum WorthQueryTransportPublicationPermitDenial {
+pub enum WorthQueryTransportPublicationPermitDenial {
     ForeignBinding,
     AtCapacity,
     CounterExhausted,

@@ -166,7 +166,7 @@ impl<Schema, Principal, PrincipalIdentity>
         self.examined_candidate_count
     }
 
-    pub(crate) const fn principal_entity_id(&self) -> EntityId {
+    pub const fn principal_entity_id(&self) -> EntityId {
         self.application_principal.entity_id
     }
 
@@ -174,11 +174,11 @@ impl<Schema, Principal, PrincipalIdentity>
         self.application_principal.runtime_authority
     }
 
-    pub(crate) const fn mapping_entity_id(&self) -> EntityId {
+    pub const fn mapping_entity_id(&self) -> EntityId {
         self.mapping_entity_id
     }
 
-    pub(crate) const fn target_relation_id(&self) -> RelationId {
+    pub const fn target_relation_id(&self) -> RelationId {
         self.target_relation_id
     }
 

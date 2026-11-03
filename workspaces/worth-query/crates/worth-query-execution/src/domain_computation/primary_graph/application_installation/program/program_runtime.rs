@@ -113,9 +113,7 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
     /// A host that rostered no program presents nothing, which is how an
     /// installation that never admitted program meaning refuses program-gated
     /// work instead of inventing an owner for it.
-    pub(in crate::domain_computation::primary_graph) fn presented_program(
-        &self,
-    ) -> Option<WorthQueryPresentedProgram<'_>> {
+    pub fn presented_program(&self) -> Option<WorthQueryPresentedProgram<'_>> {
         self.backing
             .runtime
             .installed_program_support()?
