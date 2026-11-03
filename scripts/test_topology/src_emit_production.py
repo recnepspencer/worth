@@ -12,6 +12,7 @@ import re
 
 from rust_source import pairs, replace_spans, tokens
 from src_families import test_gated
+from src_paths import use_trees
 from src_scope import scope_items
 
 ITEM_KEYWORDS = ('fn', 'struct', 'enum', 'const', 'static', 'type', 'trait', 'union')
@@ -50,7 +51,7 @@ def widen(text, start, end):
     return (vs, ve, 'pub' if current else 'pub ')
 
 
-def production_edits(model, families, widen_modules, widen_items, hooks):
+def production_edits(model, families, widen_modules, widen_items, hooks, widen_imports=()):
     """{source path: [(start, end, replacement)]} over original file text."""
     edits = defaultdict(list)
     for family in families:
@@ -79,6 +80,23 @@ def production_edits(model, families, widen_modules, widen_items, hooks):
                 s, e = absolute(node, change[0], change[1])
                 edits[file_of(node)].append((s, e, change[2]))
             if (module, name) in hooks and test_gated(attributes):
+                for gate in gate_spans(node.text, offset, offset + (end - start)):
+                    edits[file_of(node)].append(absolute(node, *gate) + ('',))
+    for module, name in sorted(widen_imports):
+        node = model.index.get(module)
+        if node is None:
+            continue
+        own = node.own_text()
+        for attributes, _vis, keyword, _item, start, end in scope_items(own):
+            if keyword != 'use' or not any((alias or (segments[-1] if segments else None)) == name
+                                           for segments, _glob, alias in use_trees(own[start:end])):
+                continue
+            offset = own_offset(node, start)
+            change = widen(node.text, offset, offset + (end - start))
+            if change:
+                s, e = absolute(node, change[0], change[1])
+                edits[file_of(node)].append((s, e, change[2]))
+            if test_gated(attributes):
                 for gate in gate_spans(node.text, offset, offset + (end - start)):
                     edits[file_of(node)].append(absolute(node, *gate) + ('',))
     return edits
@@ -112,6 +130,8 @@ def ungate_recorders(text, names):
         changed = False
         for match in re.finditer(r'#\s*\[\s*cfg\s*\(\s*test\s*\)\s*\]\s*', text):
             following = text[match.end():match.end() + 400]
+            if re.match(r'(?:#\s*\[[^\]]*\]\s*)*(?:pub(?:\s*\([^)]*\))?\s+)?(?:mod|use)\b', following):
+                continue
             statement = following.split(';', 1)[0].split('{', 1)[0]
             words = set(re.findall(r'\w+', statement))
             span = (match.start(), match.end())
@@ -124,6 +144,66 @@ def ungate_recorders(text, names):
     return spans
 
 
-def apply_edits(text, changes):
+def apply_edits(text, changes, source=''):
     unique = sorted(set(changes))
+    for (a, b, x), (c, d, y) in zip(unique, unique[1:]):
+        if c < b:
+            raise ValueError(f'overlapping production edits in {source}: {(a, b, x)!r} {(c, d, y)!r}: '
+                             f'{text[a:b][:120]!r} / {text[c:d][:120]!r}')
     return replace_spans(text, unique)
+
+
+def hook_edits(model, classes, referenced, called):
+    """Compile non-test-dependent hooks, compile support modules in place, remove extracted items.
+
+    referenced: (module, name) items moved code names; called: method names it calls with `.`.
+    Compiled items lose their exact `#[cfg(test)]`; those moved code names, and methods it calls,
+    become `pub`. Extracted items leave production (they were test-only code).
+    """
+    from src_hooks import impl_methods
+    edits = defaultdict(list)
+    for key in sorted(classes.compiled, key=str):
+        module, name = key
+        node = model.index[module]
+        for start, end in classes.spans.get(key, []):
+            offset = own_offset(node, start)
+            stop = offset + (end - start)
+            for gate in gate_spans(node.text, offset, stop):
+                edits[file_of(node)].append(absolute(node, *gate) + ('',))
+            body = node.text[offset:stop]
+            is_impl = re.search(r'^\s*(?:#\s*\[[^\]]*\]\s*)*(?:unsafe\s+)?impl\b', body) is not None
+            if not is_impl and (key in referenced or name in called):
+                change = widen(node.text, offset, stop)
+                if change:
+                    edits[file_of(node)].append(absolute(node, change[0], change[1]) + (change[2],))
+            if is_impl:
+                edits[file_of(node)].extend(method_widenings(node, offset, body, called, impl_methods))
+    for family in sorted(classes.compiled_families):
+        node = model.index[family]
+        parent = model.index[family[:-1]]
+        start, end = node.declaration.start, node.declaration.end
+        for gate in gate_spans(parent.text, start, end):
+            edits[file_of(parent)].append(absolute(parent, *gate) + ('',))
+        for member in node.walk():
+            for attributes, _vis, keyword, _name, s, e in scope_items(member.own_text()):
+                if keyword == 'impl':
+                    offset = own_offset(member, s)
+                    body = member.text[offset:offset + (e - s)]
+                    edits[file_of(member)].extend(method_widenings(member, offset, body, called, impl_methods))
+    for module, items in sorted(classes.extracted.items()):
+        node = model.index[module]
+        for _name, spans in items:
+            for start, end in spans:
+                offset = own_offset(node, start)
+                edits[file_of(node)].append(absolute(node, offset, offset + (end - start)) + ('',))
+    return edits
+
+
+def method_widenings(node, offset, body, called, impl_methods):
+    result = []
+    for method, start, end, _gated in impl_methods(body):
+        if method in called:
+            change = widen(node.text, offset + start, offset + end)
+            if change:
+                result.append(absolute(node, change[0], change[1]) + (change[2],))
+    return result

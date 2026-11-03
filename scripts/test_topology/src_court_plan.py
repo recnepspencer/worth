@@ -10,7 +10,9 @@ from pathlib import Path
 from cargo_inventory import metadata
 from court_partition import CEILING, classification
 from frontier_adapter import frontiers
-from src_move_model import MoveModel
+from rust_source import tokens
+from src_hooks import classify, method_seeds
+from src_move_model import MoveModel, add_extracted
 from src_ownership import dispositions
 from src_placement import named_products, place_courts, place_testkits
 from src_rewrite import Rewriter
@@ -99,10 +101,50 @@ def build(lib, repository, baseline, admissions, workspace_manifest, overrides, 
                 'placement': dict(placement), 'parts': parts, 'ledger': rewriter.ledger,
                 'kit_products': kit_products}
 
+    forced = set()
+    for _attempt in range(4):
+        first = placed(None)
+        called = called_methods(model)
+        method_items, method_families = method_seeds(model, called)
+        classes = classify(model, set(first['ledger'].hooks) | method_items, method_families)
+        readers = extracted_readers(model, classes) | (classes.family_reads - set(model.moving))
+        new = {'::'.join(f) for f in readers} - forced
+        if not new:
+            break
+        forced |= new
+        model = MoveModel(lib, repository, baseline, admissions, sorted(forced))
+        foreign = {n for n, r in model.records.items() if not r.node.source.resolve().is_relative_to(library_root)}
+    for module, items in sorted(classes.extracted.items()):
+        add_extracted(model, module, items)
     first = placed(None)
     measured = {key: row['text'].count('\n') + 4 for key, row in first['parts'].items()}
     result = placed(measured)
-    result.update({'model': model, 'foreign': foreign, 'renames': renames})
+    result.update({'model': model, 'foreign': foreign, 'renames': renames, 'hooks': classes,
+                   'called': called, 'forced': sorted(forced)})
+    return result
+
+
+def called_methods(model):
+    """Method names moved code calls with `.name`."""
+    called = set()
+    for record in model.records.values():
+        stream = tokens(record.node.own_text())
+        called |= {stream[i + 1].value for i in range(len(stream) - 1)
+                   if stream[i].value == '.' and stream[i + 1].kind == 'ident'}
+    return called
+
+
+def extracted_readers(model, classes):
+    """Staying families that name an extracted item: they must move with it."""
+    names = {name for items in classes.extracted.values() for name, _spans in items}
+    moving = set(model.moving)
+    result = set()
+    for family, record in model.families.items():
+        if family in moving:
+            continue
+        words = {t.value for n in record.node.walk() for t in tokens(n.own_text()) if t.kind == 'ident'}
+        if words & names:
+            result.add(family)
     return result
 
 

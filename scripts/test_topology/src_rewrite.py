@@ -26,6 +26,7 @@ class Ledger:
     hooks: set = field(default_factory=set)
     unresolved: set = field(default_factory=set)
     cross_court: set = field(default_factory=set)
+    widen_imports: set = field(default_factory=set)
 
 
 def public_paths(surface):
@@ -82,11 +83,18 @@ class Rewriter:
         parts = self.placement[names]
         return parts.get('testkit') or parts.get('court')
 
+    def moved(self, module, name):
+        """Whether (module, name) now lives in a generated crate."""
+        record = self.model.records.get(module)
+        if record is None:
+            return False
+        return name in record.extracted if record.extracted else True
+
     def item_path(self, origin, reader_crate):
         module, name = origin
         if module == '<external>':
             return name
-        if module in self.model.records:
+        if self.moved(module, name):
             crate, path = self.owner_part(module)
             if crate != reader_crate and '-court-' in crate and '-court-' in reader_crate:
                 self.ledger.cross_court.add(('::'.join(module), name or ''))
@@ -122,10 +130,49 @@ class Rewriter:
             return self.module_path(module, reader_crate)
         origin, _gated = self.model.everything.origin(module, rest[0])
         origin = origin or (module, rest[0])
+        if origin[0] == '<external>' or (origin[1] is not None and origin[1] != rest[0]):
+            site = self.alias_site(module, rest[0])
+            if site is not None and (origin[0] != '<external>' or origin[1].rsplit('::', 1)[-1] != rest[0]):
+                return '::'.join((self.alias_path(site, rest[0], origin, reader_crate),) + rest[1:])
         return '::'.join((self.item_path(origin, reader_crate),) + rest[1:])
 
+    def alias_site(self, module, name, seen=frozenset()):
+        """The module whose `use` binds `name` as an alias, following glob imports."""
+        scope = self.model.everything.scopes.get(module)
+        if scope is None or module in seen or name in scope.declared:
+            return None
+        if name in scope.imports:
+            return module
+        for segments in scope.globs:
+            target = self.model.everything.target(segments, module)
+            if target is not None and not target[1]:
+                found = self.alias_site(target[0], name, seen | {module})
+                if found is not None:
+                    return found
+        return None
+
+    def alias_path(self, site, name, origin, reader_crate):
+        """An aliased name keeps its spelling: it is reached where the alias is declared."""
+        if site in self.model.records and not self.model.records[site].extracted:
+            crate, path = self.owner_part(site)
+            prefix = 'crate' if crate == reader_crate else crate.replace('-', '_')
+            return '::'.join((prefix,) + path + (name,))
+        public = self.public.get(origin)
+        if public is not None and public[1] == name:
+            return '::'.join((LIBRARY,) + public[0] + (name,))
+        self.widen_chain(site)
+        self.ledger.widen_imports.add((site, name))
+        if origin[0] != '<external>' and origin[1] is not None:
+            # `pub use` re-exports only a `pub` item (E0364).
+            self.ledger.widen_items.add(origin)
+            _found, gated = self.model.production.origin(origin[0], origin[1])
+            scope = self.model.production.scopes.get(origin[0])
+            if gated or (scope is not None and origin[1] in scope.gated):
+                self.ledger.hooks.add(origin)
+        return '::'.join((LIBRARY,) + site + (name,))
+
     def module_path(self, module, reader_crate):
-        if module in self.model.records:
+        if module in self.model.records and not self.model.records[module].extracted:
             crate, path = self.owner_part(module)
             prefix = 'crate' if crate == reader_crate else crate.replace('-', '_')
             return '::'.join((prefix,) + path)
@@ -152,10 +199,33 @@ class Rewriter:
             if replacement is not None:
                 changes.append((occurrence.start, occurrence.end, replacement))
         text = replace_spans(text, changes)
+        if disposition == 'split' or record.extracted:
+            text = self.with_bare_imports(text, record, reader_crate)
         changes = [(start, end, self.visibility('pub(' + inner + ')', reader_crate))
                    for start, end, inner in visibility_markers(text) if inner.startswith('in ')
                    or '-testkit-' in reader_crate]
         return replace_spans(text, changes)
+
+    def with_bare_imports(self, text, record, reader_crate):
+        """A fragment of a module imports the sibling names it used but no longer holds."""
+        from src_move_model import items_of
+        stream = tokens(text)
+        heads = {t.value for k, t in enumerate(stream) if t.kind == 'ident'
+                 and not (k and stream[k - 1].value in ('.', ':'))
+                 and not (k + 1 < len(stream) and stream[k + 1].value == '!')}
+        defined = {item.name for item in items_of(text)}
+        uses, _paths = scan(text)
+        bound = {alias or segments[-1] for d in uses for segments, glob, alias in d.leaves if segments and not glob}
+        lines = []
+        for name in sorted((heads & self.model.visible(record.names)) - defined - bound):
+            path = self.resolve_path(('self', name), record.names, reader_crate)
+            if path is None or path == name:
+                continue
+            lines.append('use ' + path + ('' if path.rsplit('::', 1)[-1] == name else f' as {name}') + ';')
+        if not lines:
+            return text
+        inner, end = leading_inner_attributes(text)
+        return inner + '\n' + '\n'.join(lines) + '\n' + text[end:]
 
     def visibility(self, visibility, reader_crate):
         if not visibility:

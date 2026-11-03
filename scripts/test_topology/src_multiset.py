@@ -9,11 +9,13 @@ import hashlib
 
 from filesystem_path import filesystem_path
 from module_tree import test_names
-from rust_source import pairs, tokens
+import posixpath
+
+from rust_source import pairs, string_value, tokens
 from src_paths import flatten
 
 
-def normalized_bodies(text):
+def normalized_bodies(text, source=None):
     names = set(test_names(text))
     stream = tokens(text)
     matching = pairs(stream)
@@ -23,12 +25,12 @@ def normalized_bodies(text):
             body = next((j for j in range(i + 2, len(stream)) if stream[j].value in ('{', ';')), None)
             if body is None or stream[body].value != '{':
                 continue
-            values = without_import_shape(stream, matching, i, matching[body] + 1)
+            values = without_import_shape(stream, matching, i, matching[body] + 1, source)
             result.append((stream[i + 1].value, digest(values)))
     return result
 
 
-def without_import_shape(stream, matching, start, end):
+def without_import_shape(stream, matching, start, end, source=None):
     """Token values with every `use` statement replaced by one sorted set of the names bound.
 
     The move splits braced imports into one explicit import per leaf; the names a body
@@ -51,9 +53,21 @@ def without_import_shape(stream, matching, start, end):
             bound_all += bound
             k = close + 1
             continue
-        values.append(token.value)
+        values.append(included_target(stream, k, source) or token.value)
         k += 1
     return values + ['use'] + sorted(bound_all)
+
+
+def included_target(stream, k, source):
+    """A relative `include*!` literal compares as the repository file it names."""
+    token = stream[k]
+    if source is None or token.kind != 'string' or k < 3 or stream[k - 1].value != '(' \
+            or stream[k - 2].value != '!' or not stream[k - 3].value.startswith('include'):
+        return None
+    literal = string_value(token)
+    if literal.startswith('/'):
+        return None
+    return 'file:' + posixpath.normpath(posixpath.join(posixpath.dirname(source), literal))
 
 
 def digest(values):
@@ -67,12 +81,13 @@ def digest(values):
     return hashlib.sha256(' '.join(reduced).encode()).hexdigest()[:16]
 
 
-def multiset_of_texts(texts):
+def multiset_of_texts(sources):
+    """sources: (text, repository-relative source path) pairs."""
     counts = Counter()
-    for text in texts:
-        counts.update(normalized_bodies(text))
+    for text, source in sources:
+        counts.update(normalized_bodies(text, source))
     return counts
 
 
 def multiset_of_files(root, paths):
-    return multiset_of_texts(filesystem_path(root / p).read_text(encoding='utf-8') for p in paths)
+    return multiset_of_texts((filesystem_path(root / p).read_text(encoding='utf-8'), p) for p in paths)

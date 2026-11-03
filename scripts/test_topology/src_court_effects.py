@@ -10,7 +10,7 @@ from src_emit_config import (control_callers, library_test_doors, shrink_admissi
                              splits_toml)
 from src_emit_crates import (LIBRARY_DIR, crate_sources, library_dependencies, manifest, module_files,
                              referenced_testkits)
-from src_emit_production import apply_edits, production_edits, ungate_recorders
+from src_emit_production import apply_edits, hook_edits, production_edits, ungate_recorders
 from src_multiset import multiset_of_texts
 
 CONFIG = 'tools/boundary-check/config/'
@@ -114,14 +114,18 @@ def effects_for(root, lib, baseline, admissions, workspace, overrides):
     for path, content in sorted(files.items()):
         effects.write(root / path, content)
     ledger = p['ledger']
-    edits = production_edits(model, [f for f in model.moving], ledger.widen_modules, ledger.widen_items, ledger.hooks)
-    hook_names = {name for _module, name in ledger.hooks}
+    edits = production_edits(model, [f for f in model.moving], ledger.widen_modules, ledger.widen_items,
+                             set(), ledger.widen_imports)
+    classes = p['hooks']
+    for source, changes in hook_edits(model, classes, ledger.hooks | ledger.widen_items, p['called']).items():
+        edits[source].extend(changes)
+    hook_names = {name for _module, name in classes.compiled}
     for source, changes in sorted(edits.items(), key=lambda kv: str(kv[0])):
         text = filesystem_path(source).read_text(encoding='utf-8')
         changes = list(changes)
         if hook_names:
             changes += [(s, e, '') for s, e in ungate_recorders(text, hook_names)]
-        effects.write(source, apply_edits(text, changes))
+        effects.write(source, apply_edits(text, changes, str(source)))
     for blocker in sorted(ledger.cross_court):
         blockers.append({'cross_court_reference': '::'.join(blocker)})
     moved_sources = set(relocated)
@@ -130,20 +134,27 @@ def effects_for(root, lib, baseline, admissions, workspace, overrides):
     staying_text = '\n'.join(n.own_text() for names, f in sorted(model.families.items())
                              if names not in model.moving for n in f.node.walk())
     trim_dev_dependencies(root, effects, staying_text, library_table)
-    before = multiset_of_texts(model.records[n].node.own_text() for n in model.records)
+    before = multiset_of_texts((model.records[n].node.own_text(), relative(model.records[n].node.source.resolve(), root))
+                               for n in model.records if not model.records[n].extracted)
     court_files = sorted([path for path in files if '/tests/' in path and path.endswith('.rs')] + sorted(foreign_files))
     program = effects.program()
     totals = Counter({'moved_families': len(model.moving), 'moved_scopes': len(model.records),
                       'crates': len(crates), 'tests': sum(before.values()),
                       'widened_modules': len(ledger.widen_modules), 'widened_items': len(ledger.widen_items),
-                      'compiled_hooks': len(ledger.hooks), 'unresolved': len(ledger.unresolved),
+                      'compiled_hooks': len(classes.compiled), 'compiled_support_modules': len(classes.compiled_families),
+                      'extracted_to_testkit': sum(len(v) for v in classes.extracted.values()), 'unresolved': len(ledger.unresolved),
                       'moves': len(program['moves']), 'writes': len(program['writes']), 'blockers': len(blockers)})
     return {'version': 1, 'effects': program, 'crates': crates, 'totals': dict(totals),
             'blockers': blockers, 'court_test_files': court_files,
             'test_multiset': {'\t'.join(k): v for k, v in sorted(before.items())},
             'widened_modules': sorted('::'.join(m) for m in ledger.widen_modules),
             'widened_items': sorted('::'.join(m) + '::' + n for m, n in ledger.widen_items),
-            'compiled_hooks': sorted('::'.join(m) + '::' + n for m, n in ledger.hooks),
+            'widened_imports': sorted('::'.join(m) + '::' + n for m, n in ledger.widen_imports),
+            'compiled_hooks': sorted('::'.join(m) + '::' + n for m, n in classes.compiled),
+            'compiled_support_modules': sorted('::'.join(f) for f in classes.compiled_families),
+            'extracted_to_testkit': sorted('::'.join(m) + '::' + n for m, items in classes.extracted.items()
+                                           for n, _spans in items),
+            'forced_families': p['forced'],
             'unresolved': sorted('::'.join(m) + '::' + str(n) for m, n in ledger.unresolved),
             'allocator_moved_from': sorted(allocators),
             'renamed_modules': sorted(f'{k} -> {v}' for k, v in p['renames'].items()),

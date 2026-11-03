@@ -38,11 +38,13 @@ class ModuleRecord:
     items: list = field(default_factory=list)
     tests: list = field(default_factory=list)
     uses: list = field(default_factory=list)
+    extracted: set = field(default_factory=set)
+    extracted_spans: list = field(default_factory=list)
 
 
-def moving_families(rows):
+def moving_families(rows, forced=()):
     by_module = {r['module']: r for r in rows}
-    moving = {m for m, r in by_module.items() if r['decision'] in MOVING}
+    moving = {m for m, r in by_module.items() if r['decision'] in MOVING} | set(forced)
     changed = True
     while changed:
         changed = False
@@ -67,14 +69,14 @@ def items_of(text):
 
 
 class MoveModel:
-    def __init__(self, lib_source, repository, baseline, admissions):
+    def __init__(self, lib_source, repository, baseline, admissions, forced=()):
         self.repository = Path(repository).resolve()
         self.lib = Path(lib_source).resolve()
         self.plan = audit(self.lib, self.repository, baseline, admissions)
         self.tree, found = families(self.lib)
         self.index = module_index(self.tree)
         self.families = {f.names: f for f in found}
-        self.moving = [tuple(m.split('::')) for m in moving_families(self.plan['families'])]
+        self.moving = [tuple(m.split('::')) for m in moving_families(self.plan['families'], forced)]
         self.production = Surface(self.tree, self.index, list(self.families))
         self.everything = Surface(self.tree, self.index, [])
         self.records = {}
@@ -135,3 +137,31 @@ class MoveModel:
             if target is not None and not target[1]:
                 names |= self.visible(target[0], seen | {module})
         return names
+
+
+class ExtractedNode:
+    """Test-dependent `cfg(test)` items of a production module, moved as one support scope."""
+
+    def __init__(self, module_node, text):
+        self.names, self.source, self.offset = module_node.names, module_node.source, None
+        self.declaration, self.children, self.text = None, [], text
+
+    def own_text(self):
+        return self.text
+
+    def walk(self):
+        yield self
+
+
+def add_extracted(model, module, items):
+    """Record extracted items of production `module` (name, own-text spans) as a support scope."""
+    node = model.index[module]
+    own = node.own_text()
+    spans = sorted({span for _name, item_spans in items for span in item_spans})
+    text = '\n\n'.join(own[s:e] for s, e in spans) + '\n'
+    record = ModuleRecord(module, ('<extracted>',) + module, ExtractedNode(node, text), items_of(text))
+    record.uses = model.resolved(record.node)
+    record.extracted = {name for name, _spans in items}
+    record.extracted_spans = spans
+    model.records[module] = record
+    return record

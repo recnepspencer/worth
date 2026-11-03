@@ -25,6 +25,7 @@ def dispositions(model, unit_of):
             if unit_of(target) != reader_unit:
                 supported.add(target)
     supported |= {names for names in model.records if model.records[names].family in root_support(model)}
+    supported |= {names for names, record in model.records.items() if record.extracted}
     frontier = list(supported)
     while frontier:
         names = frontier.pop()
@@ -56,7 +57,7 @@ def defining_record(model, module):
 
 def root_support(model):
     """Moving families with no tests at all are support wherever they are read from."""
-    return {family for family in model.moving
+    return {family for family in model.moving if family in model.families
             if not any(model.records[n.names].tests or macro_tests(model.records[n.names])
                        for n in model.families[family].node.walk())}
 
