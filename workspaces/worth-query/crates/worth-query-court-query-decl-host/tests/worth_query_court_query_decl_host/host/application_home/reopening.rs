@@ -106,10 +106,10 @@ fn flushed_and_pending_multibatch_homes_readmit_their_completed_publication() {
         .unwrap_or_else(|refused| opening_failed("multibatch readmission", &refused));
         let (_, live) = scope();
         assert_eq!(balance(home.runtime(), &live), 7);
-        assert!(matches!(
-            set(home.runtime(), &live, 0x773, 8).unwrap(),
-            WorthQueryApplicationMutationOutcome::Committed { result: 8, .. }
-        ));
+        match set(home.runtime(), &live, 0x773, 8).unwrap() {
+            WorthQueryApplicationMutationOutcome::Committed { result: 8, .. } => {}
+            other => panic!("mutation after multibatch reopen (flushed={flush_final}): {other:?}"),
+        }
         assert_eq!(balance(home.runtime(), &live), 8);
         assert_eq!(contacts.load(Ordering::SeqCst), 1);
         home.close(&execution)
