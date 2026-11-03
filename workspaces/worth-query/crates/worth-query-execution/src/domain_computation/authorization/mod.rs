@@ -119,5 +119,5 @@ fn authorization_denial(
 pub(in crate::domain_computation) use capability_observation::CancelGrantSelectionGuardForTest;
 
 pub(in crate::domain_computation) use operation_progression::{
-    BrandTag, WorthQueryAdmittedOperation,
+    BrandTag, ReadCompletionAdmission, WorthQueryAdmittedOperation,
 };

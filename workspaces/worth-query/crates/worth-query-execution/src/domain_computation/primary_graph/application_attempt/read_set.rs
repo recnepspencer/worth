@@ -21,7 +21,6 @@ use crate::domain_computation::primary_graph::{
     WorthQueryInstalledEntityResolutionContext, WorthQueryPrimaryGraphApplicationRuntime,
     WorthQueryPrincipalResolutionMode,
 };
-
 mod fact_routes;
 pub(in crate::domain_computation::primary_graph) use fact_routes::FactRoutes;
 mod application_projection;
@@ -33,8 +32,11 @@ mod completed_facts;
 pub(in crate::domain_computation::primary_graph::application_attempt) use completed_facts::admit_completed_facts;
 mod authority_facts;
 mod binding_proof;
+mod complete_read_set_core;
 mod completion;
+mod completion_brand;
 mod computation_routing;
+mod mutation_read_attempt_core;
 mod native_completion;
 mod value_decode;
 #[cfg(test)]
@@ -387,7 +389,6 @@ where
         })
     }
 }
-
 mod entity_resolution;
 mod workflow_actor;
 

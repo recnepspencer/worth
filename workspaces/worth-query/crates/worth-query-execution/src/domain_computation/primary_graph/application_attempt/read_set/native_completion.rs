@@ -1,5 +1,9 @@
 //! Checked fixed-shape facts reach ordinary completion through a funded patch.
+use super::complete_read_set_core::{
+    CompleteReadSetCore, CompletedReadFacts, NativeReadCompletion, PreparedReadCompletion,
+};
 use super::computation_routing::NativeReadRefresh;
+use super::mutation_read_attempt_core::MutationReadAttemptCore;
 use super::*;
 use crate::domain_computation::primary_graph::application_attempt::{
     check_request_live,
@@ -7,17 +11,12 @@ use crate::domain_computation::primary_graph::application_attempt::{
 };
 use worth_execution::ExecutionAllocationPolicy;
 
-impl<Schema, Operation, Input, Scope, Phase>
-    WorthQueryApplicationReadAttempt<'_, '_, Schema, Operation, Input, Scope, Phase>
-{
+impl MutationReadAttemptCore<'_, '_, '_> {
     pub(super) fn complete_native(
-        mut self,
+        self,
         refresh: NativeReadRefresh,
         policy: ExecutionAllocationPolicy<'_, '_>,
-    ) -> Result<
-        WorthQueryCompleteApplicationReadSet<Schema, Operation, Input, Scope, Phase>,
-        WorthQueryApplicationAttemptDenial,
-    > {
+    ) -> Result<PreparedReadCompletion, WorthQueryApplicationAttemptDenial> {
         self.check_completion_live()?;
         let expected = self
             .expected_facts
@@ -56,9 +55,11 @@ impl<Schema, Operation, Input, Scope, Phase>
                 .validate_current_authority()
                 .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)
         };
+        let source_values =
+            std::mem::replace(self.source_facts, SourceFacts::Admitted(Vec::new())).into_values();
         let source = super::admit_completed_facts(
             source_count,
-            self.source_facts.into_values(),
+            source_values,
             policy,
             self.admission.publication_request(),
             operation,
@@ -81,7 +82,7 @@ impl<Schema, Operation, Input, Scope, Phase>
         let mut patch = base
             .prepare_native_patch(&changed, control)
             .map_err(|cause| cause.into_attempt_denial(operation))?;
-        for (key, fact) in &self.facts {
+        for (key, fact) in self.facts.iter() {
             check_authority()?;
             patch
                 .replace(
@@ -96,7 +97,11 @@ impl<Schema, Operation, Input, Scope, Phase>
             .map_err(|cause| cause.into_attempt_denial(operation))?;
         drop(base);
         drop(self.expected_facts.take());
-        let (inputs, completed) = self.computation_reads;
+        let (inputs, completed) = std::mem::replace(self.computation_reads, (
+            crate::domain_computation::primary_graph::invariant_projection::ObservedComputationInputs::None,
+            crate::domain_computation::primary_graph::application_contribution::CompletedComputationRetention::Absent(
+                crate::domain_computation::primary_graph::application_contribution::PriorAbsence::NotProduced),
+        ));
         drop(inputs);
         let (content, content_work) = match refresh.content() {
             Some(prior) => {
@@ -139,54 +144,78 @@ impl<Schema, Operation, Input, Scope, Phase>
         let handler_count = decision_count
             .checked_add(handler_sources)
             .ok_or_else(|| StoreDenial::Representability.into_attempt_denial(operation))?;
+        Ok(PreparedReadCompletion::Native(NativeReadCompletion {
+            read: CompletedReadFacts {
+                postcondition_carry,
+                application_projection: Some(application_projection),
+                original_read: None,
+                installed_read_scopes,
+                facts,
+                content,
+                #[cfg(test)]
+                computation_facts: Some(metadata),
+                computation_fact_ordinals,
+            },
+            retained,
+            handler_count,
+            content_work,
+        }))
+    }
+}
+
+impl NativeReadCompletion {
+    pub(super) fn finish(
+        mut self,
+        mut admission: crate::domain_computation::authorization::ReadCompletionAdmission<'_>,
+        lease: WorthQueryApplicationSnapshotLease,
+        policy: ExecutionAllocationPolicy<'_, '_>,
+    ) -> Result<
+        (CompleteReadSetCore, WorthQueryApplicationSnapshotLease),
+        WorthQueryApplicationAttemptDenial,
+    > {
+        let facts = &self.read.facts;
+        let application_projection = self
+            .read
+            .application_projection
+            .as_ref()
+            .expect("native completion projection");
+        let operation = admission.operation();
+        let retained = self.retained;
+        let handler_count = self.handler_count;
+        let content_work = self.content_work;
+        let content = &self.read.content;
+        let control = StorageControl::new(policy, Some(admission.publication_request()));
         let (lease, original_read) = super::CompletedOriginalRead::from_native_completion(
             facts.clone(),
             application_projection.clone(),
-            self.lease,
-            &self.admission,
+            lease,
+            &admission,
             control,
         )
         .map_err(|cause| cause.into_attempt_denial(operation))?;
-        self.admission.record_completed_handler_facts(
+        admission.record_completed_handler_facts(
             CompletedHandlerFactBoundary::from_completed_read(handler_count),
             retained,
         );
-        self.admission.retain_execution_canonical_work(content_work);
-        let effect_routes = match content.as_ref().and_then(|c| c.effect_routes(&facts)) {
+        admission.retain_execution_canonical_work(content_work);
+        let effect_routes = match content.as_ref().and_then(|c| c.effect_routes(facts)) {
             Some(routes) => routes,
             None => super::super::CompletedFactRoutes::from_facts(
                 facts.clone(),
                 super::super::retained_decision_facts::StorageControl::new(
                     policy,
-                    Some(self.admission.publication_request()),
+                    Some(admission.publication_request()),
                 ),
             )
-            .map_err(|cause| cause.into_attempt_denial(self.admission.operation()))?,
+            .map_err(|cause| cause.into_attempt_denial(admission.operation()))?,
         };
-        Ok(WorthQueryCompleteApplicationReadSet {
-            postcondition_carry,
-            admission: self.admission,
+        self.read.original_read = original_read;
+        Ok((
+            CompleteReadSetCore {
+                read: self.read,
+                effect_routes,
+            },
             lease,
-            application_projection: Some(application_projection),
-            original_read,
-            installed_read_scopes,
-            facts,
-            content,
-            effect_routes,
-            consumed_outputs: self.consumed_outputs,
-            #[cfg(test)]
-            computation_facts: Some(metadata),
-            computation_fact_ordinals,
-            workflow_authority_binding: None,
-            mutation_handler_binding: None,
-            workflow_deadline: None,
-            new_commit_refusal: None,
-            signed_creation: None,
-            workflow_birth_binding: None,
-            workflow_succession_binding: None,
-            local_action_settlement: None,
-            body_external_emission: None,
-            _phase: PhantomData,
-        })
+        ))
     }
 }
