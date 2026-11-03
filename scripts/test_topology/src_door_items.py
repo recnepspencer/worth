@@ -101,6 +101,10 @@ def plan_items(files, index, surface):
                     add_door(result, surface, published, module, name)
                 if reference.glob:
                     result.rewrites[path].append((reference, module, None, sorted(aliases)))
+                elif not aliases and is_import(text, reference):
+                    # An import of a library module nothing names through: an over-broad glob
+                    # expansion. It has no door; the import goes.
+                    result.rewrites[path].append((reference, module, None, ('drop',)))
                 else:
                     result.rewrites[path].append((reference, module, None, None))
                 continue
@@ -123,6 +127,11 @@ def add_door(result, surface, published, module, name):
         return ('public', published[origin])
     result.doors[module][name] = origin
     return ('door', module + (name,))
+
+
+def is_import(text, reference):
+    line_start = text.rfind('\n', 0, reference.start) + 1
+    return re.match(r'\s*(?:pub(?:\([^)]*\))?\s+)?use\s+$', text[line_start:reference.start]) is not None
 
 
 def module_alias_uses(text, reference, module, index):

@@ -255,7 +255,15 @@ def rewrite_sites(sites):
         text = path.read_bytes().decode('utf-8')
         data = text.encode('utf-8')
         spans = []
-        for start, end, replacement in sorted(changes):
+        # One field access is reported per target; keep one rewrite per span (mutable wins).
+        fields = {}
+        for start, end, replacement in changes:
+            if not isinstance(replacement, str):
+                field, mutable = replacement
+                previous = fields.get((start, end))
+                fields[(start, end)] = (field, mutable or (previous is not None and previous[1]))
+        changes = {c for c in changes if isinstance(c[2], str)} | {(s, e, r) for (s, e), r in fields.items()}
+        for start, end, replacement in sorted(changes, key=lambda c: (c[0], c[1])):
             if isinstance(replacement, str):
                 spans.append((start, end, replacement))
                 continue
@@ -299,7 +307,8 @@ def expression_start(data, field_start):
         i -= 1
     assert text[i] == '.', 'a field access follows a dot'
     i -= 1
-    closing = {')': '(', ']': '[', '}': '{'}
+    # Calls and indexes continue a postfix chain; a closing brace ends a block, never a chain.
+    closing = {')': '(', ']': '['}
     while i >= 0:
         i = skip_back(text, i)
         if i < 0:

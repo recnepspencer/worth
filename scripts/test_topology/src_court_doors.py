@@ -42,6 +42,11 @@ def rewritten(text, rewrites):
     changes = []
     for reference, module, name, target in rewrites:
         head = 'worth_query_execution'
+        if target == ('drop',):
+            line_start = text.rfind('\n', 0, reference.start) + 1
+            line_end = text.index('\n', reference.end) + 1
+            changes.append((line_start, line_end, ''))
+            continue
         if reference.through_door:
             continue
         if reference.glob:
