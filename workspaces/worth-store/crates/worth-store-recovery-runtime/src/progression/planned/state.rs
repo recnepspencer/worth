@@ -41,6 +41,69 @@ mod tests {
 
     #[test]
     fn planned_backing_refuses_combined_construction_before_allocating() {
+        for (name, bytes) in [
+            (
+                "planning_custody",
+                std::mem::size_of::<crate::progression::PlanningCustody>(),
+            ),
+            (
+                "final_custody",
+                std::mem::size_of::<crate::progression::CustodyState>(),
+            ),
+            (
+                "selected_tier_custody",
+                std::mem::size_of::<
+                    Option<worth_store_recovery_physics::VerifiedSelectedTierEpochCustody>,
+                >(),
+            ),
+            (
+                "namespace_state",
+                std::mem::size_of::<crate::progression::NamespaceDurableState>(),
+            ),
+            (
+                "final_namespace_state",
+                std::mem::size_of::<
+                    crate::progression::NamespaceDurableState<crate::progression::CustodyState>,
+                >(),
+            ),
+            (
+                "base_image_plan",
+                std::mem::size_of::<crate::progression::RecoveryBaseImagePlan>(),
+            ),
+            (
+                "publication_plan",
+                std::mem::size_of::<crate::progression::RecoveryPublicationPlan>(),
+            ),
+            (
+                "expectation_payload",
+                std::mem::size_of::<crate::progression::ExpectationPayload>(),
+            ),
+            (
+                "expectation_owner",
+                std::mem::size_of::<crate::progression::RecoveryPublicationExpectation>(),
+            ),
+            (
+                "platform_authority",
+                std::mem::size_of::<crate::entry::AdmittedPlatformAuthority>(),
+            ),
+            (
+                "fresh_reopen",
+                std::mem::size_of::<
+                    worth_store::physical_runtime::CompletedPhysicalRecoveryFreshReopen,
+                >(),
+            ),
+            (
+                "runtime_core",
+                std::mem::size_of::<worth_store::physical_runtime::RecoveredPhysicalRuntimeCore>(),
+            ),
+            (
+                "serving_handoff",
+                std::mem::size_of::<worth_store::physical_runtime::RecoveredPhysicalServingHandoff>(
+                ),
+            ),
+        ] {
+            eprintln!("compiler_layout {name}: {bytes}");
+        }
         let payload = std::mem::size_of::<PlannedRecoveryState>() as u64;
         for extraction in [0, payload] {
             let staged = std::mem::size_of::<crate::progression::StagedRecoveryState>() as u64;
