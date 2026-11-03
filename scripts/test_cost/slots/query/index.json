@@ -7,8 +7,8 @@
   "scheduler_samples": 6972,
   "standalone_complete_samples": 5,
   "unmeasured_samples": 1,
-  "failed_child_samples": 0,
-  "sample_count": 6978,
+  "failed_child_samples": 5,
+  "sample_count": 6983,
   "measured_identities": 6972,
   "policy_identities": 114,
   "retired_identities": 0,
@@ -17,18 +17,18 @@
     "identities": 7429,
     "sha256": "93570cdf49b3ae09f4072e39962cb55c5817d3c66fc4da652a966dc2af184ee1"
   },
-  "source_count": 1,
+  "source_count": 2,
   "pending_claim_count": 0,
   "catalogs": {
     "sources": {
-      "file": "sources-00-000000-88ce7f224ec2ac9a.jsonl",
-      "sha256": "88ce7f224ec2ac9ab290cdb17ea74649b38916a20d5936aa5a9a5181551de511",
-      "records": 1
+      "file": "sources-00-000000-e5fe332f933d407f.jsonl",
+      "sha256": "e5fe332f933d407f094ad38f30cf97ba8d6657099bd5d537f9aa4cbb9051fd3e",
+      "records": 2
     },
     "samples": {
-      "file": "samples-01-000000-e623f9504ddcd93a.jsonl",
-      "sha256": "e623f9504ddcd93a27843949ace0ffe846b639415e6b738265ef92cb53443ca5",
-      "records": 6978
+      "file": "samples-01-000000-b16b3d6fbb3b7466.jsonl",
+      "sha256": "b16b3d6fbb3b7466d4fc7a9ddc88b4e69bc3e3b30c3bc78ef90b5f700ed75c0f",
+      "records": 6983
     },
     "rules": {
       "file": "rules-01-000000-17ca36191d09c146.jsonl",
