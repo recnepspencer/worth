@@ -1,7 +1,7 @@
 //! Completes and closes the actual correction Source, retaining its whole evidence.
 use super::*;
 
-pub(super) fn complete(
+pub fn complete(
     host: &host::Host,
     branch: worth_query_host::facade::product::WorthQueryProductBranch,
     alternative: &WorthQuerySelectedCorrectionAlternative<'_, NumericSchema>,
@@ -23,7 +23,15 @@ pub(super) fn complete(
     let advance = match prepared {
         WorthQueryOperationCorrectionPreparation::Prepared(prepared) => prepared.publish().unwrap(),
         WorthQueryOperationCorrectionPreparation::Continued(advance) => advance,
-        _ => panic!("reapplication must preserve an ordinary source owner"),
+        WorthQueryOperationCorrectionPreparation::IdempotencyIntentDrift => {
+            panic!("reapplication intent changed")
+        }
+        WorthQueryOperationCorrectionPreparation::PublicationPending => {
+            panic!("reapplication remains pending")
+        }
+        WorthQueryOperationCorrectionPreparation::ProductUnpublished(handle) => {
+            panic!("reapplication retains unpublished custody: {handle:?}")
+        }
     };
     let completed = match advance {
         WorthQuerySourceOnlyAdvance::Completed(completed) => completed,

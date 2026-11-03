@@ -124,7 +124,7 @@ fn fresh_directory_home_journey() {
         .expect("the retained Query clone never acquires Store lifecycle custody");
     assert_eq!(
         legacy_denial.kind(),
-        WorthQueryConditionalRuntimeInstallationDenialKind::ApplicationHomeOwnsLifecycle,
+        WorthQueryConditionalRuntimeInstallationDenialKind::RuntimeKeepaliveRetained,
     );
     drop(retained_runtime);
     let closed = refused

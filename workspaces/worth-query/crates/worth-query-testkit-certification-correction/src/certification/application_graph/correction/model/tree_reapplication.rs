@@ -10,7 +10,7 @@ use worth_query_execution::facade::primary_graph::{
 use worth_query_host::facade::{application_entry::*, primary_graph::*};
 
 #[path = "tree_reapplication/reapplication_completion.rs"]
-mod reapplication_completion;
+pub mod reapplication_completion;
 
 pub fn limits() -> WorthQueryCorrectionHistoryLimits {
     WorthQueryCorrectionHistoryLimits::new(None, NonZeroUsize::MIN)

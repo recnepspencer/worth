@@ -112,34 +112,16 @@ pub fn exercise(application: &host::Host) {
         .unwrap();
     let replayed = match replay {
         WorthQueryApplicationCorrectionPreparation::Settled(
-            WorthQueryApplicationMutationOutcome::AlreadyCommitted(replayed),
+            WorthQueryApplicationMutationOutcome::RecoveredCommitted(replayed),
         ) => replayed,
         WorthQueryApplicationCorrectionPreparation::Settled(other) => {
             panic!("exact replay must return the original combined receipt: {other:?}")
         }
         _ => panic!("exact replay must settle against the original combined publication"),
     };
-    assert_eq!(replayed.commit_reference(), receipt.commit_reference());
+    super::recorded_receipt::assert_agrees(&replayed, &receipt);
     assert_eq!(
-        replayed.committed_product_publication().composite_commit(),
-        receipt.committed_product_publication().composite_commit()
-    );
-    assert_eq!(
-        replayed
-            .committed_product_publication()
-            .signal_publication(),
-        receipt.committed_product_publication().signal_publication()
-    );
-    assert_eq!(
-        replayed
-            .committed_product_publication()
-            .conditional_definition_generation(),
-        receipt
-            .committed_product_publication()
-            .conditional_definition_generation()
-    );
-    assert_eq!(
-        replayed.aftermath_causality().unwrap().recorded_source(),
+        replayed.aftermath_causality().unwrap().source(),
         receipt.aftermath_causality().unwrap().recorded_source()
     );
     assert_eq!(super::required_output_courts::head(application), corrected);
