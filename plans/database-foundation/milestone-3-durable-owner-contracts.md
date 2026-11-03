@@ -2926,3 +2926,11 @@ from staying active across the subsequent owners. They add no allocation or
 phase issuer and retain every existing proof in the same basis. Qualification
 must establish the resulting stack behavior; source decomposition alone proves
 no numerical bound.
+
+Selected-release admission dispatches exhaustively to the existing HeadV2,
+NoRelease and Absent custody families. Each receiver retains its original
+pending, ordered-history, source-probe and exact-root checks in their original
+order, so unrelated posture-local temporaries need not coexist. The shared
+probe reads the same selected V2 bytes and preserves the FailedIngest exception.
+Malformed certificates and unrelated descriptor families still refuse. This
+composition introduces no issuer or allocation and requires fresh qualification.

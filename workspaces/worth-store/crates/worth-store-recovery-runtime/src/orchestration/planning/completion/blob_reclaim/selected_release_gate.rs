@@ -4,8 +4,7 @@
 use super::super::super::{context::PlanningContext, resolved_basis::ResolvedPlanningBasis};
 use crate::progression::PlanningCustody;
 use worth_store_physical_format::{
-    decode_checkpoint_certificate, BlobRecordKind, CheckpointCertificateKind,
-    ReleaseCheckpointCertificateV1, SelectedRecordContentClass,
+    decode_checkpoint_certificate, CheckpointCertificateKind, ReleaseCheckpointCertificateV1,
 };
 
 #[path = "selected_release_gate/head_v2.rs"]
@@ -18,8 +17,17 @@ mod pending_wal;
 #[path = "selected_release_gate/posture_tests.rs"]
 mod posture_tests;
 
+#[path = "selected_release_gate/absent_posture.rs"]
+mod absent_posture;
+#[path = "selected_release_gate/head_posture.rs"]
+mod head_posture;
+#[path = "selected_release_gate/no_release_posture.rs"]
+mod no_release_posture;
 #[path = "selected_release_gate/resident_basis.rs"]
 mod resident_basis;
+#[path = "selected_release_gate/selected_release_probe.rs"]
+mod selected_release_probe;
+use selected_release_probe::selected_has_release;
 
 pub(super) fn admit_pending_wal_release(
     context: PlanningContext,
@@ -56,7 +64,7 @@ pub(super) fn admit_source_heads(
 }
 
 pub(super) fn verify(
-    mut context: PlanningContext,
+    context: PlanningContext,
     basis: &mut ResolvedPlanningBasis,
 ) -> Result<PlanningContext, crate::entry::PhysicalRecoveryOutcome> {
     match checkpoint_posture(
@@ -67,80 +75,10 @@ pub(super) fn verify(
             .checkpoint()
             .map(|shared| shared.stream()),
     ) {
-        Ok(CheckpointReleasePosture::HeadV2) => {
-            if let PlanningCustody::PendingPrepared { claim: pending, .. } = &basis.custody {
-                let admitted = pending.selected_head_v2().is_some_and(|custody| {
-                    custody.selected_root() == context.selection.root().selected().manifest()
-                }) && pending_replay_matches(basis);
-                return if admitted {
-                    Ok(context)
-                } else {
-                    Err(context.redo_block(basis.planning_counters(), None))
-                };
-            }
-            if matches!(&basis.custody, PlanningCustody::Unresolved) {
-                context = head_v2::admit(context, basis)?;
-            }
-            if basis.observed_pages.ordered_releases.is_some() {
-                return pending_wal::admit_completed_history(context, basis);
-            }
-            let PlanningCustody::SourceHeads(custody) = &basis.custody else {
-                return Err(context.redo_block(basis.planning_counters(), None));
-            };
-            let selected = context.selection.root().selected().manifest();
-            if custody.checkpoint_source_root().release_custody_head_root()
-                != selected.release_custody_head_root()
-                || custody
-                    .checkpoint_source_root()
-                    .next_release_custody_head_block()
-                    != selected.next_release_custody_head_block()
-            {
-                // A newer selected head root requires its complete ordered V14
-                // history, not a blessing of checkpoint-source entries.
-                return Err(context.redo_block(basis.planning_counters(), None));
-            }
-            Ok(context)
-        }
-        Ok(CheckpointReleasePosture::NoRelease) => {
-            if let PlanningCustody::PendingPrepared { claim: pending, .. } = &basis.custody {
-                if pending.marker().is_none() || !pending_replay_matches(basis) {
-                    return Err(context.redo_block(basis.planning_counters(), None));
-                }
-                return Ok(context);
-            }
-            if basis.observed_pages.ordered_releases.is_some() {
-                return pending_wal::admit_completed_history(context, basis);
-            }
-            let (next, has_release) = selected_has_release(context, basis)?;
-            context = next;
-            if has_release {
-                return Err(context.redo_block(basis.planning_counters(), None));
-            }
-            let Some(shared) = context.coordination.owner().checkpoint() else {
-                return Err(context.redo_block(basis.planning_counters(), None));
-            };
-            let claim = match worth_store_recovery_physics::VerifiedSelectedNoReleaseCustody::claim_selected_no_release(
-                &context.selection,
-                shared.stream(),
-            ) {
-                Ok(claim) => claim,
-                Err(_) => return Err(context.redo_block(basis.planning_counters(), None)),
-            };
-            if !matches!(&basis.custody, PlanningCustody::Unresolved) {
-                return Err(context.redo_block(basis.planning_counters(), None));
-            }
-            basis.custody = PlanningCustody::NoRelease(claim);
-            Ok(context)
-        }
-        Ok(CheckpointReleasePosture::Absent) => {
-            let (next, has_release) = selected_has_release(context, basis)?;
-            if !absent_posture_admits(has_release, &basis.custody) {
-                return Err(next.redo_block(basis.planning_counters(), None));
-            }
-            basis.custody = PlanningCustody::NoCheckpoint;
-            Ok(next)
-        }
-        _ => Err(context.redo_block(basis.planning_counters(), None)),
+        Ok(CheckpointReleasePosture::HeadV2) => head_posture::verify(context, basis),
+        Ok(CheckpointReleasePosture::NoRelease) => no_release_posture::verify(context, basis),
+        Ok(CheckpointReleasePosture::Absent) => absent_posture::verify(context, basis),
+        Err(()) => Err(context.redo_block(basis.planning_counters(), None)),
     }
 }
 
@@ -161,7 +99,11 @@ fn pending_replay_matches(basis: &ResolvedPlanningBasis) -> bool {
                 && replay.head().operation()
                     == pending.descriptor().custody().request().idempotency()
         }
-        _ => false,
+        PlanningCustody::Unresolved
+        | PlanningCustody::NoCheckpoint
+        | PlanningCustody::NoRelease(_)
+        | PlanningCustody::SourceHeads(_)
+        | PlanningCustody::OrderedCompleted { .. } => false,
     }
 }
 
@@ -208,50 +150,20 @@ fn checkpoint_records_posture(records: &[Box<[u8]>]) -> Result<CheckpointRelease
                 no_release = true
             }
             // V1 released accumulators cannot reconstruct keyed custody.
-            _ => return Err(()),
+            ReleaseCheckpointCertificateV1::Batch(_)
+            | ReleaseCheckpointCertificateV1::Accumulator(_)
+            | ReleaseCheckpointCertificateV1::AccumulatorV2(_)
+            | ReleaseCheckpointCertificateV1::NoRelease(_) => return Err(()),
         }
     }
     match (released, no_release, head_v2) {
         (false, false, false) => Ok(CheckpointReleasePosture::Absent),
         (true, true, false) => Ok(CheckpointReleasePosture::NoRelease),
         (true, false, true) => Ok(CheckpointReleasePosture::HeadV2),
-        _ => Err(()),
+        (false, true, false)
+        | (false, false, true)
+        | (false, true, true)
+        | (true, false, false)
+        | (true, true, true) => Err(()),
     }
-}
-
-fn selected_has_release(
-    mut context: PlanningContext,
-    basis: &mut ResolvedPlanningBasis,
-) -> Result<(PlanningContext, bool), crate::entry::PhysicalRecoveryOutcome> {
-    for index in 0..context.selection.page_facts().placements().len() {
-        let route = context.selection.page_facts().placements()[index];
-        match route.content_class() {
-            SelectedRecordContentClass::Blob(BlobRecordKind::ReclaimDescriptorV3) => {
-                return Ok((context, true))
-            }
-            SelectedRecordContentClass::Blob(BlobRecordKind::ReclaimDescriptorV2) => {
-                let generation = context.selection.root().selected().manifest().generation();
-                let (next, bytes) = super::record::selected_record(
-                    context,
-                    basis,
-                    generation,
-                    route.record(),
-                    worth_store_physical_format::BLOB_CONTROL_FRAME_MAX_BYTES as u64,
-                )?;
-                context = next;
-                match worth_store_physical_format::decode_blob_record(&bytes) {
-                    Ok(worth_store_physical_format::BlobRecordV1::ReclaimDescriptorV2(value))
-                        if value.source_kind()
-                            == worth_store_physical_format::BlobReclaimSourceKind::FailedIngest => {
-                    }
-                    Ok(worth_store_physical_format::BlobRecordV1::ReclaimDescriptorV2(_)) => {
-                        return Ok((context, true))
-                    }
-                    _ => return Err(context.redo_block(basis.planning_counters(), None)),
-                }
-            }
-            _ => {}
-        }
-    }
-    Ok((context, false))
 }
