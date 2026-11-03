@@ -27,7 +27,7 @@ pub const BYTES: [u8; 8] = *b"frozen-v";
 macro_rules! moved_payload_module {
     ($module:ident) => {
         mod $module {
-            use crate::domain_computation::application_aftermath::external_effect::tests::*;
+            use super::*;
 
             pub(super) struct ProtocolSchema;
             pub(super) struct Payload;
