@@ -4,7 +4,8 @@ use worth_store::physical_runtime::{
     AdmittedPhysicalRecordFormat, PhysicalCheckpointDeadline, PhysicalCheckpointIdempotencyKey,
     PhysicalCheckpointOutcome, PhysicalCheckpointRequest, PhysicalMutationDeadline,
     PhysicalMutationIdempotencyMaterial, PhysicalMutationPreparationSuccess,
-    PhysicalMutationRequest, PhysicalRecordFormatDeclaration, PhysicalWalGroupAppendOutcome,
+    PhysicalMutationRequest, PhysicalOperationAllocationScope, PhysicalRecordFormatDeclaration,
+    PhysicalRecordResidencyPolicy, PhysicalSpeculativeWorkKind, PhysicalWalGroupAppendOutcome,
     PhysicalWalGroupBarrierOutcome, RecordAppendBatch,
 };
 use worth_store_recovery_physics::RecoveryPlanCostDenial;
@@ -24,11 +25,11 @@ fn later_staging_refusal_preserves_the_larger_construction_peak_without_effects(
         PhysicalRecordFormatDeclaration::builder().admit().unwrap(),
     );
     let world =
-        PhysicalResidencyStoreWorld::initialize_for_recovery_with_operation_and_wal_budgets(
+        PhysicalResidencyStoreWorld::initialize_for_recovery_with_residency_and_wal_budgets(
             "planning-construction-refusal-peak",
             format,
             64,
-            std::num::NonZeroU64::new(256 * 1024 * 1024).unwrap(),
+            residency(format),
             std::num::NonZeroU64::new(32 * 1024 * 1024).unwrap(),
         )
         .unwrap();
@@ -47,9 +48,12 @@ fn later_staging_refusal_preserves_the_larger_construction_peak_without_effects(
         handle.wait(),
         PhysicalCheckpointOutcome::Completed(_)
     ));
-    // The encoded redo carries payload and frames; the original 32 MiB WAL
-    // declaration admits that real frame while staging scratch crosses capture.
-    append_pending_extent(&world, &vec![0x5a; 14 * 1024 * 1024]);
+    // Two 7 KiB records fit in each admitted 16 KiB page; 1,792 records
+    // create 896 inline frame identities instead of one arena frame.
+    let record = vec![0x5a; 7 * 1024];
+    let batch =
+        RecordAppendBatch::try_from_iter(std::iter::repeat_n(record.as_slice(), 1_792)).unwrap();
+    append_pending_pages(&world, batch);
     drop(world);
 
     let mut early = ordinary_recovery_declaration(4_096);
@@ -110,7 +114,7 @@ fn later_staging_refusal_preserves_the_larger_construction_peak_without_effects(
     );
 }
 
-fn append_pending_extent(world: &PhysicalResidencyStoreWorld, bytes: &[u8]) {
+fn append_pending_pages(world: &PhysicalResidencyStoreWorld, batch: RecordAppendBatch) {
     let submission = world.serving().certification_record_submission();
     let key = submission
         .issue_idempotency_key(PhysicalMutationIdempotencyMaterial::new([0x73; 32]))
@@ -121,36 +125,68 @@ fn append_pending_extent(world: &PhysicalResidencyStoreWorld, bytes: &[u8]) {
     );
     let TransitionOutcome::Success(PhysicalMutationPreparationSuccess::Prepared(prepared)) =
         submission
-            .prepare_durable_append(
-                RecordAppendBatch::try_from_iter([bytes]).unwrap(),
-                world.placement(),
-                request,
-            )
+            .prepare_durable_append(batch, world.placement(), request)
             .into_raw()
     else {
-        panic!("real pending extent must prepare");
+        panic!("real pending pages must prepare");
     };
     let appended = match submission.append_prepared_wal_group(NonEmpty::new(prepared, Vec::new())) {
         PhysicalWalGroupAppendOutcome::Appended(appended) => appended,
         PhysicalWalGroupAppendOutcome::NotAdmitted { cause, .. } => {
-            panic!("pending extent append not admitted: {cause:?}")
+            panic!("pending pages append not admitted: {cause:?}")
         }
         PhysicalWalGroupAppendOutcome::AdmissionRejected(rejected) => {
-            panic!("pending extent group rejected: {:?}", rejected.cause())
+            panic!("pending pages group rejected: {:?}", rejected.cause())
         }
         PhysicalWalGroupAppendOutcome::NotStarted(continuation) => panic!(
-            "pending extent append not started: {:?}",
+            "pending pages append not started: {:?}",
             continuation.cause()
         ),
         PhysicalWalGroupAppendOutcome::PartiallyAppended(continuation) => {
-            panic!("pending extent append partial: {:?}", continuation.cause())
+            panic!("pending pages append partial: {:?}", continuation.cause())
         }
         PhysicalWalGroupAppendOutcome::Indeterminate(_) => {
-            panic!("pending extent append indeterminate")
+            panic!("pending pages append indeterminate")
         }
     };
     assert!(matches!(
         submission.synchronize_appended_wal_group(appended),
         PhysicalWalGroupBarrierOutcome::Durable(_)
     ));
+}
+
+fn residency(
+    format: AdmittedPhysicalRecordFormat,
+) -> worth_store::physical_runtime::AdmittedPhysicalRecordResidencyPolicy {
+    let bytes = |count| std::num::NonZeroU64::new(count).unwrap();
+    let frames = |count| std::num::NonZeroU32::new(count).unwrap();
+    let mut builder = PhysicalRecordResidencyPolicy::builder()
+        .total_bytes(bytes(336 * 1024 * 1024))
+        .resident_bytes(bytes(32 * 1024 * 1024))
+        .dirty_replacement_bytes(bytes(32 * 1024 * 1024))
+        .metadata_bytes(bytes(16 * 1024 * 1024))
+        .operation_bytes(bytes(256 * 1024 * 1024))
+        .frame_entries(frames(2_048))
+        .pinned_frames(frames(2_048))
+        .pin_leases(frames(2_048))
+        .dirty_frames(frames(2_048));
+    for scope in [
+        PhysicalOperationAllocationScope::ForegroundRead,
+        PhysicalOperationAllocationScope::ForegroundWrite,
+        PhysicalOperationAllocationScope::Recovery,
+        PhysicalOperationAllocationScope::Scrub,
+        PhysicalOperationAllocationScope::Maintenance,
+        PhysicalOperationAllocationScope::Verification,
+        PhysicalOperationAllocationScope::Blob,
+    ] {
+        builder = builder.scope_bytes(scope, bytes(256 * 1024 * 1024));
+    }
+    for kind in [
+        PhysicalSpeculativeWorkKind::Prefetch,
+        PhysicalSpeculativeWorkKind::ReadAhead,
+        PhysicalSpeculativeWorkKind::WriteBehind,
+    ] {
+        builder = builder.speculative_frames(kind, frames(8));
+    }
+    builder.admit(format).into_result().unwrap()
 }

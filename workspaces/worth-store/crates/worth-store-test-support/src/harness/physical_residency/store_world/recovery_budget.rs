@@ -2,7 +2,9 @@
 
 use std::num::NonZeroU64;
 
-use worth_store::physical_runtime::AdmittedPhysicalRecordFormat;
+use worth_store::physical_runtime::{
+    AdmittedPhysicalRecordFormat, AdmittedPhysicalRecordResidencyPolicy,
+};
 
 use super::{PhysicalResidencyStoreWorld, PhysicalResidencyStoreWorldConstructionFailure};
 
@@ -24,20 +26,21 @@ impl PhysicalResidencyStoreWorld {
         )
     }
 
-    pub fn initialize_for_recovery_with_operation_and_wal_budgets(
+    pub fn initialize_for_recovery_with_residency_and_wal_budgets(
         label: &str,
         format: AdmittedPhysicalRecordFormat,
         manifest_capacity: u16,
-        operation_bytes: NonZeroU64,
+        residency: AdmittedPhysicalRecordResidencyPolicy,
         wal_segment_bytes: NonZeroU64,
     ) -> Result<Self, PhysicalResidencyStoreWorldConstructionFailure> {
-        Self::initialize_with_configuration(
-            label,
-            super::super::configuration::recovery_planning_configuration_with_operation_budget(
+        let base =
+            super::super::configuration::admitted_store_base_with_format_and_manifest_capacity(
                 format,
                 manifest_capacity,
-                operation_bytes,
-            ),
+            );
+        Self::initialize_with_configuration(
+            label,
+            base.with_residency(residency),
             wal_segment_bytes,
         )
     }
