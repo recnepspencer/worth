@@ -1,11 +1,13 @@
 error[E0603]: module `registration` is private
- --> $WORKSPACE/crates/worth-testkit-server/assets/ui/cross_family/compat_http_cannot_import_worth_native_internal.rs
+ --> tests/ui/cross_family/compat_http_cannot_import_worth_native_internal.rs:1:43
   |
-  | use worth_server::surfaces::worth_native::registration::WorthNativeSurface;
-  |                                           ^^^^^^^^^^^^ private module
+1 | use worth_server::surfaces::worth_native::registration::WorthNativeSurface;
+  |                                           ^^^^^^^^^^^^  ------------------ struct `WorthNativeSurface` is not publicly re-exported
+  |                                           |
+  |                                           private module
   |
 note: the module `registration` is defined here
- --> $WORKSPACE/crates/worth-server/src/surfaces/worth_native/mod.rs
+ --> src/surfaces/worth_native/mod.rs
   |
   | mod registration;
   | ^^^^^^^^^^^^^^^^
