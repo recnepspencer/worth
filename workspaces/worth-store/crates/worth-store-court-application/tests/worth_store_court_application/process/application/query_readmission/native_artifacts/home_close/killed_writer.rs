@@ -72,8 +72,8 @@ fn killed_host_without_close_reopens_its_acknowledged_value_and_original_idempot
     );
     assert_eq!(balance(home.runtime()), 8);
     match set(home.runtime(), 8) {
-        WorthQueryApplicationMutationOutcome::PreviouslyCommitted(observed) => {
-            assert_eq!(observed.commit_id().0, commit)
+        WorthQueryApplicationMutationOutcome::RecoveredCommitted(observed) => {
+            assert_eq!(observed.commit_reference().commit_id.0, commit)
         }
         other => panic!("actual old key retains its acknowledged journal fact: {other:?}"),
     }

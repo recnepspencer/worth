@@ -94,3 +94,6 @@ pub mod shared_support_worth_native_runtime;
 #[allow(dead_code, unused_imports)]
 #[path = "test_process/mod.rs"]
 pub mod test_process;
+
+/// Genuine Query application mutation fixture for Server courts.
+pub mod application_mutation;

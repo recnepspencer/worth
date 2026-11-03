@@ -71,7 +71,8 @@ fn compat_http_single_insert_matches_worth_native_mutation_on_shared_query_artif
         response_provenance_digest(compat.envelope().response_envelope()),
         response_provenance_digest(direct.response_envelope())
     );
-    assert!(!compat.envelope().retry_receipt().is_previously_completed());
+    // The success helper requires the explicit unkeyed Direct outcome.
+    // D9 retired the process retry receipt and its fresh/replayed flag.
 }
 
 #[test]
@@ -198,138 +199,97 @@ fn compat_http_mutation_preconditions_deny_before_any_write_attempt() {
 
 #[test]
 fn compat_http_idempotency_resolves_identical_retries_and_denies_conflicts() {
+    use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome as Outcome;
+    use worth_testkit_server::application_mutation as application;
     let attempted_writes = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
-    let server = build_phase_three_server_with_workspace_provider(
-        worth_testkit_server::shared_support_query_handoff_runtime::runtime_synthetic::ProfiledCountingTestWorkspaceProvider::new(
-            worth_query::facade::runtime::WorthQueryRuntimeSupportProfile::scaffold_backend_profile(),
-            attempted_writes.clone(),
-        ),
+    let home = application::open(
+        attempted_writes.clone(),
+        worth_query_host::facade::application_installation::ApplicationBuildIdentity::parse(env!(
+            "WORTH_IMPLEMENTATION_BUILD_ID"
+        ))
+        .unwrap(),
     );
-    let first = compat_mutation_success(
-        server.compat_http().mutate(
-            worth_server::WorthServerCompatibilityMutationExecutionInput::new(
-                prepared_mutation_request(
-                    &server,
-                    mutation_input("tasks.insert")
-                        .with_header("idempotency-key", "idem-1")
-                        .build()
-                        .expect("first idempotent mutation input should validate structurally"),
-                ),
-                "tasks.insert",
-                single_insert_body("task-1"),
-            ),
-        ),
-    );
-    let retry = compat_mutation_success(
-        server.compat_http().mutate(
-            worth_server::WorthServerCompatibilityMutationExecutionInput::new(
-                prepared_mutation_request(
-                    &server,
-                    mutation_input("tasks.insert")
-                        .with_header("idempotency-key", "idem-1")
-                        .build()
-                        .expect("retried idempotent mutation input should validate structurally"),
-                ),
-                "tasks.insert",
-                single_insert_body("task-1"),
-            ),
-        ),
-    );
-    let conflict = compat_mutation_denied(
-        server.compat_http().mutate(
-            worth_server::WorthServerCompatibilityMutationExecutionInput::new(
-                prepared_mutation_request(
-                    &server,
-                    mutation_input("tasks.insert")
-                        .with_header("idempotency-key", "idem-1")
-                        .build()
-                        .expect(
-                            "conflicting idempotent mutation input should validate structurally",
-                        ),
-                ),
-                "tasks.insert",
-                single_insert_body("task-2"),
-            ),
-        ),
-    );
-
-    assert!(!first.envelope().retry_receipt().is_previously_completed());
-    assert!(retry.envelope().retry_receipt().is_previously_completed());
+    let server = application::server(home.runtime());
+    let first = match application::execute(&server, "idem-1", 8, "first").unwrap() {
+        Outcome::Committed {
+            receipt,
+            result: Ok(value),
+        } => {
+            assert_eq!(value, json!(8));
+            receipt
+        }
+        other => panic!("the original request commits: {other:?}"),
+    };
+    let retry = match application::execute(&server, "idem-1", 8, "retry").unwrap() {
+        Outcome::RecoveredCommitted(receipt) => receipt,
+        other => panic!("retry reconstructs the original result: {other:?}"),
+    };
+    assert_eq!(first.commit_reference(), retry.commit_reference());
+    assert_eq!(first.changed_record_count(), retry.changed_record_count());
+    assert_eq!(first.outcome_identity(), Some(retry.outcome_identity()));
+    assert_eq!(first.emitted_effect_count(), retry.emitted_effect_count());
     assert_eq!(
-        first.mutation_result().result_digest(),
-        retry.mutation_result().result_digest()
+        first.idempotency_binding().key_identity(),
+        retry.idempotency_key_identity()
     );
+    assert!(matches!(
+        application::execute(&server, "idem-1", 10, "conflict").unwrap(),
+        Outcome::IdempotencyIntentDrift
+    ));
     assert_eq!(
         attempted_writes.load(std::sync::atomic::Ordering::Relaxed),
         1,
-        "identical idempotent retries must not execute a second write"
+        "identical retries and changed intent never execute a second write"
     );
-    assert_eq!(
-        conflict.code(),
-        worth_server::WorthServerQueryHandoffDenialCode::CompatibilityIdempotencyConflict
-    );
-    assert_eq!(
-        conflict.facts().and_then(|facts| facts.idempotency_key()),
-        Some("idem-1")
-    );
-    assert_ne!(
-        conflict
-            .facts()
-            .and_then(|facts| facts.conflicting_request_digest()),
-        conflict
-            .facts()
-            .and_then(|facts| facts.bound_request_digest())
-    );
+    assert_eq!(application::balance(home.runtime()), 8);
+    match application::execute(&server, "idem-1", 8, "after-conflict").unwrap() {
+        Outcome::RecoveredCommitted(again) => assert_eq!(again, retry),
+        other => panic!("changed intent cannot alter the retained original result: {other:?}"),
+    }
 }
 
 #[test]
 fn compat_http_idempotency_scope_isolated_by_workspace_target() {
+    use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome as Outcome;
+    use worth_testkit_server::application_mutation as application;
     let attempted_writes = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
-    let server = build_phase_three_server_with_workspace_provider(
-        worth_testkit_server::shared_support_query_handoff_runtime::runtime_synthetic::ProfiledCountingTestWorkspaceProvider::new(
-            worth_query::facade::runtime::WorthQueryRuntimeSupportProfile::scaffold_backend_profile(),
-            attempted_writes.clone(),
-        ),
+    let home = application::open(
+        attempted_writes.clone(),
+        worth_query_host::facade::application_installation::ApplicationBuildIdentity::parse(env!(
+            "WORTH_IMPLEMENTATION_BUILD_ID"
+        ))
+        .unwrap(),
     );
-    let first = compat_mutation_success(
-        server.compat_http().mutate(
-            worth_server::WorthServerCompatibilityMutationExecutionInput::new(
-                prepared_mutation_request(
-                    &server,
-                    mutation_input("tasks.insert")
-                        .with_header("idempotency-key", "shared-key")
-                        .build()
-                        .expect("first scoped idempotent mutation input should validate"),
-                ),
-                "tasks.insert",
-                single_insert_body("task-1"),
-            ),
-        ),
-    );
-    let second = compat_mutation_success(
-        server.compat_http().mutate(
-            worth_server::WorthServerCompatibilityMutationExecutionInput::new(
-                prepared_mutation_request(
-                    &server,
-                    mutation_request_input_for_workspace("tasks.insert", "workspace-77")
-                        .with_header("accept", "application/json")
-                        .with_header("idempotency-key", "shared-key")
-                        .build()
-                        .expect("second scoped idempotent mutation input should validate"),
-                ),
-                "tasks.insert",
-                single_insert_body("task-2"),
-            ),
-        ),
-    );
-
-    assert!(!first.envelope().retry_receipt().is_previously_completed());
-    assert!(!second.envelope().retry_receipt().is_previously_completed());
+    let server = application::server(home.runtime());
+    let first = match application::execute(&server, "shared-key", 8, "first").unwrap() {
+        Outcome::Committed {
+            receipt,
+            result: Ok(_),
+        } => receipt,
+        other => panic!("first workspace commits: {other:?}"),
+    };
+    let second = match application::execute_for_workspace(
+        &server,
+        "shared-key",
+        9,
+        "second",
+        "workspace-77",
+    )
+    .unwrap()
+    {
+        Outcome::Committed {
+            receipt,
+            result: Ok(_),
+        } => receipt,
+        other => panic!("another workspace has independent idempotency scope: {other:?}"),
+    };
+    assert_ne!(first.commit_reference(), second.commit_reference());
     assert_eq!(
         attempted_writes.load(std::sync::atomic::Ordering::Relaxed),
         2,
         "the same idempotency key must not collide across workspace scopes"
     );
+    assert_eq!(application::balance(home.runtime()), 9);
 }
 
 #[test]

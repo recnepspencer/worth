@@ -2685,6 +2685,7 @@ dependencies = [
  "worth-proof",
  "worth-query",
  "worth-query-host",
+ "worth-query-testkit-host",
  "worth-runtime-bridge",
  "worth-server",
 ]
