@@ -1,4 +1,5 @@
 //! Two exact-basis entity closures; selection material grants no write authority.
+use super::traversal::Read;
 use super::{basis, traversal, *};
 use crate::{branch::AdmittedRelationalBranchBasis, runtime::RelationalRuntime};
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
@@ -65,7 +66,7 @@ impl RelationalRuntime {
         result.expect("completed entity boundary preparation")
     }
 
-    fn prepare_entity_boundary(
+    pub(super) fn prepare_entity_boundary(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         context: &mut worth_execution::MapKernelContext<'_, '_>,

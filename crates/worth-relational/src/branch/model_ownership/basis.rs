@@ -5,6 +5,8 @@ use crate::{
     storage::overlay::CurrentPartitionAccess, validation::engine::state_view::InvariantStateView,
 };
 use worth_execution::{ExecutionRequest, MapKernelContext};
+#[path = "graph_read.rs"]
+mod graph_read;
 
 impl RelationalRuntime {
     pub fn observe_model_owner(
@@ -31,22 +33,24 @@ pub(super) fn observe<R>(
     let mut result = None;
     execution
         .run_native_with_checkpoint(|context| {
-            result = Some(read(runtime, execution, basis, context, operation));
+            result = Some(read(runtime, execution, basis, context, |read| {
+                operation(read)
+            }));
         })
         .map_err(RelationalModelOwnershipDenial::Request)?;
     result.expect("completed native observation")
 }
 
 /// A dependent read uses its caller's original checkpoint, never a fresh meter.
-pub(super) fn read<R>(
+pub(super) fn read<R, E: From<RelationalModelOwnershipDenial>>(
     runtime: &RelationalRuntime,
     execution: &ExecutionRequest<'_, '_>,
     basis: &AdmittedRelationalBranchBasis,
     context: &mut MapKernelContext<'_, '_>,
-    operation: impl FnOnce(&mut dyn Read) -> Result<R, RelationalModelOwnershipDenial>,
-) -> Result<(R, Vec<worth_execution::ExecutionMemoryReservation>), RelationalModelOwnershipDenial> {
+    operation: impl FnOnce(&mut BasisRead<'_, '_, '_, '_, '_, '_>) -> Result<R, E>,
+) -> Result<(R, Vec<worth_execution::ExecutionMemoryReservation>), E> {
     if basis.identity().runtime_instance_id() != runtime.runtime_instance_id() {
-        return Err(RelationalModelOwnershipDenial::ForeignBasis);
+        return Err(RelationalModelOwnershipDenial::ForeignBasis.into());
     }
     let version = basis
         .inner
@@ -67,7 +71,7 @@ pub(super) fn read<R>(
     operation(&mut read).map(|value| (value, read.memory))
 }
 
-struct BasisRead<'a, 'basis, 'context, 'kernel, 'execution, 'request> {
+pub(super) struct BasisRead<'a, 'basis, 'context, 'kernel, 'execution, 'request> {
     execution: &'a ExecutionRequest<'execution, 'request>,
     context: &'a mut MapKernelContext<'context, 'kernel>,
     state: InvariantStateView<'basis>,
@@ -76,7 +80,7 @@ struct BasisRead<'a, 'basis, 'context, 'kernel, 'execution, 'request> {
 }
 
 impl BasisRead<'_, '_, '_, '_, '_, '_> {
-    fn charge(&mut self, units: usize) -> Result<(), RelationalModelOwnershipDenial> {
+    pub(super) fn charge(&mut self, units: usize) -> Result<(), RelationalModelOwnershipDenial> {
         self.context.checkpoint(units as u64).map_err(|stop| {
             RelationalModelOwnershipDenial::Request(worth_execution::WorkCeilingDenial::Stopped(
                 stop,

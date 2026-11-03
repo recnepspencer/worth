@@ -3,7 +3,11 @@ use crate::identity::data::{EntityId, KindId};
 use std::collections::BTreeSet;
 
 mod basis;
+mod graph_denial;
+mod graph_selection;
 mod invariant;
+pub use graph_denial::{RelationalOwnedModelForeignRelation, RelationalOwnedModelSelectionDenial};
+pub use graph_selection::RelationalOwnedModelGraphSelection;
 mod selection;
 mod traversal;
 pub use selection::RelationalOwnedModelEntityBoundary;
@@ -19,6 +23,7 @@ pub struct RelationalModelOwnershipDomain {
 #[derive(Clone, Debug)]
 pub struct RelationalModelOwnership {
     domains: Vec<RelationalModelOwnershipDomain>,
+    relations: Vec<KindId>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -53,7 +58,13 @@ pub enum RelationalModelOwnershipDenial {
 
 impl RelationalModelOwnership {
     pub fn new(domains: Vec<RelationalModelOwnershipDomain>) -> Self {
-        Self { domains }
+        let relations = domains
+            .iter()
+            .flat_map(|domain| domain.relations.iter().copied())
+            .collect::<BTreeSet<_>>()
+            .into_iter()
+            .collect();
+        Self { domains, relations }
     }
     pub fn combine<'a>(owners: impl IntoIterator<Item = &'a Self>) -> Self {
         Self::new(
@@ -74,11 +85,12 @@ impl RelationalModelOwnership {
     }
 
     fn relation_kinds(&self) -> Vec<KindId> {
-        self.domains
-            .iter()
-            .flat_map(|domain| domain.relations.iter().copied())
-            .collect::<BTreeSet<_>>()
-            .into_iter()
-            .collect()
+        self.relations.clone()
+    }
+    fn declares_relation(&self, kind: KindId) -> bool {
+        self.relations.binary_search(&kind).is_ok()
+    }
+    fn relation_lookup_work(&self) -> usize {
+        self.relations.len().checked_ilog2().unwrap_or(0) as usize + 1
     }
 }

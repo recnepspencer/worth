@@ -18,6 +18,9 @@ pub(super) fn append(
             crate::application_history::ApplicationHistoryModelDomain::ScopeEntityRecord => {
                 "scope-entity-record"
             }
+            crate::application_history::ApplicationHistoryModelDomain::OwnedModelGraph => {
+                "owned-model-graph"
+            }
         },
     );
     basis.text(

@@ -83,7 +83,7 @@ pub(in crate::domain_computation::primary_graph) use registry_lowering::{
 
 #[derive(Debug)]
 pub(in crate::domain_computation) struct WorthQueryPrimaryGraphLayout {
-    history_ownership: BTreeMap<String, worth_relational::facade::branch::RelationalModelOwnership>,
+    history_ownership: history_ownership::HistoryOwnershipLayouts,
     principal_bindings: BTreeMap<String, WorthQueryPrimaryPrincipalBindingLayout>,
     live_control_entity_kinds: BTreeSet<KindId>,
     authorization_selectors: authorization_selectors::WorthQueryAuthorizationSelectors,

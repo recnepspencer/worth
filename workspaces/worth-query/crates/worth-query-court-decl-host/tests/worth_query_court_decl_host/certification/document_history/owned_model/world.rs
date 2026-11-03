@@ -30,7 +30,7 @@ pub fn install_with_shared_descendant(shared: bool) -> Host {
                     WorthQueryApplicationEntityKey::new(key).unwrap())
                     .field(ModelKey::reference(), key.to_owned()).field(ModelValue::reference(), 1))?;
             }
-            for (key, value) in [("direct", 11), ("nested", 22), ("foreign", 33), ("reference", 44)] {
+            for (key, value) in [("direct", 11), ("nested", 22), ("foreign", 33), ("reference", 44), ("loose", 55)] {
                 graph.bind_entity(WorthQueryApplicationEntitySeed::new(Member::reference(),
                     WorthQueryApplicationEntityKey::new(key).unwrap())
                     .field(MemberKey::reference(), key.to_owned()).field(MemberValue::reference(), value))?;
@@ -44,12 +44,15 @@ pub fn install_with_shared_descendant(shared: bool) -> Host {
                 WorthQueryApplicationEntityKey::new("direct").unwrap(), WorthQueryApplicationEntityKey::new("nested").unwrap()))?;
             graph.bind_relation(WorthQueryApplicationRelationSeed::new(Reference::reference(), "reference-link",
                 WorthQueryApplicationEntityKey::new("a").unwrap(), WorthQueryApplicationEntityKey::new("reference").unwrap()))?;
+            graph.bind_relation(WorthQueryApplicationRelationSeed::new(Reference::reference(), "foreign-loose-reference",
+                WorthQueryApplicationEntityKey::new("b").unwrap(), WorthQueryApplicationEntityKey::new("loose").unwrap()))?;
             if shared {
                 graph.bind_relation(WorthQueryApplicationRelationSeed::new(ModelMember::reference(), "shared-owner",
                     WorthQueryApplicationEntityKey::new("a").unwrap(), WorthQueryApplicationEntityKey::new("reference").unwrap()))?;
                 graph.bind_relation(WorthQueryApplicationRelationSeed::new(Child::reference(), "second-path",
                     WorthQueryApplicationEntityKey::new("reference").unwrap(), WorthQueryApplicationEntityKey::new("nested").unwrap()))?;
             }
+            navigation::seed(graph)?;
             Ok(())
         }).unwrap()
 }
@@ -108,6 +111,30 @@ pub fn member_identity(
             .resolve_entity(
                 &phase,
                 MemberKey::reference(),
+                key.to_owned(),
+                &scope,
+                WorthQueryPrincipalResolutionMode::Certification,
+            )
+            .unwrap()
+            .relational_record_identity_parts();
+        (id.partition_id(), id.local_slot(), id.generation())
+    })
+    .unwrap()
+}
+
+/// Independently resolve the actual model occurrence for refusal attribution.
+pub fn model_identity(
+    host: &Host,
+    branch: worth_query_host::facade::product::WorthQueryProductBranch,
+    key: &str,
+) -> (u32, u64, u32) {
+    let scope = request_scope();
+    host.with_host_advancement(|phase| {
+        let selected = host.on_branch(branch).select(&phase).unwrap();
+        let id = selected
+            .resolve_entity(
+                &phase,
+                ModelKey::reference(),
                 key.to_owned(),
                 &scope,
                 WorthQueryPrincipalResolutionMode::Certification,

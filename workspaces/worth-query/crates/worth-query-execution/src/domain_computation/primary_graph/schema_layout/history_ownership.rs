@@ -3,12 +3,18 @@ use super::*;
 use worth_query_installation::facade::ApplicationSchemaMember;
 use worth_relational::facade::branch::{RelationalModelOwnership, RelationalModelOwnershipDomain};
 
+#[derive(Debug)]
+pub(super) struct HistoryOwnershipLayouts {
+    definitions: BTreeMap<String, RelationalModelOwnership>,
+    installed: RelationalModelOwnership,
+}
+
 pub(super) fn lower(
     schema: &ErasedApplicationSchemaDeclaration,
     entities: &BTreeMap<String, KindId>,
     relations: &BTreeMap<String, WorthQueryPrimaryRelationLayout>,
     live_controls: &BTreeSet<KindId>,
-) -> Result<BTreeMap<String, RelationalModelOwnership>, WorthQueryPrimaryGraphInstallationDenial> {
+) -> Result<HistoryOwnershipLayouts, WorthQueryPrimaryGraphInstallationDenial> {
     let mut result = BTreeMap::new();
     for member in schema.members() {
         let ApplicationSchemaMember::ApplicationHistory { definition } = member else {
@@ -40,7 +46,11 @@ pub(super) fn lower(
             }]),
         );
     }
-    Ok(result)
+    let installed = RelationalModelOwnership::combine(result.values());
+    Ok(HistoryOwnershipLayouts {
+        definitions: result,
+        installed,
+    })
 }
 
 impl WorthQueryPrimaryGraphLayout {
@@ -48,11 +58,19 @@ impl WorthQueryPrimaryGraphLayout {
         &self,
         identity: &str,
     ) -> Option<&RelationalModelOwnership> {
-        self.history_ownership.get(identity)
+        self.history_ownership.definitions.get(identity)
     }
     pub(in crate::domain_computation::primary_graph) fn all_history_ownership(
         &self,
     ) -> RelationalModelOwnership {
-        RelationalModelOwnership::combine(self.history_ownership.values())
+        self.history_ownership.installed.clone()
+    }
+}
+
+impl WorthQueryPrimaryGraphLayout {
+    pub(in crate::domain_computation::primary_graph) fn installed_history_ownership(
+        &self,
+    ) -> &RelationalModelOwnership {
+        &self.history_ownership.installed
     }
 }

@@ -21,7 +21,7 @@ pub struct ApplicationHistoryOperation {
     pub label: String,
 }
 
-/// The literal model boundary for explicit physical-context refresh.
+/// The declared history model boundary.
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum ApplicationHistoryModelDomain {
     /// Every physical component remains part of the expected source.
@@ -29,6 +29,9 @@ pub enum ApplicationHistoryModelDomain {
     /// Exactly the full-GEN Native scope entity record. Relations, other
     /// records and Signal state are not inferred to belong to this domain.
     ScopeEntityRecord,
+    /// The model's declared owned closure, outgoing relations and incoming
+    /// ownership edges, under their original source-scope publication custody.
+    OwnedModelGraph,
 }
 
 /// Authority-free carriage. Installation must resolve the original typed recipes.
@@ -89,7 +92,13 @@ impl ErasedApplicationHistoryDefinition {
             if !navigation.is_valid() {
                 return Err(Denial::InvalidNavigation);
             }
-            if parts.model_domain != ApplicationHistoryModelDomain::ScopeEntityRecord {
+            if !matches!(
+                parts.model_domain,
+                ApplicationHistoryModelDomain::ScopeEntityRecord
+                    | ApplicationHistoryModelDomain::OwnedModelGraph
+            ) || (parts.model_domain == ApplicationHistoryModelDomain::ScopeEntityRecord
+                && !parts.ownership.is_empty())
+            {
                 return Err(Denial::UnsupportedNavigationDomain);
             }
         }
@@ -192,7 +201,8 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>> ApplicationHistoryDe
     }
 
     /// Opt the declared scope entity's authoritative payload into snapshot
-    /// navigation. Requires `ScopeEntityRecord`; this does not include live
+    /// navigation. Requires `ScopeEntityRecord` without ownership declarations,
+    /// or `OwnedModelGraph` for the declared closure. This does not include live
     /// grants, other records, relations or Signal. Each request must separately
     /// satisfy the installed READ, metadata and navigation capability policies.
     pub fn navigation<N: ApplicationHistoryNavigationBinding<S, H>>(mut self) -> Self {

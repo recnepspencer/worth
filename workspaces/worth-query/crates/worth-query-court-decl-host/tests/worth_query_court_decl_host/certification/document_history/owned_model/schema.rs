@@ -60,42 +60,45 @@ fn declare(
             Model::reference(),
             Member::reference(),
         );
-    query::member::declare(query::model::declare(edit::declare(schema)))
-        .declared_operation::<ownership_change::ChangeOwnership>(
-            ownership_change::ChangeOwnership::reference()
-                .definition()
-                .no_external_effect()
-                .no_aftermath()
-                .finish(),
+    query::member::declare(query::model::declare(edit::declare(navigation::declare(
+        schema,
+    ))))
+    .declared_operation::<ownership_change::ChangeOwnership>(
+        ownership_change::ChangeOwnership::reference()
+            .definition()
+            .no_external_effect()
+            .no_aftermath()
+            .finish(),
+    )
+    .application_mutation_binding::<ownership_change::Binding>()
+    .declared_operation::<generation::RecreateMember>(
+        generation::RecreateMember::reference()
+            .definition()
+            .no_external_effect()
+            .no_aftermath()
+            .finish(),
+    )
+    .application_mutation_binding::<generation::Binding>()
+    .application_history(
+        ApplicationHistoryDefinition::<Schema, History>::for_binding(
+            ApplicationQueryDisclosureContract::public(),
         )
-        .application_mutation_binding::<ownership_change::Binding>()
-        .declared_operation::<generation::RecreateMember>(
-            generation::RecreateMember::reference()
-                .definition()
-                .no_external_effect()
-                .no_aftermath()
-                .finish(),
+        .model_domain(ApplicationHistoryModelDomain::OwnedModelGraph)
+        .navigation::<navigation::Navigation>()
+        .owns(ModelMember::reference())
+        .owns(Child::reference())
+        .operation::<edit::model::Binding>("Edit model")
+        .operation::<ownership_change::Binding>("Move ownership")
+        .owned_operation::<edit::member::Binding>("Edit member"),
+    )
+    .application_history(
+        ApplicationHistoryDefinition::<Schema, ResultLimitedHistory>::for_binding(
+            ApplicationQueryDisclosureContract::public(),
         )
-        .application_mutation_binding::<generation::Binding>()
-        .application_history(
-            ApplicationHistoryDefinition::<Schema, History>::for_binding(
-                ApplicationQueryDisclosureContract::public(),
-            )
-            .model_domain(ApplicationHistoryModelDomain::ScopeEntityRecord)
-            .owns(ModelMember::reference())
-            .owns(Child::reference())
-            .operation::<edit::model::Binding>("Edit model")
-            .operation::<ownership_change::Binding>("Move ownership")
-            .owned_operation::<edit::member::Binding>("Edit member"),
-        )
-        .application_history(
-            ApplicationHistoryDefinition::<Schema, ResultLimitedHistory>::for_binding(
-                ApplicationQueryDisclosureContract::public(),
-            )
-            .model_domain(ApplicationHistoryModelDomain::ScopeEntityRecord)
-            .owns(ModelMember::reference())
-            .owns(Child::reference())
-            .operation::<edit::model::Binding>("Edit model")
-            .owned_operation::<edit::member::Binding>("Edit member"),
-        )
+        .model_domain(ApplicationHistoryModelDomain::ScopeEntityRecord)
+        .owns(ModelMember::reference())
+        .owns(Child::reference())
+        .operation::<edit::model::Binding>("Edit model")
+        .owned_operation::<edit::member::Binding>("Edit member"),
+    )
 }

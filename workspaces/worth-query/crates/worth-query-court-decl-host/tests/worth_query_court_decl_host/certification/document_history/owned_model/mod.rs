@@ -18,6 +18,7 @@ mod edit;
 mod exclusivity;
 mod generation;
 mod gesture;
+mod navigation;
 mod ownership_change;
 mod query;
 mod recording;

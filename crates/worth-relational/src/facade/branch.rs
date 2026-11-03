@@ -25,11 +25,12 @@ pub use crate::branch::{
     RelationalMaterializationSuspension, RelationalMaterializationSuspensionCompletion,
     RelationalModelOwnership, RelationalModelOwnershipConflict, RelationalModelOwnershipDenial,
     RelationalModelOwnershipDomain, RelationalOwnedModelEntityBoundary,
-    RelationalOwnerLifecycleObservation, RelationalOwnerServicePorts,
-    RelationalRelationMaterialization, RelationalRematerializationCompletion,
-    RelationalRematerializationFailure, RelationalRootCorrectnessIndex,
-    ResolvedRelationalBasisDescriptor, SuspendRelationalMaterialization,
-    RELATIONAL_BRANCH_BASIS_DESCRIPTOR_VERSION,
+    RelationalOwnedModelForeignRelation, RelationalOwnedModelGraphSelection,
+    RelationalOwnedModelSelectionDenial, RelationalOwnerLifecycleObservation,
+    RelationalOwnerServicePorts, RelationalRelationMaterialization,
+    RelationalRematerializationCompletion, RelationalRematerializationFailure,
+    RelationalRootCorrectnessIndex, ResolvedRelationalBasisDescriptor,
+    SuspendRelationalMaterialization, RELATIONAL_BRANCH_BASIS_DESCRIPTOR_VERSION,
 };
 pub use crate::branch::{
     RelationalRecordAdvanceDenial, RelationalRecordAdvanceLimits,

@@ -29,7 +29,7 @@ pub(super) fn write(
 ) -> Result<(), Denial> {
     let parts = definition.parts();
     let retention = parts.window.is_some() || parts.bookmarks.is_some();
-    let ownership = !parts.ownership.is_empty();
+    let ownership = !parts.ownership.is_empty() || parts.model_domain == Domain::OwnedModelGraph;
     output.u16(if ownership {
         4
     } else if retention {
@@ -42,6 +42,7 @@ pub(super) fn write(
     output.u16(match parts.model_domain {
         Domain::WholeComposite => 1,
         Domain::ScopeEntityRecord => 2,
+        Domain::OwnedModelGraph => 3,
     })?;
     output.text(&parts.identity)?;
     wire_vocabulary::write_type_identity(output, &parts.history_type)?;
@@ -97,6 +98,7 @@ pub(super) fn decode(
     let model_domain = match input.u16()? {
         1 => Domain::WholeComposite,
         2 => Domain::ScopeEntityRecord,
+        3 if version == 4 => Domain::OwnedModelGraph,
         _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
     };
     let identity = input.text()?.to_owned();
@@ -152,7 +154,7 @@ pub(super) fn decode(
     } else {
         Vec::new()
     };
-    if version == 4 && ownership.is_empty() {
+    if version == 4 && ownership.is_empty() && model_domain != Domain::OwnedModelGraph {
         return Err(Denial::new(Kind::InvalidRecordShape));
     }
     let member = ApplicationSchemaMember::ApplicationHistory {

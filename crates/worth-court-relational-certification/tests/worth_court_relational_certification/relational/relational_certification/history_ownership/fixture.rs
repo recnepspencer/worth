@@ -46,6 +46,54 @@ pub(super) fn registry_with(fixture: AspectSchemaFixture) -> RelationalSchemaReg
             aspect_contract_declarations: KindAspectContractDeclarations::default(),
         })
         .unwrap()
+        .register_relation_kind(RelationKindRegistration {
+            kind_id: KindId(4),
+            kind_name: "Reference".into(),
+            schema_id: fixture.schema_id.clone(),
+            schema_version_id: fixture.schema_version_id,
+            cross_context_policy:
+                worth_relational::facade::config::CrossContextPolicy::AllowExplicit,
+            cascade_delete_policy:
+                worth_relational::facade::config::CascadeDeletePolicy::CascadeDeleteRelations,
+            aspect_contract_declarations: KindAspectContractDeclarations::default(),
+            relation_integrity: RelationIntegrityDeclarations::new(
+                vec![],
+                vec![],
+                vec![],
+                vec![],
+                vec![EndpointDeletionIntegrityDeclaration {
+                    contract_id: ContractId::new("References:deletion"),
+                    mode: EndpointDeletionIntegrityMode::RejectDeleteWithLiveRelations,
+                }],
+            ),
+        })
+        .unwrap()
+        .register_relation_kind(RelationKindRegistration {
+            kind_id: KindId(5),
+            kind_name: "OtherOwnership".into(),
+            schema_id: fixture.schema_id.clone(),
+            schema_version_id: fixture.schema_version_id,
+            cross_context_policy:
+                worth_relational::facade::config::CrossContextPolicy::AllowExplicit,
+            cascade_delete_policy:
+                worth_relational::facade::config::CascadeDeletePolicy::CascadeDeleteRelations,
+            aspect_contract_declarations: KindAspectContractDeclarations::default(),
+            relation_integrity: RelationIntegrityDeclarations::default(),
+        })
+        .unwrap()
+        .register_relation_kind(RelationKindRegistration {
+            kind_id: KindId(6),
+            kind_name: "UncontractedReference".into(),
+            schema_id: fixture.schema_id.clone(),
+            schema_version_id: fixture.schema_version_id,
+            cross_context_policy:
+                worth_relational::facade::config::CrossContextPolicy::AllowExplicit,
+            cascade_delete_policy:
+                worth_relational::facade::config::CascadeDeletePolicy::CascadeDeleteRelations,
+            aspect_contract_declarations: KindAspectContractDeclarations::default(),
+            relation_integrity: RelationIntegrityDeclarations::default(),
+        })
+        .unwrap()
 }
 pub(super) fn runtime() -> RelationalRuntime {
     RelationalRuntimeApi::builder()
@@ -136,13 +184,23 @@ pub(super) fn create_relation(
     target: EntityId,
     key: &str,
 ) -> worth_relational::facade::identity::RelationId {
+    create_relation_of_kind(execution, runtime, source, target, key, KindId(2))
+}
+pub(super) fn create_relation_of_kind(
+    execution: &ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    source: EntityId,
+    target: EntityId,
+    key: &str,
+    kind: KindId,
+) -> worth_relational::facade::identity::RelationId {
     let mut transaction = begin(runtime);
     transaction
         .push_batch(
             WorkerIntentBatch::new(key).push(MutationIntent::Create(CreateIntent::Relation(
                 RelationSpec {
                     partition_id: PartitionId::main(),
-                    kind_id: KindId(2),
+                    kind_id: kind,
                     client_key: ClientKey::raw(key),
                     source: EntityReference::Existing(source),
                     target: EntityReference::Existing(target),

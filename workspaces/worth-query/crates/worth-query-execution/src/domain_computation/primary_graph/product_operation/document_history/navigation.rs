@@ -94,6 +94,10 @@ pub enum WorthQueryHistoryNavigationDenial {
     ForkRecovery,
     Transaction(worth_relational::facade::mvcc::RelationalBranchTransactionAdmissionDenial),
     Preparation(worth_relational::facade::mvcc::RelationalRetainedEntitySelectionPreparationError),
+    OwnedGraph(worth_relational::facade::branch::RelationalOwnedModelSelectionDenial),
+    RequiresCascadeCustody {
+        model: worth_relational::facade::identity::EntityId,
+    },
     SelectorSnapshot(worth_relational::facade::snapshots::RelationalSnapshotAdmissionDenial),
     SelectorMaintenance(worth_relational::facade::indexes::DerivedIndexMaintenanceDenial),
     Publication(worth_runtime_world::facade::NoEffectCompositePublication),

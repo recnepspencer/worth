@@ -2,6 +2,9 @@
 mod fixture;
 use fixture::*;
 mod entity_boundary;
+mod graph_boundary;
+mod graph_refusals;
+mod graph_resources;
 
 #[test]
 fn cold_model_ownership_demands_cross_partition_endpoints_and_edges() {

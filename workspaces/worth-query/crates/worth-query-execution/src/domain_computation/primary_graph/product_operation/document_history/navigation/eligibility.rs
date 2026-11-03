@@ -35,8 +35,12 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
         .navigation
         .as_ref()
         .ok_or_else(|| correction(Eligibility::NotDeclared))?;
-    if definition.model_domain != ApplicationHistoryModelDomain::ScopeEntityRecord
-        || !definition.ownership.is_empty()
+    if !matches!(
+        definition.model_domain,
+        ApplicationHistoryModelDomain::ScopeEntityRecord
+            | ApplicationHistoryModelDomain::OwnedModelGraph
+    ) || (definition.model_domain == ApplicationHistoryModelDomain::ScopeEntityRecord
+        && !definition.ownership.is_empty())
     {
         return Err(correction(Eligibility::ModelDomain));
     }
@@ -157,6 +161,30 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
         .primary_provider
         .graph
         .with_runtime(&execution, |native| {
+            if definition.model_domain == ApplicationHistoryModelDomain::OwnedModelGraph {
+                let layout = &application.runtime.primary_provider.graph.layout;
+                let ownership =
+                    layout
+                        .history_ownership(&definition.identity)
+                        .ok_or(Denial::Document(
+                            super::super::WorthQueryDocumentHistoryDenial::InstalledBindingMismatch,
+                        ))?;
+                let graph = native
+                    .prepare_owned_model_graph_selection(
+                        &execution,
+                        current.product().relational_basis(),
+                        historical.product().relational_basis(),
+                        ownership,
+                        layout.installed_history_ownership(),
+                        model.entity(),
+                    )
+                    .map_err(Denial::OwnedGraph)?;
+                // Single D1114 seam. Never let a graph enter the single-record
+                // candidate path while publication custody is unavailable.
+                return Err(Denial::RequiresCascadeCustody {
+                    model: graph.entities().model(),
+                });
+            }
             let transaction = native
                 .begin_branch_transaction(
                     current.product().relational_basis(),

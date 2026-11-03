@@ -40,15 +40,27 @@ Source-scope-owned publication membership and exclusivity must join the existing
 producer custody owner before the public batch is ready. The implementation must
 not reconstruct a second publication-ownership ledger.
 
-Owned-graph navigation is separately tracked by #53. Entity-only checkout and
-entity-only context refresh refuse definitions with declared ownership edges;
-they cannot silently restore or validate only the model record. #53 restores the
-union of the current and selected owned closures atomically, preserving each
-publication's custody. Corrections sharing that tree follow #56. Neither
-restoration capability is claimed by the recording entrance alone.
+For graph navigation, select
+`ApplicationHistoryModelDomain::OwnedModelGraph` and declare `.navigation::<N>()`.
+The graph domain covers the union of current and selected owned entities, their
+outgoing relations, and incoming declared ownership edges. An ordinary incoming
+edge from an outside source stays with that source. If it prevents retirement,
+`OwnedGraph(cause)` carries `cause.foreign_incoming_relation()`: its exact entity,
+relation, source owner and borrowed installed deletion contracts.
 
-Existing history definitions with no ownership declarations retain their original
-wire format and canonical identity. Owned definitions use a distinct archive
-version carrying the exact relation names and endpoints. Decoded declarations
+The [navigation court](../workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/owned_model/navigation.rs)
+uses a recorded NAV grant and a real child-scoped edit. This checkpoint prepares
+the declared structural selection, then returns the explicit
+`RequiresCascadeCustody` refusal before creating a candidate. Atomic graph
+publication, source-scope publication restoration and the applied checkout
+courts await the cascade batch. Graph navigation is not ready for adoption.
+`ScopeEntityRecord` navigation cannot include ownership declarations, and
+entity-only context refresh still refuses them. Corrections sharing the tree
+follow #56.
+
+Existing domains with no ownership declarations retain their original wire
+format and canonical identity. Owned definitions and the explicit graph domain
+use archive version 4 carrying the exact relation names and endpoints. The graph
+domain has its own canonical meaning even before any members are owned. Decoded declarations
 carry meaning only; installation and each current request still establish their
 own correspondence and authority.

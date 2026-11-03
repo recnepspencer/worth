@@ -1,6 +1,7 @@
 //! Pure declaration carriage: no runtime, binding recipe or live head is made.
 use super::*;
 mod navigation;
+mod owned_graph;
 mod retention;
 use crate::facade::WorthQueryPackageArchiveDenialKind as Kind;
 use worth_query_declaration::facade::{

@@ -190,10 +190,10 @@ as that authority or copy historical metadata over current provenance.
 
 The eventual publication handoff must carry one prepared graph restoration and
 one explicit typed `requires cascade custody` seam until the batch lands.
-Whether ordinary relations crossing the entity closure belong to this domain
-is not determined by endpoint ownership alone; the relation-boundary options
-have been sent to root. Relation restoration implementation waits for that
-ruling. Observation courts do not depend on it.
+D1117 below resolves the relation-boundary question raised in this review:
+outgoing relations and incoming declared ownership edges belong to the document;
+ordinary foreign incoming relations remain outside. Observation courts do not
+depend on that ruling.
 
 ### Entity-boundary preparation slice
 
@@ -253,3 +253,91 @@ Source-intent capture and output-profile binding currently require the exact
 model scope. Feature-scoped sources need #55's complete owned-entity proof,
 including canonical publication custody. Owned-graph navigation remains contained
 until #53. #57 has no implementation or readiness claim in this checkpoint.
+
+## D1117 relation boundary and implementation slice
+
+Root selects outgoing relations from owned sources and incoming declared
+ownership edges. Ordinary incoming relations from outside sources remain owned
+by those sources. Restoring a current-only entity's retirement must refuse if
+one of those live foreign relations survives; the diagnostic retains its exact
+relation, source owner and actual installed endpoint-deletion contracts.
+
+Boundary review: Native's immutable Head reader has full-generation relation
+metadata and charged adjacency, and the retained bases carry authoritative
+schema contracts. The existing single-entity commit authority cannot represent
+this graph and must remain unchanged. Native's mutation/publication dispatch,
+canonical-envelope variants and transaction preparation facade are still in the
+cascade exclusion set. They cannot be extended or bypassed in this slice.
+Therefore the outside-owner handoff can prepare and validate the declared
+structural selection, but cannot publish it before that batch releases these
+owners. Publication custody must still contribute its authoritative closure.
+
+Prepare current relation material from the union of current and selected entity
+closures: all outgoing relations, plus incoming ownership edges declared anywhere
+in the installed ownership registry. This includes a moved-away entity's current
+ownership edge. Desired historical relations come from the selected closure
+only; current-only entities retire rather than gaining another document's old
+payload. Historical outgoing relations whose current source moved outside the
+union refuse with that current owner. A historical outside endpoint must still
+be live at its full generation; checkout cannot restore its payload by accident.
+
+Implementation order:
+
+1. Extend the same Native basis reader with paid full-generation relation reads.
+   Keep membership traversal and its existing bill unchanged. Add a graph
+   selection owner retaining the entity boundary, both relation maps and funding.
+   No caller can supply a mutation roster or turn it into commit authority.
+2. Qualify foreign incoming retirement against actual current facts. Diagnostics
+   borrow the current basis's installed deletion contracts, without synthesizing
+   invariant receipts or copying a second schema policy. A foreign relation with
+   no explicit deletion contract still cannot be severed under D1117.
+3. Cache combined installed ownership meaning once in Query's existing layout
+   owner. Navigation consumes the Native declared structural selection after its
+   existing READ/NAV/program/Signal checks, then returns one explicit typed
+   `RequiresCascadeCustody` refusal before candidate creation. It must never
+   fall through to single-entity publication.
+4. Add generic public Native courts for outgoing reference selection, untouched
+   foreign incoming edges, typed retirement blocking, ownership moves across
+   declared relation types, and corrupted cold material. Add a public history
+   court proving the single custody refusal and unchanged step/payload. Qualify
+   each new guard with mutation probes, then run owner/public courts, formatting,
+   dirty caps, boundary-check and agent-context.
+
+The applied-checkout versions of these courts and atomic Native graph publication
+remain unqualified until the protected dispatch and canonical authority can be
+extended after landing. This is one explicit custody seam, not an entity-only
+fallback or an alternate mutation engine. #55 custody, #57 and #56 continue to
+wait for root's landing notice.
+
+### Explicit domain carriage
+
+Issue #53 asks for a navigation domain rather than a reinterpretation of the
+single-record name. Add `OwnedModelGraph` to the existing declaration enum and
+canonical/archive owners. It selects the declared graph path, including when the
+closure currently contains only the model. `ScopeEntityRecord` navigation keeps
+its existing empty-ownership boundary. Graph-without-ownership still uses archive
+version 4; tag 3 is admitted only there. Existing domain tags 1/2 and all version
+1–3 encodings remain unchanged. Prove roundtrip, canonical distinction, old-version
+refusal, and preservation of existing literal-byte courts. This is within #53's
+explicit domain request, with no change to D1117's ownership policy.
+
+### D1117 qualification checkpoint
+
+Restored-source checks pass: 15 Native ownership/graph courts, the pure Native
+schema-meaning unit, 125 public history/cost courts (two existing ignored), 14
+archive history tests, the canonical-domain identity unit, 42 external consumer
+history tests, and 30 history doctests (14 positive and 16 compile-fail).
+Boundary-check, agent-context, scoped formatting, dirty Rust line caps and
+whitespace checks pass. All 109 changed Rust files across the complete branch
+and dirty set are at most 400 lines.
+
+Twelve failed-test mutation probes cover graph boundary guards and actual owner
+attribution, global declarations, union membership, historical basis choice,
+cold material demand, retained funding, shared work metering, outgoing relation
+projection, domain wire/canonical carriage, forbidden record fallback, and Query
+propagation of Native refusals. Probes reject compilation failures as evidence;
+all source snapshots were restored before the positive checks.
+
+These are preparation and refusal proofs. They do not qualify applied checkout,
+canonical graph mutation, complete publication custody or atomic restoration.
+Those still require protected cascade owners. No READY handoff is permitted yet.

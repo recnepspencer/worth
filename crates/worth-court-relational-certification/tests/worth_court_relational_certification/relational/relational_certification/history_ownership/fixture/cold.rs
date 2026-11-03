@@ -8,6 +8,7 @@ pub(crate) struct MemberSource {
     pub members: BTreeMap<RelationalDurableMemberLocator, Vec<u8>>,
     commits: BTreeMap<PatchStreamPosition, Vec<u8>>,
     pub reads: AtomicUsize,
+    pub damaged: std::sync::atomic::AtomicBool,
     pub member_reads: Mutex<Vec<RelationalDurableMemberLocator>>,
     pub failures: Mutex<BTreeMap<RelationalDurableMemberLocator, Cause>>,
 }
@@ -37,10 +38,14 @@ impl RelationalDurableColdSource for MemberSource {
         if let Some(cause) = self.failures.lock().unwrap().get(&locator) {
             return Err(*cause);
         }
-        bounded(
+        let mut bytes = bounded(
             self.members.get(&locator).ok_or(Cause::MissingMember)?,
             limit,
-        )
+        )?;
+        if self.damaged.load(Ordering::Relaxed) && bytes.starts_with(b"WORTH-REL-REG") {
+            bytes[0] ^= 1;
+        }
+        Ok(bytes)
     }
     fn read_commit(&self, position: PatchStreamPosition, limit: u64) -> Result<Vec<u8>, Cause> {
         bounded(
@@ -86,6 +91,7 @@ pub(crate) fn reopen(
             })
             .collect(),
         reads: AtomicUsize::new(0),
+        damaged: std::sync::atomic::AtomicBool::new(false),
         member_reads: Mutex::new(Vec::new()),
         failures: Mutex::new(BTreeMap::new()),
     });
