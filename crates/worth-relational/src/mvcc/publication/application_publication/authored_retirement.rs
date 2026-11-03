@@ -105,12 +105,15 @@ impl RelationalRuntime {
                             })
                             .collect::<Result<Vec<_>, _>>()?;
                         crate::history::data::select_owned_scope_dependent(
-                            &removed,
+                            crate::history::data::OwnedScopeDependentSelection::RemovedSources(
+                                &removed,
+                            ),
                             basis.inner.root.commit_id(),
                             self.history.catalog_len(),
                             |commit| self.history.canonical_envelope(commit),
                             context,
                         )
+                        .map_err(|failure| failure.stop)
                     })
             })
             .map_err(custody::execution_stop)?

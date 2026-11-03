@@ -43,8 +43,16 @@ pub(crate) fn select_authored_source_retirement(
     installed: &RelationalInstalledApplicationPublicationAuthority,
     basis: &AdmittedRelationalBranchBasis,
     anchor: EntityId,
+    co_anchors: &[EntityId],
     roles: &[RequiredOutputRoleTarget],
-) -> Result<(CommitId, Vec<SelectedOutputPublication>), TransactionCommitError> {
+) -> Result<
+    (
+        CommitId,
+        Vec<(EntityId, CommitId)>,
+        Vec<SelectedOutputPublication>,
+    ),
+    TransactionCommitError,
+> {
     let result = execution.in_scope(|lease| {
         ExecutionWorkCeiling::new(execution.work_ceiling()).run_with_checkpoint(
             lease,
@@ -78,7 +86,26 @@ pub(crate) fn select_authored_source_retirement(
                         reject(Cause::CorruptPublication, failure.source.unwrap_or(anchor))
                     }
                 })?;
-                let selected = super::source_scope_closure::select(&[anchor], &latest, context)
+                let mut anchors = Vec::with_capacity(co_anchors.len() + 1);
+                anchors.push(anchor);
+                let mut births = Vec::with_capacity(co_anchors.len());
+                for &id in co_anchors {
+                    charge(context, anchors.len()).map_err(stopped)?;
+                    if anchors.contains(&id) {
+                        return Err(reject(Cause::RepeatedTarget, id));
+                    }
+                    births.push((id, authored_birth(execution, runtime, basis, id, context)?));
+                    anchors.push(id);
+                }
+                for &id in &anchors {
+                    for publication in &latest {
+                        charge(context, publication.origin.members.len()).map_err(stopped)?;
+                        if publication.origin.members.iter().any(|member| member.id == id && member.posture != Posture::Retire) {
+                            return Err(reject(Cause::InvalidAuthoredAnchor, id));
+                        }
+                    }
+                }
+                let selected = super::source_scope_closure::select(&anchors, &latest, context)
                     .map_err(stopped)?;
                 for publication in &selected {
                     let origin = &publication.origin;
@@ -114,32 +141,33 @@ pub(crate) fn select_authored_source_retirement(
                     }
                 }
                 if selected.is_empty() {
-                    return Ok((birth, selected));
+                    return Ok((birth, births, selected));
                 }
-                require_roster(anchor, roles, &selected, &latest, context)?;
+                require_roster(anchor, &anchors, roles, &selected, &latest, context)?;
                 // Cover the exact fixed-width legality-seal comparisons performed by proof admission.
                 charge(context, selected.len().saturating_mul(selected.len() + 1))
                     .map_err(stopped)?;
                 charge(context, roles.len()).map_err(stopped)?;
                 for role in roles
                     .iter()
-                    .filter(|role| role.target == EntityReference::Existing(anchor))
+                    .filter(|role| matches!(role.target, EntityReference::Existing(id) if anchors.contains(&id)))
                 {
+                    let EntityReference::Existing(id) = role.target else { unreachable!() };
                     let partition = basis
                         .inner
                         .root
-                        .partition_state(anchor.partition_id)
+                        .partition_state(id.partition_id)
                         .map_err(|cause| stopped(cause.into()))?
-                        .ok_or_else(|| reject(Cause::InvalidAuthoredAnchor, anchor))?;
+                        .ok_or_else(|| reject(Cause::InvalidAuthoredAnchor, id))?;
                     if !partition
                         .entity_arena
-                        .get(&anchor)
+                        .get(&id)
                         .is_some_and(|row| row.kind_id() == Some(role.kind))
                     {
-                        return Err(reject(Cause::InvalidAuthoredAnchor, anchor));
+                        return Err(reject(Cause::InvalidAuthoredAnchor, id));
                     }
                 }
-                Ok((birth, selected))
+                Ok((birth, births, selected))
             },
         )
     });

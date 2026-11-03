@@ -143,7 +143,7 @@ impl WorthQueryPreparedCorrectionSource {
     }
     pub(in crate::domain_computation::primary_graph) fn validate_authored_candidate<'a>(
         &self,
-        roles: impl Iterator<Item = (&'a str, worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture, &'a str, &'a worth_relational::facade::transactions::EntityReference)>,
+        roles: impl Iterator<Item = (&'a str, worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture, &'a str, &'a worth_relational::facade::transactions::EntityReference)> + Clone,
         batch: &worth_relational::facade::transactions::WorkerIntentBatch,
         request: &WorthQueryRequestScope,
     ) -> Result<(), super::AuthoredCorrectionCandidateDenial> {
@@ -159,6 +159,25 @@ impl WorthQueryPreparedCorrectionSource {
         self.authored_identity
             .as_ref()
             .and_then(|identity| identity.retirement_anchor())
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn authored_retirement_co_anchors(
+        &self,
+    ) -> Vec<EntityId> {
+        self.authored_identity
+            .as_ref()
+            .map_or_else(Vec::new, |identity| identity.retirement_co_anchors())
+    }
+    pub(in crate::domain_computation::primary_graph) fn authored_restoration_co_anchors<'a>(
+        &self,
+        roles: impl Iterator<Item = (&'a str, worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture, &'a str, &'a worth_relational::facade::transactions::EntityReference)> + Clone,
+    ) -> Vec<(
+        EntityId,
+        worth_relational::facade::transactions::CreatedEntityRef,
+    )> {
+        self.authored_identity
+            .as_ref()
+            .map_or_else(Vec::new, |identity| identity.restoration_co_anchors(roles))
     }
 
     pub(in crate::domain_computation::primary_graph) fn authored_restoration_anchor<'a>(

@@ -65,15 +65,16 @@ pub(super) fn bind(
             target: target.clone(),
         });
     }
-    if let Some(anchor) = anchor {
+    if let Some((anchor, co_anchors)) = anchor {
         let cascade = provider
             .graph
             .with_runtime(execution, |runtime| {
-                runtime.readmit_authored_source_retirement(
+                runtime.readmit_authored_source_retirement_with_co_anchors(
                     execution,
                     &publisher.native,
                     basis,
                     anchor,
+                    &co_anchors,
                     &roles,
                 )
             })
@@ -146,14 +147,21 @@ pub(super) fn bind(
 fn authored_anchor(
     attempt: &WorthQueryPrimaryGraphApplicationAttempt,
 ) -> Result<
-    Option<worth_relational::facade::identity::EntityId>,
+    Option<(
+        worth_relational::facade::identity::EntityId,
+        Vec<worth_relational::facade::identity::EntityId>,
+    )>,
     crate::domain_computation::WorthQueryProviderSessionCommitStop,
 > {
     if let Some(anchor) = attempt
         .aftermath_causality()
         .and_then(|causality| causality.prepared_correction().authored_retirement_anchor())
     {
-        return Ok(Some(anchor));
+        let prepared = attempt
+            .aftermath_causality()
+            .expect("selected correction anchor")
+            .prepared_correction();
+        return Ok(Some((anchor, prepared.authored_retirement_co_anchors())));
     }
     let identity = attempt
         .original_authority()
@@ -179,5 +187,25 @@ fn authored_anchor(
             CompanionPreflightStop::SelectedSourceMismatch,
         ));
     }
-    Ok(target)
+    let mut co_anchors = Vec::with_capacity(identity.co_anchors().len());
+    for declaration in identity.co_anchors() {
+        let mut matched = attempt
+            .native_publication_roles()
+            .filter(|(role, posture, _, _)| {
+                *role == declaration.parts().source_role && *posture == Posture::Retire
+            });
+        let co_anchor = matched.next().and_then(|(_, _, _, target)| match target {
+            EntityReference::Existing(id) => Some(*id),
+            _ => None,
+        });
+        if matched.next().is_some() || (co_anchor.is_none() && !declaration.is_optional()) {
+            return Err(native_output_witness_stop(
+                CompanionPreflightStop::SelectedSourceMismatch,
+            ));
+        }
+        if let Some(id) = co_anchor {
+            co_anchors.push(id);
+        }
+    }
+    Ok(target.map(|anchor| (anchor, co_anchors)))
 }

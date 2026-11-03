@@ -16,6 +16,17 @@ pub trait ApplicationCorrectionPreImage<Schema> {
         &self,
         locus: &DeclaredPreImageLocus<Schema>,
     ) -> Option<&worth_foundational::facade::AspectValue>;
+
+    /// Read one declared locus on the exact original record bound to this output
+    /// role. An absent optional role yields None; equal loci on co-anchors never
+    /// substitute for one another. This grants historical values only.
+    fn field_for_output(
+        &self,
+        _role: &crate::application_operation::ApplicationMutationOutputRoleDescriptor,
+        _locus: &DeclaredPreImageLocus<Schema>,
+    ) -> Option<&worth_foundational::facade::AspectValue> {
+        None
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

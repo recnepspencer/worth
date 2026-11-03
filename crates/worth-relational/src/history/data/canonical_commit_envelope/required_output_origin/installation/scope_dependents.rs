@@ -79,12 +79,12 @@ pub(super) fn select_removed_owning_scopes(
         return Ok(None);
     }
     let dependent = crate::history::data::select_owned_scope_dependent(
-        &anchors,
+        crate::history::data::OwnedScopeDependentSelection::RemovedSources(&anchors),
         candidate.commit.parents.first().copied(),
         runtime.history.canonical_catalog_len(),
         |commit| runtime.history.canonical_envelope(commit),
         context,
     )
-    .map_err(super::relation_stop)?;
+    .map_err(|failure| super::relation_stop(failure.stop))?;
     Ok(dependent.map(|dependent| RemovedOwningScopes { anchors, dependent }))
 }

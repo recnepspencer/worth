@@ -200,6 +200,8 @@ pub fn features() -> Vec<ApplicationFeatureSpec> {
     vec![
         ApplicationFeatureSpec::root::<Schema, SplitEntry>()
             .provides::<SplitEntryOutput>()
+            .native_action::<write_fence::Binding>()
+            .finish_action()
             .native_action::<source_control::Binding>()
             .finish_action()
             .finish(),

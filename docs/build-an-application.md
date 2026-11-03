@@ -4017,6 +4017,22 @@ publication in one transaction, preserving each producer's provenance and route
 while allocating fresh native generations and remapping owned relation endpoints.
 A restoration supplies historical output association, not producer readiness.
 
+A correction may explicitly carry co-anchors with
+`retire_created::<C, Family, Source, Inverse>()`
+`.co_retire_created::<C, CoFamily, CoSource, CoInverse>()`. For a Retire-to-Create
+inverse, use `restore_retired` followed by `co_restore_retired` instead. Each
+co-role declares its own family and Create/Retire correspondence, with matching
+exactly-one or zero-or-one cardinality. An absent optional role remains absent.
+Every present co-anchor must be genuinely authored and belong to no live
+publication. Native selects one closure from all anchors together; an undeclared
+extra Retire role is still an extra. Each restored anchor comes from its own
+inverse Create, retaining its logical key and receiving a fresh native ID.
+Declare and observe the demanded pre-image fields for each present anchor and
+set the pre-image byte bound for their total payload.
+Read a particular co-anchor with
+`preimage.field_for_output(&CoRole::DESCRIPTOR, &locus)`; equal field loci on
+different anchors retain their own original values.
+
 An owned publication cannot use the independent single-publication retirement
 path, including a warm publication capsule. It refuses with
 `OwnedPublicationRequiresCascade`, identifying the publication and its owner.
@@ -4043,8 +4059,13 @@ old derived generations. Whole-source authored restoration retains its existing
 in for a producer-created source to join the authored root's cascade.
 An owned publication cannot be
 restored or republished without its live source (`PublicationOwnerUnavailable`).
-These checks govern required-output publication custody; an unbound Native
-transaction remains governed by its ordinary schema and cascade-delete policy.
+Commit admission also fences ordinary Delete and Unlink operations against
+current opted-in publication membership and owned edges, including calls with
+no output roles. Only that publication's authentic succession or an admitted
+cascade covering it can discharge custody. A refusal names the exact entity or
+relation and its owner, before any effect. Deleting an external endpoint also
+requires its live owning publications to participate; it does not adopt the
+endpoint as an owned member.
 
 An input dependency or a reference never implies ownership. Two independent
 producers may read the same source without entering its cascade. Opting in does

@@ -78,8 +78,16 @@ pub(super) fn owns_create(
                     .ok_or_else(collection::capacity)?,
             )?;
             let id = created.resolve(&target);
-            // The distinguished source is still authored by the application.
-            for (_, target) in restoration.entities.iter().skip(1) {
+            // Every anchor remains authored by its own inverse Create.
+            let anchors = restoration
+                .retirement
+                .authored_cascade_retirement
+                .as_ref()
+                .expect("Native restoration has its retirement")
+                .co_anchors
+                .len()
+                + 1;
+            for (_, target) in restoration.entities.iter().skip(anchors) {
                 checkpoint(
                     created
                         .resolve_work_bound(target)

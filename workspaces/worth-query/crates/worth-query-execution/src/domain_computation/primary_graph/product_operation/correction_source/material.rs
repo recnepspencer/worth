@@ -87,7 +87,13 @@ pub(super) fn derive<S: ApplicationSchema, C: ApplicationCorrectionBinding<S>>(
                 .ok_or(Denial::MissingPreImage)?;
             C::derive_correction(
                 input,
-                ApplicationCorrectionSourceMaterial::RecordedInverse(&DisclosedPreImage(preimage)),
+                ApplicationCorrectionSourceMaterial::RecordedInverse(&DisclosedPreImage {
+                    retained: preimage,
+                    outputs: source
+                        .occurrence()
+                        .commit_evidence()
+                        .output_correspondence(),
+                }),
             )
             .map_err(Denial::Domain)
         }
@@ -112,17 +118,51 @@ pub(in crate::domain_computation::primary_graph) fn finish_derivation<T>(
     result.map_err(Denial::Domain)
 }
 
-struct DisclosedPreImage<'a>(&'a WorthQueryRetainedPreImage);
+struct DisclosedPreImage<'a> {
+    retained: &'a WorthQueryRetainedPreImage,
+    outputs:
+        &'a crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence,
+}
 impl<S> ApplicationCorrectionPreImage<S> for DisclosedPreImage<'_> {
     fn field(
         &self,
         locus: &DeclaredPreImageLocus<S>,
     ) -> Option<&worth_foundational::facade::AspectValue> {
-        self.0
+        self.retained
             .fields()
             .iter()
             .find(|field| {
                 field.locus().entity() == locus.entity()
+                    && field.locus().aspect() == locus.aspect()
+                    && field.locus().field() == locus.field()
+            })
+            .map(|field| field.value())
+    }
+    fn field_for_output(
+        &self,
+        role: &worth_query_declaration::facade::application_operation::ApplicationMutationOutputRoleDescriptor,
+        locus: &DeclaredPreImageLocus<S>,
+    ) -> Option<&worth_foundational::facade::AspectValue> {
+        if role.entity() != locus.entity() {
+            return None;
+        }
+        let mut roles = self
+            .outputs
+            .native_witness_roles()
+            .filter(|(name, posture, entity, _)| {
+                *name == role.name() && *posture == role.posture() && *entity == role.entity()
+            });
+        let (_, _, _, original) = roles.next()?;
+        if roles.next().is_some() {
+            return None;
+        }
+        self.retained
+            .fields()
+            .iter()
+            .find(|field| {
+                field.target_record()
+                    == &worth_relational::facade::transactions::RecordRef::Entity(original)
+                    && field.locus().entity() == locus.entity()
                     && field.locus().aspect() == locus.aspect()
                     && field.locus().field() == locus.field()
             })

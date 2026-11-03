@@ -1,5 +1,6 @@
 //! Fail-closed retention from the admitted decision read-set.
 
+mod authored_anchors;
 mod selection;
 
 pub(crate) use selection::WorthQueryRetainedPreImageSeal;
@@ -63,10 +64,12 @@ pub(super) fn retain_attempt_preimage(
                 "preimage projection capacity exhausted"),
         })?;
     let examined = candidates.examined();
-    let (retained, candidates_materialized) =
+    let selected = if let Some(anchors) = authored_anchors::select(attempt)? {
+        selection::retain_from_authored_anchors(demand, candidates.iter(), &footprint, &anchors)
+    } else {
         selection::retain_from_attempt(demand, candidates.iter(), &footprint)
-            .map_err(retention_failure)?
-            .into_parts();
+    };
+    let (retained, candidates_materialized) = selected.map_err(retention_failure)?.into_parts();
     Ok(WorthQueryPreparedPreImageRetention {
         retained: Some(retained),
         work: WorthQueryPreImageRetentionWork {

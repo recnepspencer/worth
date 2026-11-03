@@ -1,19 +1,25 @@
 //! Ordinary authored source commands, independent of producer publication machinery.
-use super::*;
+use super::{co_roles::*, *};
 #[derive(Clone, Debug, worth_foundational::facade::WorthValue)]
 pub struct Create {
+    pub create_co: bool,
+    pub co_anchors: Vec<u64>,
     pub scope: u64,
     pub id: u64,
     pub depth: u64,
 }
 #[derive(Clone, Debug, worth_foundational::facade::WorthValue)]
 pub struct Retire {
+    pub corrupt_restoration: bool,
+    pub co_anchors: Vec<u64>,
     pub scope: u64,
     pub id: u64,
     pub descendants: Vec<u64>,
 }
 #[derive(Clone, Debug, worth_foundational::facade::WorthValue)]
 pub struct Restore {
+    pub co_values: Vec<u64>,
+    pub co_anchors: Vec<u64>,
     pub scope: u64,
     pub id: u64,
     pub value: u64,
@@ -72,12 +78,17 @@ impl<S: Scenario, const I: usize> WorthQueryApplicationOutputRole for Descendant
     const NAME: &'static str = ["Rp", "Sc", "Rc", "Sl", "Rl", "C"][I];
 }
 impl<S: Scenario> ApplicationMutationOutputContract<S> for CreatedOutputs {
-    const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] =
-        &[<Created<S> as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR];
+    const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] = &[
+        <Created<S> as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR,
+        <CoCreated<S, 0> as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR,
+        <CoCreated<S, 1> as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR,
+    ];
 }
 impl<S: Scenario> ApplicationMutationOutputContract<S> for RetiredOutputs {
     const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] = &[
         <Retired<S> as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR,
+        <CoRetired<S, 0> as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR,
+        <CoRetired<S, 1> as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR,
         <Extra<S> as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR,
         <Descendant<S, 0> as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR,
         <Descendant<S, 1> as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR,
@@ -88,6 +99,10 @@ impl<S: Scenario> ApplicationMutationOutputContract<S> for RetiredOutputs {
     ];
 }
 pub type Target<S> = WorthQueryInvariantMutationTarget<S, Node>;
+pub struct RetirementTargets<S: Scenario> {
+    pub nodes: Vec<Target<S>>,
+    pub edges: Vec<(Target<S>, Target<S>)>,
+}
 worth_query_mutation_binding!(
     pub CreateBinding for Create, schema generic S: Scenario,
     identity "ownership.create.v1", input CreateInput, operation CreateOp,
@@ -103,7 +118,7 @@ worth_query_mutation_binding!(
     pub RetireBinding for Retire, schema generic S: Scenario,
     identity "ownership.retire.v1", input RetireInput, operation RetireOp,
     result query::UnitBinding, idempotency String, identity "ownership.command.v1",
-    decision Vec<Target<S>>, denial query::UnitBinding, handler identity "ownership.retire.handler.v1",
+    decision RetirementTargets<S>, denial query::UnitBinding, handler identity "ownership.retire.handler.v1",
     outputs RetiredOutputs, source NoApplicationMutationSource,
     principal binding actor(), binding_type Actor, mapping Mapping, principal_entity Node,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
@@ -134,6 +149,8 @@ worth_query_mutation_binding!(
 );
 impl OperationCreates<CreateOp> for Node {}
 impl OperationReads<CreateOp> for Id {}
+impl OperationReads<CreateOp> for Node {}
+impl OperationReads<CreateOp> for Peer {}
 impl OperationWrites<CreateOp> for Id {}
 impl OperationWrites<CreateOp> for Value {}
 impl<S: Scenario> ApplicationDeclaredOperation<S> for CreateOp {
@@ -142,6 +159,8 @@ impl<S: Scenario> ApplicationDeclaredOperation<S> for CreateOp {
     ) -> ApplicationSchemaDeclarationBuilder<S> {
         schema
             .operation_read_field(Self::reference(), Id::reference())
+            .operation_read_entity(Self::reference(), Node::reference())
+            .operation_read_relation(Self::reference(), Peer::reference())
             .operation_create(Self::reference(), Node::reference())
             .operation_write(Self::reference(), Id::reference())
             .operation_write(Self::reference(), Value::reference())
@@ -166,6 +185,8 @@ impl OperationReads<RetireOp> for Node {}
 impl OperationReads<RetireOp> for Id {}
 impl OperationReads<RetireOp> for Value {}
 impl OperationDeletes<RetireOp> for Node {}
+impl OperationReads<RetireOp> for Peer {}
+impl OperationUnlinks<RetireOp> for Peer {}
 impl<S: Scenario> ApplicationDeclaredOperation<S> for RetireOp {
     fn declare_access(
         schema: ApplicationSchemaDeclarationBuilder<S>,
@@ -174,6 +195,8 @@ impl<S: Scenario> ApplicationDeclaredOperation<S> for RetireOp {
             .operation_read_entity(Self::reference(), Node::reference())
             .operation_read_field(Self::reference(), Id::reference())
             .operation_read_field(Self::reference(), Value::reference())
+            .operation_read_relation(Self::reference(), Peer::reference())
+            .operation_unlink(Self::reference(), Peer::reference())
             .operation_delete(Self::reference(), Node::reference())
     }
 }

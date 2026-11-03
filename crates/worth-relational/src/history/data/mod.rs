@@ -8,6 +8,7 @@ pub(crate) use canonical_commit_envelope::validate_authored_restoration_candidat
 mod codec_retirement_closure;
 mod codec_retirement_preservation;
 pub(crate) use codec_retirement_closure::select_owned_scope_dependent;
+pub(crate) use codec_retirement_closure::OwnedScopeDependentSelection;
 pub(crate) use codec_retirement_closure::{
     capture_materialization_producers, derive_codec_retirement_closure,
     output_materialization_write_matches, prepare_materialization_continuity,

@@ -8,7 +8,7 @@ use crate::history::data::CommitId;
 use crate::publication::patch::data::PatchStreamPosition;
 
 pub(super) const MAGIC: [u8; 8] = *b"WRTHRCCA";
-pub(super) const FORMAT_VERSION: u16 = 3;
+pub(super) const FORMAT_VERSION: u16 = 4;
 
 const VERSION_OFFSET: usize = MAGIC.len();
 const POSITION_OFFSET: usize = VERSION_OFFSET + 2;

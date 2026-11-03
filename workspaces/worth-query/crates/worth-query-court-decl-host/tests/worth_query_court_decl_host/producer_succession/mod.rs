@@ -30,6 +30,7 @@ mod refusal_courts;
 mod schema;
 mod source_control;
 mod world;
+mod write_fence;
 use producer::*;
 use program::Program;
 use query::*;
@@ -97,6 +98,7 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
         setup: &mut WorthQueryApplicationContributionSetup<'_, Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         setup.handler::<source_control::Binding, _>(source_control::Handler)?;
+        setup.handler::<write_fence::Binding, _>(write_fence::Handler)?;
         producers::parent::install(
             setup,
             configuration.selections.clone(),

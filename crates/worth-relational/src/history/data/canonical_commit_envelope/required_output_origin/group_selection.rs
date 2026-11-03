@@ -109,15 +109,35 @@ impl CanonicalCommitEnvelope {
         {
             return Err("copied or mixed canonical authored cascade".into());
         }
+        for (index, anchor) in event.anchors().enumerate() {
+            charge(
+                context,
+                index + self.patch.authoritative_record_patches.len() + 1,
+            )?;
+            if event.anchors().take(index).any(|prior| prior == anchor)
+                || !self.patch.authoritative_record_patches.iter().any(|patch| {
+                    patch.target == RecordRef::Entity(anchor)
+                        && patch.structural_change == Change::Deleted
+                })
+            {
+                return Err("canonical cascade repeats or omits an authored anchor".into());
+            }
+        }
         for (index, origin) in event.publications.iter().enumerate() {
-            charge(context, origin.members.len() + 1)?;
+            charge(
+                context,
+                origin
+                    .members
+                    .len()
+                    .saturating_mul(event.co_anchors.len() + 1)
+                    + 1,
+            )?;
             self.validate_output_origin_header(origin)?;
             if !origin.source_scope_owned
                 || origin.publication.predecessor().is_none()
-                || origin
-                    .members
-                    .iter()
-                    .any(|member| member.posture != Posture::Retire || member.id == event.anchor)
+                || origin.members.iter().any(|member| {
+                    member.posture != Posture::Retire || event.contains_anchor(member.id)
+                })
             {
                 return Err("canonical cascade contains an unowned or live publication".into());
             }
@@ -140,7 +160,8 @@ impl CanonicalCommitEnvelope {
             }
             let mut source = origin.meaning.source_scope;
             for _ in 0..event.publications.len() {
-                if source == event.anchor {
+                charge(context, event.co_anchors.len() + 1)?;
+                if event.contains_anchor(source) {
                     break;
                 }
                 let mut parent = None;
@@ -152,7 +173,7 @@ impl CanonicalCommitEnvelope {
                 }
                 source = parent.ok_or("canonical cascade has a different source owner")?;
             }
-            if source != event.anchor {
+            if !event.contains_anchor(source) {
                 return Err("canonical cascade source ownership is cyclic".into());
             }
         }

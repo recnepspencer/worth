@@ -34,6 +34,25 @@ impl CanonicalCommitEnvelope {
         {
             return Err("invalid recorded authored restoration anchor".into());
         }
+        for (index, &(old, new)) in event.co_anchors.iter().enumerate() {
+            charge(
+                context,
+                index + event.entities.len() + self.patch.authoritative_record_patches.len() + 1,
+            )?;
+            if old == event.original_anchor
+                || new == event.anchor
+                || event.co_anchors[..index]
+                    .iter()
+                    .any(|(a, b)| *a == old || *b == new)
+                || !event.entities.contains(&(old, new))
+                || !self.patch.authoritative_record_patches.iter().any(|patch| {
+                    patch.target == RecordRef::Entity(new)
+                        && patch.structural_change == Change::Created
+                })
+            {
+                return Err("restoration repeats or omits a co-anchor".into());
+            }
+        }
         for (index, (old, new)) in event.entities.iter().enumerate() {
             charge(context, index + 1)?;
             if old == new
@@ -72,7 +91,8 @@ impl CanonicalCommitEnvelope {
             if !origin.source_scope_owned
                 || !matches!(origin.publication, CanonicalOutputPublication::AuthoredRestoration { retirement, .. } if retirement == event.retirement)
                 || origin.members.iter().any(|member| {
-                    member.id == event.anchor
+                    (member.id == event.anchor
+                        || event.co_anchors.iter().any(|(_, id)| *id == member.id))
                         || member.posture != crate::mvcc::RequiredOutputRolePosture::Create
                         || !event.entities.iter().any(|(_, id)| *id == member.id)
                 })
@@ -118,7 +138,8 @@ impl CanonicalCommitEnvelope {
             }
             let mut source = origin.meaning.source_scope;
             for _ in 0..event.publications.len() {
-                if source == event.anchor {
+                charge(context, event.co_anchors.len() + 1)?;
+                if source == event.anchor || event.co_anchors.iter().any(|(_, id)| *id == source) {
                     break;
                 }
                 let mut parent = None;
@@ -130,14 +151,15 @@ impl CanonicalCommitEnvelope {
                 }
                 source = parent.ok_or("restored publication has a foreign source")?;
             }
-            if source != event.anchor {
+            charge(context, event.co_anchors.len() + 1)?;
+            if !(source == event.anchor || event.co_anchors.iter().any(|(_, id)| *id == source)) {
                 return Err("restored source ownership is cyclic".into());
             }
         }
         if edges != event.relations.len() {
             return Err("restoration adds an unowned relation".into());
         }
-        if members.checked_add(1) != Some(event.entities.len()) {
+        if members.checked_add(event.co_anchors.len() + 1) != Some(event.entities.len()) {
             return Err("restoration adds an unowned entity".into());
         }
         Ok(())

@@ -3,7 +3,7 @@ use super::{lifecycle::*, program::*, *};
 use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
 use worth_query_testkit_document_retention::facade::document_retention_model::operator_identity::*;
 type Host<S = Schema> = WorthQueryProgramApplicationRuntime<S, Program>;
-fn install_program<S: Scenario>() -> Host<S> {
+pub(super) fn install_program<S: Scenario>() -> Host<S> {
     in_memory_program(
         ApplicationProgramAuthoring::<S, Program>::begin()
             .validated_program()
@@ -32,6 +32,8 @@ fn require_lifecycle<S: Scenario>(depth: u64, expected: &[u64], retire_from_crea
     let outcome = request
         .advanced()
         .mutate(Create {
+            create_co: true,
+            co_anchors: vec![],
             scope: 1,
             id: 10,
             depth,
@@ -88,6 +90,8 @@ fn require_lifecycle<S: Scenario>(depth: u64, expected: &[u64], retire_from_crea
         let outcome = request
             .advanced()
             .mutate(Retire {
+                corrupt_restoration: false,
+                co_anchors: vec![],
                 scope: 1,
                 id: 10,
                 descendants: expected[1..].to_vec(),
@@ -215,7 +219,7 @@ fn query_authored_correction_retires_and_restores_parent_child_and_leaf() {
     require_lifecycle::<Schema>(3, &[10, 101, 102, 1021, 1022, 10221, 10222], false);
 }
 
-fn reverse<S: Scenario>(
+pub(super) fn reverse<S: Scenario>(
     request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     receipt: &WorthQueryApplicationCommitReceipt,
     key: &str,

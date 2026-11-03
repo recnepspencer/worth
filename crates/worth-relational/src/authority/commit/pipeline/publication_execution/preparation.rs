@@ -1,3 +1,4 @@
+mod owned_record_custody;
 mod preparation_denial;
 use std::sync::Arc;
 
@@ -214,6 +215,12 @@ pub(super) fn prepare_publication_phase(
             ))
             .with_commit_log(commit_log.clone())
         })?;
+    owned_record_custody::require(
+        execution,
+        runtime,
+        &canonical_commit_envelope,
+        &branch_basis,
+    )?;
     let published_partition_delta =
         crate::storage::RelationalPublishedPartitionDelta::from_committed_partitions(
             &committed_partitions,

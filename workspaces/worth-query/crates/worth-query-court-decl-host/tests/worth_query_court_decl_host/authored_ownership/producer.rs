@@ -7,6 +7,7 @@ impl<S: Scenario> ApplicationOperationMarkerIdentity<S> for Operation {
 }
 impl OperationReads<Operation> for Id {}
 impl OperationCreates<Operation> for Node {}
+impl OperationLinks<Operation> for Peer {}
 impl OperationWrites<Operation> for Id {}
 impl OperationWrites<Operation> for Value {}
 pub struct Outputs;
@@ -158,6 +159,14 @@ impl<S: Scenario> OperationHandler<S, Binding<S>> for Provider {
             writer.initialize_field(&created, Id::reference(), id)?;
             writer.initialize_field(&created, Value::reference(), 39)?;
             writer.create_output::<Role<S>>(&created)?;
+            if S::MODE == 5 {
+                writer.link(
+                    Peer::reference(),
+                    format!("owned-source:{}", input.id),
+                    &created,
+                    &source,
+                )?;
+            }
             let cell = writer.create_entity_in_context(
                 &source,
                 Node::reference(),
@@ -187,6 +196,7 @@ pub fn declare<S: Scenario>(
         )
         .operation_read_field(operation, Id::reference())
         .operation_create(operation, Node::reference())
+        .operation_link(operation, Peer::reference())
         .operation_write(operation, Id::reference())
         .operation_write(operation, Value::reference())
         .application_mutation_binding::<Binding<S>>()

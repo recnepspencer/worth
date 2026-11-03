@@ -28,8 +28,10 @@ pub fn declare(
         )
         .application_query(realization_read::definition())
         .application_query_binding::<realization_read::Binding>();
-    source_control::declare(producers::leaf::declare(producers::child::declare(
-        producers::parent::declare(producers::independent_parent::declare(schema)),
+    write_fence::declare(source_control::declare(producers::leaf::declare(
+        producers::child::declare(producers::parent::declare(
+            producers::independent_parent::declare(schema),
+        )),
     )))
 }
 

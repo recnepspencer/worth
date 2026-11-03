@@ -8,7 +8,8 @@ impl WorthQueryPrimaryGraphProvider {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         mut material: ApplicationInvariantCandidateMaterial,
     ) -> Result<ApplicationInvariantCandidateMaterial, WorthQueryInvariantExecutionFailure> {
-        let Some((retirement, original, target)) = &material.authored_restoration else {
+        let Some((retirement, original, target, co_anchors)) = &material.authored_restoration
+        else {
             return Ok(material);
         };
         let publisher = self
@@ -19,13 +20,13 @@ impl WorthQueryPrimaryGraphProvider {
         let plan = self
             .graph
             .with_runtime(execution, |runtime| {
-                runtime.prepare_authored_source_restoration(
+                runtime.prepare_authored_source_restoration_with_co_anchors(
                     execution,
                     &publisher.native,
                     material.product.observation().basis().relational_basis(),
                     *retirement,
-                    *original,
-                    target.clone(),
+                    (*original, target.clone()),
+                    co_anchors,
                 )
             })
             .map_err(map_validation_failure)?;

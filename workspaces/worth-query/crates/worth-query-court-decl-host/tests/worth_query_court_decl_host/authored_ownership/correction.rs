@@ -1,5 +1,5 @@
 //! Authored correction supplies the distinguished source anchor in both directions.
-use super::{lifecycle::*, *};
+use super::{co_roles::*, lifecycle::*, *};
 pub struct Family;
 impl<S: Scenario> ApplicationAuthoredCorrectionFamily<S> for Family {
     const IDENTITY: &'static str = "ownership.authored.family.v1";
@@ -26,12 +26,15 @@ impl<S: Scenario> ApplicationCorrectionBinding<S> for UndoCreate<S> {
         Ok(ApplicationQueryParameterSet::new())
     }
     fn authored_identity() -> Option<ApplicationAuthoredCorrection<S>> {
-        Some(ApplicationAuthoredCorrection::retire_created::<
-            Self,
-            Family,
-            Created<S>,
-            Retired<S>,
-        >())
+        let identity =
+            ApplicationAuthoredCorrection::retire_created::<Self, Family, Created<S>, Retired<S>>();
+        Some(if S::MODE == 5 {
+            identity
+                .co_retire_created::<Self, Family, CoCreated<S, 0>, CoRetired<S, 0>>()
+                .co_retire_created::<Self, Family, CoCreated<S, 1>, CoRetired<S, 1>>()
+        } else {
+            identity
+        })
     }
     fn mechanism() -> DeclaredCorrectionMechanism<S> {
         DeclaredCorrectionMechanism::recorded_create_inverse_binding::<Self>()
@@ -63,7 +66,14 @@ impl<S: Scenario> ApplicationCorrectionBinding<S> for UndoCreate<S> {
             descendants.extend([source * 10 + 1, source * 10 + 2]);
             source = source * 10 + 2;
         }
+        for &source in &original.co_anchors {
+            for _ in 0..original.depth {
+                descendants.extend([source * 10 + 1, source * 10 + 2]);
+            }
+        }
         Ok(Retire {
+            corrupt_restoration: false,
+            co_anchors: original.co_anchors.clone(),
             scope: original.scope,
             id,
             descendants,
@@ -94,12 +104,16 @@ impl<S: Scenario> ApplicationCorrectionBinding<S> for UndoRetire<S> {
         Ok(ApplicationQueryParameterSet::new())
     }
     fn authored_identity() -> Option<ApplicationAuthoredCorrection<S>> {
-        Some(ApplicationAuthoredCorrection::restore_retired::<
-            Self,
-            Family,
-            Retired<S>,
-            Created<S>,
-        >())
+        let identity =
+            ApplicationAuthoredCorrection::restore_retired::<Self, Family, Retired<S>, Created<S>>(
+            );
+        Some(if S::MODE == 5 {
+            identity
+                .co_restore_retired::<Self, Family, CoRetired<S, 0>, CoCreated<S, 0>>()
+                .co_restore_retired::<Self, Family, CoRetired<S, 1>, CoCreated<S, 1>>()
+        } else {
+            identity
+        })
     }
     fn mechanism() -> DeclaredCorrectionMechanism<S> {
         DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
@@ -108,7 +122,7 @@ impl<S: Scenario> ApplicationCorrectionBinding<S> for UndoRetire<S> {
                     DeclaredPreImageLocus::from_field(Id::reference::<S>()),
                     DeclaredPreImageLocus::from_field(Value::reference::<S>()),
                 ],
-                18,
+                if S::MODE == 5 { 54 } else { 18 },
             )
             .unwrap(),
         )
@@ -135,7 +149,30 @@ impl<S: Scenario> ApplicationCorrectionBinding<S> for UndoRetire<S> {
                 .ok_or(MissingPreImage)?,
         )
         .map_err(|_| InvalidPreImage)?;
+        let roles = [
+            <CoRetired<S, 0> as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR,
+            <CoRetired<S, 1> as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR,
+        ];
+        let mut co_values = original
+            .co_anchors
+            .iter()
+            .enumerate()
+            .map(|(index, _)| {
+                let value = fields
+                    .field_for_output(
+                        &roles[index],
+                        &DeclaredPreImageLocus::from_field(Value::reference::<S>()),
+                    )
+                    .ok_or(MissingPreImage)?;
+                U64ApplicationValueBinding::decode(value).map_err(|_| InvalidPreImage)
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        if original.corrupt_restoration {
+            co_values[0] += 1;
+        }
         Ok(Restore {
+            co_values,
+            co_anchors: original.co_anchors.clone(),
             scope: original.scope,
             id,
             value,

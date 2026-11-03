@@ -28,6 +28,27 @@ impl RelationalRuntime {
         original: EntityId,
         anchor: CreatedEntityRef,
     ) -> Result<Option<RelationalAuthoredRestoration>, TransactionCommitError> {
+        self.prepare_authored_source_restoration_with_co_anchors(
+            execution,
+            installed,
+            basis,
+            retirement,
+            (original, anchor),
+            &[],
+        )
+    }
+
+    /// Every co-anchor is recreated by its own authored inverse Create.
+    pub fn prepare_authored_source_restoration_with_co_anchors(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        installed: &RelationalInstalledApplicationPublicationAuthority,
+        basis: &AdmittedRelationalBranchBasis,
+        retirement: CommitId,
+        anchor: (EntityId, CreatedEntityRef),
+        co_anchors: &[(EntityId, CreatedEntityRef)],
+    ) -> Result<Option<RelationalAuthoredRestoration>, TransactionCommitError> {
+        let (original, anchor) = anchor;
         if installed.runtime_instance_id != self.runtime_instance_id() || !basis.is_current() {
             return Err(reject(Cause::InvalidAuthoredAnchor, original));
         }
@@ -74,26 +95,50 @@ impl RelationalRuntime {
                         lease,
                         None,
                         |context| {
-                            basis
-                                .inner
-                                .root
-                                .demand_full_partition(execution, original.partition_id)
-                                .map_err(|cause| failure(super::request(cause)))?;
-                            let partition = basis
-                                .inner
-                                .root
-                                .partition_state(original.partition_id)
-                                .map_err(|cause| failure(cause.into()))?
-                                .ok_or_else(|| reject(Cause::InvalidAuthoredAnchor, original))?;
-                            let row = partition
-                                .entity_arena
-                                .get(&original)
-                                .filter(|row| {
-                                    row.retired_at() == Some(envelope.commit.version_id)
-                                        && row.kind_id() == Some(anchor.kind_id)
-                                })
-                                .ok_or_else(|| reject(Cause::InvalidAuthoredAnchor, original))?;
-                            let _ = row;
+                            charge(
+                                context,
+                                co_anchors.len().saturating_mul(event.co_anchors.len() + 1),
+                            )
+                            .map_err(failure)?;
+                            if co_anchors.len() != event.co_anchors.len() {
+                                return Err(reject(Cause::IncompleteRestoration, original));
+                            }
+                            for (index, (id, _)) in co_anchors.iter().enumerate() {
+                                charge(context, index + 1).map_err(failure)?;
+                                if !event.co_anchors.iter().any(|(old, _)| old == id)
+                                    || co_anchors[..index].iter().any(|(old, _)| old == id)
+                                {
+                                    return Err(reject(Cause::IncompleteRestoration, *id));
+                                }
+                            }
+                            for (original, anchor) in std::iter::once((original, &anchor))
+                                .chain(co_anchors.iter().map(|(id, target)| (*id, target)))
+                            {
+                                basis
+                                    .inner
+                                    .root
+                                    .demand_full_partition(execution, original.partition_id)
+                                    .map_err(|cause| failure(super::request(cause)))?;
+                                let partition = basis
+                                    .inner
+                                    .root
+                                    .partition_state(original.partition_id)
+                                    .map_err(|cause| failure(cause.into()))?
+                                    .ok_or_else(|| {
+                                        reject(Cause::InvalidAuthoredAnchor, original)
+                                    })?;
+                                let row = partition
+                                    .entity_arena
+                                    .get(&original)
+                                    .filter(|row| {
+                                        row.retired_at() == Some(envelope.commit.version_id)
+                                            && row.kind_id() == Some(anchor.kind_id)
+                                    })
+                                    .ok_or_else(|| {
+                                        reject(Cause::InvalidAuthoredAnchor, original)
+                                    })?;
+                                let _ = row;
+                            }
                             // Fund the fixed-width multi-publication proof comparisons before returning custody.
                             charge(
                                 context,
@@ -103,6 +148,7 @@ impl RelationalRuntime {
                             )
                             .map_err(failure)?;
                             let mut entities = vec![(original, anchor.clone())];
+                            entities.extend_from_slice(co_anchors);
                             for prior in &publications {
                                 for member in &prior.origin.members {
                                     charge(context, 1).map_err(failure)?;

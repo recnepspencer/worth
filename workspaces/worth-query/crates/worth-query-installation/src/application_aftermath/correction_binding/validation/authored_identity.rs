@@ -35,6 +35,32 @@ pub(super) fn validate(
     let Some(PortableCorrectionMechanism::RecordedInverse(recorded)) = mechanism else {
         return Err(());
     };
+    validate_identity(members, source, inverse, identity, recorded, false)?;
+    for (index, anchor) in identity.co_anchors().iter().enumerate() {
+        if anchor.parts().source_posture != identity.parts().source_posture
+            || !anchor.co_anchors().is_empty()
+            || anchor.parts().source_role == identity.parts().source_role
+            || anchor.parts().inverse_role == identity.parts().inverse_role
+            || identity.co_anchors()[..index].iter().any(|prior| {
+                prior.parts().source_role == anchor.parts().source_role
+                    || prior.parts().inverse_role == anchor.parts().inverse_role
+            })
+        {
+            return Err(());
+        }
+        validate_identity(members, source, inverse, anchor, recorded, true)?;
+    }
+    Ok(())
+}
+
+fn validate_identity(
+    members: &[Member],
+    source: &ApplicationMutationBindingDescriptor,
+    inverse: &ApplicationMutationBindingDescriptor,
+    identity: &worth_query_declaration::facade::application_aftermath::DeclaredAuthoredCorrection,
+    recorded: &worth_query_declaration::facade::application_aftermath::PortableRecordedInverse,
+    co_anchor: bool,
+) -> Result<(), ()> {
     let parts = identity.parts();
     let Member::Field {
         entity,
@@ -80,8 +106,20 @@ pub(super) fn validate(
         Posture::Retire => Posture::Create,
         Posture::Preserve => return Err(()),
     };
-    require_role(source, &parts.source_role, entity, parts.source_posture)?;
-    require_role(inverse, &parts.inverse_role, entity, inverse_posture)?;
+    require_role(
+        source,
+        &parts.source_role,
+        entity,
+        parts.source_posture,
+        co_anchor && identity.is_optional(),
+    )?;
+    require_role(
+        inverse,
+        &parts.inverse_role,
+        entity,
+        inverse_posture,
+        co_anchor && identity.is_optional(),
+    )?;
     require_lifecycle(
         members,
         source.operation_name(),
@@ -118,6 +156,7 @@ fn require_role(
     name: &str,
     entity: &str,
     posture: Posture,
+    optional: bool,
 ) -> Result<(), ()> {
     let mut roles = binding
         .output_roles()
@@ -127,9 +166,14 @@ fn require_role(
     (roles.next().is_none()
         && role.entity() == entity
         && role.posture() == posture
-        && role.cardinality() == Cardinality::ExactlyOne)
-        .then_some(())
-        .ok_or(())
+        && role.cardinality()
+            == if optional {
+                Cardinality::AtMostOne
+            } else {
+                Cardinality::ExactlyOne
+            })
+    .then_some(())
+    .ok_or(())
 }
 
 fn require_lifecycle(

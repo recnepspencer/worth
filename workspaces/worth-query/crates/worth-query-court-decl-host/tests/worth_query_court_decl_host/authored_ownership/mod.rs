@@ -12,6 +12,11 @@ use worth_query_testkit_document_retention::facade::document_retention_model::ho
 mod readiness;
 mod schema;
 use schema::*;
+mod co_checkpoint_tamper;
+mod co_courts;
+mod co_history;
+mod co_refusals;
+mod co_roles;
 mod correction;
 mod correction_courts;
 mod lifecycle;
