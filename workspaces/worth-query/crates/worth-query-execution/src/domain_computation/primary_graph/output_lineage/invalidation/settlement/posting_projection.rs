@@ -8,7 +8,7 @@ use std::sync::Arc;
 
 #[derive(Debug)]
 pub struct PostingProjection {
-    pub(in crate::domain_computation::primary_graph::output_lineage::invalidation) id: u64,
+    pub id: u64,
     pub ordinals:
         OrdMap<Arc<FactPostingKey>, OrdSet<usize>>,
     pub(in crate::domain_computation::primary_graph::output_lineage::invalidation) source_len:

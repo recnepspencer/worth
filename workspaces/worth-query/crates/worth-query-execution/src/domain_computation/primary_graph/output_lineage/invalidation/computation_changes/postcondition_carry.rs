@@ -10,8 +10,8 @@ use worth_relational::facade::history::RelationalDescriptiveTouchGraph;
 
 /// Candidate-derived coverage and its allocation custody move together.
 pub(in crate::domain_computation::primary_graph) struct SelectedPostconditionRebase {
-    pub(in crate::domain_computation::primary_graph) ordinals: OrdSet<usize>,
-    pub(in crate::domain_computation::primary_graph) basis:
+    pub ordinals: OrdSet<usize>,
+    pub basis:
         super::super::settlement::PostingRebaseBasis,
 }
 

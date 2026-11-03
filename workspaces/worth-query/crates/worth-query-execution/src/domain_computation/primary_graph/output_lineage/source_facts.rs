@@ -60,7 +60,7 @@ impl RetainedSourceFacts {
         self.source
     }
     /// Owner-only custody/index posting. This is never a comparison proof.
-    pub(super) fn postconditions(&self) -> &FactPayload {
+    pub fn postconditions(&self) -> &FactPayload {
         &self.facts
     }
     pub fn len(&self) -> usize {
