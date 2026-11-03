@@ -9,6 +9,7 @@ mod authored_cascade;
 mod authored_restoration;
 mod authored_retirement;
 mod scope_dependents;
+pub(crate) mod source_scope_closure;
 pub(crate) use scope_dependents::select_owned_scope_dependent;
 mod restoration_payload;
 pub(crate) use authored_cascade::select_authored_source_retirement;
@@ -22,6 +23,7 @@ pub(crate) use materialization::{
 };
 mod output_correspondence;
 mod payload_reconstruction;
+mod producer_retirement;
 mod publication_succession;
 mod relation_payload;
 mod relations;
@@ -214,6 +216,7 @@ fn derive_metered(
         let selected = membership::latest(runtime, basis, id, context, lease)?;
         if selected.authored_cascade_restoration.is_some()
             || selected.authored_cascade_retirement.is_some()
+            || selected.producer_cascade_retirement.is_some()
         {
             return Err(
                 "grouped authored publication requires distinct codec-transition custody".into(),

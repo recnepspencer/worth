@@ -3988,7 +3988,7 @@ enforced without a producer resource forecast.
 
 #### Source-owned producer publications
 
-A producer defaults to independent publications. Opt in to authored cascade
+A producer defaults to independent publications. Opt in to source-scope cascade
 retirement on its `WorthQueryApplicationProducerBinding`:
 
 ```rust,ignore
@@ -4022,10 +4022,24 @@ path, including a warm publication capsule. It refuses with
 `OwnedPublicationRequiresCascade`, identifying the publication and its owner.
 Anchorless mixed Create/Retire candidates receive the same refusal.
 An intermediate source created by a producer is not a genuine authored anchor.
-Producer succession may replace a leaf member, but cannot retire an intermediate
-source while its owned publications remain live. This also applies when an independent
-publication contains that intermediate source: independence does not permit it
-to sever an opted-in child's live owner. Every intermediate publication must opt
+When a producer succession deletes live members of its own predecessor publication,
+Native treats those exact deleted members as cascade anchors. It computes the
+complete transitive closure of opted-in publications they own from recorded
+history. The producer candidate must delete every live closure member and owned
+edge and declare exactly those retirements, in the same atomic commit as its
+ordinary Create/Preserve/Retire membership. Partial, missing, extra, repeated and
+foreign retirements refuse with typed causes and affected records. Borrow
+`demand_denial.authored_retirement_error()` for that original Native error.
+The surviving generator keeps its own Preserve origin; every retired publication
+retains its own provenance, route and predecessor. This also covers an independent
+generator whose removed members own opted-in children.
+
+Regrowth creates fresh source generations and fresh owned publications through
+the existing producer rules. Undo the authored size edit through its recorded
+correction, then demand outputs again; redo selects the recorded reversal
+alternative and uses reapplication. These size-edit inverses do not restore the
+old derived generations. Whole-source authored restoration retains its existing
+`restore_retired` rules. Every intermediate publication must opt
 in for a producer-created source to join the authored root's cascade.
 An owned publication cannot be
 restored or republished without its live source (`PublicationOwnerUnavailable`).

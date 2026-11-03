@@ -11,6 +11,11 @@ impl CanonicalCommitEnvelope {
         self.required_output_origin
             .iter()
             .chain(
+                self.producer_cascade_retirement
+                    .iter()
+                    .flat_map(|event| event.publications.iter()),
+            )
+            .chain(
                 self.authored_cascade_retirement
                     .iter()
                     .flat_map(|event| event.publications.iter()),
@@ -83,6 +88,7 @@ impl CanonicalCommitEnvelope {
 
     fn validate_cascade_header(&self, context: &mut MapKernelContext<'_, '_>) -> Result<(), Stop> {
         self.validate_restoration_header(context)?;
+        self.validate_producer_retirement_header(context)?;
         let Some(event) = &self.authored_cascade_retirement else {
             return Ok(());
         };
@@ -93,7 +99,8 @@ impl CanonicalCommitEnvelope {
         };
         let charge = super::super::super::codec_retirement_closure::charge;
         charge(context, self.patch.authoritative_record_patches.len() + 1)?;
-        if self.required_output_origin.is_some()
+        if self.producer_cascade_retirement.is_some()
+            || self.required_output_origin.is_some()
             || event.publications.is_empty()
             || !self.patch.authoritative_record_patches.iter().any(|patch| {
                 patch.target == RecordRef::Entity(event.anchor)

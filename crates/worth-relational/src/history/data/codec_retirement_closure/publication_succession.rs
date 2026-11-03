@@ -17,6 +17,16 @@ pub(super) fn validate_succession(
     prior: &CanonicalRequiredOutputOrigin,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<(), Stop> {
+    super::producer_retirement::validate(runtime, envelope, context)?;
+    validate_route(runtime, envelope, prior, context)
+}
+
+pub(super) fn validate_route(
+    runtime: &RelationalRuntime,
+    envelope: &CanonicalCommitEnvelope,
+    prior: &CanonicalRequiredOutputOrigin,
+    context: &mut MapKernelContext<'_, '_>,
+) -> Result<(), Stop> {
     let current = envelope.output_origin_for_route(&prior.meaning, context)?;
     charge(
         context,
@@ -36,6 +46,7 @@ pub(super) fn validate_succession(
     if matches!(
         current.publication,
         CanonicalOutputPublication::AuthoredRetirement { .. }
+            | CanonicalOutputPublication::ProducerRetirement { .. }
     ) && (current.producer != prior.producer
         || current.dependency_identity != prior.dependency_identity
         || current.meaning != prior.meaning

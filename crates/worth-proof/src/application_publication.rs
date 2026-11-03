@@ -1,4 +1,6 @@
 use std::sync::Arc;
+mod source_scope_retirement;
+pub use source_scope_retirement::AdmittedProducerOutputRetirement;
 
 /// The installed application owner retained by the runtime that selects producers.
 /// A fresh occurrence cannot satisfy a native binding issued for another owner.
