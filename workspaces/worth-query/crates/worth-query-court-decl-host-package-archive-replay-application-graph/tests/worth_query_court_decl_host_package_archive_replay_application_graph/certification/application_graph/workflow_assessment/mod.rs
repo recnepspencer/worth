@@ -139,7 +139,7 @@ fn authenticated_advance_reconstructs_the_exact_required_assessment_without_sett
         .expect("the original acceptance key must replay its exact evidence")
     {
         WorkflowProgressOutcome::RecoveredCommitted(recorded) => {
-            worth_query_testkit_host::facade::recorded_receipt_comparison::assert_transition(
+            worth_query_testkit_certification_canonical::facade::recorded_receipt_comparison::assert_transition(
                 &recorded,
                 &original_assessment,
             );
@@ -176,7 +176,7 @@ fn authenticated_advance_reconstructs_the_exact_required_assessment_without_sett
     .expect("an exact assessment retry must resolve through a non-assessment successor head")
     {
         WorkflowProgressOutcome::RecoveredCommitted(recorded) => {
-            worth_query_testkit_host::facade::recorded_receipt_comparison::assert_transition(
+            worth_query_testkit_certification_canonical::facade::recorded_receipt_comparison::assert_transition(
                 &recorded,
                 &second_original,
             );
@@ -209,7 +209,7 @@ fn authenticated_advance_reconstructs_the_exact_required_assessment_without_sett
         .expect("the committed evidence join key must replay beyond its successor head")
     {
         WorkflowProgressOutcome::RecoveredCommitted(recorded) => {
-            worth_query_testkit_host::facade::recorded_receipt_comparison::assert_transition(
+            worth_query_testkit_certification_canonical::facade::recorded_receipt_comparison::assert_transition(
                 &recorded,
                 &original_join,
             );
@@ -346,7 +346,7 @@ fn evidence_join_replays_before_a_supported_terminal_successor() {
         .expect("join key must replay before its supported successor")
     {
         WorkflowProgressOutcome::RecoveredCommitted(recorded) => {
-            worth_query_testkit_host::facade::recorded_receipt_comparison::assert_transition(
+            worth_query_testkit_certification_canonical::facade::recorded_receipt_comparison::assert_transition(
                 &recorded, &original,
             );
         }
@@ -360,7 +360,7 @@ fn evidence_join_replays_before_a_supported_terminal_successor() {
         .expect("join key must remain replayable after terminal completion")
     {
         WorkflowProgressOutcome::RecoveredCommitted(recorded) => {
-            worth_query_testkit_host::facade::recorded_receipt_comparison::assert_transition(
+            worth_query_testkit_certification_canonical::facade::recorded_receipt_comparison::assert_transition(
                 &recorded, &original,
             );
         }

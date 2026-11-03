@@ -75,7 +75,7 @@ fn ordinary_run_after_back_reuses_advanced_evidence_without_a_new_effect() {
         else {
             panic!("duplicate Back returns original recorded data");
         };
-        worth_query_testkit_host::facade::recorded_receipt_comparison::assert_transition(
+        worth_query_testkit_certification_canonical::facade::recorded_receipt_comparison::assert_transition(
             &duplicate, first,
         );
     }

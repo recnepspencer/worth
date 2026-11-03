@@ -41,7 +41,7 @@ fn ordinary_created_to_scope_link_is_traversable_and_exact_replay_keeps_it() {
     let Outcome::RecoveredCommitted(replayed) = replay else {
         panic!("replay")
     };
-    worth_query_testkit_host::facade::recorded_receipt_comparison::assert_original(
+    worth_query_testkit_certification_canonical::facade::recorded_receipt_comparison::assert_original(
         &replayed, &receipt,
     );
     assert_eq!(

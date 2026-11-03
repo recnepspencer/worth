@@ -77,7 +77,7 @@ fn a_request_encodes_its_input_once_whether_it_commits_or_replays() {
         "a replayed request encodes its input once too"
     );
     // D17 excludes historical work from recovered data; fresh admission still encodes exactly once.
-    worth_query_testkit_host::facade::recorded_receipt_comparison::assert_original(
+    worth_query_testkit_certification_canonical::facade::recorded_receipt_comparison::assert_original(
         &recovered, &receipt,
     );
 }

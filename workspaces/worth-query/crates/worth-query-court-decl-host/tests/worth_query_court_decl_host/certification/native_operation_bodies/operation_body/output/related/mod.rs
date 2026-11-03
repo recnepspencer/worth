@@ -43,7 +43,7 @@ fn related_output_of_one_target_is_preserved_without_a_dummy_write() {
     else {
         panic!("replay")
     };
-    worth_query_testkit_host::facade::recorded_receipt_comparison::assert_original(
+    worth_query_testkit_certification_canonical::facade::recorded_receipt_comparison::assert_original(
         &replay, &receipt,
     );
     assert!(

@@ -76,7 +76,7 @@ fn back_is_one_published_transition_and_reconstructs_without_replaying_an_effect
     let Err(WorkflowProgressOutcome::RecoveredCommitted(duplicate)) = navigate(2_317) else {
         panic!("the same Back intent must return original recorded data");
     };
-    worth_query_testkit_host::facade::recorded_receipt_comparison::assert_transition(
+    worth_query_testkit_certification_canonical::facade::recorded_receipt_comparison::assert_transition(
         &duplicate, &back,
     );
     assert!(
@@ -92,7 +92,7 @@ fn back_is_one_published_transition_and_reconstructs_without_replaying_an_effect
     let Err(WorkflowProgressOutcome::RecoveredCommitted(cold_duplicate)) = navigate(2_317) else {
         panic!("the same Back intent must return original recorded data");
     };
-    worth_query_testkit_host::facade::recorded_receipt_comparison::assert_transition(
+    worth_query_testkit_certification_canonical::facade::recorded_receipt_comparison::assert_transition(
         &cold_duplicate,
         &back,
     );

@@ -119,7 +119,7 @@ fn public_terminal_workflow_advances_once_through_authenticated_transition_autho
         WorkflowProgressOutcome::RecoveredCommitted(recorded) => recorded,
         other => panic!("expected the recorded terminal transition, got {other:?}"),
     };
-    worth_query_testkit_host::facade::recorded_receipt_comparison::assert_transition(
+    worth_query_testkit_certification_canonical::facade::recorded_receipt_comparison::assert_transition(
         &replay,
         &transition,
     );

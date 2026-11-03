@@ -17,7 +17,7 @@ fn true_expression_selects_satisfied_and_its_retry_replays() {
         .expect("the retried acceptance resolves");
     match retry {
         WorkflowProgressOutcome::RecoveredCommitted(recorded) => {
-            worth_query_testkit_host::facade::recorded_receipt_comparison::assert_transition(
+            worth_query_testkit_certification_canonical::facade::recorded_receipt_comparison::assert_transition(
                 &recorded, &original,
             );
         }

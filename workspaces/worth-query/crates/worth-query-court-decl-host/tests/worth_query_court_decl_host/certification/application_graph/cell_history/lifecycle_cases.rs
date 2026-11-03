@@ -68,7 +68,7 @@ fn retained_cells_survive_replacement_and_retirement_without_restoring_the_head(
     else {
         panic!("replacement retry rejoins its original commit")
     };
-    worth_query_testkit_host::facade::recorded_receipt_comparison::assert_original(
+    worth_query_testkit_certification_canonical::facade::recorded_receipt_comparison::assert_original(
         &retry, &replaced,
     );
     assert_eq!(

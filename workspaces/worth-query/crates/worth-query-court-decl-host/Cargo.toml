@@ -17,7 +17,6 @@ worth-query-host = { path = "../worth-query-host" }
 worth-query-testkit-certification-canonical = { path = "../worth-query-testkit-certification-canonical" }
 worth-query-testkit-certification-operation = { path = "../worth-query-testkit-certification-operation" }
 worth-query-testkit-document-retention = { path = "../worth-query-testkit-document-retention" }
-worth-query-testkit-host = { path = "../worth-query-testkit-host" }
 worth-relational = { path = "../../../../crates/worth-relational" }
 
 [lints]

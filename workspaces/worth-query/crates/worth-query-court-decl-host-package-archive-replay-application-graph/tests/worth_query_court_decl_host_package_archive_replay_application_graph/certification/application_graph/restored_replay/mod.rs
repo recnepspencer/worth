@@ -20,7 +20,7 @@ fn a_key_committed_before_capture_keeps_its_intent_after_restore() {
     else {
         panic!("the retry before capture replays");
     };
-    worth_query_testkit_host::facade::recorded_receipt_comparison::assert_original(
+    worth_query_testkit_certification_canonical::facade::recorded_receipt_comparison::assert_original(
         &before, &original,
     );
     let commit = original.committed_changes().commit_reference().commit_id;

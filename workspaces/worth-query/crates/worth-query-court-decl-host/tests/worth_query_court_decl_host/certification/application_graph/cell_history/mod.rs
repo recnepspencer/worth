@@ -71,7 +71,7 @@ fn retained_feature_steps_read_original_cell_versions_after_later_local_edits() 
     else {
         panic!("the original key rejoins its commit")
     };
-    worth_query_testkit_host::facade::recorded_receipt_comparison::assert_original(
+    worth_query_testkit_certification_canonical::facade::recorded_receipt_comparison::assert_original(
         &replayed, &step_one,
     );
     assert_eq!(

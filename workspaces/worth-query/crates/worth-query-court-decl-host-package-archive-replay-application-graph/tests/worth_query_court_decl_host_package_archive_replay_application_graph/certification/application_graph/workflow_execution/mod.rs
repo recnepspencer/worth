@@ -19,7 +19,7 @@ fn unsigned_execution_settles_atomically_and_same_intent_replays_without_signing
     // Lost-response retry uses the original requirement and key, not a new operation.
     match execute(&application, &instance, &required, 8, 91005).unwrap() {
         WorthQueryApplicationMutationOutcome::RecoveredCommitted(replayed) => {
-            worth_query_testkit_host::facade::recorded_receipt_comparison::assert_original(
+            worth_query_testkit_certification_canonical::facade::recorded_receipt_comparison::assert_original(
                 &replayed, &receipt,
             );
         }

@@ -170,7 +170,7 @@ fn typed_query_condition_routes_and_duplicate_acceptance_replays() {
         .expect("the duplicate condition acceptance must resolve");
     match replay {
         WorkflowProgressOutcome::RecoveredCommitted(recorded) => {
-            worth_query_testkit_host::facade::recorded_receipt_comparison::assert_transition(
+            worth_query_testkit_certification_canonical::facade::recorded_receipt_comparison::assert_transition(
                 &recorded, &original,
             );
         }

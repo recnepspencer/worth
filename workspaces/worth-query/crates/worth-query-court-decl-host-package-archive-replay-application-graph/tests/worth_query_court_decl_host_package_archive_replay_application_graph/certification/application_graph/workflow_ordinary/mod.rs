@@ -139,7 +139,7 @@ fn ordinary_run_pumps_join_and_terminal_with_stable_replay_keys() {
     };
     assert_eq!(retry_partial.attempted_steps(), 1);
     assert!(retry_partial.transitions().is_empty());
-    worth_query_testkit_host::facade::recorded_receipt_comparison::assert_transition(
+    worth_query_testkit_certification_canonical::facade::recorded_receipt_comparison::assert_transition(
         data,
         &partial.transitions()[0],
     );
@@ -172,7 +172,7 @@ fn ordinary_run_pumps_join_and_terminal_with_stable_replay_keys() {
         };
         assert_eq!(replay.attempted_steps(), 1);
         assert!(replay.transitions().is_empty());
-        worth_query_testkit_host::facade::recorded_receipt_comparison::assert_transition(
+        worth_query_testkit_certification_canonical::facade::recorded_receipt_comparison::assert_transition(
             data, original,
         );
     }
@@ -283,7 +283,7 @@ fn ordinary_publication_uses_installed_binding_and_real_commit_authority() {
     };
     assert_eq!(replayed.attempted_steps(), 1);
     assert!(replayed.transitions().is_empty());
-    worth_query_testkit_host::facade::recorded_receipt_comparison::assert_transition(
+    worth_query_testkit_certification_canonical::facade::recorded_receipt_comparison::assert_transition(
         data,
         &progressed.transitions()[0],
     );

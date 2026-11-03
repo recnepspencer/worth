@@ -5,3 +5,6 @@
 )]
 #[path = "certification/mod.rs"]
 pub mod certification;
+
+#[path = "recorded_receipt_comparison.rs"]
+pub mod recorded_receipt_comparison;

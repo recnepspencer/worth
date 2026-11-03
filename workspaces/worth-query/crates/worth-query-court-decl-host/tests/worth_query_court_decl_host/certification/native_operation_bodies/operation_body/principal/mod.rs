@@ -34,7 +34,7 @@ fn admitted_actor_survives_reconstruction_and_cannot_be_chosen_by_input() {
     let Outcome::RecoveredCommitted(recorded) = invoke(&restored, 360) else {
         panic!("the actor's retry observes the recorded original");
     };
-    worth_query_testkit_host::facade::recorded_receipt_comparison::assert_original(
+    worth_query_testkit_certification_canonical::facade::recorded_receipt_comparison::assert_original(
         &recorded, &original,
     );
     let scope = request_scope();

@@ -23,7 +23,7 @@ fn created_and_scope_outputs_name_the_same_real_row_and_replay_keeps_corresponde
     let Outcome::RecoveredCommitted(replayed) = create(&app, 310) else {
         panic!("replay")
     };
-    worth_query_testkit_host::facade::recorded_receipt_comparison::assert_original(
+    worth_query_testkit_certification_canonical::facade::recorded_receipt_comparison::assert_original(
         &replayed, &receipt,
     );
     assert!(replayed.semantic_result().semantic().created_entities().iter().any(|row| row.assigned == created),
