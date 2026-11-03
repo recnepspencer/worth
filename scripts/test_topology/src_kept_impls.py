@@ -92,8 +92,9 @@ def mark_kept_impls(model):
             target = model.records.get(origin[0])
             if target is None or target.extracted or target.foreign:
                 continue
+            target_own = target.node.own_text()
             for index, other in enumerate(target.items):
-                if other.name == origin[1] and not other.test and other.keyword in ITEM_KEYWORDS \
+                if origin[1] in declared_names(target_own, other) and not other.test \
                         and index not in target.kept:
                     target.kept.add(index)
                     work.append((origin[0], index))
@@ -105,8 +106,7 @@ def mark_kept_impls(model):
         text = own[item.start:item.end]
         words = {t.value for t in tokens(text) if t.kind == 'ident'}
         for other_index, other in enumerate(record.items):
-            if other_index not in record.kept and not other.test and other.keyword in ITEM_KEYWORDS \
-                    and other.name in words:
+            if other_index not in record.kept and not other.test and declared_names(own, other) & words:
                 record.kept.add(other_index)
                 work.append((names, other_index))
         for reference in references(_Text(names, text), model.index):
@@ -116,15 +116,18 @@ def mark_kept_impls(model):
             target = model.records.get(origin[0])
             if target is None or target.extracted or target.foreign:
                 continue
+            target_own = target.node.own_text()
             for other_index, other in enumerate(target.items):
-                if other.name == origin[1] and not other.test and other.keyword in ITEM_KEYWORDS \
+                if origin[1] in declared_names(target_own, other) and not other.test \
                         and other_index not in target.kept:
                     target.kept.add(other_index)
                     work.append((origin[0], other_index))
     count = 0
     for record in model.records.values():
         record.kept_impls = sorted((record.items[i].start, record.items[i].end) for i in record.kept)
-        record.kept_names = {record.items[i].name for i in record.kept if record.items[i].keyword != 'impl'}
+        own = record.node.own_text()
+        record.kept_names = set().union(*(declared_names(own, record.items[i]) for i in record.kept)) \
+            if record.kept else set()
         count += len(record.kept)
     return count
 
@@ -144,6 +147,17 @@ def gated_statements(text):
             continue
         pieces.append(following[:unit_extent(following)])
     return '\n'.join(pieces)
+
+
+def declared_names(own, item):
+    """Names an item declares: its own name, or the statics an item macro (thread_local!) declares."""
+    if item.keyword in ITEM_KEYWORDS:
+        return {item.name}
+    if item.name == '!':
+        stream = tokens(own[item.start:item.end])
+        return {stream[i + 1].value for i in range(len(stream) - 1)
+                if stream[i].value == 'static' and stream[i + 1].kind == 'ident'}
+    return set()
 
 
 def has_kept(model, names):
