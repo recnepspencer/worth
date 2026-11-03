@@ -75,10 +75,7 @@ pub fn record(
     state: DemandState,
     interests: usize,
 ) -> DemandRecord {
-    DemandRecord::new_for_test(None, interests, 0, Vec::new(), 0, Vec::new(), None, None, 0, None, false, Default::default(), Vec::new(), occurrence, None, Vec::new(), state, None, None, None, None, None, Arc::new(DemandWake {
-            generation: Mutex::new(0),
-            changed: Condvar::new(),
-        }))
+    DemandRecord::new_for_test(None, interests, 0, Vec::new(), 0, Vec::new(), None, None, 0, None, false, Default::default(), Vec::new(), occurrence, None, Vec::new(), state, None, None, None, None, None, Arc::new(DemandWake::new_for_test(Mutex::new(0), Condvar::new())))
 }
 
 pub fn interest(
@@ -103,9 +100,7 @@ pub fn interest_with_requirement(
     wake: Arc<DemandWake>,
     requires_output: bool,
 ) -> WorthQueryOutputDemandInterest {
-    WorthQueryOutputDemandInterest::new_for_test(key, requires_output, WorthQueryOutputDemandNotifications {
-            wake: Arc::clone(&wake),
-        }, registry.clone())
+    WorthQueryOutputDemandInterest::new_for_test(key, requires_output, WorthQueryOutputDemandNotifications::new_for_test(Arc::clone(&wake)), registry.clone())
 }
 
 /// Retain the owned key exactly as prepare_new_record does, without activating work.

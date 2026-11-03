@@ -109,10 +109,7 @@ pub fn add_custody_with_completion(
             );
         }
         // The literal read the source before moving it: keep that order outside the door call.
-        let bound_sources = Some(vec![worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::BoundOutputSource {
-                    scope,
-                    identity: (*selected.source_for_test()).clone(),
-                }]);
+        let bound_sources = Some(vec![worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::BoundOutputSource::new_for_test(scope, (*selected.source_for_test()).clone())]);
         let consumed_sources = vec![selected.source_into_for_test()];
         state.source_custody.insert(
             commit.clone(),
