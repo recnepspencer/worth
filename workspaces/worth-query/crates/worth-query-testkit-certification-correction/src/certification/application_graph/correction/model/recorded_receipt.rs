@@ -42,4 +42,25 @@ pub fn assert_agrees(
         data.attempt_identity().ordinal(),
         publication.publication_attempt().ordinal()
     );
+    assert_eq!(
+        data.attempt_identity().owner(),
+        worth_query_host::facade::primary_graph::WorldOwnerCoordinate::MemoryOnly {
+            observation: publication.publication_attempt().owner_identity().get()
+        }
+    );
+    let descriptor = |basis: &worth_relational::facade::branch::RelationalBranchBasisDescriptor| {
+        (
+            basis.descriptor_version(),
+            basis.branch_id().clone(),
+            basis.reference().generation(),
+            basis.truth_version(),
+            basis.schema_commitment().clone(),
+            basis.visibility_commitment().clone(),
+            basis.posture(),
+        )
+    };
+    assert_eq!(
+        descriptor(data.basis_descriptor()),
+        descriptor(live.basis_descriptor())
+    );
 }

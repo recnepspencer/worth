@@ -79,6 +79,16 @@ pub(super) fn assert_live_agrees(
         publication.publication_attempt().ordinal(),
         recorded.attempt_identity().ordinal()
     );
+    assert_eq!(
+        recorded.attempt_identity().owner(),
+        worth_query_host::facade::primary_graph::WorldOwnerCoordinate::Home {
+            owner: publication
+                .publication_attempt()
+                .owner_identity()
+                .durable()
+                .unwrap()
+        }
+    );
     assert_eq!(publication.relational_commit(), recorded.commit_reference());
     let descriptor = |basis: &worth_relational::facade::branch::RelationalBranchBasisDescriptor| {
         (
