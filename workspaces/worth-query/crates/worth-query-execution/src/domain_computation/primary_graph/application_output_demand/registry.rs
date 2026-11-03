@@ -151,7 +151,7 @@ pub(crate) mod lifecycle;
 mod notifications;
 mod obligations;
 pub(crate) mod post_commit;
-mod prerequisite_claims;
+pub(crate) mod prerequisite_claims;
 pub(crate) mod progression;
 mod unavailable;
 pub(in crate::domain_computation::primary_graph) use progression::CheckpointFinishStop;
@@ -165,7 +165,7 @@ pub(crate) mod record_map;
 mod record_preparation;
 pub(crate) mod refresh_predecessor;
 pub(crate) mod refreshed_rejoin;
-mod required_context;
+pub(crate) mod required_context;
 
 mod required_members;
 pub(crate) mod required_stop;

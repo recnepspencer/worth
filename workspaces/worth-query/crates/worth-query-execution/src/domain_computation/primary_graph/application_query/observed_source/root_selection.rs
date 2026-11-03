@@ -4,7 +4,7 @@ use sha2::{Digest, Sha256};
 use worth_relational::facade::identity::EntityId;
 mod components;
 mod managed_index;
-mod orbit;
+pub(crate) mod orbit;
 pub(in crate::domain_computation::primary_graph::application_query) use components::DeclaredComponentSelection;
 pub(in crate::domain_computation::primary_graph::application_query) use managed_index::{
     DeclaredManagedIndexSelection, ManagedSourceDependencies,

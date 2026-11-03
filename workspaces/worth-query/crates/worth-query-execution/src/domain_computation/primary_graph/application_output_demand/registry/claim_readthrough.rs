@@ -1,5 +1,5 @@
 //! Reader projection of claims whose physical transfer is still noted.
-mod incoming;
+pub(crate) mod incoming;
 pub(crate) mod visibility;
 use super::DemandRecord;
 use super::DemandRegistryState;

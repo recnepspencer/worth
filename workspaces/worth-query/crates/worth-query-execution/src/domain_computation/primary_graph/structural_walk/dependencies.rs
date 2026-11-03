@@ -3,7 +3,7 @@ use super::*;
 use worth_execution::ExecutionRequest;
 
 #[derive(Debug)]
-pub(in crate::domain_computation::primary_graph) struct StructuralWalkDependencies {
+pub struct StructuralWalkDependencies {
     values: Vec<Arc<StructuralWalkObservation>>,
     _memory: Option<ExecutionMemoryReservation>,
 }

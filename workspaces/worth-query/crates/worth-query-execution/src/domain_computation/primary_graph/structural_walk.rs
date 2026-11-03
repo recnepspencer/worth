@@ -6,7 +6,7 @@ use worth_relational::facade::{
     transactions::RelationalExecutionDenialCause as Cause,
 };
 mod currentness;
-mod dependencies;
+pub(crate) mod dependencies;
 pub(in crate::domain_computation::primary_graph) use dependencies::StructuralWalkDependencies;
 mod commitment;
 mod key;

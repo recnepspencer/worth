@@ -2,7 +2,7 @@
 
 mod evidence;
 pub(crate) mod outbox_commit;
-mod receipt_basis_retention;
+pub(crate) mod receipt_basis_retention;
 
 pub(crate) use super::application_attempt_state::WorthQueryRetainedPreImageSeal;
 pub(in crate::domain_computation::primary_graph) use super::application_attempt_state::{

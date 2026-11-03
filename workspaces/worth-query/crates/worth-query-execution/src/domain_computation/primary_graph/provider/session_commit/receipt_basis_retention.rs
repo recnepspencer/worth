@@ -53,7 +53,7 @@ impl PartialEq for WorthQueryRetainedApplicationCommitBasis {
 impl Eq for WorthQueryRetainedApplicationCommitBasis {}
 
 #[derive(Default)]
-pub(in crate::domain_computation::primary_graph) struct WorthQueryReceiptBasisRetentionStore {
+pub struct WorthQueryReceiptBasisRetentionStore {
     order: VecDeque<CommitId>,
     by_commit: BTreeMap<CommitId, WorthQueryRetainedApplicationCommitBasis>,
     mandatory: BTreeMap<CommitId, WorthQueryRetainedApplicationCommitBasis>,

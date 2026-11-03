@@ -57,7 +57,7 @@ pub struct WorthQueryExecutionBoundOperationAuthority {
 }
 
 #[derive(Clone, Copy)]
-pub(crate) struct WorthQueryApplicationGraphWorkAffinity {
+pub struct WorthQueryApplicationGraphWorkAffinity {
     pub(crate) session:
         crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
     pub(crate) managed_run:

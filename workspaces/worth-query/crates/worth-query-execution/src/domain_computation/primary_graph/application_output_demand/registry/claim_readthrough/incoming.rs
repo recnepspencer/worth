@@ -23,7 +23,7 @@ struct Links {
     next: Option<Arc<ClaimLink>>,
     linked: bool,
 }
-pub(in super::super) struct ClaimBatch {
+pub struct ClaimBatch {
     edges: Vec<Arc<ClaimLink>>,
     published: Arc<AtomicBool>,
 }

@@ -8,7 +8,7 @@ mod entity_touch;
 mod equality;
 pub(crate) mod indexed_entity_selection;
 mod locator_identity;
-mod managed_source_read;
+pub(crate) mod managed_source_read;
 pub(crate) mod movement;
 mod retirement_equality;
 pub(crate) mod source_currentness;

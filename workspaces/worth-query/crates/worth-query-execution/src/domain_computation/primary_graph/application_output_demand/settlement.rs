@@ -1,5 +1,5 @@
 mod authority;
-mod producer_identity;
+pub(crate) mod producer_identity;
 use producer_identity::SettlementProducerIdentity;
 mod current_commit;
 use current_commit::reacquire_current_committed_output;

@@ -7,7 +7,7 @@ use worth_runtime_bridge::facade::{
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) struct WorthQueryManagedRelationalObservationIdentity {
+pub struct WorthQueryManagedRelationalObservationIdentity {
     descriptor: RelationalBranchBasisDescriptor,
     snapshot: TruthSnapshotIdentity,
 }
