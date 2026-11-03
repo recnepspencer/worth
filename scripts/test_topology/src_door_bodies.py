@@ -31,6 +31,9 @@ def door_renames(reports):
         for entry in data.get('method_doors', []):
             name = entry.rsplit('::', 1)[-1]
             renames[name + '_for_test'] = (name, 'method')
+        for entry in data.get('field_into_doors', []):
+            field = entry.split('.')[-1]
+            renames[field + '_into_for_test'] = (field, 'into')
         for entry in data.get('field_doors', []):
             field = entry.split('.')[-1].split(' ')[0]
             renames[field + ('_mut_for_test' if entry.endswith('(mut)') else '_for_test')] = (field, 'field')
@@ -122,6 +125,9 @@ def without_doors(values, renames, orders=None):
             continue
         name, kind = renames[value]
         values[i] = name
+        if kind == 'into' and values[i + 1:i + 3] == ['(', ')']:
+            drop |= {i + 1, i + 2}
+            continue
         if kind != 'field' or values[i + 1:i + 4] != ['(', ')', ')']:
             continue
         depth, j = 0, i + 3
