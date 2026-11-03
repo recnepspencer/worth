@@ -27,7 +27,7 @@ fn native_file_open_pressure_denies_after_address_before_payload_and_retries() {
     let held = ports
         .begin_operation(
             Scope::Recovery,
-            NonZeroU64::new(original - address_bytes).unwrap(),
+            NonZeroU64::new(original - SERVING_BACKING_BYTES - address_bytes).unwrap(),
         )
         .unwrap();
     let mut discovery = media.bounded_discovery(2, 4096).unwrap();
@@ -50,7 +50,7 @@ fn native_file_open_pressure_denies_after_address_before_payload_and_retries() {
     assert_eq!(discovery.counters().bytes_read, 0);
     assert_eq!(
         ports.counters().active_operation_bytes_for(Scope::Recovery),
-        held.bytes()
+        SERVING_BACKING_BYTES + held.bytes()
     );
     drop(held);
     let observed = coordination
@@ -63,7 +63,7 @@ fn native_file_open_pressure_denies_after_address_before_payload_and_retries() {
     drop(observed);
     assert_eq!(
         ports.counters().active_operation_bytes_for(Scope::Recovery),
-        0
+        SERVING_BACKING_BYTES
     );
     assert_eq!(discovery.finish().recovery_effect_count(), 0);
 }
@@ -123,7 +123,7 @@ fn metadata_boundary_pressure_denies_payload_then_same_owner_retries() {
     assert_eq!(discovery.counters().bytes_read, 0);
     assert_eq!(
         ports.counters().active_operation_bytes_for(Scope::Recovery),
-        held.bytes()
+        SERVING_BACKING_BYTES + held.bytes()
     );
     assert_eq!(
         std::fs::read(directory.path().join("store/families/checkpoint.current")).unwrap(),

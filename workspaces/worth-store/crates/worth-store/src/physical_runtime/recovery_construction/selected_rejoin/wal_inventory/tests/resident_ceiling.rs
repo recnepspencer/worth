@@ -19,7 +19,7 @@ fn store_entry_wal_read_denies_below_backing_plus_wal_charge() {
         .unwrap()
         .charged_bytes();
     assert!(wal_charge >= encoded.len() as u64);
-    assert_eq!(fixture::active(&ports), 0);
+    assert_eq!(fixture::active(&ports), SERVING_BACKING_BYTES);
 
     let backing = 4096;
     let tight = backing + wal_charge - 1;
@@ -39,7 +39,7 @@ fn store_entry_wal_read_denies_below_backing_plus_wal_charge() {
             if required == backing + wal_charge && admitted == tight
     ));
     assert_eq!((resident.used(), resident.peak()), (backing, backing));
-    assert_eq!(fixture::active(&ports), 0);
+    assert_eq!(fixture::active(&ports), SERVING_BACKING_BYTES);
     assert_eq!(std::fs::read(&path).unwrap(), encoded);
 
     let mut sufficient = StoreRejoinResidentLedger::for_test(original, backing, u64::MAX).unwrap();

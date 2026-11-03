@@ -16,7 +16,9 @@ use worth_store_buffer_pool::{
     PhysicalOperationAllocationScope as Scope, PhysicalResidencyDimension as Dimension,
 };
 
-const ORIGINAL: u64 = 2 << 20;
+const SERVING_BACKING_BYTES: u64 =
+    crate::physical_runtime::record_serving::PreparedRecoveredCustodyBacking::required_bytes();
+const ORIGINAL: u64 = SERVING_BACKING_BYTES + (2 << 20);
 const PAYLOAD: usize = 64;
 const FIRST: &str = "segment-1-generation-1.wal";
 const SECOND: &str = "segment-2-generation-1.wal";
@@ -82,7 +84,7 @@ fn second_wal_payload_denial_retains_diagnostic_across_clone_and_owner_disposal(
     assert_eq!(discovery.counters().bytes_read, PAYLOAD as u64);
     assert_eq!(
         observer.snapshot().for_dimension(dimension).active_units(),
-        held_bytes + diagnostic_bytes,
+        SERVING_BACKING_BYTES + held_bytes + diagnostic_bytes,
         "source buffers die but the named diagnostic remains funded"
     );
     assert_eq!(failure.charged_bytes(), diagnostic_bytes);
@@ -90,7 +92,7 @@ fn second_wal_payload_denial_retains_diagnostic_across_clone_and_owner_disposal(
     assert_eq!(retained_failure.diagnostic(), failure.diagnostic());
     assert_eq!(
         observer.snapshot().for_dimension(dimension).active_units(),
-        held_bytes + diagnostic_bytes,
+        SERVING_BACKING_BYTES + held_bytes + diagnostic_bytes,
         "cloning shares the same funded diagnostic"
     );
     drop(failure);
@@ -130,7 +132,7 @@ fn second_wal_payload_denial_retains_diagnostic_across_clone_and_owner_disposal(
     );
     assert_eq!(
         observer.snapshot().for_dimension(dimension).active_units(),
-        roster_bytes + both_bytes + names + diagnostic_bytes
+        SERVING_BACKING_BYTES + roster_bytes + both_bytes + names + diagnostic_bytes
     );
     drop(window);
     drop(coordination);
@@ -212,7 +214,7 @@ fn wal_result_roster_denies_before_allocation_or_payload_reads_then_retries() {
     assert_eq!(discovery.counters().wal_bytes_read, 0);
     assert_eq!(discovery.counters().bytes_read, 0);
     let denied = observer.snapshot().for_dimension(dimension);
-    assert_eq!(denied.active_units(), held_bytes);
+    assert_eq!(denied.active_units(), SERVING_BACKING_BYTES + held_bytes);
     assert_eq!(std::fs::read(wal.join(FIRST)).unwrap(), [17; PAYLOAD]);
     assert_eq!(std::fs::read(wal.join(SECOND)).unwrap(), [29; PAYLOAD]);
     drop(held);
@@ -233,13 +235,13 @@ fn wal_result_roster_denies_before_allocation_or_payload_reads_then_retries() {
     assert_eq!(discovery.counters().wal_bytes_read, 2 * PAYLOAD as u64);
     assert_eq!(
         observer.snapshot().for_dimension(dimension).active_units(),
-        expected
+        SERVING_BACKING_BYTES + expected
     );
     drop(observations);
     drop(window);
     assert_eq!(
         observer.snapshot().for_dimension(dimension).active_units(),
-        0
+        SERVING_BACKING_BYTES
     );
     let media = discovery.finish();
     assert_eq!(media.recovery_effect_count(), 0);
