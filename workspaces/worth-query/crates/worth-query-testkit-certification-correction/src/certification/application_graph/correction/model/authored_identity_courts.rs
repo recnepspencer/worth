@@ -190,7 +190,7 @@ pub fn create_retire_and_restore() {
         .prepare()
         .unwrap();
     let WorthQueryApplicationCorrectionPreparation::Settled(
-        WorthQueryApplicationMutationOutcome::AlreadyCommitted(replayed),
+        WorthQueryApplicationMutationOutcome::RecoveredCommitted(replayed),
     ) = retry
     else {
         panic!("authored restoration retry must replay")

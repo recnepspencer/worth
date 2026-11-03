@@ -350,8 +350,8 @@ pub use crate::domain_computation::runtime_time::WorthQueryRuntimeTimeSample;
 pub use worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts;
 pub use worth_runtime_world::facade::{
     CompositeAncestorSelectionDenial, CompositeHistoryCatalogDenial, NoEffectCause,
-    ProductBranchAncestorSelectionDenial, ProductExactHistoryDenial, ProductUnpublishedNextAction,
-    ProductUnpublishedRecoveryHandle, RecoveryContinuationContract,
+    ProductBranchAncestorSelectionDenial, ProductExactHistoryDenial, ProductUnpublishedCause,
+    ProductUnpublishedNextAction, ProductUnpublishedRecoveryHandle, RecoveryContinuationContract,
     RuntimeWorldBranchAdmissionDenial, RuntimeWorldRecoveryCursor, RuntimeWorldRecoveryDenial,
     RuntimeWorldRecoveryPage, RuntimeWorldServiceDenial,
     RuntimeWorldSettledRelationalAdoptionDenial,

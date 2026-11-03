@@ -91,7 +91,7 @@ pub fn shared_component_sibling_cannot_claim_another_product_commit() {
     );
     assert_eq!(
         denial.kind(),
-        primary_graph::WorthQueryApplicationCommitDenialKind::IdempotencyIntentDrift,
+        primary_graph::WorthQueryApplicationCommitDenialKind::IdempotencyForeignAffinity,
     );
 }
 

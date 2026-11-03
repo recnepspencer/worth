@@ -8,16 +8,11 @@ use std::{
 };
 use worth_query_host::facade::{
     admission::authenticated_principal::{WorthQueryCancellationSource, WorthQueryRequestScope},
-    application_contribution::{
-        with_bootstrap_advancement_from_request, WorthQueryAdvancementDenial,
-        WorthQueryManagedComputationResourceDenial,
-    },
-    application_entry::{
-        WorthQueryApplicationRequestExt, WorthQueryApplicationRequestQueryDenialKind,
-    },
+    application_contribution::with_bootstrap_advancement_from_request,
+    application_entry::WorthQueryApplicationRequestExt,
     application_installation::ApplicationBuildIdentity,
     primary_graph::WorthQueryConditionalRuntimeInstallationDenialKind,
-    WorldCompositionRetained,
+    primary_graph::{WorthQueryHomeRetirementDenial, WorthQueryHomeRetirementOwner},
 };
 use worth_query_testkit_host::facade::host::{
     application_home as fixture, application_runtime_surface as identity, checkpoint_capture,
@@ -97,10 +92,12 @@ fn fresh_directory_home_journey() {
     let refused = home
         .close(&execution)
         .err()
-        .expect("the actual retained Query runtime keeps Store's composition alive");
+        .expect("the actual retained Query runtime blocks retirement before sealing");
     assert!(matches!(
-        refused.directory_denial(),
-        Some(WorldCompositionRetained)
+        refused.query_denial(),
+        Some(WorthQueryHomeRetirementDenial::Busy(
+            WorthQueryHomeRetirementOwner::ProgramRuntime
+        ))
     ));
     {
         let cancellation = WorthQueryCancellationSource::new();
@@ -112,25 +109,14 @@ fn fresh_directory_home_journey() {
             retained_runtime.runtime().installed_schema(),
             &scope,
         );
-        let denial = retained_runtime
+        let observed = retained_runtime
             .request(&principal, &scope)
             .query(fixture::balance_query::AccountRead(
                 "account-001".to_owned(),
             ))
             .execute()
-            .err()
-            .expect("ordinary weak World execution stays inert after sealing");
-        assert!(
-            matches!(
-                denial.kind(),
-                WorthQueryApplicationRequestQueryDenialKind::ExecutionRequest(
-                    WorthQueryAdvancementDenial::Resource(
-                        WorthQueryManagedComputationResourceDenial::NoActiveExecutionScope
-                    )
-                )
-            ),
-            "{denial:?}"
-        );
+            .expect("the pre-seal refusal keeps ordinary execution available");
+        assert_eq!(observed.rows(), &[8]);
     }
     let legacy_denial = retained_runtime
         .close_conditional_runtime()
