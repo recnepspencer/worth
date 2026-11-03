@@ -8,6 +8,7 @@ license.workspace = true
 publish = false
 
 [dev-dependencies]
+serde = { version = "1", features = ["derive"] }
 sha2 = "0.10"
 stats_alloc = "0.1"
 worth-execution = { path = "../../../../crates/worth-execution" }
