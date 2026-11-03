@@ -1,4 +1,4 @@
-//! Retain original ledger keys while explicitly retiring their live obligation.
+﻿//! Retain original ledger keys while explicitly retiring their live obligation.
 use super::*;
 use crate::branch::SignalBranchRetentionRetirementDenial as Denial;
 use worth_execution::{ExecutionRequest, WorkCeilingDenial};
@@ -59,7 +59,7 @@ impl SignalBranchRetentionBinding {
 mod tests {
     use super::*;
     use crate::branch::SignalBranchRetentionRetirementProgress;
-    use crate::{SignalGraph, SignalRuntime};
+    use crate::facade::{SignalGraph, SignalRuntime};
     use worth_execution::{CancellationSource, SerialMemoryBudget, SerialRequest};
     #[test]
     fn original_signal_lease_survives_busy_and_stop_then_retires_once_without_drop_release() {
@@ -117,3 +117,4 @@ mod tests {
         assert_eq!(registry.terminal_counts(), after);
     }
 }
+
