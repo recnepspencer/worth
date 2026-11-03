@@ -1,4 +1,5 @@
 //! Whole-slot omission refuses before Native acquisition; guards retain separate authority.
+use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::declared_queries::components::{Allowed, Missing, Omitted};
 use crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::declared_queries::components::*;
 #[test]
 fn governed_components_refuse_closed_slots_before_native_and_guard_reads() {
