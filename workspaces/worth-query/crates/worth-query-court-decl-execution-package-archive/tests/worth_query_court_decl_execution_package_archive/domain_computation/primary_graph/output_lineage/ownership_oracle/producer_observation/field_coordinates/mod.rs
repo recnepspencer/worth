@@ -30,7 +30,7 @@ pub fn inspect<Query>(
     let captured = CapturedFields {
         original,
         inputs,
-        layout: &(*runtime.primary_provider_for_test()).graph.layout,
+        layout: &(*(*runtime.primary_provider_for_test()).graph_for_test()).layout,
         contracts: runtime.installed_schema().native_contracts(),
         producer_version: changes.commit_reference().version_id,
     };
@@ -72,7 +72,7 @@ impl<Query> CapturedFields<'_, Query> {
                 })
                 .unwrap()
                 .expect("a genuine completed handler field resolves");
-            assert_eq!(resolved.entity_kind(), *kind);
+            assert_eq!(resolved.entity_kind_for_test(), *kind);
             count += 1;
         }
         assert!(
@@ -107,7 +107,7 @@ impl<Query> CapturedFields<'_, Query> {
                 panic!("fixture's actual source field")
             };
             for row in self.original.original_row_footprints_for_test() {
-                for observed in &row.aspects {
+                for observed in &(*row.aspects_for_test()) {
                     if observed.entity != *entity_id
                         || observed.aspect != *locator.aspect().aspect_key()
                         || observed.field != *key
@@ -169,7 +169,7 @@ impl<Query> CapturedFields<'_, Query> {
             })
             .unwrap()
             .unwrap();
-        assert!(source.same_field(&installed));
+        assert!(source.same_field_for_test(&installed));
         assert_eq!(source.contract_revision(), (*observed.contract_revision_for_test()));
         self.refuse_other_authorities(context, &(*observed.entity_name_for_test()), original);
         source
@@ -203,7 +203,7 @@ impl<Query> CapturedFields<'_, Query> {
                 })
                 .unwrap()
                 .unwrap();
-            assert_eq!(field.entity_kind(), *kind);
+            assert_eq!(field.entity_kind_for_test(), *kind);
             if locator.field_path() != original.field_path()
                 || locator.aspect().aspect_key() != original.aspect().aspect_key()
             {

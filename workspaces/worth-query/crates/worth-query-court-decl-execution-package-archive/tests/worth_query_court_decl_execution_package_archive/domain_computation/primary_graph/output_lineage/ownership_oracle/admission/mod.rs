@@ -16,7 +16,7 @@ pub fn refuse_mixed_and_created_subset(
     runtime.with_application_advancement(&scope, |phase| {
         let execution = phase.execution_request_for_for_test(&(*runtime.product_runtime_for_test())).unwrap();
         let (_, product, _application_basis) = runtime.on_branch(runtime.current_world()).select(&phase).unwrap().into_parts_for_test();
-        let graph = &(*runtime.primary_provider_for_test()).graph;
+        let graph = &(*(*runtime.primary_provider_for_test()).graph_for_test());
         let publisher = graph.application_publication.as_ref().expect("actual installed publication owner");
         let roles: Vec<_> = settled.output_correspondence.native_witness_roles_for_test().map(|(role, posture, name, entity)| RequiredOutputRoleTarget {
             role: role.to_owned(), entity_name: name.to_owned(), kind: graph.layout.entity_kind(name).unwrap(),
@@ -36,7 +36,7 @@ pub fn refuse_mixed_and_created_subset(
             scope: WorthQueryOperationScopeEntityBinding::from_entity_for_test(anchor),
             output_binding: lineage.binding_identity(worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId::of::<RegionOutputBinding<OwnerSchema>>()).unwrap(),
         };
-        let coordinate = product.observation();
+        let coordinate = product.observation_for_test();
         let cells = &lineage.by_source[&source][&coordinate.lifecycle_incarnation()][&coordinate.reference_generation().get()];
         assert_eq!(cells.len(), 1, "exact initial performed generation has one publication");
         let row = cells[0].get().unwrap();
@@ -57,7 +57,7 @@ pub fn refuse_mixed_and_created_subset(
         assert_eq!(created.len(), 3);
         graph.with_runtime(&execution, |native| {
             for (label, targets) in [("whole mixed correspondence", roles.as_slice()), ("created-only ring", created.as_slice())] {
-                let result = native.readmit_required_output_publication(&execution, &publisher.native, product.relational_basis(), &producer, &dependency, &meaning, targets);
+                let result = native.readmit_required_output_publication(&execution, &publisher.native, product.relational_basis_for_test(), &producer, &dependency, &meaning, targets);
                 let denial = result.expect_err(label);
                 assert!(matches!(denial, worth_relational::facade::transactions::TransactionCommitError::Publication { .. }), "{label}: ownership court, not request/funding refusal: {denial:?}");
             }

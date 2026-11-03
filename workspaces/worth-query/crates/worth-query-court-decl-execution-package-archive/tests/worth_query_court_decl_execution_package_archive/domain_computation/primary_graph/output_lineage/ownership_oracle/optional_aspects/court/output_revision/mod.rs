@@ -73,10 +73,10 @@ pub fn preserved<Schema: BirthSchema>(
         (*producing.changes_for_test()).commit_reference().version_id,
         original.1.version()
     );
-    assert!(!(*producing.changes_for_test()).shares_original(changes));
+    assert!(!(*producing.changes_for_test()).shares_original_for_test(changes));
     assert!((*producing
         .correspondence_for_test())
-        .native_witness_roles()
+        .native_witness_roles_for_test()
         .any(|(_, _, _, output)| output == original.0));
     drop(selected);
     drop(read);
@@ -98,7 +98,7 @@ pub fn observe<Schema: BirthSchema>(
         roles.next().is_none(),
         "one actual output of this installed kind"
     );
-    let graph = &(*runtime.primary_provider_for_test()).graph;
+    let graph = &(*(*runtime.primary_provider_for_test()).graph_for_test());
     let locator = graph
         .layout
         .field_locator(field.entity(), field.aspect(), field.field())

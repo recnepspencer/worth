@@ -123,7 +123,7 @@ fn ordinary_handler_clear_of_absent_field_retains_aspect_absence() {
     let receipt = cleared.application_commit_receipt().unwrap();
     let completed = (*clearing
         .primary_provider_for_test())
-        .observe_completed_application(receipt.commit_reference())
+        .observe_completed_application_for_test(receipt.commit_reference())
         .unwrap();
     assert!(
         completed
@@ -133,9 +133,9 @@ fn ordinary_handler_clear_of_absent_field_retains_aspect_absence() {
             .is_none(),
         "a clear that leaves the aspect absent did not move the read"
     );
-    let aspect = (*clearing
+    let aspect =(* (*clearing
         .primary_provider_for_test())
-        .graph
+        .graph_for_test())
         .layout
         .field_locator("Body", "SourceNotes", "SourceSelection")
         .unwrap()
@@ -158,10 +158,10 @@ fn ordinary_handler_clear_of_absent_field_retains_aspect_absence() {
         .with_application_advancement(&request, |phase| {
             let execution = phase.execution_request_for_for_test(&(*clearing.product_runtime_for_test())).unwrap();
             let selected = clearing.on_branch(clearing.current_world()).select(&phase).unwrap();
-            let field = (*clearing.primary_provider_for_test()).graph.layout
+            let field =(* (*clearing.primary_provider_for_test()).graph_for_test()).layout
                 .field_locator("Body", "SourceNotes", "SourceSelection").unwrap()
-                .field_path().fields()[0].clone();
-            (*clearing.primary_provider_for_test()).graph.with_runtime(&execution, |native| {
+                .field_path().fields()[0].clone();(*
+            (*clearing.primary_provider_for_test()).graph_for_test()).with_runtime(&execution, |native| {
                 let view = native.read_truth()
                     .project_snapshot(selected.application_basis_for_test().snapshot_handle()).unwrap();
                 assert_eq!(view.read_entity_aspect_version(&execution, entity, aspect).unwrap(), Some(revision),

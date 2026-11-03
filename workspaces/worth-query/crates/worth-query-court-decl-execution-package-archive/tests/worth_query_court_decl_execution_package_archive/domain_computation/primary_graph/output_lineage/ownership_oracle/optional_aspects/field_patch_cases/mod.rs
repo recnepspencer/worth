@@ -44,10 +44,10 @@ fn absent_parent_write_requires_each_actual_target_observation() {
         "the writer refused before commit lowering"
     );
     assert_eq!(
-        cause.locator(),
+        cause.locator(),(*
         (*runtime
             .primary_provider_for_test())
-            .graph
+            .graph_for_test())
             .layout
             .field_locator("Body", "SourceNotes", "SourceContent")
             .unwrap()

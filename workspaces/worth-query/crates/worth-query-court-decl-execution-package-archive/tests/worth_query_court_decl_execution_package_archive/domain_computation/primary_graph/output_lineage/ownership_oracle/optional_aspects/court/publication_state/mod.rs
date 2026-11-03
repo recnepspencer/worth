@@ -60,7 +60,7 @@ pub fn observe_roles<Schema: BirthSchema>(
         .on_branch(runtime.current_world())
         .select(phase)
         .unwrap();
-    let graph = &(*runtime.primary_provider_for_test()).graph;
+    let graph = &(*(*runtime.primary_provider_for_test()).graph_for_test());
     let field = Value::reference::<Schema>();
     let locator = graph
         .layout

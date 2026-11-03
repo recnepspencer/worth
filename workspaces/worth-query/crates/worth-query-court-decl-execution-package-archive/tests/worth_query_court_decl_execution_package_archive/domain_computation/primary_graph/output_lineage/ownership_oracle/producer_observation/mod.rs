@@ -209,7 +209,7 @@ pub fn observe(
                 "the original producer publication A must not replace read B"
             );
             assert!(conditional.as_ref().unwrap().same_observation(native));
-            assert!(seed.correspondence().native_witness_roles().len() > 0);
+            assert!(seed.correspondence().native_witness_roles_for_test().len() > 0);
             worth_query_execution::court_doors_for_test::domain_computation::primary_graph::admitted_capture::retained_stage::run_retained_stage(
                 &execution,
                 &mut None,

@@ -14,9 +14,9 @@ pub fn observe_performed_receipt<Schema: BirthSchema>(
             RequiredOutputRoleTarget {
                 role: role.to_owned(),
                 entity_name: name.to_owned(),
-                kind: (*runtime
+                kind:(* (*runtime
                     .primary_provider_for_test())
-                    .graph
+                    .graph_for_test())
                     .layout
                     .entity_kind(name)
                     .unwrap(),

@@ -60,7 +60,7 @@ fn genuine_input_cutoff_retains_stable_supplier_without_native_execution() {
             assert_eq!(seed.read().selected_commit(), read.selected_commit());
             assert!(seed
                 .correspondence()
-                .native_witness_roles()
+                .native_witness_roles_for_test()
                 .eq(stable.output_correspondence.native_witness_roles_for_test()));
         })
         .unwrap();

@@ -37,7 +37,7 @@ pub fn readmit_with_ordinary<Schema: BirthSchema>(
                 .select(&phase)
                 .unwrap()
                 .into_parts_for_test();
-            let graph = &(*runtime.primary_provider_for_test()).graph;
+            let graph = &(*(*runtime.primary_provider_for_test()).graph_for_test());
             let publisher = graph.application_publication.as_ref().unwrap();
             let roles: Vec<_> = settled
                 .output_correspondence
@@ -89,8 +89,8 @@ pub fn readmit_with_ordinary<Schema: BirthSchema>(
 
             let (occurrence, generation, slot) = match recorded {
                 Some(identity) => {
-                    assert_eq!(identity.source(), &source, "receipt's exact semantic source");
-                    identity.address()
+                    assert_eq!(identity.source_for_test(), &source, "receipt's exact semantic source");
+                    identity.address_for_test()
                 }
                 None => {
                     let coordinate = retained.as_ref().unwrap().product().observation_for_test();
@@ -130,7 +130,7 @@ pub fn readmit_with_ordinary<Schema: BirthSchema>(
                 let result = native.readmit_required_output_publication(
                     &execution,
                     &publisher.native,
-                    product.relational_basis(),
+                    product.relational_basis_for_test(),
                     &producer,
                     &dependency,
                     &meaning,
@@ -139,7 +139,7 @@ pub fn readmit_with_ordinary<Schema: BirthSchema>(
                 result.expect("cold complete native publication readmits");
                 if let Some(roles) = ordinary_roles {
                     assert!(native.readmit_required_output_publication(
-                        &execution, &publisher.native, product.relational_basis(),
+                        &execution, &publisher.native, product.relational_basis_for_test(),
                         &producer, &dependency, &meaning, &roles,
                     ).is_err(), "real ordinary records cannot borrow a valid producer's ownership");
                 }
@@ -187,9 +187,9 @@ pub fn edit_source_to<Schema: BirthSchema>(
                     WorthQueryPrincipalResolutionMode::Ordinary,
                 )
                 .unwrap();
-            let locator = (*runtime
+            let locator =(* (*runtime
                 .primary_provider_for_test())
-                .graph
+                .graph_for_test())
                 .layout
                 .field_locator("Body", "PlanarPosition", "PositionY")
                 .unwrap()

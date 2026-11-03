@@ -26,7 +26,7 @@ pub fn admit_genuine_all_create(runtime: &Application) {
                 .select(&phase)
                 .unwrap()
                 .into_parts_for_test();
-            let graph = &(*runtime.primary_provider_for_test()).graph;
+            let graph = &(*(*runtime.primary_provider_for_test()).graph_for_test());
             let publisher = graph.application_publication.as_ref().unwrap();
             let target = CreatedEntityRef {
                 partition_id: PartitionId::main(),
@@ -94,14 +94,14 @@ pub fn admit_genuine_all_create(runtime: &Application) {
                     .readmit_required_output_route_absence(
                         &execution,
                         &publisher.native,
-                        product.relational_basis(),
+                        product.relational_basis_for_test(),
                         &meaning,
                     )
                     .unwrap()
                     .expect("new genuine route");
                 let mut transaction = native
                     .begin_branch_transaction(
-                        product.relational_basis(),
+                        product.relational_basis_for_test(),
                         RelationalTransactionIntent::ordinary(),
                     )
                     .unwrap();
@@ -126,7 +126,7 @@ pub fn admit_genuine_all_create(runtime: &Application) {
                     .unwrap()
             });
             let outcome = product
-                .publication_binding()
+                .publication_binding_for_test()
                 .prepare_relational_candidate(candidate, &scope, false)
                 .unwrap()
                 .execute(execution);

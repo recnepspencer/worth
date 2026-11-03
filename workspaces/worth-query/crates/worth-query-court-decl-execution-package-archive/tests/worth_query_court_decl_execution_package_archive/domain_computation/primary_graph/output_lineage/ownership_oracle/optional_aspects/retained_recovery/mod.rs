@@ -111,7 +111,7 @@ fn tracked_aspect_absence_survives_query_checkpoint_then_invalidates_on_other_fi
         };
         let source = retained.restored_source.as_ref().unwrap();
         assert_eq!((*checkpoint.scope_for_test()), (*source.source_scope_for_test()));
-        assert_eq!((*checkpoint.source_partition_for_test()), (*source.checkpoint_for_test()).source_partition);
+        assert_eq!((*checkpoint.source_partition_for_test()),(* (*source.checkpoint_for_test()).source_partition_for_test()));
         assert_eq!(seed.read().selected_commit(), read.selected_commit());
     }).unwrap();
     materialize_source(&restored);

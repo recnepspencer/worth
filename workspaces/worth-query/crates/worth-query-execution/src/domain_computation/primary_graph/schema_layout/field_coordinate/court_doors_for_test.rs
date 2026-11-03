@@ -15,3 +15,10 @@ impl InstalledFieldCoordinate<'_> {
         Self::same_field(self, other)
     }
 }
+
+impl InstalledFieldCoordinate<'_> {
+    #[doc(hidden)]
+    pub fn entity_kind_for_test(&self) -> KindId {
+        Self::entity_kind(self)
+    }
+}

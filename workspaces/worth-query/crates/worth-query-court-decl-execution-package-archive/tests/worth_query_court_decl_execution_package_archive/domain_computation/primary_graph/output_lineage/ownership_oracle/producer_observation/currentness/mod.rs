@@ -13,12 +13,12 @@ fn retained_currentness_refuses_corrupted_fact_coordinates_before_clean_marks() 
         let execution = phase.execution_request_for_for_test(&(*runtime.product_runtime_for_test())).unwrap();
         let selected = runtime.on_branch(runtime.current_world()).select(&phase).unwrap();
         let mut read = {
-            let lineage = (*runtime.primary_provider_for_test()).graph.output_lineage.lock().unwrap();
+            let lineage =(* (*runtime.primary_provider_for_test()).graph_for_test()).output_lineage.lock().unwrap();
             lineage.source_facts_for_receipt((*runtime.runtime_for_test()).authority_identity().as_u64(),
                 &(*runtime.installed_schema_for_test()).binding_identity(), selected.product().observation_for_test(), receipt, &execution).unwrap().unwrap()
         };
-        assert!(!read.facts.as_ref().unwrap().is_empty(), "real retained producer facts");
-        (*runtime.primary_provider_for_test()).graph.with_runtime(&execution, |native| {
+        assert!(!read.facts.as_ref().unwrap().is_empty(), "real retained producer facts");(*
+        (*runtime.primary_provider_for_test()).graph_for_test()).with_runtime(&execution, |native| {
             selected.require_current_read_for_test(&execution, native, &read, Some(receipt)).unwrap();
             for (valid, requirement, expected) in [
                 (Requirement::NativeFactRevisionUnavailable(0), Requirement::NativeFactRevisionUnavailable(usize::MAX), Reason::NativeFactRevisionUnavailable),

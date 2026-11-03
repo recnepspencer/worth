@@ -12,7 +12,7 @@ pub fn roles_and_nonownership<Schema: BirthSchema>(
     runtime: &crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::installation::Application<Schema>,
     receipt: &WorthQueryApplicationCommitReceipt,
 ) -> Vec<RequiredOutputRoleTarget> {
-    let graph = &(*runtime.primary_provider_for_test()).graph;
+    let graph = &(*(*runtime.primary_provider_for_test()).graph_for_test());
     let correspondence = receipt.retain_output_correspondence_for_test();
     let lineage = graph.output_lineage.lock().unwrap();
     let rows: Vec<_> = lineage
@@ -41,7 +41,7 @@ pub fn roles_and_nonownership<Schema: BirthSchema>(
     assert!(row.native_prior_checkpoint.is_none());
     assert!(row.producer_dependency_identity.is_none());
     let roles: Vec<_> = correspondence
-        .native_witness_roles()
+        .native_witness_roles_for_test()
         .map(|(role, posture, name, id)| {
             assert_eq!(posture, WorthQueryApplicationOutputPosture::Create);
             RequiredOutputRoleTarget {

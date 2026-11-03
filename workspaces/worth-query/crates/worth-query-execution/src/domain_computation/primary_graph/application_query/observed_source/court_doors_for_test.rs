@@ -7,3 +7,10 @@ impl WorthQueryObservedSourceFootprint {
         Self { root, complete, entities, aspects, root_selection, adjacencies }
     }
 }
+
+impl WorthQueryObservedSourceFootprint {
+    #[doc(hidden)]
+    pub fn aspects_for_test(&self) -> &Vec<WorthQueryObservedFieldRevision> {
+        &self.aspects
+    }
+}
