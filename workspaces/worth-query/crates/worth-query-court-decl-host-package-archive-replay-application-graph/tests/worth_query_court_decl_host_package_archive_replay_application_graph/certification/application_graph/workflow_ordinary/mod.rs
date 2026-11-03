@@ -1,3 +1,4 @@
+use super::recorded_workflow_receipt as recorded;
 pub(crate) use worth_query_testkit_certification_application_graph::facade::certification::application_graph::workflow_ordinary::*;
 
 #[test]
@@ -191,13 +192,13 @@ fn ordinary_publication_uses_installed_binding_and_real_commit_authority() {
         WorkflowDefinitionPublicationOutcome::Published(performed) => performed,
         other => panic!("the ordinary definition must publish: {other:?}"),
     };
-    assert!(!first.replayed());
+    assert!(first.receipt().changed_record_count() > 0);
     let replay = match publish() {
-        WorkflowDefinitionPublicationOutcome::Published(performed) => performed,
+        WorkflowDefinitionPublicationOutcome::RecoveredCommitted(performed) => performed,
         other => panic!("the exact ordinary retry must publish: {other:?}"),
     };
-    assert!(replay.replayed());
-    assert_eq!(first.definition(), replay.definition());
+    recorded::original(&replay, first.receipt());
+    recorded::creates(&replay, first.definition().entity_id());
     let start_key = 918_002_u64;
     let start = || {
         runtime
@@ -216,14 +217,14 @@ fn ordinary_publication_uses_installed_binding_and_real_commit_authority() {
         WorkflowInstanceStartOutcome::Started(started) => started,
         other => panic!("the ordinary definition must start: {other:?}"),
     };
-    assert!(!started.replayed());
+    assert!(started.receipt().changed_record_count() > 0);
     assert_eq!(started.instance().start_node_path(), "done");
     let replayed_start = match start() {
-        WorkflowInstanceStartOutcome::Started(started) => started,
+        WorkflowInstanceStartOutcome::RecoveredCommitted(started) => started,
         other => panic!("the exact ordinary start must replay: {other:?}"),
     };
-    assert!(replayed_start.replayed());
-    assert_eq!(started.instance(), replayed_start.instance());
+    recorded::original(&replayed_start, started.receipt());
+    recorded::creates(&replayed_start, started.instance().entity_id());
 
     let run = |keys: &[u64]| {
         runtime

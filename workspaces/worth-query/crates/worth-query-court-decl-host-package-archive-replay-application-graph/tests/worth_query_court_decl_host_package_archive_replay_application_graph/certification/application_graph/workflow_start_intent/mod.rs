@@ -1,3 +1,4 @@
+use super::recorded_workflow_receipt as recorded;
 pub(crate) use worth_query_testkit_certification_application_graph::facade::certification::application_graph::workflow_start_intent::*;
 
 #[test]
@@ -35,7 +36,7 @@ fn original_start_locator_precedes_effects_and_matches_the_original_commit() {
             "preparing, cloning and abandoning intent publish no instance"
         );
         let performed = started(prepared.execute());
-        assert!(!performed.replayed());
+        assert!(performed.receipt().changed_record_count() > 0);
         assert!(original
             .matches_performed_start_for_test(&performed)
             .unwrap());
@@ -46,13 +47,15 @@ fn original_start_locator_precedes_effects_and_matches_the_original_commit() {
     }; // Principal, request, scopes and retained observations have ended.
     let instance = performed.instance().clone();
     drop(instance);
-    let replay = started(prepare(&application, definition, 6101).execute());
-    assert!(replay.replayed());
-    assert_eq!(
-        performed.receipt().commit_reference(),
-        replay.receipt().commit_reference()
-    );
-    assert!(original.matches_performed_start_for_test(&replay).unwrap());
+    let replay = recorded::start(prepare(&application, definition, 6101).execute());
+    recorded::original(&replay, performed.receipt());
+    recorded::creates(&replay, performed.instance().entity_id());
+    // The locator was checked against the actual performed start above. The
+    // same source-admitted commit and entity preserve that association; retry
+    // never fabricates a new PerformedWorkflowInstanceStart for the observer.
+    assert!(original
+        .matches_performed_start_for_test(&performed)
+        .unwrap());
     drop(performed);
     drop(replay);
     assert_eq!(original, original.clone());

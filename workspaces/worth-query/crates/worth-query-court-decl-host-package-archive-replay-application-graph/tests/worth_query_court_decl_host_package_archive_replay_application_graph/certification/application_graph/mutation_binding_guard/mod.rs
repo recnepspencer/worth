@@ -74,7 +74,7 @@ fn one_key_and_input_do_not_replay_across_bindings() {
     assert!(
         matches!(
             resolve(idempotency::<SetRetentionBinding>(&key, &request)),
-            WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(_)
+            WorthQueryApplicationIdempotencyResolution::RecoveredCommitted(_)
         ),
         "the binding that committed replays its receipt"
     );

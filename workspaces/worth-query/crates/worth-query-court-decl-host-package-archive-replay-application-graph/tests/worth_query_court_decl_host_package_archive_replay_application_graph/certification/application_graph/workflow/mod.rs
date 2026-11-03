@@ -1,3 +1,4 @@
+use super::recorded_workflow_receipt as recorded;
 pub(crate) use worth_query_testkit_certification_application_graph::facade::certification::application_graph::workflow::*;
 
 #[test]
@@ -154,24 +155,20 @@ fn public_authoring_publishes_replays_and_revises_one_branch_lineage() {
             1,
         ),
     );
-    assert!(!first.replayed());
+    assert!(first.receipt().changed_record_count() > 0);
     let first_definition = first.definition().clone();
 
-    let replay = expect_published(
-        "exact replay",
+    let replay = recorded::definition(
         publish_definition(
             &application,
             reviewed_document_definition("completed"),
             WorkflowDefinitionExpectedPredecessor::Absent,
             1,
-        ),
+        )
+        .expect("exact definition retry prepares"),
     );
-    assert!(replay.replayed());
-    assert_eq!(replay.definition(), &first_definition);
-    assert_eq!(
-        replay.receipt().product_branch(),
-        first.receipt().product_branch()
-    );
+    recorded::original(&replay, first.receipt());
+    recorded::creates(&replay, first_definition.entity_id());
 
     let second = expect_published(
         "lawful revision",
@@ -182,7 +179,7 @@ fn public_authoring_publishes_replays_and_revises_one_branch_lineage() {
             2,
         ),
     );
-    assert!(!second.replayed());
+    assert!(second.receipt().changed_record_count() > 0);
     assert_eq!(second.definition().branch(), first_definition.branch());
     assert_ne!(
         second.definition().entity_id(),
@@ -222,19 +219,17 @@ fn public_instance_start_binds_revisions_replays_and_enforces_lineage_capacity()
     );
     let first_definition = first.definition().clone();
     let started = expect_started(start_instance(&application, first_definition.clone(), 21));
-    assert!(!started.replayed());
+    assert!(started.receipt().changed_record_count() > 0);
     assert_eq!(started.instance().start_node_path(), "propose");
     assert_eq!(
         started.instance().definition_content_identity(),
         first_definition.content_identity()
     );
 
-    let replay = expect_started(start_instance(&application, first_definition.clone(), 21));
-    assert!(replay.replayed());
-    assert_eq!(
-        replay.instance().entity_id(),
-        started.instance().entity_id()
-    );
+    let replay =
+        recorded::start(start_instance(&application, first_definition.clone(), 21).unwrap());
+    recorded::original(&replay, started.receipt());
+    recorded::creates(&replay, started.instance().entity_id());
 
     let second_start = expect_started(start_instance(&application, first_definition.clone(), 22));
     assert_ne!(
@@ -253,13 +248,12 @@ fn public_instance_start_binds_revisions_replays_and_enforces_lineage_capacity()
         ),
     );
     let replay_after_replacement =
-        expect_started(start_instance(&application, first_definition.clone(), 21));
-    assert!(replay_after_replacement.replayed());
+        recorded::start(start_instance(&application, first_definition.clone(), 21).unwrap());
     assert_eq!(
-        replay_after_replacement.instance().entity_id(),
-        started.instance().entity_id(),
-        "definition replacement must not hide an exact retained replay"
+        replay_after_replacement, replay,
+        "definition replacement must not hide the exact original receipt"
     );
+    recorded::creates(&replay_after_replacement, started.instance().entity_id());
     let current =
         expect_superseded_start(start_instance(&application, first_definition.clone(), 23));
     assert_eq!(&current, second.definition());
@@ -287,12 +281,13 @@ fn public_instance_start_binds_revisions_replays_and_enforces_lineage_capacity()
             key,
         ));
     }
-    let replay_at_capacity = expect_started(start_instance(&application, first_definition, 21));
-    assert!(replay_at_capacity.replayed());
+    let replay_at_capacity =
+        recorded::start(start_instance(&application, first_definition, 21).unwrap());
     assert_eq!(
-        replay_at_capacity.instance().entity_id(),
-        started.instance().entity_id()
+        replay_at_capacity, replay,
+        "capacity cannot reinterpret the original start"
     );
+    recorded::creates(&replay_at_capacity, started.instance().entity_id());
     expect_capacity_refused(start_instance(
         &application,
         third.definition().clone(),

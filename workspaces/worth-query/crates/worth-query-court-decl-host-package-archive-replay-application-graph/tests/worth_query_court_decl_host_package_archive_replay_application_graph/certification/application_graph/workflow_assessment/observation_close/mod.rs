@@ -41,7 +41,7 @@ fn closing_every_observer_leaves_the_instance_awaiting_its_assessment() {
     match cancel_instance(&application, instance, 94_115).expect("the cancellation prepares") {
         WorkflowInstanceCancellationOutcome::Cancelled(ended) => {
             assert!(
-                !ended.replayed(),
+                ended.receipt().changed_record_count() > 0,
                 "closing observers did not end the instance"
             )
         }

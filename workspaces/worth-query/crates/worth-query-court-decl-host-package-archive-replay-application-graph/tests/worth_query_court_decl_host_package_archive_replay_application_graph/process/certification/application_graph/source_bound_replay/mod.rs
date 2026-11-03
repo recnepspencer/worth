@@ -171,7 +171,7 @@ fn source_bound_recorded_retry_preserves_checked_identity_before_fresh_allocatio
         .into_parts();
     let commit = match retried.expect("checked source-bound recorded retry") {
         Outcome::AlreadyCommitted(recorded) => recorded.commit_reference().commit_id,
-        Outcome::PreviouslyCommitted(recorded) => recorded.commit_id(),
+        Outcome::RecoveredCommitted(recorded) => recorded.commit_reference().commit_id,
         _ => panic!("recorded receipt required"),
     };
     assert_eq!(commit, receipt.commit_reference().commit_id);

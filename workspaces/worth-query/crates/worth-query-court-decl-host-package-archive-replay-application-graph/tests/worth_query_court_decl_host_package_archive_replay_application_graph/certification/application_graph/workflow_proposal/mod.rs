@@ -1,3 +1,4 @@
+use super::recorded_workflow_receipt as recorded;
 pub(crate) use worth_query_testkit_certification_application_graph::facade::certification::application_graph::workflow_proposal::*;
 
 #[test]
@@ -79,20 +80,19 @@ fn proposal_replay_is_key_bound_across_an_eligible_repeated_proposal_head() {
     ));
     assert_eq!(first.node_path(), "proposal/first");
 
-    let replay = expect_proposal(propose_authoring_instance(
-        &application,
-        started.instance().clone(),
-        413,
-    ));
-    assert!(replay.replayed());
-    assert_eq!(replay.proposal(), first.proposal());
+    let replay = recorded::proposal(
+        propose_authoring_instance(&application, started.instance().clone(), 413).unwrap(),
+    );
+    recorded::original(&replay, first.receipt());
+    recorded::creates(&replay, first.proposal().entity_id());
+    recorded::creates(&replay, first.transition());
 
     let second = expect_proposal(propose_authoring_instance(
         &application,
         started.instance().clone(),
         414,
     ));
-    assert!(!second.replayed());
+    assert!(second.receipt().changed_record_count() > 0);
     assert_eq!(second.node_path(), "proposal/second");
     assert_ne!(second.proposal(), first.proposal());
 }
@@ -123,14 +123,12 @@ fn proposal_replay_resolves_after_the_instance_completed() {
         other => panic!("expected terminal completion, got {other:?}"),
     }
 
-    let replay = expect_proposal(propose_authoring_instance(
-        &application,
-        started.instance().clone(),
-        423,
-    ));
-    assert!(replay.replayed());
-    assert_eq!(replay.proposal(), proposal.proposal());
-    assert_eq!(replay.transition(), proposal.transition());
+    let replay = recorded::proposal(
+        propose_authoring_instance(&application, started.instance().clone(), 423).unwrap(),
+    );
+    recorded::original(&replay, proposal.receipt());
+    recorded::creates(&replay, proposal.proposal().entity_id());
+    recorded::creates(&replay, proposal.transition());
 }
 
 #[test]
