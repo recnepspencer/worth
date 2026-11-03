@@ -112,12 +112,12 @@ impl RelationalStoreSection {
                 ))
             }
         };
-        // Reversible actual admission/publication/read and provider preflight.
-        // The inventory walk and irreversible seal remain incremental.
-        if let Err(cause) = runtime.advance(request, cold_source.as_ref()) {
+        // Finish reversible graph validation before handing away Serving.
+        // A source-capable fork must refuse before any cache or source retires.
+        if let Err(cause) = runtime.preflight(request, cold_source.as_ref()) {
             let (runtime, preparation) = runtime
                 .resume()
-                .unwrap_or_else(|_| unreachable!("first preflight cannot seal a binding"));
+                .unwrap_or_else(|_| unreachable!("preflight cannot seal a binding"));
             return Err((
                 Self {
                     source,
@@ -196,10 +196,10 @@ pub(super) fn prepare_attached_close(
             ))
         }
     };
-    if let Err(cause) = runtime.advance(request, cold_source.as_ref()) {
+    if let Err(cause) = runtime.preflight(request, cold_source.as_ref()) {
         let (runtime, preparation) = runtime
             .resume()
-            .unwrap_or_else(|_| unreachable!("first preflight cannot seal a binding"));
+            .unwrap_or_else(|_| unreachable!("preflight cannot seal a binding"));
         return Err((
             super::unshared::AttachedRelationalRuntime {
                 runtime,

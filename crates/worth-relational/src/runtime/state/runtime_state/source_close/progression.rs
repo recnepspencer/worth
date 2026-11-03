@@ -1,6 +1,20 @@
 //! The irreversible cut precedes all physical retirement and forbids resume.
 use super::*;
 impl RelationalSourceClose {
+    /// Validate the complete original source graph while serving remains
+    /// resumable. Each cursor step consults the caller's original request;
+    /// this method never retires caches, seals the medium or releases a source.
+    pub fn preflight(
+        &mut self,
+        request: &ExecutionRequest<'_, '_>,
+        source: &dyn RelationalDurableColdSource,
+    ) -> Result<(), RelationalSourceCloseDenial> {
+        while matches!(self.state().stage, Stage::Quiesce | Stage::Validate) {
+            self.advance(request, source)?;
+        }
+        Ok(())
+    }
+
     pub fn advance(
         &mut self,
         request: &ExecutionRequest<'_, '_>,
