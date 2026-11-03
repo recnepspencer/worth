@@ -83,6 +83,7 @@ pub(in crate::domain_computation::primary_graph::provider) struct RetainedQueryD
 }
 
 /// Narrow causes cannot embed a public same-store Query recovery wrapper.
+#[derive(Debug)]
 pub(in crate::domain_computation::primary_graph::provider) enum QueryDurablePreparationDenial {
     #[allow(
         dead_code,
@@ -106,6 +107,7 @@ pub(in crate::domain_computation::primary_graph::provider) enum QueryDurablePrep
     QueryEvidence(WorthQueryProviderSessionFailure),
 }
 
+#[derive(Debug)]
 pub(super) enum QueryCandidatePreparationDenial {
     ManagedSource(managed_source::ManagedSourcePreparationDenial),
     Native(worth_relational::facade::mvcc::TransactionCommitError),
@@ -120,6 +122,16 @@ impl QueryPreparingApplicationCommit {
         matches!(self.native, QueryNativeCustody::Proposal(_))
     }
 }
+impl std::fmt::Debug for RetainedQueryDurablePreparation {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("RetainedQueryDurablePreparation")
+            .field("stage", &self.stage())
+            .field("query_denial", &self.query_denial)
+            .finish_non_exhaustive()
+    }
+}
+
 impl RetainedQueryDurablePreparation {
     pub(in crate::domain_computation::primary_graph::provider) fn stage(
         &self,

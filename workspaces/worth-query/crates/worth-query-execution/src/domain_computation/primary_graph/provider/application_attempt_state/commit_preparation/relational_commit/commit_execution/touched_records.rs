@@ -75,6 +75,7 @@ impl PreparedTouchedRecords {
     }
 }
 
+#[derive(Debug)]
 pub(super) enum TouchedRecordsPreparationDenial {
     Allocation(worth_execution::ExecutionAllocationDenial),
     ChangedRecordsUnavailable,
