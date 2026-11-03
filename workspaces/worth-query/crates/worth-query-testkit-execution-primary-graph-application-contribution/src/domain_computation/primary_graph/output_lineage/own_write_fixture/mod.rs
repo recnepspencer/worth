@@ -110,7 +110,7 @@ pub fn commit_own_write(
             &request,
         )
         .unwrap();
-    admitted.bind_source_partition([7; 32]);
+    admitted.bind_source_partition_for_test([7; 32]);
     let (computed, projection, _) = world
         .invariant
         .project_admitted_operation(phase_custody,

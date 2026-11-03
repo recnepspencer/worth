@@ -350,3 +350,7 @@ impl<Schema, Operation, Input, Scope>
         self.core.workflow_approval_dependencies_snapshot(execution)
     }
 }
+
+// Mounted beside its path-mounted module, whose directory it shares with the parent.
+#[path = "brand_access_court_doors_for_test.rs"]
+mod court_doors_for_test;
