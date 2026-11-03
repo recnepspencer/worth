@@ -161,6 +161,7 @@ def classify(model, seeds, family_seeds=(), referenced=(), dev_aliases=()):
     gated, nodes = {}, {}
     moving = set(model.moving)
     candidates = set()
+    test_methods = test_family_methods(model)
     pending = sorted(seeds) + [('<family>', f) for f in sorted(family_seeds)]
     seen = set()
     while pending:
@@ -198,6 +199,12 @@ def classify(model, seeds, family_seeds=(), referenced=(), dev_aliases=()):
         for names, text in texts:
             if dev_aliases and crate_uses(text, set(dev_aliases)):
                 nodes[key][1].add(('<test>', 'dev-dependency'))
+            stream = tokens(text)
+            for i in range(len(stream) - 1):
+                if stream[i].value == '.' and stream[i + 1].kind == 'ident':
+                    family = test_methods.get(stream[i + 1].value)
+                    if family is not None:
+                        nodes[key][1].add(('<test>', family))
             for dependency in dependencies(model, names, text, key):
                 nodes[key][1].add(dependency)
                 pending.append(dependency)
@@ -260,6 +267,27 @@ def classify(model, seeds, family_seeds=(), referenced=(), dev_aliases=()):
     return classes
 
 
+def test_family_methods(model):
+    """Inherent method name -> test-bearing family, for names no production impl defines.
+
+    A call by name is a sound edge only when the name cannot denote production code.
+    """
+    production, in_tests = set(), {}
+    for names, node in model.index.items():
+        own = node.own_text()
+        family = next((f for f in model.families if names[:len(f)] == f), None)
+        for _attributes, _vis, keyword, _name, start, end in scope_items(own):
+            if keyword != 'impl' or trait_impl(own[start:end]):
+                continue
+            methods = {m for m, *_ in impl_methods(own[start:end])}
+            if family is None:
+                production |= methods
+            elif has_tests(model, family):
+                for method in methods:
+                    in_tests.setdefault(method, family)
+    return {m: f for m, f in in_tests.items() if m not in production}
+
+
 def is_import(model, key):
     module, name = key
     scope = model.production.scopes.get(module)
@@ -305,6 +333,13 @@ def dependencies(model, names, text, key):
 
 
 def has_tests(model, family):
+    cache = model.__dict__.setdefault('_has_tests', {})
+    if family not in cache:
+        cache[family] = _has_tests(model, family)
+    return cache[family]
+
+
+def _has_tests(model, family):
     from src_families import function_bodies, macro_generated
     return any(function_bodies(expanded_text(n)) or macro_generated(expanded_text(n))
                for n in model.families[family].node.walk())

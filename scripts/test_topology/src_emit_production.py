@@ -235,6 +235,15 @@ def residual_gates(text, skip_spans, kept_names):
         if set(re.findall(r'\w+', following[:unit_extent(following)])) & kept_names:
             continue
         result.append((match.start(), match.end(), ''))
+    ungated_fns = {m.group(1) for m in re.finditer(
+        r'#\s*\[\s*cfg\s*\(\s*test\s*\)\s*\]\s*(?:pub(?:\s*\([^)]*\))?\s+)?fn\s+(\w+)', text)
+        if (m.start(), m.start() + len(GATE.match(text, m.start()).group(0)), '') in result}
+    for match in re.finditer(r'#\s*\[\s*cfg\s*\(\s*not\s*\(\s*test\s*\)\s*\)\s*\]\s*'
+                             r'(?:pub(?:\s*\([^)]*\))?\s+)?fn\s+(\w+)', text):
+        if match.group(1) in ungated_fns:
+            # The test twin now compiles; its production-only twin would duplicate it.
+            body = text[match.end():]
+            result.append((match.start(), match.end() + unit_extent(body), ''))
     for start, end, inner in test_attributes(text):
         if any(a <= start < b for a, b in skip_spans):
             continue
