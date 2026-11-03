@@ -26,9 +26,15 @@ def dispositions(model, unit_of):
                 supported.add(target)
     supported |= {names for names in model.records if model.records[names].family in root_support(model)}
     supported |= {names for names, record in model.records.items() if record.extracted or record.doors}
+    couples = impl_couplings(model)
     frontier = list(supported)
     while frontier:
         names = frontier.pop()
+        # An impl lives in its self type's crate: impl modules follow their type into the testkit.
+        for coupled in couples.get(names, ()):
+            if coupled not in supported:
+                supported.add(coupled)
+                frontier.append(coupled)
         # A support module keeps its module ancestry: its parent's imports resolve `super::` there.
         parent = names[:-1]
         if parent in model.records and parent not in supported and not model.records[parent].extracted:
@@ -53,6 +59,32 @@ def dispositions(model, unit_of):
         else:
             result[names] = 'court' if has_tests else 'local'
     return result
+
+
+def impl_couplings(model):
+    """Type-defining moving module -> moving modules holding impls of that type."""
+    from src_hooks import impl_target
+    from src_kept_impls import impl_trait, in_moved
+    couples = {}
+    for names, record in model.records.items():
+        if record.extracted or record.foreign:
+            continue
+        own = record.node.own_text()
+        for item in record.items:
+            if item.keyword != 'impl' or item.test:
+                continue
+            text = own[item.start:item.end]
+            target, trait = impl_target(text), impl_trait(text)
+            if not target:
+                continue
+            if trait is not None:
+                trait_origin = model.everything.origin(names, trait)[0]
+                if trait_origin is not None and in_moved(model, trait_origin[0]):
+                    continue
+            origin = model.everything.origin(names, target)[0]
+            if origin is not None and origin[0] != names and origin[0] in model.records:
+                couples.setdefault(origin[0], set()).add(names)
+    return couples
 
 
 def defining_record(model, module):

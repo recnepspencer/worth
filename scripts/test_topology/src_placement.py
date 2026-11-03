@@ -52,6 +52,11 @@ def support_graph(model, kinds):
         if (record.foreign or foreign_includes(record)) and names[:-1] in members:
             edges[names].add(names[:-1])
             edges[names[:-1]].add(names)
+    from src_ownership import impl_couplings
+    for owner, holders in impl_couplings(model).items():
+        for holder in holders & members if owner in members else ():
+            edges[owner].add(holder)
+            edges[holder].add(owner)
     return support, edges
 
 

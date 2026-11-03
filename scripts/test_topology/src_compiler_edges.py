@@ -32,7 +32,7 @@ def module_of_file(tree, path):
     return best
 
 
-DECLARED = re.compile(r'\b(?:struct|enum|union|trait|type|fn|const|static|mod)\s+(\w+)')
+DECLARED = re.compile(r'\b(?:(?:(?:const|async|unsafe)\s+)*fn|struct|enum|union|trait|type|const|static|mod)\s+(\w+)')
 FIELD = re.compile(r'field `(\w+)` of (?:struct|union|variant) `(?:[\w:]*::)?(\w+)')
 PRIVATE_FIELDS = re.compile(r'fields? (`\w+`(?:, `\w+`)*(?: and `\w+`)?) of (?:struct|variant) `(?:[\w:]*::)?(\w+)')
 

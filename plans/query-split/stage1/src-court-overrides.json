@@ -16,7 +16,32 @@
       "domain_computation::provider_session::graph_obligation::inspection_terminal::court"
     ]
   },
-  "compiler_widen_fields": [],
+  "compiler_widen_fields": [
+    "WorthQueryAcceptedOutputCheckpointIdentity::idempotency_key",
+    "WorthQueryApplicationCommitReceipt::authority_binding",
+    "WorthQueryApplicationCommitReceipt::exact_output_settlement",
+    "WorthQueryApplicationCommitReceipt::provider_runtime_instance_id",
+    "WorthQueryExecutionBoundOperationAuthority::application_product_observation",
+    "WorthQueryExecutionBoundOperationAuthority::direct_resource_topology",
+    "WorthQueryExecutionBoundOperationAuthority::installation_runtime_ordinal",
+    "WorthQueryExecutionBoundOperationAuthority::provider_plan_declarations",
+    "WorthQueryExecutionBoundOperationAuthority::workflow_stage_resources",
+    "WorthQueryOutputDemandInterest::key",
+    "WorthQueryOutputDemandInterest::owner",
+    "WorthQueryOutputDemandSettlement::observation",
+    "WorthQueryOutputDemandSettlement::output_correspondence",
+    "WorthQueryOutputDemandSettlement::output_family_identity",
+    "WorthQueryOutputDemandSettlement::posture",
+    "WorthQueryOutputDemandSettlement::producer_contacts_in_this_demand",
+    "WorthQueryOutputDemandSettlement::producer_identity",
+    "WorthQueryOutputDemandSettlement::readiness_delivery",
+    "WorthQueryOutputDemandSettlement::restored_source",
+    "WorthQueryOutputDemandSettlement::runtime_authority",
+    "WorthQueryOutputDemandSettlement::schema_binding",
+    "WorthQueryOutputDemandSettlement::stable",
+    "WorthQueryPrimaryGraphProvider::graph",
+    "WorthQueryPrimaryGraphProvider::receipt_basis_retention"
+  ],
   "compiler_widen_items": [
     "domain_computation::primary_graph::application_checkpoint::facts::payload::iteration::FactIter",
     "domain_computation::primary_graph::application_output_demand::registry::record_map::MutRows",
@@ -25,7 +50,28 @@
     "domain_computation::primary_graph::application_output_demand::settlement::observation::provenance::require_disclosure_owner",
     "domain_computation::primary_graph::workflow::schema::layout::WorkflowLayoutFields"
   ],
-  "compiler_widen_methods": [],
+  "compiler_widen_methods": [
+    "basis::product_branch::observation::observation",
+    "domain_computation::application_aftermath::external_effect::outbox::from_installed_contract",
+    "domain_computation::artifact_owner::installed_binding::empty",
+    "domain_computation::artifact_owner::installed_binding::with_output",
+    "domain_computation::artifact_owner::production_authority::mint",
+    "domain_computation::artifact_owner::production_generation::initial",
+    "domain_computation::artifact_owner::registry::new",
+    "domain_computation::execution_runtime::runtime_root::retain_current_generation",
+    "domain_computation::managed_run::relational_observation::retain",
+    "domain_computation::managed_run::truth_read_request::from_relational_basis",
+    "domain_computation::operation_binding::installed_domain_authority::mint",
+    "domain_computation::primary_graph::application_attempt::compare_and_commit::commit_receipt::exact_output_settlement",
+    "domain_computation::primary_graph::application_output_demand::registry::required_context::required_context",
+    "domain_computation::primary_graph::output_lineage::invalidation::owner::new",
+    "domain_computation::primary_graph::provider::session_commit::outbox_commit::fixture_from_commit",
+    "domain_computation::provider_session::protocol::declared_closure::test_direct",
+    "domain_computation::provider_session::protocol::declared_closure::test_direct_with_decision_facts",
+    "domain_computation::provider_session::protocol::declared_closure::test_effect_with_decision_facts",
+    "domain_computation::provider_session::protocol::declared_closure::test_effect_with_decision_facts_and_invariants",
+    "domain_computation::provider_session::protocol::declared_closure::test_workflow_stage"
+  ],
   "renames": {
     "domain_computation::primary_graph::tests::inbound_admission::fixture::cost": "scoped_dispatch"
   }
