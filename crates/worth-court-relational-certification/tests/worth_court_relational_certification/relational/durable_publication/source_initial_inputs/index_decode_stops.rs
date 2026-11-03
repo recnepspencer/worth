@@ -38,14 +38,7 @@ fn original_index_decode_refuses_cancelled_and_exhausted_invoking_requests_witho
     let budget = SerialMemoryBudget::new(Some(limit));
     let host = SerialRequest::from_memory(budget.clone(), CancellationSource::new().token(), None);
     let held = Arc::new(Mutex::new(None));
-    source.arm(
-        member,
-        MemberStop::Exhaust {
-            budget: budget.clone(),
-            limit,
-            held: held.clone(),
-        },
-    );
+    source.arm(member, MemberStop::Exhaust { held: held.clone() });
     assert!(matches!(
         runtime.complete_checkpoint_service().prepare(
             &ExecutionRequest::serial(&host),

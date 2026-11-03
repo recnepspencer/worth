@@ -4,7 +4,7 @@ use std::sync::{
     atomic::{AtomicBool, Ordering},
     Mutex, Weak,
 };
-use worth_execution::{CancellationSource, ExecutionMemoryReservation, SerialMemoryBudget};
+use worth_execution::{CancellationSource, ExecutionMemoryReservation};
 use worth_relational::facade::{
     durability::*, publication::PatchStreamPosition, storage::RelationalStorageUnavailableCause,
 };
@@ -13,8 +13,6 @@ use worth_relational::facade::{
 pub(super) enum MemberStop {
     Cancel(CancellationSource),
     Exhaust {
-        budget: SerialMemoryBudget,
-        limit: u64,
         held: Arc<Mutex<Option<ExecutionMemoryReservation>>>,
     },
 }
@@ -56,18 +54,15 @@ impl SelectedSource {
         self.fired.store(true, Ordering::Relaxed);
         match stop {
             MemberStop::Cancel(cancellation) => cancellation.cancel(),
-            MemberStop::Exhaust {
-                budget,
-                limit,
-                held,
-            } => {
-                let remaining = limit.checked_sub(budget.charged_memory_bytes()).unwrap();
-                let reservation = request.reserve_retained_memory(remaining).unwrap();
-                assert!(held
-                    .lock()
-                    .unwrap()
-                    .replace(reservation.expect("serial request charges memory"))
-                    .is_none());
+            MemberStop::Exhaust { held } => {
+                let (reservation, _) = request
+                    .run_native_with_checkpoint(|_| {
+                        let remaining = ExecutionMemoryReservation::available_in_scope(None)
+                            .expect("the invoking serial scope has its original ceiling");
+                        ExecutionMemoryReservation::reserve_in_scope(None, remaining).unwrap()
+                    })
+                    .unwrap();
+                assert!(held.lock().unwrap().replace(reservation).is_none());
             }
         }
     }
