@@ -3050,3 +3050,38 @@ The inline-frame refusal cost court derives its late staging allowance from the
 root requirement observed in its earlier original-request refusal plus one real
 page. This admits the first frame and preserves the exact DirtyFrames refusal on
 the second, the zero-effects assertion and the strict later-versus-earlier peak.
+
+
+### Historical World occurrence recipe custody
+
+The normalized World image retains each occurrence edge after ordinary history
+retirement. Its checkpoint-origin owner must therefore retain that edge's actual
+Native basis and shared exact two-component history obligation. Before Native
+effects, WorldOccurrenceCustody prepares one original-request-funded linked slot.
+Finalization fills it from the actual successor commit and Bound publication pins;
+there is no new external lease or product-head authority. The attempt resource
+lease retains this same slot through submission, pending, refusal and unwinding.
+On the medium's actual Committed branch it moves infallibly to the origin holder.
+A capture racing after ACK still sees the exact basis pinned by the attempt while
+that transfer completes. Reopen prepares and fills equivalent slots from each
+installed occurrence's existing observation claims. Consuming origin retirement
+releases every held basis and pair and returns all exact reclamation keys; list
+retirement and destruction are iterative. Native's missing-image guard and the
+bounded-tail filesystem court remain unchanged. No historical headers are unioned.
+
+
+### Selected-custody rebind preparation returns before owned observation
+
+The next measured overflow entered selected-custody rebinding from a terminal
+receiver that retained a full-state Result. Split that flow at the actual media
+ownership boundary: borrow the real namespace fields through validation, claim
+rebinding and pending-effective-head admission, then return only the existing
+optional roster. A narrow method owns that mutation; no mutable payload escapes.
+Separate non-inlined terminal receivers consume the namespace once on failure or
+owned completion. Owned completion legally moves media through the existing
+bounded discovery, restores it, rebinds the tier's observed free header, converts
+custody and seals the already-funded reopened payload. The generation-zero fast
+path, predicate/read order and claim/topology mutations on denial are preserved.
+No full namespace-state Result or media placeholder exists. Original construction
+admission and independent quota assertions include two optional-roster movement
+temporaries in addition to namespace plus two reopened payloads.

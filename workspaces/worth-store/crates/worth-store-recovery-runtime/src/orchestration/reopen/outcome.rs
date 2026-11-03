@@ -1,48 +1,35 @@
 //! Terminal fresh-reopen receivers extract the actual namespace payload once.
-use super::{
-    completed_counters, custody_indeterminate, custody_rebind, denial_counters, indeterminate,
-};
+use super::{custody_indeterminate, custody_rebind, denial_counters, indeterminate};
 use crate::entry::{PhysicalRecoveryOutcome, PhysicalRecoveryReopenFailure};
-use crate::progression::{NamespaceDurablePayload, ReopenedPayload};
+use crate::progression::NamespaceDurablePayload;
 use crate::progression::{NamespaceDurablePhysicalRecovery, ReopenedPhysicalRecovery};
 
 #[inline(never)]
 pub(super) fn completed(
-    durable: NamespaceDurablePhysicalRecovery,
+    mut durable: NamespaceDurablePhysicalRecovery,
     completed: worth_store::physical_runtime::CompletedPhysicalRecoveryFreshReopen,
+) -> Result<ReopenedPhysicalRecovery, PhysicalRecoveryOutcome> {
+    match durable.prepare_selected_custody_rebind(&completed) {
+        Ok(pending_effective) => custody_rebind::complete(durable, completed, pending_effective),
+        Err(()) => custody_denied(durable),
+    }
+}
+
+#[inline(never)]
+fn custody_denied(
+    durable: NamespaceDurablePhysicalRecovery,
 ) -> Result<ReopenedPhysicalRecovery, PhysicalRecoveryOutcome> {
     let NamespaceDurablePayload {
         state,
-        mut expectation,
         publication_counters,
         publication_settlement,
-        reopened_backing,
+        ..
     } = durable.into_payload();
-    let counters = completed_counters(&completed);
-    let state = match custody_rebind::rebind_selected_custody(
+    Err(custody_indeterminate(
         state,
-        &mut expectation,
-        &publication_settlement,
-        &publication_counters,
-        &completed,
-    ) {
-        Ok(state) => state,
-        Err(state) => {
-            return Err(custody_indeterminate(
-                state,
-                publication_counters,
-                publication_settlement,
-            ))
-        }
-    };
-    Ok(reopened_backing.finish(ReopenedPayload {
-        state,
-        expectation,
         publication_counters,
         publication_settlement,
-        reopened: Some(completed),
-        reopen_counters: counters,
-    }))
+    ))
 }
 
 #[inline(never)]

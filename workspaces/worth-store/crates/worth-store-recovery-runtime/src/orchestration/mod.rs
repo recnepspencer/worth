@@ -28,7 +28,7 @@ pub(crate) use planning::{
 };
 pub(crate) use publication::{publish_recovery, PublicationPayload, PublicationStateBacking};
 pub(crate) use recovery::recover;
-pub(crate) use reopen::reopen_recovery;
+pub(crate) use reopen::{prepare_selected_custody_rebind, reopen_recovery};
 pub(crate) use staging::{
     stage_recovery, RecoveryStagingCancellation, RecoveryStagingInput, RecoveryStagingInputBacking,
     RecoveryStagingInputState,

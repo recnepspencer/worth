@@ -51,13 +51,16 @@ mod tests {
             let publication =
                 std::mem::size_of::<crate::orchestration::PublicationPayload>() as u64;
             let reopened = std::mem::size_of::<crate::progression::ReopenedPayload>() as u64;
+            let roster = std::mem::size_of::<
+                Option<worth_store_recovery_physics::VerifiedEffectiveReleaseHeadRosterV14>,
+            >() as u64;
             let movement = (payload + extraction)
                 .max(payload + 2 * input)
                 .max(input + 2 * staged)
                 .max(staged + 2 * namespace)
                 .max(staged + 2 * publication)
                 .max(publication + 2 * namespace)
-                .max(namespace + 2 * reopened);
+                .max(namespace + 2 * reopened + 2 * roster);
             let required =
                 17 + payload + staged + input + namespace + publication + reopened + movement;
             let mut allowance = PlanningResidentAllowance::new(17, required - 1).unwrap();
@@ -86,13 +89,16 @@ mod tests {
             let publication =
                 std::mem::size_of::<crate::orchestration::PublicationPayload>() as u64;
             let reopened = std::mem::size_of::<crate::progression::ReopenedPayload>() as u64;
+            let roster = std::mem::size_of::<
+                Option<worth_store_recovery_physics::VerifiedEffectiveReleaseHeadRosterV14>,
+            >() as u64;
             let movement = (payload + extraction)
                 .max(payload + 2 * input)
                 .max(input + 2 * staged)
                 .max(staged + 2 * namespace)
                 .max(staged + 2 * publication)
                 .max(publication + 2 * namespace)
-                .max(namespace + 2 * reopened);
+                .max(namespace + 2 * reopened + 2 * roster);
             let input_backing = backing.input.backing_bytes().unwrap();
             let namespace_backing = backing.namespace.backing_bytes().unwrap();
             let publication_backing = backing.publication.backing_bytes().unwrap();
@@ -224,6 +230,9 @@ fn construction_scratch(extraction_bytes: u64) -> Option<u64> {
     let namespace = std::mem::size_of::<crate::progression::NamespaceDurablePayload>() as u64;
     let publication = std::mem::size_of::<crate::orchestration::PublicationPayload>() as u64;
     let reopened = std::mem::size_of::<crate::progression::ReopenedPayload>() as u64;
+    let roster = std::mem::size_of::<
+        Option<worth_store_recovery_physics::VerifiedEffectiveReleaseHeadRosterV14>,
+    >() as u64;
     Some(
         planned
             .checked_add(extraction_bytes)?
@@ -232,6 +241,10 @@ fn construction_scratch(extraction_bytes: u64) -> Option<u64> {
             .max(staged.checked_add(namespace.checked_mul(2)?)?)
             .max(staged.checked_add(publication.checked_mul(2)?)?)
             .max(publication.checked_add(namespace.checked_mul(2)?)?)
-            .max(namespace.checked_add(reopened.checked_mul(2)?)?),
+            .max(
+                namespace
+                    .checked_add(reopened.checked_mul(2)?)?
+                    .checked_add(roster.checked_mul(2)?)?,
+            ),
     )
 }

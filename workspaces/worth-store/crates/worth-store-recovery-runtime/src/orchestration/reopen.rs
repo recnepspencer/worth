@@ -10,6 +10,7 @@ use crate::progression::{NamespaceDurablePhysicalRecovery, ReopenedPhysicalRecov
 
 #[path = "reopen/custody_rebind.rs"]
 mod custody_rebind;
+pub(crate) use custody_rebind::prepare_selected_custody_rebind;
 
 pub(crate) fn reopen_recovery(
     durable: NamespaceDurablePhysicalRecovery,

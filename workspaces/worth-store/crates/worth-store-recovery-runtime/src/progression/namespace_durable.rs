@@ -47,6 +47,13 @@ impl NamespaceDurablePhysicalRecovery {
     pub(crate) const fn payload(&self) -> &NamespaceDurablePayload {
         self.backing.payload()
     }
+    pub(crate) fn prepare_selected_custody_rebind(
+        &mut self,
+        completed: &worth_store::physical_runtime::CompletedPhysicalRecoveryFreshReopen,
+    ) -> Result<Option<worth_store_recovery_physics::VerifiedEffectiveReleaseHeadRosterV14>, ()>
+    {
+        self.backing.prepare_selected_custody_rebind(completed)
+    }
     pub(crate) fn into_payload(self) -> NamespaceDurablePayload {
         self.backing.into_payload()
     }

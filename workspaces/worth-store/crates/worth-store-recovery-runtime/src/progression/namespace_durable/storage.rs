@@ -32,6 +32,20 @@ impl NamespaceDurableBacking {
         self.0.push(payload);
         super::NamespaceDurablePhysicalRecovery { backing: self }
     }
+    pub(super) fn prepare_selected_custody_rebind(
+        &mut self,
+        completed: &worth_store::physical_runtime::CompletedPhysicalRecoveryFreshReopen,
+    ) -> Result<Option<worth_store_recovery_physics::VerifiedEffectiveReleaseHeadRosterV14>, ()>
+    {
+        let data = &mut self.0[0];
+        crate::orchestration::prepare_selected_custody_rebind(
+            &mut data.state,
+            &mut data.expectation,
+            &data.publication_settlement,
+            &data.publication_counters,
+            completed,
+        )
+    }
     pub(super) const fn payload(&self) -> &NamespaceDurablePayload {
         &self.0.as_slice()[0]
     }
