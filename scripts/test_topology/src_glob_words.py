@@ -6,6 +6,7 @@ be among them, or the children lose them.
 """
 from rust_source import tokens
 from src_paths import resolve, use_trees
+from src_scope import scope_items
 
 
 def inherited_words(model, names, cache):
@@ -19,8 +20,10 @@ def inherited_words(model, names, cache):
                 resolved = resolve(segments, child.names, model.index) if glob else None
                 if resolved is not None and resolved[0] == names and not resolved[1]:
                     stream = tokens(text)
+                    # A name the child declares is its own, not one it reads through the glob.
+                    declared = {item for _a, _v, _k, item, _s, _e in scope_items(text)}
                     cache[names] |= {t.value for k, t in enumerate(stream)
-                                     if t.kind == 'ident' and not path_tail(stream, k)}
+                                     if t.kind == 'ident' and not path_tail(stream, k)} - declared
                     cache[names] |= inherited_words(model, child.names, cache)
                     break
     return cache[names]
