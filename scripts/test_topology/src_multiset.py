@@ -10,13 +10,23 @@ import hashlib
 from filesystem_path import filesystem_path
 from module_tree import test_names
 import posixpath
+import re
 
 from rust_source import pairs, string_value, tokens
 from src_paths import flatten
 
 
+TEST_FN = re.compile(r'#\s*\[\s*(?:\w+\s*::\s*)*(?:test|rstest)\s*(?:\]|\()(?:[^\[\]]|\[[^\]]*\])*?'
+                     r'(?:#\s*\[[^\]]*\]\s*)*\s*(?:pub(?:\s*\([^)]*\))?\s+)?(?:async\s+)?fn\s+(\w+)')
+
+
+def test_function_names(text):
+    """Functions under a real test attribute; `cfg(test)` is a gate, not a test."""
+    return set(TEST_FN.findall(text))
+
+
 def normalized_bodies(text, source=None):
-    names = set(test_names(text))
+    names = test_function_names(text)
     stream = tokens(text)
     matching = pairs(stream)
     result = []
