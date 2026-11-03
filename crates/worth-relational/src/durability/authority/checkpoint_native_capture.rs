@@ -119,17 +119,7 @@ impl CapturedCheckpointBasis {
                     &symbols,
                     current_members.as_ref(),
                 )?;
-                if capture.leaf.partition_id != region.partition_id
-                    || capture.leaf.content_digest != region.content_digest
-                    || capture.leaf.entity_slots != region.entity_slots
-                    || capture.leaf.relation_slots != region.relation_slots
-                    || capture.leaf.unavailable_records != region.unavailable_records
-                    || capture.leaf.kind_authority != region.kind_commitment
-                {
-                    return Err(
-                        corrupt("captured region differs from its selected root leaf").into(),
-                    );
-                }
+                super::checkpoint_region_consistency::validate(&region, &capture.leaf)?;
                 merge_history_dependencies(
                     &mut history_dependencies,
                     capture.history_dependencies,

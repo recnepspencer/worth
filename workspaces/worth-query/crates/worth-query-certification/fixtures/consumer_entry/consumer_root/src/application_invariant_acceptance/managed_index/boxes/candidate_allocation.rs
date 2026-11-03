@@ -43,11 +43,15 @@ fn journey() {
     let samples = Arc::new(Mutex::new([None; 2]));
     let observed = samples.clone();
     *calls.before_candidates.lock().unwrap() = Some(Box::new(move || {
-        observed.lock().unwrap()[0] = Some(lifecycle::ALLOCATOR.stats());
+        // Acquire observer backing before measuring: pthread Mutex initializes
+        // its heap allocation on the first lock on macOS.
+        let mut samples = observed.lock().unwrap();
+        samples[0] = Some(lifecycle::ALLOCATOR.stats());
     }));
     let observed = samples.clone();
     *calls.first_summary.lock().unwrap() = Some(Box::new(move || {
-        observed.lock().unwrap()[1] = Some(lifecycle::ALLOCATOR.stats());
+        let mut samples = observed.lock().unwrap();
+        samples[1] = Some(lifecycle::ALLOCATOR.stats());
     }));
     let comparisons = calls.summary_comparisons.load(Ordering::SeqCst);
     let matches = calls.matched_sources.load(Ordering::SeqCst);

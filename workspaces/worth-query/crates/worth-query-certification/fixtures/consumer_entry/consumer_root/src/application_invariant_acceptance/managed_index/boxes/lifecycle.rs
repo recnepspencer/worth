@@ -50,6 +50,15 @@ fn cancelled_build() {
     assert_eq!(source.rows().len(), 6);
     let reached = Arc::new(Mutex::new(None));
     let observation = Arc::clone(&reached);
+    // The retained handle, cancellation wait list and fixture observers outlive
+    // this build. Initialize their lazy pthread Mutex backing before measuring
+    // only the build's Source/node/scratch ownership; the index is still cold.
+    assert_eq!(index.lifecycle(), WorthQueryManagedIndexLifecycle::Created);
+    drop(scope.cancellation().cancelled());
+    assert!(!scope.cancellation().is_cancelled());
+    drop(reached.lock().unwrap());
+    drop(calls.after_first_node.lock().unwrap());
+    drop(calls.coordinates.lock().unwrap());
     let region = Region::new(ALLOCATOR);
     *calls.after_first_node.lock().unwrap() = Some(Box::new(move || {
         // A leaf was actually pushed. The remaining recursive BVH spans must stop.
