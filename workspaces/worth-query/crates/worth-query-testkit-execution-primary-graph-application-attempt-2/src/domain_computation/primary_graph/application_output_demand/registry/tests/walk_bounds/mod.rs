@@ -110,24 +110,12 @@ pub fn add_custody_with_completion(
         }
         state.source_custody.insert(
             commit.clone(),
-            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::SourceCustody {
-                occurrence: receipt.product_branch().occurrence_for_test(),
-                root_kind: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::source_custody::PreparedOutputRootKind::Discovered(
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::SourceCustody::new_for_test(receipt.product_branch().occurrence_for_test(), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::source_custody::PreparedOutputRootKind::Discovered(
                     worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId::of_for_test::<()>(),
-                ),
-                source: None,
-                discovery: None,
-                bound_sources: Some(vec![worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::BoundOutputSource {
+                ), None, None, Some(vec![worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::BoundOutputSource {
                     scope,
                     identity: (*selected.source_for_test()).clone(),
-                }]),
-                consumed_sources: vec![selected.source_into_for_test()],
-                retired_sources: Vec::new(),
-                retired: None,
-                token_count: 0,
-                cleanup: Default::default(),
-                completed,
-            },
+                }]), vec![selected.source_into_for_test()], Vec::new(), None, 0, Default::default(), completed),
         );
         if completed {
             state.note_custody_for_test(&commit);

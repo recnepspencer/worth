@@ -162,3 +162,5 @@ fn source_denial() -> WorthQueryOutputDemandDenial {
         "required output readmission source does not match its admitted record",
     )
 }
+
+mod court_doors_for_test;

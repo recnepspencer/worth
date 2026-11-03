@@ -64,10 +64,7 @@ impl Fixture {
             } else {
                 vec![&upstream]
             } {
-                let ready = PreparedReadyBacking::new_for_test().complete(WorthQueryCompletedOutputDemand {
-                    authority: WorthQueryAcceptedOutputAuthority::Committed(receipt.clone()),
-                    readiness: WorthQueryOutputReadinessDeliveryEvidence::for_test_for_test(),
-                });
+                let ready = PreparedReadyBacking::new_for_test().complete(WorthQueryCompletedOutputDemand::new_for_test(WorthQueryAcceptedOutputAuthority::Committed(receipt.clone()), WorthQueryOutputReadinessDeliveryEvidence::for_test_for_test()));
                 if (*input.key_for_test()) == (*interest.key_for_test()) {
                     ready_identity = std::ptr::from_ref(&*ready).cast::<()>();
                 }(*
@@ -97,16 +94,8 @@ impl Fixture {
         {
             let mut state = (*registry.state_for_test()).lock().unwrap();
             let mut row = (*state.records_mut_for_test()).get_mut(&(*interest.key_for_test())).unwrap();
-            (*row.performed_source_mut_for_test()) = Some(WorthQueryPerformedOutputDemandSource {
-                receipt: receipt.clone(),
-                change,
-                observation,
-                output_source_identity: None,
-            });
-            (*row.performed_obligations_mut_for_test()) = vec![worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::PerformedOutputObligation {
-                source_commit: commit.clone(),
-                source:(* (*interest.key_for_test()).source_for_test()).clone(),
-            }];
+            (*row.performed_source_mut_for_test()) = Some(WorthQueryPerformedOutputDemandSource::new_for_test(receipt.clone(), change, observation, None));
+            (*row.performed_obligations_mut_for_test()) = vec![worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::PerformedOutputObligation::new_for_test(commit.clone(), (* (*interest.key_for_test()).source_for_test()).clone())];
 
             row.finish_for_test();
         }

@@ -24,10 +24,7 @@ impl RefusalRowWorthQueryOutputDemandRegistryForTest for WorthQueryOutputDemandR
     ){
         let (interest, _) = self.fixture_admitted_work_membership(occurrence());
         let key = (*interest.key_for_test()).clone();(*(*
-        (*self.state_for_test()).lock().unwrap().records_mut_for_test()).get_mut(&key).unwrap().readmission_source_mut_for_test()) = Some(Arc::new(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::source_readmission::RequiredOutputReadmission {
-            source: Arc::new(()), producer: std::sync::OnceLock::new(),
-            limits: worth_query_execution::facade::domain_computation::WorthQueryOutputDemandResourceProfile::standard().limits(), retained_program_basis: None,
-        }));(*(*
+        (*self.state_for_test()).lock().unwrap().records_mut_for_test()).get_mut(&key).unwrap().readmission_source_mut_for_test()) = Some(Arc::new(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::source_readmission::RequiredOutputReadmission::new_for_test(Arc::new(()), std::sync::OnceLock::new(), worth_query_execution::facade::domain_computation::WorthQueryOutputDemandResourceProfile::standard().limits(), None)));(*(*
         // This local lifetime fixture declares an already delivered answer;
         // only the ending's custody and row attribution are under test.
         (*self.state_for_test())

@@ -75,36 +75,10 @@ pub fn record(
     state: DemandState,
     interests: usize,
 ) -> DemandRecord {
-    DemandRecord {
-        work_membership: None,
-
-        interests,
-        required_interests: 0,
-        performed_obligations: Vec::new(),
-        framework_required_count: 0,
-        prerequisites: Vec::new(),
-        claim_batch: None,
-        checkpoint_prerequisites: None,
-        prepared_prerequisite_claims: 0,
-        pending_cleanup_next: None,
-        pending_cleanup_queued: false,
-        closed_cleanup: Default::default(),
-
-        settlements: Vec::new(),
-        product_occurrence: occurrence,
-        source_scope: None,
-        source_commits: Vec::new(),
-        state,
-        performed_source: None,
-        readmission_source: None,
-        successor_of: None,
-        required_stop: None,
-        held_successor: None,
-        wake: Arc::new(DemandWake {
+    DemandRecord::new_for_test(None, interests, 0, Vec::new(), 0, Vec::new(), None, None, 0, None, false, Default::default(), Vec::new(), occurrence, None, Vec::new(), state, None, None, None, None, None, Arc::new(DemandWake {
             generation: Mutex::new(0),
             changed: Condvar::new(),
-        }),
-    }
+        }))
 }
 
 pub fn interest(
@@ -129,14 +103,9 @@ pub fn interest_with_requirement(
     wake: Arc<DemandWake>,
     requires_output: bool,
 ) -> WorthQueryOutputDemandInterest {
-    WorthQueryOutputDemandInterest {
-        key,
-        requires_output,
-        notifications: WorthQueryOutputDemandNotifications {
+    WorthQueryOutputDemandInterest::new_for_test(key, requires_output, WorthQueryOutputDemandNotifications {
             wake: Arc::clone(&wake),
-        },
-        owner: registry.clone(),
-    }
+        }, registry.clone())
 }
 
 /// Retain the owned key exactly as prepare_new_record does, without activating work.

@@ -53,29 +53,17 @@ pub fn custody_wait(superseded: bool, token: bool) {
     let registry = WorthQueryOutputDemandRegistry::default();
     let selected = key("producer", 5, 1);
     let sources = vec![
-        BoundOutputSource {
-            scope,
-            identity: (*selected.source_for_test()).clone(),
-        },
-        BoundOutputSource {
-            scope,
-            identity: key("producer", 5, 2).source_into_for_test(),
-        },
+        BoundOutputSource::new_for_test(scope, (*selected.source_for_test()).clone()),
+        BoundOutputSource::new_for_test(scope, key("producer", 5, 2).source_into_for_test()),
     ];
     {
         let mut state = (*registry.state_for_test()).lock().unwrap();
         state.source_custody.insert(
             commit.clone(),
-            SourceCustody {
-                occurrence: receipt.product_branch().occurrence_for_test(),
-                root_kind: PreparedOutputRootKind::Discovered(TypeId::of_for_test::<()>()),
-                source: None,
-                discovery: None,
-                consumed_sources: sources
+            SourceCustody::new_for_test(receipt.product_branch().occurrence_for_test(), PreparedOutputRootKind::Discovered(TypeId::of_for_test::<()>()), None, None, sources
                     .iter()
                     .map(|source| (*source.identity_for_test()).clone())
-                    .collect(),
-                retired_sources: if superseded {
+                    .collect(), if superseded {
                     sources
                         .iter()
                         .map(|source| {
@@ -90,13 +78,7 @@ pub fn custody_wait(superseded: bool, token: bool) {
                         .collect()
                 } else {
                     Vec::new()
-                },
-                bound_sources: Some(sources),
-                retired: None,
-                token_count: usize::from(token),
-                cleanup: Default::default(),
-                completed: !superseded,
-            },
+                }, Some(sources), None, usize::from(token), Default::default(), !superseded),
         );
         let mut active = record(
             receipt.product_branch().occurrence_for_test(),
