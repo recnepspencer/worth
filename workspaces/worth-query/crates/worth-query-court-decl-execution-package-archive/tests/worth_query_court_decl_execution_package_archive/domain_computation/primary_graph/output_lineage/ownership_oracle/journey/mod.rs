@@ -94,7 +94,7 @@ pub fn complete_with_contacts(
                 read.into_admitted_disclosed().into_output_demand_source()
             };
             let mut demand = runtime
-                .admit_required_output_demand::<RegionOutputFamily>(
+                .admit_required_output_demand_for_test::<RegionOutputFamily>(
                     &execution,
                     read_source(),
                     runtime.output_demand_resource_profile().limits(),

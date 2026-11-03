@@ -123,7 +123,7 @@ pub fn demand_expected<Schema: BirthSchema>(
                     .into_output_demand_source()
             };
             let mut demand = if required {
-                runtime.admit_required_output_demand::<Family>(
+                runtime.admit_required_output_demand_for_test::<Family>(
                     &execution,
                     read_source(),
                     runtime.output_demand_resource_profile().limits(),

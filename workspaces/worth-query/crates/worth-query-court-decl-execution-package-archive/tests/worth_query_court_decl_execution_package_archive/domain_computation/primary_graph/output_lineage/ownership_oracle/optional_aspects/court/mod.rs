@@ -79,7 +79,7 @@ pub fn readmit_with_ordinary<Schema: BirthSchema>(
                 runtime.select_output_demand_settlement(&execution, settled).unwrap());
             let lineage = graph.output_lineage.lock().unwrap();
             let keeping = roles.iter().all(|role| role.posture == RequiredOutputRolePosture::Preserve);
-            let binding = if keeping { worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId::of::<Binding<Schema, true>>() } else { worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId::of::<Binding<Schema, false>>() };
+            let binding = if keeping { worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId::of_for_test::<Binding<Schema, true>>() } else { worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId::of_for_test::<Binding<Schema, false>>() };
             let source = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::semantic_source::SemanticSource {
                 runtime_authority: (*runtime.runtime_for_test()).authority_identity().as_u64(),
                 schema: runtime.installed_schema().binding_identity(),

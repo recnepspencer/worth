@@ -69,7 +69,7 @@ fn absent_aspect_read_stales_when_other_field_materializes_before_commit() {
                         let called = std::cell::Cell::new(false);
                         assert_eq!(
                             reader
-                                .decision_field_with_predecode_admission(
+                                .decision_field_with_predecode_admission_for_test(
                                     root,
                                     SourceSelection::reference(),
                                     |_, _| {

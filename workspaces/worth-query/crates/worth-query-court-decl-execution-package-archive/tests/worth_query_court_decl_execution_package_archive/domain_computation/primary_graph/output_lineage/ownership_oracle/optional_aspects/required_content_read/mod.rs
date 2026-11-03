@@ -25,7 +25,7 @@ pub fn assert_absent_required_content_is_readable(
         let (_, snapshot, _) = (*runtime.mutation_projection_for_test()).project_admitted_operation(&phase, &admitted, |reader, root| {
             assert_eq!(reader.decision_field(root, SourceContent::reference()).unwrap(), None);
             let called = std::cell::Cell::new(false);
-            assert_eq!(reader.decision_field_with_predecode_admission(root, SourceContent::reference(), |_, _| {
+            assert_eq!(reader.decision_field_with_predecode_admission_for_test(root, SourceContent::reference(), |_, _| {
                 called.set(true); Ok::<_, ()>(())
             }, &|| Ok(())).unwrap().unwrap(), None);
             assert!(!called.get());

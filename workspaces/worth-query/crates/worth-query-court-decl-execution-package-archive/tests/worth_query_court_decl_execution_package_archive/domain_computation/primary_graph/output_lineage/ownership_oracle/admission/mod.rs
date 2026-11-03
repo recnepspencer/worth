@@ -34,13 +34,13 @@ pub fn refuse_mixed_and_created_subset(
             runtime_authority: (*runtime.runtime_for_test()).authority_identity().as_u64(),
             schema: runtime.installed_schema().binding_identity(),
             scope: WorthQueryOperationScopeEntityBinding::from_entity_for_test(anchor),
-            output_binding: lineage.binding_identity_for_test(worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId::of::<RegionOutputBinding<OwnerSchema>>()).unwrap(),
+            output_binding: lineage.binding_identity_for_test(worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId::of_for_test::<RegionOutputBinding<OwnerSchema>>()).unwrap(),
         };
         let coordinate = product.observation_for_test();
         let cells = &(*lineage.by_source_for_test())[&source][&coordinate.lifecycle_incarnation()][&coordinate.reference_generation().get()];
         assert_eq!(cells.len(), 1, "exact initial performed generation has one publication");
         let row = cells[0].get().unwrap();
-        assert!(row.performed_origin.is_none());
+        assert!((*row.performed_origin_for_test()).is_none());
         // This locator is installed only by the required-claims commit handoff.
         // It proves that the Query completion reached required_origin::bind;
         // merely lacking native custody would be a wrong-reason negative.

@@ -172,7 +172,7 @@ fn cancelling_one_caller_during_producer_commit_keeps_the_other_callers_row_live
                 .unwrap();
             let admit = || {
                 runtime
-                    .admit_required_output_demand::<RegionOutputFamily>(
+                    .admit_required_output_demand_for_test::<RegionOutputFamily>(
                         &execution,
                         source(runtime, &phase, &external, &scope),
                         runtime.output_demand_resource_profile().limits(),

@@ -105,3 +105,10 @@ impl RecordedOutput {
         &self.required_publication
     }
 }
+
+impl RecordedOutput {
+    #[doc(hidden)]
+    pub fn performed_origin_for_test(&self) -> &Option<Arc<OnceLock<RecordedOutput>>> {
+        &self.performed_origin
+    }
+}
