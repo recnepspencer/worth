@@ -25,7 +25,7 @@ impl PostingRebaseBasis {
             selected,
         }
     }
-    pub(in crate::domain_computation::primary_graph) fn seal(
+    pub fn seal(
         self,
         body: FactPayload,
         after: PositionedRelationalSnapshot,

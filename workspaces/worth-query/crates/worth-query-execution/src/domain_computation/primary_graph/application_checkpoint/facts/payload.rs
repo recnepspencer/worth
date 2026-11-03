@@ -128,7 +128,7 @@ impl FactPayload {
     ) -> Option<u64> {
         self.resident_bytes
     }
-    pub(in crate::domain_computation::primary_graph) fn len(&self) -> usize {
+    pub fn len(&self) -> usize {
         self.length
     }
     pub fn is_empty(&self) -> bool {
