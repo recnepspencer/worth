@@ -233,6 +233,10 @@ The accounting and required-minus-one refusal proofs in
 continue to require actual capacity plus conversion overlap before allocation.
 The production-entry process courts prove the larger ordinary envelope, while
 the distinct 4 MiB campaigns retain their existing contracts.
+The submitted ordinary history now derives its operation count as
+`ordinary_memory / payload_bytes + 1` (129 records of 8 KiB). Its existing
+strict assertion that semantic payload exceeds the recovery allowance remains
+unchanged; the former 96-record setup no longer proved that contract.
 
 ### Hostile sequence
 

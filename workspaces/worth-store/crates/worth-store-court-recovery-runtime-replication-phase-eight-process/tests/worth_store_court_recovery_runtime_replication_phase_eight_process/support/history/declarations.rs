@@ -1,7 +1,8 @@
 pub(crate) const ARTIFACT_SET_DOMAIN: &[u8] = b"worth.store.recovery-observer.artifact-set.v1";
 pub(crate) const ARTIFACT_IDENTITY_DOMAIN: &[u8] =
     b"worth.store.recovery-observer.artifact-identity.v1";
-pub(crate) const DEFAULT_OPERATION_COUNT: usize = 96;
+pub(crate) const DEFAULT_OPERATION_COUNT: usize =
+    crate::phase_eight_process::history::schedule::OPERATION_COUNT;
 
 pub(crate) use crate::phase_eight_process::history::persisted_fates::classify_persisted_fates;
 pub(crate) use crate::phase_eight_process::history::raw_in_flight::InFlightMutationFate;
