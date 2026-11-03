@@ -60,8 +60,8 @@ fn p2_retirement_waits_for_the_exact_workflow_instance_to_finish() {
         approver: principal_id(APPROVER),
     };
     let workflow = runtime.approved_business_payment(&approver, &scope);
-    let (_definition, instance) = start_approved_payment_instance(&workflow, &authority);
-    let definition = match workflow
+    let (original_definition, instance) = start_approved_payment_instance(&workflow, &authority);
+    match workflow
         .publish_definition(
             authority,
             WorkflowDefinitionExpectedPredecessor::Absent,
@@ -69,19 +69,16 @@ fn p2_retirement_waits_for_the_exact_workflow_instance_to_finish() {
         )
         .expect("the original definition publication replays")
     {
-        WorkflowDefinitionPublicationOutcome::Published(published) => {
-            published.definition().clone()
+        WorkflowDefinitionPublicationOutcome::RecoveredCommitted(data) => {
+            worth_query_bank_testkit_server::facade::approved_payment_workflow::recorded_commit_axes::assert_agrees(&data, original_definition.receipt());
         }
         other => panic!("expected the retained definition, got {other:?}"),
     };
+    let definition = original_definition.definition();
     assert_eq!(definition.branch(), instance.branch());
 
     let denied = runtime.prepare_branch_program_adoption_retiring_definition::<BankApplicationP2>(
-        &approver,
-        &scope,
-        branch,
-        &definition,
-        4_096,
+        &approver, &scope, branch, definition, 4_096,
     );
     assert!(matches!(
         denied,

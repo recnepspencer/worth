@@ -8,7 +8,7 @@ pub use bank_external_rail::{test_control::FaultScript, RailProcessHandle};
 pub use bank_server::{BankApprovedPaymentApplyOutcome, BankAuthenticatedPrincipal};
 pub use worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope;
 pub use worth_query_host::facade::application_entry::{
-    PublishedWorkflowInstanceRef, RequiredWorkflowOperation,
+    PerformedWorkflowDefinitionPublication, PublishedWorkflowInstanceRef, RequiredWorkflowOperation,
 };
 
 pub use super::assertions::key;
@@ -21,6 +21,7 @@ pub use super::rail_transport::{spawn_rail, BankEstateRailTransport};
 pub use super::support::request_scope;
 
 pub struct ReadyPaymentWorld {
+    pub definition: PerformedWorkflowDefinitionPublication,
     pub fixture: OrdinaryReadFixture,
     pub rail: Arc<BankEstateRailTransport>,
     pub _rail_process: RailProcessHandle,
@@ -60,9 +61,10 @@ impl ReadyPaymentWorld {
             .world
             .runtime
             .approved_business_payment(&principal, &scope);
-        let (_definition, instance, operation) =
+        let (definition, instance, operation) =
             prepare_approved_payment_operation(&workflow, &authority);
         Self {
+            definition,
             fixture,
             rail,
             _rail_process: rail_process,

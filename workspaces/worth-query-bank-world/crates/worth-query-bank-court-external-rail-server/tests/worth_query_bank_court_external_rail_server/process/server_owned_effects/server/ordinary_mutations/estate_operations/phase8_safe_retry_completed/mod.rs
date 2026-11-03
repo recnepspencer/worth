@@ -42,7 +42,9 @@ fn safe_retry_of_already_completed_effect_adds_no_contact_and_no_physical_conseq
     );
     assert_eq!(
         coordinates.world_owner(),
-        terminal.original_world_commit().owner_identity().get()
+        worth_foundational::facade::WorldOwnerCoordinate::MemoryOnly {
+            observation: terminal.original_world_commit().owner_identity().get(),
+        }
     );
     // This is the generic original-source entrance, before selecting any inverse family.
     // A legacy external aftermath name does not install a typed correction association.

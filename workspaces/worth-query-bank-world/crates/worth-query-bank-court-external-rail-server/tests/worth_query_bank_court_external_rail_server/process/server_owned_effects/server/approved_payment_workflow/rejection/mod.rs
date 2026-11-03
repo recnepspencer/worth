@@ -28,25 +28,36 @@ fn rejected_payment_workflow_terminates_without_payment_or_rail_effect() {
     };
     let (instance, proposal, required) =
         journey::prepare_approved_payment_approval(&workflow, &authority);
-    for (replayed, credential) in [
-        (false, authentication::valid_credential()),
-        (true, authentication::invalid_credential()),
-    ] {
-        let outcome = support::block_on(workflow.approve(
-            instance.clone(),
-            &required,
-            &proposal,
-            WorkflowApprovalDecision::Reject,
-            credential,
-            authority.clone(),
-            &key("approved-payment:approval:reject"),
-        ))
-        .expect("the exact rejection retries without repeating authentication");
-        let WorkflowProgressOutcome::Completed(performed) = outcome else {
-            panic!("the Bank approver did not reject the exact proposal: {outcome:?}");
-        };
-        assert_eq!(performed.node_path(), "approval");
-        assert_eq!(performed.replayed(), replayed);
+    let original = support::block_on(workflow.approve(
+        instance.clone(),
+        &required,
+        &proposal,
+        WorkflowApprovalDecision::Reject,
+        authentication::valid_credential(),
+        authority.clone(),
+        &key("approved-payment:approval:reject"),
+    ))
+    .expect("the authenticated rejection settles");
+    let WorkflowProgressOutcome::Completed(original) = original else {
+        panic!("the first rejection must perform: {original:?}");
+    };
+    assert_eq!(original.node_path(), "approval");
+    assert!(!original.replayed());
+    let retry = support::block_on(workflow.approve(
+        instance.clone(),
+        &required,
+        &proposal,
+        WorkflowApprovalDecision::Reject,
+        authentication::invalid_credential(),
+        authority.clone(),
+        &key("approved-payment:approval:reject"),
+    ))
+    .expect("the exact rejection retries without repeating authentication");
+    match retry {
+        WorkflowProgressOutcome::RecoveredCommitted(data) => {
+            worth_query_bank_testkit_server::facade::approved_payment_workflow::recorded_commit_axes::assert_agrees(&data, original.receipt());
+        }
+        other => panic!("the rejection retry returns original data: {other:?}"),
     }
     let keys = [key("approved-payment:advance:rejected")];
     let terminal = workflow.run(instance.clone(), authority, &keys);

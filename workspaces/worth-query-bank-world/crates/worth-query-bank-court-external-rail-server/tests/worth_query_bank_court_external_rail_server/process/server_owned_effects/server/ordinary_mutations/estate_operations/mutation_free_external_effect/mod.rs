@@ -37,6 +37,8 @@ fn mutation_free_external_effect_co_commits_outbox_recovers_lost_response_once()
     );
 
     assert_equivalent_retry_skips_rail_and_unseen_request_consumes_sentinel(
-        &world, binding, &receipt,
+        &world,
+        binding,
+        &receipt_closed,
     );
 }

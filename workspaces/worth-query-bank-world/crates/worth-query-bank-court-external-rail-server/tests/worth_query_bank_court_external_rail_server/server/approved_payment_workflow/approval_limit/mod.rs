@@ -24,20 +24,33 @@ fn payment_over_the_approval_limit_is_rejected_before_approval() {
         limit.operands()[0].name(),
         bank_server::APPROVAL_LIMIT_OPERAND
     );
-    for replayed in [false, true] {
-        let outcome = workflow
-            .accept_approval_limit(
-                instance.clone(),
-                &limit,
-                authority.clone(),
-                &key("approved-payment:condition:limit"),
-            )
-            .expect("the over-limit amount settles the condition");
-        let WorkflowProgressOutcome::Completed(performed) = outcome else {
-            panic!("the approval limit did not settle: {outcome:?}");
-        };
-        assert_eq!(performed.node_path(), "approval/limit");
-        assert_eq!(performed.replayed(), replayed);
+    let original = match workflow
+        .accept_approval_limit(
+            instance.clone(),
+            &limit,
+            authority.clone(),
+            &key("approved-payment:condition:limit"),
+        )
+        .expect("the over-limit amount settles the condition")
+    {
+        WorkflowProgressOutcome::Completed(performed) => performed,
+        other => panic!("the approval limit did not settle: {other:?}"),
+    };
+    assert_eq!(original.node_path(), "approval/limit");
+    assert!(!original.replayed());
+    match workflow
+        .accept_approval_limit(
+            instance.clone(),
+            &limit,
+            authority.clone(),
+            &key("approved-payment:condition:limit"),
+        )
+        .expect("the exact condition replays")
+    {
+        WorkflowProgressOutcome::RecoveredCommitted(data) => {
+            worth_query_bank_testkit_server::facade::approved_payment_workflow::recorded_commit_axes::assert_agrees(&data, original.receipt());
+        }
+        other => panic!("the condition retry must return original data: {other:?}"),
     }
     let terminal = workflow.run(
         instance,

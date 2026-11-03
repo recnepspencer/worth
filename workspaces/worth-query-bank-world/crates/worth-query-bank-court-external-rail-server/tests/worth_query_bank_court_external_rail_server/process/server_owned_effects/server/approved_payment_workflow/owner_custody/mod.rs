@@ -76,11 +76,20 @@ fn a_migration_stays_blocked_after_rail_completion_without_inbound() {
         }
         other => panic!("expected definition publication, got {other:?}"),
     };
-    // The fixture's own publication replays to name the running definition.
-    let source = publish(
-        WorkflowDefinitionExpectedPredecessor::Absent,
-        "approved-payment:definition",
-    );
+    let source = match workflow
+        .publish_definition(
+            ready.authority.clone(),
+            WorkflowDefinitionExpectedPredecessor::Absent,
+            &key("approved-payment:definition"),
+        )
+        .expect("the fixture's original definition remains inspectable")
+    {
+        WorkflowDefinitionPublicationOutcome::RecoveredCommitted(data) => {
+            worth_query_bank_testkit_server::facade::approved_payment_workflow::recorded_commit_axes::assert_agrees(&data, ready.definition.receipt());
+            ready.definition.definition().clone()
+        }
+        other => panic!("expected recorded original definition, got {other:?}"),
+    };
     let successor = publish(
         WorkflowDefinitionExpectedPredecessor::Published(source),
         "approved-payment:definition:successor",

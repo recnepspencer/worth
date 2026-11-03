@@ -51,3 +51,6 @@ pub use rail_transport::{spawn_rail, BankEstateRailTransport};
 
 #[path = "approved_payment_workflow/owning.rs"]
 pub mod owning;
+
+#[path = "approved_payment_workflow/recorded_commit_axes.rs"]
+pub mod recorded_commit_axes;
