@@ -1,7 +1,7 @@
 //! Selected release authority is the V2 checkpoint-source head roster plus
 //! exact V14 post-checkpoint effects. Headless released V1 custody is obsolete.
 
-use super::super::super::{context::PlanningContext, resolved_basis::ResolvedPlanningBasis};
+use super::super::super::{context::PlanningContext, resolved_basis::ResolvedPlanningState};
 use crate::progression::PlanningCustody;
 use worth_store_physical_format::{
     decode_checkpoint_certificate, CheckpointCertificateKind, ReleaseCheckpointCertificateV1,
@@ -31,7 +31,7 @@ use selected_release_probe::selected_has_release;
 
 pub(super) fn admit_pending_wal_release(
     context: PlanningContext,
-    basis: &mut ResolvedPlanningBasis,
+    basis: &mut ResolvedPlanningState,
     projection_index: usize,
 ) -> Result<PlanningContext, crate::entry::PhysicalRecoveryOutcome> {
     // A first release of another object has no predecessor, but a HeadV2
@@ -45,7 +45,7 @@ pub(super) fn admit_pending_wal_release(
 /// custody are left untouched.
 pub(super) fn admit_source_heads(
     context: PlanningContext,
-    basis: &mut ResolvedPlanningBasis,
+    basis: &mut ResolvedPlanningState,
 ) -> Result<PlanningContext, crate::entry::PhysicalRecoveryOutcome> {
     let posture = checkpoint_posture(
         &context.selection,
@@ -65,7 +65,7 @@ pub(super) fn admit_source_heads(
 
 pub(super) fn verify(
     context: PlanningContext,
-    basis: &mut ResolvedPlanningBasis,
+    basis: &mut ResolvedPlanningState,
 ) -> Result<PlanningContext, crate::entry::PhysicalRecoveryOutcome> {
     match checkpoint_posture(
         &context.selection,
@@ -89,7 +89,7 @@ fn absent_posture_admits(has_release: bool, custody: &PlanningCustody) -> bool {
     !has_release && matches!(custody, PlanningCustody::Unresolved)
 }
 
-fn pending_replay_matches(basis: &ResolvedPlanningBasis) -> bool {
+fn pending_replay_matches(basis: &ResolvedPlanningState) -> bool {
     match &basis.custody {
         PlanningCustody::PendingPrepared {
             claim: pending,

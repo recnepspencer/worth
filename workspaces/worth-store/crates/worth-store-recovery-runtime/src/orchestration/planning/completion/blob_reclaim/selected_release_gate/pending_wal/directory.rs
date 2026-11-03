@@ -1,6 +1,6 @@
 //! Join a WAL directory replacement to the actual selected source directory bytes.
 
-use super::ResolvedPlanningBasis;
+use super::ResolvedPlanningState;
 use crate::entry::PhysicalRecoveryPlanningDenial as Denial;
 use crate::orchestration::planning::completion::historical_publication::HistoricalFailure;
 use crate::orchestration::planning::{
@@ -10,7 +10,7 @@ use worth_store_recovery_physics::{PhysicalRedoProjection, VerifiedReleasedDirec
 
 pub(super) fn admit(
     selection: &worth_store_recovery_physics::PhysicalSourceSelection,
-    basis: &mut ResolvedPlanningBasis,
+    basis: &mut ResolvedPlanningState,
     projection_index: usize,
     format: worth_store_physical_format::PhysicalRecordFormatDeclaration,
     trace: &mut crate::integrity_ingress::RecoveryIntegrityIngressTrace,

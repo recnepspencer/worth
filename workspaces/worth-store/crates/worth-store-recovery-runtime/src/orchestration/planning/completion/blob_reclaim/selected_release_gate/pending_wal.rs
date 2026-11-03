@@ -1,7 +1,7 @@
 //! Admit one post-checkpoint V3 drop from the actual C.9 WAL suffix. The
 //! selected NoRelease marker remains checkpoint-source truth only.
 
-use super::super::super::super::{context::PlanningContext, resolved_basis::ResolvedPlanningBasis};
+use super::super::super::super::{context::PlanningContext, resolved_basis::ResolvedPlanningState};
 use super::resident_basis;
 use crate::orchestration::planning::completion::historical_publication::{
     remaining_observation, HistoricalFailure,
@@ -26,7 +26,7 @@ mod selected_controls;
 
 pub(super) fn admit(
     mut context: PlanningContext,
-    basis: &mut ResolvedPlanningBasis,
+    basis: &mut ResolvedPlanningState,
     projection_index: usize,
 ) -> Result<PlanningContext, crate::entry::PhysicalRecoveryOutcome> {
     // V14 release authority is either the independently joined V2 source
@@ -124,9 +124,7 @@ pub(super) fn admit(
             });
             return Err(context.block_with_planning_attempt_denial(
                 crate::entry::PhysicalRecoveryBlockKind::RedoPlanning,
-                basis
-                    .planning_counters()
-                    .with_peak_recovery_bytes(resident.peak()),
+                basis.planning_counters_at_peak(resident.peak()),
                 "released-directory-replacement",
                 limit,
                 denial,

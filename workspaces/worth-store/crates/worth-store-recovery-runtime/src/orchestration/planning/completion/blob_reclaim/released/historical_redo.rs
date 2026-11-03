@@ -4,7 +4,7 @@ use sha2::{Digest, Sha256};
 use worth_store_physical_format::{BlobReclaimSourceBasisV1, BlobRecordKind, BlobRecordV1};
 use worth_store_recovery_physics::{ExceededRootHistoryBound, RootHistoryBound};
 
-use super::super::super::super::{context::PlanningContext, resolved_basis::ResolvedPlanningBasis};
+use super::super::super::super::{context::PlanningContext, resolved_basis::ResolvedPlanningState};
 use super::super::historical_publication::{self, HistoricalFailure};
 use super::closure_evidence::ReleasedClosureEvidence;
 use super::{binding_matches, historical, historical_anchor, selected, selected_blob_record};
@@ -18,7 +18,7 @@ use crate::progression::verified_historical_release_transition;
 
 pub(in crate::orchestration::planning::completion) fn verify_historical(
     mut context: PlanningContext,
-    basis: &mut ResolvedPlanningBasis,
+    basis: &mut ResolvedPlanningState,
     evidence: &HistoricalDropEvidence,
 ) -> Result<PlanningContext, crate::entry::PhysicalRecoveryOutcome> {
     let descriptor = evidence.descriptor;

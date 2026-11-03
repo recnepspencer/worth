@@ -1,7 +1,7 @@
 //! Complete already-selected release custody through the ordered C8 fold.
 
 use super::ordered;
-use super::{PlanningContext, ResolvedPlanningBasis};
+use super::{PlanningContext, ResolvedPlanningState};
 use crate::entry::PhysicalRecoveryOrderedReleaseDenial as Denial;
 use crate::orchestration::planning::selected_source_inventory::ResidentAllowance;
 use crate::progression::PlanningCustody;
@@ -13,7 +13,7 @@ use worth_store_recovery_physics::{
 
 pub(in crate::orchestration::planning::completion::blob_reclaim::selected_release_gate) fn admit_completed_history(
     context: PlanningContext,
-    basis: &mut ResolvedPlanningBasis,
+    basis: &mut ResolvedPlanningState,
 ) -> Result<PlanningContext, crate::entry::PhysicalRecoveryOutcome> {
     if basis.observed_pages.tier_custody.is_some()
         || !matches!(
@@ -133,7 +133,7 @@ pub(in crate::orchestration::planning::completion::blob_reclaim::selected_releas
 
 fn resident_block(
     context: PlanningContext,
-    basis: &ResolvedPlanningBasis,
+    basis: &ResolvedPlanningState,
     resident: &ResidentAllowance,
 ) -> crate::entry::PhysicalRecoveryOutcome {
     let limit = super::super::super::resident_basis::limit_failure(&context, resident);

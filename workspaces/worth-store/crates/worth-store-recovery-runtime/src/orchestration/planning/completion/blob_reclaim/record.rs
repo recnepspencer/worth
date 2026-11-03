@@ -48,7 +48,7 @@ impl From<ResidentTraceDenial> for PhysicalRecoverySelectedRecordReadDenial {
 
 pub(super) fn selected_record(
     context: super::super::super::context::PlanningContext,
-    basis: &mut super::super::super::resolved_basis::ResolvedPlanningBasis,
+    basis: &mut super::super::super::resolved_basis::ResolvedPlanningState,
     generation: u64,
     identity: PersistedRecordIdentity,
     maximum: u64,

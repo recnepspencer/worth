@@ -5,14 +5,14 @@ use sha2::{Digest, Sha256};
 use worth_store_physical_format::{BlobManifestResidueCleanup, OriginalDropProofV1};
 use worth_store_recovery_physics::{ReconciledOperationFates, RecoveryOperationFate};
 
-use crate::orchestration::planning::resolved_basis::ResolvedPlanningBasis;
+use crate::orchestration::planning::resolved_basis::ResolvedPlanningState;
 
 const DROP_MATERIAL_DOMAIN: &[u8] = b"worth.store.blob.reclaim.mutation.v1";
 const IDEMPOTENCY_DOMAIN: &[u8] = b"store.physical.mutation.idempotency-key.v1";
 
 pub(super) fn proves_descriptor_no_effect(
     intent: BlobManifestResidueCleanup,
-    basis: &ResolvedPlanningBasis,
+    basis: &ResolvedPlanningState,
 ) -> bool {
     let OriginalDropProofV1::ProvenNoEffect { idempotency, .. } = intent.proof() else {
         return false;
@@ -69,7 +69,7 @@ fn matching_original_drop_evidence(
 
 pub(super) fn proves_never_reserved(
     intent: BlobManifestResidueCleanup,
-    basis: &ResolvedPlanningBasis,
+    basis: &ResolvedPlanningState,
 ) -> bool {
     if !matches!(intent, BlobManifestResidueCleanup::V2(_))
         || intent.proof() != OriginalDropProofV1::NeverReserved
@@ -107,7 +107,7 @@ pub(super) fn proves_never_reserved(
 /// operation, WAL-member, and redo evidence for contradictory drop material.
 pub(super) fn proves_recovered_no_binding(
     intent: BlobManifestResidueCleanup,
-    basis: &ResolvedPlanningBasis,
+    basis: &ResolvedPlanningState,
 ) -> bool {
     let OriginalDropProofV1::RecoveredNoBinding { idempotency, .. } = intent.proof() else {
         return false;

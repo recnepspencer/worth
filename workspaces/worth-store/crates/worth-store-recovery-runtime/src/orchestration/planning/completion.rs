@@ -32,16 +32,17 @@ pub(super) fn complete(
     mut basis: ResolvedPlanningBasis,
 ) -> Result<PlannedPhysicalRecovery, crate::entry::PhysicalRecoveryOutcome> {
     let execution;
-    (context, execution) = execution_basis::derive(context, &mut basis)?;
+    (context, execution) = execution_basis::derive(context, basis.state_mut())?;
     let (backing, backing_peak);
-    (context, backing, backing_peak) = planned_storage::prepare(context, &basis, &execution)?;
+    (context, backing, backing_peak) =
+        planned_storage::prepare(context, basis.state(), &execution)?;
     let (plan_cost, planning_counters);
     (context, plan_cost, planning_counters) =
-        plan_cost::admit(context, &basis, &execution, backing_peak)?;
+        plan_cost::admit(context, basis.state(), &execution, backing_peak)?;
     context = publication_effects::admit(context, planning_counters, &execution.publication)?;
     planned_recovery::construct(
         context,
-        basis,
+        basis.into_state(),
         execution,
         backing,
         plan_cost,

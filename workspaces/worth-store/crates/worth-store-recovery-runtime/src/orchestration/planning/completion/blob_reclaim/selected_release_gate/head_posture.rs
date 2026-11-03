@@ -1,12 +1,12 @@
 //! Admit the existing HeadV2 selected-release custody family.
 use super::{
     head_v2, pending_replay_matches, pending_wal, PlanningContext, PlanningCustody,
-    ResolvedPlanningBasis,
+    ResolvedPlanningState,
 };
 
 pub(super) fn verify(
     mut context: PlanningContext,
-    basis: &mut ResolvedPlanningBasis,
+    basis: &mut ResolvedPlanningState,
 ) -> Result<PlanningContext, crate::entry::PhysicalRecoveryOutcome> {
     if let PlanningCustody::PendingPrepared { claim: pending, .. } = &basis.custody {
         let admitted = pending.selected_head_v2().is_some_and(|custody| {

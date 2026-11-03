@@ -1,11 +1,11 @@
 //! Inspect the actual selected routes and exact V2 descriptor bytes.
 use super::super::record::selected_record;
-use super::{PlanningContext, ResolvedPlanningBasis};
+use super::{PlanningContext, ResolvedPlanningState};
 use worth_store_physical_format::{BlobRecordKind, BlobRecordV1, SelectedRecordContentClass};
 
 pub(super) fn selected_has_release(
     mut context: PlanningContext,
-    basis: &mut ResolvedPlanningBasis,
+    basis: &mut ResolvedPlanningState,
 ) -> Result<(PlanningContext, bool), crate::entry::PhysicalRecoveryOutcome> {
     for index in 0..context.selection.page_facts().placements().len() {
         let route = context.selection.page_facts().placements()[index];

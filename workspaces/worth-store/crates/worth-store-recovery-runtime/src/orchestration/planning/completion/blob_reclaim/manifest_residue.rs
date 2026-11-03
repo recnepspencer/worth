@@ -8,7 +8,7 @@ use worth_store_physical_format::{
     BLOB_CONTROL_FRAME_MAX_BYTES,
 };
 
-use super::super::super::{context::PlanningContext, resolved_basis::ResolvedPlanningBasis};
+use super::super::super::{context::PlanningContext, resolved_basis::ResolvedPlanningState};
 use super::{historical_publication, selected, selected_record};
 
 #[path = "manifest_residue/wal_fate.rs"]
@@ -38,7 +38,7 @@ impl ValidatedManifestResidueCleanup {
 
 pub(super) fn verify(
     mut context: PlanningContext,
-    basis: &mut ResolvedPlanningBasis,
+    basis: &mut ResolvedPlanningState,
 ) -> Result<PlanningContext, crate::entry::PhysicalRecoveryOutcome> {
     let observation_count = basis.sample.blob_manifest_residue_cleanups().len();
     let covered_end = context.selection.covered_wal_end_exclusive();
@@ -318,7 +318,7 @@ fn expiry_matches(
 
 fn verify_historical_result(
     context: PlanningContext,
-    basis: &mut ResolvedPlanningBasis,
+    basis: &mut ResolvedPlanningState,
     intent: BlobManifestResidueCleanup,
 ) -> Result<PlanningContext, crate::entry::PhysicalRecoveryOutcome> {
     let format = context.authority.record_format;

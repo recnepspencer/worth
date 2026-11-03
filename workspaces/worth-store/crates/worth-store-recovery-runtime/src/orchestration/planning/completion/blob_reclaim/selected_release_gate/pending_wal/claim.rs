@@ -5,13 +5,13 @@ use worth_store_recovery_physics::{
 };
 
 use super::super::resident_basis;
-use super::{historical, member_fate::PendingMemberFate, PlanningContext, ResolvedPlanningBasis};
+use super::{historical, member_fate::PendingMemberFate, PlanningContext, ResolvedPlanningState};
 use crate::orchestration::planning::selected_source_inventory::ResidentAllowance;
 use crate::progression::PlanningCustody;
 
 pub(super) fn admit(
     mut context: PlanningContext,
-    basis: &mut ResolvedPlanningBasis,
+    basis: &mut ResolvedPlanningState,
     projection_index: usize,
     member: PendingMemberFate,
     manifest: WitnessedSelectedControlFrame,

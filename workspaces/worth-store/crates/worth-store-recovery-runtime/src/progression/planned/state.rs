@@ -42,30 +42,34 @@ mod tests {
     #[test]
     fn planned_backing_refuses_combined_construction_before_allocating() {
         let payload = std::mem::size_of::<PlannedRecoveryState>() as u64;
-        let mut allowance = PlanningResidentAllowance::new(17, 17 + 2 * payload - 1).unwrap();
-        assert!(matches!(
-            PlannedStateBacking::prepare(&mut allowance),
-            Err(PlanningMemoryDenial::RecoveryMemoryBytes { observed })
-                if observed == 17 + 2 * payload
-        ));
-        assert_eq!(allowance.used(), 17);
-        assert_eq!(allowance.peak(), 17);
+        for extraction in [0, payload] {
+            let required = 17 + 2 * payload + extraction;
+            let mut allowance = PlanningResidentAllowance::new(17, required - 1).unwrap();
+            assert!(matches!(
+                PlannedStateBacking::prepare(&mut allowance, extraction),
+                Err(PlanningMemoryDenial::RecoveryMemoryBytes { observed }) if observed == required
+            ));
+            assert_eq!(allowance.used(), 17);
+            assert_eq!(allowance.peak(), 17);
+        }
     }
 
     #[test]
     fn planned_backing_peak_keeps_actual_capacity_and_construction_overlap() {
         let payload = std::mem::size_of::<PlannedRecoveryState>() as u64;
-        let mut allowance = PlanningResidentAllowance::new(17, u64::MAX).unwrap();
-        let backing = PlannedStateBacking::prepare(&mut allowance).unwrap();
-        let actual = PlanningResidentAllowance::vector_bytes(&backing.0).unwrap();
-        assert!(actual >= payload);
-        assert_eq!(allowance.used(), 17 + actual);
-        assert_eq!(allowance.peak(), 17 + actual + payload);
-        assert!(backing.0.is_empty());
-        drop(backing);
-        allowance.release(actual);
-        assert_eq!(allowance.used(), 17);
-        assert_eq!(allowance.peak(), 17 + actual + payload);
+        for extraction in [0, payload] {
+            let mut allowance = PlanningResidentAllowance::new(17, u64::MAX).unwrap();
+            let backing = PlannedStateBacking::prepare(&mut allowance, extraction).unwrap();
+            let actual = PlanningResidentAllowance::vector_bytes(&backing.0).unwrap();
+            assert!(actual >= payload);
+            assert_eq!(allowance.used(), 17 + actual);
+            assert_eq!(allowance.peak(), 17 + actual + payload + extraction);
+            assert!(backing.0.is_empty());
+            drop(backing);
+            allowance.release(actual);
+            assert_eq!(allowance.used(), 17);
+            assert_eq!(allowance.peak(), 17 + actual + payload + extraction);
+        }
     }
 }
 
@@ -75,15 +79,16 @@ pub(crate) struct PlannedStateBacking(Vec<PlannedRecoveryState>);
 impl PlannedStateBacking {
     pub(crate) fn prepare(
         allowance: &mut super::PlanningResidentAllowance,
+        extraction_bytes: u64,
     ) -> Result<Self, super::PlanningMemoryDenial> {
-        // Admit backing and construction overlap together, before allocation.
-        allowance.transient(super::PlanningResidentAllowance::slot_bytes::<
-            PlannedRecoveryState,
-        >(2)?)?;
+        let payload = super::PlanningResidentAllowance::slot_bytes::<PlannedRecoveryState>(1)?;
+        let overflow = || super::PlanningMemoryDenial::RecoveryMemoryBytes { observed: u64::MAX };
+        let scratch = payload.checked_add(extraction_bytes).ok_or_else(overflow)?;
+        // Both named movement temporaries overlap retained backing. Admit the
+        // combined request before allocating, then use actual capacity.
+        allowance.transient(payload.checked_add(scratch).ok_or_else(overflow)?)?;
         let values = allowance.reserve::<PlannedRecoveryState>(1)?;
-        allowance.transient(super::PlanningResidentAllowance::slot_bytes::<
-            PlannedRecoveryState,
-        >(1)?)?;
+        allowance.transient(scratch)?;
         Ok(Self(values))
     }
 

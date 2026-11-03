@@ -5,12 +5,12 @@ use crate::progression::PlannedPhysicalRecovery;
 use crate::progression::PlanningCustody;
 
 use super::super::context::PlanningContext;
-use super::super::resolved_basis::ResolvedPlanningBasis;
+use super::super::resolved_basis::ResolvedPlanningState;
 use super::execution_basis::ExecutionProducts;
 
 pub(super) fn construct(
     context: PlanningContext,
-    basis: ResolvedPlanningBasis,
+    basis: ResolvedPlanningState,
     execution: ExecutionProducts,
     backing: crate::progression::PlannedStateBacking,
     plan_cost: RecoveryPlanCost,

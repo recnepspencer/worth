@@ -1,4 +1,4 @@
-use super::super::{context::PlanningContext, resolved_basis::ResolvedPlanningBasis};
+use super::super::{context::PlanningContext, resolved_basis::ResolvedPlanningState};
 use crate::orchestration::reader_limit::UNCOUNTED_READS;
 use crate::orchestration::source_copy::SourceCopyCursor;
 use worth_store::physical_runtime::{ReadGrant, UnchargedRead};
@@ -11,7 +11,7 @@ mod wal_evidence;
 /// successor additionally must contain every exact regenerated destination byte.
 pub(super) fn verify(
     mut context: PlanningContext,
-    basis: &mut ResolvedPlanningBasis,
+    basis: &mut ResolvedPlanningState,
 ) -> Result<PlanningContext, crate::entry::PhysicalRecoveryOutcome> {
     let published_evidence = match wal_evidence::verify(&context, basis) {
         Ok(evidence) => evidence,

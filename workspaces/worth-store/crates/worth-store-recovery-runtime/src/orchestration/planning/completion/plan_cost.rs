@@ -4,13 +4,13 @@ use worth_store_recovery_physics::{
 
 use super::super::context::PlanningContext;
 use super::super::denial::plan_cost_limit;
-use super::super::resolved_basis::ResolvedPlanningBasis;
+use super::super::resolved_basis::ResolvedPlanningState;
 use super::execution_basis::ExecutionProducts;
 use crate::entry::PhysicalRecoveryOutcome;
 
 pub(super) fn admit(
     context: PlanningContext,
-    basis: &ResolvedPlanningBasis,
+    basis: &ResolvedPlanningState,
     execution: &ExecutionProducts,
     backing_peak: u64,
 ) -> Result<
@@ -92,10 +92,9 @@ pub(super) fn admit(
         .max(final_live_bytes)
         .max(execution.planning_construction_peak)
         .max(context.selection.construction_peak_bytes())
-        .max(backing_peak);
-    let planning_counters = basis
-        .planning_counters()
-        .with_peak_recovery_bytes(peak_recovery_bytes);
+        .max(backing_peak)
+        .max(basis.capture_peak());
+    let planning_counters = basis.planning_counters_at_peak(peak_recovery_bytes);
     let plan_cost = RecoveryPlanCost::new(
         basis.targets.len() as u64,
         basis.redo_bytes,

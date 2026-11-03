@@ -1,13 +1,15 @@
 //! Actual live recovery backing at planning admission boundaries.
 //! Owned buffers are counted once; immutable shared history uses pointer identity.
 
-use super::{context::PlanningContext, resolved_basis::ResolvedPlanningBasis};
+use super::{context::PlanningContext, resolved_basis::ResolvedPlanningState};
 use std::sync::Arc;
 
-pub(super) fn live_bytes(context: &PlanningContext, basis: &ResolvedPlanningBasis) -> Option<u64> {
+pub(super) fn live_bytes(context: &PlanningContext, basis: &ResolvedPlanningState) -> Option<u64> {
     let mut bytes = u64::try_from(std::mem::size_of::<PlanningContext>())
         .ok()?
-        .checked_add(u64::try_from(std::mem::size_of::<ResolvedPlanningBasis>()).ok()?)?
+        .checked_add(u64::try_from(std::mem::size_of::<ResolvedPlanningState>()).ok()?)?
+        .checked_add(basis.unused_backing_bytes())?
+        .checked_add(std::mem::size_of::<super::resolved_basis::ResolvedPlanningBasis>() as u64)?
         .checked_add(context.selection.owned_heap_bytes()?)?
         .checked_add(context.integrity.owned_heap_bytes()?)?
         .checked_add(context.integrity_trace.owned_heap_bytes()?)?
@@ -79,7 +81,7 @@ fn vector_bytes<T>(values: &Vec<T>) -> Option<u64> {
 
 /// Final custody owns distinct control/replay/roster buffers, even when they
 /// contain bytes equal to earlier observations. Only shared history is deduped.
-fn final_custody_bytes(basis: &ResolvedPlanningBasis) -> Option<u64> {
+fn final_custody_bytes(basis: &ResolvedPlanningState) -> Option<u64> {
     let (pending_history, completed_history, mut bytes) = match &basis.custody {
         crate::progression::PlanningCustody::Unresolved
         | crate::progression::PlanningCustody::NoCheckpoint

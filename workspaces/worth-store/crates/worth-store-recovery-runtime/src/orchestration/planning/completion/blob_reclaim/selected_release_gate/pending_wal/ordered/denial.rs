@@ -2,7 +2,7 @@
 
 use worth_store_recovery_physics::{PendingWalReleaseCustodyDenial, PhysicsBound};
 
-use super::super::{PlanningContext, ResolvedPlanningBasis};
+use super::super::{PlanningContext, ResolvedPlanningState};
 use crate::entry::{
     PhysicalRecoveryBlockKind, PhysicalRecoveryLimitFailure, PhysicalRecoveryOrderedReleaseDenial,
     PhysicalRecoveryOutcome, PhysicalRecoveryPlanningDenial,
@@ -11,7 +11,7 @@ use crate::orchestration::recovery_budget::RecoveryAllowance;
 
 pub(in crate::orchestration::planning::completion::blob_reclaim::selected_release_gate::pending_wal) fn block(
     context: PlanningContext,
-    basis: &ResolvedPlanningBasis,
+    basis: &ResolvedPlanningState,
     cause: PhysicalRecoveryOrderedReleaseDenial,
     limit: Option<PhysicalRecoveryLimitFailure>,
 ) -> PhysicalRecoveryOutcome {

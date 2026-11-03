@@ -8,12 +8,12 @@ use crate::orchestration::recovery_budget::RecoveryAllowance;
 use crate::progression::{PlannedStateBacking, PlanningMemoryDenial, PlanningResidentAllowance};
 
 use super::super::context::PlanningContext;
-use super::super::resolved_basis::ResolvedPlanningBasis;
+use super::super::resolved_basis::ResolvedPlanningState;
 use super::execution_basis::ExecutionProducts;
 
 pub(super) fn prepare(
     context: PlanningContext,
-    basis: &ResolvedPlanningBasis,
+    basis: &ResolvedPlanningState,
     execution: &ExecutionProducts,
 ) -> Result<(PlanningContext, PlannedStateBacking, u64), PhysicalRecoveryOutcome> {
     let retained = super::super::resident_memory::live_bytes(&context, basis)
@@ -46,7 +46,10 @@ pub(super) fn prepare(
             ))
         }
     };
-    match PlannedStateBacking::prepare(&mut allowance) {
+    match PlannedStateBacking::prepare(
+        &mut allowance,
+        std::mem::size_of::<ResolvedPlanningState>() as u64,
+    ) {
         Ok(backing) => Ok((context, backing, allowance.peak())),
         Err(denial) => Err(deny(
             context,
@@ -59,7 +62,7 @@ pub(super) fn prepare(
 
 fn deny(
     context: PlanningContext,
-    basis: &ResolvedPlanningBasis,
+    basis: &ResolvedPlanningState,
     denial: PlanningMemoryDenial,
     measured_peak: u64,
 ) -> PhysicalRecoveryOutcome {
@@ -71,9 +74,7 @@ fn deny(
             )
             .past(observed);
             context.cost_denial_block(
-                basis
-                    .planning_counters()
-                    .with_peak_recovery_bytes(observed.max(measured_peak)),
+                basis.planning_counters_at_peak(observed.max(measured_peak)),
                 worth_store_recovery_physics::RecoveryPlanCostDenial::RecoveryMemoryBytes,
                 limit,
             )
@@ -83,9 +84,7 @@ fn deny(
             cause,
         } => context.block_with_planning_attempt_denial(
             PhysicalRecoveryBlockKind::RedoPlanning,
-            basis
-                .planning_counters()
-                .with_peak_recovery_bytes(measured_peak),
+            basis.planning_counters_at_peak(measured_peak),
             "planned-state-allocation",
             None,
             PhysicalRecoveryPlanningDenial::PlannedStateAllocation {

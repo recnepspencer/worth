@@ -7,12 +7,12 @@ use worth_store_physical_format::{
     SelectedRecordContentClass, BLOB_CONTROL_FRAME_MAX_BYTES,
 };
 
-use super::super::super::super::{context::PlanningContext, resolved_basis::ResolvedPlanningBasis};
+use super::super::super::super::{context::PlanningContext, resolved_basis::ResolvedPlanningState};
 use super::super::{historical_publication, historical_publication::HistoricalFailure, record};
 
 pub(super) fn verify_initial_result(
     mut context: PlanningContext,
-    basis: &mut ResolvedPlanningBasis,
+    basis: &mut ResolvedPlanningState,
     descriptor: BlobReclaimDescriptorV2,
     manifest: &DropSetManifestV3,
     descriptor_record: PersistedRecordIdentity,
@@ -106,7 +106,7 @@ pub(super) fn verify_initial_result(
 
 pub(super) fn verify_v3_result(
     mut context: PlanningContext,
-    basis: &mut ResolvedPlanningBasis,
+    basis: &mut ResolvedPlanningState,
     descriptor: BlobReclaimDescriptorV3,
     descriptor_record: PersistedRecordIdentity,
     manifest: &DropSetManifestV3,

@@ -9,7 +9,7 @@ use worth_store_recovery_physics::{
     VerifiedPendingWalReleaseCustody, VerifiedSelectedReleaseHeadCustodyV2,
 };
 
-use super::{PlanningContext, ResolvedPlanningBasis};
+use super::{PlanningContext, ResolvedPlanningState};
 use crate::entry::{
     PhysicalRecoveryLimitDimension, PhysicalRecoveryOrderedReleaseDenial as Denial,
     PhysicalRecoveryOrderedReleaseStorage as Storage,
@@ -27,7 +27,7 @@ use roster_storage::reserve_roster;
 
 fn resident_block(
     context: PlanningContext,
-    basis: &ResolvedPlanningBasis,
+    basis: &ResolvedPlanningState,
     resident: &ResidentAllowance,
 ) -> crate::entry::PhysicalRecoveryOutcome {
     let limit = super::super::resident_basis::limit_failure(&context, resident);
@@ -36,7 +36,7 @@ fn resident_block(
 
 pub(super) fn attach(
     context: PlanningContext,
-    basis: &mut ResolvedPlanningBasis,
+    basis: &mut ResolvedPlanningState,
     claim: &mut VerifiedPendingWalReleaseCustody,
     resident: &mut ResidentAllowance,
 ) -> Result<PlanningContext, crate::entry::PhysicalRecoveryOutcome> {
@@ -103,7 +103,7 @@ pub(super) fn attach(
 
 pub(super) fn admit_roster(
     context: PlanningContext,
-    basis: &mut ResolvedPlanningBasis,
+    basis: &mut ResolvedPlanningState,
     minimum_releases: usize,
     selected_base: Option<&VerifiedAddressedCheckpointReleaseBase>,
     selected_head_v2: Option<&VerifiedSelectedReleaseHeadCustodyV2>,

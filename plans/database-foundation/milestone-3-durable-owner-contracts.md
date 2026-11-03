@@ -2934,3 +2934,15 @@ order, so unrelated posture-local temporaries need not coexist. The shared
 probe reads the same selected V2 bytes and preserves the FailedIngest exception.
 Malformed certificates and unrelated descriptor families still refuse. This
 composition introduces no issuer or allocation and requires fresh qualification.
+
+ResolvedPlanningBasis retains one actual ResolvedPlanningState in checked backing.
+Inner verification and construction borrow that state directly; no Deref, alias
+or alternate phase issuer preserves the former inline shape. Capture uses the
+original recovery-memory ceiling, counts the actual context/state and existing
+heaps, and admits backing plus movement before allocation and actual capacity
+afterward. Private unused-capacity bytes remain in every subsequent live count.
+The original context survives until a typed capture refusal is formed. The later
+planned-storage admission additionally funds resolved-state extraction alongside
+planned-state construction and both retained backings. State-owned counters take
+the maximum of capture and subsequent peaks, including early refusal paths.
+Consuming extraction transfers the same proofs and releases the old backing.

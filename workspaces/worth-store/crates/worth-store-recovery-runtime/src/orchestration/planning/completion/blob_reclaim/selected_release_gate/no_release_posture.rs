@@ -1,12 +1,12 @@
 //! Admit the existing NoRelease selected-release custody family.
 use super::{
     pending_replay_matches, pending_wal, selected_has_release, PlanningContext, PlanningCustody,
-    ResolvedPlanningBasis,
+    ResolvedPlanningState,
 };
 
 pub(super) fn verify(
     mut context: PlanningContext,
-    basis: &mut ResolvedPlanningBasis,
+    basis: &mut ResolvedPlanningState,
 ) -> Result<PlanningContext, crate::entry::PhysicalRecoveryOutcome> {
     if let PlanningCustody::PendingPrepared { claim: pending, .. } = &basis.custody {
         if pending.marker().is_none() || !pending_replay_matches(basis) {

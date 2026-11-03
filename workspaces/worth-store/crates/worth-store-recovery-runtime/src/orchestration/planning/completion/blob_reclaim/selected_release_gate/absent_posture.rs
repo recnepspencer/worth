@@ -1,12 +1,12 @@
 //! Admit the existing Absent selected-release custody family.
 use super::{
     absent_posture_admits, selected_has_release, PlanningContext, PlanningCustody,
-    ResolvedPlanningBasis,
+    ResolvedPlanningState,
 };
 
 pub(super) fn verify(
     context: PlanningContext,
-    basis: &mut ResolvedPlanningBasis,
+    basis: &mut ResolvedPlanningState,
 ) -> Result<PlanningContext, crate::entry::PhysicalRecoveryOutcome> {
     let (next, has_release) = selected_has_release(context, basis)?;
     if !absent_posture_admits(has_release, &basis.custody) {

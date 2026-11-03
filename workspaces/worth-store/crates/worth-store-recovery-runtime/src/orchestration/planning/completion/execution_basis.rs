@@ -11,7 +11,7 @@ use crate::progression::{
 
 use super::super::context::PlanningContext;
 use super::super::manifest_entry_budget::ManifestEntryBudget;
-use super::super::resolved_basis::ResolvedPlanningBasis;
+use super::super::resolved_basis::ResolvedPlanningState;
 use super::super::successor_candidate_observation;
 
 #[cfg(test)]
@@ -28,7 +28,7 @@ pub(super) struct ExecutionProducts {
 
 pub(super) fn derive(
     mut context: PlanningContext,
-    basis: &mut ResolvedPlanningBasis,
+    basis: &mut ResolvedPlanningState,
 ) -> Result<(PlanningContext, ExecutionProducts), PhysicalRecoveryOutcome> {
     let retained_memory_bytes = super::super::resident_memory::live_bytes(&context, basis)
         .and_then(|bytes| bytes.checked_add(std::mem::size_of::<ExecutionProducts>() as u64))
@@ -60,7 +60,7 @@ pub(super) fn derive(
             )
             .past(observed);
             return Err(context.cost_denial_block(
-                basis.planning_counters().with_peak_recovery_bytes(observed),
+                basis.planning_counters_at_peak(observed),
                 worth_store_recovery_physics::RecoveryPlanCostDenial::RecoveryMemoryBytes,
                 limit,
             ));
@@ -125,9 +125,7 @@ pub(super) fn derive(
                 };
                 let artifact = format!("{:?}", denial.artifact());
                 return Err(context.successor_candidate_block(
-                    basis
-                        .planning_counters()
-                        .with_peak_recovery_bytes(required_peak),
+                    basis.planning_counters_at_peak(required_peak),
                     &artifact,
                     limit,
                     denial,
@@ -171,9 +169,7 @@ pub(super) fn derive(
         }) => {
             return Err(context.block_with_planning_attempt_denial(
                 crate::entry::PhysicalRecoveryBlockKind::RedoPlanning,
-                basis
-                    .planning_counters()
-                    .with_peak_recovery_bytes(allowance.peak()),
+                basis.planning_counters_at_peak(allowance.peak()),
                 "publication-candidate-allocation",
                 None,
                 crate::entry::PhysicalRecoveryPlanningDenial::PublicationCandidateAllocation {
@@ -204,7 +200,7 @@ pub(super) fn derive(
             )
             .past(observed);
             return Err(context.cost_denial_block(
-                basis.planning_counters().with_peak_recovery_bytes(observed),
+                basis.planning_counters_at_peak(observed),
                 worth_store_recovery_physics::RecoveryPlanCostDenial::RecoveryMemoryBytes,
                 limit,
             ));

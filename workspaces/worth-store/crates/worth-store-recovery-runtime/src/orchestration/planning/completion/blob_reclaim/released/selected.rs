@@ -13,7 +13,7 @@ use worth_store_physical_format::{
 };
 use worth_store_recovery_physics::RecoveryOperationFate;
 
-use super::super::super::super::{context::PlanningContext, resolved_basis::ResolvedPlanningBasis};
+use super::super::super::super::{context::PlanningContext, resolved_basis::ResolvedPlanningState};
 use super::super::super::historical_publication::{
     remaining_observation, unobserved, HistoricalFailure, HistoricalFailure::Invalid,
 };
@@ -34,7 +34,7 @@ mod wal_admission;
 
 pub(super) fn verify_initial(
     mut context: PlanningContext,
-    basis: &mut ResolvedPlanningBasis,
+    basis: &mut ResolvedPlanningState,
     descriptor: BlobReclaimDescriptorV2,
     manifest: &DropSetManifestV3,
     operation_id: [u8; 32],
