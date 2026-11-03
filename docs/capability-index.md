@@ -1603,3 +1603,8 @@ configuration owner. Actual grant/revoke and creation maintain stable occurrence
 slots without rebuilding warm roots. See the [Bank declaration](../workspaces/worth-query-bank-world/crates/bank-domain/src/queries/current_accounts.rs),
 [provider](../workspaces/worth-query-bank-world/crates/bank-server/src/application_definition/current_accounts/provider.rs)
 and [ordinary receiver courts](../workspaces/worth-query-bank-world/crates/worth-query-bank-court-external-rail-server/tests/worth_query_bank_court_external_rail_server/server/ordinary_reads/current_accounts/mod.rs).
+
+Bank account activity accepts recorded original receipt data through
+`BankAccountActivityRequestForPrincipal::historical_original`. It uses Query
+`at_original_receipt` with fresh authorization and bounded current owner history;
+receipt data cannot recreate a performed owner or revive unavailable history.

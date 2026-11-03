@@ -85,7 +85,10 @@ fn a_migration_stays_blocked_after_rail_completion_without_inbound() {
         .expect("the fixture's original definition remains inspectable")
     {
         WorkflowDefinitionPublicationOutcome::RecoveredCommitted(data) => {
-            worth_query_bank_testkit_server::facade::approved_payment_workflow::recorded_commit_axes::assert_agrees(&data, ready.definition.receipt());
+            worth_query_bank_testkit_server::facade::recorded_commit_axes::assert_agrees(
+                &data,
+                ready.definition.receipt(),
+            );
             ready.definition.definition().clone()
         }
         other => panic!("expected recorded original definition, got {other:?}"),

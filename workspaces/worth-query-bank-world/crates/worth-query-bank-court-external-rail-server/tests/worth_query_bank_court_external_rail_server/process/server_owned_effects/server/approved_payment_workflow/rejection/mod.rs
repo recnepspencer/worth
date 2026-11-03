@@ -55,7 +55,10 @@ fn rejected_payment_workflow_terminates_without_payment_or_rail_effect() {
     .expect("the exact rejection retries without repeating authentication");
     match retry {
         WorkflowProgressOutcome::RecoveredCommitted(data) => {
-            worth_query_bank_testkit_server::facade::approved_payment_workflow::recorded_commit_axes::assert_agrees(&data, original.receipt());
+            worth_query_bank_testkit_server::facade::recorded_commit_axes::assert_agrees(
+                &data,
+                original.receipt(),
+            );
         }
         other => panic!("the rejection retry returns original data: {other:?}"),
     }

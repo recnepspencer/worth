@@ -44,16 +44,27 @@ fn correction_waits_for_original_rail_owner_then_preserves_completed_settlement(
             &operation_key,
         )
         .unwrap();
-    let bank_server::BankApprovedPaymentApplyOutcome::Performed(source) = source else {
-        panic!("same-key inspection must return the original committed occurrence");
+    let bank_server::BankApprovedPaymentApplyOutcome::RecoveredCommitted(source) = source else {
+        panic!("same-key inspection must return original data without a performed owner");
     };
-    assert!(!source.newly_committed());
     assert_eq!(
         ready.rail.attempts().len(),
         1,
         "receipt observation cannot redispatch"
     );
-    let source_coordinates = source.correction_source();
+    let source_coordinates = {
+        let inspection = operation
+            .inspect_source(&request)
+            .expect("freshly admitted actual owner inspection");
+        let original = inspection
+            .source()
+            .live_receipt()
+            .expect("the performing operation retains its genuine first receipt");
+        worth_query_bank_testkit_server::facade::recorded_commit_axes::assert_agrees(
+            &source, original,
+        );
+        original.correction_source()
+    };
     let teller = ready.fixture.authenticate(fixture::TELLER);
     let teller_request = runtime
         .request(&teller, &ready.scope)
@@ -197,7 +208,7 @@ fn correction_waits_for_original_rail_owner_then_preserves_completed_settlement(
     else {
         panic!("exact compensation retry delivers the original inverse");
     };
-    let WorthQuerySourceCompletion::Recovered {
+    let WorthQuerySourceCompletion::Recorded {
         receipt,
         retained: Some(retained),
         ..
@@ -205,7 +216,7 @@ fn correction_waits_for_original_rail_owner_then_preserves_completed_settlement(
     else {
         panic!("replay retains its original publication evidence");
     };
-    assert_eq!(receipt.commit_reference(), inverse.commit_reference());
+    worth_query_bank_testkit_server::facade::recorded_commit_axes::assert_agrees(receipt, &inverse);
     assert_eq!(
         retained.selected_commit(),
         inverse.committed_product_publication().composite_commit()

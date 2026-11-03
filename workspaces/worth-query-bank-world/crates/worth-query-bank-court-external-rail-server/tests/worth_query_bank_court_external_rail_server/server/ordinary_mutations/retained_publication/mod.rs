@@ -138,7 +138,7 @@ fn owning_deposit_and_replay_deliver_the_original_retained_commit() {
     let Advance::Completed(replay) = replay.advance(&deposit_request, Some(history)) else {
         panic!("bounded original native replay delivery")
     };
-    let Completion::Recovered {
+    let Completion::Recorded {
         receipt: replay_receipt,
         retained: Some(replay_retained),
         ..
@@ -149,6 +149,10 @@ fn owning_deposit_and_replay_deliver_the_original_retained_commit() {
     assert_eq!(
         replay_retained.selected_commit(),
         retained.selected_commit()
+    );
+    worth_query_bank_testkit_server::facade::recorded_commit_axes::assert_agrees(
+        replay_receipt,
+        receipt,
     );
     let replay_receipt = replay_receipt.clone();
     assert!(replay.close(&deposit_request).is_ok());
@@ -201,7 +205,7 @@ fn owning_deposit_and_replay_deliver_the_original_retained_commit() {
     assert!(performed.close(&deposit_request).is_ok());
     let historical = saved_view
         .as_principal(&owner)
-        .historical(
+        .historical_original(
             &replay_receipt,
             std::num::NonZeroUsize::new(128).unwrap(),
             std::num::NonZeroUsize::new(8_192).unwrap(),

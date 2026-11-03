@@ -70,7 +70,10 @@ fn p2_retirement_waits_for_the_exact_workflow_instance_to_finish() {
         .expect("the original definition publication replays")
     {
         WorkflowDefinitionPublicationOutcome::RecoveredCommitted(data) => {
-            worth_query_bank_testkit_server::facade::approved_payment_workflow::recorded_commit_axes::assert_agrees(&data, original_definition.receipt());
+            worth_query_bank_testkit_server::facade::recorded_commit_axes::assert_agrees(
+                &data,
+                original_definition.receipt(),
+            );
         }
         other => panic!("expected the retained definition, got {other:?}"),
     };

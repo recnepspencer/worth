@@ -70,6 +70,6 @@ fn another_runtime_without_the_exact_commit_cannot_observe_a_receipts_committed_
                     .observe_committed_dispatch_outbox(&phase, &receipt)
             )
             .expect("installed host call opens"),
-        Err(BankCommittedDispatchOutboxReadDenial::ExactCommitUnavailable)
+        Err(BankCommittedDispatchOutboxReadDenial::ForeignRuntime)
     );
 }

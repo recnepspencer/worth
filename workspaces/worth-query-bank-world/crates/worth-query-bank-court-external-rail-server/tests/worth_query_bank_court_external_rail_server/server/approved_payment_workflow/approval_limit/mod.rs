@@ -48,7 +48,10 @@ fn payment_over_the_approval_limit_is_rejected_before_approval() {
         .expect("the exact condition replays")
     {
         WorkflowProgressOutcome::RecoveredCommitted(data) => {
-            worth_query_bank_testkit_server::facade::approved_payment_workflow::recorded_commit_axes::assert_agrees(&data, original.receipt());
+            worth_query_bank_testkit_server::facade::recorded_commit_axes::assert_agrees(
+                &data,
+                original.receipt(),
+            );
         }
         other => panic!("the condition retry must return original data: {other:?}"),
     }
