@@ -46,7 +46,11 @@ fn selected_source_slot_requires_original_and_native_capacity_before_retaining_b
         assert_eq!(blocked.recovery_effects(), 0);
         let evidence = blocked.evidence();
         assert_eq!(evidence.counters.current_root_integrity_admissions, 1);
-        let [PhysicalRecoverySourceDenial::WalInventoryAllocation {
+        let [PhysicalRecoverySourceDenial::RootProtocol {
+            artifact:
+                worth_store_recovery_runtime::PhysicalRecoveryRootProtocolArtifact::PreviousSelector,
+            denial: worth_store_recovery_runtime::PhysicalRecoveryRootProtocolDenial::Absent,
+        }, PhysicalRecoverySourceDenial::WalInventoryAllocation {
             boundary: PhysicalRecoveryWalInventoryAllocationBoundary::SourceSelection,
             cause: RecoveryWalAllocationDenial::Backing { requested, cause },
         }] = evidence.source_denials.as_slice()
