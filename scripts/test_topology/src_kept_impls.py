@@ -85,7 +85,7 @@ def mark_kept_impls(model):
         statements = gated_statements(node.own_text())
         if not statements:
             continue
-        for reference in references(_Text(names, statements), model.index):
+        for reference in references(_Text(names, statements), model.index) + child_references(model, names, statements):
             if reference.item is None:
                 continue
             origin = model.everything.origin(reference.module, reference.item)[0] or (reference.module, reference.item)
@@ -160,6 +160,20 @@ def declared_names(own, item):
     return set()
 
 
+def child_references(model, names, text):
+    """References through the module's own child modules (`tests::recorder::record()`)."""
+    from src_occurrences import scan
+    from src_paths import Reference
+    children = {c.names[-1] for c in model.index[names].children}
+    result = []
+    for occurrence in scan(text, children)[1]:
+        if occurrence.segments[0] in children:
+            resolved = resolve(occurrence.segments, names, model.index)
+            if resolved is not None and resolved[1]:
+                result.append(Reference(resolved[0], resolved[1][0]))
+    return result
+
+
 def has_kept(model, names):
     return any(r.kept_impls for n, r in model.records.items() if n[:len(names)] == names)
 
@@ -206,6 +220,8 @@ def public(text):
     head = re.match(r'\s*(?:#\s*\[[^\]]*\]\s*)*', text).end()
     if re.match(r'(?:fn|struct|enum|const|static|type|trait|union)\b', text[head:]):
         text = text[:head] + 'pub ' + text[head:]
+    if re.match(r'thread_local\s*!', text[head:]):
+        text = re.sub(r'(?m)^(\s*)static\s', r'\1pub static ', text)
     if re.match(r'impl\b', text[head:]) and not re.search(r'\bfor\b', text[head:text.find('{')]):
         text = re.sub(r'(?m)^(\s+(?:#\s*\[[^\]]*\]\s*)*)(?=(?:const\s+|async\s+|unsafe\s+)*fn\s)', r'\1pub ', text)
     return text

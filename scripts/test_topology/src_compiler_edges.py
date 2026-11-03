@@ -51,10 +51,12 @@ def widenings(check_json, root, tree):
             continue
         diagnostic = message['message']
         code = (diagnostic.get('code') or {}).get('code')
-        spans = diagnostic['spans'] + [s for c in diagnostic['children'] for s in c['spans']]
+        # Declarations sit in secondary spans or in child notes (where rustc marks them primary).
+        spans = [s for s in diagnostic['spans'] if not s['is_primary']] + \
+            [s for c in diagnostic['children'] for s in c['spans']]
         if code in ('E0446', 'E0603', 'E0624'):
             for span in spans:
-                if span['is_primary'] or not span['text']:
+                if not span['text']:
                     continue
                 path = (workspace / span['file_name']).resolve()
                 if not path.is_relative_to(library):

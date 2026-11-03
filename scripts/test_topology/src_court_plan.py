@@ -59,7 +59,8 @@ def build(lib, repository, baseline, admissions, workspace_manifest, overrides, 
         unit_of = {names: record.family for names, record in model.records.items()}
         for _round in range(6):
             kinds = dispositions(model, lambda n: unit_of[n])
-            for names in sorted((n for n in kinds if model.records[n].foreign), key=len):
+            for names in sorted((n for n in kinds if model.records[n].foreign or foreign_includes(model.records[n])),
+                                key=len):
                 # A mounted foreign source lives with its parent's part: it resolves `super::` there.
                 parent = kinds.get(names[:-1])
                 kinds[names] = 'testkit' if parent in ('testkit', 'split') else 'local'
@@ -155,6 +156,12 @@ def prepare(model, library_root):
     door_traits(model)
 
 
+def foreign_includes(record):
+    """Whether a module `include!`s source another package owns: that source relies on `super::`."""
+    import re
+    return bool(re.search(r'include!\s*\(\s*"[^"]*worth-query-certification/', record.node.own_text()))
+
+
 def included_record(record, target):
     """An included file rewritten in the context of the module that includes it."""
     from src_families import file_text
@@ -205,6 +212,9 @@ def extracted_readers(model, classes):
         for node in record.node.walk():
             for reference in references(ExpandedView(node), model.index):
                 if reference.item is None:
+                    target = model.records.get(reference.module)
+                    if target is not None and not target.extracted and family not in moving:
+                        result.add(family)
                     continue
                 origin, _gated = model.everything.origin(reference.module, reference.item)
                 if moved_away(origin or (reference.module, reference.item)):

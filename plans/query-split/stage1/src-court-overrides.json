@@ -22,6 +22,7 @@
     "domain_computation::primary_graph::application_output_demand::registry::record_map::MutRows",
     "domain_computation::primary_graph::application_output_demand::registry::record_map::ObservedRows",
     "domain_computation::primary_graph::application_output_demand::registry::record_map::mutation::RecordMutation",
+    "domain_computation::primary_graph::application_output_demand::settlement::observation::provenance::require_disclosure_owner",
     "domain_computation::primary_graph::workflow::schema::layout::WorkflowLayoutFields"
   ],
   "compiler_widen_methods": [],
