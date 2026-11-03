@@ -10,7 +10,7 @@ pub(super) struct DetachedRequiredMember {
     pub(super) _key: Option<Arc<WorthQueryOutputDemandKey>>,
 }
 
-pub(super) struct PreparedRequiredMember {
+pub struct PreparedRequiredMember {
     key: Arc<WorthQueryOutputDemandKey>,
 }
 

@@ -24,7 +24,7 @@ use crate::domain_computation::primary_graph::{
 
 mod fact_routes;
 pub(in crate::domain_computation::primary_graph) use fact_routes::FactRoutes;
-mod application_projection;
+pub(crate) mod application_projection;
 pub(in crate::domain_computation) use application_projection::CompletedFactProjection;
 mod original_read;
 pub(in crate::domain_computation) use original_read::CompletedOriginalRead;

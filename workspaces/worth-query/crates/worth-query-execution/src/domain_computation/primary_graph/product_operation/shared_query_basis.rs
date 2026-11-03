@@ -5,7 +5,7 @@ use crate::domain_computation::primary_graph::application_query::resource_lifecy
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
-pub(in crate::domain_computation) struct SharedSelectedProductOperation<'runtime, Schema> {
+pub struct SharedSelectedProductOperation<'runtime, Schema> {
     selected: WorthQuerySelectedProductOperation<'runtime, Schema>,
 }
 

@@ -33,7 +33,7 @@ pub use operation_reader::{
     WorthQueryObservedOutputAvailability, WorthQueryOutputAvailabilityDenial,
     WorthQueryOutputAvailabilityState,
 };
-mod realized_scope;
+pub(crate) mod realized_scope;
 mod relation_field;
 mod relation_identity;
 pub use relation_identity::WorthQueryInvariantRelation;

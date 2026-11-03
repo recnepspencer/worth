@@ -30,7 +30,7 @@ impl WorthQueryProviderSessionAffinityIdentity {
 }
 
 #[derive(Clone, Copy)]
-pub(in crate::domain_computation) struct WorthQueryProviderSessionAffinityView<'session> {
+pub struct WorthQueryProviderSessionAffinityView<'session> {
     #[allow(dead_code)]
     identity: WorthQueryProviderSessionAffinityIdentity,
     #[allow(dead_code)]

@@ -23,7 +23,7 @@ pub struct WorthQueryPerformedOutputDemandSource {
     pub(in crate::domain_computation::primary_graph) output_source_identity: Option<SourceEpoch>,
 }
 
-struct DiscoveredSourceRecovery {
+pub struct DiscoveredSourceRecovery {
     receipt: crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
     observation: worth_runtime_world::facade::ProductBranchObservation,
     discovery: Arc<dyn std::any::Any + Send + Sync>,
@@ -136,7 +136,7 @@ pub(in crate::domain_computation::primary_graph) use accepted_checkpoint_identit
 pub(in crate::domain_computation::primary_graph) use accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointPosture;
 pub(crate) mod admission;
 pub(crate) mod checkpoint;
-mod cleanup;
+pub(crate) mod cleanup;
 pub(crate) mod disposition;
 pub(crate) mod publication_head;
 use disposition::IdleRowDisposition;
@@ -160,14 +160,14 @@ pub(crate) mod claim_readthrough;
 mod custody_visibility;
 pub(crate) mod ready_backing;
 
-pub(in crate::domain_computation::primary_graph) mod join_observation;
+pub(crate) mod join_observation;
 pub(crate) mod record_map;
 mod record_preparation;
 pub(crate) mod refresh_predecessor;
 pub(crate) mod refreshed_rejoin;
 pub(crate) mod required_context;
 
-mod required_members;
+pub(crate) mod required_members;
 pub(crate) mod required_stop;
 pub(crate) mod required_work;
 pub(in crate::domain_computation::primary_graph) use admission::SelectedOutputAdmission;

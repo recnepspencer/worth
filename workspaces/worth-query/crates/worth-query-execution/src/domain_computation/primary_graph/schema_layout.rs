@@ -120,7 +120,7 @@ pub struct WorthQueryPrimaryRelationLayout {
 }
 
 #[derive(Clone, Debug)]
-pub(in crate::domain_computation) struct WorthQueryPrimaryFieldLayout {
+pub struct WorthQueryPrimaryFieldLayout {
     pub(super) entity_kind: KindId,
     pub(super) locator: AspectFieldLocator,
     /// Whether the schema declares the field equality-queryable.

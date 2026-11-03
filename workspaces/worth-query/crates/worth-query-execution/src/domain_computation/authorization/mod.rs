@@ -14,7 +14,7 @@ pub(crate) mod capability_observation;
 mod capability_registry;
 mod capability_revalidation;
 mod capability_revocation_progression;
-mod decision_facts;
+pub(crate) mod decision_facts;
 pub(in crate::domain_computation) use decision_facts::AuthorizationCurrentnessStop;
 pub(in crate::domain_computation) use decision_facts::{
     SourceAuthorizationLocus, SourceReadSupport, SourceReadSupportCurrentnessStop,

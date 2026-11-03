@@ -4,7 +4,7 @@ pub(crate) mod wave_admission;
 pub(in crate::domain_computation::primary_graph) use wave_admission::AdmittedRequiredWave;
 pub(in crate::domain_computation::primary_graph) use wave_admission::PreparedRequiredInputs;
 mod branch_selection;
-mod claim;
+pub(crate) mod claim;
 pub(in crate::domain_computation::primary_graph) use claim::RequiredWorkClaim;
 mod current_record;
 mod discontinuity;

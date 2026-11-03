@@ -31,7 +31,7 @@ struct ConfiguredProviders<S> {
     registration_order: Vec<EqualityTypeId>,
 }
 
-pub(in crate::domain_computation::primary_graph) struct ManagedIndexProviderCatalog<S> {
+pub struct ManagedIndexProviderCatalog<S> {
     providers: Arc<ConfiguredProviders<S>>,
     marker: PhantomData<fn() -> S>,
 }

@@ -56,7 +56,7 @@ impl WorthQueryApplicationAttemptLookupKey {
 }
 
 #[derive(Default)]
-pub(super) struct WorthQueryPrimaryGraphApplicationAttemptStore {
+pub struct WorthQueryPrimaryGraphApplicationAttemptStore {
     attempts: BTreeMap<WorthQueryApplicationAttemptLookupKey, WorthQueryApplicationAttemptEntry>,
     next_registration: u64,
     next_overlay: u64,

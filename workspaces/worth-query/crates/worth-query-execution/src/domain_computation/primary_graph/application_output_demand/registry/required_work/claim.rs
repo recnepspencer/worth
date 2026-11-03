@@ -1,6 +1,6 @@
 //! A queue pop claims a physical row, without selecting its current cause.
 use super::*;
-pub(in crate::domain_computation::primary_graph) struct RequiredWorkClaim {
+pub struct RequiredWorkClaim {
     pub(super) membership: Arc<RequiredWorkMembership>,
     pub(super) armed: bool,
 }

@@ -13,7 +13,7 @@ pub(in crate::domain_computation) use source_read_support::{
     SourceAuthorizationLocus, SourceReadSupport, SourceReadSupportCurrentnessStop,
 };
 pub(super) mod authorization;
-mod principal_currentness;
+pub(crate) mod principal_currentness;
 mod provider_binding;
 mod provider_commit_authorization;
 pub(in crate::domain_computation) use authorization::WorthQueryAuthorizationDecisionFact;

@@ -10,7 +10,7 @@ pub(in super::super) struct CustodyCleanupQueue {
 }
 
 #[derive(Default)]
-pub(in super::super) struct CustodyCleanupLinks {
+pub struct CustodyCleanupLinks {
     pub queued: bool,
     previous: Option<Commit>,
     pub next: Option<Commit>,

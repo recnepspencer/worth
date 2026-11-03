@@ -17,7 +17,7 @@ use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture;
 
 /// Prepared before Running and consumed by exactly one execution outcome.
-pub(in crate::domain_computation::primary_graph) struct PreparedSelectedExecutionFinish<'a> {
+pub struct PreparedSelectedExecutionFinish<'a> {
     registry: &'a WorthQueryOutputDemandRegistry,
     key: Arc<super::super::WorthQueryOutputDemandKey>,
     member: Arc<RequiredWorkMembership>,

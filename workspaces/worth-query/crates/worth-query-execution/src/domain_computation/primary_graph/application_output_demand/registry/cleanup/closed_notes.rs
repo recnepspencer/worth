@@ -10,7 +10,7 @@ mod visit;
 pub(in super::super) use visit::ClosedRowNote;
 pub(in super::super) use visit::QueuedClosedRow;
 
-pub(in super::super) struct ClosedCleanupLinks(Arc<ClosedNoteBacking>);
+pub struct ClosedCleanupLinks(Arc<ClosedNoteBacking>);
 pub(in super::super) struct ClosedNoteBacking {
     pub(in super::super) claim_owner: super::super::claim_readthrough::OwnerState,
     pub(in super::super) claimants:

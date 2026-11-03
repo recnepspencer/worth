@@ -5,7 +5,7 @@ pub(in crate::domain_computation::primary_graph) use admitted_read::read_decisio
 pub(in crate::domain_computation::primary_graph::application_query) use admitted_read::read_source_admitted;
 mod build;
 mod candidates;
-mod configuration;
+pub(crate) mod configuration;
 mod control;
 mod denial;
 mod execution;

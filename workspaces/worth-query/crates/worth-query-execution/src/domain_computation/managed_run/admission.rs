@@ -169,7 +169,7 @@ fn validate_run_lower(
     Ok(counters)
 }
 
-pub(crate) struct WorthQueryManagedRunAdmissionRejection {
+pub struct WorthQueryManagedRunAdmissionRejection {
     denial: WorthQueryManagedRunDenial,
     resource_attempt: WorthQueryDirectExecutionResourceAttempt,
     bridge_basis: BridgeBoundExecutionBasis,
