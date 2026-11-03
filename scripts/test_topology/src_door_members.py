@@ -70,7 +70,7 @@ def members(root, check, report, write_report):
     index = {node.names: node for node in tree.walk()}
     doors = defaultdict(dict)        # module names -> {door key: text}
     sites = defaultdict(set)         # court file -> {(start, end, replacement)}
-    authority, unplaced = set(), []
+    authority, unplaced, opened = set(), [], set()
     counts = defaultdict(int)
     for diagnostic in diagnostics(check):
         code = (diagnostic.get('code') or {}).get('code')
@@ -101,6 +101,12 @@ def members(root, check, report, write_report):
             span = declared[0]
             owner = owning_impl(index, (root / WORKSPACE / span['file_name']).resolve(), span['byte_start'])
             name = re.search(r'`(\w+)`', diagnostic['message']).group(1)
+            if name.endswith('_for_test'):
+                # Already a sealed test door by name: it only needs to be `pub`.
+                opened.add(((root / WORKSPACE / span['file_name']).resolve(), span['byte_start']))
+                if AUTHORITY.search(name):
+                    authority.add(span['file_name'].split('/src/', 1)[-1] + f'::{name}')
+                continue
             if owner is None:
                 unplaced.append(diagnostic['message'])
                 continue
@@ -136,6 +142,7 @@ def members(root, check, report, write_report):
             if AUTHORITY.search(struct):
                 authority.add('::'.join(node.names) + f'::{struct}.{field}')
     counts.update(write_doors(index, doors))
+    counts['opened'] = open_declarations(opened)
     counts['call_sites'] = rewrite_sites(sites)
     data = {'constructor_doors': sorted('::'.join(m) + f'::{k[2]}::new' for m, d in doors.items() for k in d if k[0] == 'new'),
             'method_doors': sorted('::'.join(m) + f'::{k[2]}::{k[1]}' for m, d in doors.items() for k in d if k[0] == 'method'),
@@ -144,6 +151,23 @@ def members(root, check, report, write_report):
             'authority_doors': sorted(authority), 'unplaced': sorted(set(unplaced))}
     write_report(report, 'members', data)
     return {k: len(v) for k, v in data.items()}
+
+
+def open_declarations(opened):
+    """Make `*_for_test` methods (already sealed doors by name) `pub` at their declaration."""
+    by_file = defaultdict(set)
+    for path, at in opened:
+        by_file[path].add(at)
+    for path, starts in by_file.items():
+        data = path.read_bytes()
+        for at in sorted(starts, reverse=True):
+            head = re.match(rb'pub(?:\s*\([^)]*\))?\s+', data[at:])
+            if head:
+                data = data[:at] + b'pub ' + data[at + head.end():]
+            elif data[at:].startswith((b'fn ', b'const fn', b'async fn', b'unsafe fn')):
+                data = data[:at] + b'pub ' + data[at:]
+        path.write_bytes(data)
+    return len(opened)
 
 
 def writes(path, end):
