@@ -221,10 +221,12 @@ impl PlannedStateBacking {
         crate::orchestration::PublicationStateBacking,
         crate::progression::ReopenedBacking,
     ) {
-        let state = self
-            .values
-            .pop()
-            .expect("planned receiver contains its admitted state");
+        assert_eq!(
+            self.values.len(),
+            1,
+            "sealed planned owner contains one state"
+        );
+        let state = self.values.remove(0);
         (
             state,
             self.input,

@@ -51,10 +51,8 @@ impl NamespaceDurableBacking {
         &self.0.as_slice()[0]
     }
     pub(super) fn into_parts(mut self) -> (NamespaceDurablePayload, Self) {
-        let payload = self
-            .0
-            .pop()
-            .expect("published namespace contains its admitted payload");
+        assert_eq!(self.0.len(), 1, "sealed namespace contains one payload");
+        let payload = self.0.remove(0);
         (payload, self)
     }
     pub(super) fn into_payload(mut self) -> NamespaceDurablePayload {
