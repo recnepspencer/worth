@@ -10,10 +10,10 @@ use worth_store_recovery_runtime::{
 
 #[test]
 fn selected_source_slot_requires_original_and_native_capacity_before_retaining_backing() {
-    let (world, receipt, _) =
-        worth_store_testkit_recovery_runtime::production_entry::release_reopen::released_world(1);
-    assert!(receipt.remaining_payload_records() > 0);
-    crate::production_entry::certified_release_serving::release_capacity_budget::recovery_pool_handoff::checkpoint(world.serving(), [0xd6; 32]);
+    // Keep this cut before its first checkpoint, so checkpoint decoding is
+    // not an earlier, larger allocation boundary than the source slot.
+    let world = worth_store_test_support::harness::physical_residency::PhysicalResidencyStoreWorld::initialize_for_recovery("selected-source-funding")
+        .expect("real filesystem Store before its first checkpoint");
     let store = world.serving().store_identity();
     let retained = world.retained_root();
     let root = retained.path();
@@ -24,7 +24,10 @@ fn selected_source_slot_requires_original_and_native_capacity_before_retaining_b
     // Input DATA, its movement temporary and its new slot already require
     // three payload headers; native custody adds its own nonempty header.
     let insufficient = source_bytes.checked_mul(3).unwrap();
-    let original = PhysicalRecoveryStaticConfiguration::current();
+    let original = PhysicalRecoveryStaticConfiguration::current()
+        .with_durability_declaration(worth_store_testkit_recovery_runtime::production_entry::certified_release_serving::serving_durability(
+            std::num::NonZeroU64::new(16 << 20).unwrap(),
+        ));
     let native = original
         .clone()
         .with_residency_policy(recovery_policy_with_scope(insufficient))
