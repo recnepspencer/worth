@@ -1,6 +1,9 @@
 {
  "authority_doors": [],
  "constructor_doors": [],
+ "destructuring_doors": [
+  "domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::registered::WorthQueryRegisteredProviderAttempt::into_parts"
+ ],
  "field_doors": [
   "domain_computation::primary_graph::application_output_demand::registry::DemandRecord.claim_batch (mut)",
   "domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointIdentity.idempotency_key (mut)"
