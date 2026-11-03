@@ -14,6 +14,10 @@ pub(in crate::domain_computation::primary_graph::provider) struct WorthQueryAppr
         Option<PredicatePreparationOwner>,
 }
 pub(in crate::domain_computation::primary_graph::provider) struct WorthQueryRetiredApplicationAttemptPhase(
+    #[allow(
+        dead_code,
+        reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it"
+    )]
     PhaseState,
 );
 

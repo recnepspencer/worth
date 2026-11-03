@@ -31,7 +31,7 @@ fn cancelled_native_preparation_is_a_control_stop_not_no_kind() {
         .commit(&execution, &runtime)
         .unwrap();
     assert_eq!(admitted.changed_records.len(), 1);
-    crate::relational_snapshot_release::release_query_snapshot(&mut runtime, &admitted.snapshot);
+    crate::relational_snapshot_release::release_query_snapshot(&runtime, &admitted.snapshot);
     let pending = transaction(&runtime, "cancelled");
     source.cancel();
     let error = pending.commit(&execution, &runtime).unwrap_err();
@@ -72,10 +72,7 @@ fn cancelled_relation_equality_is_a_control_stop_not_false() {
         let RecordRef::Entity(entity) = committed.changed_records[0] else {
             panic!("entity commit produced its entity");
         };
-        crate::relational_snapshot_release::release_query_snapshot(
-            &mut runtime,
-            &committed.snapshot,
-        );
+        crate::relational_snapshot_release::release_query_snapshot(&runtime, &committed.snapshot);
         entity
     };
     let from = create_entity("from");
@@ -150,5 +147,5 @@ fn cancelled_relation_equality_is_a_control_stop_not_false() {
         denial.execution_denial_cause(),
         Some(Err(Control::Cancelled))
     );
-    crate::relational_snapshot_release::release_query_snapshot(&mut runtime, &committed.snapshot);
+    crate::relational_snapshot_release::release_query_snapshot(&runtime, &committed.snapshot);
 }

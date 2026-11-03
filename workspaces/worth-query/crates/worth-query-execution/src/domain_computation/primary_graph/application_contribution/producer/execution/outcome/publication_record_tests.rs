@@ -10,8 +10,7 @@ fn only_a_new_commit_records_a_publication_in_this_advance() {
             "published fixture",
             WorthQueryApplicationCommitOutcome::RecoveredCommitted(recovered),
         )
-        .err()
-        .expect("original data cannot mint a producer publication capability");
+        .expect_err("original data cannot mint a producer publication capability");
         assert!(replay.recovered_publication().is_some());
         assert_eq!(
             recorded.get(),

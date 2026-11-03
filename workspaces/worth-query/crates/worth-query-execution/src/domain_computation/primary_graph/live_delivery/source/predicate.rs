@@ -205,24 +205,6 @@ impl WorthQueryLiveDeliverySource {
         }
         Ok(())
     }
-    /// An authenticated lifecycle/untracked-movement owner calls this; no READ is issued.
-    pub(in crate::domain_computation::primary_graph) fn invalidate_predicates(
-        &self,
-        observation: &ProductBranchObservation,
-    ) {
-        let key = WorthQueryLiveProductKey::from_observation(observation);
-        let mut state = self
-            .state
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        if let Some(partition) = state.partitions.get_mut(&key) {
-            if let Some(next) = partition.resync_epoch.checked_add(1) {
-                partition.resync_epoch = next;
-            } else {
-                partition.retired = true;
-            }
-        }
-    }
 }
 impl WorthQueryLivePredicateSubscription {
     pub(in crate::domain_computation::primary_graph) fn subscription(

@@ -174,7 +174,7 @@ where
     if let Some(material) = &material {
         material
             .original_metadata(plan.query.name(), basis_identity.branch_id())
-            .map_err(&material_failure)?;
+            .map_err(material_failure)?;
     }
     let query_identifier = std::sync::Arc::new(plan.query.name().to_owned());
     let result_set_footprint = set_footprint.materialize();
@@ -199,7 +199,7 @@ where
                 execution,
                 &source_control,
             )
-            .map_err(&material_failure)
+            .map_err(material_failure)
         };
     let mut row_meanings = worth_execution::ExecutionRequestArrayBuilder::allocate(
         *execution,
@@ -256,7 +256,7 @@ where
     let mut observed_sources = if let Some(material) = &material {
         material
             .source_headers(source_parameters.row_meanings().len())
-            .map_err(&material_failure)?
+            .map_err(material_failure)?
     } else {
         Vec::with_capacity(source_parameters.row_meanings().len())
     };

@@ -2,14 +2,6 @@ use super::super::super::demand::ProducerPublicationStale;
 use super::*;
 use crate::domain_computation::primary_graph::invariant_projection::VerificationCapacityStop;
 
-pub(super) fn ready_work_denial(subject: &'static str) -> ProducerExecutionStop {
-    WorthQueryOutputDemandDenial::new(
-        WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-        subject,
-    )
-    .into()
-}
-
 pub(in crate::domain_computation::primary_graph::application_contribution::producer::execution) fn ready_resource_denial(
     subject: &'static str,
     stop: worth_relational::facade::mvcc::CompanionPreflightStop,

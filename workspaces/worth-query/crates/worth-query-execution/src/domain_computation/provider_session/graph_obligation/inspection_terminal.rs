@@ -11,11 +11,27 @@ use worth_query_admission::{
 
 pub(in crate::domain_computation) struct WorthQueryInspectionReadCompletion {
     pub(super) session: WorthQueryGraphWorkSessionIdentity,
+    #[allow(
+        dead_code,
+        reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it"
+    )]
     pub(super) managed_run: WorthQueryGraphWorkManagedRunIdentity,
     pub(super) plan: WorthQueryGraphWorkPlanIdentity,
     pub(super) target: std::sync::Arc<WorthQueryApplicationInspectionTarget>,
+    #[allow(
+        dead_code,
+        reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it"
+    )]
     pub(super) basis: WorthQueryApplicationBasisIdentity,
+    #[allow(
+        dead_code,
+        reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it"
+    )]
     pub(super) basis_release: WorthQueryApplicationBasisReleaseReceipt,
+    #[allow(
+        dead_code,
+        reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it"
+    )]
     pub(super) release: WorthQueryExecutionCapacityReleaseReceipt,
 }
 
@@ -27,12 +43,6 @@ impl WorthQueryInspectionReadCompletion {
         target: &std::sync::Arc<WorthQueryApplicationInspectionTarget>,
     ) -> bool {
         self.session == session && self.plan == plan && std::sync::Arc::ptr_eq(&self.target, target)
-    }
-
-    pub(in crate::domain_computation) const fn session_identity(
-        &self,
-    ) -> WorthQueryGraphWorkSessionIdentity {
-        self.session
     }
 }
 

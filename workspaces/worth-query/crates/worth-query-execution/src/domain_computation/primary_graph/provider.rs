@@ -114,7 +114,6 @@ pub use mutation_work::WorthQueryTouchedRecordIdentity;
 pub(in crate::domain_computation) use session_commit::WorthQueryCommittedDispatchOutboxBinding;
 pub(super) use session_commit::WorthQueryCommittedDispatchOutboxBindingDenial;
 pub(super) use session_commit::WorthQueryCommittedDispatchOutboxReceiptSeal;
-pub(super) use session_commit::WorthQueryRetainedApplicationCommitBasis;
 pub(crate) use session_commit::WorthQueryRetainedPreImageSeal;
 use std::sync::Arc;
 use std::sync::Mutex;

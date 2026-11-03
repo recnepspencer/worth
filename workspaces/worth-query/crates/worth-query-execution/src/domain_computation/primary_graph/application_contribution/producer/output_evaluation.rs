@@ -43,6 +43,10 @@ pub(in crate::domain_computation::primary_graph) struct ProducerOutputEvaluation
 pub(in crate::domain_computation::primary_graph) enum ProducerOutputEvaluationState {
     Ineligible(WorthQueryProducerEvaluationIneligibility),
     CaptureUnavailable(
+        #[allow(
+            dead_code,
+            reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it"
+        )]
         crate::domain_computation::primary_graph::application_attempt::OutputFieldCaptureFailure,
     ),
     Compared(ComparedProducerOutput),
@@ -148,7 +152,7 @@ impl InstalledOutputComparison {
                 Err(cause) => ProducerOutputEvaluationState::Ineligible(cause),
                 Ok(observed) => {
                     let attempt = attempts
-                        .fetch_update(
+                        .try_update(
                             std::sync::atomic::Ordering::Relaxed,
                             std::sync::atomic::Ordering::Relaxed,
                             |current| current.checked_add(2),

@@ -141,7 +141,7 @@ fn held_completed_evidence_preserves_exact_old_replay_without_eviction() {
         };
         assert_eq!(held.len(), 64);
         crate::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_original(
-            &replayed, &first,
+            &replayed, first,
         );
         assert_eq!(replayed.commit_reference(), first.commit_reference());
         // D9 retires reconstructed runtime work; fresh work assertions and original semantic equality remain.

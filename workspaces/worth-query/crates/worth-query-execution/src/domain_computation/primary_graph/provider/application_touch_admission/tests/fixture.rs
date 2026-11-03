@@ -270,7 +270,7 @@ impl World {
             .settle_performed_publication(performed)
             .unwrap();
         crate::relational_snapshot_release::release_query_snapshot(
-            &mut self.native,
+            &self.native,
             &self.retained_commit.snapshot,
         );
         self.retained_commit = committed;
@@ -341,7 +341,7 @@ impl World {
 impl Drop for World {
     fn drop(&mut self) {
         crate::relational_snapshot_release::release_query_snapshot(
-            &mut self.native,
+            &self.native,
             &self.retained_commit.snapshot,
         );
     }

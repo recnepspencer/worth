@@ -63,6 +63,10 @@ fn workflow_release_disposes_each_exact_capacity_authority_once() {
 }
 
 #[test]
+#[expect(
+    clippy::disallowed_methods,
+    reason = "External simultaneous callers exercise the capacity owner; this test does not place Query computation"
+)]
 fn racing_reservations_never_exceed_the_physical_limit() {
     const THREADS: usize = 8;
     let capacity = Arc::new(ObservedCapacity::new("raced", 1));

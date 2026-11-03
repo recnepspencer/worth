@@ -211,7 +211,7 @@ where
                 instance_identity_locator,
                 start_path,
                 ),
-            Ok(crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationLandedCommit::Recovered(receipt)) => return WorkflowInstanceStartOutcome::RecoveredCommitted(receipt),
+            Ok(crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationLandedCommit::Recovered(receipt)) => WorkflowInstanceStartOutcome::RecoveredCommitted(receipt),
             Err(uncommitted) => match supersession {
                 Some(supersession) => supersession
                     .outcome(uncommitted)

@@ -80,12 +80,6 @@ impl OriginalPublication {
             Self::Memory(value) => value.native().semantic_result().semantic(),
         }
     }
-    pub(super) fn recovered_semantic_result(&self) -> &RecoveredRelationalSemanticResult {
-        match self {
-            Self::Home(value) => value.recovered_semantic_result(),
-            Self::Memory(value) => value.native().semantic_result(),
-        }
-    }
     pub(super) fn owner_coordinate(&self) -> worth_foundational::facade::WorldOwnerCoordinate {
         match self {
             Self::Home(value) => worth_foundational::facade::WorldOwnerCoordinate::Home {

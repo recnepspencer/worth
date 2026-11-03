@@ -16,6 +16,10 @@ type Value<S, B> =
 enum IndexDecisionStop {
     ContextUnavailable,
     ForeignProjection,
+    #[allow(
+        dead_code,
+        reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it"
+    )]
     Native(worth_relational::facade::mvcc::CompanionPreflightStop),
 }
 impl std::fmt::Display for IndexDecisionStop {

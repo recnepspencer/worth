@@ -3,8 +3,8 @@ use crate::domain_computation::primary_graph::tests::fixture::{
     installed_authorization_world, live_scope,
 };
 use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationCommitOutcome, WorthQueryApplicationCommitTerminalKind,
-    WorthQueryApplicationHistoricalRead, WorthQueryApplicationQueryAdmissionDenialKind,
+    WorthQueryApplicationCommitOutcome, WorthQueryApplicationHistoricalRead,
+    WorthQueryApplicationQueryAdmissionDenialKind,
 };
 
 #[test]

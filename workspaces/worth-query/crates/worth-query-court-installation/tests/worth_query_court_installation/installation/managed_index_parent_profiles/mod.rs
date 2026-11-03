@@ -79,9 +79,8 @@ fn installed_parent_profiles_preserve_identity_and_refuse_codec_or_disclosure_dr
         declared.operation().contracts().managed_index_reads().len(),
         1
     );
-    let foreign_scope = bind::<4>()
-        .err()
-        .expect("an input-field operation cannot borrow a principal-scoped Parent");
+    let foreign_scope =
+        bind::<4>().expect_err("an input-field operation cannot borrow a principal-scoped Parent");
     assert_eq!(
         foreign_scope.kind(),
         SchemaKind::OperationInstallationDenied

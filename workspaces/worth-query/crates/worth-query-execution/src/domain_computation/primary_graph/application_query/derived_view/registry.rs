@@ -9,15 +9,13 @@ mod managed_source;
 mod native_count;
 mod predicate;
 pub(in crate::domain_computation::primary_graph) use predicate::PredicateNoticeDisposition;
+pub(in crate::domain_computation::primary_graph::application_query) use predicate::PredicateRegistration;
 pub(in crate::domain_computation::primary_graph::application_query) use predicate::{
     mark_prepared_predicates_unavailable, route_prepared_predicates,
 };
 pub(in crate::domain_computation::primary_graph) use predicate::{
     PredicatePreparationFactory, PredicatePreparationOwner, PredicatePreparationRetirement,
     PredicateWorld, PreparedPredicateNotices, PreparedPredicatePublication, SourcePredicateAxis,
-};
-pub(in crate::domain_computation::primary_graph::application_query) use predicate::{
-    PredicateRegistration, PredicateRootReservation,
 };
 
 pub(in crate::domain_computation::primary_graph::application_query) trait RegisteredManagedIndex:

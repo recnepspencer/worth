@@ -343,14 +343,6 @@ impl WorthQueryApplicationCommitReceipt {
         self.performed_product_change.take()
     }
 
-    pub(in crate::domain_computation::primary_graph) fn with_aftermath_causality(
-        mut self,
-        causality: Option<WorthQueryCommittedAftermathCausality>,
-    ) -> Self {
-        self.aftermath_causality = causality;
-        self
-    }
-
     pub(in crate::domain_computation::primary_graph) fn with_external_dispatch(
         mut self,
         dispatch: WorthQueryExternalEffectDispatch,

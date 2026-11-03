@@ -159,11 +159,6 @@ impl WorthQueryProductPublicationReceipt {
         self.history.take()
     }
 
-    /// Keeps this copy's commit in World history for as long as it lives.
-    pub(crate) fn hold_history(&mut self, hold: WorthQueryCommitHistoryHold) {
-        self.history = Some(hold);
-    }
-
     pub(crate) fn root_identity(&self) -> Arc<WorthQueryProductRootIdentity> {
         Arc::clone(&self.custody.root_identity)
     }

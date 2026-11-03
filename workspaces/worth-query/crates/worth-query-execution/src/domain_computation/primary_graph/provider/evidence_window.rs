@@ -1,6 +1,6 @@
 //! Completed evidence and exact World history handoff.
 
-use super::{WorthQueryPrimaryGraphCommittedApplication, WorthQueryPrimaryGraphProvider};
+use super::WorthQueryPrimaryGraphProvider;
 
 impl WorthQueryPrimaryGraphProvider {
     /// Exact completed evidence entries retained for idempotency.

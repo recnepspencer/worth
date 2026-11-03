@@ -1,5 +1,4 @@
 //! The actual lineage owner, not recorded coordinates, supplies output custody.
-use super::*;
 use crate::domain_computation::primary_graph::{
     output_lineage::own_write_fixture::with_committed_own_write,
     tests::{

@@ -62,7 +62,7 @@ fn equivalent_retry_recovers_original_receipt_while_intent_drift_is_denied() {
             admitted_program(&phase, &world, &principal, &account, &request, "committed")
         })
         .expect("the fixture read owns its installed host call");
-    let WorthQueryApplicationCommitOutcome::RecoveredCommitted(mut recovered) =
+    let WorthQueryApplicationCommitOutcome::RecoveredCommitted(recovered) =
         world.application.compare_and_commit_application(
             retry,
             idempotency(9, 7),

@@ -38,9 +38,7 @@ pub(super) use retained_basis::{
     WorthQueryObservedApplicationFactBasis,
 };
 
-use super::{
-    mutation_work::WorthQueryPrimaryMutationWorkCounters, WorthQueryPrimaryGraphApplicationAttempt,
-};
+use super::WorthQueryPrimaryGraphApplicationAttempt;
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 struct WorthQueryApplicationAttemptLookupKey(WorthQueryProviderSessionAffinityIdentity);
@@ -83,6 +81,10 @@ enum WorthQueryApplicationAttemptEntry {
         identity: u64,
     },
 }
+#[allow(
+    dead_code,
+    reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it"
+)]
 pub(super) struct WorthQueryRetiredApplicationAttempt(WorthQueryApplicationAttemptEntry);
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationAttemptReservation {

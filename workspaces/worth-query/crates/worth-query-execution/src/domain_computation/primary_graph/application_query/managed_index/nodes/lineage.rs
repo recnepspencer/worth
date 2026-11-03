@@ -39,7 +39,7 @@ impl NodeLineage {
     pub(super) fn issue(&self, control: &WorthQueryManagedIndexControl<'_>) -> Result<usize, Stop> {
         control.checkpoint(1)?;
         self.next
-            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |next| {
+            .try_update(Ordering::Relaxed, Ordering::Relaxed, |next| {
                 next.checked_add(1)
             })
             .map_err(|_| control.refuse(Stop::CapacityOverflow))

@@ -109,16 +109,6 @@ impl WorthQueryCommittedProductPublication {
         }
     }
 
-    /// Keeps this copy's commit in World history for as long as it lives.
-    pub(in crate::domain_computation::primary_graph) fn hold_history(
-        &mut self,
-        hold: crate::domain_computation::execution_runtime::product_world::WorthQueryCommitHistoryHold,
-    ) {
-        if let PublicationCustody::Performed(receipt) = &mut self.custody {
-            receipt.hold_history(hold);
-        }
-    }
-
     /// The same identities without the performed publication, once its
     /// commit's history retired, so holding it pins no World or owner state.
     pub(in crate::domain_computation::primary_graph) fn retired(&self) -> Self {

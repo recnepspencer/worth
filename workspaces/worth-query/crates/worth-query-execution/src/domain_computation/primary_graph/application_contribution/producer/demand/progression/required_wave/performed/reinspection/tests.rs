@@ -110,7 +110,7 @@ fn assert_publication_credit(replay: bool, publish: bool) {
                     if replay {
                         let recovered = crate::domain_computation::primary_graph::tests::fixture::recorded_receipt::read_original_in_phase(world, &receipt, &phase);
                         let denial = commit_receipt("actual publication", WorthQueryApplicationCommitOutcome::RecoveredCommitted(recovered))
-                            .err().expect("original receipt data cannot pay fresh publication credit");
+                            .expect_err("original receipt data cannot pay fresh publication credit");
                         assert!(denial.recovered_publication().is_some());
                     } else {
                         let publication = commit_receipt("actual publication", WorthQueryApplicationCommitOutcome::Committed(receipt))

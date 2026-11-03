@@ -212,7 +212,7 @@ fn read_source<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>>(
             let (observation, _, proof) = execute_selected_authorized_body_with_native_access(
                 execution,
                 application,
-                &mut plan,
+                &plan,
                 native,
                 |runtime, _, source_plan| {
                     Ok(runtime.read_truth().observe_managed_index_source(

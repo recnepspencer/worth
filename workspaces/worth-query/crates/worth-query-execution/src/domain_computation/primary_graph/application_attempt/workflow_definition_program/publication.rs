@@ -233,7 +233,7 @@ where
                 content_identity,
                 &content_identity_locator,
                 ),
-            Ok(crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationLandedCommit::Recovered(receipt)) => return WorkflowDefinitionPublicationOutcome::RecoveredCommitted(receipt),
+            Ok(crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationLandedCommit::Recovered(receipt)) => WorkflowDefinitionPublicationOutcome::RecoveredCommitted(receipt),
             Err(uncommitted) => WorkflowDefinitionPublicationOutcome::Application(uncommitted),
         }
     }

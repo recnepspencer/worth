@@ -131,10 +131,10 @@ pub(super) fn take_released_original<'a>(
     wakes: impl Iterator<Item = &'a mut Wake>,
 ) -> Option<crate::domain_computation::primary_graph::WorthQueryApplicationManagedCleanupReceipt> {
     for wake in wakes {
-        if let Decision::OperationCleanupRequired(_, cleanup) = &mut wake.decision {
-            if let Some(original) = cleanup.take_released_original() {
-                return Some(original);
-            }
+        if let Decision::OperationCleanupRequired(_, cleanup) = &mut wake.decision
+            && let Some(original) = cleanup.take_released_original()
+        {
+            return Some(original);
         }
     }
     None

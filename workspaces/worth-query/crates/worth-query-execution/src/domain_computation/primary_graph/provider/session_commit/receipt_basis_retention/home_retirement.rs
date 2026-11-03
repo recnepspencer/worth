@@ -14,6 +14,10 @@ use worth_relational::facade::change_source::{
 pub(super) enum RetirableReceiptBasis {
     Serving(WorthQueryRetainedApplicationCommitBasis),
     Retiring(RelationalRetainedObservationRetirement),
+    #[allow(
+        dead_code,
+        reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it"
+    )]
     Retired(RetiredRelationalRetainedObservation),
     LocalShareReleased,
 }

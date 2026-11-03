@@ -17,15 +17,6 @@ pub(in crate::domain_computation::primary_graph::provider) struct PreparedTouche
 }
 
 impl PreparedTouchedRecords {
-    pub(super) fn prepare(
-        candidate: &PreparedRelationalCommitCandidate,
-
-        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
-    ) -> Result<Self, WorthQueryProviderSessionCommitStop> {
-        Self::prepare_retained(candidate, allocation_policy)
-            .map_err(TouchedRecordsPreparationDenial::into_memory_stop)
-    }
-
     pub(super) fn prepare_retained(
         candidate: &PreparedRelationalCommitCandidate,
         allocation_policy: ExecutionAllocationPolicy<'_, '_>,

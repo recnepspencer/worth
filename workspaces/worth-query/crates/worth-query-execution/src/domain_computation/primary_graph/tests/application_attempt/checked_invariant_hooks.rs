@@ -6,7 +6,6 @@ use crate::domain_computation::primary_graph::{
     bound_advancement_requests_on_this_thread_for_test as bound,
     place_managed_computations_on_this_thread_for_test as place,
     WorthQueryAdvancementDenial as Advancement, WorthQueryExecutionPlacementForTest as Placement,
-    WorthQueryManagedComputationResourceDenial as Resource,
 };
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitOutcome,
