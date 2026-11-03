@@ -102,8 +102,7 @@ impl StoreColdSource {
         let cut = original
             .downcast_ref::<StoreCheckpointReadCut>()
             .ok_or(Refusal::ForeignProtection)?;
-        if cut.issuer.as_ptr() != self as *const Self || !Arc::ptr_eq(&cut.serving, self.serving())
-        {
+        if !std::ptr::eq(cut.issuer.as_ptr(), self) || !Arc::ptr_eq(&cut.serving, self.serving()) {
             return Err(Refusal::ForeignSource);
         }
         Ok(cut)

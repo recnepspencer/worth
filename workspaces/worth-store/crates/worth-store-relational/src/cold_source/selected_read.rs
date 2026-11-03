@@ -98,7 +98,7 @@ impl StoreColdSource {
         let Some(selected) = original.downcast_ref::<StoreSelectedRead>() else {
             return Ok(None);
         };
-        if selected.issuer.as_ptr() != self as *const Self
+        if !std::ptr::eq(selected.issuer.as_ptr(), self)
             || !selected
                 .serving
                 .as_ref()

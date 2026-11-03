@@ -38,7 +38,7 @@ impl SelectedReplacement {
         if self
             .issuer
             .as_ref()
-            .is_some_and(|issuer| issuer.as_ptr() != source as *const StoreColdSource)
+            .is_some_and(|issuer| !std::ptr::eq(issuer.as_ptr(), source))
             || self.expected.is_some_and(|original| original != expected)
         {
             return Err(Denial::DifferentSelection);
@@ -157,6 +157,10 @@ impl SelectedReplacement {
             .map_err(|_| Denial::Busy)??;
         Ok(())
     }
+    #[allow(
+        clippy::while_let_loop,
+        reason = "Retirement progress stays exhaustive so a new fate requires an owner decision"
+    )]
     fn retire_previous(
         &mut self,
         source: &StoreColdSource,

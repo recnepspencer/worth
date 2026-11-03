@@ -118,7 +118,7 @@ impl StoreColdSource {
         if builder.len() != length {
             return Err(Refusal::Storage(Cause::Damaged));
         }
-        Ok(builder.seal_immutable_bytes().map_err(Refusal::Buffer)?)
+        builder.seal_immutable_bytes().map_err(Refusal::Buffer)
     }
 }
 fn copy_journal(
@@ -151,7 +151,7 @@ fn copy_journal(
     if builder.len() != length {
         return Err(Refusal::Storage(Cause::Damaged));
     }
-    Ok(builder.seal_immutable_bytes().map_err(Refusal::Buffer)?)
+    builder.seal_immutable_bytes().map_err(Refusal::Buffer)
 }
 pub(super) fn journal_failure(failure: Failure, limit: u64) -> Refusal {
     match failure {

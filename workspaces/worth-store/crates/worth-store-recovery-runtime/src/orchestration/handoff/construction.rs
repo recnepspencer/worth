@@ -1,11 +1,10 @@
 //! Dispatch the selected recovery family before entering its owning construction frame.
 use worth_store::physical_runtime::{
-    AbsentCheckpointWitness, ClosedPhysicalRecoveryCleanup,
+    AbsentCheckpointWitness, AdmittedRecoveryFilesystemMedia, ClosedPhysicalRecoveryCleanup,
     ConfiguredPhysicalDurabilityDeclaration, PhysicalRecoveryAllocationAdmission,
     PhysicalRecoveryConstructionPort, PhysicalRecoveryCoordination,
     RecoveredPhysicalRuntimeConstructionDenial, RecoveredPhysicalRuntimeCore,
 };
-use worth_store_physical_backend::AdmittedRecoveryFilesystemMedia;
 use worth_store_recovery_physics::{
     VerifiedEffectiveReleaseHeadRosterV14, VerifiedOrderedHistoricalReleaseCustody,
     VerifiedPendingWalReleaseCustody, VerifiedSelectedNoReleaseCustody,

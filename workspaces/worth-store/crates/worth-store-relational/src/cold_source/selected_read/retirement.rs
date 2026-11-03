@@ -19,7 +19,7 @@ impl StoreColdSource {
         let selected = original
             .downcast_ref::<StoreSelectedRead>()
             .ok_or(R::ForeignCustody)?;
-        if selected.issuer.as_ptr() != self as *const Self
+        if !std::ptr::eq(selected.issuer.as_ptr(), self)
             || !selected
                 .serving
                 .as_ref()
