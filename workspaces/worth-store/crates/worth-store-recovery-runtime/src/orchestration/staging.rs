@@ -11,7 +11,8 @@ use crate::entry::{
 use crate::handoff::RecoveryOperationFateSet;
 use crate::progression::{
     PhysicalRecoveryDiscoveryCounters, RecoveryIntegrityEvidence, RecoveryPublicationPlan,
-    RecoveryQuiescencePlan, RecoveryStagingLayoutPlan, StagedPhysicalRecovery,
+    RecoveryQuiescencePlan, RecoveryStagingLayoutPlan, StagedPhysicalRecovery, StagedRecoveryState,
+    StagedStateBacking,
 };
 
 use super::RecoveryCoordination;
@@ -20,6 +21,7 @@ mod command;
 mod execution;
 
 pub(crate) struct RecoveryStagingInput {
+    pub(crate) staged_backing: StagedStateBacking,
     pub(crate) authority: AdmittedPlatformAuthority,
     pub(crate) coordination: RecoveryCoordination,
     pub(crate) selection: ResidentSourceSelection,
@@ -79,27 +81,27 @@ fn complete(
         return Err(block(input, execution));
     }
     let base = input.staging.into_base_image();
-    Ok(StagedPhysicalRecovery::new(
-        input.authority,
-        input.coordination,
-        input.selection,
-        input.custody,
-        input.verified_selected_tier_custody,
-        input.discovery_counters,
-        input.root_protocol_denials,
-        input.integrity,
-        input.freshness,
-        input.fates,
-        input.planning_counters,
-        input.root_protocol_counters,
+    Ok(input.staged_backing.finish(StagedRecoveryState {
+        authority: input.authority,
+        coordination: input.coordination,
+        selection: input.selection,
+        custody: input.custody,
+        verified_selected_tier_custody: input.verified_selected_tier_custody,
+        discovery_counters: input.discovery_counters,
+        root_protocol_denials: input.root_protocol_denials,
+        integrity: input.integrity,
+        freshness: input.freshness,
+        fates: input.fates,
+        planning_counters: input.planning_counters,
+        root_protocol_counters: input.root_protocol_counters,
         base,
-        input.publication,
-        input.quiescence,
-        execution.closed.expect("successful execution is closed"),
-        execution.counters,
-        execution.settlements,
-        input.integrity_trace,
-    ))
+        publication: input.publication,
+        quiescence: input.quiescence,
+        closed: execution.closed.expect("successful execution is closed"),
+        staging_counters: execution.counters,
+        staging_settlements: execution.settlements,
+        integrity_trace: input.integrity_trace,
+    }))
 }
 
 fn block(

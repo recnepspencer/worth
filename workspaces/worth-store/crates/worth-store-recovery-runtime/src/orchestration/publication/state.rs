@@ -10,7 +10,7 @@ use crate::entry::{
 };
 use crate::progression::{
     NamespaceDurablePhysicalRecovery, NamespaceDurableState, RecoveryPublicationExpectation,
-    RecoveryPublicationPlan, StagedPhysicalRecovery,
+    RecoveryPublicationPlan, StagedPhysicalRecovery, StagedRecoveryState,
 };
 
 pub(super) struct PublicationState {
@@ -37,7 +37,7 @@ pub(super) struct PublicationState {
 
 impl PublicationState {
     pub(super) fn from_staged(staged: StagedPhysicalRecovery) -> (Self, RecoveryPublicationPlan) {
-        let StagedPhysicalRecovery {
+        let StagedRecoveryState {
             authority,
             coordination,
             selection,
@@ -57,7 +57,7 @@ impl PublicationState {
             closed,
             staging_counters,
             staging_settlements,
-        } = staged;
+        } = staged.into_state();
         (
             Self {
                 authority,

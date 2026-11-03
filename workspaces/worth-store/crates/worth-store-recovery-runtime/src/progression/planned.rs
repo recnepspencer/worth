@@ -201,6 +201,7 @@ impl PlannedPhysicalRecovery {
         self,
         cancellation: crate::orchestration::RecoveryStagingCancellation,
     ) -> Result<super::StagedPhysicalRecovery, PhysicalRecoveryOutcome> {
+        let (planned, staged_backing) = self.state.into_staging_parts();
         let PlannedRecoveryState {
             authority,
             coordination,
@@ -220,8 +221,9 @@ impl PlannedPhysicalRecovery {
             root_protocol_denials,
             integrity_trace,
             integrity,
-        } = self.state.into_state();
+        } = planned;
         crate::orchestration::stage_recovery(crate::orchestration::RecoveryStagingInput {
+            staged_backing,
             authority,
             coordination,
             selection,

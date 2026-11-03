@@ -36,3 +36,4 @@ pub use planned::{
 pub use reopened::ReopenedPhysicalRecovery;
 pub use selected::SelectedPhysicalRecovery;
 pub use staged::{ClosedRecoveryStagingGeneration, StagedPhysicalRecovery};
+pub(crate) use staged::{StagedRecoveryState, StagedStateBacking};
