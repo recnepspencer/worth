@@ -735,7 +735,9 @@ For fresh program installation inside an already admitted original execution req
 use `host::application_contribution::with_bootstrap_advancement_from_request` and pass
 its phase first to `host::application_installation::in_memory_rostered_program_in_advancement`,
 then the validated program, roster, declaration, configuration, build identity, World
-limits and seed callback. Setup spends the supplied request; the installed World keeps
+limits and seed callback. To install a host-owned authorization clock in that same
+bootstrap, use `in_memory_rostered_program_with_authorization_time_source_in_advancement`
+and supply the clock after the callback. Setup spends the supplied request; the installed World keeps
 its declared runtime request policy. Default installation entries still open setup
 from that policy. See [installation funding](build-an-application.md#4-install-the-application-graph).
 
