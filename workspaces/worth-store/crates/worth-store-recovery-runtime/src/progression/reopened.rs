@@ -27,6 +27,10 @@ impl ReopenedPhysicalRecovery {
     pub(crate) fn backing_bytes(&self) -> Option<u64> {
         self.backing.backing_bytes().ok()
     }
+    #[cfg(feature = "certification-test-authority")]
+    pub(crate) fn retain_cleanup_media_handle_for_certification(&mut self) -> bool {
+        self.backing.retain_cleanup_media_handle_for_certification()
+    }
     pub(crate) fn release_admitted_wal(&mut self) {
         self.backing.release_admitted_wal();
     }

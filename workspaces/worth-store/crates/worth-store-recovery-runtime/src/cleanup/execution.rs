@@ -225,12 +225,7 @@ fn finish(
         .take_certification_cleanup_media_handle_leak()
     {
         assert!(
-            reopened
-                .payload()
-                .state
-                .authority
-                .media
-                .certification_retain_cleanup_media_handle(),
+            reopened.retain_cleanup_media_handle_for_certification(),
             "certification cleanup handle leak must reach the admitted backend owner"
         );
     }

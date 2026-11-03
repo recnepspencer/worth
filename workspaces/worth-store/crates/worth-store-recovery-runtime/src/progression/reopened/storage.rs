@@ -45,6 +45,14 @@ impl ReopenedBacking {
             .take()
             .expect("cleanup entry consumes fresh reopen exactly once")
     }
+    #[cfg(feature = "certification-test-authority")]
+    pub(super) fn retain_cleanup_media_handle_for_certification(&mut self) -> bool {
+        self.0[0]
+            .state
+            .authority
+            .media
+            .certification_retain_cleanup_media_handle()
+    }
     pub(super) fn release_admitted_wal(&mut self) {
         self.0[0].state.integrity.release_admitted_wal();
     }
