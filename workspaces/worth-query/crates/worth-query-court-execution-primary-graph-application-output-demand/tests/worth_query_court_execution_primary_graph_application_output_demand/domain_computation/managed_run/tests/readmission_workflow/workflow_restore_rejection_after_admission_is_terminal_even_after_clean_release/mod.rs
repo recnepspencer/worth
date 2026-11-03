@@ -1,6 +1,6 @@
 //! Workflow restore rejection after admission is terminal even after clean release.
 
-use worth_query_execution::domain_computation::managed_run::readmission::workflow_progression::workflow_state::workflow_cleanup_owner as WorthQueryWorkflowReadmissionCleanupOutcome;
+use worth_query_execution::domain_computation::managed_run::readmission::WorthQueryWorkflowReadmissionCleanupOutcome;
 
 use crate::domain_computation::managed_run::tests::readmission_workflow::*;
 

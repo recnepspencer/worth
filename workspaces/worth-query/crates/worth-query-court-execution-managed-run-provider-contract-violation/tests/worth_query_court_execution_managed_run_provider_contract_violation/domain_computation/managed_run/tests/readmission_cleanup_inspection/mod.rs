@@ -1,15 +1,15 @@
-use worth_query_execution::domain_computation::managed_run::readmission::workflow_progression::workflow_state::workflow_cleanup_owner as WorthQueryWorkflowReadmissionCleanupOutcome;
-use worth_query_execution::domain_computation::managed_run::readmission::workflow_progression::workflow_state::workflow_cleanup_owner as WorthQueryWorkflowReadmissionCleanupPending;
-use worth_query_execution::domain_computation::managed_run::readmission::workflow_progression::workflow_state::workflow_cleanup_owner as WorthQueryWorkflowReadmissionCleanupPendingInspection;
-use worth_query_execution::domain_computation::managed_run::readmission::workflow_progression::workflow_state::workflow_cleanup_owner as WorthQueryWorkflowReadmissionCleanupRequired;
+use worth_query_execution::domain_computation::managed_run::readmission::WorthQueryWorkflowReadmissionCleanupOutcome;
+use worth_query_execution::domain_computation::managed_run::readmission::WorthQueryWorkflowReadmissionCleanupPending;
+use worth_query_execution::domain_computation::managed_run::readmission::WorthQueryWorkflowReadmissionCleanupPendingInspection;
+use worth_query_execution::domain_computation::managed_run::readmission::WorthQueryWorkflowReadmissionCleanupRequired;
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::managed_run::tests::readmission_workflow::yielded_workflow_with_retained_artifact;
 use crate::domain_computation::managed_run::tests::readmission_workflow_association::shared_yielded_workflow_peers_with_provider;
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::managed_run::tests::yield_fixture::YieldProvider;
 use crate::process::domain_computation::managed_run::tests::*;
 use worth_query_execution::facade::domain_computation::WorthQueryDirectReadmissionCleanupInspection;
 use worth_query_execution::facade::domain_computation::WorthQueryDirectReadmissionCleanupReceipt;
-use worth_query_execution::domain_computation::managed_run::readmission::workflow_progression::workflow_state::workflow_cleanup_owner as WorthQueryWorkflowReadmissionCleanupInspection;
-use worth_query_execution::domain_computation::managed_run::readmission::workflow_progression::workflow_state::workflow_cleanup_owner as WorthQueryWorkflowReadmissionCleanupReceipt;
+use worth_query_execution::domain_computation::managed_run::readmission::WorthQueryWorkflowReadmissionCleanupInspection;
+use worth_query_execution::domain_computation::managed_run::readmission::WorthQueryWorkflowReadmissionCleanupReceipt;
 
 #[test]
 fn completed_readmission_cleanup_receipts_are_exact_inspection_newtypes() {

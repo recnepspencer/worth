@@ -16,7 +16,7 @@ pub use worth_query_testkit_execution_primary_graph_application_attempt_2::domai
 pub use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::operation_binding::authority::tests::workflow_authority_with_stage_graph_and_output_artifact;
 pub use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::managed_run::tests::readmission_workflow::yielded_workflow;
 
-pub use worth_query_execution::domain_computation::managed_run::readmission::workflow_progression::workflow_state::workflow_cleanup_owner as WorthQueryWorkflowReadmissionCleanupOutcome;
+pub use worth_query_execution::domain_computation::managed_run::readmission::WorthQueryWorkflowReadmissionCleanupOutcome;
 
 pub use std::collections::BTreeMap;
 pub use std::sync::Arc;
