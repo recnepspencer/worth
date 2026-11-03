@@ -9,13 +9,13 @@ use crate::domain_computation::authorization::WorkflowApprovalRequestEncodingDen
 /// Clones retain the same text allocation and its original payer. No owned
 /// String can be extracted; an independent field copy requires fresh admission.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) struct FundedActorText(ExecutionImmutableBytes);
+pub struct FundedActorText(ExecutionImmutableBytes);
 
 impl FundedActorText {
     pub(in crate::domain_computation) fn bytes(&self) -> &ExecutionImmutableBytes {
         &self.0
     }
-    pub(in crate::domain_computation) fn as_str(&self) -> &str {
+    pub fn as_str(&self) -> &str {
         std::str::from_utf8(self.0.bytes()).expect("serde JSON emits UTF-8")
     }
 }
