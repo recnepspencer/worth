@@ -154,7 +154,7 @@ pub struct MarkState {
     pub(super) delivery_epoch: DeliveryEpoch,
     pub(super) last_discontinuity: Option<FullVerificationReason>,
     pub postings: OrdMap<Arc<FactPostingKey>, OrdSet<u64>>,
-    pub(super) settlements: OrdMap<Arc<RecordedSettlementIdentity>, Arc<SettlementMarks>>,
+    pub settlements: OrdMap<Arc<RecordedSettlementIdentity>, Arc<SettlementMarks>>,
     pub(super) downstream:
         OrdMap<Arc<RecordedSettlementIdentity>, OrdSet<Arc<RecordedSettlementIdentity>>>,
     pub(super) equal_links: OrdMap<Arc<RecordedSettlementIdentity>, Arc<EqualOutputLink>>,

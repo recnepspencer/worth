@@ -50,7 +50,7 @@ impl CommitTouchEntities<'_> {
 /// One relevant commit on the branch and the watched entities it touched.
 pub(in crate::domain_computation::primary_graph) struct TouchedCommit {
     pub(in crate::domain_computation::primary_graph) position: PatchStreamPosition,
-    pub(in crate::domain_computation::primary_graph) commit: CommitId,
+    pub commit: CommitId,
     /// `None` when exact touches were unavailable for the commit.
     touched: Option<BTreeSet<EntityId>>,
 }

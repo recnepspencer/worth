@@ -50,7 +50,7 @@ pub(in crate::domain_computation::primary_graph) struct ObservedCurrentCustody {
 }
 
 impl StoppedVerifiedCurrent {
-    pub(in crate::domain_computation::primary_graph) fn reason(&self) -> CompanionCellEditStop {
+    pub fn reason(&self) -> CompanionCellEditStop {
         self.reason
     }
 }

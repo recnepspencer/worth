@@ -33,8 +33,8 @@ pub(in crate::domain_computation::primary_graph) struct BranchMarkRoot {
 
 #[derive(Clone, Debug)]
 pub(super) struct HistoricalMarkState {
-    pub(super) root_id: u64,
-    pub(super) commit_id: Option<CommitId>,
+    pub root_id: u64,
+    pub commit_id: Option<CommitId>,
     pub(super) state: Arc<MarkState>,
     pub(super) next_delivery: Arc<RetainedTouchDelivery>,
 }

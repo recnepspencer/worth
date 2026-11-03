@@ -56,7 +56,7 @@ impl ComputationChanges {
     }
     /// The same native-position check lends this image to the reader's exact
     /// live pin. The cutoff's separate snapshot handle is never substituted.
-    pub(in crate::domain_computation::primary_graph) fn for_snapshot(
+    pub fn for_snapshot(
         &self,
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
@@ -66,7 +66,7 @@ impl ComputationChanges {
         selected.snapshot = snapshot.clone();
         Some(selected)
     }
-    pub(in crate::domain_computation::primary_graph) fn ordinals(&self) -> &OrdSet<usize> {
+    pub fn ordinals(&self) -> &OrdSet<usize> {
         &self.ordinals
     }
     pub fn bind_original(

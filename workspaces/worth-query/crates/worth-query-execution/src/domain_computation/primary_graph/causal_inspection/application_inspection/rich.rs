@@ -105,7 +105,7 @@ pub(super) enum OriginalQueryDetail {
     Provided(WorthQueryMaterializedQueryProjection),
 }
 pub struct WorthQueryApplicationRichMaterialization {
-    pub(super) request: WorthQueryApplicationMaterializationRequest,
+    pub request: WorthQueryApplicationMaterializationRequest,
     pub(super) original: OriginalQueryDetail,
     pub(super) source: SourceDetail,
     pub(super) producer: Option<ProducerExplanation>,

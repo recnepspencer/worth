@@ -29,7 +29,7 @@ impl std::fmt::Debug for PostconditionCarry {
     }
 }
 impl ComputationChanges {
-    pub(in crate::domain_computation::primary_graph) fn carry(
+    pub fn carry(
         &self,
         original: &FactPayload,
         prefix: usize,
