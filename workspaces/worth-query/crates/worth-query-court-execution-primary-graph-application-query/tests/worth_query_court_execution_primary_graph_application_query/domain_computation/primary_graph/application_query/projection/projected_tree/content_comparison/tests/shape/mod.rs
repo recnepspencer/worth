@@ -4,7 +4,7 @@ pub use worth_query_declaration::facade::application_query::*;
 pub use worth_query_declaration::facade::application_schema::*;
 
 pub struct Query;
-worth_query_declaration::worth_query_structured_value_binding!(UnitBinding for () { identity: "worth.query.content-comparison.unit" });
+worth_query_declaration::worth_query_structured_value_binding!(pub UnitBinding for () { identity: "worth.query.content-comparison.unit" });
 impl ApplicationQueryMarkerIdentity<()> for Query {
     type ParameterBinding = UnitBinding;
     type ResultBinding = UnitBinding;
