@@ -8,10 +8,7 @@ pub use worth_query_execution::facade::domain_computation::WorthQueryExternalDis
 pub use worth_query_execution::facade::domain_computation::WorthQueryExternalEffectTransport;
 pub use worth_query_execution::facade::domain_computation::WorthQueryExternalTransportOutcome;
 pub use worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::correlation::derive_external_effect_correlation_identity;
-pub use worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::dispatch;
 pub use worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::outbox::dispatch_outbox_create_intent;
-pub use worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::identity;
-pub use worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::observation;
 pub use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::provider::committed_dispatch_outbox::test_support::commit_distinct_records_and_admit_fixture;
 pub use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::provider::committed_dispatch_outbox::test_support::commit_observe_and_admit_fixture;
 pub use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::provider::committed_dispatch_outbox::test_support::commit_observe_and_admit_twice_fixture;

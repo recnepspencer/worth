@@ -4,7 +4,6 @@ use std::sync::OnceLock;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::recorded_output::RecordedOutput;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::required_publication::head::SelectedRequiredPublicationHead;
 use worth_relational::facade::mvcc::CompanionPreflightStop as Stop;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::required_publication::head;
 
 #[test]
 fn restored_unattested_head_is_selectable_but_cannot_supply_a_cold_predecessor() {

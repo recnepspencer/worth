@@ -1,6 +1,5 @@
 //! Installed opener refusals are synchronous and leave the worker usable.
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::computation::prepared_request::PreparedCompute;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::computation::wave_dispatch;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::computation::wave_dispatch::PreparedMember;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::computation::worker_custody::active;
 pub use crate::domain_computation::primary_graph::application_contribution::computation::worker_custody::tests;

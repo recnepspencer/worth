@@ -11,9 +11,6 @@ use worth_query_execution::court_doors_for_test::domain_computation::primary_gra
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::component_selection::ComponentSelection;
 use worth_execution::ExecutionRequest;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::component_selection;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::root;
 use crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::decision::components::binding::*;
 use std::collections::BTreeSet;
 use std::sync::Arc;

@@ -10,8 +10,6 @@ use worth_query_execution::facade::domain_computation::WorthQueryApplicationComm
 use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandDenial;
 use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandDenialKind;
 use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandSettlement;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::settlement::observation;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::settlement::observation::provenance;
 use worth_query_execution::facade::domain_computation::WorthQueryOutputSettlementProvenanceDenial as Reason;
 
 /// Test doors on a library type, owned by the moved courts.

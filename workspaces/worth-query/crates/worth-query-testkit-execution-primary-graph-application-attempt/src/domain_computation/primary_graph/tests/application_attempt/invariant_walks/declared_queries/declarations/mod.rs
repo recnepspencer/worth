@@ -3,7 +3,6 @@ use crate::domain_computation::primary_graph::tests::application_attempt::invari
 use worth_query_declaration::facade::application_query::*;
 use worth_query_declaration::facade::application_schema::*;
 use worth_query_declaration::*;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationProjection;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationProjectionDenial;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationProjectionRow;

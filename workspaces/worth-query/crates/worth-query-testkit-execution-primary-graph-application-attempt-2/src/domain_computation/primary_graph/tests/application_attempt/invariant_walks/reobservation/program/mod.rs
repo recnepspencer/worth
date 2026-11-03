@@ -10,7 +10,6 @@ use worth_query_execution::facade::domain_computation::WorthQueryApplicationEnti
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationOperationInvariantProjectionReader;
 use worth_query_execution::facade::domain_computation::WorthQueryInvariantEntityIdentity;
 use worth_query_execution::facade::domain_computation::WorthQueryPrincipalResolutionMode;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::root;
 use worth_execution::ExecutionAllocationPolicy as Allocation;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 

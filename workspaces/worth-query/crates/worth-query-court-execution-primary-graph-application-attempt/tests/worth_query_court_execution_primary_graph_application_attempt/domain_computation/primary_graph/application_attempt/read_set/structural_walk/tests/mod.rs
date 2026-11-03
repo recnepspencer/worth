@@ -8,8 +8,6 @@ use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_co
 use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::tests::application_attempt::invariant_walks::schema::*;
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_walks::world;
 use worth_query_execution::facade::domain_computation::WorthQueryInvariantProjectionTraversalDenialKind;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::denial;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::root;
 use worth_execution::ExecutionAllocationPolicy as Allocation;
 use worth_query_declaration::facade::application_schema::RelationDirection::Forward;
 #[test]

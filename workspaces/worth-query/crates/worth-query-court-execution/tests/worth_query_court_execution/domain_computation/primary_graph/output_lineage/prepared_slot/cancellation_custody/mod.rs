@@ -11,8 +11,6 @@ use worth_query_execution::court_doors_for_test::domain_computation::primary_gra
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::ProductCoordinate;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::settlement_identity::RecordedSettlementIdentity;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::prior_absence::SealedComputationRetention;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::prepared_slot::cancellation;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::prepared_slot::computation;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::sealed_run_for_lineage_test;
 
 #[test]

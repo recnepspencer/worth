@@ -18,10 +18,6 @@ use worth_query_execution::facade::domain_computation::WorthQueryApplicationAtte
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitOutcome;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact;
 use worth_query_execution::facade::domain_computation::WorthQueryInvariantProjectionTraversalDenialKind;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::component_selection;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::denial;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::root;
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::decision::components::binding::*;
 use std::collections::BTreeSet;
 use std::sync::Arc;

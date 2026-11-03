@@ -7,10 +7,7 @@ use worth_query_execution::facade::domain_computation::WorthQueryExecutionPlacem
 use worth_query_execution::facade::application_contribution::WorthQueryManagedComputationResourceDenial;
 use worth_query_execution::facade::domain_computation::advancement_requests_on_this_thread_for_test;
 use worth_query_execution::facade::domain_computation::bound_advancement_requests_on_this_thread_for_test;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::denial;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::observations;
 use worth_query_execution::facade::domain_computation::place_managed_computations_on_this_thread_for_test;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::root;
 use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::tests::application_attempt::invariant_walks::schema::Node;
 use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::tests::application_attempt::invariant_walks::schema::WalkSchema;
 use crate::domain_computation::primary_graph::tests::application_attempt::invariant_walks::world::World;

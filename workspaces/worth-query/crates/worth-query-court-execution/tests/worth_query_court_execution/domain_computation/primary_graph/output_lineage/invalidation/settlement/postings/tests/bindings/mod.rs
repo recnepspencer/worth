@@ -1,8 +1,6 @@
 //! Shared physical storage never substitutes one exact settlement for another.
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::delivery::affected::posting_order::LogicalPostings;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::mark_state::FactPosting;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::settlement::posting_bindings;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::settlement::posting_removal;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::settlement::postings::tests::*;
 
 pub fn projection(id: u64) -> Arc<worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::settlement::posting_projection::PostingProjection>{

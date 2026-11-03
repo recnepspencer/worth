@@ -34,11 +34,6 @@ use worth_query_execution::court_doors_for_test::domain_computation::primary_gra
 use worth_query_execution::facade::domain_computation::WorthQueryObservedSource;
 use worth_query_execution::facade::domain_computation::WorthQueryPrincipalResolutionMode;
 use worth_query_execution::facade::domain_computation::WorthQueryProductQueryControls;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::component_selection;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::denial;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::facade;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::root;
 use crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::declared_queries::declarations::*;
 pub fn world() -> World {
     world::install_orbit(

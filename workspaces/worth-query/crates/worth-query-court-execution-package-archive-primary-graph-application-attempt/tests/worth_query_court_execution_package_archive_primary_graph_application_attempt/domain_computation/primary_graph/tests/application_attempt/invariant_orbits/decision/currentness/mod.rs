@@ -11,7 +11,6 @@ use crate::domain_computation::primary_graph::tests::application_attempt::invari
 use worth_query_execution::facade::domain_computation::HandlerResult;
 use worth_execution::ExecutionRequest;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitOutcome;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_entry;
 use worth_execution::ExecutionAllocationPolicy as Allocation;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_declaration::facade::application_operation::ApplicationMutationIdentities;

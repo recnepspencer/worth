@@ -3,7 +3,6 @@ use worth_query_testkit_execution_primary_graph_application_attempt::domain_comp
 use crate::domain_computation::primary_graph::tests::application_attempt::invariant_walks::world::World;
 use crate::domain_computation::primary_graph::tests::application_attempt::invariant_walks::program::authorization::authorize;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationEffectProgram;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::root;
 use worth_execution::ExecutionAllocationPolicy as Allocation;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 

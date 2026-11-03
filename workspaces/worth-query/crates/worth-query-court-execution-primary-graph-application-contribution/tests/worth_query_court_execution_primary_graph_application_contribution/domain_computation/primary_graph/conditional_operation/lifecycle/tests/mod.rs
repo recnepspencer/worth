@@ -10,7 +10,6 @@ use worth_query_execution::court_doors_for_test::domain_computation::primary_gra
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::conditional_operation::lifecycle::installed_operation::WorthQueryInstalledConditionalOperation;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::conditional_operation::lifecycle::installed_operation::WorthQueryPreparedConditionalRuntimeBinding;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::conditional_operation::lifecycle::clock_source_observation::isolate_clock_source;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::conditional_operation::lifecycle::registry;
 use worth_query_execution::facade::domain_computation::WorthQueryConditionalRuntimeInstallationDenial;
 use worth_query_execution::facade::domain_computation::WorthQueryPrimaryGraphApplicationRuntime;
 use worth_query_installation::facade::WorthQueryNamedClockFailure;

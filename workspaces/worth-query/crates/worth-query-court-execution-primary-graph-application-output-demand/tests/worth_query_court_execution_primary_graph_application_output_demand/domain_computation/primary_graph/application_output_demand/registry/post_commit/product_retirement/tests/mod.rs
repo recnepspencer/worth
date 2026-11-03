@@ -10,9 +10,6 @@ use std::sync::Arc;
     use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryOutputDemandInterest;
     use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandNotifications;
     use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryOutputDemandRegistry;
-    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::cleanup;
-    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::post_commit::discovery;
-    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::notifications;
     use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::recoverable_commit_support;
 #[test]
 fn registry_product_retirement_prunes_rows_and_their_notes_together() {

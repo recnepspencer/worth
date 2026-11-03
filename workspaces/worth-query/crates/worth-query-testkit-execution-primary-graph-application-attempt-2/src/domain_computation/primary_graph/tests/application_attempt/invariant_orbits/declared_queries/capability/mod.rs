@@ -5,7 +5,6 @@ use worth_query_execution::facade::domain_computation::WorthQueryApplicationEnti
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationEntitySeed;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationRelationSeed;
 use worth_query_execution::facade::domain_computation::WorthQueryPrimaryGraphBootstrap;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::bootstrap;
 use crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::declared_queries::capability::declarations::*;
 use worth_query_declaration::facade::application_schema::*;
 pub fn declare<S: OrbitModel>(

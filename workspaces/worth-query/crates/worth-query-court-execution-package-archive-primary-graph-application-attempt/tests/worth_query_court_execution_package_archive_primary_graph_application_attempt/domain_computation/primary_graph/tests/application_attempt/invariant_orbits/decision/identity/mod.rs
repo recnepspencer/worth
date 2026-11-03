@@ -12,8 +12,6 @@ use worth_query_execution::court_doors_for_test::domain_computation::primary_gra
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::snapshot_lease::WorthQueryApplicationSnapshotLease;
 use worth_execution::ExecutionRequest;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitOutcome;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::aggregate_observation;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt;
 use std::sync::Arc;
 use worth_execution::ExecutionAllocationPolicy as Allocation;
 #[test]

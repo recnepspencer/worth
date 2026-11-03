@@ -5,7 +5,6 @@ use crate::domain_computation::primary_graph::application_checkpoint::tests::ass
 use crate::domain_computation::primary_graph::application_checkpoint::tests::checkpoint_body;
 use crate::domain_computation::primary_graph::application_checkpoint::tests::checkpoint_from_body;
 
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::WIRE_VERSION;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact as Fact;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointPosture as Posture;

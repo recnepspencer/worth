@@ -24,7 +24,6 @@ use worth_query_testkit_execution_primary_graph_application_attempt::domain_comp
 use worth_query_execution::facade::primary_graph::WorthQueryCommittedDispatchOutboxReadDenial as Denial;
 use worth_query_execution::facade::domain_computation::WorthQueryDispatchOutboxRecord;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::committed_dispatch_outbox::correlation;
 use crate::domain_computation::primary_graph::provider::committed_dispatch_outbox::tests;
 use worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::outbox::bind_dispatch_outbox_create_intent;
 use worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::correlation::derive_external_effect_correlation_identity;

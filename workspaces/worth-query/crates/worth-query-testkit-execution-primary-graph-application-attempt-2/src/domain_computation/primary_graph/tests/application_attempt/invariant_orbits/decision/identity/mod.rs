@@ -10,9 +10,6 @@ use crate::domain_computation::primary_graph::tests::application_attempt::invari
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::aggregate_observation::AggregateObservation;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::snapshot_lease::WorthQueryApplicationSnapshotLease;
 use worth_execution::ExecutionRequest;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::aggregate_observation;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::root;
 use std::sync::Arc;
 use worth_execution::ExecutionAllocationPolicy as Allocation;
 pub fn install() -> World {

@@ -16,15 +16,11 @@ use worth_query_execution::facade::domain_computation::WorthQueryApplicationProj
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationProjectionRow;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationQueryAdmissionDenialKind;
 use worth_query_execution::facade::domain_computation::WorthQueryObservedSource;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::component_selection;
 use crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::declared_queries::components;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::denial;
 use crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::declared_queries::declarations::key;
 use crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::declared_queries::metadata_only;
 use crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::declared_queries::declarations::orbit;
 use crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::declared_queries::read;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::root;
 use crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::declared_queries::world;
 
 use crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::decision::components::binding::Shells;
