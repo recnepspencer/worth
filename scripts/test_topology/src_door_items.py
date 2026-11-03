@@ -94,7 +94,7 @@ def plan_items(files, index, surface):
         for reference in library_paths(path, text):
             module, rest = split_module(index, reference.segments)
             if not rest:
-                aliases = module_alias_uses(text, reference, module, index)
+                aliases = module_alias_uses(text + mounted_foreign_text(path, text), reference, module, index)
                 if reference.glob:
                     aliases = glob_uses(text, module, surface)
                 for name in aliases:
@@ -128,6 +128,23 @@ def add_door(result, surface, published, module, name):
         return ('public', published[origin])
     result.doors[module][name] = origin
     return ('door', module + (name,))
+
+
+def mounted_foreign_text(path, text):
+    """Text of the certification fixture files this file mounts: they read its imports."""
+    result = []
+    for literal in re.findall(r'#\[path = "([^"]*worth-query-certification/[^"]*)"\]', text):
+        target = (path.parent / literal).resolve()
+        if target.is_file():
+            result.append(target.read_text(encoding='utf-8'))
+            # Mounted directories (`mod.rs` siblings) are read too.
+            if target.name == 'mod.rs':
+                result += [f.read_text(encoding='utf-8') for f in sorted(target.parent.rglob('*.rs'))]
+    for literal in re.findall(r'include!\(\s*"([^"]*worth-query-certification/[^"]*)"', text):
+        target = (path.parent / literal).resolve()
+        if target.is_file():
+            result.append(target.read_text(encoding='utf-8'))
+    return '\n'.join(result)
 
 
 def is_import(text, reference):
