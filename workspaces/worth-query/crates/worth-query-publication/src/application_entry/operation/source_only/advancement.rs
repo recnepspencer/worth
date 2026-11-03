@@ -1,5 +1,6 @@
 //! Each call enters one native phase and delegates one genuine source handoff.
 use super::*;
+mod outcome;
 use worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionBinding;
 use worth_query_execution::facade::primary_graph::WorthQueryApplicationIdempotencyResolution as Resolution;
 
@@ -32,7 +33,7 @@ where
     ) -> Advance<S, I, P, A, M> {
         let phase_keepalive = self.admission.runtime.clone();
         let runtime = phase_keepalive.runtime();
-        match runtime.with_application_advancement(request.scope, |phase| {
+        let outcome = runtime.with_application_advancement(request.scope, |phase| {
             let result = self.step(&phase, request, maximum_history_work);
             if matches!(&result, Ok(Step::Completed))
                 && let Some(control) = &self.completion_handoff
@@ -40,30 +41,15 @@ where
                 control.pause();
             }
             result
-        }) {
-            Ok(Ok(Step::Progress)) => WorthQuerySourceOnlyAdvance::Progress(self),
-            Ok(Ok(Step::Completed)) => {
-                WorthQuerySourceOnlyAdvance::Completed(WorthQueryCompletedSourceOperation {
-                    operation: self,
-                })
-            }
-            Ok(Ok(Step::Terminal)) => {
-                WorthQuerySourceOnlyAdvance::Terminal(WorthQueryTerminalSourceOperation {
-                    operation: self,
-                })
-            }
-            Ok(Err(denial)) => WorthQuerySourceOnlyAdvance::Refused {
-                operation: self,
-                denial,
-            },
+        });
+        let outcome = match outcome {
+            Ok(outcome) => outcome,
             Err(denial) => {
                 self.record_unresolved_advancement(denial);
-                WorthQuerySourceOnlyAdvance::Refused {
-                    operation: self,
-                    denial: WorthQuerySourceOnlyDenial::Execution(denial),
-                }
+                Err(WorthQuerySourceOnlyDenial::Execution(denial))
             }
-        }
+        };
+        self.into_advance(outcome)
     }
 
     pub(in crate::application_entry::operation) fn step(

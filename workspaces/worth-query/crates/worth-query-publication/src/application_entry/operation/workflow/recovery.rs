@@ -67,6 +67,19 @@ where
             return Err(WorthQueryWorkflowEffectRecoveryDenial::NativeHandleConsumed);
         }
         let (receipt, settled) = match custody {
+            WorthQueryGuardedWorkflowOperationCustody::RecoveredCommitted(recorded) => {
+                // The original Source owner and fresh guarded admission are still here.
+                // Recorded business completion with no outbox has no external dispatch
+                // to recover. This returns owned cleanup, never a performed transition.
+                if recorded.dispatch_outbox().is_none()
+                    && matches!(&self.recovery, WorkflowDispatchRecovery::Unopened)
+                {
+                    return Ok(WorkflowStep::Completed);
+                }
+                return Err(WorthQueryWorkflowEffectRecoveryDenial::Owner(
+                    crate::application_entry::WorthQueryWorkflowOperationOwnerPosture::RecoveredCommitted(recorded),
+                ));
+            }
             WorthQueryGuardedWorkflowOperationCustody::Committed(receipt)
             | WorthQueryGuardedWorkflowOperationCustody::ExternallySettled(receipt) => {
                 (receipt, true)
