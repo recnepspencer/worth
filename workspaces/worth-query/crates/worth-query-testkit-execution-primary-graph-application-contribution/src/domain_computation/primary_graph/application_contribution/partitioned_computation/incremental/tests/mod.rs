@@ -288,11 +288,11 @@ where
 }
 use crate::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tests::projected_attempt::attempt_placed;
 pub fn prior_of(first: Attempt, moved: bool) -> ComputationPrior {
-    let mut state = (*first
+    let mut state = first
         .sealed
         .unwrap()
         .expect("a producer's run retains")
-        .state_for_test());
+        .state_into_for_test();
     if moved {
         let (key, fact) = (*state
             .facts_for_test())

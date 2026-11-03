@@ -21,3 +21,10 @@ impl RetainedComputation {
         &mut self.facts
     }
 }
+
+impl SealedComputationRun {
+    #[doc(hidden)]
+    pub fn state_into_for_test(self) -> RetainedComputation {
+        self.state
+    }
+}
