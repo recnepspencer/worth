@@ -25,18 +25,21 @@ use super::context::PlanningContext;
 use super::resolved_basis::ResolvedPlanningBasis;
 
 pub(super) fn complete(
-    context: PlanningContext,
+    mut context: PlanningContext,
     mut basis: ResolvedPlanningBasis,
 ) -> Result<PlannedPhysicalRecovery, crate::entry::PhysicalRecoveryOutcome> {
-    let context = rewrite_materialization::install(context, &mut basis)?;
-    let context = source_copy::verify(context, &mut basis)?;
-    let context = blob_expiry::verify(context, &mut basis)?;
-    let context = blob_reclaim::verify(context, &mut basis)?;
-    let (context, execution) = execution_basis::derive(context, &mut basis)?;
-    let (context, backing, backing_peak) = planned_storage::prepare(context, &basis, &execution)?;
-    let (context, plan_cost, planning_counters) =
+    context = rewrite_materialization::install(context, &mut basis)?;
+    context = source_copy::verify(context, &mut basis)?;
+    context = blob_expiry::verify(context, &mut basis)?;
+    context = blob_reclaim::verify(context, &mut basis)?;
+    let execution;
+    (context, execution) = execution_basis::derive(context, &mut basis)?;
+    let (backing, backing_peak);
+    (context, backing, backing_peak) = planned_storage::prepare(context, &basis, &execution)?;
+    let (plan_cost, planning_counters);
+    (context, plan_cost, planning_counters) =
         plan_cost::admit(context, &basis, &execution, backing_peak)?;
-    let context = publication_effects::admit(context, planning_counters, &execution.publication)?;
+    context = publication_effects::admit(context, planning_counters, &execution.publication)?;
     planned_recovery::construct(
         context,
         basis,
