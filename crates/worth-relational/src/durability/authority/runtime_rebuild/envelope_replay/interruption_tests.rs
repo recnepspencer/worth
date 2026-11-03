@@ -2,7 +2,6 @@ use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc,
 };
-use std::time::Instant;
 
 use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, SerialRequest};
 
@@ -212,7 +211,10 @@ fn recovery_entry_stops_change_no_record_or_diagnostic() {
         let host = SerialRequest::from_memory(
             SerialMemoryBudget::new(None),
             cancellation.token(),
-            (cause == Cause::DeadlineElapsed).then(Instant::now),
+            (cause == Cause::DeadlineElapsed).then(|| {
+                let clock = worth_execution::MonotonicClock::system();
+                clock.deadline_at(clock.now())
+            }),
         );
         let stages = Arc::new(AtomicUsize::new(0));
         let observed = stages.clone();

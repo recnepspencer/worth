@@ -179,7 +179,7 @@ pub fn edit_source(
 }
 
 pub fn limits() -> WorthQueryInMemoryApplicationLimits {
-    host_limits()
+    host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system())
 }
 pub fn program() -> ValidatedApplicationProgram<CanonicalSchema, Program> {
     ApplicationProgramAuthoring::<CanonicalSchema, Program>::begin()

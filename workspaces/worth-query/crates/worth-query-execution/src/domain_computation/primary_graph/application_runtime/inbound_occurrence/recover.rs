@@ -306,7 +306,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         }
         let prepared = match binding.prepare_settled_relational_adoption(&unpublished, request) {
             Ok(prepared) => prepared,
-            Err(PublicationDenial::Stopped(stop)) => {
+            Err(PublicationDenial::ClockMismatch) => {
+                return RecoveryStep::Retain(
+                    State::Active(recovery),
+                    Err(Denial::ExecutionDenied(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock))),
+                )
+            },
+Err(PublicationDenial::Stopped(stop)) => {
                 return RecoveryStep::Retain(
                     State::Active(recovery),
                     Err(Denial::ExecutionDenied(advancement_denial(stop))),
@@ -348,7 +354,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     retirements,
                 )
             }
-            Err(PublicationDenial::Stopped(stop)) => RecoveryStep::Retain(
+            Err(PublicationDenial::ClockMismatch) => RecoveryStep::Retain(
+                State::Active(recovery),
+                Err(Denial::ExecutionDenied(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock))),
+            ),
+Err(PublicationDenial::Stopped(stop)) => RecoveryStep::Retain(
                 State::Active(recovery),
                 Err(Denial::ExecutionDenied(advancement_denial(stop))),
             ),

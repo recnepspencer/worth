@@ -19,7 +19,7 @@ use worth_relational::facade::{
 #[test]
 fn fresh_native_retirement_descriptions_do_not_issue_original_output_authority() {
     {
-        let source = installed_authorization_world(true);
+        let source = installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let (original, unrelated) = source
             .application
             .with_host_advancement(|phase| {

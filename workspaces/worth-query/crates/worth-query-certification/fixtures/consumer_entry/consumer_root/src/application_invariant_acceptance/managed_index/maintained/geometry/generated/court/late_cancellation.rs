@@ -82,7 +82,7 @@ fn journey() {
     rules.records.lock().unwrap().clear();
 
     let cancellation = WorthQueryCancellationSource::new();
-    let original_scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let original_scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let observed = Arc::new(Mutex::new(None));
     let recorded = observed.clone();
     let before = observation.selected_commit().clone();

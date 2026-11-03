@@ -7,6 +7,7 @@
 /// conditional bindings, and managed computation owners.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryPrimaryGraphInstallationDenialKind {
+    AdmissionClockMismatch,
     /// An opted-in producer's source is shared, contextual or not its exact entity scope.
     ProducerOwnershipRequiresEntitySourceScope,
     ProducerFamilyOwnershipMismatch,

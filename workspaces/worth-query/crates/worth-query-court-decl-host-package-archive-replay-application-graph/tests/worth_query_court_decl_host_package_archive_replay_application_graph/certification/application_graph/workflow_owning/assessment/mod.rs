@@ -45,8 +45,7 @@ fn workflow_owning_source_completion_does_not_accept_assessment() {
     let stopped =
         worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope::new(
             None,
-            cancel.token(),
-        );
+            cancel.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let (observer, _) = observer
         .close(
             &runtime

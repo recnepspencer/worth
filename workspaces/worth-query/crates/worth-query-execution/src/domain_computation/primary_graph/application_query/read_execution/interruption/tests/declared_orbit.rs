@@ -5,18 +5,22 @@ use crate::domain_computation::primary_graph::tests::application_attempt::invari
 fn original_query_cancellation_and_deadline_survive_native_orbit_entry() {
     let _isolation =
         crate::domain_computation::primary_graph::tests::fixture::isolated_request_owner();
-    let world = declared_queries::world();
+    let time = worth_execution::MonotonicTimeController::new().unwrap();
+    time.hold();
+    let world = declared_queries::world_on_clock(time.clock());
     for deadline_stop in [false, true] {
         let cancellation = WorthQueryCancellationSource::new();
-        let deadline = Instant::now()
+        let deadline = time.clock().now()
             + if deadline_stop {
                 Duration::from_secs(1)
             } else {
                 Duration::from_secs(60)
             };
-        let request = WorthQueryRequestScope::new(Some(deadline), cancellation.token());
+        let request =
+            WorthQueryRequestScope::new(Some(deadline), cancellation.token(), time.clock());
         let visits = Rc::new(Cell::new(0));
         let observed = Rc::clone(&visits);
+        let advancing_time = time.clone();
         CHECKPOINT.with(|slot| {
             *slot.borrow_mut() = Some(Box::new(move |subject| {
                 if subject != "Next" {
@@ -28,10 +32,7 @@ fn original_query_cancellation_and_deadline_survive_native_orbit_entry() {
                 // invoked by the original Query control inside Native aggregate read.
                 if visit == 2 {
                     if deadline_stop {
-                        std::thread::sleep(
-                            deadline.saturating_duration_since(Instant::now())
-                                + Duration::from_millis(1),
-                        );
+                        advancing_time.advance(Duration::from_secs(1)).unwrap();
                     } else {
                         cancellation.cancel();
                     }

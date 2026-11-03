@@ -5,7 +5,7 @@ use worth_relational::facade::transactions::RelationalExecutionDenialCause as Ca
 
 #[test]
 fn aftermath_resolution_preserves_stops_at_every_consult() {
-    let world = correction_source::install();
+    let world = correction_source::install(worth_execution::MonotonicClock::system());
     let source = correction_source::edit(&world, "counted-source", "edited-label");
     let prepared = correction_source::prepare(&world, &source, "counted-correction");
     let pending = prepared.pending();

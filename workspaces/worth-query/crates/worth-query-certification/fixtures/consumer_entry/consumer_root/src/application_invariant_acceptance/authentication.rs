@@ -1,7 +1,7 @@
 use std::future::Future;
 use std::pin::pin;
 use std::task::{Context, Poll, Waker};
-use std::time::{Duration, Instant, SystemTime};
+use std::time::{Duration, SystemTime};
 
 use worth_query_host::facade::{
     admission::authenticated_principal as authentication,
@@ -76,8 +76,7 @@ pub(super) fn admit<Schema: ApplicationSchema>(
         schema,
         authentication::WorthQueryAuthenticationAdapterAdmission::new(
             authentication::WorthQueryAuthenticationAudience::new("consumer-root").unwrap(),
-            authentication::WorthQueryAuthenticationMethod::new("local-credential").unwrap(),
-        ),
+            authentication::WorthQueryAuthenticationMethod::new("local-credential").unwrap(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         LocalIdentityAdapter,
     )
     .expect("the local adapter is admitted against the installed consumer schema")
@@ -86,9 +85,8 @@ pub(super) fn admit<Schema: ApplicationSchema>(
 pub(super) fn request_scope() -> authentication::WorthQueryRequestScope {
     let cancellation = authentication::WorthQueryCancellationSource::new();
     authentication::WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(120)),
-        cancellation.token(),
-    )
+        Some(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(120)),
+        cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system())
 }
 
 pub(super) fn block_on<Output>(future: impl Future<Output = Output>) -> Output {

@@ -2,7 +2,7 @@
 pub(in crate::domain_computation::primary_graph) mod own_write_computation;
 #[path = "fixture/retained_output_capacity.rs"]
 pub(in crate::domain_computation::primary_graph) mod retained_output_capacity;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 #[path = "fixture/authentication.rs"]
 mod authentication;
@@ -228,7 +228,7 @@ use worth_query_installation::facade::{
     WorthQueryValidatedPortableDomainPackage,
 };
 
-use authorization_time::AuthorizationTimeController;
+pub(in crate::domain_computation::primary_graph) use authorization_time::AuthorizationTimeController;
 
 use crate::domain_computation::execution_runtime::{
     WorthQueryApplicationQueryResourceProfile, WorthQueryExecutionRuntime,

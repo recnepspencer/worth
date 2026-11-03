@@ -3,10 +3,7 @@ pub use super::product_workflow_support::application_entry::{
     AmendTemporalDenial, AmendTemporalResult,
 };
 pub use super::{amendment, principal, ExampleApplication};
-pub use std::{
-    num::NonZeroUsize,
-    time::{Duration, Instant},
-};
+pub use std::{num::NonZeroUsize, time::Duration};
 pub use worth_query_host::facade::{
     admission::authenticated_principal::{WorthQueryCancellationSource, WorthQueryRequestScope},
     application_contribution::{
@@ -48,9 +45,8 @@ pub fn run(leased: bool, ceiling: Option<u64>, cancel: bool) -> Case {
     let mut app = ExampleApplication::publish("blocked");
     let cancellation = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(120)),
-        cancellation.token(),
-    );
+        Some(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(120)),
+        cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let actor = principal(&app, &scope);
     reports();
     place(if leased {

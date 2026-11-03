@@ -54,7 +54,10 @@ fn a_retry_names_the_same_intent_and_a_changed_input_does_not() {
 
 #[test]
 fn two_bindings_sharing_key_namespace_operation_and_input_type_never_replay_each_other() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application
@@ -144,7 +147,10 @@ fn two_bindings_sharing_key_namespace_operation_and_input_type_never_replay_each
 
 #[test]
 fn a_binding_the_schema_never_installed_is_refused_instead_of_panicking() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application
@@ -218,7 +224,7 @@ fn a_binding_the_schema_never_installed_is_refused_instead_of_panicking() {
 #[test]
 fn handler_contact_is_preserved_after_a_later_execution_denial() {
     for status in ["open", "missing"] {
-        let world = installed_authorization_world(true);
+        let world = installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let request = live_scope();
         let principal = world
             .application

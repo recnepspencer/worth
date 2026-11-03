@@ -21,7 +21,10 @@ fn forged(world: &AuthorizationWorld, request: &WorthQueryRequestScope) -> Admis
 
 #[test]
 fn foreign_installed_seal_is_stale_at_projection_before_work() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let admission = forged(&world, &request);
     world.application.with_host_advancement(|phase| {
@@ -44,7 +47,10 @@ fn foreign_installed_seal_is_stale_at_projection_before_work() {
 
 #[test]
 fn foreign_installed_seal_is_stale_at_idempotency_before_work() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let admission = forged(&world, &request);
     world.application.with_host_advancement(|phase| {
@@ -65,7 +71,10 @@ fn foreign_installed_seal_is_stale_at_idempotency_before_work() {
 
 #[test]
 fn foreign_installed_seal_is_stale_at_read_attempt_before_work() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let admission = forged(&world, &request);
     world.application.with_host_advancement(|phase| {
@@ -88,7 +97,10 @@ fn foreign_installed_seal_is_stale_at_read_attempt_before_work() {
 
 #[test]
 fn foreign_installed_seal_is_stale_at_mutation_before_work() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let (principal, _) = party(&world, &request);
     let execution = execute(
@@ -105,7 +117,10 @@ fn foreign_installed_seal_is_stale_at_mutation_before_work() {
 
 #[test]
 fn installed_input_type_is_checked_before_projection_reads() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let (principal, account) = party(&world, &request);
     let mut admission = admit!(

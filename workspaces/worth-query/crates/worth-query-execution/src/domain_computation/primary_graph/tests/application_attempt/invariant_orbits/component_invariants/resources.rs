@@ -49,8 +49,7 @@ fn component_reads_preserve_original_cancellation_and_live_twin() {
         let world = world::install_with_probe(super::census::graph(), observer.clone());
         let request = WorthQueryRequestScope::new(
             Some(std::time::Instant::now() + std::time::Duration::from_secs(60)),
-            source.token(),
-        );
+            source.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let operation = program::swap_successors(&world, &request, 0, 1);
         let before = world.committed_version();
         observer.arm();

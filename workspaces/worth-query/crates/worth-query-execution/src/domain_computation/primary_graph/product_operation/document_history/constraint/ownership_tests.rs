@@ -5,8 +5,8 @@ use crate::domain_computation::authorization::{
     WorthQueryOperationAuthorizationRefusalKind as Refusal,
 };
 use crate::domain_computation::primary_graph::tests::{
-    application_attempt::{authenticated_principal, idempotency, resolved_account},
-    fixture::{installed_authorization_world, live_scope, TouchAccountOperation},
+    application_attempt::{idempotency, resolved_account},
+    fixture::{installed_authorization_world, TouchAccountOperation},
 };
 
 impl WorthQueryDocumentHistoryOperationConstraint {
@@ -14,15 +14,18 @@ impl WorthQueryDocumentHistoryOperationConstraint {
         access: &WorthQueryProgramPublicationAccess,
     ) {
         for expired in [false, true] {
-            let world = installed_authorization_world(true);
+            let time = worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionTimeController::new().unwrap();
+            time.hold();
+            let world = installed_authorization_world(true, time.clock());
             let now = std::time::SystemTime::now();
             world.authorization_time.hold(now);
-            let request = live_scope();
+            let request = worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope::new(Some(time.clock().now() + std::time::Duration::from_secs(60)), worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource::new().token(), time.clock());
+            let external = world.authenticate("alice", std::time::Duration::from_secs(1), &request);
             world
                 .application
                 .with_host_advancement(|phase| {
                     let principal =
-                        authenticated_principal(&phase.test_host_request(), &world, &request);
+                        world.selected_product(&phase.test_host_request()).resolve_authenticated_principal(&phase, &world.binding, &external, &request, crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionMode::Ordinary).unwrap();
                     let account =
                         resolved_account(&phase.test_host_request(), &world, "open", &request);
                     let other =
@@ -33,7 +36,7 @@ impl WorthQueryDocumentHistoryOperationConstraint {
                         .installed_schema()
                         .installed_operation(TouchAccountOperation::reference())
                         .unwrap();
-                    let mut admission = world
+                    let admission = world
                         .selected_product(&phase.test_host_request())
                         .authorize_operation(
                             &phase,
@@ -63,7 +66,7 @@ impl WorthQueryDocumentHistoryOperationConstraint {
                         .validate_current_authority()
                         .expect("the genuine admission starts fresh");
                     if expired {
-                        admission.expire_authentication_for_test();
+                        time.advance(std::time::Duration::from_secs(2)).unwrap();
                         assert_eq!(
                             admission.validate_current_authority().unwrap_err().kind(),
                             Kind::Refused(Refusal::ExpiredAuthentication)

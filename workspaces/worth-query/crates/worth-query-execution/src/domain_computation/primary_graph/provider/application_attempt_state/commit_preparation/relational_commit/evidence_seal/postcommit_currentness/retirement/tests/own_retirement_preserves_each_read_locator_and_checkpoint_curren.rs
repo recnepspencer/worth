@@ -3,7 +3,10 @@ use super::*;
 
 #[test]
 fn own_retirement_preserves_each_read_locator_and_checkpoint_currentness() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     world.application.with_host_advancement(|phase| {
             let borrowed = phase.borrowed_request_for_test();
             let execution = &borrowed;

@@ -8,7 +8,6 @@ use crate::domain_computation::{
     WorthQueryProviderSessionControlStopKind as Control,
     WorthQueryProviderSessionDenialKind as Kind,
 };
-use std::time::Instant;
 use worth_execution::CancellationSource;
 
 #[test]
@@ -47,7 +46,10 @@ fn inbound_completion_preserves_real_execution_refusals_at_each_phase() {
             let mut canceled = request();
             canceled.cancellation = source.token();
             let mut expired = request();
-            expired.deadline = Some(Instant::now());
+            expired.deadline = Some({
+                let clock = worth_execution::MonotonicClock::system();
+                clock.deadline_at(clock.now())
+            });
             for (request, kind) in [(canceled, Control::Cancelled), (expired, Control::TimedOut)] {
                 let error = refused_commit(execution, request);
                 assert_eq!(

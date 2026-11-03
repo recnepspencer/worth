@@ -3,7 +3,10 @@ use super::*;
 
 #[test]
 fn optional_owner_removal_and_insertion_refresh_at_the_real_current_product() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     world

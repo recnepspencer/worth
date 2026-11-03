@@ -55,7 +55,7 @@ pub(super) fn run(
         WorthQueryManagedIndexWatchOutcome::Pending
     ));
     let cancellation = WorthQueryCancellationSource::new();
-    let stopped = WorthQueryRequestScope::new(None, cancellation.token());
+    let stopped = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let fired = Arc::new(std::sync::atomic::AtomicBool::new(false));
     let observed = Arc::clone(&fired);
     *calls.after_first_node.lock().unwrap() = Some(Box::new(move || {

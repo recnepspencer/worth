@@ -32,7 +32,7 @@ fn checkpoint_transition_target_rule_rejects_retained_predecessor_only_value() {
         DocumentRetentionSchema::declaration().unwrap(),
         ((),),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        host_limits(),
+        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         source.clone(),
         predecessor,
         installation::WorthQueryCheckpointTransitionResources::bounded(SELECTION_WORK, 32, 8192)
@@ -98,7 +98,7 @@ fn checkpoint_transition_target_rule_accepts_complete_retained_and_created_state
         DocumentRetentionSchema::declaration().unwrap(),
         ((),),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        host_limits(),
+        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         source,
         predecessor,
         installation::WorthQueryCheckpointTransitionResources::bounded(SELECTION_WORK, 32, 8192)

@@ -35,7 +35,11 @@ pub(super) fn committed_handle(
     WorthQueryCancellationSource,
 ) {
     let cancellation = WorthQueryCancellationSource::new();
-    let request = WorthQueryRequestScope::new(None, cancellation.token());
+    let request = WorthQueryRequestScope::new(
+        None,
+        cancellation.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let (principal, account) = world
         .application
         .with_host_advancement(|phase| {
@@ -91,7 +95,10 @@ pub(super) fn committed_handle(
 
 #[test]
 fn expired_redispatch_handle_precedes_cancelled_admission() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let now = std::time::SystemTime::now();
     world.authorization_time.hold(now);
     let (handle, admission, cancellation) = committed_handle(&world);

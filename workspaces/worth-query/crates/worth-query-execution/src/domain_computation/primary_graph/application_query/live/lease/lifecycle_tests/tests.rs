@@ -1,4 +1,4 @@
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
@@ -83,7 +83,7 @@ impl LiveContext {
         // Instant deadline comparison is `now >= deadline`, so the
         // current instant makes the next delivery sample DeadlineExceeded
         // without sleeping or racing open.
-        WorthQueryRequestScope::new(Some(Instant::now()), live_cancellation.token())
+        WorthQueryRequestScope::new(Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now()), live_cancellation.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system())
     }
 
     fn principal(

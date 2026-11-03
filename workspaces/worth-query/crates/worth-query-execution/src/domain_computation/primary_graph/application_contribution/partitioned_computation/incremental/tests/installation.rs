@@ -70,7 +70,10 @@ impl TestOwner for Doubling {
 fn another_owner_with_the_same_types_runs_in_full() {
     let _observation =
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let installed = installed(StatusRead::Gather(1), sum);
     let first = first_run(&world, &installed);
     let doubling = WorthQueryInstalledPartitionedComputation::new(
@@ -106,7 +109,10 @@ fn another_owner_with_the_same_types_runs_in_full() {
 fn a_reinstalled_owner_runs_in_full() {
     let _observation =
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let first = first_run(&world, &installed(StatusRead::Gather(1), sum));
     let reinstalled = installed(StatusRead::Gather(1), sum);
 
@@ -124,7 +130,10 @@ fn a_reinstalled_owner_runs_in_full() {
 fn a_clone_of_the_installation_reuses_its_state() {
     let _observation =
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let installed = installed(StatusRead::Gather(1), sum);
     let first = first_run(&world, &installed);
 
@@ -138,8 +147,14 @@ fn a_clone_of_the_installation_reuses_its_state() {
 #[test]
 fn retained_reads_require_the_actual_installed_value_catalogue() {
     let _observation = QueryObservation::install_on_this_thread();
-    let world = installed_authorization_world(true);
-    let foreign = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
+    let foreign = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let installed = installed(StatusRead::Gather(1), sum);
     for (same, catalogue) in [
         (
@@ -185,7 +200,10 @@ fn retained_reads_require_the_actual_installed_value_catalogue() {
 fn a_reinstalled_reducer_runs_in_full_with_its_own_reduction() {
     let _observation =
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let first = first_run(&world, &installed(StatusRead::Gather(1), sum));
     let expected = (0..2)
         .map(|parity| (1..=4).filter(|item| item % 2 == parity).sum::<u64>())

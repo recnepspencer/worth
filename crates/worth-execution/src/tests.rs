@@ -331,7 +331,10 @@ fn cancellation_and_deadline_stop_at_kernel_checkpoint() {
     assert_eq!(cancelled.report.charged_work(), 0);
     let expired = authority()
         .request_lease(LeaseRequest {
-            deadline: Some(Instant::now() - Duration::from_secs(1)),
+            deadline: Some(
+                crate::MonotonicClock::system()
+                    .deadline_at(Instant::now() - Duration::from_secs(1)),
+            ),
             ..accounted_request(1, 10)
         })
         .unwrap();

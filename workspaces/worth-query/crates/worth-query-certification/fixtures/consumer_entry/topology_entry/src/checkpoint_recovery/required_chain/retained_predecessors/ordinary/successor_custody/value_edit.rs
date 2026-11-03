@@ -117,7 +117,7 @@ mod serial {
             assert_eq!(edit.registry_custody_omitted, 0);
             let cancellation = authentication::WorthQueryCancellationSource::new();
             let stopped_scope =
-                authentication::WorthQueryRequestScope::new(None, cancellation.token());
+                authentication::WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
             let stopped = application.request(&principal, &stopped_scope);
             cancellation.cancel();
             let operation = match open().advance(&stopped) {

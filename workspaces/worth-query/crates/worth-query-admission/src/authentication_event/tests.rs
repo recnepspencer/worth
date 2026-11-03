@@ -4,7 +4,7 @@ use std::pin::pin;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::task::{Context, Poll, Waker};
-use std::time::{Duration, Instant, SystemTime};
+use std::time::{Duration, SystemTime};
 
 use worth_foundational::facade::CanonicalDigestId;
 use worth_query_declaration::facade::application_schema::{
@@ -218,8 +218,12 @@ fn installed_schema(
 
 fn scope() -> WorthQueryRequestScope {
     WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(60)),
+        Some(
+            crate::authenticated_principal::WorthQueryAdmissionClock::system().now()
+                + Duration::from_secs(60),
+        ),
         WorthQueryCancellationSource::new().token(),
+        crate::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     )
 }
 
@@ -241,6 +245,7 @@ fn principal_named(
         WorthQueryAuthenticationAdapterAdmission::new(
             WorthQueryAuthenticationAudience::new("approval").unwrap(),
             WorthQueryAuthenticationMethod::new("test-factor").unwrap(),
+            crate::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
         ),
         PrincipalAdapter,
     )

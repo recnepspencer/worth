@@ -62,6 +62,7 @@ fn unknown_disabled_cancelled_and_cross_runtime_resolution_fail_closed() {
     let cancelled_scope = WorthQueryRequestScope::new(
         Some(std::time::Instant::now() + Duration::from_secs(60)),
         cancellation.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     enabled
         .application

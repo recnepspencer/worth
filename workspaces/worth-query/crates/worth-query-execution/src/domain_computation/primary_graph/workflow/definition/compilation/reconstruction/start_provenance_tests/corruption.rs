@@ -14,7 +14,7 @@ fn started_revision_reader_refuses_unmanaged_and_unrostered_current_truth() {
     // topology, installed schema and genuine actor. Native publication must
     // succeed; setup/schema denial cannot satisfy this semantic-read oracle.
     for corrupt in ["unmanaged", "unrostered"] {
-        let world = installed_authorization_world(true);
+        let world = installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let (support, original, _) =
             installed_provenance_support(world.application.installed_schema());
         let lease = payer();
@@ -98,7 +98,10 @@ fn started_revision_reader_refuses_unmanaged_and_unrostered_current_truth() {
 
 #[test]
 fn started_revision_missing_current_field_is_rejected_by_native_restore_before_publication() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let (support, original, _) = installed_provenance_support(world.application.installed_schema());
     let lease = payer();
     let execution = ExecutionRequest::leased(&lease);

@@ -3,7 +3,10 @@ use super::*;
 
 #[test]
 fn an_edge_entering_an_observed_empty_adjacency_stales_the_attempt() {
-    let world = installed_authorization_world(false);
+    let world = installed_authorization_world(
+        false,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let actor = world
         .application

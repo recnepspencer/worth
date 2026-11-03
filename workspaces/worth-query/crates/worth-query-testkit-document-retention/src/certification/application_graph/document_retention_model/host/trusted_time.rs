@@ -24,20 +24,25 @@ pub use super::{host_limits, seed_host, DocumentRetentionRuntime};
 #[derive(Clone)]
 pub struct CertificationTrustedTime {
     pub origin: SystemTime,
+    pub admission_clock:
+        worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock,
     pub offset_milliseconds: Arc<AtomicU64>,
     pub unavailable: Arc<AtomicBool>,
 }
 
 impl Default for CertificationTrustedTime {
     fn default() -> Self {
-        Self::new()
+        Self::new(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system())
     }
 }
 
 impl CertificationTrustedTime {
-    pub fn new() -> Self {
+    pub fn new(
+        admission_clock: worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock,
+    ) -> Self {
         Self {
             origin: SystemTime::now(),
+            admission_clock,
             offset_milliseconds: Arc::new(AtomicU64::new(0)),
             unavailable: Arc::new(AtomicBool::new(false)),
         }
@@ -55,6 +60,12 @@ impl CertificationTrustedTime {
 }
 
 impl WorthQueryRuntimeTimeSource for CertificationTrustedTime {
+    fn admission_clock(
+        &self,
+    ) -> worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock
+    {
+        self.admission_clock.clone()
+    }
     fn current_time(&self) -> Result<SystemTime, WorthQueryRuntimeTimeSourceDenial> {
         if self.unavailable.load(Ordering::SeqCst) {
             return Err(WorthQueryRuntimeTimeSourceDenial::Unavailable);
@@ -67,15 +78,19 @@ impl WorthQueryRuntimeTimeSource for CertificationTrustedTime {
 pub fn publish_on_first_program_with_trusted_time(
     time: impl WorthQueryRuntimeTimeSource + 'static,
 ) -> DocumentRetentionRuntime<RetentionProgramP0> {
+    let initial = validated_first_program();
+    let roster = super::auxiliary_programs::include(
+        WorthQueryApplicationProgramRoster::new().support(validated_second_program()),
+        initial.identity(),
+        initial.revision(),
+    );
     in_memory_rostered_program_with_authorization_time_source(
-        validated_first_program(),
-        WorthQueryApplicationProgramRoster::new()
-            .support(validated_second_program())
-            .support(super::super::actor_generation::validated_actor_program()),
+        initial,
+        roster,
         DocumentRetentionSchema::declaration().expect("the document-retention schema is valid"),
         ((),),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        host_limits(),
+        host_limits(time.admission_clock()),
         seed_host,
         time,
     )

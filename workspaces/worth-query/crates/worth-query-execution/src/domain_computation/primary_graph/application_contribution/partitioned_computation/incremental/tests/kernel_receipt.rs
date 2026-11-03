@@ -4,7 +4,10 @@ use super::*;
 #[test]
 fn a_tree_stop_keeps_no_kernel_completion_receipt_with_reuse_either_way() {
     let _observation = QueryObservation::install_on_this_thread();
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let installed = installed(StatusRead::Gather(1), sum);
     let request = live_scope();
     let policy = super::super::super::super::request_execution::test_policy(

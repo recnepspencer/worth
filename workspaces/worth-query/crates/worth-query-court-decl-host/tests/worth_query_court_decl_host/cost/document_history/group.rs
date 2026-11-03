@@ -177,9 +177,7 @@ fn grouped_member_work_and_one_edge_adoption_scale_with_members_without_visiting
     for depth in [1, 15] {
         samples.push([run(depth, 2, open::<2>), run(depth, 4, open::<4>)]);
     }
-    for member_index in 0..2 {
-        let short = &samples[0][member_index];
-        let longer = &samples[1][member_index];
+    for (short, longer) in samples[0].iter().zip(&samples[1]) {
         for (small, large) in [
             (&short.members, &longer.members),
             (&short.adoption, &longer.adoption),

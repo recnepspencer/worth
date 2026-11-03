@@ -244,7 +244,7 @@ fn run() {
     );
     calls.reject_refinement.store(false, Ordering::SeqCst);
     let cancellation = WorthQueryCancellationSource::new();
-    let interrupted = WorthQueryRequestScope::new(None, cancellation.token());
+    let interrupted = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let fired = Arc::new(std::sync::atomic::AtomicBool::new(false));
     let observe = fired.clone();
     *calls.after_refinement.lock().unwrap() = Some(Box::new(move || {

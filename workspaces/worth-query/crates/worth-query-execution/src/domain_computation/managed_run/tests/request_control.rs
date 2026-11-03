@@ -3,7 +3,7 @@ use super::invariant_execution_fixture::execute_invariant_with_request;
 use crate::domain_computation::{
     WorthQueryInvariantExecutionDenialKind as Kind, WorthQueryInvariantReceipt,
 };
-use std::time::{Duration, Instant};
+use std::time::Duration;
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
 };
@@ -14,8 +14,9 @@ fn cancelled_invariant_request_stops_before_provider_state_load() {
     let requirement = requirement("closed-loop", WorthQueryInvariantEnforcement::Blocking, 1);
     let source = WorthQueryCancellationSource::new();
     let request = WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(60)),
+        Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(60)),
         source.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     let passed = crate::domain_computation::primary_graph::with_test_advancement(|phase| {
         let bootstrap = phase.bootstrap_for_test();

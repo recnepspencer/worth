@@ -63,7 +63,7 @@ fn authored_body_input_selection_requires_capture_at_installation() {
         schema,
         (program::Installation::Native,),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        host_limits(),
+        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         |_phase, _graph, _schema| panic!("missing capture must deny before initialization"),
     );
     match result {

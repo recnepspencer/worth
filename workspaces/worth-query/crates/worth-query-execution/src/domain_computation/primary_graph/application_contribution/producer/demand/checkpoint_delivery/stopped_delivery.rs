@@ -34,7 +34,10 @@ impl BridgeConditionalComputeProvider for Compute {
 
 #[test]
 fn a_terminal_delivery_stop_releases_the_head_with_a_peer_still_present() {
-    let world = fixture::installed_authorization_world(true);
+    let world = fixture::installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let mut foreign_receipt = recoverable_commit_support::committed_recoverable_application();
     let change = foreign_receipt
         .take_performed_relational_product_change()

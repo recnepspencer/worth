@@ -16,8 +16,7 @@ fn predispatch_cancellation_is_identical_at_every_first_compute_position_and_wid
             source.cancel();
             let scope = WorthQueryRequestScope::new(
                 Some(std::time::Instant::now() + std::time::Duration::from_secs(60)),
-                source.token(),
-            );
+                source.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
             let mut input = members(7, None);
             // Earlier members declare empty, zero-work tasks. The varied member
             // is the first that would checkpoint if entry were not interrupted.

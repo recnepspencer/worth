@@ -29,8 +29,14 @@ impl WorthQueryProducerOutputFamily<super::fixture::IdentityExecutionSchema>
 
 #[test]
 fn current_output_rejects_a_foreign_producer_identity_with_its_typed_cause() {
-    let world = installed_authorization_world(true);
-    let foreign = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
+    let foreign = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let foreign_account = foreign
         .application
         .with_host_advancement(|phase| {
@@ -100,7 +106,10 @@ fn current_output_rejects_a_foreign_producer_identity_with_its_typed_cause() {
 
 #[test]
 fn current_output_exhaustion_denies_the_admitted_projection() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let (request, principal, scope, operation) = world
         .application
         .with_host_advancement(|phase| {

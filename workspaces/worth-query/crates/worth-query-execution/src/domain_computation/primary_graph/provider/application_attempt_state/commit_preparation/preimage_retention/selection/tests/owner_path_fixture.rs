@@ -7,7 +7,10 @@ pub(super) fn owner_path_fixture() -> (
     ValidatedMutationFootprint,
     EntityId,
 ) {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let account = world
         .application
         .with_host_advancement(|phase| {

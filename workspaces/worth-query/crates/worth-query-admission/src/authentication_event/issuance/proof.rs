@@ -93,6 +93,7 @@ pub struct WorthQueryConsumedAuthenticationEvent<Schema> {
     pub(super) expires_at_nanoseconds: u64,
     pub(super) observed_at_nanoseconds: u64,
     pub(super) principal_valid_until: Instant,
+    pub(super) principal_clock: crate::authenticated_principal::WorthQueryAdmissionClock,
     pub(super) revoked: Arc<AtomicBool>,
     pub(super) marker: PhantomData<fn() -> Schema>,
 }

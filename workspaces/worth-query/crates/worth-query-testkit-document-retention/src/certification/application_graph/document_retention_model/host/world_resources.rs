@@ -24,12 +24,14 @@ pub fn world_resources(
     commits: u64,
     metadata_bytes: u64,
     pins: u64,
+    clock: worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock,
 ) -> runtime::WorthQueryProductWorldResources {
     world_resources_with_capacity(
         commits,
         metadata_bytes,
         pins,
         WorldLifecycleCapacity::DEFAULT,
+        clock,
     )
 }
 
@@ -38,6 +40,7 @@ pub fn world_resources_with_capacity(
     metadata_bytes: u64,
     pins: u64,
     capacity: WorldLifecycleCapacity,
+    clock: worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock,
 ) -> runtime::WorthQueryProductWorldResources {
     // These ordinary authority courts impose no guessed request-work ceiling.
     // Native checked work and allocation handling retain their existing policy.
@@ -74,7 +77,7 @@ pub fn world_resources_with_capacity(
                     .owner_created_component_custody_records,
             },
         },
-        runtime::WorthQueryProductWorldClock::start(),
+        runtime::WorthQueryProductWorldClock::start(clock),
         runtime::WorthQueryInvalidationResources::new(),
         execution_policy,
     )

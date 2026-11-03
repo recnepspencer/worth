@@ -28,7 +28,7 @@ pub fn evaluation_rechecks_each_subject_and_releases_request_funding() {
         let baseline = readers.observe().active();
         let access = |subject| distinct_subjects::access(&application, &principal, &scope, subject);
         let cancellation = WorthQueryCancellationSource::new();
-        let cancelled = WorthQueryRequestScope::new(None, cancellation.token());
+        let cancelled = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
         let (qm, qd, sm, sd) = (
             access("observer-decoy"),
             access("observer-decoy"),

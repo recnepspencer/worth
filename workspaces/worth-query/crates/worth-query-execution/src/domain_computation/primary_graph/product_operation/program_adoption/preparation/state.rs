@@ -252,7 +252,10 @@ pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
         .publication_binding()
         .prepare_relational_candidate(candidate, request, successor_observation_requested)
         .map_err(|denial| match denial {
-            PublicationDenial::Stopped(stop) => {
+            PublicationDenial::ClockMismatch => {
+                WorthQueryBranchAdoptionPreparationDenial::ExecutionDenied(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock))
+            },
+PublicationDenial::Stopped(stop) => {
                 WorthQueryBranchAdoptionPreparationDenial::ExecutionDenied(advancement_denial(stop))
             }
             PublicationDenial::Refused(no_effect) => {

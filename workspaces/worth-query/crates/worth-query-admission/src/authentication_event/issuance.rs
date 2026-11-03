@@ -2,7 +2,6 @@ use std::marker::PhantomData;
 use std::num::NonZeroUsize;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
-use std::time::Instant;
 
 use worth_query_declaration::facade::application_schema::{
     ApplicationSchema, ApplicationSchemaBindingIdentity,
@@ -143,6 +142,9 @@ where
         intent: WorthQueryAuthenticationEventIntent,
         scope: &WorthQueryRequestScope,
     ) -> Result<WorthQueryAuthenticationEvent<Schema>, WorthQueryAuthenticationEventDenial> {
+        if !principal.clock().same_clock(scope.clock()) {
+            return Err(WorthQueryAuthenticationEventDenial::ClockIdentityChanged);
+        }
         self.check_principal(principal)?;
         check_interruption(scope)?;
         let mut reservation = self.reserve_challenge(principal.identity())?;
@@ -160,6 +162,9 @@ where
             .await
             .map_err(WorthQueryAuthenticationEventDenial::VerifierFailed)?;
         check_interruption(scope)?;
+        if !principal.clock().same_clock(scope.clock()) {
+            return Err(WorthQueryAuthenticationEventDenial::ClockIdentityChanged);
+        }
         self.check_principal(principal)?;
         let mut state = self.state();
         if state.invalidated_pending.contains(&event_id) {
@@ -210,6 +215,9 @@ where
     ) -> Result<WorthQueryConsumedAuthenticationEvent<Schema>, WorthQueryAuthenticationEventDenial>
     {
         self.check_event(event)?;
+        if !principal.clock().same_clock(scope.clock()) {
+            return Err(WorthQueryAuthenticationEventDenial::ClockIdentityChanged);
+        }
         self.check_principal(principal)?;
         check_interruption(scope)?;
         if event.principal != *principal.identity() {
@@ -253,6 +261,7 @@ where
             expires_at_nanoseconds: event.expires_at_nanoseconds,
             observed_at_nanoseconds: now,
             principal_valid_until: principal.valid_until(),
+            principal_clock: principal.clock().clone(),
             revoked: Arc::clone(&event.revoked),
             marker: PhantomData,
         })
@@ -282,7 +291,7 @@ where
         if self.binding_identity != *principal.binding_identity() {
             return Err(WorthQueryAuthenticationEventDenial::WrongSchemaBinding);
         }
-        if principal.valid_until() <= Instant::now() {
+        if principal.is_expired() {
             return Err(WorthQueryAuthenticationEventDenial::PrincipalExpired);
         }
         Ok(())

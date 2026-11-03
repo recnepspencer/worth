@@ -1,5 +1,3 @@
-use std::time::Instant;
-
 use super::{CancellationToken, SerialMemoryBudget};
 use worth_foundational::ExecutionRequestPolicy;
 
@@ -11,7 +9,7 @@ use worth_foundational::ExecutionRequestPolicy;
 pub struct SerialRequest {
     pub(crate) memory: Option<SerialMemoryBudget>,
     pub(crate) work_ceiling: Option<u64>,
-    pub(crate) deadline: Option<Instant>,
+    pub(crate) deadline: Option<crate::MonotonicDeadline>,
     pub(crate) cancellation: CancellationToken,
 }
 
@@ -22,7 +20,8 @@ impl SerialRequest {
             Some(KernelStop::Cancelled)
         } else if self
             .deadline
-            .is_some_and(|deadline| Instant::now() >= deadline)
+            .as_ref()
+            .is_some_and(|deadline| deadline.is_elapsed())
         {
             Some(KernelStop::DeadlineElapsed)
         } else {
@@ -33,7 +32,7 @@ impl SerialRequest {
     pub fn from_policy(
         policy: &ExecutionRequestPolicy,
         cancellation: CancellationToken,
-        deadline: Option<Instant>,
+        deadline: Option<crate::MonotonicDeadline>,
     ) -> Self {
         Self {
             memory: policy
@@ -49,7 +48,7 @@ impl SerialRequest {
     pub fn from_memory(
         memory: SerialMemoryBudget,
         cancellation: CancellationToken,
-        deadline: Option<Instant>,
+        deadline: Option<crate::MonotonicDeadline>,
     ) -> Self {
         Self {
             memory: Some(memory),
@@ -63,7 +62,7 @@ impl SerialRequest {
         self.cancellation = cancellation;
         self
     }
-    pub fn with_deadline(mut self, deadline: Option<Instant>) -> Self {
+    pub fn with_deadline(mut self, deadline: Option<crate::MonotonicDeadline>) -> Self {
         self.deadline = deadline;
         self
     }

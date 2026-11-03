@@ -18,7 +18,10 @@ const REQUIRED: &[WorthQueryProducerInvariantRequirement] =
 
 #[test]
 fn producer_requirement_denies_before_first_publication_and_leaves_retry_clean() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application

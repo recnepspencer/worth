@@ -22,7 +22,10 @@ fn payload(fact: Fact) -> FactPayload {
 
 #[test]
 fn paired_retirement_support_checks_original_and_target_exact_metadata() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     world.application.with_host_advancement(|phase| {
         let execution = phase.borrowed_request_for_test();
         let host = phase.test_host_request();

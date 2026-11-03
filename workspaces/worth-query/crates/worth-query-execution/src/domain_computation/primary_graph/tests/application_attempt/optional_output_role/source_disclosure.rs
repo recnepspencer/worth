@@ -76,7 +76,10 @@ fn non_correctable_source_keeps_disclosure_and_releases_its_native_input() {
     let _observation =
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let _placement = RestorePlacement::choose(Placement::Leased(std::num::NonZeroUsize::MIN));
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let caller = worth_execution::ExecutionResourceLease::serial(worth_execution::LeaseRequest {
         policy: worth_foundational::ExecutionRequestPolicy::new(
@@ -188,12 +191,14 @@ fn serial_placement_source_capture_preserves_success_and_original_cancellation()
     let _observation =
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let _placement = RestorePlacement::choose(Placement::Serial);
-    let resources =
-        test_product_world_resources().with_execution_policy(ExecutionRequestPolicy::for_workers(
-            ExecutionPosture::Serial,
-            DeterminismContract::CanonicalBitwise,
-            std::num::NonZeroUsize::MIN,
-        ));
+    let resources = test_product_world_resources(
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    )
+    .with_execution_policy(ExecutionRequestPolicy::for_workers(
+        ExecutionPosture::Serial,
+        DeterminismContract::CanonicalBitwise,
+        std::num::NonZeroUsize::MIN,
+    ));
     let world = installed_authorization_world_with_product_resources(resources);
     for cancel_capture in [true, false] {
         let before = world
@@ -207,7 +212,7 @@ fn serial_placement_source_capture_preserves_success_and_original_cancellation()
             })
             .unwrap();
         let cancellation = WorthQueryCancellationSource::new();
-        let request = WorthQueryRequestScope::new(None, cancellation.token());
+        let request = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let result = world.application.with_application_advancement(&request, |phase| {
             let execution = phase.checked_execution_request_for(world.application.product_runtime()).unwrap();
             let (accounted, _) = execution.run_native_with_checkpoint(|context| context.has_accounting()).unwrap();

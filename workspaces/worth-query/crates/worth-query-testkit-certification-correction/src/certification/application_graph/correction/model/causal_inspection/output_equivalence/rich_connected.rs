@@ -179,7 +179,7 @@ pub fn rich_source_and_producer_keep_original_values_both_authorities_and_releas
         assert!(application
             .runtime()
             .cancel_after_next_inspection_materialization_for_test(cancellation.clone()));
-        let cancelled = WorthQueryRequestScope::new(None, cancellation.token());
+        let cancelled = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
         let denied = application
             .runtime()
             .request(&principal, &cancelled)

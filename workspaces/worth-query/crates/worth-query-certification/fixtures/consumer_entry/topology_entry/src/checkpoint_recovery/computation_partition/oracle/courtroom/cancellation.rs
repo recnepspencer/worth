@@ -15,7 +15,7 @@ pub(in super::super) fn before_decision(application: &Application) {
         .start_dependent_in_program::<OracleProgram, RegionConnection>(application)
         .unwrap();
     let cancellation = authentication::WorthQueryCancellationSource::new();
-    let stopped_scope = authentication::WorthQueryRequestScope::new(None, cancellation.token());
+    let stopped_scope = authentication::WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let stopped_request = application.request(&principal, &stopped_scope);
     room().clear();
     published_states();

@@ -5,14 +5,17 @@ use crate::domain_computation::primary_graph::{
     WorthQueryInvariantDecisionPlanDenial, WorthQueryInvariantDecisionPlanDenialKind,
 };
 use std::cell::Cell;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestInterruption, WorthQueryRequestScope,
 };
 
 #[test]
 fn prepared_decision_selection_preserves_scalar_results_and_rejects_foreign_projection() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let prepared = world
         .application
@@ -73,11 +76,15 @@ fn prepared_decision_selection_preserves_scalar_results_and_rejects_foreign_proj
 
 #[test]
 fn prepared_decision_selection_observes_cancellation_after_preparation() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let source = WorthQueryCancellationSource::new();
     let request = WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(60)),
+        Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(60)),
         source.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     let observed = Cell::new(false);
     let result = world

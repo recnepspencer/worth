@@ -5,7 +5,7 @@ use std::{num::NonZeroUsize, sync::Arc};
 
 #[test]
 fn correction_page_retains_all_owned_receipts_until_its_last_shared_owner() {
-    let world = correction_source::install();
+    let world = correction_source::install(worth_execution::MonotonicClock::system());
     let source = correction_source::edit(&world, "page-source", "edited-label");
     let prepared = correction_source::prepare(&world, &source, "page-reversal");
     let reversal = correction_source::committed(correction_source::publish(&world, prepared));

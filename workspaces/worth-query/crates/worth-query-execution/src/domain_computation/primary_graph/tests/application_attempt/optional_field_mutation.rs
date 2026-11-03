@@ -26,7 +26,10 @@ mod optional_fields_preserve_empty_zero_and_lawful_absence_through_q;
 
 #[test]
 fn ordinary_and_optional_writes_to_one_entity_commit_as_one_native_patch() {
-    let world = super::super::fixture::installed_authorization_world(true);
+    let world = super::super::fixture::installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application
@@ -145,7 +148,10 @@ fn ordinary_and_optional_writes_to_one_entity_commit_as_one_native_patch() {
 
 #[test]
 fn absent_field_decision_facts_stale_after_a_competing_presence_change() {
-    let world = super::super::fixture::installed_authorization_world(true);
+    let world = super::super::fixture::installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application

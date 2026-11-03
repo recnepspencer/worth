@@ -3,7 +3,10 @@ use crate::domain_computation::primary_graph::WorthQueryInvariantProjectionDenia
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
 #[test]
 fn current_output_door_preserves_stops_at_every_consult() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let admission = world
         .application
         .with_host_advancement(|phase| {

@@ -79,7 +79,7 @@ impl WorthQueryProductPublicationBinding {
         WorthQueryPreparedConditionalRecovery,
         Denial<RuntimeWorldSettledRelationalAdoptionDenial>,
     > {
-        let control = self.request_control(request);
+        let control = self.request_control(request).ok_or(Denial::ClockMismatch)?;
         self.adoption_preparation.reached();
         let prepared = self
             .publication()

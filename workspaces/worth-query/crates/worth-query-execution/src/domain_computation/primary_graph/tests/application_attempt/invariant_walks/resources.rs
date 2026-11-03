@@ -65,6 +65,7 @@ fn run(leased: bool, roots: usize, ceiling: Option<u64>, cancel: bool) -> Case {
     let request = WorthQueryRequestScope::new(
         Some(std::time::Instant::now() + std::time::Duration::from_secs(60)),
         source.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     let program = program::set_active(&world, &request, true);
     let before = world.checkpoint();

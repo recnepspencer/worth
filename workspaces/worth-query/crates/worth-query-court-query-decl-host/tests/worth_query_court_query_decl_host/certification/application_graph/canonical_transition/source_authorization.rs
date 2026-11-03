@@ -19,7 +19,7 @@ fn entry_custody_cancelled_source_dependency_keeps_retryable_recovery() {
     let host = host::install(model::authored_value()).unwrap();
     let runtime = host.runtime();
     let cancellation = WorthQueryCancellationSource::new();
-    let request = WorthQueryRequestScope::new(None, cancellation.token());
+    let request = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let external = authenticate_operator(host.installed_schema(), &request);
     let result = runtime
         .request(&external, &request)

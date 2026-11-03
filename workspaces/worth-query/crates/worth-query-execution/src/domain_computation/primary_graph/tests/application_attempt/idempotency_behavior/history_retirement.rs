@@ -9,7 +9,7 @@ use worth_runtime_world::facade::{
 
 #[test]
 fn a_causal_replay_after_its_history_retires_answers_with_its_sealed_causality() {
-    let world = correction_source::install();
+    let world = correction_source::install(worth_execution::MonotonicClock::system());
     let source = correction_source::edit(&world, "retirement-source", "edited-label");
     let prepared = correction_source::prepare(&world, &source, "retirement-correction");
     let binding = prepared.binding;

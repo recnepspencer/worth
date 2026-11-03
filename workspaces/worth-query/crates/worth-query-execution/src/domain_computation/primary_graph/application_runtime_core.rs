@@ -8,7 +8,6 @@ pub(in crate::domain_computation) struct WorthQueryApplicationRuntimeCore {
     pub(super) checkpoint_restore_work: Option<worth_relational::facade::durability::CheckpointRestoreWork>,
     pub(in crate::domain_computation) authorization: Arc<WorthQueryInstalledAuthorizationRegistry>,
     pub(in crate::domain_computation) authorization_clock: Arc<WorthQueryRuntimeClock>,
-    pub(super) authentication_clock: WorthQueryAuthenticationClock,
     pub(in crate::domain_computation::primary_graph) relational_branch_identity:
         worth_relational::facade::branch::RelationalBranchIdentity,
     pub(crate) bridge: super::super::managed_bridge::WorthQueryInstalledApplicationBridge,
@@ -122,7 +121,7 @@ impl WorthQueryApplicationRuntimeCore {
         &self,
         valid_until: std::time::Instant,
     ) -> bool {
-        self.authentication_clock.is_expired(valid_until)
+        self.authorization_clock.admission_clock.now() >= valid_until
     }
 }
 

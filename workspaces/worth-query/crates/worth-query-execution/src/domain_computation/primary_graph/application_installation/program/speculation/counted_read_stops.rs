@@ -124,7 +124,7 @@ fn installed_preview_runtime() -> WorthQueryProgramApplicationRuntime<PreviewSch
         program, PreviewSchema::declaration().unwrap(), ((),),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         WorthQueryInMemoryApplicationLimits::new(
-            crate::domain_computation::execution_runtime::product_world::test_product_world_resources(),
+            crate::domain_computation::execution_runtime::product_world::test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()),
             Default::default(),
             worth_signal::facade::runtime::SignalConditionalEvaluationBudget::development(),
         ),
@@ -200,7 +200,11 @@ fn branch_creation_keeps_the_source_program_resolver_read_stop() {
     let runtime = installed_preview_runtime();
     let before = runtime.current_world();
     let source = WorthQueryCancellationSource::new();
-    let request = WorthQueryRequestScope::new(None, source.token());
+    let request = WorthQueryRequestScope::new(
+        None,
+        source.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let _named = runtime
         .product_runtime()
         .observe_named_read_consults_for_test();

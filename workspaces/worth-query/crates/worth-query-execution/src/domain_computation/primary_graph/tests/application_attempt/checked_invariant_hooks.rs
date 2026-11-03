@@ -58,6 +58,7 @@ fn run_case(checked: bool, work: bool, ceiling: Option<u64>, cancel_in_preparati
     let scope = WorthQueryRequestScope::new(
         Some(std::time::Instant::now() + Duration::from_secs(60)),
         source.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     let program = program::prepare(&world, &scope);
     // Installation completes before the rule control targets this commit.

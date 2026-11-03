@@ -7,22 +7,19 @@ use crate::domain_computation::primary_graph::application_contribution::request_
 };
 use crate::domain_computation::primary_graph::application_contribution::QueryRequestExecution;
 use crate::domain_computation::primary_graph::{tests::fixture, WorthQueryAdvancementDenial};
-use std::{
-    num::NonZeroUsize,
-    sync::Arc,
-    time::{Duration, Instant},
-};
+use std::{num::NonZeroUsize, sync::Arc, time::Duration};
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
 };
 
 #[test]
 fn author_held_application_and_product_handles_receive_nested_opening() {
-    let application = Arc::new(fixture::installed_authorization_world(false).application);
+    let application = Arc::new(fixture::installed_authorization_world(false, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()).application);
     let cancellation = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(60)),
+        Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(60)),
         cancellation.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     for workers in [0, 1, 2, 4] {
         let root = QueryRequestExecution::open(

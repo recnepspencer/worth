@@ -64,7 +64,7 @@ pub fn install_with_control(cancellation: Option<WorthQueryCancellationSource>) 
         Schema::declaration().unwrap(),
         (cancellation,),
         build(),
-        host_limits(),
+        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         |_, graph, installed| {
             graph.bind_principal(
                 &installed.principal_binding(Actor::reference()).unwrap(),
@@ -93,7 +93,7 @@ pub fn restore(checkpoint: WorthQueryApplicationCheckpoint) -> Host {
         Schema::declaration().unwrap(),
         (None,),
         build(),
-        host_limits(),
+        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         checkpoint,
     )
     .unwrap()

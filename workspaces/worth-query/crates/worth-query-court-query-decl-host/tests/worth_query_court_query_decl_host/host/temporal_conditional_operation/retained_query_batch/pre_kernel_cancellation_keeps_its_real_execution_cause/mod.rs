@@ -11,8 +11,7 @@ fn pre_kernel_cancellation_keeps_its_real_execution_cause() {
     let cancellation = WorthQueryCancellationSource::new();
     let request = WorthQueryRequestScope::new(
         Some(std::time::Instant::now() + std::time::Duration::from_secs(60)),
-        cancellation.token(),
-    );
+        cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let principal = product_query_support::principal(&world, &request);
     let query = world
         .application

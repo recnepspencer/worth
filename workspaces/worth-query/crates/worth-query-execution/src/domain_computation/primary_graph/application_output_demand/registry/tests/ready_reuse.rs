@@ -11,9 +11,7 @@ fn ready_output_reopens_and_only_its_exact_restored_predecessor_refreshes_it() {
     let output_key = key("producer", 5, 1);
     let scope = crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(root(1));
     let world =
-        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
-            true,
-        );
+        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     let observation = world
         .application
         .with_host_advancement(|phase| {

@@ -89,8 +89,7 @@ pub fn authenticate<P>(
         host.application.installed_schema(),
         WorthQueryAuthenticationAdapterAdmission::new(
             WorthQueryAuthenticationAudience::new("capability-retention-host").unwrap(),
-            WorthQueryAuthenticationMethod::new("certification").unwrap(),
-        ),
+            WorthQueryAuthenticationMethod::new("certification").unwrap(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         Adapter,
     )
     .unwrap();
@@ -122,6 +121,7 @@ pub fn install_program<
         (contacts.clone(),),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         worth_query_testkit_document_retention::facade::document_retention_model::host::host_limits(
+            worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system(),
         ),
         |_, graph, installed| {
             projection = Some(graph.retain_invariant_projection_authority());

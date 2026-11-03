@@ -31,7 +31,7 @@ pub fn publish_owner_workflow_with_projection() -> (
         DocumentRetentionSchema::declaration().unwrap(),
         ((),),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        host_limits(),
+        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         |phase, graph, schema| {
             projection = Some(graph.retain_invariant_projection_authority());
             seed_host(phase, graph, schema)

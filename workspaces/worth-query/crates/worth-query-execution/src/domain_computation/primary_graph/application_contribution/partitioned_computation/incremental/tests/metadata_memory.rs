@@ -7,7 +7,10 @@ use crate::domain_computation::primary_graph::application_contribution::request_
 fn partition_metadata_refusal_preserves_prior_and_its_funded_view_lasts_until_final_drop() {
     let _observation =
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let first = first_run(&world, &installed(StatusRead::Gather(1), sum));
     let sealed = first.sealed.unwrap().unwrap();
     let prior = sealed

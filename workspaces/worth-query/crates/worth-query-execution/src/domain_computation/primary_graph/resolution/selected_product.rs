@@ -88,6 +88,12 @@ where
         PrincipalIdentityBinding: ApplicationIdentityScalarValueBinding<Value = PrincipalIdentity>,
         PrincipalIdentity: 'static,
     {
+        validate_principal_clock(
+            &self.application().runtime,
+            external.clock(),
+            scope,
+            installed_binding.binding(),
+        )?;
         admit_resolution_request(scope, installed_binding.binding(), external.is_expired())?;
         let runtime = self.application().runtime.execution();
         runtime
@@ -142,6 +148,12 @@ where
                 installed_binding,
             )
         })?;
+        validate_principal_clock(
+            &self.application().runtime,
+            external.clock(),
+            scope,
+            installed_binding.binding(),
+        )?;
         admit_resolution_request(scope, installed_binding.binding(), external.is_expired())?;
         Ok(WorthQueryAuthenticatedPrincipal::mint(external, evidence))
     }
@@ -174,6 +186,12 @@ where
         principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
         scope: &WorthQueryRequestScope,
     ) -> Result<(), WorthQueryPrincipalResolutionDenial> {
+        validate_principal_clock(
+            &self.application().runtime,
+            principal.clock(),
+            scope,
+            principal.binding(),
+        )?;
         admit_resolution_request(scope, principal.binding(), principal.is_expired())?;
         let runtime = self.application().runtime.execution();
         if principal.runtime_authority() != runtime.authority_identity() {

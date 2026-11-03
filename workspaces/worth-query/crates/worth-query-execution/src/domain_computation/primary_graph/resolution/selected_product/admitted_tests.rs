@@ -7,7 +7,10 @@ use crate::domain_computation::primary_graph::tests::fixture::{
 
 #[test]
 fn admitted_selected_principal_matches_ordinary_and_certification() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     world
         .application
         .with_host_advancement(|phase| {

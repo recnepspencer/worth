@@ -30,7 +30,9 @@ pub(super) fn observe_case(
     place(workers.map_or(Placement::Serial, |width| {
         Placement::Leased(NonZeroUsize::new(width).unwrap())
     }));
-    let world = installed_authorization_world(true);
+    let time = worth_execution::MonotonicTimeController::new().unwrap();
+    time.hold();
+    let world = installed_authorization_world(true, time.clock());
     world.application.with_host_advancement(|phase| {
     let host_request = phase.test_host_request();
     let phase_custody = &host_request;
@@ -52,7 +54,7 @@ pub(super) fn observe_case(
         worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource::new();
     let scope = worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope::new(
         Some(
-            std::time::Instant::now()
+            time.clock().now()
                 + Duration::from_secs(
                     if matches!(case.query_interruption, Some(ScopeInterruption::Deadline)) {
                         5
@@ -61,8 +63,7 @@ pub(super) fn observe_case(
                     },
                 ),
         ),
-        query_cancel.token(),
-    );
+        query_cancel.token(), time.clock());
     let caller_cancel = worth_execution::CancellationSource::new();
     let selected = world.selected_product(phase_custody);
     let external = world.authenticate("alice", Duration::from_secs(60), &scope);
@@ -140,18 +141,17 @@ pub(super) fn observe_case(
                 .unwrap(),
         )
         .unwrap();
-    // Execution has a real immutable deadline. Mint it after world setup,
-    // allow preparation five seconds, and require a fresh selected rendezvous.
-    // The kernel waits for expiry there; elapsed setup can only fail the test.
+    // The request carries an immutable deadline on the held clock.
+    // The event advances that owner only at the selected rendezvous.
     let deadline = case
         .interrupt
         .filter(|(_, deadline)| *deadline)
-        .map(|_| std::time::Instant::now() + Duration::from_secs(5));
+        .map(|_| { let clock = time.clock(); clock.deadline_at(clock.now() + Duration::from_secs(5)) });
     let lease = execution.in_scope(|parent| {
         { let parent = parent.expect("the active phase is leased"); parent.child(LeaseRequest {
             policy: worth_foundational::ExecutionRequestPolicy::new(parent.policy().posture(), parent.policy().determinism(), worth_foundational::ExecutionBudget::new(NonZeroUsize::new(workers.unwrap_or(1)).unwrap(), None, parent.policy().work_ceiling())),
             cancellation: caller_cancel.token(),
-            deadline,
+            deadline: deadline.clone(),
         }).unwrap() }
     }).unwrap();
     let request = ExecutionRequest::leased(&lease);
@@ -182,6 +182,7 @@ pub(super) fn observe_case(
                 root,
                 earlier,
                 deadline: deadline.unwrap(),
+                time: time.clone(),
             }
         } else {
             Interrupt::Cancel {
@@ -206,6 +207,7 @@ pub(super) fn observe_case(
                 deadline: scope
                     .deadline()
                     .expect("this case supplies a query deadline"),
+                time: time.clone(),
             },
         });
     }

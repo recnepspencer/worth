@@ -269,9 +269,11 @@ pub mod integration {
     #[doc(hidden)]
     pub fn product_world_resources_for_test(
         retained_composite_commits: u64,
+        clock: worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock,
     ) -> WorthQueryProductWorldResources {
         crate::domain_computation::execution_runtime::product_world::test_product_world_resources_with_history_limit_for_test(
             retained_composite_commits,
+            clock,
         )
     }
     #[doc(hidden)]

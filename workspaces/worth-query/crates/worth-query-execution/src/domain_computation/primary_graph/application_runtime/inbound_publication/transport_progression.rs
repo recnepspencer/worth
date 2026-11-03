@@ -114,7 +114,10 @@ where
         let recovery = publication.recovery();
         let prepared = match publication.prepare_relational_candidate(candidate, request, false) {
             Ok(prepared) => prepared,
-            Err(PublicationDenial::Stopped(stop)) => {
+            Err(PublicationDenial::ClockMismatch) => {
+                return Outcome::Denied(evidence, Denial::ExecutionDenied(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock)))
+            },
+Err(PublicationDenial::Stopped(stop)) => {
                 return Outcome::Denied(evidence, Denial::ExecutionDenied(advancement_denial(stop)))
             }
             Err(PublicationDenial::Refused(_)) => return Outcome::NoEffect(evidence),
@@ -138,6 +141,12 @@ where
                     incarnation,
                     terminal.fill(performed.consume(), None),
                 ))
+            }
+            Err(PublicationDenial::ClockMismatch) => {
+                self.runtime
+                    .primary_provider
+                    .clear_inbound_completion_publication_pending(&correlation);
+                Outcome::Denied(evidence, Denial::ExecutionDenied(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock)))
             }
             Err(PublicationDenial::Stopped(stop)) => {
                 self.runtime

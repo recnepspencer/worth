@@ -8,7 +8,10 @@ fn original_source_reports_sort_qualification_without_execution_overflow_and_the
     let _observation =
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let _placement = RestorePlacement::choose(Placement::Serial);
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     for refuse in [true, false] {
         let before = world

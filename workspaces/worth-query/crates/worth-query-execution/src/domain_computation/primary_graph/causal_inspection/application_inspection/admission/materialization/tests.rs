@@ -17,7 +17,10 @@ use worth_execution::{
 
 #[test]
 fn real_report_refusal_preserves_original_payer_until_owned_denial_closes() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let original = observe(&world, &external, &request, false);

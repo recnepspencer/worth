@@ -140,7 +140,7 @@ fn unpublished<'d, 'r>(
         });
         let mut refused = None;
         for _ in 0..96 {
-            let scope = WorthQueryRequestScope::new(None, cancellation.token());
+            let scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
             match with_scope(app, &scope, |request| owner.advance(request)) {
                 WorthQueryHistoryNavigationAdvance::Pending(next) => owner = next,
                 WorthQueryHistoryNavigationAdvance::Refused { cause, owner } => {
@@ -218,7 +218,7 @@ fn unpublished_history_producer_resumes_original_effect_once_before_selecting_th
     let original = page.rows()[0].handle().clone();
     drop(page);
     let cancellation = WorthQueryCancellationSource::new();
-    let scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     owner = match with_scope(app, &scope, |request| {
         cancellation.cancel();
         owner.advance(request)
@@ -312,7 +312,7 @@ fn dropped_unpublished_history_producer_closes_only_its_original_effect_and_cand
     let original = page.rows()[0].handle().clone();
     drop(page);
     let cancellation = WorthQueryCancellationSource::new();
-    let scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let mut retained = None;
     let _outcome = app.runtime().with_application_advancement(&scope, |phase| {
         cancellation.cancel();

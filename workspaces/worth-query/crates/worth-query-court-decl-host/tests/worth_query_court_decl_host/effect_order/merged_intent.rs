@@ -163,7 +163,7 @@ fn disjoint_removal_and_write_from_independent_workers_still_conflict() {
                 .push_batch(batch, ExecutionAllocationPolicy::SystemAllocation)
                 .unwrap();
         }
-        let denial = transaction.commit(&execution, &mut runtime).unwrap_err();
+        let denial = transaction.commit(&execution, &runtime).unwrap_err();
         let TransactionCommitError::Conflict { error, .. } = denial else {
             panic!("{denial:?}");
         };

@@ -27,7 +27,7 @@ mod tests {
 
     #[test]
     fn optional_aspect_initialization_presence_follows_exact_installed_write_membership() {
-        let world = installed_authorization_world(true);
+        let world = installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let schema = world.application.installed_schema();
         let writer = schema
             .installed_operation(PatchAccountDraftOperation::reference())

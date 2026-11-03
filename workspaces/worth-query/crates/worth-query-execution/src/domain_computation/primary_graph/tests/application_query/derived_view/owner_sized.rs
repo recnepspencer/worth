@@ -21,7 +21,10 @@ impl WorthQueryManagedDerivedValue for ImageLabel {
 
 #[test]
 fn owner_sized_image_grows_from_actual_census_and_preserves_clean_arcs() {
-    let world = installed_authorization_world(false);
+    let world = installed_authorization_world(
+        false,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let query = world

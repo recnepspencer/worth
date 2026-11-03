@@ -184,8 +184,7 @@ mod tests {
         let request =
             worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope::new(
                 Some(std::time::Instant::now() + std::time::Duration::from_secs(60)),
-                source.token(),
-            );
+                source.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let control = super::super::validation_control::ValidationRequestControl::new(&request);
         source.cancel();
         assert_eq!(

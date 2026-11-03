@@ -39,7 +39,7 @@ fn unpublished_candidate_edit_recovers_before_adopting_the_unchanged_model() {
         )
         .unwrap();
     let cancellation = WorthQueryCancellationSource::new();
-    let original_scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let original_scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let original =
         authentication::authenticate(host.installed_schema(), Actor::Reviewer, &original_scope)
             .unwrap();

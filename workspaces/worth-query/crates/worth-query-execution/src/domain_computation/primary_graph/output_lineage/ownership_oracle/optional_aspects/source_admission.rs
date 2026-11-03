@@ -34,8 +34,7 @@ fn check(fault: Fault, entry: Entry) {
     let request =
         worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope::new(
             None,
-            cancellation.token(),
-        );
+            cancellation.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     let external = primary_graph::tests::fixture::authenticate_external(
         source.installed_schema(),
         "alice",

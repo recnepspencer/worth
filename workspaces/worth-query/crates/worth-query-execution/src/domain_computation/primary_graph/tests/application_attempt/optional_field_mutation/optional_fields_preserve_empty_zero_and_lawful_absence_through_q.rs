@@ -3,7 +3,10 @@ use super::*;
 
 #[test]
 fn optional_fields_preserve_empty_zero_and_lawful_absence_through_query() {
-    let world = super::super::super::fixture::installed_authorization_world(true);
+    let world = super::super::super::fixture::installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application

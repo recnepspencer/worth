@@ -27,7 +27,7 @@ pub fn publish_monitor(
         ((), (), configuration),
         ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID"))
             .expect("embedded application build identity"),
-        host_limits(),
+        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         seed_host,
     )
     .expect("the neutral mixed program installs through the real bootstrap");
@@ -45,7 +45,7 @@ pub fn restore(
         ((), (), crate::resource_monitor::Configuration::default()),
         ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID"))
             .expect("embedded application build identity"),
-        host_limits(),
+        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         checkpoint,
     )
     .expect("the current neutral checkpoint restores without a seed callback");

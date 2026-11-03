@@ -47,9 +47,8 @@ fn continuation_late_cancellation_refuses_the_page_and_fresh_request_succeeds() 
     for reject in [false, true] {
         let cancellation = WorthQueryCancellationSource::new();
         let scope = WorthQueryRequestScope::new(
-            Some(Instant::now() + Duration::from_secs(30)),
-            cancellation.token(),
-        );
+            Some(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(30)),
+            cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
         query::reset(Some(cancellation), reject);
         opaque::reset();
         let denial = match first_page(&host, &scope) {

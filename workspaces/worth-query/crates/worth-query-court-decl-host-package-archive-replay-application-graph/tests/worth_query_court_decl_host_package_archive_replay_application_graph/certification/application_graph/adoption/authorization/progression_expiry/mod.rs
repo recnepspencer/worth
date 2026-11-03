@@ -11,7 +11,11 @@ fn expiry_during_capability_progression_preserves_the_native_prepared_owner() {
         .supported_program::<RetentionProgramP1>()
         .unwrap()
         .owned_revision();
-    let scope = request_scope();
+    let scope = WorthQueryRequestScope::new(
+        Some(clock.time.clock().now() + std::time::Duration::from_secs(30)),
+        WorthQueryCancellationSource::new().token(),
+        clock.time.clock(),
+    );
     let current = authenticate_operator(host.installed_schema(), &scope);
     let programs = host.runtime().request(&current, &scope).programs();
     let requirements = programs.compare(&target).unwrap();
@@ -50,7 +54,7 @@ fn expiry_during_capability_progression_preserves_the_native_prepared_owner() {
         .unwrap();
     assert_eq!(before, after);
     assert_eq!(prepared.target(), &target);
-    assert_eq!(read_retention(host.runtime(), branch), 7);
+    assert_eq!(host.runtime().request(&current, &scope).on_branch(branch).query(worth_query_testkit_document_retention::facade::document_retention_model::retention_entry::DocumentRetentionRead { identity: worth_query_testkit_document_retention::facade::document_retention_model::retention_entry::DOCUMENT_IDENTITY.to_owned() }).execute().unwrap().rows()[0].retention_days, 7);
     assert!(matches!(
         host.runtime()
             .request(&current, &scope)
@@ -72,7 +76,11 @@ fn expiry_during_progression_preserves_branch_set_prefix_and_pending_owner() {
         .supported_program::<RetentionProgramP1>()
         .unwrap()
         .owned_revision();
-    let scope = request_scope();
+    let scope = WorthQueryRequestScope::new(
+        Some(clock.time.clock().now() + std::time::Duration::from_secs(30)),
+        WorthQueryCancellationSource::new().token(),
+        clock.time.clock(),
+    );
     let current = authenticate_operator(host.installed_schema(), &scope);
     let coverage = host
         .runtime()

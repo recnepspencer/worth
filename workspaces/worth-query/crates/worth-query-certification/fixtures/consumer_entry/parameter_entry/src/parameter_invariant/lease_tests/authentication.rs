@@ -69,8 +69,7 @@ pub(super) fn admit(
         schema,
         authentication::WorthQueryAuthenticationAdapterAdmission::new(
             authentication::WorthQueryAuthenticationAudience::new("consumer-root").unwrap(),
-            authentication::WorthQueryAuthenticationMethod::new("local-credential").unwrap(),
-        ),
+            authentication::WorthQueryAuthenticationMethod::new("local-credential").unwrap(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         LocalIdentityAdapter,
     )
     .expect("the local adapter is admitted against the installed consumer schema")

@@ -14,7 +14,7 @@ fn cancelled_event_source_staging_preserves_head_and_allows_a_fresh_request() {
     )
     .unwrap();
     let cancellation = WorthQueryCancellationSource::new();
-    let stopped = WorthQueryRequestScope::new(None, cancellation.token());
+    let stopped = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let request = world
         .runtime()
         .request(&principal, &stopped)

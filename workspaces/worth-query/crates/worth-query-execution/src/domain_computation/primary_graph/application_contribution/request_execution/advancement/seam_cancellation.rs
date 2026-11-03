@@ -10,7 +10,7 @@ use std::{
         mpsc::{sync_channel, Receiver, SyncSender},
         Arc, Mutex,
     },
-    time::{Duration, Instant},
+    time::Duration,
 };
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
@@ -99,15 +99,17 @@ fn placements() -> [Placement; 3] {
 #[test]
 fn cancellation_during_bridge_read_remains_cancellation_in_the_advancement() {
     let _observer = crate::domain_computation::execution_observation::WorthQueryExecutionObservation::install_on_this_thread();
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let _restore = Restore(place(Placement::World));
     for placement in placements() {
         place(placement);
         let cancellation = WorthQueryCancellationSource::new();
         let scope = WorthQueryRequestScope::new(
-            Some(Instant::now() + Duration::from_secs(60)),
-            cancellation.token(),
-        );
+            Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(60)),
+            cancellation.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let (entered, ready) = sync_channel(1);
         let (release, released) = sync_channel(1);
         let source = world.application.runtime.product_runtime.source.clone();
@@ -194,15 +196,17 @@ fn cancellation_during_signal_evaluation_remains_cancellation_in_the_advancement
         SignalExecutionStopReason, SignalGraph,
     };
     let _observer = crate::domain_computation::execution_observation::WorthQueryExecutionObservation::install_on_this_thread();
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let _restore = Restore(place(Placement::World));
     for placement in placements() {
         place(placement);
         let cancellation = WorthQueryCancellationSource::new();
         let scope = WorthQueryRequestScope::new(
-            Some(Instant::now() + Duration::from_secs(60)),
-            cancellation.token(),
-        );
+            Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(60)),
+            cancellation.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let (entered, ready) = sync_channel(1);
         let (release, released) = sync_channel(1);
         let gate = Gate {

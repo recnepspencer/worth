@@ -12,9 +12,7 @@ pub(in crate::domain_computation::primary_graph::application_output_demand::regi
     worth_runtime_world::facade::ProductBranchIncarnation,
 ) {
     let world =
-        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
-            true,
-        );
+        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     world.application.with_host_advancement(|phase| {
         let custody = phase.test_host_request();
         let request = crate::domain_computation::primary_graph::tests::fixture::live_scope();

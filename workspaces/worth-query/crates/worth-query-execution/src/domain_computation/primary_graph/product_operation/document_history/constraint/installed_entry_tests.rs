@@ -22,7 +22,7 @@ impl WorthQueryDocumentHistoryOperationConstraint {
         access: &WorthQueryProgramPublicationAccess,
     ) {
         for forged in [false, true] {
-            let world = installed_authorization_world(true);
+            let world = installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
             let request = live_scope();
             world
                 .application

@@ -96,7 +96,7 @@ fn an_authored_demand_clone_panic_leaves_original_candidate_disposal_owned_and_c
     drop(navigation);
 
     let cancellation = WorthQueryCancellationSource::new();
-    let scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     // Caller custody keeps the actual close owner independently of the host's
     // unit-result handoff. No request or phase escapes with it.
     let mut close = None;

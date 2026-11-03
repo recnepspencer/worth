@@ -19,7 +19,10 @@ fn direct_admission_rejects_a_same_relational_different_signal_product() {
     let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let (exact, substitute) = world
         .application
         .with_host_advancement(|phase| hostile_product_twins(&phase, &world.application))
@@ -75,7 +78,10 @@ fn workflow_admission_rejects_a_same_relational_different_signal_product() {
     let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let (exact, substitute) = world
         .application
         .with_host_advancement(|phase| hostile_product_twins(&phase, &world.application))

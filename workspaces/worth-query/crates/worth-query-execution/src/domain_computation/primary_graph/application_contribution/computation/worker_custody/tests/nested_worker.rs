@@ -16,12 +16,11 @@ impl worth_execution::ChargedBytes for Probe {
 #[test]
 fn nested_partition_workers_keep_the_member_reentry_refusal() {
     let _observation = crate::domain_computation::execution_observation::WorthQueryExecutionObservation::install_on_this_thread();
-    let application = Arc::new(fixture::installed_authorization_world(false).application);
+    let application = Arc::new(fixture::installed_authorization_world(false, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()).application);
     let cancellation = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(
         None,
-        cancellation.token(),
-    );
+        cancellation.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     let root = QueryRequestExecution::open(
         worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Leased {
             authority: test_authority(),

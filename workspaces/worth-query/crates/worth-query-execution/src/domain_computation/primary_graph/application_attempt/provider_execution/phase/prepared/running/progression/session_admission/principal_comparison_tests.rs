@@ -14,14 +14,16 @@ use crate::domain_computation::primary_graph::tests::fixture::installed_authoriz
 
 #[test]
 fn principal_staleness_and_request_stop_keep_their_distinct_answers() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let cancellation =
         worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource::new();
     let request =
         worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope::new(
             Some(std::time::Instant::now() + std::time::Duration::from_secs(60)),
-            cancellation.token(),
-        );
+            cancellation.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     let principal = world
         .application
         .with_host_advancement(|phase| {

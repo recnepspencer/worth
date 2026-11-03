@@ -28,7 +28,7 @@ fn install<const MODE: u8>() -> Result<
         Model::<MODE>::declaration().unwrap(),
         ((),),
         ApplicationBuildIdentity::parse("919b0039-0000-0000-0000-000000000001").unwrap(),
-        host_limits(),
+        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         |_, graph, installed| {
             graph.bind_principal(
                 &installed.principal_binding(actor()).unwrap(),

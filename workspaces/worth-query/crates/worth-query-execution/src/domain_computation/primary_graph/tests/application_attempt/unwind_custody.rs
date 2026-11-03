@@ -9,7 +9,10 @@ use super::{
 
 #[test]
 fn world_unwind_retains_and_releases_the_exact_query_idempotency_slot() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application

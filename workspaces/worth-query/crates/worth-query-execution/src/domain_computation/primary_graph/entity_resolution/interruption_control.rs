@@ -7,7 +7,10 @@ use worth_query_admission::facade::authenticated_principal::WorthQueryCancellati
 thread_local! { static PENDING: RefCell<Option<Pending>> = const { RefCell::new(None) }; }
 enum Action {
     Cancel(WorthQueryCancellationSource),
-    Deadline(std::time::Instant),
+    Deadline {
+        time: worth_execution::MonotonicTimeController,
+        deadline: std::time::Instant,
+    },
 }
 struct Pending {
     action: Action,
@@ -26,9 +29,10 @@ impl FreshnessCancellationGuardForTest {
         Self::install(Action::Cancel(source), preceding_reads)
     }
     pub(in crate::domain_computation::primary_graph) fn deadline_on_this_thread(
+        time: worth_execution::MonotonicTimeController,
         deadline: std::time::Instant,
     ) -> Self {
-        Self::install(Action::Deadline(deadline), 0)
+        Self::install(Action::Deadline { time, deadline }, 0)
     }
     fn install(action: Action, preceding_reads: usize) -> Self {
         assert!(crate::domain_computation::execution_observation::is_installed());
@@ -66,9 +70,11 @@ pub(super) fn cancel_before_lookup_for_test() {
         pending.triggered.set(true);
         match pending.action {
             Action::Cancel(source) => source.cancel(),
-            Action::Deadline(deadline) => {
-                // Reach the caller's actual deadline; no elapsed-time assertion.
-                std::thread::sleep(deadline.saturating_duration_since(std::time::Instant::now()));
+            Action::Deadline { time, deadline } => {
+                let elapsed = deadline
+                    .checked_duration_since(time.clock().now())
+                    .expect("the held request is fresh before lookup");
+                time.advance(elapsed).unwrap();
             }
         }
     }

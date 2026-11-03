@@ -72,7 +72,7 @@ fn cancelled_build() {
     let calls = Arc::new(prefix::Calls::default());
     let world = host::install(Arc::clone(&calls));
     let cancellation = WorthQueryCancellationSource::new();
-    let scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let principal = authenticate(&world, &scope);
     let request = world
         .runtime()

@@ -17,7 +17,7 @@ fn cancelled_staged_nested_source_releases_original_storage_and_allows_fresh_ret
     )
     .unwrap();
     let cancellation = WorthQueryCancellationSource::new();
-    let stopped = WorthQueryRequestScope::new(None, cancellation.token());
+    let stopped = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let request = world
         .runtime()
         .request(&principal, &stopped)

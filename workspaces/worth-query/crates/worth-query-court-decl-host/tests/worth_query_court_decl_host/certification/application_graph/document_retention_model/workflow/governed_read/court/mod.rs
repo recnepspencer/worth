@@ -158,7 +158,7 @@ fn governed_original_intent_read_uses_fresh_subject_and_independent_audit_at_ret
         ))
     ));
     let cancellation=worth_query_host::facade::admission::authenticated_principal::WorthQueryCancellationSource::new();
-    let cancelled = WorthQueryRequestScope::new(None, cancellation.token());
+    let cancelled = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     cancellation.cancel();
     assert!(
         matches!(

@@ -91,9 +91,7 @@ mod scope_tests {
     fn dropping_the_arming_guard_clears_the_interleaving() {
         let guard = crate::domain_computation::execution_observation::WorthQueryExecutionObservation::install_on_this_thread();
         let world =
-            crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
-                true,
-            );
+            crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         world
             .application
             .interleave_before_owned_reobservation_for_test(|| {
