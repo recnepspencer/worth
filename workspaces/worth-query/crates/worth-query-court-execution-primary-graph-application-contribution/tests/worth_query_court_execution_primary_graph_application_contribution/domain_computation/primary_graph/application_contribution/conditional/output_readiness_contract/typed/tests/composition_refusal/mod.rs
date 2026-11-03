@@ -1,6 +1,6 @@
 //! The real composed constructor refuses mismatched field meaning before effects.
 use crate::domain_computation::primary_graph::application_contribution::conditional::output_readiness_contract::typed::tests::*;
-use worth_query_execution::domain_computation::primary_graph as graph;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph as graph;
 use worth_query_execution::facade::application_contribution as host;
 use schema::ApplicationSchemaContributionAuthoring;
 use std::cell::Cell;
@@ -107,7 +107,7 @@ fn composed_field_refusal_preserves_configuration_and_seed() {
     let configured = Arc::new(AtomicUsize::new(0));
     let seeded = Cell::new(0);
     let limits = worth_query_execution::facade::application_installation::WorthQueryInMemoryApplicationLimits::new(
-        worth_query_execution::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(),
+        worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(),
         worth_query_execution::facade::domain_computation::WorthQueryApplicationQueryResourceProfile::new(
             std::num::NonZeroUsize::new(128).unwrap()),
         worth_signal::facade::runtime::SignalConditionalEvaluationBudget::development(),

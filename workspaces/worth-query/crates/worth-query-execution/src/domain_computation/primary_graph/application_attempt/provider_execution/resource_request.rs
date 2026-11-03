@@ -1,6 +1,6 @@
 //! Derivation of the execution-resource request from installed contracts.
 
-pub(in crate::domain_computation) fn application_resource_request(
+pub fn application_resource_request(
     contracts: &worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts,
 ) -> Option<worth_query_declaration::facade::domain_computation::WorthQueryExecutionResourceRequest>
 {

@@ -2,8 +2,8 @@
 
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitOutcome;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationEffectProgram;
-use worth_query_execution::domain_computation::primary_graph::denial;
-use worth_query_execution::domain_computation::primary_graph::root;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::denial;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::root;
 use crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::schema::Node;
 use crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::schema::OrbitSchema;
 use crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::world::World;

@@ -19,11 +19,11 @@ use worth_query_installation::facade::{
 
 use super::WorthQueryApplicationCommitDenial;
 
-mod activation_cell;
+pub(crate) mod activation_cell;
 mod original_meaning;
 mod presented_program;
 pub(in crate::domain_computation) use original_meaning::OriginalProgramMeaning;
-mod revision_rendering;
+pub(crate) mod revision_rendering;
 mod support_lifecycle;
 
 pub(in crate::domain_computation::primary_graph) use activation_cell::WorthQueryProgramActivationCell;
@@ -35,7 +35,7 @@ pub(in crate::domain_computation::primary_graph) use support_lifecycle::{
 };
 
 /// The program support one published application runtime retains.
-pub(in crate::domain_computation::primary_graph) struct WorthQueryInstalledProgramSupport<Schema> {
+pub struct WorthQueryInstalledProgramSupport<Schema> {
     native_programs: Box<[Arc<super::application_installation::WorthQuerySupportedProgramRecord>]>,
     roster: Arc<WorthQueryProgramSupportRoster<Schema>>,
     renderings: Box<[AspectValue]>,

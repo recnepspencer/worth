@@ -10,8 +10,8 @@ use worth_query_admission::facade::basis::ObservationLaneWitness;
 use worth_query_admission::facade::basis::RawBasisIntent;
 use worth_query_admission::facade::resource_admission::WorthQueryAdmittedExecutionResourcePlan;
 use worth_query_admission::facade::resource_admission::WorthQueryExecutionResourceAdmissionDenialKind;
-use worth_query_execution::domain_computation::operation_binding::authority::topology::test_topology;
-use worth_query_execution::domain_computation::operation_binding::authority::topology::WorthQueryExecutionResourceTopology;
+use worth_query_execution::court_doors_for_test::domain_computation::operation_binding::authority::topology::test_topology;
+use worth_query_execution::court_doors_for_test::domain_computation::operation_binding::authority::topology::WorthQueryExecutionResourceTopology;
 use worth_query_execution::facade::domain_computation::WorthQueryExecutionBoundOperationAuthority;
 use worth_query_execution::facade::domain_computation::WorthQueryExecutionRuntimeInstaller;
 use worth_query_execution::facade::domain_computation::WorthQueryInstalledDomainExecutionAuthority;
@@ -92,7 +92,7 @@ pub fn direct_authority_with_graph(
 ) -> WorthQueryExecutionBoundOperationAuthority {
     let mut authority = direct_authority(runtime, plan);
     authority.installation_runtime_ordinal = graph.runtime_ordinal();
-    authority.direct_resource_topology = worth_query_execution::domain_computation::operation_binding::authority::topology::resource_topology(
+    authority.direct_resource_topology = worth_query_execution::court_doors_for_test::domain_computation::operation_binding::authority::topology::resource_topology(
         std::iter::empty(),
         &[graph],
         std::iter::once((graph.role(), access)),
@@ -100,7 +100,7 @@ pub fn direct_authority_with_graph(
         worth_query_execution::facade::domain_computation::WorthQueryExecutionCommitPosture::ReadOnly,
     );
     authority.provider_plan_declarations = Arc::new(
-        worth_query_execution::domain_computation::provider_session::protocol::declared_closure::WorthQueryProviderPlanDeclarations::test_direct(
+        worth_query_execution::court_doors_for_test::domain_computation::provider_session::protocol::declared_closure::WorthQueryProviderPlanDeclarations::test_direct(
             graph.role(),
             Some(access),
             false,
@@ -117,7 +117,7 @@ pub fn direct_authority_with_graph_and_decision_facts(
 ) -> WorthQueryExecutionBoundOperationAuthority {
     let mut authority = direct_authority_with_graph(runtime, plan, graph, access);
     authority.provider_plan_declarations = Arc::new(
-        worth_query_execution::domain_computation::provider_session::protocol::declared_closure::WorthQueryProviderPlanDeclarations::test_direct_with_decision_facts(
+        worth_query_execution::court_doors_for_test::domain_computation::provider_session::protocol::declared_closure::WorthQueryProviderPlanDeclarations::test_direct_with_decision_facts(
             graph.role(),
             access,
             families,
@@ -132,7 +132,7 @@ pub fn direct_authority_with_graph_effect(
 ) -> WorthQueryExecutionBoundOperationAuthority {
     let mut authority = direct_authority(runtime, plan);
     authority.installation_runtime_ordinal = graph.runtime_ordinal();
-    authority.direct_resource_topology = worth_query_execution::domain_computation::operation_binding::authority::topology::resource_topology(
+    authority.direct_resource_topology = worth_query_execution::court_doors_for_test::domain_computation::operation_binding::authority::topology::resource_topology(
         std::iter::empty(),
         &[graph],
         std::iter::empty(),
@@ -140,7 +140,7 @@ pub fn direct_authority_with_graph_effect(
         worth_query_execution::facade::domain_computation::WorthQueryExecutionCommitPosture::ReadOnly,
     );
     authority.provider_plan_declarations = Arc::new(
-        worth_query_execution::domain_computation::provider_session::protocol::declared_closure::WorthQueryProviderPlanDeclarations::test_direct(
+        worth_query_execution::court_doors_for_test::domain_computation::provider_session::protocol::declared_closure::WorthQueryProviderPlanDeclarations::test_direct(
             graph.role(),
             None,
             true,
@@ -156,7 +156,7 @@ pub fn direct_authority_with_graph_effect_and_decision_facts(
 ) -> WorthQueryExecutionBoundOperationAuthority {
     let mut authority = direct_authority_with_graph_effect(runtime, plan, graph);
     authority.provider_plan_declarations = Arc::new(
-        worth_query_execution::domain_computation::provider_session::protocol::declared_closure::WorthQueryProviderPlanDeclarations::test_effect_with_decision_facts(
+        worth_query_execution::court_doors_for_test::domain_computation::provider_session::protocol::declared_closure::WorthQueryProviderPlanDeclarations::test_effect_with_decision_facts(
             graph.role(),
             families,
         ),
@@ -175,7 +175,7 @@ pub fn direct_authority_with_graph_effect_decision_facts_and_invariants(
     let mut authority =
         direct_authority_with_graph_effect_and_decision_facts(runtime, plan, graph, families);
     authority.provider_plan_declarations = Arc::new(
-        worth_query_execution::domain_computation::provider_session::protocol::declared_closure::WorthQueryProviderPlanDeclarations::test_effect_with_decision_facts_and_invariants(
+        worth_query_execution::court_doors_for_test::domain_computation::provider_session::protocol::declared_closure::WorthQueryProviderPlanDeclarations::test_effect_with_decision_facts_and_invariants(
             graph.role(),
             authority.provider_plan_declarations.decision_fact_families().to_vec(),
             invariants,
@@ -192,12 +192,12 @@ pub fn workflow_authority(
         .map(|(stage, resources)| {
             (
                 Arc::<str>::from(stage),
-                worth_query_execution::domain_computation::operation_binding::authority::WorthQueryWorkflowStageResourceAuthority {
+                worth_query_execution::court_doors_for_test::domain_computation::operation_binding::authority::WorthQueryWorkflowStageResourceAuthority {
                     contract_identity: Arc::from(resources.contract_identity()),
                     topology: Default::default(),
                     predecessors: Arc::from([]),
                     artifact_contracts:
-                        worth_query_execution::domain_computation::artifact_owner::installed_binding::WorthQueryInstalledWorkflowArtifactContracts::empty(),
+                        worth_query_execution::court_doors_for_test::domain_computation::artifact_owner::installed_binding::WorthQueryInstalledWorkflowArtifactContracts::empty(),
                 },
             )
         })
@@ -251,7 +251,7 @@ pub fn workflow_authority_with_output_artifact(
         .and_then(|stages| stages.get_mut(stage_identity))
         .expect("managed-run artifact stage must exist")
         .artifact_contracts =
-        worth_query_execution::domain_computation::artifact_owner::installed_binding::WorthQueryInstalledWorkflowArtifactContracts::with_output(
+        worth_query_execution::court_doors_for_test::domain_computation::artifact_owner::installed_binding::WorthQueryInstalledWorkflowArtifactContracts::with_output(
             output,
         );
     authority
@@ -270,7 +270,7 @@ pub fn workflow_authority_with_stage_graph(
         .as_mut()
         .and_then(|stages| stages.get_mut(stage_identity))
         .expect("managed-run graph stage must exist")
-        .topology = worth_query_execution::domain_computation::operation_binding::authority::topology::resource_topology(
+        .topology = worth_query_execution::court_doors_for_test::domain_computation::operation_binding::authority::topology::resource_topology(
         std::iter::empty(),
         &[graph],
         std::iter::once((graph.role(), access)),
@@ -278,7 +278,7 @@ pub fn workflow_authority_with_stage_graph(
         worth_query_execution::facade::domain_computation::WorthQueryExecutionCommitPosture::ReadOnly,
     );
     authority.provider_plan_declarations = Arc::new(
-        worth_query_execution::domain_computation::provider_session::protocol::declared_closure::WorthQueryProviderPlanDeclarations::test_workflow_stage(
+        worth_query_execution::court_doors_for_test::domain_computation::provider_session::protocol::declared_closure::WorthQueryProviderPlanDeclarations::test_workflow_stage(
             stage_identity,
             graph.role(),
             access,
@@ -302,7 +302,7 @@ pub fn workflow_authority_with_stage_graph_and_output_artifact(
         .and_then(|stages| stages.get_mut(stage_identity))
         .expect("managed-run graph and artifact stage must exist")
         .artifact_contracts =
-        worth_query_execution::domain_computation::artifact_owner::installed_binding::WorthQueryInstalledWorkflowArtifactContracts::with_output(
+        worth_query_execution::court_doors_for_test::domain_computation::artifact_owner::installed_binding::WorthQueryInstalledWorkflowArtifactContracts::with_output(
             output,
         );
     authority

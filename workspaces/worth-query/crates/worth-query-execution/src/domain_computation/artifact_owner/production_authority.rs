@@ -23,7 +23,7 @@ pub struct WorthQueryArtifactProductionAuthority {
     pub(super) production_generation: WorthQueryArtifactProductionGeneration,
 }
 
-pub(crate) struct WorthQueryArtifactProductionAuthorityParts {
+pub struct WorthQueryArtifactProductionAuthorityParts {
     pub(crate) contract:
         Arc<worth_query_installation::facade::WorthQueryInstalledArtifactContractAuthority>,
     pub(crate) domain_authority:

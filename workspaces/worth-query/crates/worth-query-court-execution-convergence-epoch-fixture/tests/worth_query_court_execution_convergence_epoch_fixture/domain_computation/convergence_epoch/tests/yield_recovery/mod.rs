@@ -22,7 +22,7 @@ pub use worth_query_execution::facade::domain_computation::WorthQueryManagedGrap
 
 #[test]
 fn direct_running_recovery_resumes_the_exact_epoch_on_the_rightful_thread() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -57,7 +57,7 @@ fn direct_running_recovery_resumes_the_exact_epoch_on_the_rightful_thread() {
 
 #[test]
 fn workflow_running_recovery_resumes_the_exact_stage_on_the_rightful_thread() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -92,7 +92,7 @@ fn workflow_running_recovery_resumes_the_exact_stage_on_the_rightful_thread() {
 
 #[test]
 fn direct_terminal_recovery_closes_resources_once() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -124,7 +124,7 @@ fn direct_terminal_recovery_closes_resources_once() {
 
 #[test]
 fn workflow_terminal_recovery_closes_without_artifacts() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -149,7 +149,7 @@ fn workflow_terminal_recovery_closes_without_artifacts() {
 
 #[test]
 fn workflow_terminal_recovery_pending_retry_preserves_authority() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -197,7 +197,7 @@ fn workflow_terminal_recovery_pending_retry_preserves_authority() {
 
 #[test]
 fn workflow_terminal_recovery_types_double_artifact_panic_as_closed_recovery() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -229,7 +229,7 @@ fn workflow_terminal_recovery_types_double_artifact_panic_as_closed_recovery() {
 }
 
 pub fn direct_paused(
-    execution: &worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
 
     fixture: DirectAdmissionFixture,
     call_identity: &str,
@@ -258,7 +258,7 @@ pub fn direct_paused(
 }
 
 pub fn workflow_paused(
-    execution: &worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
 
     fixture: WorkflowAdmissionFixture,
     call_identity: &str,

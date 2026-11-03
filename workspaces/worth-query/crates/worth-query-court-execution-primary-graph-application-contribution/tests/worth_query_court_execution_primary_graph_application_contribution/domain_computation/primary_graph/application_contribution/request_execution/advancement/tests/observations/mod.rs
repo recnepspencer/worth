@@ -1,8 +1,8 @@
 //! The original advancement observer preserves refusal, panic and owner-only custody.
 use crate::domain_computation::primary_graph::application_contribution::request_execution::advancement::tests::*;
-use worth_query_execution::domain_computation::primary_graph::application_contribution::computation::prepared_request::PreparedCompute;
-use worth_query_execution::domain_computation::primary_graph::application_contribution::computation::wave_dispatch::dispatch;
-use worth_query_execution::domain_computation::primary_graph::application_contribution::computation::wave_dispatch::PreparedMember;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::computation::prepared_request::PreparedCompute;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::computation::wave_dispatch::dispatch;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::computation::wave_dispatch::PreparedMember;
 
 pub const PREPARE: u64 = 2;
 
@@ -70,7 +70,7 @@ fn member_host_refusals_do_not_add_thread_dependent_observations() {
                 .map(|_| PreparedMember {
                     requests: vec![PreparedCompute::new(|_| {
                         with_bootstrap_advancement(
-                            worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy(
+                            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy(
                                 NonZeroUsize::MIN,
                                 None,
                             ),

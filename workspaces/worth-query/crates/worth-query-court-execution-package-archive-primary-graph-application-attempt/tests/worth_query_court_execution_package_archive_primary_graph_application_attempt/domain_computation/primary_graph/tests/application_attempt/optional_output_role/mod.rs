@@ -9,9 +9,9 @@ pub use worth_query_testkit_execution_primary_graph_application_contribution::do
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::resolved_account;
-pub use worth_query_execution::equality_type_id::EqualityTypeId as TypeId;
+pub use worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId as TypeId;
 
-pub use worth_query_execution::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::role_use::OutputRoleUse;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::role_use::OutputRoleUse;
 pub use worth_query_execution::facade::domain_computation::HandlerResult;
 pub use worth_query_execution::facade::domain_computation::WorthQueryCompletedMutationCandidate;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::Account;
@@ -29,7 +29,7 @@ pub use worth_query_execution::facade::domain_computation::WorthQueryApplication
 pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationAttemptDenialKind;
 pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitOutcome;
 pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationIdempotencyBinding;
-pub use worth_query_execution::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondence;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondence;
 pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationOutputProjectionDenial;
 pub use worth_query_declaration::facade::application_operation::ApplicationMutationIdentities;
 pub use worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture;

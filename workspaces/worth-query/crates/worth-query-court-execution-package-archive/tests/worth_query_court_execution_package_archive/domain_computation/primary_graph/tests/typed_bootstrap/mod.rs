@@ -20,7 +20,7 @@ use worth_query_declaration::facade::application_schema::U64ApplicationValueBind
 
 #[test]
 fn authenticated_bootstrap_registers_the_exact_installed_native_contract() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let phase = &active_phase;
 
         let declaration = IdentityExecutionSchema::declaration().unwrap();
@@ -53,7 +53,7 @@ fn authenticated_bootstrap_registers_the_exact_installed_native_contract() {
             .unwrap()
             .0;
 
-        let bootstrap = authority.prepare_primary_graph(&phase.bootstrap_for_test(), &runtime, &schema, worth_query_execution::domain_computation::execution_runtime::product_world::resources::test_product_world_resources()).unwrap();
+        let bootstrap = authority.prepare_primary_graph(&phase.bootstrap_for_test(), &runtime, &schema, worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::resources::test_product_world_resources()).unwrap();
         let registered = bootstrap
             .graph
             .registered_entity_aspect(
@@ -110,7 +110,7 @@ impl ApplicationSchema for ExhaustedProviderIdentitySchema {
 
 #[test]
 fn provider_identity_exhaustion_denies_before_relational_installation() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let phase = &active_phase;
 
         let declaration = ExhaustedProviderIdentitySchema::declaration().unwrap();
@@ -134,7 +134,7 @@ fn provider_identity_exhaustion_denies_before_relational_installation() {
             .bind_application_schema(declaration)
             .unwrap();
         let denial = authority
-        .prepare_primary_graph(&phase.bootstrap_for_test(), &runtime, &schema, worth_query_execution::domain_computation::execution_runtime::product_world::resources::test_product_world_resources())
+        .prepare_primary_graph(&phase.bootstrap_for_test(), &runtime, &schema, worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::resources::test_product_world_resources())
         .err()
         .unwrap();
 
@@ -151,9 +151,9 @@ fn provider_identity_exhaustion_denies_before_relational_installation() {
 
 #[test]
 fn invalidation_keeps_no_window_so_a_finite_world_history_installs() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let phase = &active_phase;
-        use worth_query_execution::domain_computation::execution_runtime::product_world::resources::test_product_world_resources;
+        use worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::resources::test_product_world_resources;
         use worth_query_execution::facade::integration::WorthQueryProductWorldResources;
         use worth_query_execution::facade::domain_computation::WorthQueryInvalidationResources;
         let declaration = IdentityExecutionSchema::declaration().unwrap();
@@ -215,7 +215,7 @@ fn typed_policy_facts_publish_atomically_with_principal_identity() {
 
 #[test]
 fn duplicate_typed_principal_identity_denies_without_poisoning_bootstrap() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let phase = &active_phase;
 
         let declaration = IdentityExecutionSchema::declaration().unwrap();
@@ -241,7 +241,7 @@ fn duplicate_typed_principal_identity_denies_without_poisoning_bootstrap() {
         let binding = schema
             .principal_binding(IdentityBinding::reference())
             .unwrap();
-        let mut bootstrap = authority.prepare_primary_graph(&phase.bootstrap_for_test(), &runtime, &schema, worth_query_execution::domain_computation::execution_runtime::product_world::resources::test_product_world_resources()).unwrap();
+        let mut bootstrap = authority.prepare_primary_graph(&phase.bootstrap_for_test(), &runtime, &schema, worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::resources::test_product_world_resources()).unwrap();
 
         bootstrap
             .bind_principal(

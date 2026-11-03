@@ -88,9 +88,9 @@ fn registry_drop_cascade_names_its_released_row_bound() {
         retain_owned_key(&mut state, &root);
         let wake = Arc::clone(&state.records[&root].wake);
         drop(state);
-        let before = worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::record_map::occurrence_rows_visited();
+        let before = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::record_map::occurrence_rows_visited();
         drop(interest(&registry, root, wake));
-        contacts.push(worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::record_map::occurrence_rows_visited() - before);
+        contacts.push(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::record_map::occurrence_rows_visited() - before);
         registry.drain_closed_cleanup_admitted().unwrap();
         assert_eq!(
             registry.state.lock().unwrap().records.len(),
@@ -145,12 +145,12 @@ fn registry_drop_cascade_names_its_whole_map_claimant_bound() {
         state.records.insert(dependent.clone(), row);
         retain_owned_key(&mut state, &dependent);
         drop(state);
-        let whole = worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::record_map::whole_rows().expect("bounded registry observation");
-        let occurrence = worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::record_map::occurrence_rows_visited();
+        let whole = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::record_map::whole_rows().expect("bounded registry observation");
+        let occurrence = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::record_map::occurrence_rows_visited();
         drop(interest(&registry, dependent, wake));
         contacts.push((
-            worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::record_map::whole_rows().expect("bounded registry observation") - whole,
-            worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::record_map::occurrence_rows_visited() - occurrence,
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::record_map::whole_rows().expect("bounded registry observation") - whole,
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::record_map::occurrence_rows_visited() - occurrence,
         ));
     }
     // One replaced-row scan and one member scan of the dependent's own row;

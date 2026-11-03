@@ -1,6 +1,6 @@
 //! The real settlement's readonly seed, separate from its operational read lease.
 
-mod provenance;
+pub(crate) mod provenance;
 use super::*;
 use crate::basis::WorthQueryProductBranchReadIdentity;
 use crate::domain_computation::primary_graph::{
@@ -11,7 +11,7 @@ use crate::domain_computation::primary_graph::{
 /// No variant asserts that a query row or field was produced by this source.
 /// Fresh metadata admission and exact revision/output overlap remain necessary.
 #[derive(Clone)]
-pub(in crate::domain_computation::primary_graph) enum OriginalSettledProducerSource {
+pub enum OriginalSettledProducerSource {
     Committed {
         settlement: Option<Arc<RecordedSettlementIdentity>>,
         publication: Option<WorthQueryProductBranchReadIdentity>,
@@ -34,7 +34,7 @@ pub(in crate::domain_computation::primary_graph) enum OriginalSettledProducerSou
 
 /// One original-request funded header sharing only original immutable backings.
 /// It owns no Product observation, Native reader, Ready cell or commit receipt.
-pub(in crate::domain_computation::primary_graph) struct OriginalSettledProducerObservation {
+pub struct OriginalSettledProducerObservation {
     runtime_authority: u64,
     schema: ApplicationSchemaBindingIdentity,
     read: WorthQueryProductBranchReadIdentity,

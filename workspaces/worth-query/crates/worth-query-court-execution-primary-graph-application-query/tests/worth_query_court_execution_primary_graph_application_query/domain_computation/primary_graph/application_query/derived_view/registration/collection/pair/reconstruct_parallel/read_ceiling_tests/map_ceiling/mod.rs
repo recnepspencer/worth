@@ -103,7 +103,7 @@ fn map_read_preserves_its_callers_work_stop_and_releases_transient_memory() {
             let mut plans = WorthQueryDerivedPairReadPlans::new(first, second);
             execution
                 .in_scope(|lease| {
-                    worth_query_execution::domain_computation::primary_graph::application_query::derived_view::registration::collection::pair::reconstruction::owner_stage::run(lease, |context| {
+                    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::derived_view::registration::collection::pair::reconstruction::owner_stage::run(lease, |context| {
                         plans.admit(execution, &world.application, root.entity_id(), context)
                     })
                 })

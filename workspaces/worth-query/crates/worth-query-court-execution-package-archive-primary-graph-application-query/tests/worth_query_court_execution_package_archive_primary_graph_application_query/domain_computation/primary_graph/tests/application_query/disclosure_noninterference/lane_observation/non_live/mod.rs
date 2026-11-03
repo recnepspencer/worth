@@ -10,7 +10,7 @@ use worth_query_execution::facade::domain_computation::WorthQueryApplicationQuer
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationQueryResumeControls;
 
 pub fn observe_one_shot(
-    phase_custody: &worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     context: &GovernedObservationContext<'_>,
     occurrences: &mut GraphWorkOccurrences,
 ) -> LaneObservation {
@@ -49,7 +49,7 @@ pub fn observe_one_shot(
 }
 
 pub fn observe_continuation(
-    phase_custody: &worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     context: &GovernedObservationContext<'_>,
     occurrences: &mut GraphWorkOccurrences,
 ) -> ContinuationObservation {

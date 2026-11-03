@@ -131,10 +131,10 @@ impl WorthQuerySessionGraphReadProof {
     }
 }
 
-pub(in crate::domain_computation) mod pin_panic {
+pub(crate) mod pin_panic {
     use std::cell::Cell;
     thread_local! { static ARMED: Cell<bool> = const { Cell::new(false) }; }
-    pub(in crate::domain_computation) struct PanicDuringPinGuardForTest(bool);
+    pub struct PanicDuringPinGuardForTest(bool);
     impl PanicDuringPinGuardForTest {
         pub(in crate::domain_computation) fn install_on_this_thread() -> Self {
             assert!(crate::domain_computation::execution_observation::is_installed());
@@ -151,4 +151,4 @@ pub(in crate::domain_computation) mod pin_panic {
     }
 }
 
-pub(in crate::domain_computation) mod pin_control;
+pub(crate) mod pin_control;

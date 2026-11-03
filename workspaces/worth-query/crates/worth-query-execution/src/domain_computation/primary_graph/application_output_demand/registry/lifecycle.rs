@@ -1,12 +1,12 @@
 pub(in crate::domain_computation::primary_graph) use selected_execution_finish::RunningSelectedExecution;
 mod cached_reclaim;
 
-mod closed_retirement;
-pub(super) mod completed_custody;
+pub(crate) mod closed_retirement;
+pub(crate) mod completed_custody;
 
 mod performed_release;
 pub(super) mod release;
-mod selected_execution_finish;
+pub(crate) mod selected_execution_finish;
 
 use super::*;
 

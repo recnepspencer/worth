@@ -1,10 +1,10 @@
 //! Real native controls at the new pre-effect storage receiver.
 use worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial as Advance;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::dependency_identity::WorthQueryProducerIdentityDenial as Identity;
-use worth_query_execution::domain_computation::primary_graph::application_contribution::producer::execution::denial::ProducerExecutionStop;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::dependency_identity::WorthQueryProducerIdentityDenial as Identity;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::execution::denial::ProducerExecutionStop;
 use worth_query_execution::facade::application_inspection::StoreDenial;
 use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandDenialKind;
-use worth_query_execution::domain_computation::primary_graph::application_contribution::producer::execution::denial::content_identity::identity_failed;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::execution::denial::content_identity::identity_failed;
 use worth_query_execution::facade::application_contribution::with_bootstrap_advancement;
 use worth_execution::CancellationSource;
 use worth_execution::ExecutionAllocationPolicy;

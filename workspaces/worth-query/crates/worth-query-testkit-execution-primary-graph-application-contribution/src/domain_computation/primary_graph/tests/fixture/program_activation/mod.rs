@@ -1,9 +1,9 @@
 //! Publish fixture activation through World before preparing program-owned work.
-use worth_query_execution::domain_computation::execution_runtime::product_world::publication_denial::WorthQueryProductPublicationOutcome as PublicationOutcome;
+use worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::publication_denial::WorthQueryProductPublicationOutcome as PublicationOutcome;
 
 use crate::domain_computation::primary_graph::tests::fixture::product_publication::prepare_relational_mutation_on_application;
 use crate::domain_computation::primary_graph::tests::fixture::authorization_world_installation::AuthorizationWorld;
-use worth_query_execution::domain_computation::primary_graph::program_occurrence::revision_rendering::program_revision_rendering;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::program_occurrence::revision_rendering::program_revision_rendering;
 use std::collections::BTreeMap;
 use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
 use worth_relational::facade::identity::PartitionId;

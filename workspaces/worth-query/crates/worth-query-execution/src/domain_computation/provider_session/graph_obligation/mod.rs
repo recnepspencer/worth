@@ -1,8 +1,8 @@
-mod branch_affinity;
+pub(crate) mod branch_affinity;
 mod decision_read_set;
 mod inspection_terminal;
-mod mutation_progression;
-mod owner_execution;
+pub(crate) mod mutation_progression;
+pub(crate) mod owner_execution;
 mod read_terminal;
 pub(in crate::domain_computation) use inspection_terminal::WorthQueryInspectionReadCompletion;
 mod resource_terminal;

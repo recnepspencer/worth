@@ -7,7 +7,7 @@ mod outcome_application;
 mod processing;
 mod provider_commit_deferred;
 mod reentry_counts;
-mod sealed_commit;
+pub(crate) mod sealed_commit;
 mod temporal_idempotency;
 mod wake_retirement;
 pub(in crate::domain_computation::primary_graph::conditional_operation) use denial::WorthQueryTemporalReentryDenial;
@@ -31,7 +31,7 @@ use super::reconstruction_authority::{
 };
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
-pub(super) enum WorthQueryTemporalReentryOutcome {
+pub enum WorthQueryTemporalReentryOutcome {
     CleanupRequired(Box<super::super::WorthQueryApplicationCleanupRequired>),
     ProductStale(crate::domain_computation::WorthQueryProductStaleApplication),
     ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
@@ -66,7 +66,7 @@ pub(super) enum WorthQueryTemporalControlStop {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(super) enum WorthQueryTemporalTerminalFailure {
+pub enum WorthQueryTemporalTerminalFailure {
     CustomInvariant(crate::domain_computation::WorthQueryCustomInvariantDenial),
     ApplicationCommit(
         crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialKind,

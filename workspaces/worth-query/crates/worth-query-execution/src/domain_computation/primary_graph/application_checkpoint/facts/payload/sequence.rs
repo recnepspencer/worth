@@ -1,7 +1,7 @@
 //! Ordered access without a contiguous-slice or implicit materialization door.
 use super::{Fact, FactPayload};
 
-pub(in crate::domain_computation::primary_graph) trait FactSequence {
+pub trait FactSequence {
     fn len(&self) -> usize;
     fn get(&self, ordinal: usize) -> Option<&Fact>;
     fn iter(&self) -> impl DoubleEndedIterator<Item = &Fact> + ExactSizeIterator + Clone;

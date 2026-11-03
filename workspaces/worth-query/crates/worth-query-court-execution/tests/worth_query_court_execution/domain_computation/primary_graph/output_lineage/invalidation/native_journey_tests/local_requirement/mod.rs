@@ -1,14 +1,14 @@
 //! A post-effect lineage requirement cannot be hidden by an older Clean mark.
 
 use crate::domain_computation::primary_graph::output_lineage::invalidation::native_journey_tests::*;
-use worth_query_execution::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryCheckpointSourceIdentity;
-use worth_query_execution::domain_computation::primary_graph::invariant_projection::consumed_output::ConsumedOutputEvidence;
-use worth_query_execution::domain_computation::primary_graph::invariant_projection::consumed_output::verification::ConsumedOutputVerification;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::mark_state::FullVerificationReason;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::recorded_source_identity::RecordedSourceIdentity;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondence;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::WorthQueryApplicationOutputLineage;
-use worth_query_execution::equality_type_id::EqualityTypeId as TypeId;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryCheckpointSourceIdentity;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::consumed_output::ConsumedOutputEvidence;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::consumed_output::verification::ConsumedOutputVerification;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::mark_state::FullVerificationReason;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::recorded_source_identity::RecordedSourceIdentity;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondence;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::WorthQueryApplicationOutputLineage;
+use worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId as TypeId;
 
 #[test]
 fn local_full_verification_requirement_overrides_a_clean_actor_row() {
@@ -86,7 +86,7 @@ fn local_full_verification_requirement_overrides_a_clean_actor_row() {
         [0x72; 32],
         None,
         [0x73; 32],
-            worth_query_execution::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false).retain_facts(Arc::clone(&retained_fact)),
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false).retain_facts(Arc::clone(&retained_fact)),
         None,
         None,
         None,

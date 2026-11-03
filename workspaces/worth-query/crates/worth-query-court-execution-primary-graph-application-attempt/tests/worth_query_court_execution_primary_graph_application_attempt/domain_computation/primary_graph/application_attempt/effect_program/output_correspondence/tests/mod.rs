@@ -9,18 +9,18 @@ pub use worth_relational::facade::symbols::ClientKey;
 pub use worth_relational::facade::transactions::CreatedEntityRef;
 pub use worth_relational::facade::transactions::EntityReference;
 
-pub use worth_query_execution::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::role_use::OutputRoleUse;
-pub use worth_query_execution::equality_type_id::EqualityTypeId as TypeId;
-pub use worth_query_execution::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondence;
-pub use worth_query_execution::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::candidate::WorthQueryApplicationOutputCorrespondenceCandidate;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::role_use::OutputRoleUse;
+pub use worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId as TypeId;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondence;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::candidate::WorthQueryApplicationOutputCorrespondenceCandidate;
 pub use worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture as WorthQueryApplicationOutputPosture;
 pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationOutputProjectionDenial;
 pub use worth_query_declaration::facade::application_operation::WorthQueryApplicationOutputRoleNameDenial;
-pub use worth_query_execution::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryCheckpointOutputRole;
-pub use worth_query_execution::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::candidate;
-pub use worth_query_execution::domain_computation::primary_graph::application_attempt::effect_program::model::WorthQueryApplicationCreationPartition;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryCheckpointOutputRole;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::candidate;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::model::WorthQueryApplicationCreationPartition;
 pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationEffectEntity;
-pub use worth_query_execution::domain_computation::primary_graph::application_attempt::effect_program::model::WorthQueryApplicationRealizedEffect;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::model::WorthQueryApplicationRealizedEffect;
 pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationAttemptDenialKind;
 pub use worth_query_declaration::facade::application_operation::ApplicationMutationOutputRoleCardinality as Cardinality;
 
@@ -359,7 +359,7 @@ pub fn create_effect(key: &'static str, kind: u32) -> WorthQueryApplicationReali
         kind: KindId::new(kind),
         key: key.to_owned(),
         fields: BTreeMap::new(),
-        partition: worth_query_execution::domain_computation::primary_graph::application_attempt::effect_program::model::WorthQueryApplicationCreationPartition::Issued,
+        partition: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::model::WorthQueryApplicationCreationPartition::Issued,
     }
 }
 

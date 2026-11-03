@@ -124,7 +124,7 @@ pub fn installed_preview_runtime(
         program, PreviewSchema::declaration().unwrap(), ((),),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         WorthQueryInMemoryApplicationLimits::new(
-            worth_query_execution::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(),
+            worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(),
             Default::default(),
             worth_signal::facade::runtime::SignalConditionalEvaluationBudget::development(),
         ),

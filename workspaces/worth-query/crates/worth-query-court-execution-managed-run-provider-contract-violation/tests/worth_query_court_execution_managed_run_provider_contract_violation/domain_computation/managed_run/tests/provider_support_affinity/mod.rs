@@ -90,7 +90,7 @@ impl WorthQueryGraphParticipationProvider<ManagedGraph> for ForeignSafePointProv
 
 #[test]
 fn compatible_but_independently_minted_provider_support_denies_before_provider_start() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -141,7 +141,7 @@ fn compatible_but_independently_minted_provider_support_denies_before_provider_s
 
 #[test]
 fn workflow_stage_safe_point_family_must_match_the_running_bridge_basis() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 

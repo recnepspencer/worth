@@ -1,6 +1,6 @@
-use worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::full_verification::FullVerificationStop;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::full_verification::FullVerificationStop;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::native_journey_tests::*;
-use worth_query_execution::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 
 #[test]
 fn a_retired_row_absent_in_both_images_does_not_change_the_image() {

@@ -12,7 +12,7 @@ pub(super) struct WorthQueryProviderSessionAdmissionFailure {
     mutation_run: crate::domain_computation::provider_session::WorthQueryMutationRunBinding,
 }
 
-pub(super) struct WorthQueryRegisteredProviderSession<'run> {
+pub struct WorthQueryRegisteredProviderSession<'run> {
     registered: super::WorthQueryRegisteredProviderAttempt<'run>,
     mutation_run:
         crate::domain_computation::provider_session::WorthQueryProviderSessionBoundMutationRun,
@@ -24,7 +24,7 @@ pub(super) struct WorthQueryProviderSessionRegistrationFailure {
         crate::domain_computation::provider_session::WorthQueryProviderSessionBoundMutationRun,
 }
 
-pub(super) fn admit_provider_session<'run>(
+pub fn admit_provider_session<'run>(
     phase: &'run crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     running: &'run mut crate::domain_computation::WorthQueryRunningDirectRun,
     graph: &worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,

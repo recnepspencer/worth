@@ -55,7 +55,7 @@ enum ReadBasis {
 }
 
 /// Only exact native source selection can construct this observation.
-pub(super) struct SnapshotAlignedMarkState<'selected> {
+pub struct SnapshotAlignedMarkState<'selected> {
     state: Arc<MarkState>,
     retained: Arc<BranchMarkRoot>,
     current_root_id: u64,

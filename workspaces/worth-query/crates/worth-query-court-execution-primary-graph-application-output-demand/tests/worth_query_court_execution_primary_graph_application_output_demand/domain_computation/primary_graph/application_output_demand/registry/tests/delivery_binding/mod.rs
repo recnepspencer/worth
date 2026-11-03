@@ -45,10 +45,10 @@ fn selected_delivery_keeps_both_producer_and_applicability_identity() {
         let joined = registry
             .admit(
                 requested,
-                Some(worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::admission::selected_output::SelectedOutputAdmission::new(commit, None)),
+                Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::admission::selected_output::SelectedOutputAdmission::new(commit, None)),
                 scope,
                 occurrence(),
-                worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::DemandAdmissionKind::Ordinary,
+                worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandAdmissionKind::Ordinary,
                 None,
                 None,
             )

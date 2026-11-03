@@ -1,13 +1,13 @@
 use std::sync::Arc;
-use worth_query_execution::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
-use worth_query_execution::equality_type_id::EqualityTypeId as TypeId;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
+use worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId as TypeId;
 
-use worth_query_execution::domain_computation::primary_graph::output_lineage::resolution::latest_output_matching;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::ProductCoordinate;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::recorded_source_identity::RecordedSourceIdentity;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::semantic_source::SemanticSource;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondence;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::WorthQueryApplicationOutputLineage;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::resolution::latest_output_matching;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::ProductCoordinate;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::recorded_source_identity::RecordedSourceIdentity;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::semantic_source::SemanticSource;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondence;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::WorthQueryApplicationOutputLineage;
 
 pub struct RestoredOutputBinding;
 
@@ -55,7 +55,7 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
         first_partition,
         None,
         [0x41; 32],
-            worth_query_execution::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false).retain_facts(source_facts()),
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false).retain_facts(source_facts()),
         None,
         None,
         None,
@@ -71,7 +71,7 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
         sibling_partition,
         Some([0x52; 32]),
         [0x42; 32],
-            worth_query_execution::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false).retain_facts(source_facts()),
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false).retain_facts(source_facts()),
         None,
         None,
         None,
@@ -87,7 +87,7 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
         first_partition,
         None,
         [0x41; 32],
-            worth_query_execution::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false).retain_facts(source_facts()),
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false).retain_facts(source_facts()),
         None,
         None,
         None,
@@ -143,9 +143,9 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
     assert!(Arc::ptr_eq(&family.candidates[1].correspondence, &sibling));
 
     let current_checkpoint =
-        worth_query_execution::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryCheckpointSourceIdentity::new([0x31; 32]);
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryCheckpointSourceIdentity::new([0x31; 32]);
     let current_runtime =
-        worth_query_execution::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryRuntimeSourceIdentity::new([0x99; 32]);
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryRuntimeSourceIdentity::new([0x99; 32]);
     let candidates = lineage
         .retained_output_candidates_metered(
             runtime_authority,
@@ -205,8 +205,8 @@ fn recovered_prior_correspondence_is_not_currentness_evidence_until_exact_readmi
     );
     let partition = [0x11; 32];
     let source_identity = checkpoint_identity([0x31; 32]);
-    let runtime_identity = worth_query_execution::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryRuntimeSourceIdentity::new([0x99; 32]);
-    let checkpoint_identity = worth_query_execution::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryCheckpointSourceIdentity::new([0x31; 32]);
+    let runtime_identity = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryRuntimeSourceIdentity::new([0x99; 32]);
+    let checkpoint_identity = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryCheckpointSourceIdentity::new([0x31; 32]);
     let correspondence = Arc::new(
         WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles(
             TypeId::of::<RestoredOutputBinding>(),
@@ -293,7 +293,7 @@ fn recovered_prior_correspondence_is_not_currentness_evidence_until_exact_readmi
         partition,
         None,
         [0x41; 32],
-            worth_query_execution::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false).retain_facts(Arc::<[worth_query_execution::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact]>::from([])),
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false).retain_facts(Arc::<[worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact]>::from([])),
         None,
         None,
         None,
@@ -325,7 +325,7 @@ fn recovered_prior_correspondence_is_not_currentness_evidence_until_exact_readmi
         partition,
         None,
         [0x41; 32],
-            worth_query_execution::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false).retain_facts(source_facts()),
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false).retain_facts(source_facts()),
         None,
         None,
         None,
@@ -346,14 +346,14 @@ fn recovered_prior_correspondence_is_not_currentness_evidence_until_exact_readmi
 
 pub fn checkpoint_identity(identity: [u8; 32]) -> RecordedSourceIdentity {
     RecordedSourceIdentity::Checkpoint(
-        worth_query_execution::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryCheckpointSourceIdentity::new(identity),
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryCheckpointSourceIdentity::new(identity),
     )
 }
 
 pub fn source_facts(
-) -> Arc<[worth_query_execution::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact]>{
+) -> Arc<[worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact]>{
     Arc::from([
-        worth_query_execution::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact::SourceEntity {
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact::SourceEntity {
             entity_id: worth_relational::facade::identity::EntityId::new(
                 worth_relational::facade::identity::PartitionId::main(),
                 1,

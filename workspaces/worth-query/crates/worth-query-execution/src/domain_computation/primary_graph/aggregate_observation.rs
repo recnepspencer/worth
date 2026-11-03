@@ -11,20 +11,20 @@ mod currentness;
 mod key;
 mod member;
 pub(in crate::domain_computation::primary_graph) mod member_work;
-mod selection;
+pub(crate) mod selection;
 pub(in crate::domain_computation::primary_graph) use key::AggregateKey;
 pub(in crate::domain_computation::primary_graph) use selection::AggregateSelection;
 
 /// Only Native acquisition can construct this body. Source custody is separate
 /// from semantic truth: stored incident lineage is not part of an orbit answer.
 #[derive(Debug)]
-pub(in crate::domain_computation) struct AggregateObservation<Member = EntityId> {
+pub struct AggregateObservation<Member = EntityId> {
     key: AggregateKey<Member>,
     native: PinnedAggregateRead<Member>,
     source: SnapshotHandle,
     _allocation: Option<Arc<super::source_facts::SourceFactsAllocation>>,
 }
-pub(in crate::domain_computation::primary_graph) struct AggregateQuery<'a> {
+pub struct AggregateQuery<'a> {
     pub allocation: Option<&'a Arc<super::source_facts::SourceFactsAllocation>>,
     pub subject: &'a str,
     pub entity_kind: KindId,

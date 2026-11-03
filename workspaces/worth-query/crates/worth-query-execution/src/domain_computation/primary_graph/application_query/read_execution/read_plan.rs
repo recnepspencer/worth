@@ -7,7 +7,7 @@ use worth_query_admission::facade::application_query::WorthQueryAdmittedApplicat
 use worth_query_installation::facade::WorthQueryInstalledGraphReadContract;
 use worth_relational::facade::{identity::EntityId, snapshots::SnapshotHandle};
 
-pub(in crate::domain_computation::primary_graph::application_query) struct ReadPlan<'a> {
+pub struct ReadPlan<'a> {
     pub(in crate::domain_computation::primary_graph::application_query) parent_session:
         crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
     pub(in crate::domain_computation::primary_graph::application_query) managed_rows:

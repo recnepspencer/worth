@@ -1,14 +1,14 @@
 //! Completed-effect entries own infallible work; request entries cannot mint its payer.
 use super::*;
 mod advancement;
-pub(super) mod custody_reader;
-pub(super) mod discovery;
+pub(crate) mod custody_reader;
+pub(crate) mod discovery;
 mod product_retirement;
 mod publication;
-mod retirement_observation;
-pub(super) mod source_retirement;
+pub(crate) mod retirement_observation;
+pub(crate) mod source_retirement;
 mod supersession;
-pub(super) fn sweep_contacts() -> u64 {
+pub fn sweep_contacts() -> u64 {
     retirement_observation::sweep_contacts()
 }
 /// A registry-wide retirement pass records each row it contacts, wherever the

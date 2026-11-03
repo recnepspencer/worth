@@ -4,9 +4,9 @@ use worth_relational::facade::identity::PartitionId;
 use std::sync::Arc;
 use std::collections::BTreeMap;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationBasisSelectionIdentity;
-use worth_query_execution::domain_computation::primary_graph::application_query::observed_source::source_identity::WorthQueryObservedSourceEpoch;
-use worth_query_execution::domain_computation::primary_graph::application_query::observed_source::WorthQueryObservedSourceFootprint;
-use worth_query_execution::domain_computation::primary_graph::application_query::observed_source::source_identity::WorthQueryObservedSourceMeaningRegistry;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::WorthQueryObservedSourceEpoch;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::WorthQueryObservedSourceFootprint;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::WorthQueryObservedSourceMeaningRegistry;
 
 #[test]
 fn refused_comparison_preserves_ordinal_and_live_coordinate_for_retry() {

@@ -48,7 +48,7 @@ impl WorthQueryApplicationOutputLineage {
     }
 }
 
-pub(super) fn latest_output_matching(
+pub fn latest_output_matching(
     history: &BTreeMap<u64, RecordedGeneration>,
     maximum_generation: u64,
     mut matches: impl FnMut(&RecordedOutput) -> bool,

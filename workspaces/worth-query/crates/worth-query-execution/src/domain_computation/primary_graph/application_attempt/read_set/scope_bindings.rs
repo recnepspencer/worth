@@ -45,7 +45,7 @@ impl InstalledScopePosition {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum CompletedReadScopes {
+pub enum CompletedReadScopes {
     Installed {
         contracts: Arc<Contracts>,
         positions: Arc<ExecutionArray<InstalledScopePosition>>,

@@ -34,7 +34,7 @@ fn registry_eager_binding_reads_the_closed_claim_without_an_admission() {
         .clone();
     assert_eq!(
         bound,
-        Some(vec![worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::BoundOutputSource {
+        Some(vec![worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::BoundOutputSource {
             scope: context.scope,
             identity: world.keys[0].source.clone(),
         }])
@@ -87,7 +87,7 @@ fn registry_eager_owned_closed_note_does_not_name_a_reused_key() {
             None,
             context.scope,
             occurrence(),
-            worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::DemandAdmissionKind::Ordinary,
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandAdmissionKind::Ordinary,
             None,
             None,
         )

@@ -1,6 +1,6 @@
 use crate::domain_computation::primary_graph::provider::decision_facts::comparison::tests::TestsWorthQueryPrimaryGraphProviderForTest;
 use crate::domain_computation::primary_graph::provider::decision_facts::comparison::tests::principal_staleness::PrincipalStalenessWorthQueryPrimaryGraphProviderForTest;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::registered::WorthQueryRegisteredProviderAttempt;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::registered::WorthQueryRegisteredProviderAttempt;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::authorization_world_installation::AuthorizationWorld;
 use worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;

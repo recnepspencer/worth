@@ -4,11 +4,11 @@ use worth_foundational::facade::AspectValue;
 use std::collections::BTreeMap;
 use worth_relational::facade::identity::EntityId;
 use worth_foundational::facade::InternedString;
-use worth_query_execution::domain_computation::authorization::retained_capability_request::portable::MAXIMUM_PORTABLE_BYTES;
-use worth_query_execution::domain_computation::authorization::retained_capability_request::portable::WorkflowApprovalRequestEncodingDenial;
-use worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::capability_admission::preparation::observation::request_resolution::WorthQueryCapabilityContextKey;
+use worth_query_execution::court_doors_for_test::domain_computation::authorization::retained_capability_request::portable::MAXIMUM_PORTABLE_BYTES;
+use worth_query_execution::court_doors_for_test::domain_computation::authorization::retained_capability_request::portable::WorkflowApprovalRequestEncodingDenial;
+use worth_query_execution::court_doors_for_test::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::capability_admission::preparation::observation::request_resolution::WorthQueryCapabilityContextKey;
 use worth_query_declaration::facade::application_capability::WorthQueryPortableApplicationCapabilityRelationBindingParts;
-use worth_query_execution::domain_computation::authorization::retained_capability_request::WorthQueryRetainedCapabilityRequest;
+use worth_query_execution::court_doors_for_test::domain_computation::authorization::retained_capability_request::WorthQueryRetainedCapabilityRequest;
 
 #[test]
 fn approval_request_round_trip_preserves_every_authorization_axis() {
@@ -45,7 +45,7 @@ fn approval_request_round_trip_preserves_every_authorization_axis() {
             2,
             0,
         ),
-        data: Arc::new(worth_query_execution::domain_computation::authorization::retained_capability_request::RetainedCapabilityRequestData {
+        data: Arc::new(worth_query_execution::court_doors_for_test::domain_computation::authorization::retained_capability_request::RetainedCapabilityRequestData {
             _codec_funding: None,
             resource_entity: Arc::from("resource"),
             elevation: Some(EntityId::new(
@@ -72,14 +72,14 @@ fn approval_request_round_trip_preserves_every_authorization_axis() {
             cardinality: 9,
             context_name: Arc::from("context"),
             context_type: Arc::from("context-type"),
-            context: worth_query_execution::domain_computation::authorization::retained_capability_request::context::RetainedContext::Native(BTreeMap::new()),
+            context: worth_query_execution::court_doors_for_test::domain_computation::authorization::retained_capability_request::context::RetainedContext::Native(BTreeMap::new()),
         }),
     };
     let context_key = serde_json::from_str::<WorthQueryCapabilityContextKey>(
             r#"{"context":"context","context_type":"context-type","slot":"peer","slot_type":"entity","entity":"subject"}"#,
         )
         .unwrap();
-    let worth_query_execution::domain_computation::authorization::retained_capability_request::context::RetainedContext::Native(context) =
+    let worth_query_execution::court_doors_for_test::domain_computation::authorization::retained_capability_request::context::RetainedContext::Native(context) =
         &mut Arc::get_mut(&mut request.data).unwrap().context
     else {
         panic!("fixture has native context")
@@ -191,8 +191,8 @@ fn approval_request_round_trip_preserves_every_authorization_axis() {
     drop(changed_elevation);
     let before_use = lease.charged_memory_bytes();
     let allocation =
-        worth_query_execution::domain_computation::primary_graph::source_facts::allocation::SourceFactsAllocation::open(&execution).unwrap();
-    let use_identity = worth_query_execution::domain_computation::authorization::retained_capability_request::use_identity::WorthQueryCapabilityUseIdentity::retain_request(
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::source_facts::allocation::SourceFactsAllocation::open(&execution).unwrap();
+    let use_identity = worth_query_execution::court_doors_for_test::domain_computation::authorization::retained_capability_request::use_identity::WorthQueryCapabilityUseIdentity::retain_request(
         &restored,
         &execution,
         &allocation,
@@ -245,8 +245,8 @@ fn approval_request_round_trip_preserves_every_authorization_axis() {
         .encode_workflow_approval_request(&execution)
         .is_err());
     let allocation =
-        worth_query_execution::domain_computation::primary_graph::source_facts::allocation::SourceFactsAllocation::open(&execution).unwrap();
-    let use_identity = worth_query_execution::domain_computation::authorization::retained_capability_request::use_identity::WorthQueryCapabilityUseIdentity::retain_request(
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::source_facts::allocation::SourceFactsAllocation::open(&execution).unwrap();
+    let use_identity = worth_query_execution::court_doors_for_test::domain_computation::authorization::retained_capability_request::use_identity::WorthQueryCapabilityUseIdentity::retain_request(
         &nonportable,
         &execution,
         &allocation,
@@ -295,7 +295,7 @@ fn canonical_envelope_native_backing_keeps_its_charge_until_last_clone() {
     .unwrap();
     let retained = {
         let execution = worth_execution::ExecutionRequest::leased(&lease);
-        let encoded = worth_query_execution::domain_computation::primary_graph::workflow::actor::encoding::encode(
+        let encoded = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::actor::encoding::encode(
             &execution,
             &("actor\n", [1u8, 2]),
             MAXIMUM_PORTABLE_BYTES,
@@ -337,7 +337,7 @@ fn envelope_count_bound_precedes_exact_native_payload_refusal() {
     let execution = worth_execution::ExecutionRequest::leased(&lease);
     let original = "original";
     let encode =
-        worth_query_execution::domain_computation::primary_graph::workflow::actor::encoding::encode;
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::actor::encoding::encode;
     assert!(matches!(
         encode(&execution, &original, 1),
         Err(WorkflowApprovalRequestEncodingDenial::TooLarge)

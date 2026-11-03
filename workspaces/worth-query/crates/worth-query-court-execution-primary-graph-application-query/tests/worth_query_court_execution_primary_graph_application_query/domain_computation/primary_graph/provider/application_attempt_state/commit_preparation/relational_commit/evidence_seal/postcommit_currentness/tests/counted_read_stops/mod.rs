@@ -19,8 +19,8 @@ fn post_effect_rebase_door_preserves_stops_at_every_consult() {
 
 #[test]
 fn selected_native_rebase_preserves_stops_at_every_consult() {
-    use worth_query_execution::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl;
-    use worth_query_execution::domain_computation::primary_graph::application_checkpoint::facts::payload::native::NativeFactPayloadBuilder;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::payload::native::NativeFactPayloadBuilder;
     let world = installed_authorization_world(true);
     world.application.with_host_advancement(|phase| {
         let (entity, locator) = account_note(&phase, &world, "account-1");
@@ -35,11 +35,11 @@ fn selected_native_rebase_preserves_stops_at_every_consult() {
         let selected = world.selected_product(&phase.test_host_request());
         let snapshot = selected.application_basis().snapshot_handle();
         worth_query_execution::test_read_stops::every_consult_under(&phase.borrowed_request_for_test(), |execution| {
-            let prepared = match worth_query_execution::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::selected::SelectedRebase::prepare_full(
+            let prepared = match worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::selected::SelectedRebase::prepare_full(
                 facts.clone(), Arc::from([]), StorageControl::new(execution.allocation_policy(), None),
             ) {
                 Ok(prepared) => prepared,
-                Err(worth_query_execution::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::PreparedRebaseDenial::Retention(
+                Err(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::PreparedRebaseDenial::Retention(
                     worth_query_execution::facade::application_inspection::StoreDenial::Allocation(cause))) => {
                     use worth_execution::ExecutionAllocationDenialClass as Class;
                     use worth_execution::WorkCeilingDenial as Work;

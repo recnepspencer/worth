@@ -1,12 +1,12 @@
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationAttemptDenialKind;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::effect_program::model::WorthQueryApplicationRealizedEffect;
-use worth_query_execution::domain_computation::primary_graph::workflow::schema::layout::WorthQueryWorkflowLayout;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::workflow_transition_program::assessment::evidence_budget::admit;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::model::WorthQueryApplicationRealizedEffect;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::schema::layout::WorthQueryWorkflowLayout;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow_transition_program::assessment::evidence_budget::admit;
 use std::collections::BTreeMap;
 use worth_foundational::facade::AspectValue;
 use worth_foundational::facade::InternedString;
 
-use worth_query_execution::domain_computation::primary_graph::application_attempt::effect_program::model::WorthQueryApplicationCreationPartition;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::model::WorthQueryApplicationCreationPartition;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::installed_layout;
 
 pub fn text(value: &str) -> AspectValue {

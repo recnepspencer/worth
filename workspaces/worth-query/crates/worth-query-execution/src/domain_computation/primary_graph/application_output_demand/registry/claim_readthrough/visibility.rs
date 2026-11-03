@@ -24,7 +24,7 @@ fn moving_claims(row: &DemandRecord, newest_ready: bool) -> usize {
         0
     }
 }
-pub(in super::super) fn observe_row(
+pub fn observe_row(
     records: &super::super::record_map::DemandRecords,
     key: &WorthQueryOutputDemandKey,
 ) -> RowObservation {

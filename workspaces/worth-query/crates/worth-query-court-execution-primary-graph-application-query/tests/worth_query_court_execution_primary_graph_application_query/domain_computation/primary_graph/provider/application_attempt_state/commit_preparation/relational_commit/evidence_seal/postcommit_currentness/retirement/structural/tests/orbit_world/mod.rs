@@ -57,7 +57,7 @@ pub fn capture(world: &World, key: u64, execution: &ExecutionRequest<'_, '_>) ->
                     allocation: None,
                     subject: "Next",
                     entity_kind: kind,
-                    selection: worth_query_execution::domain_computation::primary_graph::aggregate_observation::selection::AggregateSelection::OrbitRelation(relation),
+                    selection: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::aggregate_observation::selection::AggregateSelection::OrbitRelation(relation),
                     member,
                     maximum_work: None,
                     control: None,

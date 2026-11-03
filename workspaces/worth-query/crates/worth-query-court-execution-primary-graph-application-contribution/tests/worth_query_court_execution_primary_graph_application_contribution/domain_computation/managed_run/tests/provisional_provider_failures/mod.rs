@@ -9,7 +9,7 @@ use worth_query_execution::facade::domain_computation::WorthQueryProvisionalEffe
 
 #[test]
 fn provider_overlay_must_match_every_and_only_lowered_staged_change() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -49,7 +49,7 @@ fn provider_overlay_must_match_every_and_only_lowered_staged_change() {
 
 #[test]
 fn duplicate_proposed_fact_identities_deny_before_provider_staging() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -95,7 +95,7 @@ fn duplicate_proposed_fact_identities_deny_before_provider_staging() {
 
 #[test]
 fn provider_staging_panic_is_typed_and_aborts_the_live_session() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -126,7 +126,7 @@ fn provider_staging_panic_is_typed_and_aborts_the_live_session() {
 
 #[test]
 fn provider_discard_panic_is_typed_and_the_guard_retries_cleanup() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -161,7 +161,7 @@ fn provider_discard_panic_is_typed_and_the_guard_retries_cleanup() {
 
 #[test]
 fn rejected_overlay_discard_panic_is_typed_and_retried_by_the_guard() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 

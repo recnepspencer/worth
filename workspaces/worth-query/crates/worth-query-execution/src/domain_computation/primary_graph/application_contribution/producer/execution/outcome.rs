@@ -126,7 +126,7 @@ where
 }
 
 /// Maps a producer commit to its receipt or to the demand denial it settles as.
-pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn commit_receipt(
+pub fn commit_receipt(
     identity: &str,
     outcome: WorthQueryApplicationCommitOutcome,
 ) -> Result<ProducerCommitReceipt, WorthQueryOutputDemandDenial> {

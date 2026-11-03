@@ -19,7 +19,7 @@ pub use worth_query_installation::facade::WorthQueryInstalledInvariantExecutionR
 pub use worth_query_installation::facade::WorthQueryInvariantEnforcement;
 #[test]
 fn blocking_and_advisory_receipts_retain_their_installed_posture() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -68,7 +68,7 @@ fn blocking_and_advisory_receipts_retain_their_installed_posture() {
 }
 #[test]
 fn progression_requires_the_exact_complete_installed_invariant_set() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -104,7 +104,7 @@ fn progression_requires_the_exact_complete_installed_invariant_set() {
 }
 #[test]
 fn each_selected_blocking_invariant_observes_corruption_and_cannot_progress() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -139,7 +139,7 @@ fn each_selected_blocking_invariant_observes_corruption_and_cannot_progress() {
 }
 #[test]
 fn regional_and_full_validation_agree_or_return_indeterminate() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -237,7 +237,7 @@ fn regional_and_full_validation_agree_or_return_indeterminate() {
 }
 #[test]
 fn empty_or_undeclared_state_loads_never_reach_validator_execution() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 

@@ -30,11 +30,11 @@ pub fn refuse_mixed_and_created_subset(
         let anchor = roles.iter().find(|role| role.posture == RequiredOutputRolePosture::Preserve).unwrap();
         let EntityReference::Existing(anchor) = anchor.target else { unreachable!() };
         let lineage = graph.output_lineage.lock().unwrap();
-        let source = worth_query_execution::domain_computation::primary_graph::output_lineage::semantic_source::SemanticSource {
+        let source = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::semantic_source::SemanticSource {
             runtime_authority: runtime.runtime.authority_identity().as_u64(),
             schema: runtime.installed_schema().binding_identity(),
             scope: WorthQueryOperationScopeEntityBinding::from_entity(anchor),
-            output_binding: lineage.binding_identity(worth_query_execution::equality_type_id::EqualityTypeId::of::<RegionOutputBinding<OwnerSchema>>()).unwrap(),
+            output_binding: lineage.binding_identity(worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId::of::<RegionOutputBinding<OwnerSchema>>()).unwrap(),
         };
         let coordinate = product.observation();
         let cells = &lineage.by_source[&source][&coordinate.lifecycle_incarnation()][&coordinate.reference_generation().get()];

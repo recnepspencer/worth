@@ -28,7 +28,7 @@ pub(super) fn history_source_denial(
 }
 
 #[derive(Clone)]
-pub(in crate::domain_computation::primary_graph) struct ProducerInvocationAuthority<'invocation> {
+pub struct ProducerInvocationAuthority<'invocation> {
     mode: WorthQueryProducerCommitAuthority,
     history: Option<HistoryProducerInvocation<'invocation>>,
 }

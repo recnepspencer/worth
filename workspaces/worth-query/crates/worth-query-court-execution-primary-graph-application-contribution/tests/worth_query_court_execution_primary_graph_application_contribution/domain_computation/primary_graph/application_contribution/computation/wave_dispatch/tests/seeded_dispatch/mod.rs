@@ -1,7 +1,7 @@
 //! Acquisition is recorded inside the shipped owned dispatcher, not in a racy kernel.
 
 use std::num::NonZeroUsize;
-use worth_query_execution::domain_computation::primary_graph::application_contribution::computation::wave_dispatch::tests::seeded_dispatch::ORDERS;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::computation::wave_dispatch::tests::seeded_dispatch::ORDERS;
 use crate::domain_computation::primary_graph::application_contribution::computation::wave_dispatch::tests::member_result;
 use crate::domain_computation::primary_graph::application_contribution::computation::wave_dispatch::tests::run;
 use crate::domain_computation::primary_graph::application_contribution::computation::wave_dispatch::tests::*;

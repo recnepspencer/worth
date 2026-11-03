@@ -1,8 +1,8 @@
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::provider_session::graph_provider::tests::support::attempt;
     use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::provider_session::graph_provider::tests::support::call;
     use std::sync::Arc;
-    use worth_query_execution::domain_computation::provider_session::graph_provider::receipt_association::WorthQueryBoundGraphExecutionAssociation;
-    use worth_query_execution::domain_computation::domain_evidence_binding::execution_snapshot::WorthQueryBoundExecutionSnapshotIdentity;
+    use worth_query_execution::court_doors_for_test::domain_computation::provider_session::graph_provider::receipt_association::WorthQueryBoundGraphExecutionAssociation;
+    use worth_query_execution::court_doors_for_test::domain_computation::domain_evidence_binding::execution_snapshot::WorthQueryBoundExecutionSnapshotIdentity;
 
 #[test]
 fn exact_execution_association_denies_each_independent_owner_axis_swap() {

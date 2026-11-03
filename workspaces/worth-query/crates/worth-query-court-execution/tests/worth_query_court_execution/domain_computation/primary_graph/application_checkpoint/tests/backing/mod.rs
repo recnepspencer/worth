@@ -6,7 +6,7 @@ use worth_relational::facade::durability::RelationalNativeCheckpoint;
 use worth_execution::ExecutionAllocationPolicy as CapturePolicy;
 use crate::domain_computation::primary_graph::application_checkpoint::tests::checkpoint_from_body;
 use worth_query_execution::facade::application_installation::WorthQueryApplicationCheckpoint;
-use worth_query_execution::domain_computation::primary_graph::application_checkpoint::FORMAT_VERSION;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::FORMAT_VERSION;
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::recoverable_commit_support::recoverable_application_world;
 
 #[test]
@@ -31,8 +31,8 @@ fn untrusted_query_clones_share_moved_bytes_after_original_owner_drops() {
 fn query_clones_decode_into_the_same_native_payload_backing() {
     let mut body = Vec::new();
     body.extend_from_slice(&FORMAT_VERSION.to_be_bytes());
-    body.extend_from_slice(&worth_query_execution::domain_computation::primary_graph::application_checkpoint::WORKFLOW_FACTS.to_be_bytes());
-    body.extend_from_slice(&worth_query_execution::domain_computation::primary_graph::application_checkpoint::WORKFLOW_INSTANCES.to_be_bytes());
+    body.extend_from_slice(&worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::WORKFLOW_FACTS.to_be_bytes());
+    body.extend_from_slice(&worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::WORKFLOW_INSTANCES.to_be_bytes());
     body.extend_from_slice(&1_u64.to_be_bytes());
     body.extend_from_slice(&3_u64.to_be_bytes());
     body.extend_from_slice(&0_u64.to_be_bytes());
@@ -72,7 +72,7 @@ pub fn assert_three_handoffs_share_backing(
     let expected = checkpoint
         .bytes()
         .as_ptr()
-        .wrapping_add(worth_query_execution::domain_computation::primary_graph::application_checkpoint::HEADER_BYTES);
+        .wrapping_add(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::HEADER_BYTES);
     let clones = [checkpoint.clone(), checkpoint.clone(), checkpoint.clone()];
     for clone in &clones {
         assert_eq!(clone.bytes().as_ptr(), checkpoint.bytes().as_ptr());

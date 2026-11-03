@@ -3,7 +3,7 @@
 use crate::domain_computation::primary_graph::fact_verification_observation::input_cutoff as observation;
 use crate::domain_computation::primary_graph::fact_verification_observation::input_cutoff::Gate;
 mod owned;
-mod refusal;
+pub(crate) mod refusal;
 pub(in crate::domain_computation::primary_graph) use owned::OwnedInputCutoffDecision;
 pub(in crate::domain_computation::primary_graph) use refusal::InputCutoffVerificationStop;
 
@@ -51,7 +51,7 @@ pub(in crate::domain_computation::primary_graph) struct VerifiedInputCutoff<'sel
     pub(super) verified_consumed: Option<std::sync::Arc<[ConsumedOutputEvidence]>>,
 }
 
-pub(in crate::domain_computation::primary_graph) enum InputCutoffDecision<'selected> {
+pub enum InputCutoffDecision<'selected> {
     Fresh {
         key: PreparedInputReuseKey,
         context: PreparedDecisionReuseContext,
@@ -344,8 +344,8 @@ impl RetainedInputCutoffCandidate {
 }
 
 mod matched_roots;
-mod pending_upstream;
+pub(crate) mod pending_upstream;
 
-mod source_facts;
+pub(crate) mod source_facts;
 use source_facts::facts_are_current;
 use source_facts::marked_facts_permit_reuse;

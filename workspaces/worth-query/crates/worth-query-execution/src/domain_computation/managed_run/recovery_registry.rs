@@ -15,7 +15,7 @@ use worth_runtime_world::facade::CompositeCommitIdentity;
 
 /// Authoritative commit identity claimed exactly once for recovery minting.
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
-pub(crate) struct WorthQueryRecoveryMintClaim {
+pub struct WorthQueryRecoveryMintClaim {
     provider_runtime_instance_id: u64,
     product_commit: CompositeCommitIdentity,
 }
@@ -38,7 +38,7 @@ pub(crate) struct WorthQueryRecoveryMintAlreadyClaimed;
 
 /// Terminal fate recorded when a live recovery resource leaves the registry.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(crate) enum WorthQueryRecoveryResourceTerminal {
+pub enum WorthQueryRecoveryResourceTerminal {
     Consumed,
     /// Safe retry observed external completion before consuming the handle.
     Completed,
@@ -114,7 +114,7 @@ impl RecoveryRegistryState {
 /// what lets a handle re-check its own deadline without any transition growing
 /// a clock parameter — freshness stays something the runtime samples, never
 /// something a caller presents (R8.31).
-pub(crate) struct WorthQueryRecoveryHandleRegistry {
+pub struct WorthQueryRecoveryHandleRegistry {
     runtime_authority: WorthQueryRuntimeAuthorityIdentity,
     clock: Arc<WorthQueryRuntimeClock>,
     state: Mutex<RecoveryRegistryState>,

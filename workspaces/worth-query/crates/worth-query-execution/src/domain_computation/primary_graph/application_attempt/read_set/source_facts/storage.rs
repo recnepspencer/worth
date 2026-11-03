@@ -6,7 +6,7 @@ use crate::domain_computation::primary_graph::application_attempt::retained_deci
 /// Ordinary admitted facts keep their original order. Projected decision and
 /// producer-source facts retain separate canonical maps until completion.
 #[derive(Debug)]
-pub(in crate::domain_computation::primary_graph::application_attempt::read_set) enum SourceFacts {
+pub enum SourceFacts {
     Admitted(Vec<WorthQueryApplicationObservedFact>),
     Projected(Option<RetainedSourceFacts>, Option<RetainedSourceFacts>),
 }

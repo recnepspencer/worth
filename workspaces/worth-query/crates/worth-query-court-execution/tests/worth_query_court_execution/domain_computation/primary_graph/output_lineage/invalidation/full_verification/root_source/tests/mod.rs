@@ -1,16 +1,16 @@
 //! Completeness of retained upstream evidence against actual actor registration.
-use worth_query_execution::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 
 use std::sync::Arc;
-use worth_query_execution::domain_computation::primary_graph::invariant_projection::consumed_output::verification::EvidenceView;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::full_verification::FullVerificationStop;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::consumed_output::verification::EvidenceView;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::full_verification::FullVerificationStop;
 use im::OrdSet;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::settlement_identity::RecordedSettlementIdentity;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::settlement_identity::RecordedSettlementIdentity;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::full_verification::root_source::tests;
 
-use worth_query_execution::domain_computation::primary_graph::invariant_projection::consumed_output::ConsumedOutputEvidence;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::ProductCoordinate;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::semantic_source::SemanticSource;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::consumed_output::ConsumedOutputEvidence;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::ProductCoordinate;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::semantic_source::SemanticSource;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::AccountStatus;
@@ -80,11 +80,11 @@ fn retained_source_must_include_every_registered_upstream_edge() {
             (Arc::clone(&consumer), OrdSet::unit(Arc::clone(&upstream))),
         ] {
             owner
-                .register_settlement(worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::settlement::SettlementRegistration {
+                .register_settlement(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::settlement::SettlementRegistration {
                         computation: None,
                         work_membership: None,
                         identity,
-                        facts: worth_query_execution::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts::for_test(false, Arc::from([])),
+                        facts: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts::for_test(false, Arc::from([])),
                         output_facts: None,
                         read_basis: (*selected).clone(),
                         stale_at_read_basis: im::OrdSet::new(),

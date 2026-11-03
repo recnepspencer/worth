@@ -3,16 +3,16 @@ use worth_query_testkit_execution_primary_graph_application_attempt::domain_comp
 use worth_query_execution::facade::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitDenial as Denial;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitDenialKind as Kind;
-use worth_query_execution::domain_computation::primary_graph::conditional_operation::application_operation_reentry::WorthQueryTemporalReentryOutcome as Outcome;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::conditional_operation::application_operation_reentry::WorthQueryTemporalReentryOutcome as Outcome;
 use worth_query_execution::facade::application_contribution::WorthQueryManagedComputationResourceDenial as Resource;
 use worth_query_execution::facade::domain_computation::WorthQueryProviderSessionDenialKind as Session;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitDenialStage as Stage;
-use worth_query_execution::domain_computation::primary_graph::conditional_operation::application_operation_reentry::WorthQueryTemporalTerminalFailure as Terminal;
-use worth_query_execution::domain_computation::primary_graph::conditional_operation::application_operation_reentry::sealed_commit::denial::classify_denial;
-use worth_query_execution::domain_computation::primary_graph::conditional_operation::application_operation_reentry::sealed_commit::denial::classify_kind;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_compare_denial::control_stopped_outcome;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_compare_denial::provider_session_denied;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_compare_denial::provider_session_execution_denied;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::conditional_operation::application_operation_reentry::WorthQueryTemporalTerminalFailure as Terminal;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::conditional_operation::application_operation_reentry::sealed_commit::denial::classify_denial;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::conditional_operation::application_operation_reentry::sealed_commit::denial::classify_kind;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_compare_denial::control_stopped_outcome;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_compare_denial::provider_session_denied;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_compare_denial::provider_session_execution_denied;
 #[test]
 fn every_head_reachable_preparation_category_retries_without_folding() {
     for (session, _) in execution_cases() {
@@ -96,7 +96,7 @@ fn invariant_execution_control_stops_keep_stage_cause_and_terminal_posture() {
 }
 #[test]
 fn preparation_control_stops_retry_at_provider_commit() {
-    use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::outcome::WorthQueryProviderProgressionOutcome as Progression;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::outcome::WorthQueryProviderProgressionOutcome as Progression;
     use worth_query_execution::facade::domain_computation::WorthQueryProviderSessionCommitControlStopped as Stopped;
     for kind in [Control::Cancelled, Control::TimedOut] {
         let Progression::Denied(denial) =

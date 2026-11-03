@@ -24,7 +24,7 @@ use worth_query_execution::facade::domain_computation::WorthQueryApplicationComm
 fn program_activation_changed_after_preparation_cannot_readmit_the_old_program() {
     use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::product_publication::publish_relational_mutation;
     use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::program_roster::unadmitted_program_revision;
-    use worth_query_execution::domain_computation::primary_graph::program_occurrence::revision_rendering::program_revision_rendering;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::program_occurrence::revision_rendering::program_revision_rendering;
     use std::collections::BTreeMap;
     use worth_relational::facade::transactions::AspectFieldPatch;
     use worth_relational::facade::transactions::EntityMutationIntent;
@@ -122,7 +122,7 @@ fn program_activation_changed_after_preparation_cannot_readmit_the_old_program()
                     &presented,
                     program,
                     idempotency(73, 73),
-                    worth_query_execution::domain_computation::application_aftermath::commit_causality::ApplicationCommitCausality::Ordinary,
+                    worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::commit_causality::ApplicationCommitCausality::Ordinary,
                  worth_execution::ExecutionAllocationPolicy::SystemAllocation)
         })
         .expect("fixture owner admits its advancement");
@@ -206,7 +206,7 @@ fn a_program_action_on_an_unseeded_occurrence_names_the_unresolved_activation() 
                     &presented,
                     program,
                     idempotency(71, 71),
-                    worth_query_execution::domain_computation::application_aftermath::commit_causality::ApplicationCommitCausality::Ordinary,
+                    worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::commit_causality::ApplicationCommitCausality::Ordinary,
                  worth_execution::ExecutionAllocationPolicy::SystemAllocation)
         })
         .expect("fixture owner admits its advancement");
@@ -289,7 +289,7 @@ fn a_required_output_source_on_an_unseeded_occurrence_is_gated_like_its_siblings
                     &presented,
                     program,
                     idempotency(72, 72),
-                    worth_query_execution::domain_computation::application_aftermath::commit_causality::ApplicationCommitCausality::Ordinary,
+                    worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::commit_causality::ApplicationCommitCausality::Ordinary,
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 )
         })

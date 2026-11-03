@@ -1,7 +1,7 @@
 //! Pure association contrasts use admitted metadata, never pretend Native evaluation evidence.
 use crate::domain_computation::primary_graph::application_contribution::producer::registry::tests::output_equivalence::*;
-use worth_query_execution::domain_computation::primary_graph::application_contribution::producer::output_equivalence_contract::InstalledProducerOutputEquivalence;
-use worth_query_execution::domain_computation::primary_graph::application_contribution::producer::output_evaluation::native::dependency_matches_output;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::output_equivalence_contract::InstalledProducerOutputEquivalence;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::output_evaluation::native::dependency_matches_output;
 use std::sync::Arc;
 use worth_foundational::facade::AspectBinding;
 use worth_foundational::facade::AspectMask;

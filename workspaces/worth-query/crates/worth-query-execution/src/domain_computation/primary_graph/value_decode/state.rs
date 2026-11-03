@@ -4,7 +4,7 @@ use std::cell::{Cell, RefCell};
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, ExecutionWorkCeiling};
 use worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog;
 
-pub(in crate::domain_computation::primary_graph) struct ValueDecodeState {
+pub struct ValueDecodeState {
     pub(super) bindings: WorthQueryInstalledApplicationValueBindingCatalog,
     pub(super) memory: RefCell<Option<ExecutionMemoryReservation>>,
     first: Cell<Option<Stop>>,

@@ -4,14 +4,14 @@ use super::derived_source::DerivedSourceDependencies;
 use super::structural_walk::StructuralWalkDependencies;
 use std::sync::Arc;
 use worth_relational::facade::identity::EntityId;
-mod allocation;
+pub(crate) mod allocation;
 mod authorization_currentness;
 pub(in crate::domain_computation::primary_graph) use authorization_currentness::map_source_authorization_currentness;
 pub(in crate::domain_computation) use authorization_currentness::validate_source_principal_facts;
 mod builder;
 mod descriptor;
 mod retention;
-mod revisions;
+pub(crate) mod revisions;
 pub(in crate::domain_computation) use allocation::SourceFactsAllocation;
 pub(in crate::domain_computation::primary_graph) use builder::{
     SourceFactReadDenial, SourceFactsBuilder,
@@ -23,7 +23,7 @@ pub(in crate::domain_computation) use revisions::{
 };
 
 #[derive(Debug)]
-pub(in crate::domain_computation::primary_graph) struct SourceFacts {
+pub struct SourceFacts {
     pub(in crate::domain_computation::primary_graph) entities: Vec<EntityId>,
     pub(in crate::domain_computation::primary_graph) aspects: Vec<WorthQueryObservedFieldRevision>,
     pub adjacencies: Vec<WorthQueryObservedAdjacencyRevision>,

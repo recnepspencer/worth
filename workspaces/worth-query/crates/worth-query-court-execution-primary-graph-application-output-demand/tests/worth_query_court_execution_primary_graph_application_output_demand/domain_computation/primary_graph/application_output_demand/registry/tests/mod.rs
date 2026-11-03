@@ -8,16 +8,16 @@ pub use worth_query_testkit_execution_primary_graph_application_attempt_2::domai
 pub use std::sync::Arc;
 pub use std::sync::Condvar;
 pub use std::sync::Mutex;
-pub use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::supersession::supersede_predecessors;
-pub use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::DemandRecord;
-pub use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::DemandRegistryState;
-pub use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::DemandState;
-pub use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::DemandWake;
-pub use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::WorthQueryOutputDemandInterest;
-pub use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::demand_key::WorthQueryOutputDemandKey;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::supersession::supersede_predecessors;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandRecord;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandRegistryState;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandState;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandWake;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryOutputDemandInterest;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::demand_key::WorthQueryOutputDemandKey;
 pub use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandNotifications;
-pub use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::WorthQueryOutputDemandRegistry;
-pub use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::WorthQueryOutputSchedulingResult;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryOutputDemandRegistry;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryOutputSchedulingResult;
 pub use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandDenial;
 pub use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandDenialKind;
 pub(super) use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::support::key;
@@ -287,16 +287,16 @@ fn denied_executor_releases_the_shared_claim_for_its_peer() {
 
     assert!(matches!(
         registry.begin(&denied),
-        worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::advance_admission::WorthQueryOutputDemandAdvanceAdmission::Execute { successor_of: None }
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::advance_admission::WorthQueryOutputDemandAdvanceAdmission::Execute { successor_of: None }
     ));
     assert!(matches!(
         registry.begin(&peer),
-        worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::advance_admission::WorthQueryOutputDemandAdvanceAdmission::Pending
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::advance_admission::WorthQueryOutputDemandAdvanceAdmission::Pending
     ));
     registry.relinquish_execution(&denied);
     assert!(matches!(
         registry.begin(&peer),
-        worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::advance_admission::WorthQueryOutputDemandAdvanceAdmission::Execute { successor_of: None }
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::advance_admission::WorthQueryOutputDemandAdvanceAdmission::Execute { successor_of: None }
     ));
 }
 

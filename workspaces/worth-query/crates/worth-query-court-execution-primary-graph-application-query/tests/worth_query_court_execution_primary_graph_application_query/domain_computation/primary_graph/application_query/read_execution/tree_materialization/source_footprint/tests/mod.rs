@@ -9,10 +9,10 @@ use worth_relational::facade::runtime::RelationalAdjacencyDirection;
 use worth_relational::facade::runtime::RelationalFieldPresence;
 use worth_relational::facade::runtime::RelationalFieldRevision;
 
-use worth_query_execution::domain_computation::primary_graph::application_query::read_execution::tree_materialization::source_footprint::normalize_source_footprint;
-use worth_query_execution::domain_computation::primary_graph::source_facts::revisions::WorthQueryObservedAdjacencyRevision;
-use worth_query_execution::domain_computation::primary_graph::source_facts::revisions::WorthQueryObservedFieldRevision;
-use worth_query_execution::domain_computation::primary_graph::application_query::observed_source::WorthQueryObservedSourceFootprint;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::read_execution::tree_materialization::source_footprint::normalize_source_footprint;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::source_facts::revisions::WorthQueryObservedAdjacencyRevision;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::source_facts::revisions::WorthQueryObservedFieldRevision;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::WorthQueryObservedSourceFootprint;
 
 #[test]
 fn normalization_deduplicates_revisited_native_dependencies() {
@@ -73,7 +73,7 @@ pub fn managed_order_matches_legacy_for_stable_keys_and_full_equality(
     use worth_foundational::ExecutionBudget;
     use worth_foundational::ExecutionPosture;
     use worth_foundational::ExecutionRequestPolicy;
-    use worth_query_execution::domain_computation::primary_graph::source_facts::allocation::SourceFactsAllocation;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::source_facts::allocation::SourceFactsAllocation;
     let backing = SerialRequest::from_policy(
         &ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
@@ -85,7 +85,7 @@ pub fn managed_order_matches_legacy_for_stable_keys_and_full_equality(
     );
     let execution = ExecutionRequest::serial(&backing);
     let grant = SourceFactsAllocation::open(&execution).unwrap();
-    let storage = worth_query_execution::domain_computation::primary_graph::application_query::read_execution::tree_materialization::source_footprint::material_storage::MaterialFootprintStorage::new(&execution, Some(&grant));
+    let storage = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::read_execution::tree_materialization::source_footprint::material_storage::MaterialFootprintStorage::new(&execution, Some(&grant));
     let mut earlier = base.aspects[0].clone();
     earlier.entity_name = "first-stable-value".to_owned();
     let mut later = earlier.clone();

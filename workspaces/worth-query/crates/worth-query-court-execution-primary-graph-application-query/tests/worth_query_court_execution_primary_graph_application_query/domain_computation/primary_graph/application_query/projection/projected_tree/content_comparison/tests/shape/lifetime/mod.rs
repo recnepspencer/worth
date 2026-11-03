@@ -1,8 +1,8 @@
 //! An owned raw tree's payer survives handoff and cancelled final disposal.
 use crate::domain_computation::primary_graph::application_query::projection::projected_tree::content_comparison::tests::shape::*;
-use worth_query_execution::domain_computation::primary_graph::application_query::projection::projected_tree::owned_rows::OwnedProjectionRows;
-use worth_query_execution::domain_computation::primary_graph::application_query::projection::projected_tree::owned_rows::ProjectionDisposal;
-use worth_query_execution::domain_computation::primary_graph::source_facts::allocation::SourceFactsAllocation;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::projection::projected_tree::owned_rows::OwnedProjectionRows;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::projection::projected_tree::owned_rows::ProjectionDisposal;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::source_facts::allocation::SourceFactsAllocation;
 use worth_execution::ChargedBytes;
 use worth_execution::ExecutionRequestArrayBuilder;
 #[test]
@@ -23,7 +23,7 @@ fn frozen_deep_rows_keep_original_funding_through_take_retain_clear_and_last_dro
         + rows[0].retained_bytes();
     allocation.claim(execution, payload as u64).unwrap();
     allocation
-        .claim_arc::<worth_query_execution::domain_computation::primary_graph::application_query::projection::retained_projection::body::OriginalProjection>(
+        .claim_arc::<worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::projection::retained_projection::body::OriginalProjection>(
             execution,
         )
         .unwrap();

@@ -1,18 +1,18 @@
 //! Genuine sealed structural inputs force fresh owner calls in both postures.
 
-pub use worth_query_execution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::carriage::ComputationPrior;
-pub use worth_query_execution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::retained::SealedComputationRun;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::carriage::ComputationPrior;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::retained::SealedComputationRun;
 pub use worth_query_execution::facade::application_contribution::WorthQueryPartitionedComputationFullCause as Cause;
 pub use worth_query_execution::facade::application_contribution::WorthQueryPartitionedComputationRunForTest as Run;
-pub use worth_query_execution::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact as Fact;
-pub use worth_query_execution::domain_computation::primary_graph::application_contribution::partitioned_computation::installed::ComputationRetention;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact as Fact;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::installed::ComputationRetention;
 pub use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_walks::world;
 pub use crate::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tests::structural_walk::model::*;
 pub use std::sync::atomic::Ordering;
 pub use std::sync::Arc;
 pub fn body(
     run: &SealedComputationRun,
-) -> Arc<worth_query_execution::domain_computation::primary_graph::structural_walk::StructuralWalkObservation>{
+) -> Arc<worth_query_execution::court_doors_for_test::domain_computation::primary_graph::structural_walk::StructuralWalkObservation>{
     let bodies: Vec<_> = run
         .state
         .facts

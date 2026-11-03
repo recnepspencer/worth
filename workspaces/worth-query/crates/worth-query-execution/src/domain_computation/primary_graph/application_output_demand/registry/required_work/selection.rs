@@ -10,7 +10,7 @@ use super::*;
 
 /// Scheduling custody from one exact required record. The selected Product,
 /// source permission, lineage row, and native actor still need authentication.
-pub(in crate::domain_computation::primary_graph) struct SelectedReadyReadmission {
+pub struct SelectedReadyReadmission {
     pub(super) completion: ReadyCompletion,
     pub(super) readmission: Arc<super::super::source_readmission::RequiredOutputReadmission>,
     pub(super) membership: Arc<RequiredWorkMembership>,

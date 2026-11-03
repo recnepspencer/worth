@@ -1,7 +1,7 @@
 //! Cleanup issuance never decides the release order of genuine occurrences.
-use worth_query_execution::domain_computation::execution_runtime::product_world::owner_cleanup::registry::CleanupScope;
-use worth_query_execution::domain_computation::execution_runtime::product_world::owner_cleanup::registry::WorthQueryProductBranchOwnerCleanupRegistry;
-use worth_query_execution::domain_computation::execution_runtime::product_world::owner_cleanup::WorthQueryRetiredProductOccurrence;
+use worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::owner_cleanup::registry::CleanupScope;
+use worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::owner_cleanup::registry::WorthQueryProductBranchOwnerCleanupRegistry;
+use worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::owner_cleanup::WorthQueryRetiredProductOccurrence;
 use worth_runtime_world::facade::*;
 
 #[test]
@@ -80,12 +80,12 @@ fn retirement_releases_in_branch_then_incarnation_order() {
 
 #[test]
 fn absent_cleanup_policy_keeps_reservations_until_drop() {
-    let registry = worth_query_execution::domain_computation::execution_runtime::product_world::owner_cleanup::registry::WorthQueryProductBranchOwnerCleanupRegistry::new(None);
+    let registry = worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::owner_cleanup::registry::WorthQueryProductBranchOwnerCleanupRegistry::new(None);
     let held: Vec<_> = (0..600)
-        .map(|_| registry.reserve(worth_query_execution::domain_computation::execution_runtime::product_world::owner_cleanup::registry::CleanupScope::Application).unwrap())
+        .map(|_| registry.reserve(worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::owner_cleanup::registry::CleanupScope::Application).unwrap())
         .collect();
-    assert_eq!(worth_query_execution::domain_computation::execution_runtime::product_world::owner_cleanup::registry::lock(&registry.state).reserved, held.len());
+    assert_eq!(worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::owner_cleanup::registry::lock(&registry.state).reserved, held.len());
     drop(held);
-    assert_eq!(worth_query_execution::domain_computation::execution_runtime::product_world::owner_cleanup::registry::lock(&registry.state).reserved, 0);
-    assert!(worth_query_execution::domain_computation::execution_runtime::product_world::owner_cleanup::registry::lock(&registry.state).entries.is_empty());
+    assert_eq!(worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::owner_cleanup::registry::lock(&registry.state).reserved, 0);
+    assert!(worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::owner_cleanup::registry::lock(&registry.state).entries.is_empty());
 }

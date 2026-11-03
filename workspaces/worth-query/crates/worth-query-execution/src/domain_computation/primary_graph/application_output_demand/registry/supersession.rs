@@ -5,7 +5,7 @@ use super::WorthQueryOutputDemandKey;
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
 
-pub(super) fn supersede_predecessors(
+pub fn supersede_predecessors(
     state: &mut DemandRegistryState,
     successor: &WorthQueryOutputDemandKey,
 ) -> Result<(), WorthQueryOutputDemandDenial> {

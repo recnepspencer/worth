@@ -1,10 +1,10 @@
-use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::start_managed_application_commit;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::WorthQueryRunningApplicationCommit;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::application_attempt_affinity::WorthQueryApplicationAttemptAffinityMismatch as M;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::application_attempt_affinity::WorthQueryApplicationAttemptAffinityView;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::commit_preparation::prepare_application_commit;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::WorthQueryApplicationCommitPreparation;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::WorthQueryApplicationCommitPreparationRequest;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::start_managed_application_commit;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::WorthQueryRunningApplicationCommit;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::application_attempt_affinity::WorthQueryApplicationAttemptAffinityMismatch as M;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::application_attempt_affinity::WorthQueryApplicationAttemptAffinityView;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::commit_preparation::prepare_application_commit;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::WorthQueryApplicationCommitPreparation;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::WorthQueryApplicationCommitPreparationRequest;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::preimage_evidence::retained_status_program;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::preimage_evidence::RetentionMutationBreadth;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::authenticated_principal;
@@ -18,8 +18,8 @@ use worth_query_testkit_execution_primary_graph_application_contribution::domain
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::IdentityExecutionSchema;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationEffectProgram;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationIdempotencyBinding;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::snapshot_lease::WorthQueryApplicationSnapshotLease;
-use worth_query_execution::domain_computation::provider_session::protocol::terminal_binding::WorthQueryProviderSessionTerminalBinding;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::snapshot_lease::WorthQueryApplicationSnapshotLease;
+use worth_query_execution::court_doors_for_test::domain_computation::provider_session::protocol::terminal_binding::WorthQueryProviderSessionTerminalBinding;
 use worth_query_execution::facade::domain_computation::WorthQueryManagedRunTerminalKind;
 
 pub type RetainedProgram = WorthQueryApplicationEffectProgram<
@@ -35,7 +35,7 @@ pub struct TestAffinityView {
     pub installed_operation: String,
     pub resource_binding: String,
     pub operation_attempt:
-        Option<worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::WorthQueryOperationAdmissionIdentity>,
+        Option<worth_query_execution::court_doors_for_test::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::WorthQueryOperationAdmissionIdentity>,
     pub operation_slot: Option<String>,
     pub schema_binding: Option<worth_query_installation::facade::ApplicationSchemaBindingIdentity>,
     pub snapshot: Option<worth_relational::facade::snapshots::SnapshotHandle>,
@@ -74,7 +74,7 @@ impl WorthQueryApplicationAttemptAffinityView for TestAffinityView {
     }
     fn operation_attempt(
         &self,
-    ) -> Option<worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::WorthQueryOperationAdmissionIdentity>
+    ) -> Option<worth_query_execution::court_doors_for_test::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::WorthQueryOperationAdmissionIdentity>
 {
         self.operation_attempt
     }
@@ -181,7 +181,7 @@ fn every_plan_session_and_attempt_axis_is_rejected_independently() {
 }
 
 pub fn assert_one(
-    basis: &worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::application_attempt_affinity::WorthQueryApplicationAttemptBasis,
+    basis: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::application_attempt_affinity::WorthQueryApplicationAttemptBasis,
     base: &TestAffinityView,
     expected: M,
     substitute: impl FnOnce(&mut TestAffinityView),
@@ -202,9 +202,9 @@ pub fn release(
         Account,
     >,
 ) -> (
-    worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::application_attempt_affinity::WorthQueryApplicationAttemptBasis,
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::application_attempt_affinity::WorthQueryApplicationAttemptBasis,
     worth_query_execution::facade::domain_computation::WorthQueryRunningDirectRun,
-    worth_query_execution::domain_computation::provider_session::graph_obligation::mutation_progression::WorthQueryMutationRunBinding,
+    worth_query_execution::court_doors_for_test::domain_computation::provider_session::graph_obligation::mutation_progression::WorthQueryMutationRunBinding,
     WorthQueryApplicationSnapshotLease,
 ){
     let WorthQueryRunningApplicationCommit {
@@ -235,7 +235,7 @@ pub fn real_terminal_session<'run>(
 }
 
 pub fn finish(
-    mutation_run: worth_query_execution::domain_computation::provider_session::graph_obligation::mutation_progression::WorthQueryMutationRunBinding,
+    mutation_run: worth_query_execution::court_doors_for_test::domain_computation::provider_session::graph_obligation::mutation_progression::WorthQueryMutationRunBinding,
     running: worth_query_execution::facade::domain_computation::WorthQueryRunningDirectRun,
     lease: WorthQueryApplicationSnapshotLease,
 ) {

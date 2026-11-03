@@ -1,12 +1,12 @@
 //! Observation-pressure release follows declared commit order, with native custody.
 
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::source_custody::PreparedOutputRootKind;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::SourceCustody;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::WorthQueryPerformedOutputDemandSource;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::source_custody::PreparedOutputRootKind;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::SourceCustody;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryPerformedOutputDemandSource;
 use crate::domain_computation::primary_graph::application_output_demand::registry::tests::*;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture;
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::recoverable_commit_support;
-use worth_query_execution::equality_type_id::EqualityTypeId as TypeId;
+use worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId as TypeId;
 
 #[test]
 fn unheld_performed_sources_release_the_oldest_in_commit_order() {

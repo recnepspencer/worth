@@ -1,10 +1,10 @@
 //! Missing scheduling or source-read grants refuse genuine factory installation.
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_query_declaration::facade::application_schema::*;
-use worth_query_execution::domain_computation::primary_graph::application_invariant;
-use worth_query_execution::domain_computation::primary_graph::application_invariant::WorthQueryEmptyInvariantRefusal;
-use worth_query_execution::domain_computation::primary_graph::schema_layout;
-use worth_query_execution::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_invariant;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_invariant::WorthQueryEmptyInvariantRefusal;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::schema_layout;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout;
 use worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantContext;
 use worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantFactories;
 use worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantRule;

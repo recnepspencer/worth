@@ -43,7 +43,7 @@ impl<'lane, 'selected> PreparedStableLineagePublication<'lane, 'selected> {
 }
 
 /// Minted only by a verified stable publication at its exact selected source.
-pub(in crate::domain_computation::primary_graph) struct StableEqualityConsequence<'selected> {
+pub struct StableEqualityConsequence<'selected> {
     partition: Option<[u8; 32]>,
     predecessor: Arc<RecordedSettlementIdentity>,
     successor: Arc<RecordedSettlementIdentity>,

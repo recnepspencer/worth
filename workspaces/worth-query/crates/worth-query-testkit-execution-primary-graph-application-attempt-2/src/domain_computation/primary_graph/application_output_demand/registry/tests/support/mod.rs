@@ -51,7 +51,7 @@ pub fn key_with_query_identity(
         "registry-output-family",
         producer.to_owned(),
         worth_query_execution::facade::application_contribution::WorthQueryProducerApplicability::new("registry-fixture", worth_query_execution::facade::application_contribution::WorthQueryProducerLifecyclePosture::Preserve),
-        worth_query_execution::domain_computation::primary_graph::application_query::observed_source::source_identity::WorthQueryObservedSourceEpoch::new(
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::WorthQueryObservedSourceEpoch::new(
             query,
             [query_identity.wrapping_add(1); 32],
             root,
@@ -146,8 +146,8 @@ pub fn retain_owned_key(state: &mut DemandRegistryState, key: &WorthQueryOutputD
     }
     let queue = state
         .required_work_queue
-        .get_or_insert_with(|| Arc::new(worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::required_work::queue::RequiredWorkQueue::new()));
-    let member = Arc::new(worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::required_work::RequiredWorkMembership::new(
+        .get_or_insert_with(|| Arc::new(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::required_work::queue::RequiredWorkQueue::new()));
+    let member = Arc::new(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::required_work::RequiredWorkMembership::new(
         Arc::new(key.clone()),
         queue,
     ));

@@ -7,7 +7,7 @@ use crate::domain_computation::convergence_epoch::tests::fixture::workflow_insta
 use crate::domain_computation::convergence_epoch::tests::fixture::workflow_installed_world::WorkflowAdmissionFixture;
 use crate::domain_computation::convergence_epoch::tests::terminal_fixture::converged_terminal;
 use crate::domain_computation::convergence_epoch::tests::terminal_fixture::workflow_converged_terminal;
-use worth_query_execution::domain_computation::WorthQueryConverged;
+use worth_query_execution::court_doors_for_test::domain_computation::WorthQueryConverged;
 use worth_query_execution::facade::convergence_epoch::WorthQueryDirectConvergenceIterationOutcome;
 use worth_query_execution::facade::convergence_epoch::WorthQueryDirectConvergenceReadmissionOutcome;
 use worth_query_execution::facade::convergence_epoch::WorthQueryDirectConvergenceStepOutcome;
@@ -24,7 +24,7 @@ use worth_query_execution::facade::domain_computation::WorthQueryReadmissionEvid
 
 #[test]
 fn same_runtime_yield_and_readmission_preserve_the_semantic_convergence_result() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -126,7 +126,7 @@ fn same_runtime_yield_and_readmission_preserve_the_semantic_convergence_result()
 
 #[test]
 fn workflow_yield_and_readmission_preserve_the_semantic_convergence_result() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -232,7 +232,7 @@ fn workflow_yield_and_readmission_preserve_the_semantic_convergence_result() {
 
 #[test]
 fn admitted_chunk_schedule_preserves_the_semantic_convergence_result() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -269,7 +269,7 @@ fn admitted_chunk_schedule_preserves_the_semantic_convergence_result() {
 }
 
 pub fn chunked_converged_terminal(
-    execution: &worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
 
     width: usize,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,

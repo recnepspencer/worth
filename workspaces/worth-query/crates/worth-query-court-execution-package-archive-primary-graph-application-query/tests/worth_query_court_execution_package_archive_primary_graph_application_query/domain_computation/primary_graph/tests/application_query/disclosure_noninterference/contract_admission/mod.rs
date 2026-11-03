@@ -27,7 +27,7 @@ pub use worth_query_testkit_execution_primary_graph_application_contribution::do
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::IncompleteDisclosureQuery;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::Principal;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::ResultRulePredicateQuery;
-pub use worth_query_execution::domain_computation::authorization::application_disclosure::contract::field_masks::admit_field_mask_categories;
+pub use worth_query_execution::court_doors_for_test::domain_computation::authorization::application_disclosure::contract::field_masks::admit_field_mask_categories;
 pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationEntityIdentity;
 pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationQueryAccessContext;
 pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationQueryAdmissionDenialKind;

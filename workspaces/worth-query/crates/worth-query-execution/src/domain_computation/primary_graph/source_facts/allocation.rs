@@ -13,7 +13,7 @@ struct Backing {
 
 /// One conservative read-batch grant, retained by its actual source witnesses.
 #[derive(Debug)]
-pub(in crate::domain_computation) struct SourceFactsAllocation {
+pub struct SourceFactsAllocation {
     backing: Mutex<Backing>,
 }
 

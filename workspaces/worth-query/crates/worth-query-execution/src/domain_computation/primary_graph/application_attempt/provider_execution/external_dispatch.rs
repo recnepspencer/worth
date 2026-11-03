@@ -12,7 +12,7 @@
 
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 
-mod denial;
+pub(crate) mod denial;
 
 use std::sync::Arc;
 

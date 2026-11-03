@@ -30,7 +30,7 @@ mod local_settlement;
 mod settlement;
 use evidence::WorkflowOperationEvidence;
 pub(in crate::domain_computation::primary_graph::application_attempt) use local_settlement::LocalActionSettlementProof;
-mod receipt;
+pub(crate) mod receipt;
 pub(in crate::domain_computation::primary_graph::application_attempt) use receipt::operation_receipt_requires_recovery;
 pub(in crate::domain_computation::primary_graph::application_attempt) use receipt::receipt_identity_from_outcome;
 pub(super) use receipt::validate_operation_receipt;

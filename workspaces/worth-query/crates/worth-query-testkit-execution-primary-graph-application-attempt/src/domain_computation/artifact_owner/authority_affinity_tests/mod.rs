@@ -2,7 +2,7 @@ use std::sync::Arc;
 use worth_foundational::facade::CanonicalizationRuleVersion;
 use worth_foundational::facade::FoundationalPerformanceCounterName;
 use worth_foundational::facade::RetentionDeliveryProfile;
-use worth_query_execution::domain_computation::artifact_owner::production_authority::WorthQueryArtifactProductionAuthorityParts;
+use worth_query_execution::court_doors_for_test::domain_computation::artifact_owner::production_authority::WorthQueryArtifactProductionAuthorityParts;
 use worth_query_execution::facade::domain_computation::WorthQueryArtifactDenialKind;
 use worth_query_execution::facade::domain_computation::WorthQueryArtifactProductionAuthority;
 use worth_query_execution::facade::domain_computation::WorthQueryArtifactProductionEvidence;

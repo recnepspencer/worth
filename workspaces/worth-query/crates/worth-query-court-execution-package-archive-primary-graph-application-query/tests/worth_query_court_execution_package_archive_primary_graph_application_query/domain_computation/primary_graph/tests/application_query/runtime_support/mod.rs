@@ -21,8 +21,8 @@ use worth_relational::facade::schema::RelationalSchemaRegistry;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::live_account_query::live_account_parameters;
 use worth_query_execution::facade::domain_computation::WorthQueryExecutionRuntimeInstaller;
-use worth_query_execution::domain_computation::primary_graph::application_query::runtime_support::primary_graph_support_inventory;
-use worth_query_execution::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::runtime_support::primary_graph_support_inventory;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout;
 
 #[test]
 fn live_support_requires_the_exact_contract_and_both_equality_indexes() {

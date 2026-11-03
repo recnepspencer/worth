@@ -1,7 +1,7 @@
 //! A current Preserve supplier does not become the creator of an unchanged field.
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::court::*;
-use worth_query_execution::domain_computation::primary_graph::admitted_capture::retained_stage::run_retained_stage;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::settlement::observation::OriginalSettledProducerSource;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::admitted_capture::retained_stage::run_retained_stage;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::settlement::observation::OriginalSettledProducerSource;
 use worth_foundational::facade::AspectFieldLocator;
 use worth_foundational::facade::CanonicalFieldPath;
 use worth_foundational::facade::LocatorAuthority;
@@ -115,7 +115,7 @@ pub fn observe<Schema: BirthSchema>(
                 field.entity(),
                 locator.aspect().aspect_key(),
                 &locator.field_path().fields()[0],
-                |work| worth_query_execution::domain_computation::primary_graph::admitted_capture::checkpoint(context, work),
+                |work| worth_query_execution::court_doors_for_test::domain_computation::primary_graph::admitted_capture::checkpoint(context, work),
             )
             .map_err(worth_execution::MapKernelFailure::Stop)?
             .unwrap();

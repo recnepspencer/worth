@@ -1,13 +1,13 @@
 //! Q8.20 — recovery authority is affine to its owning runtime.
 
-use worth_query_execution::domain_computation::application_aftermath::recovery_progression::authority::require_inspect_disclosure;
-use worth_query_execution::domain_computation::application_aftermath::recovery_progression::authority::require_fresh_effect_authority;
+use worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::recovery_progression::authority::require_inspect_disclosure;
+use worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::recovery_progression::authority::require_fresh_effect_authority;
 use worth_query_execution::facade::domain_computation::WorthQueryRecoveryEffectAuthority;
 use worth_query_execution::facade::domain_computation::WorthQueryRecoveryInspectAuthority;
 use worth_query_execution::facade::domain_computation::WorthQueryRecoveryHandle;
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::application_aftermath::recovery_handle::binding::WorthQueryRecoveryHandleBindingAxisProbe;
 use worth_query_execution::facade::domain_computation::WorthQueryRecoveryHandleDenialKind;
-use worth_query_execution::domain_computation::managed_run::recovery_registry::WorthQueryRecoveryResourceTerminal;
+use worth_query_execution::court_doors_for_test::domain_computation::managed_run::recovery_registry::WorthQueryRecoveryResourceTerminal;
 
 pub fn probe_handle_with_runtime_instance(runtime_instance_id: u64) -> WorthQueryRecoveryHandle {
     probe_handle_expiring_at(runtime_instance_id, u64::MAX)
@@ -65,7 +65,7 @@ fn effect_authority_minted_before_expiry_denies_after_the_deadline() {
     // The handle really is past its deadline against the runtime's own clock,
     // so this is not a test that passes because nothing expired.
     assert!(matches!(
-        worth_query_execution::domain_computation::application_aftermath::recovery_progression::expiry::evaluate_expiry(&handle, registry.clock()).expect("clock samples"),
+        worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::recovery_progression::expiry::evaluate_expiry(&handle, registry.clock()).expect("clock samples"),
         worth_query_execution::facade::domain_computation::WorthQueryRecoveryExpiryEvaluation::Expired(_)
     ));
 
@@ -200,13 +200,13 @@ fn admission_time_foreignness_and_proof_use_foreignness_are_different_causes() {
 
     // Admission time: the handle presented to obtain authority is not ours.
     let admission_denial =
-        worth_query_execution::domain_computation::application_aftermath::recovery_progression::authority::ensure_same_runtime(owner, handle_b.runtime_authority())
+        worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::recovery_progression::authority::ensure_same_runtime(owner, handle_b.runtime_authority())
             .expect_err("a handle from another runtime cannot be admitted here");
     assert_eq!(
         admission_denial.kind(),
         WorthQueryRecoveryHandleDenialKind::ForeignRuntime
     );
-    worth_query_execution::domain_computation::application_aftermath::recovery_progression::authority::ensure_same_runtime(owner, handle_a.runtime_authority())
+    worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::recovery_progression::authority::ensure_same_runtime(owner, handle_a.runtime_authority())
         .expect("our own handle admits");
 
     // Proof use: the authority *is* ours, but it is not this handle's.
@@ -238,7 +238,7 @@ pub fn colliding_slot_handles() -> (WorthQueryRecoveryHandle, WorthQueryRecovery
 pub fn same_runtime_handles() -> (WorthQueryRecoveryHandle, WorthQueryRecoveryHandle) {
     use std::sync::Arc;
 
-    use worth_query_execution::domain_computation::managed_run::recovery_registry::WorthQueryRecoveryHandleRegistry;
+    use worth_query_execution::court_doors_for_test::domain_computation::managed_run::recovery_registry::WorthQueryRecoveryHandleRegistry;
 
     let seed = probe_handle_with_runtime_instance(11);
     let binding = seed.binding().clone();

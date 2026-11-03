@@ -4,7 +4,7 @@ use crate::domain_computation::convergence_epoch::tests::yield_recovery::*;
 
 #[test]
 fn same_scope_and_stage_running_recovery_peers_keep_their_own_epochs() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 

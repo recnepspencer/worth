@@ -1,5 +1,5 @@
 //! Drop notes completed custody; the next admitted drain owns its sweep.
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::lifecycle::completed_custody::contacts;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::lifecycle::completed_custody::contacts;
 use crate::domain_computation::primary_graph::application_output_demand::registry::tests::*;
 
 pub fn fixture(

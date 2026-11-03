@@ -2,7 +2,7 @@
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 #[derive(Debug)]
-pub(in crate::domain_computation::primary_graph) enum CheckpointPriorSelectionDenial {
+pub enum CheckpointPriorSelectionDenial {
     Admission {
         phase: &'static str,
         stop: CompanionPreflightStop,
@@ -18,7 +18,7 @@ pub(in crate::domain_computation::primary_graph) enum CheckpointPriorSelectionDe
 }
 
 #[derive(Debug)]
-pub(in crate::domain_computation::primary_graph) enum CheckpointPriorStructure {
+pub enum CheckpointPriorStructure {
     DuplicateInstalledBinding,
     DuplicatePartition,
     AmbiguousPublicationHeads,

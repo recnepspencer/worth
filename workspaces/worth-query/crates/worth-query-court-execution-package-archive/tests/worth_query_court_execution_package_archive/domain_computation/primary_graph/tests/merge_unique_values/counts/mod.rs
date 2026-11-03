@@ -1,6 +1,6 @@
 //! Actual equality-index calls depend on merged unique writes, not target size.
 use crate::domain_computation::primary_graph::tests::merge_unique_values::*;
-use worth_query_execution::domain_computation::primary_graph::merge_unique_values::take_lookup_limits;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::merge_unique_values::take_lookup_limits;
 #[test]
 fn merge_unique_lookup_count_is_bounded_by_its_writes() {
     let host_request = worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request();

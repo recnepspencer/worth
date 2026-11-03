@@ -1,10 +1,10 @@
 use crate::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::retirement::tests::*;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryCheckpointOutputRole;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryCheckpointOutputRole;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::Account;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondence;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondence;
 use worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture as WorthQueryApplicationOutputPosture;
-use worth_query_execution::equality_type_id::EqualityTypeId as TypeId;
+use worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId as TypeId;
 use worth_relational::facade::transactions::RecordRef;
 
 #[test]
@@ -158,7 +158,7 @@ pub fn sealed_rebase(
     facts: Vec<Fact>,
     correspondence: &WorthQueryApplicationOutputCorrespondence,
     changed: &[RecordRef],
-) -> worth_query_execution::domain_computation::primary_graph::application_checkpoint::facts::payload::FactPayload{
+) -> worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::payload::FactPayload{
     let selected = world.selected_product(&(phase_custody).test_host_request());
     world
         .application
@@ -167,7 +167,7 @@ pub fn sealed_rebase(
         .unwrap()
         .integration_handle()
         .with_runtime(execution, |runtime| {
-            exact(worth_query_execution::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::rebase_output(execution, runtime, selected.application_basis().snapshot_handle(), worth_query_execution::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::PreparedSourceFactRebase::admit(
+            exact(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::rebase_output(execution, runtime, selected.application_basis().snapshot_handle(), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::PreparedSourceFactRebase::admit(
                     facts,
                     [].into(),
                     StorageControl::new(
@@ -175,6 +175,6 @@ pub fn sealed_rebase(
                         None,
                     ),
                 )
-                .unwrap(), correspondence, changed, true, worth_query_execution::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new(execution.allocation_policy(), None)))
+                .unwrap(), correspondence, changed, true, worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new(execution.allocation_policy(), None)))
         })
 }

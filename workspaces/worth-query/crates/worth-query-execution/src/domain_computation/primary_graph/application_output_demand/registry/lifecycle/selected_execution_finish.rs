@@ -26,7 +26,7 @@ pub(in crate::domain_computation::primary_graph) struct PreparedSelectedExecutio
 
 /// Holds only this invocation's Running claim. Abandoning a prepared suffix
 /// releases it back to Scheduled before its last Interest can be destroyed.
-pub(in crate::domain_computation::primary_graph) struct RunningSelectedExecution<'a> {
+pub struct RunningSelectedExecution<'a> {
     finish: Option<PreparedSelectedExecutionFinish<'a>>,
 }
 impl<'a> RunningSelectedExecution<'a> {

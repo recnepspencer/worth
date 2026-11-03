@@ -3,7 +3,7 @@ use worth_relational::facade::identity::EntityId;
 use super::{SettledWorkflowTransition, WorkflowInstanceProgress};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) struct WorkflowTransitionLocator {
+pub struct WorkflowTransitionLocator {
     entity: EntityId,
     settlement: SettledWorkflowTransition,
 }
@@ -56,7 +56,7 @@ impl WorkflowAssessmentEvidenceLocator {
 }
 
 #[derive(Clone)]
-pub(in crate::domain_computation::primary_graph) struct WorkflowTransitionProgressObservation {
+pub struct WorkflowTransitionProgressObservation {
     captured_inputs: Option<std::sync::Arc<crate::domain_computation::primary_graph::workflow::captured_input::WorkflowCapturedInputSupport>>,
     transition: WorkflowTransitionLocator,
     assessment_evidence: Option<EntityId>,

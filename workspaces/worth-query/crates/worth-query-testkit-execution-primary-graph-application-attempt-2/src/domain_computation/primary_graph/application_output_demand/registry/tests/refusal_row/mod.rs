@@ -7,7 +7,7 @@ pub trait RefusalRowWorthQueryOutputDemandRegistryForTest: Sized {
     fn fixture_refusing_ready(
         &self) -> (
         WorthQueryOutputDemandInterest,
-        worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::required_work::selection::SelectedReadyReadmission,
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::required_work::selection::SelectedReadyReadmission,
     );
     fn fixture_stop_kind(
         &self,
@@ -20,11 +20,11 @@ impl RefusalRowWorthQueryOutputDemandRegistryForTest for WorthQueryOutputDemandR
         &self,
     ) -> (
         WorthQueryOutputDemandInterest,
-        worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::required_work::selection::SelectedReadyReadmission,
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::required_work::selection::SelectedReadyReadmission,
     ){
         let (interest, _) = self.fixture_admitted_work_membership(occurrence());
         let key = interest.key.clone();
-        self.state.lock().unwrap().records.get_mut(&key).unwrap().readmission_source = Some(Arc::new(worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::source_readmission::RequiredOutputReadmission {
+        self.state.lock().unwrap().records.get_mut(&key).unwrap().readmission_source = Some(Arc::new(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::source_readmission::RequiredOutputReadmission {
             source: Arc::new(()), producer: std::sync::OnceLock::new(),
             limits: worth_query_execution::facade::domain_computation::WorthQueryOutputDemandResourceProfile::standard().limits(), retained_program_basis: None,
         }));

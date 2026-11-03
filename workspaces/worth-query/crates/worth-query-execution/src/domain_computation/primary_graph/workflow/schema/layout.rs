@@ -6,7 +6,7 @@ use worth_relational::facade::indexes::DerivedIndexId;
 /// Keeping the vocabulary inline would copy every locator through read sets,
 /// effect programs and their result variants even when no workflow is bound.
 #[derive(Clone, Debug)]
-pub(in crate::domain_computation::primary_graph) struct WorthQueryWorkflowLayout {
+pub struct WorthQueryWorkflowLayout {
     fields: std::sync::Arc<WorkflowLayoutFields>,
 }
 

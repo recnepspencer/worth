@@ -2,9 +2,9 @@ use graph::WorthQueryApplicationCommitDenialKind;
 use graph::WorthQueryApplicationCommitOutcome;
 use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandDenial;
 use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandDenialKind;
-use worth_query_execution::domain_computation::primary_graph::application_contribution::producer::execution::outcome::commit_receipt;
-use worth_query_execution::domain_computation::primary_graph::application_contribution::producer::execution::denial::denial;
-use worth_query_execution::domain_computation::primary_graph as graph;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::execution::outcome::commit_receipt;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::execution::denial::denial;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph as graph;
 use worth_query_execution::facade::domain_computation::WorthQueryProviderSessionCommitDeferred;
 use worth_query_execution::facade::domain_computation::WorthQueryProviderSessionCommitDeferredKind;
 use worth_relational::facade::mvcc::CompanionPreflightStop as Stop;
@@ -124,7 +124,7 @@ fn every_execution_commit_kind_survives_the_producer_boundary() {
             WorthQueryOutputDemandDenialKind::ProducerUnavailable,
         ),
     ] {
-        let commit = worth_query_execution::domain_computation::primary_graph::application_attempt::provider_compare_denial::provider_session_denied(
+        let commit = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_compare_denial::provider_session_denied(
             worth_query_execution::facade::domain_computation::WorthQueryProviderSessionFailure::new(session,
                 worth_query_execution::facade::domain_computation::WorthQueryProviderSessionProtocolStage::Commit,
                 "producer commit preparation refused", Default::default()),
@@ -141,7 +141,7 @@ fn every_execution_commit_kind_survives_the_producer_boundary() {
 
 #[test]
 fn pending_execution_evidence_keeps_heads_producer_category() {
-    use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_compare_denial::provider_session_execution_denied;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_compare_denial::provider_session_execution_denied;
     use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitDenialStage as Stage;
     use worth_query_execution::facade::domain_computation::WorthQueryProviderSessionDenialKind as Session;
     let kind = Session::ExecutionWorkerPanicked {
@@ -170,7 +170,7 @@ fn pending_execution_evidence_keeps_heads_producer_category() {
 
 #[test]
 fn root_request_work_stop_is_distinct_from_attributed_producer_work() {
-    use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_compare_denial::provider_session_execution_denied;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_compare_denial::provider_session_execution_denied;
     use worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial as Request;
     use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitDenialStage as Stage;
     use worth_query_execution::facade::application_contribution::WorthQueryManagedComputationResourceDenial as Resource;
@@ -239,7 +239,7 @@ fn root_request_work_stop_is_distinct_from_attributed_producer_work() {
 
 #[test]
 fn consumed_verification_capacity_reaches_the_original_demand_denial() {
-    use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_compare_denial::provider_session_denied;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_compare_denial::provider_session_denied;
     use worth_query_execution::facade::domain_computation::VerificationCapacityStop as Capacity;
     use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitDenialKind as Kind;
     use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitDenialStage as Stage;

@@ -1,10 +1,10 @@
 //! A held custody note survives rotation until the last stale claim leaves.
-pub use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::BoundOutputSource;
-pub use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::source_custody::PreparedOutputRootKind;
-pub use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::SourceCustody;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::BoundOutputSource;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::source_custody::PreparedOutputRootKind;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::SourceCustody;
 pub use crate::domain_computation::primary_graph::application_output_demand::registry::tests::*;
 pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitReceipt;
-pub use worth_query_execution::equality_type_id::EqualityTypeId;
+pub use worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId;
 
 pub fn fixture(
     receipt: &WorthQueryApplicationCommitReceipt,
@@ -113,7 +113,7 @@ fn registry_custody_note_survives_a_held_drain_and_claim_transfer() {
     assert_eq!(state.records[&newest].framework_required_count, 1);
     state.drain_next_foreign_custody();
     assert!(!state.source_custody.contains_key(commit));
-    worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::post_commit::custody_reader::resolve_before_binding(&mut state, &receipt);
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::post_commit::custody_reader::resolve_before_binding(&mut state, &receipt);
     assert!(
         !state.pending_custody_prune(),
         "binding cannot see the pruned newer source"
@@ -124,12 +124,12 @@ pub fn copy_ready(ready: &DemandState) -> DemandState {
     let DemandState::Output(output) = ready else {
         panic!("Ready fixture")
     };
-    let Some(worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint::Ready(completion)) = &output.checkpoint
+    let Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint::Ready(completion)) = &output.checkpoint
     else {
         panic!("Ready fixture")
     };
-    DemandState::Output(worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputProgress::new(
-        worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint::Ready(completion.clone()),
+    DemandState::Output(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputProgress::new(
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint::Ready(completion.clone()),
     ))
 }
 

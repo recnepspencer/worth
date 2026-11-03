@@ -16,7 +16,7 @@ mod batch;
 pub use batch::WorthQueryApplicationBatchReadDenial;
 pub use batch::WorthQueryApplicationBatchResult;
 
-mod denial;
+pub(crate) mod denial;
 pub(super) mod outcome;
 pub(super) mod plan_admission;
 use plan_admission::admit_request;
@@ -182,7 +182,7 @@ where
     }
 }
 
-pub(super) fn map_authorized_read_denial(
+pub fn map_authorized_read_denial(
     denial_value: WorthQueryAuthorizedApplicationReadDenial,
     query: &str,
 ) -> WorthQueryApplicationOneShotDenial {

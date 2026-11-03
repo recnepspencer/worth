@@ -6,7 +6,7 @@ use super::{
 use crate::equality_type_id::EqualityTypeId as TypeId;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum PreparedOutputRootKind {
+pub enum PreparedOutputRootKind {
     Required(TypeId),
     Discovered(TypeId),
 }
@@ -344,7 +344,7 @@ impl SourceCustody {
     }
 }
 
-pub(super) fn root_revision_order(
+pub fn root_revision_order(
     prior: &BoundOutputSource,
     successor: &BoundOutputSource,
 ) -> Option<Ordering> {

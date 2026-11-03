@@ -1,9 +1,9 @@
 //! Genuine admitted action meaning and World-published activation for correction tests.
 use crate::domain_computation::primary_graph::tests::fixture::*;
 use crate::domain_computation::primary_graph::tests::fixture::correction_source::label_edit::LabelBinding;
-use worth_query_execution::domain_computation::primary_graph::application_installation::program::supported_program::WorthQuerySupportedProgramRecord;
-use worth_query_execution::domain_computation::primary_graph::program_occurrence::WorthQueryInstalledProgramSupport;
-use worth_query_execution::domain_computation::primary_graph::program_occurrence::activation_cell::WorthQueryProgramActivationCell;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_installation::program::supported_program::WorthQuerySupportedProgramRecord;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::program_occurrence::WorthQueryInstalledProgramSupport;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::program_occurrence::activation_cell::WorthQueryProgramActivationCell;
 use std::sync::Arc;
 use worth_query_declaration::facade::application_program::*;
 use worth_query_installation::facade::install_rostered_application_program;

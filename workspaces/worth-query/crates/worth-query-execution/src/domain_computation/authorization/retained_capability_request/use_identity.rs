@@ -6,7 +6,7 @@ use crate::domain_computation::{
 use worth_execution::ExecutionRequest;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
 
-pub(in crate::domain_computation) struct WorthQueryCapabilityUseIdentity {
+pub struct WorthQueryCapabilityUseIdentity {
     request: WorthQueryRetainedCapabilityRequest,
     comparison_work: u64,
     // The shared immutable payload and actor provenance retire before this payer.

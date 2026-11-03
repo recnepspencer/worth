@@ -2,23 +2,23 @@
 pub use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
 pub use worth_foundational::facade::AspectFieldLocator;
 pub use worth_foundational::facade::AspectValue;
-pub use worth_query_execution::domain_computation::primary_graph::workflow::definition::compilation::plan::CompiledWorkflowDefinition;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::definition::compilation::plan::CompiledWorkflowDefinition;
 pub use worth_relational::facade::identity::EntityId;
 pub use worth_foundational::facade::InternedString;
 pub use worth_relational::facade::identity::KindId;
-pub use worth_query_execution::domain_computation::primary_graph::workflow::schema::layout::WorthQueryWorkflowLayout;
-pub use worth_query_execution::domain_computation::primary_graph::workflow::definition::compilation::reconstruction::global_actions;
-pub use worth_query_execution::domain_computation::primary_graph::workflow::definition::compilation::reconstruction::node;
-pub use worth_query_execution::domain_computation::primary_graph::workflow::definition::compilation::publication_binding::separate_compiled_definition;
-pub use worth_query_execution::domain_computation::primary_graph::application_attempt::effect_program::model::WorthQueryApplicationRealizedEffect as Effect;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::schema::layout::WorthQueryWorkflowLayout;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::definition::compilation::reconstruction::global_actions;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::definition::compilation::reconstruction::node;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::definition::compilation::publication_binding::separate_compiled_definition;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::model::WorthQueryApplicationRealizedEffect as Effect;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::program_fixture::admitted_operation;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::authenticated_principal;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::resolved_account;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::*;
-pub use worth_query_execution::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor;
-pub use worth_query_execution::domain_computation::primary_graph::workflow::instance::start_provenance;
-pub use worth_query_execution::domain_computation::primary_graph::workflow::instance::facts::visit_instance_start_facts;
-pub use worth_query_execution::domain_computation::primary_graph::workflow::instance::facts::WorkflowLineageCarry;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::instance::start_provenance;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::instance::facts::visit_instance_start_facts;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::instance::facts::WorkflowLineageCarry;
 pub use worth_execution::CancellationToken;
 pub use worth_execution::ExecutionRequest;
 pub use worth_execution::ExecutionResourceLease;
@@ -55,7 +55,7 @@ fn started_revision_actual_producer_is_immutable_but_current_revision_can_change
         .integration_handle();
     handle.with_runtime(&execution, |runtime| {
         assert_eq!(
-            worth_query_execution::domain_computation::primary_graph::workflow::instance::start_provenance::read(
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::instance::start_provenance::read(
                 &execution,
                 runtime,
                 before.1.snapshot_handle(),
@@ -80,7 +80,7 @@ fn started_revision_actual_producer_is_immutable_but_current_revision_can_change
         );
     }); // No active deployment/activation is consulted for historical DATA.
     let replacement = handle.with_runtime(&execution, |runtime| {
-        worth_query_execution::domain_computation::primary_graph::workflow::instance::start_provenance::admit(&execution, runtime, &before.0, &successor).unwrap()
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::instance::start_provenance::admit(&execution, runtime, &before.0, &successor).unwrap()
     });
     let candidate = handle.with_runtime(&execution, |runtime| {
         let mut transaction = runtime
@@ -118,7 +118,7 @@ fn started_revision_actual_producer_is_immutable_but_current_revision_can_change
     assert_eq!(before.0.descriptor(), after.0.descriptor());
     // This is a native mutability counterpart, NOT a program adoption admission.
     let current_revision = handle.with_runtime(&execution, |runtime| {
-        worth_query_execution::domain_computation::primary_graph::workflow::instance::start_provenance::admit(&execution, runtime, &after.0, &successor).unwrap()
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::instance::start_provenance::admit(&execution, runtime, &after.0, &successor).unwrap()
     });
     publish_relational_mutation(
         &execution,
@@ -132,7 +132,7 @@ fn started_revision_actual_producer_is_immutable_but_current_revision_can_change
     let current = selected(&world, &execution);
     handle.with_runtime(&execution, |runtime| {
         assert_eq!(
-            worth_query_execution::domain_computation::primary_graph::workflow::instance::start_provenance::read(
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::instance::start_provenance::read(
                 &execution,
                 runtime,
                 current.1.snapshot_handle(),
@@ -144,7 +144,7 @@ fn started_revision_actual_producer_is_immutable_but_current_revision_can_change
             original
         );
         assert_eq!(
-            worth_query_execution::domain_computation::primary_graph::workflow::instance::start_provenance::read(
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::instance::start_provenance::read(
                 &execution,
                 runtime,
                 before.1.snapshot_handle(),
@@ -170,7 +170,7 @@ fn started_revision_actual_producer_is_immutable_but_current_revision_can_change
         assert_eq!(
             // The current revision's original producer emits canonical scalar text;
             // only started_program_revision promises managed Symbol custody.
-            worth_query_execution::domain_computation::primary_graph::application_attempt::observation::predecode_admission::observe_field_value_borrowed(
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::observation::predecode_admission::observe_field_value_borrowed(
                 runtime, &execution, before.1.snapshot_handle(), instance,
                 layout.instance.entity_kind, &layout.instance.program_revision,
                 |value| value == Some(&AspectValue::String(InternedString::Raw(original.to_string()))),
@@ -182,7 +182,7 @@ fn started_revision_actual_producer_is_immutable_but_current_revision_can_change
     let latest = selected(&world, &execution);
     handle.with_runtime(&execution, |runtime| {
         assert_eq!(
-            worth_query_execution::domain_computation::primary_graph::workflow::instance::start_provenance::read(
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::instance::start_provenance::read(
                 &execution,
                 runtime,
                 latest.1.snapshot_handle(),
@@ -194,7 +194,7 @@ fn started_revision_actual_producer_is_immutable_but_current_revision_can_change
             successor
         );
         assert_eq!(
-            worth_query_execution::domain_computation::primary_graph::workflow::instance::start_provenance::read(
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::instance::start_provenance::read(
                 &execution,
                 runtime,
                 latest.1.snapshot_handle(),
@@ -261,7 +261,7 @@ fn started_revision_current_capture_restore_retains_exact_data_after_original_pa
         .unwrap();
     let snapshot = native_snapshot(&restored);
     assert_eq!(
-        worth_query_execution::domain_computation::primary_graph::workflow::instance::start_provenance::read(&receiving, &restored, &snapshot, &layout, instance, &support)
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::instance::start_provenance::read(&receiving, &restored, &snapshot, &layout, instance, &support)
             .unwrap(),
         original
     );

@@ -1,23 +1,23 @@
 //! Derived consumed-fact postings and source-position-specific output marks.
 
-mod commit_touches;
-mod computation_changes;
+pub(crate) mod commit_touches;
+pub(crate) mod computation_changes;
 pub(in crate::domain_computation::primary_graph) use computation_changes::ComputationChanges;
 pub(in crate::domain_computation::primary_graph) use computation_changes::ComputationRegistration;
 pub(in crate::domain_computation::primary_graph) use computation_changes::PostconditionCarry;
 
-mod delivery;
+pub(crate) mod delivery;
 mod delivery_observation;
 pub use delivery_observation::inexact_native_deliveries_on_this_thread_for_test;
-mod derived;
+pub(crate) mod derived;
 
 mod equality;
 mod equality_recovery;
 pub(in crate::domain_computation::primary_graph) use equality_recovery::EqualityRecoveryRow;
-mod fact_key;
+pub(crate) mod fact_key;
 mod fact_keys;
 
-mod full_verification;
+pub(crate) mod full_verification;
 pub(in crate::domain_computation::primary_graph) use full_verification::FullVerificationDecision;
 pub(in crate::domain_computation::primary_graph) use full_verification::FullVerificationImage;
 pub(in crate::domain_computation::primary_graph) use full_verification::FullVerificationStop;
@@ -32,28 +32,28 @@ pub use logical_marking::WorthQueryNativeMarkingWork;
 pub use marking_observation::native_marking_on_this_thread_for_test;
 pub use marking_observation::WorthQueryMarkedOutputForTest;
 pub use marking_observation::WorthQueryNativeMarkingForTest;
-mod mark_state;
+pub(crate) mod mark_state;
 mod output_availability;
 pub(in crate::domain_computation::primary_graph) use output_availability::SourcePublicationReadFence;
 mod output_facts;
 pub(in crate::domain_computation) use output_availability::ObservedSourcePublication;
 pub(in crate::domain_computation::primary_graph) use output_facts::RegisteredOutputFacts;
 
-mod owner;
-mod publication;
+pub(crate) mod owner;
+pub(crate) mod publication;
 mod publication_cell;
-mod query_coverage;
+pub(crate) mod query_coverage;
 mod read_basis_carry;
 pub(in crate::domain_computation::primary_graph) use query_coverage::QueryCoverageStop;
 pub(in crate::domain_computation::primary_graph) use query_coverage::QueryFactCoverage;
 mod reestablishment;
 
 mod retirement;
-mod settlement;
-mod source_alignment;
+pub(crate) mod settlement;
+pub(crate) mod source_alignment;
 mod source_publication;
 mod touch_keys;
-mod verification;
+pub(crate) mod verification;
 mod verified_current;
 
 pub(in crate::domain_computation::primary_graph) use commit_touches::CommitTouchEntities;

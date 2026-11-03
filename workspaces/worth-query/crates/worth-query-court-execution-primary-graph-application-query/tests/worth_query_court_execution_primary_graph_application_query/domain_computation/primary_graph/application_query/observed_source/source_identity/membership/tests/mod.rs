@@ -11,9 +11,9 @@ use worth_relational::facade::identity::PartitionId;
 use worth_relational::facade::identity::VersionId;
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
-use worth_query_execution::domain_computation::primary_graph::application_query::observed_source::source_identity::membership::WorthQueryObservedSourceSelection;
-use worth_query_execution::domain_computation::primary_graph::application_query::observed_source::source_identity::membership::same_footprint_membership;
-use worth_query_execution::domain_computation::primary_graph::application_query::observed_source::source_identity::membership::same_text;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::membership::WorthQueryObservedSourceSelection;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::membership::same_footprint_membership;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::membership::same_text;
 #[test]
 fn selected_membership_ignores_revisions_but_not_selected_endpoints() {
     let before = footprint(vec![entity(2)], 4);
@@ -25,7 +25,7 @@ fn selected_membership_ignores_revisions_but_not_selected_endpoints() {
 #[test]
 fn retained_selection_compares_a_fresh_meaning_without_revision_identity() {
     let authority = worth_query_execution::facade::domain_computation::WorthQueryRuntimeAuthorityIdentity::mint_for_test();
-    let registry = worth_query_execution::domain_computation::primary_graph::application_query::observed_source::source_identity::WorthQueryObservedSourceMeaningRegistry::new(authority);
+    let registry = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::WorthQueryObservedSourceMeaningRegistry::new(authority);
     let selection = worth_query_execution::facade::domain_computation::WorthQueryApplicationBasisSelectionIdentity::Relational;
     let meaning = |endpoints, revision| {
         registry

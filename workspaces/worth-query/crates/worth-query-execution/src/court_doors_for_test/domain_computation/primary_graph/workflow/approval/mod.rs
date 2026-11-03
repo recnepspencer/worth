@@ -1,0 +1,5 @@
+//! Doors under `domain_computation::primary_graph::workflow::approval`.
+#[path = "field_text/mod.rs"]
+pub mod field_text;
+pub use crate::domain_computation::primary_graph::workflow::approval::WorkflowApprovalMeaning;
+pub use crate::domain_computation::primary_graph::workflow::approval::workflow_approval_fields;

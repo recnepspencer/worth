@@ -16,7 +16,7 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationR
 mod selected;
 mod unpublished;
 
-struct PreparedSelectedDelivery<'a> {
+pub struct PreparedSelectedDelivery<'a> {
     lowering: &'a std::sync::Arc<worth_runtime_bridge::facade::BridgeInstalledConditionalLowering>,
     ordinal: usize,
     preserved: bool,

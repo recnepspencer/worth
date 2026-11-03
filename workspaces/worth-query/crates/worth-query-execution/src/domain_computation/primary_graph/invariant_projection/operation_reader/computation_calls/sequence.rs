@@ -12,7 +12,7 @@ mod issue;
 mod reached;
 use reached::ReachedCalls;
 #[derive(Debug)]
-pub(in crate::domain_computation::primary_graph) enum CallSequenceDenial {
+pub enum CallSequenceDenial {
     Resource(Resource),
     InvalidEdit,
     Storage(worth_execution::ExecutionOrderedMapDenial),
@@ -27,11 +27,11 @@ impl From<worth_execution::ExecutionOrderedMapDenial> for CallSequenceDenial {
         Self::Storage(cause)
     }
 }
-type Call = (ComputationCallCharge, Option<u64>);
+pub type Call = (ComputationCallCharge, Option<u64>);
 
 mod shape;
 pub(in crate::domain_computation::primary_graph) use shape::{CallShape, CallShapeTransition};
-mod tree;
+pub(crate) mod tree;
 use tree::{build, leaf, patch, summary, visit};
 mod editing;
 #[derive(Clone, Copy)]
@@ -70,7 +70,7 @@ impl CallSummary {
         })
     }
 }
-struct Node {
+pub struct Node {
     count: usize,
     height: u8,
     summary: Option<CallSummary>,
@@ -82,7 +82,7 @@ enum Kind {
     Leaf(ComputationRead, Call),
     Branch(Arc<Node>, Arc<Node>),
 }
-pub(in crate::domain_computation::primary_graph) enum CallVisit<'a> {
+pub enum CallVisit<'a> {
     Range(Range<usize>, &'a CallSummary),
     Leaf(
         usize,
@@ -93,7 +93,7 @@ pub(in crate::domain_computation::primary_graph) enum CallVisit<'a> {
 }
 /// No request borrow or parent sequence is stored. Each cell funds its own
 /// representation; unchanged nodes and the exact ordinal shape share grants.
-pub(in crate::domain_computation::primary_graph) struct ComputationCallSequence {
+pub struct ComputationCallSequence {
     shape: Arc<CallShape>,
     root: Option<Arc<Node>>,
     reached: ReachedCalls,

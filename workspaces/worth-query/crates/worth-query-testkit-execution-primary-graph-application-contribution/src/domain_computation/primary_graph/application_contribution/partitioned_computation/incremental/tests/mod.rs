@@ -15,7 +15,7 @@ use crate::domain_computation::primary_graph::application_contribution::partitio
 use crate::domain_computation::primary_graph::application_contribution::partitioned_computation::attribution_tests::Input;
 use crate::domain_computation::primary_graph::application_contribution::partitioned_computation::attribution_tests::Number;
 use crate::domain_computation::primary_graph::application_contribution::partitioned_computation::attribution_tests::Parity;
-use worth_query_execution::domain_computation::primary_graph::application_contribution::partitioned_computation::installed::ComputationRetention;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::installed::ComputationRetention;
 use worth_query_execution::facade::application_contribution::WorthQueryComputationInputDenial;
 use worth_query_execution::facade::application_contribution::WorthQueryComputationPartitionMembers;
 use worth_query_execution::facade::application_contribution::WorthQueryComputationPartitionPlan;
@@ -27,14 +27,14 @@ use worth_query_execution::facade::application_contribution::WorthQueryPartition
 use worth_query_execution::facade::application_contribution::WorthQueryPartitionedComputationOwner;
 use worth_query_execution::facade::domain_computation::partitioned_computation_runs_on_this_thread_for_test as runs;
 use worth_query_execution::facade::domain_computation::partitioned_computation_tree_work_on_this_thread_for_test as tree_runs;
-use worth_query_execution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::carriage::ComputationPrior;
-use worth_query_execution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::retained::SealedComputationRun;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::carriage::ComputationPrior;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::retained::SealedComputationRun;
 use worth_query_execution::facade::application_contribution::WorthQueryPartitionedComputationFullCause as Cause;
 use worth_query_execution::facade::application_contribution::WorthQueryPartitionedComputationRunForTest as Run;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::computation_routing::ComputationRead;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact;
-use worth_query_execution::domain_computation::primary_graph::application_contribution::producer::registry::semantic_edition::InstalledProducerEdition;
-use worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::QueryRequestExecution;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::computation_routing::ComputationRead;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::registry::semantic_edition::InstalledProducerEdition;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::QueryRequestExecution;
 use crate::domain_computation::primary_graph::tests::application_attempt::authenticated_principal;
 use crate::domain_computation::primary_graph::tests::application_attempt::resolved_account;
 use crate::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;
@@ -280,7 +280,7 @@ where
         prior,
         request,
         RuntimeWorldExecutionPlacement::Serial(
-        worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy(
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy(
             std::num::NonZeroUsize::MIN, None,
         ),
     ),

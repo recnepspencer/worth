@@ -6,7 +6,7 @@ use crate::domain_computation::primary_graph::{
 };
 
 #[derive(Debug)]
-pub(in crate::domain_computation::primary_graph) struct CheckpointDecodeDenial {
+pub struct CheckpointDecodeDenial {
     kind: Kind,
     message: String,
 }

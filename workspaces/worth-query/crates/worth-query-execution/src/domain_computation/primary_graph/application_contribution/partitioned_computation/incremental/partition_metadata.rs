@@ -4,7 +4,7 @@ use std::{collections::BTreeMap, sync::Arc};
 use worth_execution::{ExecutionAllocationPolicy, ExecutionOrderedMap, ExecutionOrderedMapDenial};
 use worth_foundational::facade::PartitionIdentity;
 
-pub(super) struct PartitionMetadata<Key> {
+pub struct PartitionMetadata<Key> {
     entries: ExecutionOrderedMap<PartitionIdentity, RetainedPartition<Key>>,
 }
 impl<Key> PartitionMetadata<Key> {

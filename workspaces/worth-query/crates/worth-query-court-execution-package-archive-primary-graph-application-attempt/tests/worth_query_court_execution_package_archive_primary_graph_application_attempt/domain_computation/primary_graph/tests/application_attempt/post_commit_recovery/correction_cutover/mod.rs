@@ -1,7 +1,7 @@
 //! Real pending custody races cross-branch lookup through the admitted resolver.
 //! The owner-private command marker isolates store/coordination evidence from domain derivation.
 use crate::domain_computation::primary_graph::tests::application_attempt::post_commit_recovery::*;
-use worth_query_execution::domain_computation::primary_graph::provider::correction_idempotency::CorrectionIdempotencyObservation as Observed;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::correction_idempotency::CorrectionIdempotencyObservation as Observed;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationIdempotencyResolution;
 
 #[test]

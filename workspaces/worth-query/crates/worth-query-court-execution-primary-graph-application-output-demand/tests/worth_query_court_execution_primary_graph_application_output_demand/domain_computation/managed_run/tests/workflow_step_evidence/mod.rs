@@ -158,7 +158,7 @@ impl WorthQueryGraphParticipationProvider<ManagedGraph> for MultiCallArtifactPro
 
 #[test]
 fn provider_step_evidence_ignores_preexisting_artifacts_and_keeps_checkpoint_continuity() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -274,7 +274,7 @@ fn provider_step_evidence_ignores_preexisting_artifacts_and_keeps_checkpoint_con
 
 #[test]
 fn governed_artifact_retention_survives_a_later_provider_call() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -367,7 +367,7 @@ fn governed_artifact_retention_survives_a_later_provider_call() {
 }
 
 pub fn complete_observe_call(
-    execution: &worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
 
     running: worth_query_execution::facade::domain_computation::WorthQueryRunningWorkflowRun,
     graph: &WorthQueryInstalledGraphParticipationAuthority,

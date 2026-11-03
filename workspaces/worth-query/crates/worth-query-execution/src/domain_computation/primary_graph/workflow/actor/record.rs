@@ -5,7 +5,7 @@ use worth_relational::facade::identity::{EntityId, PartitionId};
 
 /// Historical identity, not a grant or an execution right.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) struct WorkflowAdmittedActor(EntityId);
+pub struct WorkflowAdmittedActor(EntityId);
 
 impl WorkflowAdmittedActor {
     pub(in crate::domain_computation::primary_graph) fn from_admission<S, O, I, C>(

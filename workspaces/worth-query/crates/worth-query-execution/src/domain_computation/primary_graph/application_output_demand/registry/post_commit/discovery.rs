@@ -6,7 +6,7 @@ type Identity = Arc<RecordedSettlementIdentity>;
 
 use std::sync::Arc;
 
-pub(in super::super) fn after_publication(
+pub fn after_publication(
     state: &DemandRegistryState,
     key: &WorthQueryOutputDemandKey,
 ) -> Vec<Identity> {

@@ -9,7 +9,7 @@ use std::{collections::BTreeMap, sync::Arc};
 
 mod preimage;
 
-pub(in crate::domain_computation) struct ApplicationFactTable {
+pub struct ApplicationFactTable {
     prefix: Option<Prefix>,
     overlay: BTreeMap<String, Decision>,
     count: usize,

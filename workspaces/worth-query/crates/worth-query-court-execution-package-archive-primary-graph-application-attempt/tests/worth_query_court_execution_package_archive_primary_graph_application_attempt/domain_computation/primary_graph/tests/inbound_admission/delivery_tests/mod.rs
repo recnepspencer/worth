@@ -7,7 +7,7 @@ use worth_relational::facade::history::CommitId;
 use crate::domain_computation::primary_graph::tests::inbound_admission::fixture::installed_world;
 use crate::domain_computation::primary_graph::tests::inbound_admission::verifier::signed_envelope;
 use crate::domain_computation::primary_graph::tests::inbound_admission::verifier::signed_envelope_for_seconds;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::commit_touches::CommitTouchInterest;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::commit_touches::CommitTouchInterest;
 use worth_query_execution::facade::domain_computation::WorthQueryInboundReceiptPosture;
 
 #[test]

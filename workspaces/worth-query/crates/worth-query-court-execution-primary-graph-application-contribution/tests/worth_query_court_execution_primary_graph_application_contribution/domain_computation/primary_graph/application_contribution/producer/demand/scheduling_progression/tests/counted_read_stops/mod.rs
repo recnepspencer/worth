@@ -24,7 +24,7 @@ fn scheduling_progression_preserves_admission_stops_at_every_consult() {
     let (_, route) = installation();
     world.application.output_producer_routes.insert(
         "scheduling-busy".to_owned(),
-        worth_query_execution::domain_computation::primary_graph::application_contribution::producer::scheduling::WorthQueryInstalledOutputProducerRoute {
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::scheduling::WorthQueryInstalledOutputProducerRoute {
             scheduling: route,
             output_comparison: None,
         },

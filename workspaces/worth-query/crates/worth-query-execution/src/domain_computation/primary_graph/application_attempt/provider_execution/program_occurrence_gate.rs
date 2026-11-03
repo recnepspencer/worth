@@ -67,7 +67,7 @@ pub(super) fn require_selected_program_matches_occurrence(
 }
 
 /// Requires the activated program to declare the effectful operation route.
-pub(super) fn require_occurrence_acts_through<Operation: 'static>(
+pub fn require_occurrence_acts_through<Operation: 'static>(
     occurrence: &WorthQueryOccurrenceProgram<'_>,
 ) -> Result<(), WorthQueryApplicationCommitDenial> {
     if !occurrence

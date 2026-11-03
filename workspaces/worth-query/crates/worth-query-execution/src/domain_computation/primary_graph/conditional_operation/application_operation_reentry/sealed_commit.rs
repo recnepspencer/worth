@@ -150,4 +150,4 @@ fn classify_commit(
     }
 }
 
-mod denial;
+pub(crate) mod denial;

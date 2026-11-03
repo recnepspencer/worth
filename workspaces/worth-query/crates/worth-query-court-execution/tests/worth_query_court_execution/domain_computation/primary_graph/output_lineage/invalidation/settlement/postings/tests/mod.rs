@@ -6,12 +6,12 @@ pub use worth_relational::facade::identity::EntityId;
 pub use worth_relational::facade::identity::KindId;
 pub use worth_relational::facade::identity::PartitionId;
 
-pub use worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::fact_key::FactPostingKey;
-pub use worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::mark_state::MarkState;
-pub use worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::settlement::postings::group_projected;
-pub use worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::settlement::postings::PreparedPostingOrdinals;
-pub use worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::settlement::postings::ProjectedKey;
-pub use worth_query_execution::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact as Fact;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::fact_key::FactPostingKey;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::mark_state::MarkState;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::settlement::postings::group_projected;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::settlement::postings::PreparedPostingOrdinals;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::settlement::postings::ProjectedKey;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact as Fact;
 
 #[test]
 fn equal_fingerprints_keep_distinct_exact_keys_and_merge_only_equal_keys() {
@@ -70,7 +70,7 @@ fn source_and_output_facts_share_one_key_but_keep_both_composite_ordinals() {
     let prepared = PreparedPostingOrdinals::prepare(&source, Some(&output), &mut None).unwrap();
     let mut state = MarkState::initial();
     let projection = prepared.into_projection(0, source.len(), output.len(), None);
-    worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::settlement::posting_bindings::bind(&mut state, &projection, &identity).unwrap();
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::settlement::posting_bindings::bind(&mut state, &projection, &identity).unwrap();
     let ordinals = &projection.ordinals;
     let key = FactPostingKey::EntityLifecycle(entity);
     let own = ordinals.get(&key).unwrap();
@@ -109,7 +109,7 @@ fn final_posting_storage_keeps_all_ordinals_without_retaining_grouping_scratch()
         let prior = state.postings.clone();
         let projection = prepared.into_projection(0, facts.len(), 0, None);
 
-        worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::settlement::posting_bindings::bind(&mut state, &projection, &identity).unwrap();
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::settlement::posting_bindings::bind(&mut state, &projection, &identity).unwrap();
         assert!(prior.is_empty());
         assert_eq!(state.posting_count, keys);
         assert_eq!(state.postings.len(), keys);
@@ -127,7 +127,7 @@ fn final_posting_storage_keeps_all_ordinals_without_retaining_grouping_scratch()
 /// preflight counter-overflow stops; Relational defers them verbatim.
 #[test]
 fn posting_and_marking_counters_stop_with_their_typed_overflow() {
-    use worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::delivery::affected::mark_keys;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::delivery::affected::mark_keys;
     use worth_query_execution::facade::domain_computation::WorthQueryNativeMarkingWork;
     use worth_relational::facade::mvcc::CompanionPreflightStop;
 
@@ -141,12 +141,12 @@ fn posting_and_marking_counters_stop_with_their_typed_overflow() {
     let mut full = MarkState::initial();
     full.posting_count = usize::MAX;
     assert_eq!(
-        worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::settlement::posting_bindings::bind(&mut full, &projection, &identity),
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::settlement::posting_bindings::bind(&mut full, &projection, &identity),
         Err(CompanionPreflightStop::PreparationMemoryCounterOverflow)
     );
 
     let mut state = MarkState::initial();
-    worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::settlement::posting_bindings::bind(&mut state, &projection, &identity).unwrap();
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::settlement::posting_bindings::bind(&mut state, &projection, &identity).unwrap();
     let mut counts = WorthQueryNativeMarkingWork {
         posting_key_lookups: u64::MAX,
         ..WorthQueryNativeMarkingWork::default()

@@ -2,13 +2,13 @@ use worth_query_execution::facade::domain_computation::WorthQueryProviderSession
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitDenial as Denial;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitDenialKind as Kind;
 use worth_query_execution::facade::application_contribution::WorthQueryMemoryLimitLevel as Level;
-use worth_query_execution::domain_computation::primary_graph::conditional_operation::application_operation_reentry::WorthQueryTemporalReentryOutcome as Outcome;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::conditional_operation::application_operation_reentry::WorthQueryTemporalReentryOutcome as Outcome;
 use worth_query_execution::facade::application_contribution::WorthQueryManagedComputationResourceDenial as Resource;
 use worth_query_execution::facade::domain_computation::WorthQueryProviderSessionDenialKind as Session;
-use worth_query_execution::domain_computation::primary_graph::conditional_operation::application_operation_reentry::sealed_commit::denial::classify_denial;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_compare_denial::control_stopped_outcome;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_compare_denial::provider_session_denied;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_compare_denial::provider_session_execution_denied;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::conditional_operation::application_operation_reentry::sealed_commit::denial::classify_denial;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_compare_denial::control_stopped_outcome;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_compare_denial::provider_session_denied;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_compare_denial::provider_session_execution_denied;
 pub fn resources() -> Vec<Resource> {
     let mut causes = vec![
         Resource::WorkExhausted,

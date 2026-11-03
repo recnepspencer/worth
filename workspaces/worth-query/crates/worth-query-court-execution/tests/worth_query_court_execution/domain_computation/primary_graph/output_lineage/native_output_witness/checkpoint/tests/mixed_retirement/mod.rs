@@ -89,7 +89,7 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
                 );
                 changed.roles[1].posture = WorthQueryApplicationOutputPosture::Retire;
                 let metadata =
-                    worth_query_execution::domain_computation::primary_graph::output_lineage::native_output_witness::retirement::native_metadata(runtime, &committed, retired, request_execution)
+                    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::native_output_witness::retirement::native_metadata(runtime, &committed, retired, request_execution)
                         .unwrap()
                         .unwrap();
                 assert_ne!(metadata.created_at, metadata.deleted_at);
@@ -202,7 +202,7 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
                 change_label(request_execution, runtime, live, label.clone());
                 let later = snapshot(runtime);
                 assert_eq!(
-                    worth_query_execution::domain_computation::primary_graph::output_lineage::native_output_witness::retirement::native_metadata(runtime, &later, retired, request_execution)
+                    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::native_output_witness::retirement::native_metadata(runtime, &later, retired, request_execution)
                         .unwrap(),
                     Some(metadata),
                     "original tuple persists at later observations"

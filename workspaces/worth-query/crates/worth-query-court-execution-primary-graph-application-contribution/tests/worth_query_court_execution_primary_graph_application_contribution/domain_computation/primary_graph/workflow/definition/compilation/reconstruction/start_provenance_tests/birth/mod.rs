@@ -1,8 +1,8 @@
 //! Complete native birth producer/read regression, not a public mutation-authorization journey.
 use crate::domain_computation::primary_graph::workflow::definition::compilation::reconstruction::start_provenance_tests::*;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::workflow_instance_observation as observation;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::effect_program::model::WorthQueryApplicationCreationPartition;
-use worth_query_execution::domain_computation::primary_graph::workflow::instance::facts::visit_instance_birth_facts;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow_instance_observation as observation;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::model::WorthQueryApplicationCreationPartition;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::instance::facts::visit_instance_birth_facts;
 use std::collections::BTreeMap;
 use worth_query_declaration::facade::application_program::ApplicationWorkflowComponentLimits;
 use worth_query_declaration::facade::application_schema::ApplicationEntityMarkerIdentity;
@@ -62,7 +62,7 @@ fn birth_subject_provenance_and_start_actor_remain_readable() {
     let value = graph
         .integration_handle()
         .with_runtime(&execution, |runtime| {
-            worth_query_execution::domain_computation::primary_graph::workflow::instance::start_provenance::admit(&execution, runtime, &before.0, &revision).unwrap()
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::instance::start_provenance::admit(&execution, runtime, &before.0, &revision).unwrap()
         });
     let mut effects = vec![Effect::CreateEntity {
         kind: subject_kind,
@@ -113,7 +113,7 @@ fn birth_subject_provenance_and_start_actor_remain_readable() {
     graph
         .integration_handle()
         .with_runtime(&execution, |runtime| {
-            let record = worth_query_execution::domain_computation::primary_graph::application_attempt::workflow_instance_observation::governed_record::observe(
+            let record = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow_instance_observation::governed_record::observe(
                 &execution,
                 runtime,
                 current.1.snapshot_handle(),
@@ -134,7 +134,7 @@ fn birth_subject_provenance_and_start_actor_remain_readable() {
                 "current birth retains an actual command locator"
             );
             let mut facts = Vec::new();
-            worth_query_execution::domain_computation::primary_graph::application_attempt::workflow_instance_observation::subject::observe_subject(
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow_instance_observation::subject::observe_subject(
                 &execution,
                 runtime,
                 current.1.snapshot_handle(),
@@ -145,7 +145,7 @@ fn birth_subject_provenance_and_start_actor_remain_readable() {
             )
             .expect("recorded-actor scope consumes the same birth subject");
             assert!(
-                worth_query_execution::domain_computation::primary_graph::application_attempt::workflow_instance_observation::subject::observe_subject(
+                worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow_instance_observation::subject::observe_subject(
                     &execution,
                     runtime,
                     current.1.snapshot_handle(),
@@ -187,7 +187,7 @@ fn birth_subject_provenance_and_start_actor_remain_readable() {
         .integration_handle()
         .with_runtime(&execution, |runtime| {
             assert!(
-                worth_query_execution::domain_computation::primary_graph::application_attempt::workflow_instance_observation::subject::observe_subject(
+                worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow_instance_observation::subject::observe_subject(
                     &execution,
                     runtime,
                     corrupted.1.snapshot_handle(),

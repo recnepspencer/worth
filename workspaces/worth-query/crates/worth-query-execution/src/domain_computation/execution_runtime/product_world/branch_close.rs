@@ -48,7 +48,7 @@ impl WorthQueryProductBranchCloseReceipt {
     }
 }
 
-pub(crate) enum WorthQueryProductBranchCloseScope {
+pub enum WorthQueryProductBranchCloseScope {
     Workspace,
     Application,
 }

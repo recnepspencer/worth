@@ -1,11 +1,11 @@
 //! Binding without an admission must not read pending completed custody as truth.
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::BoundOutputSource;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::source_custody::PreparedOutputRootKind;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::SourceCustody;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::BoundOutputSource;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::source_custody::PreparedOutputRootKind;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::SourceCustody;
 use crate::domain_computation::primary_graph::application_output_demand::registry::tests::*;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture;
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::recoverable_commit_support;
-use worth_query_execution::equality_type_id::EqualityTypeId;
+use worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId;
 
 #[test]
 fn registry_binding_reader_ignores_logically_absent_completed_custody() {
@@ -21,7 +21,7 @@ fn registry_binding_reader_ignores_logically_absent_completed_custody() {
         .committed_product_publication()
         .take_output_demand_observation()
         .unwrap();
-    let source = worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::WorthQueryPerformedOutputDemandSource {
+    let source = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryPerformedOutputDemandSource {
         receipt: active,
         change,
         observation,
@@ -121,7 +121,7 @@ fn registry_binding_reader_ignores_logically_absent_completed_custody() {
         // The admission-free reader drains only its own named custody; the
         // completed note stays queued for its cleanup owner, but no reader
         // sees it: both registries expose the same visible custody.
-        let visible = |state: &worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::DemandRegistryState| {
+        let visible = |state: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandRegistryState| {
             state
                 .source_custody
                 .keys()

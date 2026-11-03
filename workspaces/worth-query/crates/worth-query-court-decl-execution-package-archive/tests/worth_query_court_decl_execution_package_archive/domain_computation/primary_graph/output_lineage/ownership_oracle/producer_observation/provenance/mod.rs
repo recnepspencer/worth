@@ -8,7 +8,7 @@ pub trait ProvenanceOriginalSourceInspectionDisclosureForTest {
     fn court_public_settlement_rejects_disclosure(self: Arc<Self>);
 }
 
-impl ProvenanceOriginalSourceInspectionDisclosureForTest for worth_query_execution::domain_computation::primary_graph::source_disclosure::inspection::OriginalSourceInspectionDisclosure {
+impl ProvenanceOriginalSourceInspectionDisclosureForTest for worth_query_execution::court_doors_for_test::domain_computation::primary_graph::source_disclosure::inspection::OriginalSourceInspectionDisclosure {
     fn court_public_settlement_rejects_foreign_receipt(
         self: Arc<Self>,
         foreign: Arc<Self>,

@@ -12,14 +12,14 @@ use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphCo
 use crate::domain_computation::primary_graph::schema_layout::WorthQueryProviderIdempotencyLayout;
 
 mod lookup_key;
-mod product_affinity;
+pub(crate) mod product_affinity;
 pub(in crate::domain_computation::primary_graph) use lookup_key::WorthQueryIdempotencyLookupKey;
 pub(in crate::domain_computation::primary_graph) use product_affinity::WorthQueryProductIdempotencyAffinity;
-mod snapshot_resolution;
+pub(crate) mod snapshot_resolution;
 use snapshot_resolution::resolve_at_snapshot;
 
 #[derive(Debug)]
-pub(in crate::domain_computation::primary_graph) enum WorthQueryProviderIdempotencyResolution {
+pub enum WorthQueryProviderIdempotencyResolution {
     Absent,
     Equivalent(WorthQueryPrimaryGraphCommittedApplication),
     Drift,
@@ -67,7 +67,7 @@ impl From<&'static str> for WorthQueryProviderIdempotencyResolutionDenial {
     }
 }
 
-pub(super) fn idempotency_create_intent(
+pub fn idempotency_create_intent(
     layout: &WorthQueryProviderIdempotencyLayout,
     binding: WorthQueryApplicationIdempotencyBinding,
     outcome_identity: WorthQueryApplicationCommitOutcomeIdentity,

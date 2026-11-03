@@ -9,7 +9,7 @@ use worth_query_execution::facade::domain_computation::WorthQueryManagedGraphCal
 
 #[test]
 fn real_installed_direct_authorities_progress_to_converged_and_cleanup() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -71,7 +71,7 @@ fn real_installed_direct_authorities_progress_to_converged_and_cleanup() {
 
 #[test]
 fn same_semantic_candidate_in_real_direct_peers_has_distinct_occurrences() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -88,7 +88,7 @@ fn same_semantic_candidate_in_real_direct_peers_has_distinct_occurrences() {
 }
 
 pub fn start_direct_peer(
-    execution: &worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     scope: &str,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> WorthQueryStartedDirectConvergenceIteration {
@@ -104,7 +104,7 @@ pub fn start_direct_peer(
 }
 
 pub fn complete_direct_peer(
-    execution: &worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     started: WorthQueryStartedDirectConvergenceIteration,
 ) -> String {
     let outcome = {
@@ -138,7 +138,7 @@ pub fn complete_direct_peer(
 
 #[test]
 fn epoch_owned_iteration_bound_terminalizes_continue_as_exhausted() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 

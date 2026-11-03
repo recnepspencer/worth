@@ -28,9 +28,9 @@ pub use worth_relational::facade::transactions::UpdateEntityFieldsIntent;
 pub use worth_relational::facade::transactions::WorkerIntentBatch;
 
 pub use crate::domain_computation::primary_graph::output_lineage::invalidation::native_journey_tests::*;
-pub use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::required_work::RequiredWorkMembership;
-pub use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::required_work::SelectedRequiredWorkKind;
-pub use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::WorthQueryOutputDemandRegistry;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::required_work::RequiredWorkMembership;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::required_work::SelectedRequiredWorkKind;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryOutputDemandRegistry;
 
 pub use crate::domain_computation::primary_graph::output_lineage::invalidation::native_journey_tests::required_hints::gate::TwoPrepareGate;
 

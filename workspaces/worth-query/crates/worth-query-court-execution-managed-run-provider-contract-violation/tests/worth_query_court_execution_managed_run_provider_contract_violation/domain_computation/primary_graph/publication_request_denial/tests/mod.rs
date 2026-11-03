@@ -1,6 +1,6 @@
 use worth_execution::MapKernelStop;
 use worth_execution::WorkCeilingDenial as Stop;
-use worth_query_execution::domain_computation::primary_graph::publication_request_denial::publication;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::publication_request_denial::publication;
 use worth_runtime_world::facade::NoEffectCause;
 #[test]
 fn publication_stop_classification_preserves_control_and_ordinary_causes() {

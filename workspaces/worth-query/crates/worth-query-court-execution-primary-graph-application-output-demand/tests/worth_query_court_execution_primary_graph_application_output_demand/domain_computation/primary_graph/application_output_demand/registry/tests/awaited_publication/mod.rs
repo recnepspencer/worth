@@ -1,6 +1,6 @@
 //! A superseded interest owns the newest undelivered answer of its occurrence.
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::advance_admission::WorthQueryOutputDemandAdvanceAdmission as Admission;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::advance_admission::WorthQueryOutputDemandAdvanceAdmission as Admission;
 use crate::domain_computation::primary_graph::application_output_demand::registry::tests::published_retirement::admit;
 use crate::domain_computation::primary_graph::application_output_demand::registry::tests::published_retirement::publish;
 use crate::domain_computation::primary_graph::application_output_demand::registry::tests::*;
@@ -8,7 +8,7 @@ use crate::domain_computation::primary_graph::application_output_demand::registr
 pub fn scenario(rejoin: bool, late_hold: bool) {
     let receipt = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application();
     let _occurrence = occurrence();
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|_| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|_| {
         let registry = WorthQueryOutputDemandRegistry::default();
 
         let old_key = key("awaited", 1, 1);
@@ -17,7 +17,7 @@ pub fn scenario(rejoin: bool, late_hold: bool) {
         let refreshing = admit(&registry, &newest_key);
         // The registry transports this opaque installed readmission payload.
         // Native Query certification is outside this row-lifetime proof.
-        let source = Arc::new(worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::source_readmission::RequiredOutputReadmission {
+        let source = Arc::new(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::source_readmission::RequiredOutputReadmission {
             source: Arc::new(()), producer: std::sync::OnceLock::new(),
             limits: worth_query_execution::facade::domain_computation::WorthQueryOutputDemandResourceProfile::standard().limits(),
             retained_program_basis: None,
@@ -55,7 +55,7 @@ pub fn scenario(rejoin: bool, late_hold: bool) {
                 state.records.contains_key(&newest_key),
                 "the freshest Published answer still belongs to the stale owner"
             );
-            assert!(worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::refreshed_rejoin::awaited_by_stale_owner(
+            assert!(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::refreshed_rejoin::awaited_by_stale_owner(
                 &state.records,
                 &newest_key
             ));
@@ -103,8 +103,8 @@ pub fn scenario(rejoin: bool, late_hold: bool) {
             else {
                 panic!("the answer was delivered exactly once");
             };
-            let ready = ready_backing.complete(worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::WorthQueryCompletedOutputDemand {
-                authority: worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::WorthQueryAcceptedOutputAuthority::Committed(receipt),
+            let ready = ready_backing.complete(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryCompletedOutputDemand {
+                authority: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryAcceptedOutputAuthority::Committed(receipt),
                 readiness: worth_query_execution::facade::domain_computation::WorthQueryOutputReadinessDeliveryEvidence::without_execution(),
             });
             registry
@@ -158,7 +158,7 @@ fn a_successor_held_after_its_last_awaiting_owner_closed_is_returned() {
 fn closing_the_last_stale_owner_releases_its_held_successor() {
     let receipt = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application();
     let _occurrence = occurrence();
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|_| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|_| {
         let registry = WorthQueryOutputDemandRegistry::default();
 
         let stale_key = key("held-awaiting", 1, 1);

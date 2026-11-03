@@ -1,9 +1,9 @@
 //! Draft storage proof only. Not an installed Query admission or scale proof.
 //! Run in a dedicated test binary so its authority does not compete with other
 //! test targets' process authority; linking/runtime remain root-owned.
-use worth_query_execution::domain_computation::primary_graph::application_attempt::retained_decision_facts::handoff::restore_authored_order;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::retained_decision_facts::canonical_key::AdmittedFactKey;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::retained_decision_facts::storage::RetainedFactStore;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::handoff::restore_authored_order;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::canonical_key::AdmittedFactKey;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::storage::RetainedFactStore;
 use worth_query_execution::facade::application_inspection::StoreDenial;
 use worth_execution::ExecutionAllocationPolicy as Policy;
 
@@ -15,7 +15,7 @@ pub struct Body {
 pub fn key(
     locator: &[u8],
     predicate: Option<(&[u8], usize)>,
-    policy: worth_query_execution::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>,
+    policy: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl<'_, '_>,
 ) -> AdmittedFactKey {
     AdmittedFactKey::write(
         locator.len(),
@@ -143,14 +143,14 @@ fn conflicting_body_refuses_the_entire_attempt() {
 
 pub fn control<'scope, 'authority>(
     policy: Policy<'scope, 'authority>,
-) -> worth_query_execution::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl<'scope, 'authority>{
-    worth_query_execution::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new(policy, None)
+) -> worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl<'scope, 'authority>{
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new(policy, None)
 }
 
 #[test]
 fn sealed_canonical_seed_moves_into_merge_without_cloning_values() {
     fn send_sync<T: Send + Sync>() {}
-    send_sync::<worth_execution::ExecutionArray<worth_query_execution::domain_computation::primary_graph::application_attempt::retained_decision_facts::RetainedFact<Body>>>();
+    send_sync::<worth_execution::ExecutionArray<worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::RetainedFact<Body>>>();
     let policy = control(Policy::SystemAllocation);
     let mut original = RetainedFactStore::new(policy).unwrap();
     for value in 0..65 {

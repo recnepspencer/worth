@@ -19,7 +19,7 @@ pub fn installed_world_with_policy_fact(
     rows: &[(&str, WorthQueryPrincipalMappingStatus)],
     include_policy_fact: bool,
 ) -> IdentityWorld {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let phase = &active_phase;
 
         let declaration = IdentityExecutionSchema::declaration().unwrap();
@@ -38,7 +38,7 @@ pub fn installed_world_with_policy_fact(
         let binding = schema
             .principal_binding(IdentityBinding::reference())
             .unwrap();
-        let mut bootstrap = authority.prepare_primary_graph(&phase.bootstrap_for_test(), &runtime, &schema, worth_query_execution::domain_computation::execution_runtime::product_world::resources::test_product_world_resources()).unwrap();
+        let mut bootstrap = authority.prepare_primary_graph(&phase.bootstrap_for_test(), &runtime, &schema, worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::resources::test_product_world_resources()).unwrap();
         for (ordinal, (subject, status)) in rows.iter().enumerate() {
             bootstrap
                 .bind_principal(
@@ -95,7 +95,7 @@ pub fn restored_world(
     IdentityWorld,
     worth_query_execution::facade::domain_computation::WorthQueryPrimaryGraphInstallationDenial,
 > {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let phase = &active_phase;
 
         let declaration = IdentityExecutionSchema::declaration().unwrap();
@@ -120,7 +120,7 @@ pub fn restored_world(
         &runtime,
         &schema,
         worth_relational::facade::runtime::RelationalRuntimeApi::builder().build().expect("valid native runtime configuration"),
-        worth_query_execution::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(),
+        worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(),
         worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantFactories::for_installed_schema(&schema),
         &decoded,
         false,

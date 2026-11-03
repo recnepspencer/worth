@@ -1,10 +1,10 @@
 //! Actor image and retention behavior, using real native source snapshots.
 //! The existing test-only equality mint establishes actor coverage only.
-use worth_query_execution::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 
 use crate::domain_computation::primary_graph::output_lineage::invalidation::native_journey_tests::*;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::input_cutoff::stable_publication::source_registration::StableEqualityConsequence;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::input_cutoff::stable_publication::source_registration::StableEqualityConsequence;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts;
 use worth_relational::facade::mvcc::CompanionCellEditStop;
 
 #[test]
@@ -147,7 +147,7 @@ let prepared = owner
                         &snapshot,
                         &basis,
                         &current,
-                        &worth_query_execution::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts::for_test(false, Arc::clone(&facts)).for_comparison().unwrap(),
+                        &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts::for_test(false, Arc::clone(&facts)).for_comparison().unwrap(),
                     )
                     .unwrap()
                     .expect("complete clean actor coverage certifies current");
@@ -175,7 +175,7 @@ let stale = owner
                 &snapshot,
                 &basis,
                 &current,
-                &worth_query_execution::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts::for_test(false, Arc::clone(&facts)).for_comparison().unwrap(),
+                &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts::for_test(false, Arc::clone(&facts)).for_comparison().unwrap(),
             )
             .unwrap()
             .unwrap();

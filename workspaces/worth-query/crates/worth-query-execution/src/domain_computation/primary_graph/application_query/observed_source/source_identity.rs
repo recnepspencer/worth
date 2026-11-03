@@ -8,11 +8,11 @@ use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIden
 mod checkpoint_commitment;
 #[path = "source_identity/tests/epoch_construction.rs"]
 mod epoch_construction;
-mod identity_kind;
+pub(crate) mod identity_kind;
 mod interning;
 mod material_storage;
 pub(in crate::domain_computation::primary_graph::application_query) use material_storage::admit_footprint_comparison;
-mod membership;
+pub(crate) mod membership;
 mod ordering;
 mod runtime_commitment;
 pub(in crate::domain_computation::primary_graph) use identity_kind::{
@@ -36,7 +36,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryObservedSource
 }
 
 /// Runtime-owned exact meaning retained by observed sources and output epochs.
-pub(in crate::domain_computation::primary_graph) struct WorthQueryObservedSourceMeaning {
+pub struct WorthQueryObservedSourceMeaning {
     coordinate: WorthQueryObservedSourceCoordinate,
     footprint: WorthQueryObservedSourceFootprint,
     identity: [u8; 32],
@@ -105,7 +105,7 @@ struct WorthQueryObservedSourceMeaningRegistryState {
         BTreeMap<WorthQueryObservedSourceCoordinate, material_storage::CoordinateMeanings>,
 }
 
-pub(in crate::domain_computation::primary_graph) struct WorthQueryObservedSourceMeaningRegistry {
+pub struct WorthQueryObservedSourceMeaningRegistry {
     runtime_authority: WorthQueryRuntimeAuthorityIdentity,
     state: Arc<Mutex<WorthQueryObservedSourceMeaningRegistryState>>,
 }
@@ -135,7 +135,7 @@ fn source_identity(
 
 /// Complete runtime coordinate of one observed source.
 #[derive(Clone, Debug)]
-pub(in crate::domain_computation::primary_graph) struct WorthQueryObservedSourceEpoch {
+pub struct WorthQueryObservedSourceEpoch {
     query: [u8; 32],
     parameters: [u8; 32],
     root: worth_relational::facade::identity::EntityId,

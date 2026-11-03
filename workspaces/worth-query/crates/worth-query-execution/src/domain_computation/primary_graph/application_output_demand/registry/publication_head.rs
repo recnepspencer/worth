@@ -14,7 +14,7 @@ pub(super) struct Head {
 
 /// Only the registry's answer can issue a live-head witness.
 pub(in crate::domain_computation::primary_graph) struct LivePublicationHead(());
-pub(in crate::domain_computation::primary_graph) enum PublicationHeadSelection {
+pub enum PublicationHeadSelection {
     Live(LivePublicationHead),
     Frozen,
 }

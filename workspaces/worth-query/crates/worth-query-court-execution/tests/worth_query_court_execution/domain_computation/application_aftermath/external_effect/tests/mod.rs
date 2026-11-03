@@ -1,4 +1,4 @@
-pub use worth_query_execution::domain_computation::application_aftermath::external_effect::correlation::ExternalEffectCorrelationBasis;
+pub use worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::correlation::ExternalEffectCorrelationBasis;
 pub use worth_query_execution::facade::domain_computation::ExternalEffectCorrelationIdentity;
 pub use worth_query_execution::facade::domain_computation::ExternalEffectPosture;
 pub use worth_query_execution::facade::domain_computation::ExternalEffectPostureKind;
@@ -7,11 +7,11 @@ pub use worth_query_execution::facade::domain_computation::WorthQueryDispatchOut
 pub use worth_query_execution::facade::domain_computation::WorthQueryExternalDispatchRequest;
 pub use worth_query_execution::facade::domain_computation::WorthQueryExternalEffectTransport;
 pub use worth_query_execution::facade::domain_computation::WorthQueryExternalTransportOutcome;
-pub use worth_query_execution::domain_computation::application_aftermath::external_effect::correlation::derive_external_effect_correlation_identity;
-pub use worth_query_execution::domain_computation::application_aftermath::external_effect::dispatch;
-pub use worth_query_execution::domain_computation::application_aftermath::external_effect::outbox::dispatch_outbox_create_intent;
-pub use worth_query_execution::domain_computation::application_aftermath::external_effect::identity;
-pub use worth_query_execution::domain_computation::application_aftermath::external_effect::observation;
+pub use worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::correlation::derive_external_effect_correlation_identity;
+pub use worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::dispatch;
+pub use worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::outbox::dispatch_outbox_create_intent;
+pub use worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::identity;
+pub use worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::observation;
 pub use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::provider::committed_dispatch_outbox::test_support::commit_distinct_records_and_admit_fixture;
 pub use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::provider::committed_dispatch_outbox::test_support::commit_observe_and_admit_fixture;
 pub use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::provider::committed_dispatch_outbox::test_support::commit_observe_and_admit_twice_fixture;
@@ -33,7 +33,7 @@ impl WorthQueryExternalEffectTransport for FixedTransport {
 
 #[test]
 fn completed_dispatch_has_four_distinct_exact_predecessors() {
-    let dispatch = worth_query_execution::domain_computation::application_aftermath::external_effect::dispatch::dispatch_external_effect(
+    let dispatch = worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::dispatch::dispatch_external_effect(
         &FixedTransport(WorthQueryExternalTransportOutcome::Completed),
         admitted_from_fresh_runtime(7),
     )
@@ -85,7 +85,7 @@ fn transport_faults_never_fabricate_owner_observation_or_completion() {
     .into_iter()
     .enumerate()
     {
-        let dispatch = worth_query_execution::domain_computation::application_aftermath::external_effect::dispatch::dispatch_external_effect(
+        let dispatch = worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::dispatch::dispatch_external_effect(
             &FixedTransport(outcome),
             admitted_from_fresh_runtime(index as u64 + 9),
         )
@@ -108,7 +108,7 @@ fn unsupported_protocol_version_preserves_exact_external_owner_causality() {
         unsupported.posture(),
         BoundaryProtocolUnsupportedVersionPosture::ExceedsWindow
     );
-    let dispatch = worth_query_execution::domain_computation::application_aftermath::external_effect::dispatch::dispatch_external_effect(
+    let dispatch = worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::dispatch::dispatch_external_effect(
         &FixedTransport(
             WorthQueryExternalTransportOutcome::UnsupportedProtocolVersion(unsupported),
         ),
@@ -133,12 +133,12 @@ fn distinct_attempt_ordinals_produce_distinct_attempt_identities() {
         first_admitted.ordinal_for_test(),
         second_admitted.ordinal_for_test()
     );
-    let first = worth_query_execution::domain_computation::application_aftermath::external_effect::dispatch::dispatch_external_effect(
+    let first = worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::dispatch::dispatch_external_effect(
         &FixedTransport(WorthQueryExternalTransportOutcome::LostResponse),
         first_admitted,
     )
     .unwrap();
-    let second = worth_query_execution::domain_computation::application_aftermath::external_effect::dispatch::dispatch_external_effect(
+    let second = worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::dispatch::dispatch_external_effect(
         &FixedTransport(WorthQueryExternalTransportOutcome::Completed),
         second_admitted,
     )
@@ -166,12 +166,12 @@ fn equal_attempt_ordinals_in_distinct_query_runtimes_cannot_collide() {
         first_admitted.ordinal_for_test(),
         second_admitted.ordinal_for_test()
     );
-    let first = worth_query_execution::domain_computation::application_aftermath::external_effect::dispatch::dispatch_external_effect(
+    let first = worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::dispatch::dispatch_external_effect(
         &FixedTransport(WorthQueryExternalTransportOutcome::LostResponse),
         first_admitted,
     )
     .unwrap();
-    let second = worth_query_execution::domain_computation::application_aftermath::external_effect::dispatch::dispatch_external_effect(
+    let second = worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::dispatch::dispatch_external_effect(
         &FixedTransport(WorthQueryExternalTransportOutcome::LostResponse),
         second_admitted,
     )
@@ -192,12 +192,12 @@ fn identical_values_at_distinct_record_identities_have_distinct_causal_roots() {
     let (first_admitted, second_admitted, first_ref, second_ref) =
         commit_distinct_records_and_admit_fixture();
     assert_ne!(first_ref, second_ref);
-    let first = worth_query_execution::domain_computation::application_aftermath::external_effect::dispatch::dispatch_external_effect(
+    let first = worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::dispatch::dispatch_external_effect(
         &FixedTransport(WorthQueryExternalTransportOutcome::LostResponse),
         first_admitted,
     )
     .unwrap();
-    let second = worth_query_execution::domain_computation::application_aftermath::external_effect::dispatch::dispatch_external_effect(
+    let second = worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::dispatch::dispatch_external_effect(
         &FixedTransport(WorthQueryExternalTransportOutcome::LostResponse),
         second_admitted,
     )
@@ -274,7 +274,7 @@ pub fn assert_predecessor(successor: &ExternalEffectPosture, predecessor: &Exter
 
 pub fn admitted_from_fresh_runtime(
     outcome_identity: u64,
-) -> worth_query_execution::domain_computation::application_aftermath::external_effect::causal_event::WorthQueryAdmittedExternalDispatchAttempt{
+) -> worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::causal_event::WorthQueryAdmittedExternalDispatchAttempt{
     commit_observe_and_admit_fixture(outcome_identity as u8).0
 }
 

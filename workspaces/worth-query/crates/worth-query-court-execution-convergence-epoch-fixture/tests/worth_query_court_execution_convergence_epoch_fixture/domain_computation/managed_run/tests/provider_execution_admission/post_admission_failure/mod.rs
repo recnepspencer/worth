@@ -1,7 +1,7 @@
 use crate::domain_computation::managed_run::tests::provider_execution_admission::*;
 
 pub fn post_admission_failure(
-    execution: &worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
 
     behavior: PostAdmissionBehavior,
     destructor_panics: bool,

@@ -33,11 +33,11 @@ fn causal_fact_survives_post_commit_snapshot_failure_via_relational_owner_read()
             let request = phase.borrowed_request_for_test();
             let basis = selected.product().relational_basis();
             provider.graph.with_runtime_mut(&request, |runtime| {
-                let snapshot = worth_query_execution::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(runtime, basis).unwrap();
+                let snapshot = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(runtime, basis).unwrap();
                 let resolution = provider.resolve_aftermath_causality_in_snapshot(
                     &request, runtime, basis, &snapshot, &pending, None,
                 );
-                worth_query_execution::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
+                worth_query_execution::court_doors_for_test::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
                 resolution.expect("the native canonical read succeeds")
                     .expect("the co-committed fact exists")
             })

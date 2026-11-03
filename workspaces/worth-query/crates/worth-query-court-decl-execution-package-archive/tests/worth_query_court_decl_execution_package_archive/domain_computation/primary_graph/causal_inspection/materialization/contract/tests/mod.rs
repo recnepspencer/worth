@@ -3,10 +3,10 @@ use worth_query_execution::facade::causal_inspection::CausalInspectionMaterializ
 use worth_query_execution::facade::application_inspection::WorthQueryApplicationMaterializationPolicy as CausalInspectionMaterializationPolicy;
 use worth_query_execution::facade::evidence_identity::WorthQueryEvidenceIdentity;
 use worth_query_execution::facade::evidence_identity::WorthQueryEvidenceTag;
-use worth_query_execution::domain_computation::primary_graph::causal_inspection::materialization::contract::validate_materialization_contract;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::causal_inspection::materialization::contract::validate_materialization_contract;
 use worth_query_execution::facade::evidence_identity::WorthQueryEvidenceScope;
-use worth_query_execution::domain_computation::primary_graph::causal_inspection::identity::CausalInspectionOutcomeIdentity;
-use worth_query_execution::domain_computation::primary_graph::causal_inspection::observation_identity::CausalObservationAnchorDigest;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::causal_inspection::identity::CausalInspectionOutcomeIdentity;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::causal_inspection::observation_identity::CausalObservationAnchorDigest;
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle;
 use worth_runtime_bridge::facade::BridgeCausalInspectionAdmissionSummary as Summary;
 use worth_runtime_bridge::facade::BridgeCausalInspectionAdmissionSummaryKind as Kind;
@@ -37,7 +37,7 @@ fn real_native_envelope_requires_fresh_admission_under_both_legacy_paths_and_pol
                 envelope.bindings()[0].reference_evidence_identity(),
                 query.bridge_evidence_identity()
             );
-            let error = worth_query_execution::domain_computation::primary_graph::causal_inspection::materialization::validate_bridge_summary(&admission, &anchor, kind, &envelope)
+            let error = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::causal_inspection::materialization::validate_bridge_summary(&admission, &anchor, kind, &envelope)
                 .unwrap_err();
             assert_eq!(
                 error.kind(),
@@ -83,7 +83,7 @@ fn query_observation_reporting_requires_fresh_admission_under_both_legacy_paths_
         .unwrap()
         .assemble_with_admission(&mut |_, _| Ok::<_, ()>(()))
         .unwrap();
-        let error = worth_query_execution::domain_computation::primary_graph::causal_inspection::materialization::validate_bridge_summary(&admission, &anchor, kind, &envelope)
+        let error = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::causal_inspection::materialization::validate_bridge_summary(&admission, &anchor, kind, &envelope)
             .unwrap_err();
         assert_eq!(
             error.kind(),

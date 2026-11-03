@@ -5,9 +5,9 @@ use crate::domain_computation::primary_graph::application_output_demand::registr
 fn registry_eager_completion_notes_without_sweeping_then_admission_prunes() {
     let context = crate::domain_computation::primary_graph::application_output_demand::registry::tests::eager_debt::world::Context::new();
     let mut world = World::new(&context, 1);
-    let contacts = worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::post_commit::sweep_contacts();
+    let contacts = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::post_commit::sweep_contacts();
     world.registry.complete_prepared_source(&context.completed);
-    assert_eq!(worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::post_commit::sweep_contacts(), contacts);
+    assert_eq!(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::post_commit::sweep_contacts(), contacts);
     assert!(
         world.registry.state.lock().unwrap().source_custody[&context.commit(1)]
             .cleanup

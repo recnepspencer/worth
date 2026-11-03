@@ -1,7 +1,7 @@
 //! Descriptive receipt replay cannot mark a new effect in this advance.
 use graph::WorthQueryApplicationCommitOutcome;
-use worth_query_execution::domain_computation::primary_graph::application_contribution::producer::execution::outcome::commit_receipt;
-use worth_query_execution::domain_computation::primary_graph as graph;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::execution::outcome::commit_receipt;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph as graph;
 
 #[test]
 fn only_a_new_commit_records_a_publication_in_this_advance() {

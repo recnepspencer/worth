@@ -139,7 +139,7 @@ fn zero_memory_cancellation_and_expired_deadline_refuse_before_any_read() {
                         )
                         .unwrap();
                     let (witness, _scope) =
-            worth_query_execution::domain_computation::primary_graph::application_query::read_execution::dispatch_witness::DispatchWitness::install(
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::read_execution::dispatch_witness::DispatchWitness::install(
                 None,
             );
                     let mut prepared = 0;

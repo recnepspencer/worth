@@ -1,8 +1,8 @@
 //! Native pin failures keep the read door's reason and canonical root.
 
-use worth_query_execution::domain_computation::primary_graph::application_query::derived_view::reconstruction_denial as denial;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::derived_view::reconstruction_denial as denial;
 use crate::domain_computation::primary_graph::application_query::derived_view::registration::collection::pair::reconstruct_parallel::read_ceiling_tests::*;
-use worth_query_execution::domain_computation::primary_graph::application_query::read_execution::denial::WorthQueryApplicationReadExecutionDenialKind as ReadKind;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::read_execution::denial::WorthQueryApplicationReadExecutionDenialKind as ReadKind;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationOneShotDenialKind as OneShot;
 use worth_relational::facade::indexes::DerivedIndexId;
 #[derive(Clone, Copy)]
@@ -85,7 +85,7 @@ pub fn check(case: Case) {
             let missing = DerivedIndexId(u64::MAX);
             match case {
                 Case::Panic => {
-                    use worth_query_execution::domain_computation::provider_session::graph_obligation::owner_execution::pin_panic::PanicDuringPinGuardForTest;
+                    use worth_query_execution::court_doors_for_test::domain_computation::provider_session::graph_obligation::owner_execution::pin_panic::PanicDuringPinGuardForTest;
                     let _panic = PanicDuringPinGuardForTest::install_on_this_thread();
                     let panic = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                         let _ = plan.graph_work.prepare_query_read(
@@ -131,7 +131,7 @@ pub fn check(case: Case) {
                         Ok(_) => panic!("the unavailable native source unexpectedly pinned"),
                     };
                     let outer =
-                        denial::session(cause, root.entity_id(), &worth_query_execution::domain_computation::primary_graph::application_query::read_execution::read_plan::ReadPlan::of(&plan));
+                        denial::session(cause, root.entity_id(), &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::read_execution::read_plan::ReadPlan::of(&plan));
                     let expected = if matches!(case, Case::Snapshot) {
                         OneShot::ProjectionUnavailable
                     } else {
@@ -156,8 +156,8 @@ pub fn check(case: Case) {
 }
 
 pub fn missing_door_index(live: bool, predicate_missing: bool) {
-    use worth_query_execution::domain_computation::primary_graph::application_query::read_execution::continuation_page::read_continuation_page;
-    use worth_query_execution::domain_computation::primary_graph::application_query::read_execution::live_target::read_live_target;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::read_execution::continuation_page::read_continuation_page;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::read_execution::live_target::read_live_target;
     let _observation =
         worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation::install_on_this_thread();
     let world = installed_authorization_world(true);

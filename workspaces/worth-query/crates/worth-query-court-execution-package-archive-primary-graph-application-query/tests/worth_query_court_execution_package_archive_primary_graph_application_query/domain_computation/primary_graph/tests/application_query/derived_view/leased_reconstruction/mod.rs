@@ -19,7 +19,7 @@ pub struct Observation {
     ),
     pub retained_values: Vec<String>,
     pub interruption_point:
-        Option<worth_query_execution::domain_computation::primary_graph::application_query::read_execution::dispatch_witness::InterruptionPoint>,
+        Option<worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::read_execution::dispatch_witness::InterruptionPoint>,
 }
 
 #[derive(Default)]

@@ -4,7 +4,7 @@ use super::{
 };
 use worth_execution::{ExecutionArray, ExecutionArrayBuilder};
 
-pub(in crate::domain_computation::primary_graph) struct RetainedFactStore<T> {
+pub struct RetainedFactStore<T> {
     seed: Option<Run<T>>,
     chunk: Option<Run<T>>,
     directory: Option<RunDirectory<T>>,

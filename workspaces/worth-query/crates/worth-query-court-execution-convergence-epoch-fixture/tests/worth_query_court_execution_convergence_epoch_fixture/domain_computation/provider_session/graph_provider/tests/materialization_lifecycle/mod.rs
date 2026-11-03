@@ -3,7 +3,7 @@ use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_co
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::provider_session::graph_provider::tests::support::material;
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::provider_session::graph_provider::tests::support::material_with_rows;
 use worth_query_execution::facade::domain_computation::WorthQueryGraphReadMaterial;
-use worth_query_execution::domain_computation::provider_session::graph_provider::stream_evidence::WorthQueryGraphReadStreamAccumulator;
+use worth_query_execution::court_doors_for_test::domain_computation::provider_session::graph_provider::stream_evidence::WorthQueryGraphReadStreamAccumulator;
 
 pub const MANY_CHUNKS: usize = 50_000;
 pub const SMALL_STACK_BYTES: usize = 256 * 1024;

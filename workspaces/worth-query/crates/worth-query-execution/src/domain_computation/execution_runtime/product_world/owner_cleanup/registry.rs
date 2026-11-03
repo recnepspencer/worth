@@ -10,13 +10,13 @@ use super::{
 };
 use crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime;
 
-struct CleanupEntry {
+pub struct CleanupEntry {
     record: Mutex<Option<WorthQueryProductBranchOwnerCleanupRecord>>,
     scope: CleanupScope,
 }
 
 #[derive(Clone)]
-pub(crate) enum CleanupScope {
+pub enum CleanupScope {
     Creation,
     Application,
     WorkspaceRetirement,
@@ -31,7 +31,7 @@ struct CleanupRegistryState {
 }
 
 #[derive(Clone)]
-pub(crate) struct WorthQueryProductBranchOwnerCleanupRegistry {
+pub struct WorthQueryProductBranchOwnerCleanupRegistry {
     state: Arc<Mutex<CleanupRegistryState>>,
     pub(super) follower: Arc<OnceLock<Weak<dyn WorthQueryProductRetentionFollower>>>,
 }
@@ -351,6 +351,6 @@ impl Drop for WorthQueryProductBranchOwnerCleanupReservation {
     }
 }
 
-fn lock<T>(mutex: &Mutex<T>) -> std::sync::MutexGuard<'_, T> {
+pub fn lock<T>(mutex: &Mutex<T>) -> std::sync::MutexGuard<'_, T> {
     mutex.lock().unwrap_or_else(|error| error.into_inner())
 }

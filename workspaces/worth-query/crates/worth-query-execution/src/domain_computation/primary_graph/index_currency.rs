@@ -11,7 +11,7 @@ pub(crate) use selected_field::ensure_selected_field_indexes_admitted;
 pub(crate) use selected_field::SelectedFieldIndexAdmissionStop;
 
 #[derive(Debug)]
-pub(crate) enum WorthQueryPrimaryIndexCurrencyDenial {
+pub enum WorthQueryPrimaryIndexCurrencyDenial {
     Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     Basis(super::exact_basis_access::WorthQueryExactBasisSnapshotDenial),
     IndexUnavailable(&'static str),

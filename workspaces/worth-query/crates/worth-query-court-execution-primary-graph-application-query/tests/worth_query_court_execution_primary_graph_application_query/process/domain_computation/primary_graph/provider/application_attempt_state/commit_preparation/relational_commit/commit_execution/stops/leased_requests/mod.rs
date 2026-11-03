@@ -2,10 +2,10 @@
 //! admits exactly one physical authority for a process lifetime. Query's other
 //! unit-test owners have their own authority; this scope cannot replace it.
 
-pub use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_compare_denial::control_stopped_outcome;
-pub use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_compare_denial::provider_compare_denied;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_compare_denial::control_stopped_outcome;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_compare_denial::provider_compare_denied;
 pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitDenialKind as Kind;
-pub use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::outcome::WorthQueryProviderProgressionOutcome as Outcome;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::outcome::WorthQueryProviderProgressionOutcome as Outcome;
 pub use worth_query_execution::facade::application_contribution::WorthQueryManagedComputationResourceDenial as Resource;
 pub use worth_query_execution::facade::application_contribution::WorthQueryMemoryLimitLevel as Level;
 pub use worth_query_execution::facade::domain_computation::WorthQueryProviderCompareAndCommitDenial as Compare;
@@ -201,7 +201,7 @@ pub fn check_lease(
     // Direct index building exercises leased owner work and the same typed
     // cause conversion as the bootstrap index-build boundary. RequestWorkBudget
     // creates one child lease, so the full policy lease is ancestor 1.
-    let stop = worth_query_execution::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_stop(cause, denial.partition_identity);
+    let stop = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_stop(cause, denial.partition_identity);
     let outcome = match stop {
         Stop::PreEffectDenied(failure) => {
             provider_compare_denied(Compare::ProviderSession(failure))
@@ -222,7 +222,7 @@ pub fn check_lease(
         )
         .expect_err("commit preparation refused");
     assert!(matches!(error, TransactionCommitError::Execution { .. }));
-    let stop = worth_query_execution::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::commit_execution::stops::transaction_commit_stop(error);
+    let stop = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::commit_execution::stops::transaction_commit_stop(error);
     let outcome = match stop {
         Stop::PreEffectDenied(failure) => {
             provider_compare_denied(Compare::ProviderSession(failure))

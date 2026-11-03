@@ -1,4 +1,4 @@
-mod authority;
+pub(crate) mod authority;
 mod commit_posture;
 mod denial;
 mod installed_domain_authority;

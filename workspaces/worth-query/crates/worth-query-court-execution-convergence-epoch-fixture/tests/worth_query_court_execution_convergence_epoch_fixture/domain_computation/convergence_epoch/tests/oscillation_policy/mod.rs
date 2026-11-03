@@ -1,8 +1,8 @@
 use crate::domain_computation::convergence_epoch::tests::fixture::candidate_contract::FixtureConvergenceContract;
 use crate::domain_computation::convergence_epoch::tests::fixture::direct_installed_world::direct_admission_fixture_with_contract;
 use crate::domain_computation::convergence_epoch::tests::fixture::provider::disposition::FixtureDisposition;
-use worth_query_execution::domain_computation::WorthQueryIndeterminate;
-use worth_query_execution::domain_computation::WorthQueryOscillating;
+use worth_query_execution::court_doors_for_test::domain_computation::WorthQueryIndeterminate;
+use worth_query_execution::court_doors_for_test::domain_computation::WorthQueryOscillating;
 use worth_query_execution::facade::convergence_epoch::WorthQueryConvergenceEpochDenialKind;
 use worth_query_execution::facade::convergence_epoch::WorthQueryConvergenceIndeterminateCause;
 use worth_query_execution::facade::convergence_epoch::WorthQueryConvergenceTerminalKind;
@@ -14,7 +14,7 @@ use worth_query_execution::facade::domain_computation::WorthQueryManagedGraphCal
 
 #[test]
 fn installed_repeated_state_policies_reject_contradictory_domain_reports() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -41,7 +41,7 @@ fn installed_repeated_state_policies_reject_contradictory_domain_reports() {
 
 #[test]
 fn installed_oscillation_postures_govern_incumbent_selection() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -121,7 +121,7 @@ pub fn assert_indeterminate_policy_denial(
 }
 
 pub fn indeterminate_terminal(
-    execution: &worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
 
     disposition: FixtureDisposition,
     contract: FixtureConvergenceContract,
@@ -134,7 +134,7 @@ pub fn indeterminate_terminal(
 }
 
 pub fn oscillating_terminal(
-    execution: &worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
 
     disposition: FixtureDisposition,
     contract: FixtureConvergenceContract,
@@ -147,7 +147,7 @@ pub fn oscillating_terminal(
 }
 
 pub fn terminal_outcome(
-    execution: &worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
 
     disposition: FixtureDisposition,
     contract: FixtureConvergenceContract,

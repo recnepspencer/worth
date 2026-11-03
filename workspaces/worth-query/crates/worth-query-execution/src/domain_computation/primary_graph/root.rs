@@ -10,7 +10,7 @@ use worth_relational::facade::runtime::RelationalRuntime;
 use super::schema_layout::WorthQueryPrimaryGraphLayout;
 use crate::domain_computation::execution_runtime::product_world::WorthQueryRelationalSourceOwner;
 
-mod index_installation;
+pub(crate) mod index_installation;
 mod selected_runtime;
 mod test_inspection;
 use index_installation::{

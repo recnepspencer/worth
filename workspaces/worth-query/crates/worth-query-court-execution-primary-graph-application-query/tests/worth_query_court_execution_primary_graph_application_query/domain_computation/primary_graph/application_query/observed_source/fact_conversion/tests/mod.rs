@@ -4,7 +4,7 @@ pub use worth_relational::facade::identity::PartitionId;
 pub use worth_relational::facade::identity::VersionId;
 pub use worth_relational::facade::runtime::RelationalAdjacencyDirection;
 
-pub use worth_query_execution::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact as Fact;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact as Fact;
 
 #[test]
 fn overlapping_path_and_projection_adjacency_merge_at_one_native_revision() {
@@ -29,7 +29,7 @@ fn overlapping_path_and_projection_adjacency_merge_at_one_native_revision() {
     assert!(projected
         .merge_same_source_fact(
             path,
-            worth_query_execution::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)
         )
         .unwrap());
     assert!(
@@ -46,7 +46,7 @@ fn overlapping_path_and_projection_adjacency_merge_at_one_native_revision() {
     assert!(!projected
         .merge_same_source_fact(
             changed,
-            worth_query_execution::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)
         )
         .unwrap());
 }

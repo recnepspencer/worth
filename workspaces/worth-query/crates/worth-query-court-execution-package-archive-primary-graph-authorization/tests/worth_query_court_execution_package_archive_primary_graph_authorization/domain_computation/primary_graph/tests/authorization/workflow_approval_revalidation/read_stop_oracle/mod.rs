@@ -1,7 +1,7 @@
 //! The readmission door preserves stops raised inside its freshness reads.
 use crate::domain_computation::primary_graph::tests::authorization::workflow_approval_revalidation::*;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::fact::consult_observation::Door;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::fact::consult_observation::ReadConsultObservationForTest;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::consult_observation::Door;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::consult_observation::ReadConsultObservationForTest;
 use worth_query_execution::facade::domain_computation::bound_advancement_requests_on_this_thread_for_test as bound;
 use worth_query_execution::facade::domain_computation::place_managed_computations_on_this_thread_for_test as place;
 use worth_query_execution::facade::domain_computation::WorthQueryExecutionPlacementForTest as Placement;
@@ -74,8 +74,8 @@ pub fn run(
         bound(None),
     );
     let probe = match work {
-        Some(work) => worth_query_execution::domain_computation::primary_graph::application_attempt::fact::consult_observation::ReadConsultObservationForTest::install_with_work_on_this_thread_for_test(
-            worth_query_execution::domain_computation::primary_graph::application_attempt::fact::consult_observation::Door::Approval,
+        Some(work) => worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::consult_observation::ReadConsultObservationForTest::install_with_work_on_this_thread_for_test(
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::consult_observation::Door::Approval,
             Some(work),
             move |context| {
                 // Exceed the live caller ceiling at the selected read consultation.
@@ -93,8 +93,8 @@ pub fn run(
                 );
             },
         ),
-        None => worth_query_execution::domain_computation::primary_graph::application_attempt::fact::consult_observation::ReadConsultObservationForTest::install_on_this_thread_for_test(
-            worth_query_execution::domain_computation::primary_graph::application_attempt::fact::consult_observation::Door::Approval,
+        None => worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::consult_observation::ReadConsultObservationForTest::install_on_this_thread_for_test(
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::consult_observation::Door::Approval,
             cancel_at.map(|k| (k, source)),
         ),
     };

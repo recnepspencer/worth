@@ -17,7 +17,7 @@ const SCRATCH_CHARGE: usize = 16 * 1024;
 const TRANSITION_CHARGE: usize = 4096;
 const OWNED_COPY_MULTIPLICITY: usize = 4;
 
-pub(super) struct HistoryReconstructionCharge {
+pub struct HistoryReconstructionCharge {
     budget: WorthQueryWorkflowHistoryReconstructionBudget,
     bytes: usize,
 }

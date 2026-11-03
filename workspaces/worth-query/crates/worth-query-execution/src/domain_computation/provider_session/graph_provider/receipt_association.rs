@@ -14,7 +14,7 @@ use crate::domain_computation::WorthQueryConvergenceDomainEvidenceBindingDenial;
 use crate::execution_digest::hash_parts;
 
 #[derive(Clone, Eq, PartialEq)]
-pub(in crate::domain_computation) struct WorthQueryBoundGraphExecutionAssociation {
+pub struct WorthQueryBoundGraphExecutionAssociation {
     call_authority: WorthQueryGraphCallAuthorityIdentity,
     call_identity: Arc<str>,
     provider_session: WorthQueryExecutionProviderSessionIdentity,

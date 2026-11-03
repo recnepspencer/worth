@@ -1,7 +1,7 @@
 //! Native admission is the only author of canonical workflow actors.
 mod dependencies;
-pub(in crate::domain_computation) mod encoding;
-pub(in crate::domain_computation) mod record;
+pub(crate) mod encoding;
+pub(crate) mod record;
 mod revision_transport;
 pub(in crate::domain_computation) use dependencies::WorkflowActorDependencies;
 

@@ -2,11 +2,11 @@
 mod plan;
 pub(super) use plan::InspectionPlanDenial;
 mod source_scope;
-mod subject;
+pub(crate) mod subject;
 pub(super) use subject::InspectionSubject;
 pub(super) mod connected;
 pub(super) mod policy;
-pub(super) mod preparation;
+pub(crate) mod preparation;
 pub(super) use preparation::prepare;
 mod affinity;
 pub(super) use affinity::validate_original_affinity;
@@ -34,7 +34,7 @@ use std::sync::Arc;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 
-pub(super) enum InspectionAdmissionDenial {
+pub enum InspectionAdmissionDenial {
     Request(worth_execution::WorkCeilingDenial),
     RequestControl(worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption),
     ForeignIssuedAccess,
@@ -65,7 +65,7 @@ pub(super) enum InspectionAdmissionDenial {
     Report(crate::domain_computation::primary_graph::admitted_capture::CaptureStop<super::report::InspectionReportDenial>),
 }
 
-pub(super) struct InspectionRead<'a, 'storage, Schema, Scope> {
+pub struct InspectionRead<'a, 'storage, Schema, Scope> {
     runtime: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     scope: &'a WorthQueryApplicationEntityIdentity<Schema, Scope>,
     request: &'a WorthQueryRequestScope,
@@ -85,7 +85,7 @@ pub(super) struct InspectionComparisonPreparation<'original> {
     pub(super) pending: crate::domain_computation::authorization::application_disclosure::WorthQueryPendingApplicationQueryGovernance,
 }
 
-pub(super) enum InspectionDiagnosticPreparation<'o> {
+pub enum InspectionDiagnosticPreparation<'o> {
     Comparison(InspectionComparisonPreparation<'o>),
     Rich {
         request:super::rich::WorthQueryApplicationMaterializationRequest,
@@ -115,7 +115,7 @@ impl<'o> InspectionDiagnosticPreparation<'o> {
         }
     }
 }
-pub(super) fn require_request(
+pub fn require_request(
     execution: &ExecutionRequest<'_, '_>,
     request: &WorthQueryRequestScope,
 ) -> Result<(), InspectionAdmissionDenial> {

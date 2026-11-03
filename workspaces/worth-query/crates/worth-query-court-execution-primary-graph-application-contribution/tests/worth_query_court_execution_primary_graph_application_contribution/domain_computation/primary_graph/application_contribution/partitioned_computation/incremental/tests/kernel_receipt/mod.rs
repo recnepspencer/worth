@@ -7,7 +7,7 @@ fn a_tree_stop_keeps_no_kernel_completion_receipt_with_reuse_either_way() {
     let world = installed_authorization_world(true);
     let installed = installed(StatusRead::Gather(1), sum);
     let request = live_scope();
-    let policy = worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy(
+    let policy = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy(
         std::num::NonZeroUsize::MIN,
         None,
     );

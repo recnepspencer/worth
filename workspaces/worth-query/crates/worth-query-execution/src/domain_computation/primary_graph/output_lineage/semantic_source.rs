@@ -2,7 +2,7 @@
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
-pub(in crate::domain_computation::primary_graph) struct SemanticSource {
+pub struct SemanticSource {
     pub(super) runtime_authority: u64,
     pub(super) schema: ApplicationSchemaBindingIdentity,
     pub scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,

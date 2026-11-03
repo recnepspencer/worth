@@ -31,7 +31,7 @@ fn checkpoint_finishes_keep_caller_stops_off_the_shared_row() {
                 state.records.get_mut(&fixture.interest.key).unwrap().state = DemandState::Output(
                     WorthQueryOutputProgress::new(WorthQueryOutputCheckpoint::Published {
                         receipt: fixture.receipt.clone(),
-                        delivery: worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryPendingOutputDelivery::NoChange,
+                        delivery: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryPendingOutputDelivery::NoChange,
                         ready_backing: PreparedReadyBacking::for_test(),
                     }),
                 );
@@ -78,7 +78,7 @@ fn checkpoint_finishes_keep_caller_stops_off_the_shared_row() {
                 assert!(output.checkpoint.is_some());
                 if fails_row {
                     assert_eq!(
-                        worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::required_stop::head_stop(
+                        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::required_stop::head_stop(
                             &state.records,
                             &fixture.interest.key,
                         ),

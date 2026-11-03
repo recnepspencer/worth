@@ -9,8 +9,8 @@ use std::collections::BTreeMap;
 
 use worth_query_declaration::facade::application_operation::application_computation_partition_identity;
 
-use worth_query_execution::domain_computation::primary_graph::application_contribution::partitioned_computation::routing::ComputationPartitionRouting;
-use worth_query_execution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::retained::RetainedPartitions;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::routing::ComputationPartitionRouting;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::retained::RetainedPartitions;
 use crate::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tests::reroute::moved_facts;
 use crate::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tests::reroute::owner::Rerouted;
 use crate::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tests::*;
@@ -120,14 +120,14 @@ fn replacing_a_sole_member_key_with_a_prefix_collision_matches_a_fresh_run() {
     assert_eq!(&a_digest[..8], &b_digest[..8]);
     assert_ne!(a_digest, b_digest);
     let partition = typed.partitions.get(&identity).unwrap();
-    let replacement = worth_query_execution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::retained::RetainedPartition {
+    let replacement = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::retained::RetainedPartition {
         key: Arc::new(Parity(42)),
         gather: partition.gather.clone(),
     };
     let request = live_scope();
     let execution = QueryRequestExecution::open(
         RuntimeWorldExecutionPlacement::Serial(
-            worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy(
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy(
                 std::num::NonZeroUsize::MIN, None,
             ),
         ),

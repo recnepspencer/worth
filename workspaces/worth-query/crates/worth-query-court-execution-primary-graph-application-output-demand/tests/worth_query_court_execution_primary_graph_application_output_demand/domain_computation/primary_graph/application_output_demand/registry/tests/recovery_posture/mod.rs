@@ -1,12 +1,12 @@
 pub use std::sync::Arc;
 pub use std::sync::Condvar;
-pub use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::DemandRecord;
-pub use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::DemandState;
-pub use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::DemandWake;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandRecord;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandState;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandWake;
 pub use std::sync::Mutex;
 pub use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandDenial;
 pub use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandDenialKind;
-pub use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::WorthQueryOutputDemandRegistry;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryOutputDemandRegistry;
 pub use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::demand_key;
 pub use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::support::key;
 pub use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::support::key_with_identity;
@@ -15,12 +15,12 @@ pub use worth_query_testkit_execution_primary_graph_application_attempt_2::domai
 pub use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::support::required_interest;
 pub use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::support::root;
 
-pub use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputProgress;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputProgress;
 pub use crate::domain_computation::primary_graph::application_output_demand::registry::tests::*;
-pub use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::advance_admission::WorthQueryOutputDemandAdvanceAdmission;
-pub use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::WorthQueryAcceptedOutputAuthority;
-pub use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint;
-pub use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryPendingOutputDelivery;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::advance_admission::WorthQueryOutputDemandAdvanceAdmission;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryAcceptedOutputAuthority;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryPendingOutputDelivery;
 pub use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandRecoveryPosture;
 #[test]
 fn retryable_publication_stale_does_not_keep_a_closed_required_interest() {
@@ -121,7 +121,7 @@ fn no_change_checkpoint_keeps_its_real_receipt_across_claims() {
                     WorthQueryOutputCheckpoint::Published {
                         receipt,
                         delivery: WorthQueryPendingOutputDelivery::NoChange,
-                        ready_backing: worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::ready_backing::PreparedReadyBacking::for_test(),
+                        ready_backing: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::ready_backing::PreparedReadyBacking::for_test(),
                     },
                 )),
                 1,
@@ -193,7 +193,7 @@ fn closed_occurrence_stops_a_claim_without_losing_published_identity() {
                     WorthQueryOutputCheckpoint::Published {
                         receipt,
                         delivery: WorthQueryPendingOutputDelivery::NoChange,
-                        ready_backing: worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::ready_backing::PreparedReadyBacking::for_test(),
+                        ready_backing: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::ready_backing::PreparedReadyBacking::for_test(),
                     },
                 )),
                 1,
@@ -236,7 +236,7 @@ fn closed_occurrence_stops_a_claim_without_losing_published_identity() {
     );
     assert!(matches!(
         output.advancement(),
-        worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputAdvancement::Stopped { .. }
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputAdvancement::Stopped { .. }
     ));
     drop(state);
     assert!(matches!(

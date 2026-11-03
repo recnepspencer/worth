@@ -14,7 +14,7 @@ pub(in crate::domain_computation::primary_graph) struct CorrectionPerformedWitne
 }
 
 #[derive(Debug)]
-pub(in crate::domain_computation::primary_graph) enum CorrectionWitnessDenial {
+pub enum CorrectionWitnessDenial {
     Request(WorkCeilingDenial),
     CopyAdmission(WorkCeilingDenial),
     Interrupted(MapKernelStop),

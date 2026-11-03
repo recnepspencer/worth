@@ -10,7 +10,7 @@ use worth_query_installation::facade::WorthQueryInstallationGeneration;
 use worth_query_installation::facade::WorthQueryPortableDomainIdentity;
 use worth_query_installation::facade::WorthQueryPortableDomainPackage;
 
-use worth_query_execution::domain_computation::execution_runtime::product_world::resources::test_product_world_resources;
+use worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::resources::test_product_world_resources;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationEntityKey;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationEntitySeed;
 use worth_query_execution::facade::domain_computation::WorthQueryExecutionRuntimeInstaller;
@@ -89,7 +89,7 @@ pub fn member(
 }
 
 pub fn prepared_bootstrap() -> WorthQueryPrimaryGraphBootstrap<UniqueSeedSchema> {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let phase = &active_phase;
 
         let declaration = UniqueSeedSchema::declaration().unwrap();

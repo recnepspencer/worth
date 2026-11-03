@@ -5,7 +5,7 @@ pub(in crate::domain_computation::primary_graph) struct NestedFailureTransport<'
     take: &'context mut dyn FnMut() -> Option<NestedComputationStop>,
 }
 
-pub(in crate::domain_computation::primary_graph) enum MemberComputeFailure<E> {
+pub enum MemberComputeFailure<E> {
     Own(E),
     Nested(TakenNestedFailure<E>),
 }

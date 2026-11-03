@@ -1,8 +1,8 @@
 //! Owner logic only: public correction courts separately prove actual source material.
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::*;
-use worth_query_execution::domain_computation::primary_graph::product_operation::correction_source::material::finish_derivation;
-use worth_query_execution::domain_computation::primary_graph::product_operation::correction_source::material::source_outputs::read_checked;
-use worth_query_execution::domain_computation::primary_graph::product_operation::correction_source::material::source_outputs::preflight::validate_witness;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::product_operation::correction_source::material::finish_derivation;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::product_operation::correction_source::material::source_outputs::read_checked;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::product_operation::correction_source::material::source_outputs::preflight::validate_witness;
 use worth_query_execution::facade::domain_computation::WorthQueryCorrectionOutputProjectionDenial as D;
 use worth_query_execution::facade::domain_computation::WorthQueryCorrectionDerivationDenial;
 use std::any::TypeId;

@@ -20,7 +20,7 @@ pub use worth_query_execution::facade::domain_computation::WorthQueryMoveOnlyArt
 
 #[test]
 fn direct_yield_cleanup_preserves_its_closed_epoch_receipt() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -48,7 +48,7 @@ fn direct_yield_cleanup_preserves_its_closed_epoch_receipt() {
 
 #[test]
 fn workflow_yield_cleanup_preserves_its_closed_epoch_receipt() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -79,7 +79,7 @@ fn workflow_yield_cleanup_preserves_its_closed_epoch_receipt() {
 
 #[test]
 fn direct_yield_closed_recovery_counts_the_cleanup_as_complete() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -108,7 +108,7 @@ fn direct_yield_closed_recovery_counts_the_cleanup_as_complete() {
 
 #[test]
 fn workflow_yield_closed_recovery_counts_the_cleanup_as_complete() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -140,7 +140,7 @@ fn workflow_yield_closed_recovery_counts_the_cleanup_as_complete() {
 
 #[test]
 fn workflow_yield_pending_then_retry_counts_two_attempts_and_one_completion() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -175,7 +175,7 @@ fn workflow_yield_pending_then_retry_counts_two_attempts_and_one_completion() {
 
 #[test]
 fn same_scope_direct_cleanup_peers_keep_their_own_epochs() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -209,7 +209,7 @@ fn same_scope_direct_cleanup_peers_keep_their_own_epochs() {
 
 #[test]
 fn same_stage_workflow_pending_and_complete_peers_do_not_cross_pair() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -257,7 +257,7 @@ fn same_stage_workflow_pending_and_complete_peers_do_not_cross_pair() {
 }
 
 pub fn direct_yield(
-    execution: &worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     call_identity: &str,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> WorthQueryYieldedDirectConvergenceIteration {
@@ -270,7 +270,7 @@ pub fn direct_yield(
 }
 
 pub fn direct_yield_with_disposition(
-    execution: &worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
 
     disposition: FixtureDisposition,
     call_identity: &str,
@@ -311,7 +311,7 @@ pub fn direct_yield_with_disposition(
 }
 
 pub fn workflow_yield(
-    execution: &worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     call_identity: &str,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> WorthQueryYieldedWorkflowConvergenceIteration {
@@ -324,7 +324,7 @@ pub fn workflow_yield(
 }
 
 pub fn workflow_yield_with_disposition(
-    execution: &worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
 
     disposition: FixtureDisposition,
     call_identity: &str,

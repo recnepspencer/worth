@@ -13,7 +13,7 @@ use super::WorthQueryPrimaryGraphProvider;
 use crate::domain_computation::application_aftermath::WorthQueryAcceptedInboundOccurrence;
 
 mod history_read;
-mod preparation_denial;
+pub(crate) mod preparation_denial;
 mod read;
 mod transport;
 pub(in crate::domain_computation::primary_graph) use read::{
@@ -22,7 +22,7 @@ pub(in crate::domain_computation::primary_graph) use read::{
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) enum WorthQueryInboundCompletionPreparationDenial {
+pub enum WorthQueryInboundCompletionPreparationDenial {
     ExecutionDenied {
         stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
         kind: crate::domain_computation::WorthQueryProviderSessionDenialKind,

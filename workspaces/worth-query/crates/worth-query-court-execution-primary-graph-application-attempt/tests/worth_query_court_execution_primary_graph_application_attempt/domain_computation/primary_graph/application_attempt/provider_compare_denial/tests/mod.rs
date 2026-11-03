@@ -1,11 +1,11 @@
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitDenialKind as Application;
 use worth_query_execution::facade::domain_computation::WorthQueryProviderCompareAndCommitDenial as Compare;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitDenial as Denial;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::outcome::WorthQueryProviderProgressionOutcome as Progression;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::outcome::WorthQueryProviderProgressionOutcome as Progression;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitDenialStage as Stage;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_compare_denial::control_stopped_outcome;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_compare_denial::provider_compare_denied;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_compare_denial::provider_session_execution_denied;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_compare_denial::control_stopped_outcome;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_compare_denial::provider_compare_denied;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_compare_denial::provider_session_execution_denied;
 use worth_query_execution::facade::application_contribution::WorthQueryManagedComputationResourceDenial as Resource;
 use worth_query_execution::facade::application_contribution::WorthQueryMemoryLimitLevel as Level;
 use worth_query_execution::facade::domain_computation::WorthQueryDecisionReadSetDenialKind as Read;
@@ -23,7 +23,7 @@ pub fn denied(compare: Compare) -> Denial {
 
 #[test]
 fn commit_preparation_keeps_every_execution_kind_typed() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|_active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|_active_phase| {
         let mut kinds = vec![
             (
                 Session::ExecutionNestedPatternStopped {
@@ -360,7 +360,7 @@ fn read_fold_checked_session_read_stop_is_the_commit_denial_cause() {
     for stop in [Control::Cancelled, Control::TimedOut] {
         let failure =
             Failure::checked_read_stopped(Err(stop), Protocol::Commit, "native read stopped");
-        let denial = worth_query_execution::domain_computation::primary_graph::application_attempt::provider_compare_denial::provider_session_denied(failure);
+        let denial = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_compare_denial::provider_session_denied(failure);
         assert_eq!(denial.execution_denial_cause(), Some(Err(stop)));
         assert_eq!(denial.stage(), Stage::ProviderCommit);
     }

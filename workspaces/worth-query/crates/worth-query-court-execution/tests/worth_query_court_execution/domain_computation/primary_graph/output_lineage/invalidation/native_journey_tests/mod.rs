@@ -1,13 +1,13 @@
 //! The ordinary native writer must mark the installed Query actor before its
 //! new source head can be read. No World publication or Query feed is involved.
-pub use worth_query_execution::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 
 // Fixture evidence carries no performed output projection, so the
 // equivalence oracle correctly refuses it; this proof is about metering.
 
 pub use std::collections::BTreeMap;
 pub use std::sync::Arc;
-pub use worth_query_execution::equality_type_id::EqualityTypeId as TypeId;
+pub use worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId as TypeId;
 
 pub use im::OrdSet;
 pub use worth_foundational::facade::AspectFieldLocator;
@@ -26,13 +26,13 @@ pub use worth_relational::facade::transactions::MutationIntent;
 pub use worth_relational::facade::transactions::UpdateEntityFieldsIntent;
 pub use worth_relational::facade::transactions::WorkerIntentBatch;
 
-pub use worth_query_execution::domain_computation::primary_graph::output_lineage::ProductCoordinate;
-pub use worth_query_execution::domain_computation::primary_graph::output_lineage::settlement_identity::RecordedSettlementIdentity;
-pub use worth_query_execution::domain_computation::primary_graph::output_lineage::semantic_source::SemanticSource;
-pub use worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::settlement::SettlementRegistration;
-pub use worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::owner::SourceInvalidationOwner;
-pub use worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::derived::SourceSettlementCurrentness;
-pub use worth_query_execution::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::ProductCoordinate;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::settlement_identity::RecordedSettlementIdentity;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::semantic_source::SemanticSource;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::settlement::SettlementRegistration;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::owner::SourceInvalidationOwner;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::derived::SourceSettlementCurrentness;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope;
 pub use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::tests::fixture::commit_snapshot_closeout::release_test_commit_snapshot;
@@ -144,7 +144,7 @@ pub fn register(
                 computation: None,
                 work_membership: None,
                 identity,
-                facts: worth_query_execution::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts::for_test(false, facts),
+                facts: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts::for_test(false, facts),
                 output_facts: None,
                 read_basis: basis.clone(),
                 stale_at_read_basis: im::OrdSet::new(),

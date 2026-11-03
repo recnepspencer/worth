@@ -1,7 +1,7 @@
 //! Shared metadata keeps old grants; only changed paths need fresh room.
-use worth_query_execution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::retained::RetainedPartitions;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::retained::RetainedPartitions;
 use crate::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tests::*;
-use worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy;
 
 #[test]
 fn partition_metadata_refusal_preserves_prior_and_its_funded_view_lasts_until_final_drop() {

@@ -137,7 +137,7 @@ fn with_support_snapshots<T>(
     result
 }
 
-fn compare(
+pub fn compare(
     runtime: &RelationalRuntime,
     execution: ExecutionRequest<'_, '_>,
     original: &worth_relational::facade::snapshots::SnapshotHandle,

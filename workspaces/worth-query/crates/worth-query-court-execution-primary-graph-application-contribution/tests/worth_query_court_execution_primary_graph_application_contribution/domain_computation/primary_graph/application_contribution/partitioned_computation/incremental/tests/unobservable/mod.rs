@@ -19,8 +19,8 @@ pub fn bound_observation_work() {
         ),
     ));
 }
-use worth_query_execution::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationAdjacencyDirection as Direction;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationFactKey as Key;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationAdjacencyDirection as Direction;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationFactKey as Key;
 
 #[test]
 fn an_unobservable_key_gathers_its_partition_again_and_denies_nothing() {

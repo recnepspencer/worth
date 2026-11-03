@@ -10,6 +10,6 @@ impl MemberComputeCustody {
         }
     }
 }
-pub(in crate::domain_computation::primary_graph) fn active() -> bool {
+pub fn active() -> bool {
     worth_execution::ExecutionOwnerContext::is_active()
 }

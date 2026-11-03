@@ -1,10 +1,10 @@
 //! Existing durable approval fixture transport under its real host execution.
 use crate::domain_computation::primary_graph::tests::authorization::capability_progression::Admission;
-use worth_query_execution::domain_computation::authorization::workflow_approval_authority::decoding::decode_lineage;
-use worth_query_execution::domain_computation::authorization::workflow_approval_authority::decoding::decode_principal;
-use worth_query_execution::domain_computation::authorization::workflow_approval_authority::decode_workflow_approval_support;
-use worth_query_execution::domain_computation::authorization::retained_capability_request::WorthQueryRetainedCapabilityRequest;
-use worth_query_execution::domain_computation::authorization::workflow_approval_authority::WorthQueryWorkflowApprovalAuthorityBasis;
+use worth_query_execution::court_doors_for_test::domain_computation::authorization::workflow_approval_authority::decoding::decode_lineage;
+use worth_query_execution::court_doors_for_test::domain_computation::authorization::workflow_approval_authority::decoding::decode_principal;
+use worth_query_execution::court_doors_for_test::domain_computation::authorization::workflow_approval_authority::decode_workflow_approval_support;
+use worth_query_execution::court_doors_for_test::domain_computation::authorization::retained_capability_request::WorthQueryRetainedCapabilityRequest;
+use worth_query_execution::court_doors_for_test::domain_computation::authorization::workflow_approval_authority::WorthQueryWorkflowApprovalAuthorityBasis;
 
 pub fn durable_approval_basis(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -77,7 +77,7 @@ pub fn durable_approval_basis_with_dependency_snapshot(
         dependency_snapshot["support"] = dependency_snapshot["primary"].clone();
     }
     let dependencies =
-        worth_query_execution::domain_computation::authorization::workflow_approval_dependencies::WorthQueryWorkflowApprovalDependencies::decode(
+        worth_query_execution::court_doors_for_test::domain_computation::authorization::workflow_approval_dependencies::WorthQueryWorkflowApprovalDependencies::decode(
             execution,
             &dependency_snapshot.to_string(),
         )

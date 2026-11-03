@@ -10,8 +10,8 @@ use worth_query_execution::facade::domain_computation::WorthQueryApplicationInva
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationPrincipalKey;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationRelationSeed;
 use worth_query_execution::facade::domain_computation::WorthQueryPrimaryGraphApplicationRuntime;
-use worth_query_execution::domain_computation::primary_graph::bootstrap;
-use worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::bootstrap;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement;
 use worth_query_declaration::facade::application_schema::*;
 use worth_query_declaration::facade::authentication::*;
 use worth_query_installation::facade::*;
@@ -65,7 +65,7 @@ pub fn install(rule: AccountingRule) -> World {
         let mut bootstrap = authority.prepare_primary_graph_with_relational_runtime_and_invariants(
             &phase.bootstrap_for_test(), &runtime, &schema,
             worth_relational::facade::runtime::RelationalRuntimeApi::builder().build().expect("valid native runtime configuration"),
-            worth_query_execution::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(), factories,
+            worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(), factories,
         ).unwrap();
         bootstrap
             .bind_principal(

@@ -12,7 +12,7 @@ use crate::domain_computation::primary_graph::application_query::derived_view::{
 use worth_runtime_world::facade::CompositeCommitIdentity;
 
 mod aftermath;
-pub(super) mod registry;
+pub(crate) mod registry;
 mod stops;
 pub(in crate::domain_computation::primary_graph) use registry::WorthQueryApplicationPublicationRecoveryReservation;
 use registry::WorthQueryPendingApplicationIdempotency;

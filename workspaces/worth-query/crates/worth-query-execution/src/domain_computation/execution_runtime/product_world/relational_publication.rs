@@ -1,4 +1,4 @@
-mod delivery;
+pub(crate) mod delivery;
 mod outcome;
 mod performed;
 

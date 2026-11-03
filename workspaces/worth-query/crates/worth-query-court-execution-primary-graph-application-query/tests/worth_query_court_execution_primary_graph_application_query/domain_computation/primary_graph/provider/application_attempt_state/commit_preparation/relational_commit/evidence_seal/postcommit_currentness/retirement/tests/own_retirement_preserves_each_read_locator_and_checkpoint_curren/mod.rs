@@ -1,7 +1,7 @@
 //! own retirement preserves each read locator and checkpoint currentness.
 
-use worth_query_execution::domain_computation::primary_graph::application_checkpoint::facts::decode as decode_producer_facts;
-use worth_query_execution::domain_computation::primary_graph::application_checkpoint::facts::encode as encode_producer_facts;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::decode as decode_producer_facts;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::encode as encode_producer_facts;
 use crate::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::retirement::tests::*;
 
 #[test]

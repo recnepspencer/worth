@@ -4,7 +4,7 @@ use super::*;
 use sha2::{Digest, Sha256};
 use worth_foundational::facade::{write_aspect_value_identity_material, CanonicalMaterialSink};
 
-pub(in crate::domain_computation::primary_graph::application_query) struct ContentWriter<'a, E> {
+pub struct ContentWriter<'a, E> {
     digest: Sha256,
     admit: &'a mut dyn FnMut(u64) -> Result<(), E>,
     overflow: &'a dyn Fn() -> E,

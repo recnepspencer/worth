@@ -27,7 +27,7 @@ use crate::domain_computation::primary_graph::application_contribution::{
 /// reader is recorded with that call, and one the handler read itself is
 /// recorded as the handler's. A key both read is both.
 #[derive(Default)]
-pub(in crate::domain_computation::primary_graph) struct DecisionReads {
+pub struct DecisionReads {
     handler: BTreeSet<WorthQueryApplicationFactKey>,
     source_publications: Option<std::sync::Arc<source_publications::IssuedSourcePublicationValues>>,
     managed_sources: managed_sources::IssuedManagedSourceValues,
@@ -55,7 +55,7 @@ pub(in crate::domain_computation::primary_graph) struct DecisionReads {
 }
 
 #[derive(Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum FailedDecisionRead {
+pub enum FailedDecisionRead {
     Key(WorthQueryApplicationFactKey),
     StructuralWalk,
     ManagedSource,
@@ -107,7 +107,7 @@ impl ComputationPriorUnavailable {
 /// What became of one decision read. A field, entity or relation read
 /// records an absent value as its content, so only a traversal can fail.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(super) enum DecisionReadOutcome {
+pub enum DecisionReadOutcome {
     Observed,
     Failed,
 }

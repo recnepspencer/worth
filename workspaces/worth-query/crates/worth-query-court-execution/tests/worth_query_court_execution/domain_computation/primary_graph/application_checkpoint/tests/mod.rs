@@ -1,14 +1,14 @@
 use sha2::Digest;
 use sha2::Sha256;
 
-use worth_query_execution::domain_computation::primary_graph::application_checkpoint::capture::merge_accepted_outputs;
-use worth_query_execution::domain_computation::primary_graph::application_checkpoint::BODY_PREFIX_BYTES;
-use worth_query_execution::domain_computation::primary_graph::application_checkpoint::CHECKSUM_BYTES;
-use worth_query_execution::domain_computation::primary_graph::application_checkpoint::FORMAT_VERSION;
-use worth_query_execution::domain_computation::primary_graph::application_checkpoint::MAGIC;
-use worth_query_execution::domain_computation::primary_graph::application_checkpoint::MAXIMUM_ENTITY_NAME_BYTES;
-use worth_query_execution::domain_computation::primary_graph::application_checkpoint::MAXIMUM_PRODUCER_IDENTITY_BYTES;
-use worth_query_execution::domain_computation::primary_graph::application_checkpoint::MAXIMUM_ROLE_IDENTITY_BYTES;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::capture::merge_accepted_outputs;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::BODY_PREFIX_BYTES;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::CHECKSUM_BYTES;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::FORMAT_VERSION;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::MAGIC;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::MAXIMUM_ENTITY_NAME_BYTES;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::MAXIMUM_PRODUCER_IDENTITY_BYTES;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::MAXIMUM_ROLE_IDENTITY_BYTES;
 use worth_query_execution::facade::application_installation::WorthQueryApplicationCheckpoint;
 
 #[test]
@@ -17,10 +17,10 @@ fn current_output_replaces_its_recovered_slot_without_checkpoint_growth() {
         .principal_scope()
         .scope();
     let checkpoint = |source, partition| {
-        worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointIdentity {
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointIdentity {
             implementation: worth_relational::facade::mvcc::RequiredOutputProducingImplementation::from_checkpoint([0x11; 16], [0x22; 32]).unwrap(),
             producer: ("producer".to_owned()).into(),
-            posture: worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointPosture::Performed,
+            posture: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointPosture::Performed,
             source,
             scope,
             source_partition: partition,
@@ -53,7 +53,7 @@ fn accepted_output_count_is_bounded_before_allocation() {
 #[test]
 fn producer_identity_length_and_utf8_are_guarded() {
     let mut zero = 0_u64.to_be_bytes().to_vec();
-    zero.resize(worth_query_execution::domain_computation::primary_graph::application_checkpoint::MINIMUM_ACCEPTED_OUTPUT_BYTES, 0);
+    zero.resize(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::MINIMUM_ACCEPTED_OUTPUT_BYTES, 0);
     assert_denied(
         checkpoint_body(1, zero),
         "producer identity length is invalid",
@@ -62,7 +62,7 @@ fn producer_identity_length_and_utf8_are_guarded() {
     let mut oversized = ((MAXIMUM_PRODUCER_IDENTITY_BYTES + 1) as u64)
         .to_be_bytes()
         .to_vec();
-    oversized.resize(worth_query_execution::domain_computation::primary_graph::application_checkpoint::MINIMUM_ACCEPTED_OUTPUT_BYTES, 0);
+    oversized.resize(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::MINIMUM_ACCEPTED_OUTPUT_BYTES, 0);
     assert_denied(
         checkpoint_body(1, oversized),
         "producer identity length is invalid",
@@ -183,14 +183,14 @@ fn duplicate_slot_and_copied_fact_payload_cannot_form_two_recovered_candidates()
     let mut copied_facts = first.clone();
     copied_facts.truncate(copied_facts.len() - 8);
     copied_facts.truncate(copied_facts.len() - 2);
-    let fact = worth_query_execution::domain_computation::primary_graph::application_checkpoint::facts::encode(&[
-        worth_query_execution::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact::SourceEntity {
+    let fact = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::encode(&[
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact::SourceEntity {
             entity_id: worth_relational::facade::identity::EntityId::new(
                 worth_relational::facade::identity::PartitionId(1), 3, 1,
             ),
         },
     ]).unwrap();
-    copied_facts.extend_from_slice(&worth_query_execution::domain_computation::primary_graph::application_checkpoint::facts::WIRE_VERSION.to_be_bytes());
+    copied_facts.extend_from_slice(&worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::WIRE_VERSION.to_be_bytes());
     copied_facts.extend_from_slice(&(fact.len() as u64).to_be_bytes());
     copied_facts.extend_from_slice(&fact);
     let mut duplicate_identity = first;
@@ -216,8 +216,8 @@ fn trailing_and_truncated_payloads_are_rejected() {
 pub fn checkpoint_body(accepted_count: u64, accepted: Vec<u8>) -> Vec<u8> {
     let mut body = Vec::with_capacity(BODY_PREFIX_BYTES + accepted.len());
     body.extend_from_slice(&FORMAT_VERSION.to_be_bytes());
-    body.extend_from_slice(&worth_query_execution::domain_computation::primary_graph::application_checkpoint::WORKFLOW_FACTS.to_be_bytes());
-    body.extend_from_slice(&worth_query_execution::domain_computation::primary_graph::application_checkpoint::WORKFLOW_INSTANCES.to_be_bytes());
+    body.extend_from_slice(&worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::WORKFLOW_FACTS.to_be_bytes());
+    body.extend_from_slice(&worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::WORKFLOW_INSTANCES.to_be_bytes());
     body.extend_from_slice(&1_u64.to_be_bytes());
     body.extend_from_slice(&0_u64.to_be_bytes());
     body.extend_from_slice(&accepted_count.to_be_bytes());
@@ -289,7 +289,7 @@ pub fn entity_bytes() -> [u8; 16] {
 }
 
 pub fn padded(mut accepted: Vec<u8>) -> Vec<u8> {
-    accepted.resize(worth_query_execution::domain_computation::primary_graph::application_checkpoint::MINIMUM_ACCEPTED_OUTPUT_BYTES, 0);
+    accepted.resize(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::MINIMUM_ACCEPTED_OUTPUT_BYTES, 0);
     accepted
 }
 

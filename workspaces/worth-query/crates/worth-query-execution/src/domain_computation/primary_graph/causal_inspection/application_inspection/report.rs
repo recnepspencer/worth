@@ -61,7 +61,7 @@ pub(super) struct FundedInspectionReport {
     reference: InspectionOriginalReference,
 }
 
-pub(super) fn materialize(
+pub fn materialize(
     execution: &ExecutionRequest<'_, '_>,
     target: &Arc<WorthQueryApplicationInspectionTarget>,
     session: &WorthQueryManagedGraphWorkSession,

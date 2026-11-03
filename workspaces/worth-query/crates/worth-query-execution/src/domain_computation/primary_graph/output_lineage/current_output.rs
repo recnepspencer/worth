@@ -18,7 +18,7 @@ use super::WorthQueryApplicationOutputLineage;
 use super::WorthQueryProducerLineageHead;
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt;
 
-pub(in crate::domain_computation::primary_graph) struct RetainedOutputCurrentnessRead {
+pub struct RetainedOutputCurrentnessRead {
     pub(in crate::domain_computation::primary_graph) identity:
         Arc<super::RecordedSettlementIdentity>,
     pub(in crate::domain_computation::primary_graph) facts: Option<super::ComparableSourceFacts>,

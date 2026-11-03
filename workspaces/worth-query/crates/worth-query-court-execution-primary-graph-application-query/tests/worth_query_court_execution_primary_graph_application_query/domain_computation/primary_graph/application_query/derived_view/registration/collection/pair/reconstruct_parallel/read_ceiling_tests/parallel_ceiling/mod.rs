@@ -102,7 +102,7 @@ fn parallel_read_request_exhaustion_keeps_a_canonical_prefix_and_releases_memory
                     .collect::<Vec<_>>();
                 request
                     .in_scope(|lease| {
-                        worth_query_execution::domain_computation::primary_graph::application_query::derived_view::registration::collection::pair::reconstruction::owner_stage::run(lease, |context| {
+                        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::derived_view::registration::collection::pair::reconstruction::owner_stage::run(lease, |context| {
                             for (pair, root) in plans.iter_mut().zip(&roots) {
                                 pair.admit(
                                     &host_custody.borrowed_request_for_test(),
@@ -117,7 +117,7 @@ fn parallel_read_request_exhaustion_keeps_a_canonical_prefix_and_releases_memory
                     .unwrap()
                     .unwrap();
                 let (witness, _probe) =
-            worth_query_execution::domain_computation::primary_graph::application_query::read_execution::dispatch_witness::DispatchWitness::install(
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::read_execution::dispatch_witness::DispatchWitness::install(
                 Some(roots[1].entity_id()),
             );
 

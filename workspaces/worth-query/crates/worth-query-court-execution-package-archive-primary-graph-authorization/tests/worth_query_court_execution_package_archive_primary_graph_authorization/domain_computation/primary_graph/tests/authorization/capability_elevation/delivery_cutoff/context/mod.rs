@@ -51,7 +51,7 @@ impl ElevatedQueryContext {
 
     pub fn elevated_access(
         &self,
-        phase_custody: &worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+        phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     ) -> worth_query_execution::facade::domain_computation::WorthQueryAdmittedApplicationCapabilityAccess<
         IdentityExecutionSchema,
         crate::domain_computation::primary_graph::tests::authorization::capability_elevation::ElevatedTouchAccountCapability,

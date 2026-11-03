@@ -12,7 +12,7 @@ fn unrelated_identical_row_cannot_make_owner_mapping_ambiguous() {
         .graph
         .with_runtime_mut(request_execution, |runtime| {
             let (intent, pending) =
-            worth_query_execution::domain_computation::application_aftermath::external_effect::outbox::bind_dispatch_outbox_create_intent(
+            worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::outbox::bind_dispatch_outbox_create_intent(
                 Some(provider.graph.layout.provider_dispatch_outbox()),
                 Some(&record),
                 worth_relational::facade::identity::PartitionId::main(),
@@ -133,10 +133,10 @@ fn another_committed_record_ref_cannot_substitute_for_the_bound_outbox() {
             let commit = committed.outcome().commit.clone();
             retain_commit_basis(provider, runtime, &committed);
             release_commit_snapshot(runtime, &committed);
-            let snapshot = worth_query_execution::domain_computation::primary_graph::exact_basis_access::open_current_branch_snapshot(runtime, &primary_relational_branch_id())
+            let snapshot = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::exact_basis_access::open_current_branch_snapshot(runtime, &primary_relational_branch_id())
                 .unwrap();
             let runtime_id = snapshot.runtime_instance_id();
-            worth_query_execution::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
+            worth_query_execution::court_doors_for_test::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
             (bind(&first), bind(&second), commit, runtime_id)
         });
     let substituted = WorthQueryCommittedDispatchOutboxBinding::fixture(

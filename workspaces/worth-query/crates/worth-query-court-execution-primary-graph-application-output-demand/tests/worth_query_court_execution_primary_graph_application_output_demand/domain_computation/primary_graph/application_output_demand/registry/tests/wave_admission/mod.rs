@@ -1,10 +1,10 @@
 //! A native-current read cannot admit compute before managed delivery commits.
 use crate::domain_computation::primary_graph::application_output_demand::registry::tests::*;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::owner::SourceInvalidationOwner;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::owner::SourceInvalidationOwner;
 use worth_query_execution::facade::domain_computation::WorthQueryInvalidationResources;
 #[test]
 fn uncommitted_upstream_never_admits_a_prepared_member() {
-    use worth_query_execution::domain_computation::primary_graph::invariant_projection::consumed_output::ConsumedOutputEvidence;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::consumed_output::ConsumedOutputEvidence;
     let registry = WorthQueryOutputDemandRegistry::default();
     let _owner = SourceInvalidationOwner::new(WorthQueryInvalidationResources::new(), 1);
     let world =
@@ -49,7 +49,7 @@ fn uncommitted_upstream_never_admits_a_prepared_member() {
     {
         let mut state = registry.state.lock().unwrap();
         let (posting, _cleanup) = state.reserve_settlement_vacancy(&identity).unwrap();
-        worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::settlement_index::SettlementIndex::fill_prepared(
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::settlement_index::SettlementIndex::fill_prepared(
             &posting,
             &identity,
             Arc::clone(&identity),

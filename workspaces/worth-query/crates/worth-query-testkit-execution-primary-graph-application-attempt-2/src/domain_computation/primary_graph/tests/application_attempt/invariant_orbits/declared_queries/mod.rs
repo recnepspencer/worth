@@ -20,7 +20,7 @@ use crate::domain_computation::primary_graph::tests::application_attempt::invari
 use worth_execution::ExecutionRequest;
 use worth_query_execution::facade::application_invariants::WorthQueryAggregateIdentity;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitOutcome;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationOneShotDenial;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationOneShotDenialKind;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationOneShotResult;
@@ -30,15 +30,15 @@ use worth_query_execution::facade::domain_computation::WorthQueryApplicationProj
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationQueryAccessContext;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationQueryAdmissionDenial;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationQueryAdmissionDenialKind;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::snapshot_lease::WorthQueryApplicationSnapshotLease;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::snapshot_lease::WorthQueryApplicationSnapshotLease;
 use worth_query_execution::facade::domain_computation::WorthQueryObservedSource;
 use worth_query_execution::facade::domain_computation::WorthQueryPrincipalResolutionMode;
 use worth_query_execution::facade::domain_computation::WorthQueryProductQueryControls;
-use worth_query_execution::domain_computation::primary_graph::application_query;
-use worth_query_execution::domain_computation::primary_graph::component_selection;
-use worth_query_execution::domain_computation::primary_graph::denial;
-use worth_query_execution::domain_computation::primary_graph::facade;
-use worth_query_execution::domain_computation::primary_graph::root;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::component_selection;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::denial;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::facade;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::root;
 use crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::declared_queries::declarations::*;
 pub fn world() -> World {
     world::install_orbit(

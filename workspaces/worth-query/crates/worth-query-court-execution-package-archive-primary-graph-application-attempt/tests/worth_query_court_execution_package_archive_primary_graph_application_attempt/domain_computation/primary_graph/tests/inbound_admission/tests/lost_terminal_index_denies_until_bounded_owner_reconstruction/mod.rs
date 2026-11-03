@@ -29,7 +29,7 @@ fn lost_terminal_index_denies_until_bounded_owner_reconstruction() {
     provider.destroy_completed_inbound_index_for_test();
     assert!(matches!(
         provider.lookup_completed_inbound(&correlation),
-        Err(worth_query_execution::domain_computation::primary_graph::provider::inbound_terminal_index::WorthQueryInboundTerminalIndexDenial::IndexUnavailable)
+        Err(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::inbound_terminal_index::WorthQueryInboundTerminalIndexDenial::IndexUnavailable)
     ));
     let one = std::num::NonZeroUsize::new(1).unwrap();
     let records = std::num::NonZeroUsize::new(32).unwrap();

@@ -10,7 +10,7 @@ pub(in crate::domain_computation) struct SharedSelectedProductOperation<'runtime
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum SelectedQueryBasisRetentionStop {
+pub enum SelectedQueryBasisRetentionStop {
     Basis,
     Admission(CompanionPreflightStop),
 }

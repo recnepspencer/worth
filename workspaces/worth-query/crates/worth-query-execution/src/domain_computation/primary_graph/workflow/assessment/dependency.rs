@@ -9,7 +9,7 @@ use crate::domain_computation::primary_graph::workflow::evidence_dependency::{
     encode_direction, WorkflowEvidenceDependencyKind,
 };
 
-pub(super) fn visit_dependency_facts<Error>(
+pub fn visit_dependency_facts<Error>(
     layout: &WorthQueryWorkflowLayout,
     evidence: &CreatedEntityRef,
     meaning: &WorkflowAssessmentEvidenceMeaning,
@@ -144,7 +144,7 @@ pub(super) fn visit_dependency_facts<Error>(
     Ok(())
 }
 
-fn append_field_revision_fields(
+pub fn append_field_revision_fields(
     layout: &crate::domain_computation::primary_graph::workflow::schema::WorkflowEvidenceDependencyLayout,
     locator: &worth_foundational::facade::AspectFieldLocator,
     native_revision: Option<worth_relational::facade::runtime::RelationalFieldRevision>,

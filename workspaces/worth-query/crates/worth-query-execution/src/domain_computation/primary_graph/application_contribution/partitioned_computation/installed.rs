@@ -52,7 +52,7 @@ where
 /// hands a run the prior it compares with, so only a run of a producer's
 /// operation digests its input. No other run does that work or pays for it.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum ComputationRetention {
+pub enum ComputationRetention {
     /// A declared producer runs the owner's operation.
     ProducerOperation,
     /// No producer runs it, so no run is ever compared.

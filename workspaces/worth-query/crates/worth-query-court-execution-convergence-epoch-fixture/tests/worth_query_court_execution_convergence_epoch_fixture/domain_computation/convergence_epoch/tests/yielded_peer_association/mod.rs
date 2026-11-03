@@ -41,7 +41,7 @@ pub struct WorkflowYieldedPeer {
 
 #[test]
 fn same_scope_direct_peers_deny_cross_owners_then_complete_rightfully() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -81,7 +81,7 @@ fn same_scope_direct_peers_deny_cross_owners_then_complete_rightfully() {
 
 #[test]
 fn same_stage_workflow_peers_deny_cross_owners_then_complete_rightfully() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -125,7 +125,7 @@ pub struct CompletedPeer {
 }
 
 pub fn complete_direct_peer(
-    execution: &worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
 
     yielded: WorthQueryYieldedDirectConvergenceIteration,
     runtime: &WorthQueryExecutionRuntime,
@@ -176,7 +176,7 @@ pub fn complete_direct_peer(
 }
 
 pub fn complete_workflow_peer(
-    execution: &worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
 
     yielded: WorthQueryYieldedWorkflowConvergenceIteration,
     runtime: &WorthQueryExecutionRuntime,
@@ -228,7 +228,7 @@ pub fn complete_workflow_peer(
 }
 
 pub fn direct_yielded_peer(
-    execution: &worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> DirectYieldedPeer {
     let DirectAdmissionFixture {
@@ -273,7 +273,7 @@ pub fn direct_yielded_peer(
 }
 
 pub fn workflow_yielded_peer(
-    execution: &worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> WorkflowYieldedPeer {
     let WorkflowAdmissionFixture {

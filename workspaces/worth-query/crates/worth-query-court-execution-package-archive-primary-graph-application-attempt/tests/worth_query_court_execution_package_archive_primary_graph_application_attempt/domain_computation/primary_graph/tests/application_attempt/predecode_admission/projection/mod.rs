@@ -1,7 +1,7 @@
 //! Same production DecisionReader construction over a genuinely admitted scope.
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::authenticated_principal;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::resolved_account;
-use worth_query_execution::domain_computation::primary_graph::handler::decision_context_use::DecisionContextUse;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::handler::decision_context_use::DecisionContextUse;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::authorization_world_installation::AuthorizationWorld;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::IdentityExecutionSchema;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::program_required_binding::ProgramRequiredInput;
@@ -76,7 +76,7 @@ pub fn try_with_reader<Output>(
     let affinity = admission.operation_scope_binding().clone();
     let context = std::cell::Cell::new(DecisionContextUse::default());
     let interruption = std::cell::Cell::new(None);
-    let execution = worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::QueryRequestExecution::open(world.application.product_runtime().owner.execution_placement(), admission.publication_request());
+    let execution = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::QueryRequestExecution::open(world.application.product_runtime().owner.execution_placement(), admission.publication_request());
     world
         .invariant
         .project_admitted_operation(
@@ -92,7 +92,7 @@ pub fn try_with_reader<Output>(
                     &execution,
                     &context,
                     &interruption,
-                    worth_query_execution::domain_computation::primary_graph::handler::conditional_definition::ConditionalDefinitionAdmission::new(
+                    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::handler::conditional_definition::ConditionalDefinitionAdmission::new(
                         &world.application, admission.graph_work().mutation_product(),
                     ),
                 );

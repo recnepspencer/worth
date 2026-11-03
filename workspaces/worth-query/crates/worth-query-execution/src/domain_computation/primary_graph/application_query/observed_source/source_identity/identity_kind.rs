@@ -1,5 +1,5 @@
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub(in crate::domain_computation::primary_graph) struct WorthQueryRuntimeSourceIdentity([u8; 32]);
+pub struct WorthQueryRuntimeSourceIdentity([u8; 32]);
 
 impl WorthQueryRuntimeSourceIdentity {
     pub(in crate::domain_computation::primary_graph) const fn new(identity: [u8; 32]) -> Self {

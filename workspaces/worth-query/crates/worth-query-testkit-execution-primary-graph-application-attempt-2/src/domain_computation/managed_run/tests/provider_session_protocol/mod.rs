@@ -15,7 +15,7 @@ use crate::domain_computation::managed_run::tests::*;
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
-use worth_query_execution::domain_computation::provider_session::protocol::session_affinity::WorthQueryProviderSessionAffinityIdentity;
+use worth_query_execution::court_doors_for_test::domain_computation::provider_session::protocol::session_affinity::WorthQueryProviderSessionAffinityIdentity;
 use worth_query_execution::facade::domain_computation::WorthQueryProviderExecutionPlanView;
 use worth_query_execution::facade::domain_computation::WorthQueryProviderSessionDenialKind;
 use worth_query_execution::facade::domain_computation::WorthQueryProviderSessionFailure;
@@ -199,7 +199,7 @@ impl WorthQueryProviderSessionLifecycle for SessionProtocolProvider {
     }
 }
 pub fn closed_session_affinity(
-    execution: &worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> WorthQueryProviderSessionAffinityIdentity {
     let (mut running, graph) = session_run(
@@ -260,7 +260,7 @@ pub fn session_run(
     )
 }
 pub fn staged_session<'run>(
-    execution: &'run worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &'run worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
 
     running: &'run mut WorthQueryRunningDirectRun,
     graph: &WorthQueryInstalledGraphParticipationAuthority,

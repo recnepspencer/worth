@@ -15,7 +15,7 @@ use crate::domain_computation::primary_graph::application_attempt::{
 use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider;
 use crate::domain_computation::primary_graph::schema_layout::WorthQueryProviderIdempotencyLayout;
 
-pub(super) fn resolve_at_snapshot(
+pub fn resolve_at_snapshot(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     provider: &WorthQueryPrimaryGraphProvider,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
@@ -246,7 +246,7 @@ fn resolve_projected_idempotency(
     ))
 }
 
-fn idempotency_read_stop(
+pub fn idempotency_read_stop(
     cause: worth_relational::facade::transactions::RelationalExecutionDenialCause,
 ) -> WorthQueryProviderIdempotencyResolutionDenial {
     WorthQueryProviderIdempotencyResolutionDenial::ExecutionDenied(

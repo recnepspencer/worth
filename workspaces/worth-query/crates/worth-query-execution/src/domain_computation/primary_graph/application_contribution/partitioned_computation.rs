@@ -21,13 +21,13 @@ mod compute;
 pub(super) use incremental::observe_retained_full_tree;
 mod certification_reuse;
 mod denial;
-mod incremental;
-mod installed;
+pub(crate) mod incremental;
+pub(crate) mod installed;
 mod items;
 mod plan;
-mod preparation_work;
+pub(crate) mod preparation_work;
 mod reader;
-mod routing;
+pub(crate) mod routing;
 
 pub use compute::{
     WorthQueryCompletedPartitionedComputation, WorthQueryPreparedPartitionedComputation,

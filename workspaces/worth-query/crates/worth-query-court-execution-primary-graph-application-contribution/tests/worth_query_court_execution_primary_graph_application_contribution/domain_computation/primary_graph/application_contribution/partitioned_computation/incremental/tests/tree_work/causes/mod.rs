@@ -6,7 +6,7 @@ use worth_execution::ReductionRunFailure;
 use worth_execution::ReductionRunStop;
 
 use crate::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tests::tree_work::*;
-use worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy;
 
 #[derive(Clone)]
 pub struct Value {
@@ -141,7 +141,7 @@ fn supplied_native_counter_failure_is_normalized_and_its_metrics_are_carried() {
     let _observation =
         worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation::install_on_this_thread();
     // Supply a typed native failure to exercise production normalization and metric carriage.
-    use worth_query_execution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tree_attempt::TreeAttempt;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tree_attempt::TreeAttempt;
     let native =
         TreeAttempt::<(), _>::native(Err(ReductionRunFailure::<worth_execution::MapKernelStop> {
             reason: ReductionRunStop::WorkCounterOverflow,

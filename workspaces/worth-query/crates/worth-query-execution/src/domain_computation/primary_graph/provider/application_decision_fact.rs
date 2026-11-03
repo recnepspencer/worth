@@ -1,5 +1,5 @@
 mod application_facts;
-mod application_table;
+pub(crate) mod application_table;
 use super::super::WorthQueryApplicationAttemptDenial as SelfDenial;
 use crate::domain_computation::{
     WorthQueryDecisionReadSetDenialKind as BindingKind,
@@ -15,7 +15,7 @@ use worth_execution::ExecutionRequest;
 use crate::domain_computation::authorization::WorthQueryPrincipalCurrentnessDependency;
 
 #[derive(Clone)]
-pub(in crate::domain_computation) enum WorthQueryPrimaryGraphApplicationDecisionFact {
+pub enum WorthQueryPrimaryGraphApplicationDecisionFact {
     Application {
         read_scope: SharedReadScope,
         fact: SharedObservedFact,

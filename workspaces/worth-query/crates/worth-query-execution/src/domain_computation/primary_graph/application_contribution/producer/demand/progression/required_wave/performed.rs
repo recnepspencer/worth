@@ -39,13 +39,13 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
 }
 
 mod captured_input;
-pub(super) mod certification;
+pub(crate) mod certification;
 pub(super) use certification::certify_required_ready;
 pub(in crate::domain_computation::primary_graph) use certification::CurrentBasis;
 pub(in crate::domain_computation::primary_graph) use certification::CurrentProof;
 mod member_keys;
 use captured_input::CapturedDecisionInput;
-mod ordinary;
+pub(crate) mod ordinary;
 mod publication;
 mod reinspection;
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) use ordinary::DecisionInput;

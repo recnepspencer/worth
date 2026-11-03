@@ -11,7 +11,7 @@ use worth_query_execution::facade::domain_computation::WorthQueryProviderSession
 
 #[test]
 fn readmission_and_preparation_failures_stop_at_the_exact_callback() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -55,7 +55,7 @@ fn readmission_and_preparation_failures_stop_at_the_exact_callback() {
 
 #[test]
 fn staged_preparation_failures_abort_without_reaching_commit() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -87,7 +87,7 @@ fn staged_preparation_failures_abort_without_reaching_commit() {
 
 #[test]
 fn commit_failures_leave_recovery_required_and_drop_aborts_once() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -122,7 +122,7 @@ fn commit_failures_leave_recovery_required_and_drop_aborts_once() {
 
 #[test]
 fn abort_failures_are_retried_once_by_the_live_session_guard() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -151,7 +151,7 @@ fn abort_failures_are_retried_once_by_the_live_session_guard() {
 }
 
 pub fn assert_early_failure(
-    execution: &worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
 
     point: SessionFailurePoint,
     stage: WorthQueryProviderSessionProtocolStage,

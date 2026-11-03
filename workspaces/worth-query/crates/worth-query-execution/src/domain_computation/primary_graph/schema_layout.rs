@@ -19,7 +19,7 @@ mod capability_grant_join;
 mod continuation_ordering;
 mod derived_relation;
 mod equality_fields;
-mod field_coordinate;
+pub(crate) mod field_coordinate;
 mod field_optionality;
 pub(in crate::domain_computation::primary_graph) use field_coordinate::InstalledFieldCoordinate;
 mod installation_primitives;
@@ -44,7 +44,7 @@ mod signed_entities;
 mod signing_lifecycle;
 mod support_admission;
 
-mod unique_fields;
+pub(crate) mod unique_fields;
 mod workflow_reads;
 pub(in crate::domain_computation::primary_graph) use unique_fields::WorthQueryUniqueFieldFixture;
 pub(in crate::domain_computation::primary_graph) use unique_fields::{
@@ -78,7 +78,7 @@ pub(in crate::domain_computation::primary_graph) use registry_lowering::{
 };
 
 #[derive(Debug)]
-pub(in crate::domain_computation) struct WorthQueryPrimaryGraphLayout {
+pub struct WorthQueryPrimaryGraphLayout {
     principal_bindings: BTreeMap<String, WorthQueryPrimaryPrincipalBindingLayout>,
     live_control_entity_kinds: BTreeSet<KindId>,
     authorization_selectors: authorization_selectors::WorthQueryAuthorizationSelectors,

@@ -1,11 +1,11 @@
 //! Lifecycle order does not collapse exact rows or cross output families.
 
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::demand_key::WorthQueryOutputDemandKey;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::demand_key::WorthQueryOutputDemandKey;
 use crate::domain_computation::primary_graph::application_output_demand::registry::tests::support::key;
 
 use crate::domain_computation::primary_graph::application_output_demand::registry::tests::*;
 use std::cmp::Ordering;
-use worth_query_execution::equality_type_id::EqualityTypeId as TypeId;
+use worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId as TypeId;
 use worth_query_execution::facade::application_contribution::WorthQueryProducerApplicability;
 use worth_query_execution::facade::application_contribution::WorthQueryProducerLifecyclePosture;
 pub fn family_declarations() -> [[(TypeId, &'static str); 2]; 2] {

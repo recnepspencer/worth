@@ -49,7 +49,7 @@ pub fn completion_records(
         .graph
         .with_runtime_mut(execution, |runtime| {
             let snapshot =
-                worth_query_execution::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(
+                worth_query_execution::court_doors_for_test::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(
                     runtime,
                     product.relational_basis(),
                 )
@@ -63,7 +63,7 @@ pub fn completion_records(
                 .unwrap()
                 .records()
                 .len();
-            worth_query_execution::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
+            worth_query_execution::court_doors_for_test::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
             count
         })
 }

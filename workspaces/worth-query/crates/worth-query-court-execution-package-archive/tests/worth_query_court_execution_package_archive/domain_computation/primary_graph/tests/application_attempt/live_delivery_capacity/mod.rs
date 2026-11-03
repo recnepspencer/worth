@@ -121,7 +121,7 @@ pub fn bridge_head_commit(
         .graph
         .relational_bridge_source()
         .load_branch_head_patch(
-            &worth_query_execution::domain_computation::primary_graph::application_branch::primary_truth_branch_identity(),
+            &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_branch::primary_truth_branch_identity(),
             resource_request,
         )
         .expect("the bridge truth head remains available")

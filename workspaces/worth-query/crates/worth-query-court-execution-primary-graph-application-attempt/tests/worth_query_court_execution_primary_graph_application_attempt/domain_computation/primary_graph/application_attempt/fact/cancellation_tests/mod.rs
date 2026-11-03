@@ -1,12 +1,12 @@
 //! Cancellation is a typed stop through native adjacency and indexed equality.
 
-pub use worth_query_execution::domain_computation::primary_graph::application_attempt::fact::adjacency::AdjacencyObservationDenial;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::adjacency::AdjacencyObservationDenial;
 pub use worth_relational::facade::identity::KindId;
-pub use worth_query_execution::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationAdjacencyDirection;
-pub use worth_query_execution::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact;
-pub use worth_query_execution::domain_computation::primary_graph::application_attempt::fact::adjacency;
-pub use worth_query_execution::domain_computation::primary_graph::application_attempt::fact::indexed_entity_selection;
-pub use worth_query_execution::domain_computation::primary_graph::application_attempt::fact::indexed_entity_selection::observe_indexed_entity_selection;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationAdjacencyDirection;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::adjacency;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::indexed_entity_selection;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::indexed_entity_selection::observe_indexed_entity_selection;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::AccountOwner;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::AccountStatus;
@@ -34,7 +34,7 @@ fn cancelled_indexed_selection_equality_keeps_the_native_stop() {
             unreachable!()
         };
         let compare = || {
-            worth_query_execution::domain_computation::primary_graph::application_attempt::fact::indexed_entity_selection::remains_equal(
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::indexed_entity_selection::remains_equal(
                 runtime,
                 execution,
                 snapshot,
@@ -69,7 +69,7 @@ fn cancelled_adjacency_read_and_equality_keep_the_native_stop() {
             };
             let anchor = candidates[0];
             let direction = WorthQueryApplicationAdjacencyDirection::Incoming;
-            let expected = worth_query_execution::domain_computation::primary_graph::application_attempt::fact::adjacency::observe_adjacency(
+            let expected = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::adjacency::observe_adjacency(
                 runtime,
                 execution,
                 snapshot,
@@ -84,7 +84,7 @@ fn cancelled_adjacency_read_and_equality_keep_the_native_stop() {
                 !expected.is_empty(),
                 "the fixture account has a real owner relation"
             );
-            assert!(worth_query_execution::domain_computation::primary_graph::application_attempt::fact::adjacency::remains_equal(
+            assert!(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::adjacency::remains_equal(
                 runtime,
                 execution,
                 snapshot,
@@ -97,7 +97,7 @@ fn cancelled_adjacency_read_and_equality_keep_the_native_stop() {
             .unwrap());
             source.cancel();
             let stopped = [
-                worth_query_execution::domain_computation::primary_graph::application_attempt::fact::adjacency::observe_adjacency_with_work(
+                worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::adjacency::observe_adjacency_with_work(
                     runtime,
                     execution,
                     snapshot,
@@ -107,7 +107,7 @@ fn cancelled_adjacency_read_and_equality_keep_the_native_stop() {
                     Some(32),
                 )
                 .unwrap_err(),
-                worth_query_execution::domain_computation::primary_graph::application_attempt::fact::adjacency::observe_adjacency_checked(
+                worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::adjacency::observe_adjacency_checked(
                     runtime,
                     execution,
                     snapshot,
@@ -129,7 +129,7 @@ fn cancelled_adjacency_read_and_equality_keep_the_native_stop() {
                 assert_eq!(event.boundary(), worth_relational::facade::mvcc::RelationalInterruptionBoundary::ObservationAdmission);
             }
             assert_eq!(
-                worth_query_execution::domain_computation::primary_graph::application_attempt::fact::adjacency::observe_adjacency(
+                worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::adjacency::observe_adjacency(
                     runtime,
                     execution,
                     snapshot,
@@ -143,7 +143,7 @@ fn cancelled_adjacency_read_and_equality_keep_the_native_stop() {
                 Kind::Cancelled
             );
             assert_eq!(
-                worth_query_execution::domain_computation::primary_graph::application_attempt::fact::adjacency::remains_equal(
+                worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::adjacency::remains_equal(
                     runtime,
                     execution,
                     snapshot,

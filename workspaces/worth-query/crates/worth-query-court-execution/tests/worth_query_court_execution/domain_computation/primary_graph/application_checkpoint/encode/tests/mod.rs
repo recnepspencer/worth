@@ -12,12 +12,12 @@ use worth_relational::facade::identity::PartitionId;
 
 use worth_query_execution::facade::application_installation::WorthQueryCheckpointCaptureDenial;
 use worth_execution::ExecutionAllocationPolicy as CapturePolicy;
-use worth_query_execution::domain_computation::primary_graph::application_checkpoint::encode::reserve_buffer;
-use worth_query_execution::domain_computation::primary_graph::application_checkpoint::encode::sizing::ValidatedCheckpointSize;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryCheckpointOutputRole;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointIdentity;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointPosture;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::encode::reserve_buffer;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::encode::sizing::ValidatedCheckpointSize;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryCheckpointOutputRole;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointIdentity;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointPosture;
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::recoverable_commit_support::recoverable_application_world;
 use worth_query_execution::facade::application_installation::WorthQueryApplicationCheckpoint;
 use worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture as WorthQueryApplicationOutputPosture;
@@ -26,7 +26,7 @@ use worth_query_declaration::facade::application_operation::ApplicationMutationO
 fn checkpoint_one_buffer_matches_independent_v13_grammar_and_sections() {
     let (world, receipt) = recoverable_application_world(141, "checkpoint-wire-proof");
     let scope = receipt.principal_scope().scope();
-    let facts = worth_query_execution::domain_computation::primary_graph::application_checkpoint::facts::encode(&[WorthQueryApplicationObservedFact::SourceEntity {
+    let facts = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::encode(&[WorthQueryApplicationObservedFact::SourceEntity {
         entity_id: entity(9),
     }])
     .unwrap();
@@ -53,7 +53,7 @@ fn checkpoint_one_buffer_matches_independent_v13_grammar_and_sections() {
             ])
             .into(),
             producer_facts: Some(std::sync::Arc::new(facts.clone())),
-            producer_fact_wire_version: worth_query_execution::domain_computation::primary_graph::application_checkpoint::facts::WIRE_VERSION,
+            producer_fact_wire_version: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::WIRE_VERSION,
             metadata: None,
         },
         WorthQueryAcceptedOutputCheckpointIdentity {
@@ -111,7 +111,7 @@ fn checkpoint_one_buffer_matches_independent_v13_grammar_and_sections() {
     assert_eq!(capacity, expected.len());
     buffer.extend_from_slice(b"WQAPCP01").unwrap();
     buffer.extend_from_slice(&[0; 32]).unwrap();
-    worth_query_execution::domain_computation::primary_graph::application_checkpoint::encode::body::write(
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::encode::body::write(
         &mut buffer,
         native,
         world.application.publication(),
@@ -130,7 +130,7 @@ fn checkpoint_one_buffer_matches_independent_v13_grammar_and_sections() {
     let short_capacity = short_buffer.capacity();
     short_buffer.extend_from_slice(b"WQAPCP01").unwrap();
     short_buffer.extend_from_slice(&[0; 32]).unwrap();
-    let denial = worth_query_execution::domain_computation::primary_graph::application_checkpoint::encode::body::write(
+    let denial = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::encode::body::write(
         &mut short_buffer,
         b"abcd",
         world.application.publication(),

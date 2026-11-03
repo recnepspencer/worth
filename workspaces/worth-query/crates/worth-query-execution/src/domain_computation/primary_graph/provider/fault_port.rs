@@ -5,7 +5,7 @@ mod cancellation;
 use cancellation::BoundaryCancellation;
 
 #[derive(Clone, Copy)]
-pub(in crate::domain_computation::primary_graph) enum WorthQueryPrimaryGraphFault {
+pub enum WorthQueryPrimaryGraphFault {
     LostCommitResponse,
     RejectedSessionPreparation,
     RejectedCommitBeforeTransaction,

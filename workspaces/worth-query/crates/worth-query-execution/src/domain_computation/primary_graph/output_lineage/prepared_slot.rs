@@ -4,7 +4,7 @@ mod cancellation;
 
 mod capacity;
 mod checkpoint_locator;
-mod computation;
+pub(crate) mod computation;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use computation::PreparedComputationCustody;
 mod preparation;
@@ -29,7 +29,7 @@ use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphCo
 /// The identity stays invisible until the actual performed product head and
 /// sealed output source match this reservation. Drop removes only its vacancy.
 #[must_use = "a prepared output slot must be filled or released"]
-pub(in crate::domain_computation::primary_graph) struct PreparedOutputLineageSlot {
+pub struct PreparedOutputLineageSlot {
     pub(in crate::domain_computation::primary_graph) required_publication:
         Option<worth_relational::facade::mvcc::RelationalRequiredOutputPublication>,
     owner: Arc<Mutex<WorthQueryApplicationOutputLineage>>,
@@ -57,7 +57,7 @@ pub(in crate::domain_computation::primary_graph) struct PreparedOutputLineageSlo
     filled: bool,
 }
 
-pub(super) struct CancelledLineageSlot {
+pub struct CancelledLineageSlot {
     identity: Arc<RecordedSettlementIdentity>,
     partition: Option<[u8; 32]>,
     pub(super) next: Option<Box<Self>>,

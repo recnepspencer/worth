@@ -1,10 +1,10 @@
 //! A real replacement with the same selector cannot inherit the original subject.
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::causal_inspection::application_inspection::tests::observe;
-use worth_query_execution::domain_computation::primary_graph::causal_inspection::application_inspection::admission;
-use worth_query_execution::domain_computation::primary_graph::causal_inspection::application_inspection::identity;
-use worth_query_execution::domain_computation::primary_graph::causal_inspection::application_inspection::request;
-use worth_query_execution::domain_computation::primary_graph::causal_inspection::application_inspection::stop;
-use worth_query_execution::domain_computation::primary_graph::causal_inspection::application_inspection::target;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::causal_inspection::application_inspection::admission;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::causal_inspection::application_inspection::identity;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::causal_inspection::application_inspection::request;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::causal_inspection::application_inspection::stop;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::causal_inspection::application_inspection::target;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::causal_inspection::application_inspection::tests;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_reclaiming_authorization_world;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope;
@@ -215,8 +215,8 @@ fn same_scope_reused_slot_cannot_inherit_original_observation_generation() {
     assert!(
         matches!(
             denial.cause,
-            worth_query_execution::domain_computation::primary_graph::causal_inspection::application_inspection::stop::InspectionCause::Admission(
-                worth_query_execution::domain_computation::primary_graph::causal_inspection::application_inspection::admission::InspectionAdmissionDenial::ForeignIssuedAccess
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::causal_inspection::application_inspection::stop::InspectionCause::Admission(
+                worth_query_execution::court_doors_for_test::domain_computation::primary_graph::causal_inspection::application_inspection::admission::InspectionAdmissionDenial::ForeignIssuedAccess
             )
         ),
         "a new readable generation cannot borrow original observation identity"

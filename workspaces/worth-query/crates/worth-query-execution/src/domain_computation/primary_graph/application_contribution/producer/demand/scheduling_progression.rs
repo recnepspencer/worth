@@ -270,7 +270,7 @@ fn schedule_admission_denial(
     )
 }
 
-fn scheduling_refusal(
+pub fn scheduling_refusal(
     producer_identity: &str,
     error: BridgeConditionalDenial,
 ) -> Result<WorthQueryOutputSchedulingResult, WorthQueryOutputDemandDenial> {

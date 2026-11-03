@@ -51,8 +51,8 @@ use worth_relational::facade::transactions::MutationIntent;
 use worth_relational::facade::transactions::UpdateEntityFieldsIntent;
 use worth_relational::facade::transactions::WorkerIntentBatch;
 
-use worth_query_execution::domain_computation::primary_graph::merge_unique_values::admit_merge_unique_values;
-use worth_query_execution::domain_computation::primary_graph::schema_layout::unique_fields::WorthQueryUniqueFieldFixture;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::merge_unique_values::admit_merge_unique_values;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::schema_layout::unique_fields::WorthQueryUniqueFieldFixture;
 use worth_query_execution::facade::integration::WorthQueryMergeUniqueValueDenialKind as Kind;
 
 pub const KIND: KindId = KindId(1);

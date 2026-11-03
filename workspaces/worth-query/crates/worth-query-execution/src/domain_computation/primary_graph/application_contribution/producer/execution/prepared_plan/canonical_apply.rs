@@ -4,7 +4,7 @@ use worth_proof::CanonicalUniqueVec;
 
 use crate::domain_computation::primary_graph::application_contribution::QueryRequestExecution;
 
-pub(in crate::domain_computation::primary_graph::application_contribution::producer) struct CanonicalApplyCursor<
+pub struct CanonicalApplyCursor<
     'owner,
     Key,
     Value,

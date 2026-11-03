@@ -4,9 +4,9 @@ use worth_query_testkit_execution_primary_graph_application_attempt::domain_comp
 
 use std::sync::Arc;
 use worth_execution::ExecutionAllocationPolicy;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::computation_routing::ComputationRead;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::role_use::OutputRoleUse;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::recorded_output::RecordedOutput;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::computation_routing::ComputationRead;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::role_use::OutputRoleUse;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::recorded_output::RecordedOutput;
 use crate::domain_computation::primary_graph::tests::application_attempt::authenticated_principal;
 use crate::domain_computation::primary_graph::tests::application_attempt::idempotency;
 use crate::domain_computation::primary_graph::tests::application_attempt::preimage_evidence::retained_status_program;
@@ -55,7 +55,7 @@ pub fn commit_own_write(
     ),
 ) {
     let product_resources =
-        worth_query_execution::domain_computation::execution_runtime::product_world::resources::test_product_world_resources();
+        worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::resources::test_product_world_resources();
     let resources = product_resources.invalidation_resources();
     let world = crate::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world_with_product_resources(product_resources);
     world.declare_output_contract::<OwnWriteOutputs>("OwnWriteOutputs");
@@ -256,18 +256,18 @@ pub fn commit_own_write(
             .get_mut()
             .unwrap();
         let count = recorded.observed_source_facts().unwrap().len();
-        let boundary = worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::handler_fact_boundary::CompletedHandlerFactBoundary::completed_for_test(count);
-        let context = worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::decision_reuse::PreparedDecisionReuseContext::new(
+        let boundary = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::handler_fact_boundary::CompletedHandlerFactBoundary::completed_for_test(count);
+        let context = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::decision_reuse::PreparedDecisionReuseContext::new(
             worth_query_execution::facade::application_contribution::WorthQueryProducerInputReuseContract::canonical_bitwise(
                 worth_query_execution::facade::application_contribution::WorthQueryDecisionContextDependencies::KEY), Some([11;32]), None, None).unwrap();
         recorded.completed_decision_reuse = boundary.seal_decision_reuse(
             context,
-            worth_query_execution::domain_computation::primary_graph::handler::decision_context_use::DecisionContextUse::default().key_for_test(),
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::handler::decision_context_use::DecisionContextUse::default().key_for_test(),
         );
         recorded.completed_handler_facts = Some(boundary);
-        recorded.prepared_input_reuse_key = Some(worth_query_execution::domain_computation::primary_graph::output_lineage::input_reuse_key::PreparedInputReuseKey::new(
-            worth_query_execution::domain_computation::primary_graph::application_query::observed_source::source_identity::membership::WorthQueryObservedSourceSelection::selecting_for_test(u64::try_from(count).unwrap()),
-            [11;32], worth_query_execution::domain_computation::primary_graph::application_contribution::producer::registry::semantic_edition::InstalledProducerEdition::for_test([12;32])));
+        recorded.prepared_input_reuse_key = Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::input_reuse_key::PreparedInputReuseKey::new(
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::membership::WorthQueryObservedSourceSelection::selecting_for_test(u64::try_from(count).unwrap()),
+            [11;32], worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::registry::semantic_edition::InstalledProducerEdition::for_test([12;32])));
     }
     let cell = handle
         .output_lineage

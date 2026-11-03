@@ -7,7 +7,7 @@ use worth_relational::facade::runtime::RelationalAdjacencyDirection as NativeDir
 // the adjacency population. It covers pair presence and ABA.
 const NATIVE_REVISION_LOOKUP_WORK: usize = 1;
 
-pub(super) fn rebase_decision_adjacency(
+pub fn rebase_decision_adjacency(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,

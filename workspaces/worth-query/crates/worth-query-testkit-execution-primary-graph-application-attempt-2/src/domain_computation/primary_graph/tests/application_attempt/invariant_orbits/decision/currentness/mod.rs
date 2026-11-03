@@ -15,8 +15,8 @@ use worth_query_execution::facade::domain_computation::WorthQueryApplicationComm
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationEffectProgram;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationIdempotencyBinding;
 use worth_query_execution::facade::domain_computation::WorthQueryMutationHandlerWork;
-use worth_query_execution::domain_computation::primary_graph::application_entry;
-use worth_query_execution::domain_computation::primary_graph::root;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_entry;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::root;
 use worth_execution::ExecutionAllocationPolicy as Allocation;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_declaration::facade::application_operation::ApplicationMutationIdentities;

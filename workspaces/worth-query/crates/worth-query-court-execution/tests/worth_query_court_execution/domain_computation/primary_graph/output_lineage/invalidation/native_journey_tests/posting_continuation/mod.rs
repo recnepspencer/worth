@@ -1,7 +1,7 @@
 //! Native source custody, shared settlement installation, retirement and races.
 use crate::domain_computation::primary_graph::output_lineage::invalidation::native_journey_tests::*;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts;
 
 #[test]
 fn native_projection_continuation_keeps_exact_bindings_and_rejects_source_races() {
@@ -79,7 +79,7 @@ fn native_projection_continuation_keeps_exact_bindings_and_rejects_source_races(
     let first = RecordedSettlementIdentity::retain(&source, coordinate, 0);
     owner
         .register_settlement(SettlementRegistration {
-            computation: Some(worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::computation_changes::ComputationRegistration::retained()),
+            computation: Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::computation_changes::ComputationRegistration::retained()),
             work_membership: None,
             identity: first.clone(),
             facts: RetainedSourceFacts::for_test(false, facts.clone()),
@@ -254,7 +254,7 @@ fn native_projection_continuation_keeps_exact_bindings_and_rejects_source_races(
     assert!(matches!(
         currentness(owner, &after, &fourth),
         SourceSettlementCurrentness::FullVerificationRequired(
-            worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::mark_state::FullVerificationReason::MissingSettlement
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::mark_state::FullVerificationReason::MissingSettlement
         )
     ));
     drop(retired_image);

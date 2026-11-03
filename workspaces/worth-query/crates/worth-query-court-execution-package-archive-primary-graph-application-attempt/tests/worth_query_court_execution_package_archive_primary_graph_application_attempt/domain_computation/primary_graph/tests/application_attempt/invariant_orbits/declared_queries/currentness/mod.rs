@@ -1,6 +1,6 @@
 //! Query row/set retention preserves original aggregate and walk bodies independently.
 use crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::declared_queries::*;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::snapshot_lease::WorthQueryApplicationSnapshotLease;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::snapshot_lease::WorthQueryApplicationSnapshotLease;
 use std::sync::Arc;
 use worth_execution::ExecutionAllocationPolicy as Allocation;
 use worth_execution::ExecutionRequest;
@@ -45,11 +45,11 @@ fn retained_query_aggregate_identity_is_not_hidden_by_its_walk_companion() {
             let mut extent = None;
             let aggregate_fact = WorthQueryApplicationObservedFact::Aggregate { observation: Arc::clone(aggregate) };
             let movement = aggregate_fact.source_currentness_with(runtime, &execution, lease.snapshot(), &mut extent, None).unwrap().unwrap().movement();
-            assert_eq!(movement == worth_query_execution::domain_computation::primary_graph::application_attempt::fact::movement::Movement::Unmoved, index == winner);
+            assert_eq!(movement == worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::movement::Movement::Unmoved, index == winner);
             let again = aggregate_fact.source_currentness_with(runtime, &execution, lease.snapshot(), &mut extent, None).unwrap().unwrap().movement();
             assert_eq!(movement, again);
             let walk_fact = WorthQueryApplicationObservedFact::StructuralWalk { observation: Arc::clone(walk) };
-            assert_eq!(walk_fact.source_currentness_with(runtime, &execution, lease.snapshot(), &mut extent, None).unwrap().unwrap().movement(), worth_query_execution::domain_computation::primary_graph::application_attempt::fact::movement::Movement::Moved);
+            assert_eq!(walk_fact.source_currentness_with(runtime, &execution, lease.snapshot(), &mut extent, None).unwrap().unwrap().movement(), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::movement::Movement::Moved);
         });
     }
 }

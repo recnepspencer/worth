@@ -7,7 +7,7 @@ pub use worth_query_testkit_execution_primary_graph_application_contribution::do
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::AccountStatus;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::IdentityExecutionSchema;
-pub use worth_query_execution::domain_computation::primary_graph::application_branch::primary_relational_branch_id;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_branch::primary_relational_branch_id;
 pub use worth_query_execution::facade::domain_computation::WorthQueryEntityResolutionDenialKind;
 pub use worth_query_execution::facade::domain_computation::WorthQueryPrincipalResolutionMode;
 

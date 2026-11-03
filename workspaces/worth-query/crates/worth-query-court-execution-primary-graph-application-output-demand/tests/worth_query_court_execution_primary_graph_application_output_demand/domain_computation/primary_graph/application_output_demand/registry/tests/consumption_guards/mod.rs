@@ -1,20 +1,20 @@
 //! Root consumption is returned only for an abandoned, undelivered answer.
 //! Receipts and source payloads come from real commits; stages are assigned
 //! at the registry seam that owns disposal, not inferred from a handler run.
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::BoundOutputSource;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::source_custody::PreparedOutputRootKind;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::ready_backing::PreparedReadyBacking;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::SourceCustody;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputProgress;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryPendingOutputDelivery;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::WorthQueryPerformedOutputDemandSource;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::BoundOutputSource;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::source_custody::PreparedOutputRootKind;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::ready_backing::PreparedReadyBacking;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::SourceCustody;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputProgress;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryPendingOutputDelivery;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryPerformedOutputDemandSource;
 use crate::domain_computation::primary_graph::application_output_demand::registry::tests::*;
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::recoverable_commit_support;
-use worth_query_execution::equality_type_id::EqualityTypeId;
+use worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId;
 
 pub fn retained_source(
-    identity: worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::SourceEpoch,
+    identity: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::SourceEpoch,
 ) -> SourceCustody {
     let mut receipt = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application_with_output_demand_observation();
     let change = Arc::new(receipt.take_performed_relational_product_change().unwrap());
@@ -145,10 +145,10 @@ fn an_abandoned_join_returns_the_requested_source_it_consumed() {
     let (interest, _) = registry
         .admit(
             requested.clone(),
-            Some(worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::admission::selected_output::SelectedOutputAdmission::new(&commit, None)),
+            Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::admission::selected_output::SelectedOutputAdmission::new(&commit, None)),
             scope,
             initial.occurrence,
-            worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::DemandAdmissionKind::Required,
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandAdmissionKind::Required,
             None,
             None,
         )

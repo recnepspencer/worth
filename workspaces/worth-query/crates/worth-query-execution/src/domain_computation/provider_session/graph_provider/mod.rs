@@ -10,8 +10,8 @@ mod read_material;
 mod read_product;
 mod read_row;
 mod receipt;
-mod receipt_association;
-mod stream_evidence;
+pub(crate) mod receipt_association;
+pub(crate) mod stream_evidence;
 mod work_report;
 
 pub(crate) use call::WorthQueryGraphProviderCallReadmissionPlan;

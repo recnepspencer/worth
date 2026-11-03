@@ -130,9 +130,9 @@ pub fn mutation_index_refresh_stop(cancelled: bool) {
 }
 
 pub fn currency_stop(
-    denial: worth_query_execution::domain_computation::primary_graph::index_currency::WorthQueryPrimaryIndexCurrencyDenial,
+    denial: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::index_currency::WorthQueryPrimaryIndexCurrencyDenial,
 ) -> Option<Result<Kind, Control>> {
-    use worth_query_execution::domain_computation::primary_graph::index_currency::WorthQueryPrimaryIndexCurrencyDenial as Denial;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::index_currency::WorthQueryPrimaryIndexCurrencyDenial as Denial;
     match denial {
         Denial::Execution(stop) => Some(
             worth_query_execution::facade::domain_computation::relational_execution_kind(

@@ -8,7 +8,7 @@ use worth_execution::ExecutionRequest;
 use WorthQueryManagedDerivedViewDenial as Denial;
 
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationOneShotDenialKind;
-use worth_query_execution::domain_computation::provider_session::graph_obligation::owner_execution::pin_control::PinControlGuardForTest;
+use worth_query_execution::court_doors_for_test::domain_computation::provider_session::graph_obligation::owner_execution::pin_control::PinControlGuardForTest;
 use worth_query_declaration::facade::application_query::ApplicationDerivedViewDefinition;
 use worth_query_declaration::facade::application_query::ApplicationDerivedViewLimits;
 
@@ -156,10 +156,10 @@ pub fn check(case: usize) {
                 )
                 .unwrap();
             let stimulus = if case == 1 {
-                Some(worth_query_execution::domain_computation::provider_session::graph_obligation::owner_execution::pin_control::PinControlGuardForTest::cancellation(cancellation))
+                Some(worth_query_execution::court_doors_for_test::domain_computation::provider_session::graph_obligation::owner_execution::pin_control::PinControlGuardForTest::cancellation(cancellation))
             } else if case == 0 {
                 // First side pins normally; second side is the one-predicate query.
-                Some(worth_query_execution::domain_computation::provider_session::graph_obligation::owner_execution::pin_control::PinControlGuardForTest::unavailable_snapshot(1, unavailable))
+                Some(worth_query_execution::court_doors_for_test::domain_computation::provider_session::graph_obligation::owner_execution::pin_control::PinControlGuardForTest::unavailable_snapshot(1, unavailable))
             } else {
                 None
             };

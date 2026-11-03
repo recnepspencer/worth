@@ -19,7 +19,7 @@ use worth_query_execution::facade::domain_computation::WorthQueryPrincipalResolu
 pub type World = crate::domain_computation::primary_graph::tests::authorization::capability_elevation::approval_transition::World;
 
 pub fn elevation_status(
-    phase_custody: &worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &World,
 ) -> CapabilityElevationStatus {
@@ -59,7 +59,7 @@ pub fn elevation_status(
 }
 
 pub fn review_status(
-    phase_custody: &worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &World,
 ) -> CapabilityReviewStatus {
@@ -79,7 +79,7 @@ pub fn review_status(
 }
 
 pub fn has_exact_reviewer(
-    phase_custody: &worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &World,
     reviewer: EntityId,
@@ -117,7 +117,7 @@ pub fn has_exact_reviewer(
 }
 
 pub fn has_exact_approver(
-    phase_custody: &worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &World,
     approver: EntityId,
@@ -169,7 +169,7 @@ pub fn has_exact_approver(
 }
 
 pub fn resolved_review(
-    phase_custody: &worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &World,
 ) -> (EntityId, KindId) {
@@ -209,7 +209,7 @@ where
         .integration_handle()
         .with_runtime_mut(execution, |relational| {
             let snapshot = selected.application_basis().snapshot_handle();
-            worth_query_execution::domain_computation::primary_graph::application_attempt::observation::observe_field_value(
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::observation::observe_field_value(
                 relational, execution, snapshot, entity, kind, locator,
             )
             .expect("native field request remains live")

@@ -90,7 +90,7 @@ impl Fixture {
                 .records
                 .get_mut(&interest.key)
                 .unwrap()
-                .successor_of = Some(worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::succession::Succession::new(
+                .successor_of = Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::succession::Succession::new(
                 *receipt.idempotency_binding().key_identity(),
             ));
         }
@@ -103,7 +103,7 @@ impl Fixture {
                 observation,
                 output_source_identity: None,
             });
-            row.performed_obligations = vec![worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::PerformedOutputObligation {
+            row.performed_obligations = vec![worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::PerformedOutputObligation {
                 source_commit: commit.clone(),
                 source: interest.key.source.clone(),
             }];

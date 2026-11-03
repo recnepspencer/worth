@@ -9,7 +9,7 @@ use std::cmp::Ordering;
 // Family and source precede the binding: one output occurrence remains a
 // contiguous range even when Initial and Preserve have separate executors.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub(in crate::domain_computation::primary_graph) struct WorthQueryOutputDemandKey {
+pub struct WorthQueryOutputDemandKey {
     pub(super) family: OutputFamilyIdentity,
     pub(super) source: SourceEpoch,
     pub(super) applicability: WorthQueryProducerApplicability,

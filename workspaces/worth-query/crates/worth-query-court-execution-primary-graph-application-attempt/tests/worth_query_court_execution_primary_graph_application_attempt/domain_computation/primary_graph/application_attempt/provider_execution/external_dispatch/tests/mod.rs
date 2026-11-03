@@ -26,7 +26,7 @@ impl WorthQueryExternalEffectTransport for RetryTransport {
 #[test]
 fn production_fresh_attempt_operation_distinguishes_safe_redispatch() {
     let (world, receipt) = recoverable_application_world(181, "dispatch-retry");
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let phase = &active_phase;
 
         let transport = RetryTransport(AtomicUsize::new(0));
@@ -79,7 +79,7 @@ fn production_fresh_attempt_operation_distinguishes_safe_redispatch() {
 fn foreign_owner_observation_denies_before_transport_and_preserves_cause() {
     let (world, local_receipt) = recoverable_application_world(184, "local-dispatch");
     let (foreign_world, foreign_receipt) = recoverable_application_world(182, "foreign-dispatch");
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let phase = &active_phase;
 
         let transport = RetryTransport(AtomicUsize::new(0));
@@ -132,7 +132,7 @@ fn foreign_owner_observation_denies_before_transport_and_preserves_cause() {
 #[test]
 fn unavailable_runtime_time_is_a_typed_dispatch_preparation_denial() {
     let (world, receipt) = recoverable_application_world(183, "unavailable-time");
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let phase = &active_phase;
 
         world.authorization_time.script([]);

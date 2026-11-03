@@ -6,8 +6,8 @@ use std::sync::atomic::Ordering;
 use std::sync::Mutex;
 use worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource;
 
-use worth_query_execution::domain_computation::primary_graph::provider::fault_port::WorthQueryPrimaryGraphFault;
-use worth_query_execution::domain_computation::primary_graph::provider::fault_port::WorthQueryPrimaryGraphFaultPort;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::fault_port::WorthQueryPrimaryGraphFault;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::fault_port::WorthQueryPrimaryGraphFaultPort;
 
 #[derive(Default)]
 pub struct PrimaryGraphFaultController {

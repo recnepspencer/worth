@@ -8,7 +8,7 @@ use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_co
 use crate::process::domain_computation::managed_run::tests::*;
 #[test]
 fn direct_readmission_mints_fresh_attempts_and_transfers_capacity() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -80,7 +80,7 @@ fn direct_readmission_mints_fresh_attempts_and_transfers_capacity() {
 }
 #[test]
 fn query_preflight_denial_returns_the_exact_yielded_capability_without_fresh_work() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -153,7 +153,7 @@ fn query_preflight_denial_returns_the_exact_yielded_capability_without_fresh_wor
 }
 #[test]
 fn provider_restore_denial_preserves_the_exact_checkpoint_and_capacity_package() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 

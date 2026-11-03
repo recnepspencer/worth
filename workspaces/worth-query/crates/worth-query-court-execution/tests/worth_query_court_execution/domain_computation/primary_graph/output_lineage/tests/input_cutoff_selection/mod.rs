@@ -1,6 +1,6 @@
 use std::sync::Arc;
-use worth_query_execution::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
-use worth_query_execution::equality_type_id::EqualityTypeId as TypeId;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
+use worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId as TypeId;
 
 use worth_runtime_world::facade::ProductBranchCreationIntent;
 use worth_runtime_world::facade::ProductBranchCreationPlans;
@@ -12,10 +12,10 @@ use worth_runtime_world::facade::SignalBranchCreationPlan;
 use crate::domain_computation::primary_graph::output_lineage::tests::checkpoint_identity;
 use crate::domain_computation::primary_graph::output_lineage::tests::RestoredOutputBinding;
 use worth_query_execution::facade::domain_computation::WorthQueryOperationScopeBinding;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::ProductCoordinate;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::semantic_source::SemanticSource;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondence;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::WorthQueryApplicationOutputLineage;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::ProductCoordinate;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::semantic_source::SemanticSource;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondence;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::WorthQueryApplicationOutputLineage;
 
 #[test]
 fn cutoff_candidate_pins_the_selected_ancestor_partition() {
@@ -121,8 +121,8 @@ fn cutoff_candidate_pins_the_selected_ancestor_partition() {
         [&parent.reference_generation().get()][0];
     let selected_identity = &selected_cell.get().unwrap().settlement_identity;
     assert!(matches!(&selected_cell.get().unwrap().mutable.lock().unwrap().computation,
-        worth_query_execution::domain_computation::primary_graph::output_lineage::retained_computation::RecordedComputation::Absent(
-            worth_query_execution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::prior_absence::PriorAbsence::Restored)));
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::retained_computation::RecordedComputation::Absent(
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::prior_absence::PriorAbsence::Restored)));
 
     let selected = lineage
         .prior_input_cutoff_candidate::<RestoredOutputBinding>(

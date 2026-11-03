@@ -4,7 +4,7 @@ use crate::domain_computation::primary_graph::tests::application_attempt::invari
 use crate::domain_computation::primary_graph::tests::application_attempt::invariant_walks::program::authorization::authorize;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationEffectProgram;
 use worth_query_execution::facade::domain_computation::WorthQueryPrincipalResolutionMode;
-use worth_query_execution::domain_computation::primary_graph::facade::authorization;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::facade::authorization;
 use worth_execution::ExecutionAllocationPolicy as Allocation;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 pub fn link(

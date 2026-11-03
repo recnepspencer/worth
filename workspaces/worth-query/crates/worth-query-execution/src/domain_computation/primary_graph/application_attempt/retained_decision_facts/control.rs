@@ -5,7 +5,7 @@ use worth_query_admission::facade::authenticated_principal::WorthQueryRequestSco
 /// Attempt-local borrowing only; this facet is never retained in a snapshot,
 /// prepared candidate, completed read set or commit authority.
 #[derive(Clone, Copy)]
-pub(in crate::domain_computation) struct StorageControl<'scope, 'authority> {
+pub struct StorageControl<'scope, 'authority> {
     execution: Option<worth_execution::ExecutionRequest<'scope, 'authority>>,
     policy: ExecutionAllocationPolicy<'scope, 'authority>,
     request: Option<&'scope WorthQueryRequestScope>,

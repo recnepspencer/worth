@@ -1,10 +1,10 @@
 //! Private World publication of an owner-admitted external completion.
 
-mod custody;
-mod installed_transport;
-mod outcome;
-mod progression;
-mod transport_progression;
+pub(crate) mod custody;
+pub(crate) mod installed_transport;
+pub(crate) mod outcome;
+pub(crate) mod progression;
+pub(crate) mod transport_progression;
 
 pub(super) use custody::InstalledTransportCompletionCustody;
 pub(in crate::domain_computation::primary_graph) use custody::{

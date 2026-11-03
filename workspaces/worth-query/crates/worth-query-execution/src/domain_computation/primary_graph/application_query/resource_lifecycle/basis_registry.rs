@@ -5,7 +5,7 @@ use std::sync::{
 
 use super::lifecycle_count::{acquire, record_one_saturating};
 
-mod lease;
+pub(crate) mod lease;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle;
 pub(crate) use lease::WorthQueryApplicationBasisLease;
 use worth_relational::facade::{
@@ -25,7 +25,7 @@ struct WorthQueryApplicationBasisRegistryState {
 }
 
 #[derive(Default)]
-pub(crate) struct WorthQueryApplicationBasisRegistry {
+pub struct WorthQueryApplicationBasisRegistry {
     state: Arc<WorthQueryApplicationBasisRegistryState>,
 }
 

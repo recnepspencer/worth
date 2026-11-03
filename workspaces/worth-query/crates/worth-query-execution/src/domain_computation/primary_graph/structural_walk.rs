@@ -11,12 +11,12 @@ pub(in crate::domain_computation::primary_graph) use dependencies::StructuralWal
 mod commitment;
 mod key;
 pub(in crate::domain_computation::primary_graph) mod memory;
-mod read;
+pub(crate) mod read;
 pub(in crate::domain_computation::primary_graph) use key::StructuralWalkKey;
 pub(in crate::domain_computation::primary_graph) use read::StructuralWalkQuery;
 
 #[derive(Debug)]
-pub(in crate::domain_computation) struct StructuralWalkObservation {
+pub struct StructuralWalkObservation {
     query: StructuralWalkKey,
     native: PinnedStructuralWalk,
     commitment: [u8; 32],

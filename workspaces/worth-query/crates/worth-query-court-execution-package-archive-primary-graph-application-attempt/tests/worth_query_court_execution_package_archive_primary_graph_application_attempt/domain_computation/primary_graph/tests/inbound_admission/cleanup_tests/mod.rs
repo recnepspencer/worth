@@ -9,7 +9,7 @@ use crate::domain_computation::primary_graph::tests::inbound_admission::schema::
 use crate::domain_computation::primary_graph::tests::inbound_admission::verifier::TestVerifier;
 use crate::domain_computation::primary_graph::tests::inbound_admission::verifier::signed_envelope;
 use crate::domain_computation::primary_graph::tests::inbound_admission::verifier::signed_envelope_for_seconds;
-use worth_query_execution::domain_computation::application_aftermath::external_effect::inbound::custody::WorthQueryInboundPublicationClaim;
+use worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::inbound::custody::WorthQueryInboundPublicationClaim;
 use worth_query_execution::facade::domain_computation::WorthQueryInboundAdmissionDenial;
 use worth_query_execution::facade::domain_computation::WorthQueryInboundReceiptPosture;
 

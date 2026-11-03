@@ -11,12 +11,12 @@ use worth_query_admission::facade::authenticated_principal::WorthQueryRequestSco
 
 use crate::domain_computation::primary_graph::tests::inbound_admission::fixture::installed_world;
 use crate::domain_computation::primary_graph::tests::inbound_admission::verifier::signed_envelope_for_seconds;
-use worth_query_execution::domain_computation::application_aftermath::external_effect::dispatch::dispatch_external_effect;
+use worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::dispatch::dispatch_external_effect;
 use worth_query_execution::facade::domain_computation::WorthQueryExternalDispatchRequest;
 use worth_query_execution::facade::domain_computation::WorthQueryExternalEffectTransport;
 use worth_query_execution::facade::domain_computation::WorthQueryExternalTransportOutcome;
-use worth_query_execution::domain_computation::primary_graph::application_runtime::inbound_publication::installed_transport::InstalledTransportCompletion;
-use worth_query_execution::domain_computation::primary_graph::application_runtime::inbound_publication::custody::InstalledTransportResumeOutcome;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_runtime::inbound_publication::installed_transport::InstalledTransportCompletion;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_runtime::inbound_publication::custody::InstalledTransportResumeOutcome;
 use worth_query_execution::facade::domain_computation::WorthQueryInboundAdmissionDenial;
 use worth_query_execution::facade::domain_computation::WorthQueryInboundReceiptPosture;
 

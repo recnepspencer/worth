@@ -74,7 +74,7 @@ fn field_denial(
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(super) struct FieldExpectation {
+pub struct FieldExpectation {
     pub(super) binding: NativeFieldBindingExpectation,
     pub(super) aspect: domain::AspectContract,
     pub(super) native_binding: domain::AspectBinding,

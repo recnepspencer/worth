@@ -2,10 +2,10 @@
 
 mod admitted;
 mod component;
-mod follower;
+pub(crate) mod follower;
 mod history;
-mod registry;
-mod retirement;
+pub(crate) mod registry;
+pub(crate) mod retirement;
 pub(crate) use retirement::OwnerCleanupRetirements;
 
 use worth_runtime_world::facade::{
@@ -19,7 +19,7 @@ pub(crate) use registry::WorthQueryProductBranchOwnerCleanupReservation;
 pub(super) use registry::{CleanupScope, WorthQueryProductBranchOwnerCleanupRegistry};
 
 #[derive(Clone)]
-pub(crate) struct WorthQueryRetiredProductOccurrence {
+pub struct WorthQueryRetiredProductOccurrence {
     branch: worth_runtime_world::facade::ProductBranchIdentity,
     incarnation: worth_runtime_world::facade::ProductBranchIncarnation,
 }

@@ -11,7 +11,7 @@ use crate::domain_computation::primary_graph::{
 /// has no such proof, and a republished output continues its own.
 /// The installed edition is the producer's whole identity: a runtime installs
 /// one producer under it, whichever program selects the occurrence.
-pub(in crate::domain_computation::primary_graph) struct PreparedInputReuseKey {
+pub struct PreparedInputReuseKey {
     selection: WorthQueryObservedSourceSelection,
     input_identity: [u8; 32],
     installed_edition: InstalledProducerEdition,

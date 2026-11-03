@@ -1,6 +1,6 @@
 //! One actual producer field comparison, completed before Ready and retained through retries.
 pub(super) mod installation;
-mod native;
+pub(crate) mod native;
 use super::output_equivalence_contract::InstalledProducerOutputEquivalence;
 use crate::domain_computation::primary_graph::{
     application_output_demand::PreparedReadyBacking,

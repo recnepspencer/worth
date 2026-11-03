@@ -1,8 +1,8 @@
 //! Numeric topology only; no Native, Source slot or qualified root is fabricated.
 use worth_execution::ExecutionRequest;
 use worth_query_execution::facade::domain_computation::WorthQueryManagedIndexStop as Stop;
-use worth_query_execution::domain_computation::primary_graph::application_query::managed_index::source_structure::cold::acyclic;
-use worth_query_execution::domain_computation::primary_graph::application_query::managed_index::invocation::controlled;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::managed_index::source_structure::cold::acyclic;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::managed_index::invocation::controlled;
 use worth_query_execution::facade::domain_computation::WorthQueryManagedIndexWorkDenial as Denial;
 use worth_execution::CancellationSource;
 use worth_execution::ExecutionWorkCeiling;

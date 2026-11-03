@@ -34,7 +34,7 @@ pub(super) fn require_legacy_materialization_source(
     Ok(())
 }
 
-pub(super) fn validate_materialization_contract(
+pub fn validate_materialization_contract(
     query_observation_identity: &WorthQueryEvidenceIdentity,
     requested_families: &[CausalEvidenceFamily],
     envelope: &BridgeCausalExplanationEnvelope,

@@ -1,0 +1,2 @@
+//! Doors under `domain_computation::primary_graph::index_currency`.
+pub use crate::domain_computation::primary_graph::index_currency::WorthQueryPrimaryIndexCurrencyDenial;

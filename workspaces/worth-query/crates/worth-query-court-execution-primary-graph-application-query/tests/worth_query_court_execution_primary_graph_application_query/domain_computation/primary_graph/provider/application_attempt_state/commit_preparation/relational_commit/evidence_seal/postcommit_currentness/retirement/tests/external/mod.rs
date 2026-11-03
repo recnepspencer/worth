@@ -42,7 +42,7 @@ fn external_pair_and_adjacency_remain_current_after_owned_endpoint_retirement() 
                 .entity_kind(ActivityIdentity::reference().entity())
                 .unwrap();
             let relations = graph.integration_handle().with_runtime(&phase.borrowed_request_for_test(), |runtime| {
-                worth_query_execution::domain_computation::primary_graph::application_attempt::fact::adjacency::observe_adjacency(
+                worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::adjacency::observe_adjacency(
                     runtime,
                     execution,
                     selected.application_basis().snapshot_handle(),
@@ -162,7 +162,7 @@ fn external_pair_and_adjacency_remain_current_after_owned_endpoint_retirement() 
 
 #[test]
 fn a_retired_entity_changes_each_revision_fact_read_without_its_entity_fact() {
-    use worth_query_execution::domain_computation::primary_graph::application_attempt::fact::movement::Movement;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::movement::Movement;
     let world = installed_authorization_world(true);
     world
         .application

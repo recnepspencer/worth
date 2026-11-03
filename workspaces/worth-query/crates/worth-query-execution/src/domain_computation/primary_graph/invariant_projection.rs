@@ -10,7 +10,7 @@ mod component;
 mod graph_member;
 mod logical_projection;
 pub use component::WorthQueryInvariantProjectionComponent;
-pub(in crate::domain_computation::primary_graph) mod consumed_output;
+pub(crate) mod consumed_output;
 mod entity_resident;
 #[path = "invariant_projection/field_projection.rs"]
 mod field_projection;
@@ -23,7 +23,7 @@ mod orbit;
 pub use orbit::WorthQueryInvariantProjectionOrbit;
 mod locked_reader;
 mod operation_projection_denial;
-mod operation_reader;
+pub(crate) mod operation_reader;
 pub(in crate::domain_computation::primary_graph) use operation_reader::native_index_decision_cause;
 pub(in crate::domain_computation::primary_graph) use operation_reader::BorrowedOperationProjection;
 pub use operation_reader::{
@@ -39,7 +39,7 @@ mod relation_identity;
 pub use relation_identity::WorthQueryInvariantRelation;
 mod traversal;
 mod walk;
-mod work;
+pub(crate) mod work;
 pub(in crate::domain_computation::primary_graph) use consumed_output::EvidenceView;
 pub use walk::{
     WorthQueryInvariantProjectionWalk, WorthQueryInvariantProjectionWalkIter,

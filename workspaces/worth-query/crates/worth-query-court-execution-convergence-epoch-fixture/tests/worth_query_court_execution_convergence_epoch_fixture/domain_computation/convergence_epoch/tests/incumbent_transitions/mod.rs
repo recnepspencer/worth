@@ -10,7 +10,7 @@ use worth_query_execution::facade::domain_computation::WorthQueryManagedGraphCal
 
 #[test]
 fn pareto_remove_and_add_commits_only_after_the_installed_transition_validates() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -60,7 +60,7 @@ fn pareto_remove_and_add_commits_only_after_the_installed_transition_validates()
 
 #[test]
 fn repeated_semantic_candidate_key_mints_a_distinct_pareto_occurrence() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -111,7 +111,7 @@ fn repeated_semantic_candidate_key_mints_a_distinct_pareto_occurrence() {
 }
 
 pub fn advance(
-    execution: &worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
 
     epoch: WorthQueryIteratingDirectConvergenceEpoch,
     call_identity: &str,

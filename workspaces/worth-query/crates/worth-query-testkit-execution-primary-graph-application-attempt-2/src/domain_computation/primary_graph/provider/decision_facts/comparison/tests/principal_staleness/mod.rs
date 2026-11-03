@@ -96,7 +96,7 @@ impl PrincipalStalenessWorthQueryPrimaryGraphProviderForTest for WorthQueryPrima
                             }
                             fact.remains_equal_in(reader, runtime, &snapshot)
                         })
-                        .map_err(worth_query_execution::domain_computation::primary_graph::provider::decision_facts::fact_read_set_failure)?;
+                        .map_err(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::decision_facts::fact_read_set_failure)?;
                     admission.observe_current_version(if current {
                         evidence.physical_version_evidence().to_owned()
                     } else {

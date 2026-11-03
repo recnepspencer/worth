@@ -1,8 +1,8 @@
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::support::key;
     use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::support::record;
-    use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::DemandRegistryState;
-    use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::DemandState;
-    use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::post_commit::source_retirement::retire_stale_records;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandRegistryState;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandState;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::post_commit::source_retirement::retire_stale_records;
 #[test]
 fn source_retirement_closes_all_producers_and_preserves_custody() {
     let receipt = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application();

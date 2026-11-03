@@ -2,7 +2,7 @@
 use crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::probe;
 use crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::schema::*;
 use worth_query_execution::facade::domain_computation::WorthQueryExecutionRuntimeInstaller;
-use worth_query_execution::domain_computation::execution_runtime::product_world;
+use worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationEntityKey;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationEntitySeed;
 use worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantFactories;
@@ -10,8 +10,8 @@ use worth_query_execution::facade::domain_computation::WorthQueryApplicationInva
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationPrincipalKey;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationRelationSeed;
 use worth_query_execution::facade::domain_computation::WorthQueryPrimaryGraphApplicationRuntime;
-use worth_query_execution::domain_computation::primary_graph::bootstrap;
-use worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::bootstrap;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement;
 use worth_query_declaration::facade::application_schema::*;
 use worth_query_declaration::facade::authentication::*;
 use worth_query_installation::facade::*;
@@ -123,7 +123,7 @@ pub fn install_with_visibility<const O: bool>(
                 worth_relational::facade::runtime::RelationalRuntimeApi::builder()
                     .build()
                     .expect("valid native fixture configuration"),
-                worth_query_execution::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(),
+                worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(),
                 factories,
             )
             .unwrap();

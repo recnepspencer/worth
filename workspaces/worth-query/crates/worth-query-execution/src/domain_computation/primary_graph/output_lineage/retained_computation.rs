@@ -26,14 +26,14 @@ use crate::domain_computation::primary_graph::application_contribution::PriorAbs
 use crate::domain_computation::primary_graph::application_contribution::SealedComputationRun;
 
 /// What a record holds of its computation's state.
-pub(super) enum RecordedComputation {
+pub enum RecordedComputation {
     Retained(Arc<RetainedComputation>),
     Absent(PriorAbsence),
 }
 
 /// The exact record a producer's run took its prior state from.
 #[derive(Clone)]
-pub(in crate::domain_computation::primary_graph) struct PriorComputationRecord {
+pub struct PriorComputationRecord {
     cell: Arc<OnceLock<RecordedOutput>>,
 }
 

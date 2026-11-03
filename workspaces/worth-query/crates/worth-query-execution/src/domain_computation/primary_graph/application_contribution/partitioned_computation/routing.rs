@@ -23,7 +23,7 @@ pub(super) enum ComputationPartitionRoutingDenial {
 /// encoding, so two keys are one partition exactly when their digests are
 /// equal, and two digests that share a partition identity are a collision.
 #[derive(Clone, Default)]
-pub(super) struct ComputationPartitionRouting {
+pub struct ComputationPartitionRouting {
     partitioner: KeyedPartitioner<[u8; 32]>,
 }
 

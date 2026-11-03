@@ -1,11 +1,11 @@
 //! Shared physical storage never substitutes one exact settlement for another.
-use worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::delivery::affected::posting_order::LogicalPostings;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::mark_state::FactPosting;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::settlement::posting_bindings;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::settlement::posting_removal;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::delivery::affected::posting_order::LogicalPostings;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::mark_state::FactPosting;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::settlement::posting_bindings;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::settlement::posting_removal;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::settlement::postings::tests::*;
 
-pub fn projection(id: u64) -> Arc<worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::settlement::posting_projection::PostingProjection>{
+pub fn projection(id: u64) -> Arc<worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::settlement::posting_projection::PostingProjection>{
     let entity = EntityId::new(PartitionId::main(), 1, 1);
     let facts = [
         Fact::SourceEntity { entity_id: entity },
@@ -21,10 +21,10 @@ fn shared_bindings_detach_exactly_and_historical_storage_lives_until_final_drop(
     let (_, [first, second]) = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::output_lineage::registry_fixture::recorded_settlement_pair();
     let projection = projection(0);
     let mut state = MarkState::initial();
-    worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::settlement::posting_bindings::bind(&mut state, &projection, &first).unwrap();
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::settlement::posting_bindings::bind(&mut state, &projection, &first).unwrap();
     let historical = state.clone();
     let physical = state.postings.clone();
-    worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::settlement::posting_bindings::bind(&mut state, &projection, &second).unwrap();
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::settlement::posting_bindings::bind(&mut state, &projection, &second).unwrap();
     assert_eq!(state.postings, physical);
     assert_eq!(
         state.posting_bindings[&0]
@@ -34,7 +34,7 @@ fn shared_bindings_detach_exactly_and_historical_storage_lives_until_final_drop(
             .len(),
         2
     );
-    worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::settlement::posting_removal::remove(&mut state, &first, &projection).unwrap();
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::settlement::posting_removal::remove(&mut state, &first, &projection).unwrap();
     assert_eq!(state.postings, physical);
     assert_eq!(
         state.posting_bindings[&0]
@@ -56,7 +56,7 @@ fn shared_bindings_detach_exactly_and_historical_storage_lives_until_final_drop(
         .unwrap()
         .settlements
         .contains(&second));
-    worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::settlement::posting_removal::remove(&mut state, &second, &projection).unwrap();
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::settlement::posting_removal::remove(&mut state, &second, &projection).unwrap();
     assert!(state.postings.is_empty());
     assert!(state.posting_bindings.is_empty());
     assert_eq!(state.posting_count, 0);
@@ -72,8 +72,8 @@ fn logical_delivery_orders_exact_settlements_and_duplicate_ordinals_not_projecti
     let mut state = MarkState::initial();
     let later = projection(0);
     let earlier = projection(1);
-    worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::settlement::posting_bindings::bind(&mut state, &later, &second).unwrap();
-    worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::settlement::posting_bindings::bind(&mut state, &earlier, &first).unwrap();
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::settlement::posting_bindings::bind(&mut state, &later, &second).unwrap();
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::settlement::posting_bindings::bind(&mut state, &earlier, &first).unwrap();
     let key = FactPostingKey::EntityLifecycle(EntityId::new(PartitionId::main(), 1, 1));
     let mut counts = Default::default();
     let mut cursor = LogicalPostings::prepare(&state, &key, &mut counts)

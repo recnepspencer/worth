@@ -19,7 +19,7 @@ use crate::domain_computation::WorthQueryInstalledOperationExecutionSupport;
 mod application_binding;
 mod provider_plan;
 mod runtime_binding;
-mod topology;
+pub(crate) mod topology;
 
 pub(crate) use application_binding::WorthQueryApplicationOperationBindingInput;
 use topology::operation_workflow_topology;
@@ -75,7 +75,7 @@ impl std::fmt::Debug for WorthQueryExecutionBoundOperationAuthority {
 }
 
 #[derive(Clone)]
-struct WorthQueryWorkflowStageResourceAuthority {
+pub struct WorthQueryWorkflowStageResourceAuthority {
     contract_identity: Arc<str>,
     topology: WorthQueryExecutionResourceTopology,
     predecessors: Arc<[String]>,

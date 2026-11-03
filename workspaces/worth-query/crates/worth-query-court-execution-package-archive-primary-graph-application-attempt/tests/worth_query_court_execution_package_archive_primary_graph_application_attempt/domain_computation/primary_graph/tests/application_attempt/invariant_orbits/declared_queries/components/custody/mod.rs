@@ -1,6 +1,6 @@
 //! Retained original bodies distinguish Native membership from physical dependencies.
 use crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::declared_queries::components::*;
-use worth_query_execution::domain_computation::primary_graph::component_selection::ComponentSelection;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::component_selection::ComponentSelection;
 use std::sync::Arc;
 use worth_execution::CancellationSource;
 use worth_execution::ExecutionAllocationPolicy as Allocation;

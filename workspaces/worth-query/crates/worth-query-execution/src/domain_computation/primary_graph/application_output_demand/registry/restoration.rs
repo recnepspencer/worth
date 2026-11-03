@@ -13,7 +13,7 @@ use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
 
 #[derive(Clone)]
-pub(in crate::domain_computation::primary_graph) struct WorthQueryRestoredAcceptedOutput {
+pub struct WorthQueryRestoredAcceptedOutput {
     pub(in crate::domain_computation::primary_graph) checkpoint:
         super::WorthQueryAcceptedOutputCheckpointIdentity,
     pub(in crate::domain_computation::primary_graph) correspondence: std::sync::Arc<

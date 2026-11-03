@@ -1,4 +1,4 @@
-use worth_query_execution::domain_computation::primary_graph::provider::branch_commit_coordination::WorthQueryApplicationBranchCommitCoordinator as Coordinator;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::branch_commit_coordination::WorthQueryApplicationBranchCommitCoordinator as Coordinator;
 
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::capability_world_installation::installed_capability_authorization_world;
 

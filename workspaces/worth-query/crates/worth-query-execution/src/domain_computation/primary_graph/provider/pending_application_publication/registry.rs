@@ -54,7 +54,7 @@ impl super::WorthQueryPrimaryGraphProvider {
     }
 }
 
-pub(super) enum WorthQueryPendingApplicationIdempotency {
+pub enum WorthQueryPendingApplicationIdempotency {
     Reserved,
     Pending(
         crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding,

@@ -2,7 +2,7 @@
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact as Fact;
 use std::collections::BTreeSet;
 use worth_relational::facade::identity::EntityId;
-pub(super) mod structural;
+pub(crate) mod structural;
 
 /// The entity this commit retired that `fact` was read at; `None` for every
 /// other fact. It reads nothing.
@@ -54,7 +54,7 @@ pub(super) fn committed_retirement(
     })
 }
 
-pub(super) fn rebase(
+pub fn rebase(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     facts: Vec<Fact>,

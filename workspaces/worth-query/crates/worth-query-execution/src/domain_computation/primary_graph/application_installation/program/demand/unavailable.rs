@@ -59,7 +59,7 @@ impl<Schema: ApplicationSchema + 'static, Program: ApplicationProgramDefinition<
 }
 
 /// Phase custody precedes the installed root's demand-affinity admission.
-fn admit_unavailable_completion<'scope>(
+pub fn admit_unavailable_completion<'scope>(
     phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'scope>,
     runtime: &crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime,
     owns_demand: impl FnOnce() -> bool,

@@ -25,7 +25,7 @@ pub use owner::{
 #[cfg(test)]
 mod output_tests;
 
-pub(super) enum InspectionCause {
+pub enum InspectionCause {
     Unavailable,
     Advancement(WorthQueryAdvancementDenial),
     Selection(crate::basis::WorthQueryProductBranchAdmissionDenial),

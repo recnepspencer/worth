@@ -2,7 +2,7 @@
 
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::performed::certification::acknowledgement_basis::AcknowledgementBasisCurrentProofForTest;
 use crate::domain_computation::primary_graph::application_output_demand::registry::tests::*;
-use worth_query_execution::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::performed::certification::CurrentProof;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::performed::certification::CurrentProof;
 
 #[test]
 fn registry_current_successor_pin_acknowledges_only_its_native_current_proof() {

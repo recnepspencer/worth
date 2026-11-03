@@ -162,7 +162,7 @@ impl AggregateWorld {
                 let committed = transaction
                     .commit(&execution, runtime)
                     .expect("the branch commits");
-                worth_query_execution::relational_snapshot_release::release_query_snapshot(
+                worth_query_execution::court_doors_for_test::relational_snapshot_release::release_query_snapshot(
                     runtime,
                     &committed.snapshot,
                 );

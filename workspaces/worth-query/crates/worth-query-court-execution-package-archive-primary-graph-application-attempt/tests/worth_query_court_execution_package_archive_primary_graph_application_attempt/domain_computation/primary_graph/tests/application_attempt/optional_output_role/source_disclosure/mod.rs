@@ -172,7 +172,7 @@ fn non_correctable_source_keeps_disclosure_and_releases_its_native_input() {
 
 #[test]
 fn serial_placement_source_capture_preserves_success_and_original_cancellation() {
-    use worth_query_execution::domain_computation::execution_runtime::product_world::resources::test_product_world_resources;
+    use worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::resources::test_product_world_resources;
     use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world_with_product_resources;
     use worth_foundational::DeterminismContract;
     use worth_foundational::ExecutionPosture;

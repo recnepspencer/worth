@@ -1,5 +1,5 @@
 //! Phase custody wins before unavailable-completion demand affinity.
-use worth_query_execution::domain_computation::primary_graph::application_installation::program::demand::unavailable::admit_unavailable_completion;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_installation::program::demand::unavailable::admit_unavailable_completion;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;
 use worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial;
 use worth_query_execution::facade::application_contribution::WorthQueryManagedComputationResourceDenial;

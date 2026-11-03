@@ -1,15 +1,15 @@
 //! Native actor consequence with real source snapshots and delivered touches.
 //! The test-only relation mint exercises the actor, not producer authorization.
-pub use worth_query_execution::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 
 pub use crate::domain_computation::primary_graph::output_lineage::invalidation::native_journey_tests::*;
-pub use worth_query_execution::domain_computation::primary_graph::invariant_projection::consumed_output::verification::ConsumedOutputVerification;
-pub use worth_query_execution::domain_computation::primary_graph::invariant_projection::consumed_output::verification::ConsumedOutputVerificationStop;
-pub use worth_query_execution::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts;
-pub use worth_query_execution::domain_computation::primary_graph::invariant_projection::consumed_output::ConsumedOutputEvidence;
-pub use worth_query_execution::domain_computation::primary_graph::output_lineage::input_cutoff::stable_publication::source_registration::StableEqualityConsequence;
-pub use worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::mark_state::SettlementCurrentness;
-pub use worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::source_alignment::SnapshotAlignedMarkState;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::consumed_output::verification::ConsumedOutputVerification;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::consumed_output::verification::ConsumedOutputVerificationStop;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::consumed_output::ConsumedOutputEvidence;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::input_cutoff::stable_publication::source_registration::StableEqualityConsequence;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::mark_state::SettlementCurrentness;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::source_alignment::SnapshotAlignedMarkState;
 
 #[test]
 fn certified_alias_chain_discharge_is_exact_and_later_native_change_repends() {
@@ -131,7 +131,7 @@ fn certified_alias_chain_discharge_is_exact_and_later_native_change_repends() {
         assert_eq!(
             ConsumedOutputEvidence::verify_candidate_with_admission(
 request_execution,                &a0,
-                &worth_query_execution::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts::for_test(false, Arc::from([old_a_fact.clone()])).for_comparison().unwrap(),
+                &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts::for_test(false, Arc::from([old_a_fact.clone()])).for_comparison().unwrap(),
                 &[],
                 None,
                 &before,
@@ -215,12 +215,12 @@ fn unchanged_own_evidence_waits_for_a_pending_equal_successor() {
         write_field(request_execution, runtime, entity, status, "changed-output");
         let (later_handle, later) = snapshot(runtime);
         assert!(matches!(owner.consumed_output_currentness(&later, &a0).unwrap(),
-            worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::derived::ConsumedOutputCurrentness::PendingEqualSuccessor));
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::derived::ConsumedOutputCurrentness::PendingEqualSuccessor));
         assert_eq!(ConsumedOutputEvidence::verify_candidate_with_admission(
 request_execution,            &a0,
             &RetainedSourceFacts::for_test(false, Arc::from([unchanged_fact])).for_comparison().unwrap(),
             &[], None, &before, owner, runtime, &later_handle, &later,
-        ), Err(worth_query_execution::domain_computation::primary_graph::invariant_projection::consumed_output::verification::ConsumedOutputVerificationStop::PendingUpstream));
+        ), Err(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::consumed_output::verification::ConsumedOutputVerificationStop::PendingUpstream));
         for handle in [before_handle, alias_handle, later_handle] {
             runtime.snapshots().release_snapshot(&handle).unwrap();
         }

@@ -4,7 +4,7 @@ use worth_execution::{ExecutionByteBuffer, ExecutionImmutableBytes};
 
 /// Mirrors CURRENT StorageKey ordering: locator, optional predicate, numeric limit.
 /// A flattened decimal/string tuple would change ordering (e.g. limit 2 vs 10).
-pub(in crate::domain_computation::primary_graph) struct AdmittedFactKey {
+pub struct AdmittedFactKey {
     locator: ExecutionImmutableBytes,
     predicate: Option<(ExecutionImmutableBytes, usize)>,
 }

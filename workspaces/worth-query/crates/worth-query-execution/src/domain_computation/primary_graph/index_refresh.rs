@@ -261,7 +261,7 @@ fn read_complete_mutation_batch(
     Ok(batch)
 }
 
-fn patch_read_denial(
+pub fn patch_read_denial(
     previous: Option<&RelationalCommitReceipt>,
     latest: Option<&RelationalCommitReceipt>,
     requested: usize,

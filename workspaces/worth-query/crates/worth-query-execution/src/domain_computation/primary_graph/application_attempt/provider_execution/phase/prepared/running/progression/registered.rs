@@ -4,7 +4,7 @@ use crate::domain_computation::primary_graph::application_attempt::provider_exec
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding;
 use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider;
 
-pub(in crate::domain_computation) struct WorthQueryRegisteredProviderAttempt<'run> {
+pub struct WorthQueryRegisteredProviderAttempt<'run> {
     staged: crate::domain_computation::WorthQuerySessionBoundReadsAndEffects<'run>,
 
     steps: std::sync::Arc<[crate::domain_computation::WorthQueryProvisionalEffectStep]>,
@@ -12,7 +12,7 @@ pub(in crate::domain_computation) struct WorthQueryRegisteredProviderAttempt<'ru
         Option<crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxRecord>,
 }
 
-pub(in crate::domain_computation) struct WorthQueryProviderAttemptRegistrationContext<
+pub struct WorthQueryProviderAttemptRegistrationContext<
     'a,
     Schema,
     Operation,

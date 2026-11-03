@@ -2,7 +2,7 @@ use super::{AdmittedFactKey, RetainedFact, Slot, Slots, StoreDenial};
 use std::cell::{Cell, RefCell};
 use worth_execution::ExecutionArrayBuilder;
 
-pub(in crate::domain_computation::primary_graph) struct Run<T> {
+pub struct Run<T> {
     pub(in crate::domain_computation::primary_graph) slots: Slots<T>,
     pub(in crate::domain_computation::primary_graph) used: usize,
     cursor: Cell<usize>,

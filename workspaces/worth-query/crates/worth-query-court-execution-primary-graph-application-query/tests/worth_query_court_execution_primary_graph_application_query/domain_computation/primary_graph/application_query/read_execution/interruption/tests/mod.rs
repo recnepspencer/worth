@@ -1,4 +1,4 @@
-pub use worth_query_execution::domain_computation::primary_graph::application_query::read_execution::interruption::tests::CHECKPOINT;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::read_execution::interruption::tests::CHECKPOINT;
 pub use std::cell::Cell;
 pub use std::cell::RefCell;
 pub use std::num::NonZeroUsize;
@@ -145,10 +145,10 @@ fn cancellation_during_real_nested_materialization_releases_all_read_resources()
 fn deadline_is_checked_at_kernel_safe_points() {
     let cancellation = WorthQueryCancellationSource::new();
     let request = WorthQueryRequestScope::new(Some(Instant::now()), cancellation.token());
-    let denial = worth_query_execution::domain_computation::primary_graph::application_query::read_execution::interruption::checkpoint(&request, "root/relation[0]").unwrap_err();
+    let denial = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::read_execution::interruption::checkpoint(&request, "root/relation[0]").unwrap_err();
     assert_eq!(
         denial.kind(),
-        worth_query_execution::domain_computation::primary_graph::application_query::read_execution::denial::WorthQueryApplicationReadExecutionDenialKind::DeadlineExceeded
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::read_execution::denial::WorthQueryApplicationReadExecutionDenialKind::DeadlineExceeded
     );
 }
 

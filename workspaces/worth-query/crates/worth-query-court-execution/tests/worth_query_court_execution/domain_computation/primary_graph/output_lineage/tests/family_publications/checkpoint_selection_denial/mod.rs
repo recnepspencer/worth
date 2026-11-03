@@ -1,8 +1,8 @@
 //! Descriptive family-selection controls, not producer freshness or R3 proof.
 use crate::domain_computation::primary_graph::output_lineage::tests::family_publications::*;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::family_selection::checkpoint_priors::denial::CheckpointPriorSelectionDenial as Denial;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::family_selection::checkpoint_priors::denial::CheckpointPriorStructure;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::family_selection::checkpoint_priors::NativePriorCheckpointOutput;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::family_selection::checkpoint_priors::denial::CheckpointPriorSelectionDenial as Denial;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::family_selection::checkpoint_priors::denial::CheckpointPriorStructure;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::family_selection::checkpoint_priors::NativePriorCheckpointOutput;
 
 pub fn select(court: &Court) -> Result<Vec<NativePriorCheckpointOutput<'_>>, Denial> {
     court.lineage.checkpoint_prior_outputs(

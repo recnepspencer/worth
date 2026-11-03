@@ -1,6 +1,6 @@
 //! A genuinely installed application owns the component definitions and seed graph.
 pub use worth_query_execution::facade::domain_computation::WorthQueryExecutionRuntimeInstaller;
-pub use worth_query_execution::domain_computation::execution_runtime::product_world;
+pub use worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world;
 pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationEntityKey;
 pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationEntitySeed;
 pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationInvariantProjectionAuthority;
@@ -8,9 +8,9 @@ pub use worth_query_execution::facade::domain_computation::WorthQueryApplication
 pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationRelationSeed;
 pub use worth_query_execution::facade::domain_computation::WorthQueryPrimaryGraphApplicationRuntime;
 pub use worth_query_execution::facade::domain_computation::WorthQueryPrimaryGraphBootstrap;
-pub use worth_query_execution::domain_computation::primary_graph::bootstrap;
-pub use worth_query_execution::domain_computation::primary_graph::facade;
-pub use worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::bootstrap;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::facade;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement;
 pub use worth_query_declaration::facade::application_schema::*;
 pub use worth_query_declaration::*;
 pub use worth_query_installation::facade::*;
@@ -115,7 +115,7 @@ pub fn install() -> World {
                 &phase.bootstrap_for_test(),
                 &runtime,
                 &schema,
-                worth_query_execution::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(),
+                worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(),
             )
             .unwrap();
         crate::domain_computation::primary_graph::invariant_projection::component::tests::fixture::principal_binding::seed(&mut bootstrap, &schema);

@@ -1,28 +1,28 @@
 //! Scheduling interruption preserves registry custody, not output currentness.
 
 pub use std::sync::Arc;
-pub use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::DemandState;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandState;
 pub use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::scheduling_interruption::Finish;
 pub use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandDenial;
 pub use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandDenialKind;
-pub use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::WorthQueryOutputDemandInterest;
-pub use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::WorthQueryOutputDemandRegistry;
-pub use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::WorthQueryOutputSchedulingResult;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryOutputDemandInterest;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryOutputDemandRegistry;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryOutputSchedulingResult;
 pub use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::support::interest;
 pub use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::support::key;
 pub use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::support::occurrence;
 pub use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::recovery_posture;
 
-pub use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::DemandAdmissionKind;
-pub use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::refresh_predecessor::OutputRefreshPredecessor;
-pub use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::ready_backing::PreparedReadyBacking;
-pub use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::WorthQueryAcceptedOutputAuthority;
-pub use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::WorthQueryCompletedOutputDemand;
-pub use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputAdvancement;
-pub use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint;
-pub use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::advance_admission::WorthQueryOutputDemandAdvanceAdmission;
-pub use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputProgress;
-pub use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::WorthQueryPerformedOutputDemandSource;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandAdmissionKind;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::refresh_predecessor::OutputRefreshPredecessor;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::ready_backing::PreparedReadyBacking;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryAcceptedOutputAuthority;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryCompletedOutputDemand;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputAdvancement;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::advance_admission::WorthQueryOutputDemandAdvanceAdmission;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputProgress;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryPerformedOutputDemandSource;
 pub use crate::domain_computation::primary_graph::application_output_demand::registry::tests::*;
 pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitReceipt;
 pub use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandRecoveryPosture as Posture;
@@ -106,7 +106,7 @@ fn both_scheduling_finishes_preserve_claims_and_custody_on_interruption() {
                     } else {
                         assert!(matches!(row.state, DemandState::Admitted));
                         assert_eq!(
-                            worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::succession::Succession::predecessor_of(&row.successor_of),
+                            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::succession::Succession::predecessor_of(&row.successor_of),
                             Some(*fixture.receipt.idempotency_binding().key_identity())
                         );
                     }
@@ -139,7 +139,7 @@ fn other_scheduling_stops_still_fail_the_row_and_release_obligations() {
         assert!(matches!(&row.state, DemandState::Failed(stored)
             if stored == &denial));
         assert_eq!(
-            worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::required_stop::head_stop(&state.records, &fixture.interest.key),
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::required_stop::head_stop(&state.records, &fixture.interest.key),
             Some(denial)
         );
         assert!(row.performed_source.is_none());

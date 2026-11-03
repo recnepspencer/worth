@@ -140,7 +140,7 @@ pub fn commit_probe(probe: Probe) -> Outcome {
         )
         .expect_err("custom preparation refused");
     assert!(matches!(error, TransactionCommitError::Execution { .. }));
-    let stop = worth_query_execution::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::commit_execution::stops::transaction_commit_stop(error);
+    let stop = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::commit_execution::stops::transaction_commit_stop(error);
     assert_eq!(
         runtime
             .observe_branch(&runtime.main_branch_identity())

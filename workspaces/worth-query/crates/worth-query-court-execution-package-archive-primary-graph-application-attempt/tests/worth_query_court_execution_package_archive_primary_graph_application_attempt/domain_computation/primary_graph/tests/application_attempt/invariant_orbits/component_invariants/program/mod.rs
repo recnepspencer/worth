@@ -5,7 +5,7 @@ use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_co
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationEffectProgram;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationEntityKey;
 use worth_query_execution::facade::domain_computation::WorthQueryPrincipalResolutionMode;
-use worth_query_execution::domain_computation::primary_graph::root;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::root;
 use worth_execution::ExecutionAllocationPolicy as Allocation;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 

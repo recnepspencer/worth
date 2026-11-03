@@ -1,12 +1,12 @@
 //! Real Report admission refuses before allocation on its original funded read.
-use worth_query_execution::domain_computation::primary_graph::causal_inspection::application_inspection::admission::InspectionAdmissionDenial;
-use worth_query_execution::domain_computation::primary_graph::causal_inspection::application_inspection::admission::subject::InspectionSubject;
-use worth_query_execution::domain_computation::primary_graph::causal_inspection::application_inspection::admission::policy;
-use worth_query_execution::domain_computation::primary_graph::causal_inspection::application_inspection::admission::preparation::prepare;
-use worth_query_execution::domain_computation::primary_graph::causal_inspection::application_inspection::report;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::causal_inspection::application_inspection::admission::InspectionAdmissionDenial;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::causal_inspection::application_inspection::admission::subject::InspectionSubject;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::causal_inspection::application_inspection::admission::policy;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::causal_inspection::application_inspection::admission::preparation::prepare;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::causal_inspection::application_inspection::report;
 use crate::domain_computation::primary_graph::causal_inspection::application_inspection::admission::materialization::tests;
-use worth_query_execution::domain_computation::primary_graph::application_query::admission::permission::fresh::FreshQueryPermissionStop;
-use worth_query_execution::domain_computation::primary_graph::causal_inspection::application_inspection::stop::InspectionCause;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::admission::permission::fresh::FreshQueryPermissionStop;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::causal_inspection::application_inspection::stop::InspectionCause;
 use worth_query_execution::facade::application_inspection::WorthQueryApplicationInspectionResourceRefusal;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::causal_inspection::application_inspection::tests::observe;
 use worth_query_execution::facade::application_inspection::WorthQueryApplicationInspectionDenial;
@@ -111,11 +111,11 @@ fn real_report_refusal_preserves_original_payer_until_owned_denial_closes() {
                         .unwrap();
                     // This is the actual production report owner immediately after
                     // its real currentness check, with its real target and session.
-                    let refusal = worth_query_execution::domain_computation::primary_graph::causal_inspection::application_inspection::report::materialize(
+                    let refusal = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::causal_inspection::application_inspection::report::materialize(
                         &execution,
                         &read.target,
                         &read.session,
-                        worth_query_execution::domain_computation::primary_graph::causal_inspection::application_inspection::identity::InspectionOriginalReference::After,
+                        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::causal_inspection::application_inspection::identity::InspectionOriginalReference::After,
                         read.memory,
                     )
                     .err()

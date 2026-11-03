@@ -13,7 +13,7 @@ use worth_relational::facade::transactions::RelationalExecutionDenialCause as Ca
 /// The complete selected source meaning, without its revision-bearing identity.
 /// A restored or incomplete observation cannot mint this cutoff input.
 #[derive(Clone)]
-pub(in crate::domain_computation::primary_graph) struct WorthQueryObservedSourceSelection {
+pub struct WorthQueryObservedSourceSelection {
     runtime_authority: u64,
     schema_binding: ApplicationSchemaBindingIdentity,
     meaning: Arc<WorthQueryObservedSourceMeaning>,
@@ -123,7 +123,7 @@ impl WorthQueryObservedSourceSelection {
     }
 }
 
-fn same_footprint_membership(
+pub fn same_footprint_membership(
     left: &WorthQueryObservedSourceFootprint,
     right: &WorthQueryObservedSourceFootprint,
 ) -> bool {
@@ -249,7 +249,7 @@ fn same_adjacencies(
     true
 }
 
-fn same_text(left: &str, right: &str) -> bool {
+pub fn same_text(left: &str, right: &str) -> bool {
     if left.len() != right.len() {
         return false;
     }

@@ -2,10 +2,10 @@
 
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::required_work::RequiredWorkWorthQueryOutputDemandRegistryForTest;
 
-use worth_query_execution::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::performed::certification::current_basis::CurrentBasis;
-use worth_query_execution::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::performed::PerformedMembers;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::performed::certification::current_basis::CurrentBasis;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::performed::PerformedMembers;
 use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandDenialKind;
-use worth_query_execution::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::denial;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::denial;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::output_lineage::own_write_fixture::with_committed_own_write;
 #[test]
 fn a_current_proof_from_another_basis_acknowledges_nothing() {
@@ -14,14 +14,14 @@ fn a_current_proof_from_another_basis_acknowledges_nothing() {
         let execution = phase.execution_request_for(&world.application.product_runtime).unwrap();
         let runtime = &world.application;
 
-        let (basis_a, _) = worth_query_execution::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::selection::select_required_basis(
+        let (basis_a, _) = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::selection::select_required_basis(
             &execution,
             runtime,
             runtime.current_world(),
         )
         .unwrap();
         let a = CurrentBasis::of(basis_a.selected().product().observation());
-        let registry = worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::WorthQueryOutputDemandRegistry::default();
+        let registry = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryOutputDemandRegistry::default();
         // The row's key names this World's own occurrence. The shared registry
         // fixture key would install a second fixture World inside this
         // advancement, which the advancement owner refuses as a nested opening.
@@ -66,7 +66,7 @@ fn a_current_proof_from_another_basis_acknowledges_nothing() {
                             locator, worth_foundational::facade::AspectValue::String("unrelated-write".into()))])),
                     }))));
         }
-        let (basis_b, _) = worth_query_execution::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::selection::select_required_basis(
+        let (basis_b, _) = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::selection::select_required_basis(
             &execution,
             runtime,
             runtime.current_world(),
@@ -111,14 +111,14 @@ fn a_current_proof_of_record_a_cannot_acknowledge_record_b_at_the_same_basis() {
         let execution = phase.execution_request_for(&world.application.product_runtime).unwrap();
         let runtime = &world.application;
 
-        let (selected, _) = worth_query_execution::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::selection::select_required_basis(
+        let (selected, _) = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::selection::select_required_basis(
             &execution,
             runtime,
             runtime.current_world(),
         )
         .unwrap();
         let basis = CurrentBasis::of(selected.selected().product().observation());
-        let registry = worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::WorthQueryOutputDemandRegistry::default();
+        let registry = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryOutputDemandRegistry::default();
         let occurrence = selected
             .selected()
             .product()

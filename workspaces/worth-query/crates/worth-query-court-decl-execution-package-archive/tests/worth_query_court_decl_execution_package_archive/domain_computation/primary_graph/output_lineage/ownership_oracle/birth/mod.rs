@@ -1,7 +1,7 @@
 //! A genuine all-Create publication under the same actual installed owner.
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::installation::Application;
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::*;
-use worth_query_execution::domain_computation::execution_runtime::product_world::publication_denial::WorthQueryProductPublicationOutcome as PublicationOutcome;
+use worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::publication_denial::WorthQueryProductPublicationOutcome as PublicationOutcome;
 use std::collections::BTreeMap;
 use worth_query_decl::facade::application_schema::ApplicationScalarValueBinding;
 use worth_query_decl::facade::application_schema::StringApplicationValueBinding;

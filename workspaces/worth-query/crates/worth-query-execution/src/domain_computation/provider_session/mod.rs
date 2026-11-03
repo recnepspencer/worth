@@ -2,7 +2,7 @@ mod attempt_evidence;
 mod decision_read_set;
 mod direct_attempt;
 mod execution_attempt_identity;
-mod graph_obligation;
+pub(crate) mod graph_obligation;
 pub use graph_obligation::WorthQueryManagedGraphWorkSessionStartDenial;
 pub(in crate::domain_computation) use graph_obligation::{
     WorthQueryInspectionReadCompletion, WorthQueryManagedIndexReadSession,
@@ -12,7 +12,7 @@ pub(in crate::domain_computation) use graph_obligation::{
     WorthQuerySessionResourceReadProof,
 };
 pub(crate) mod graph_provider;
-mod protocol;
+pub(crate) mod protocol;
 mod provisional_attempt;
 pub(crate) mod readmission;
 mod session_identity;

@@ -1,9 +1,9 @@
 use worth_relational::facade::identity::EntityId;
 use worth_relational::facade::identity::PartitionId;
 
-use worth_query_execution::domain_computation::primary_graph::application_query::observed_source::source_identity::WorthQueryObservedSourceEpoch;
-    use worth_query_execution::domain_computation::primary_graph::application_query::observed_source::source_identity::WorthQueryObservedSourceMeaningRegistry;
-    use worth_query_execution::domain_computation::primary_graph::application_query::observed_source::WorthQueryObservedSourceFootprint;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::WorthQueryObservedSourceEpoch;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::WorthQueryObservedSourceMeaningRegistry;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::WorthQueryObservedSourceFootprint;
     use worth_query_execution::facade::domain_computation::WorthQueryApplicationBasisSelectionIdentity;
 
 #[test]
@@ -28,8 +28,8 @@ fn portable_identity_ignores_runtime_occurrence_but_changes_with_source_meaning(
 
     let mut changed_selection = footprint(root, true);
     changed_selection.root_selection = Some(std::sync::Arc::new(
-            worth_query_execution::domain_computation::primary_graph::application_query::observed_source::root_selection::WorthQueryObservedRootSelection::new(
-                worth_query_execution::domain_computation::primary_graph::source_facts::SourceFacts { entities: vec![root], aspects: Vec::new(), adjacencies: Vec::new(), walks: None, derived: None, allocation: None }, None,
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::root_selection::WorthQueryObservedRootSelection::new(
+                worth_query_execution::court_doors_for_test::domain_computation::primary_graph::source_facts::SourceFacts { entities: vec![root], aspects: Vec::new(), adjacencies: Vec::new(), walks: None, derived: None, allocation: None }, None,
             ),
         ));
     let changed = epoch(&registry, root, changed_selection, &first_selection);

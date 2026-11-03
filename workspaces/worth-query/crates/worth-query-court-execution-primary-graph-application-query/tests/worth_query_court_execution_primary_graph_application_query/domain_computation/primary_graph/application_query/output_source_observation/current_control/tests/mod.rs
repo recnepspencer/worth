@@ -1,5 +1,5 @@
-use worth_query_execution::domain_computation::primary_graph::application_query::output_source_observation::SourceQueryObservationStop;
-    use worth_query_execution::domain_computation::primary_graph::application_query::output_source_observation::SourceQueryPreparationPhase;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::output_source_observation::SourceQueryObservationStop;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::output_source_observation::SourceQueryPreparationPhase;
     use worth_query_execution::facade::domain_computation::WorthQueryApplicationQueryAdmissionDenial;
     use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandDenial;
     use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandDenialKind;

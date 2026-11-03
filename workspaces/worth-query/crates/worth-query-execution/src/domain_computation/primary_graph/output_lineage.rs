@@ -1,48 +1,48 @@
 //! Product-local semantic output correspondence owned by Query publication.
 
 pub(in crate::domain_computation) use invalidation::HeadCellRegistrationStop;
-mod source_facts;
+pub(crate) mod source_facts;
 mod source_publication;
 pub(in crate::domain_computation::primary_graph) use source_facts::ComparableSourceFacts;
 pub(in crate::domain_computation::primary_graph) use source_facts::RetainedSourceFacts;
 pub(in crate::domain_computation::primary_graph) use source_publication::CoveredSourcePublication;
 pub(in crate::domain_computation::primary_graph) use source_publication::SourcePublication;
-mod computation_source;
+pub(crate) mod computation_source;
 mod implementation_build;
 pub(in crate::domain_computation::primary_graph) use computation_source::ComputationSourceEvidence;
 pub(in crate::domain_computation::primary_graph) use computation_source::CurrentComputation;
 mod current_candidate;
-mod current_output;
+pub(crate) mod current_output;
 pub(in crate::domain_computation::primary_graph) use current_output::RetainedOutputCurrentnessRead;
 mod denial;
-mod family_selection;
+pub(crate) mod family_selection;
 pub(in crate::domain_computation::primary_graph) use family_selection::NativePriorCheckpointOutput;
-mod input_cutoff;
-mod input_reuse_key;
-pub(in crate::domain_computation::primary_graph) mod invalidation;
-mod native_output_witness;
-mod native_prior_checkpoint;
+pub(crate) mod input_cutoff;
+pub(crate) mod input_reuse_key;
+pub(crate) mod invalidation;
+pub(crate) mod native_output_witness;
+pub(crate) mod native_prior_checkpoint;
 
 mod partition_index;
-mod prepared_slot;
+pub(crate) mod prepared_slot;
 mod qualification;
-mod recorded_output;
-mod recorded_source_identity;
-mod required_publication;
-mod required_settlement;
+pub(crate) mod recorded_output;
+pub(crate) mod recorded_source_identity;
+pub(crate) mod required_publication;
+pub(crate) mod required_settlement;
 pub(in crate::domain_computation::primary_graph) use required_settlement::AcceptedCurrentCandidate;
 pub(in crate::domain_computation::primary_graph) use required_settlement::BoundCurrentAcceptedOutput;
 pub(in crate::domain_computation::primary_graph) use required_settlement::CurrentAcceptedResult;
 pub(in crate::domain_computation::primary_graph) use required_settlement::CurrentAcceptedStop;
 pub(in crate::domain_computation::primary_graph) use required_settlement::RequiredSettlementStop;
-mod resolution;
+pub(crate) mod resolution;
 mod resources;
 mod restoration;
-mod retained_computation;
+pub(crate) mod retained_computation;
 pub(in crate::domain_computation::primary_graph) use retained_computation::PriorComputationRecord;
 mod fork_origin;
 mod retention;
-mod settlement_identity;
+pub(crate) mod settlement_identity;
 
 pub(in crate::domain_computation) use invalidation::SourceInvalidationOwner;
 
@@ -83,11 +83,11 @@ use super::provider::WorthQueryPrimaryGraphCommittedApplication;
 use super::WorthQueryApplicationOutputCorrespondence;
 
 mod binding_inventory;
-mod semantic_source;
+pub(crate) mod semantic_source;
 pub(in crate::domain_computation::primary_graph) use semantic_source::SemanticSource;
 
 #[derive(Default)]
-pub(crate) struct WorthQueryApplicationOutputLineage {
+pub struct WorthQueryApplicationOutputLineage {
     implementation_build: Option<worth_foundational::facade::ApplicationBuildIdentity>,
     by_source: BTreeMap<
         SemanticSource,
@@ -135,12 +135,12 @@ pub(super) struct WorthQueryProducerLineageHead {
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-struct ProductCoordinate {
+pub struct ProductCoordinate {
     occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
     generation: u64,
 }
 
-pub(super) struct WorthQueryPriorOutputBindingResolution {
+pub struct WorthQueryPriorOutputBindingResolution {
     pub(super) correspondence: Option<Arc<WorthQueryApplicationOutputCorrespondence>>,
 }
 
@@ -155,7 +155,7 @@ pub(super) struct WorthQueryCurrentOutputCandidate {
     pub(super) native_output_witness: Option<Arc<OnceLock<SealedNativeOutputWitness>>>,
 }
 
-pub(super) struct WorthQueryCurrentOutputFamilyResolution {
+pub struct WorthQueryCurrentOutputFamilyResolution {
     pub(super) family_installed: bool,
     pub(super) ambiguous_publication: bool,
     pub(super) candidates: Vec<WorthQueryCurrentOutputCandidate>,

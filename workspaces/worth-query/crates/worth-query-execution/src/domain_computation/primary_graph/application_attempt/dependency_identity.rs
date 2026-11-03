@@ -2,7 +2,7 @@ use super::WorthQueryApplicationEffectProgram;
 
 mod canonical_encoding;
 mod content_rule;
-mod content_tree;
+pub(crate) mod content_tree;
 mod output_postcondition;
 mod producing_implementation;
 
@@ -18,7 +18,7 @@ use output_postcondition::normalized_output_facts;
 pub(in crate::domain_computation::primary_graph) use output_postcondition::OutputCurrentnessFacts;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum WorthQueryProducerIdentityDenial {
+pub enum WorthQueryProducerIdentityDenial {
     DependencyStorage(StoreDenial),
     DependencyCanonicalizationRejected,
     MissingSourcePartition,

@@ -122,7 +122,7 @@ impl WorthQueryPartitionedTreeRun {
 }
 
 /// Each path returns its outcome and work together; terminal construction consumes both.
-pub(super) struct ReportedTree<Tree, Stopped> {
+pub struct ReportedTree<Tree, Stopped> {
     pub(super) outcome: Result<Tree, WorthQueryPartitionedComputationDenial<Stopped>>,
     pub(super) report: WorthQueryPartitionedTreeRun,
 }

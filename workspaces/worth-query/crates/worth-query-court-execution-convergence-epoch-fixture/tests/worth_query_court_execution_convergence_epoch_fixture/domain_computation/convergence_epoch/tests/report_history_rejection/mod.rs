@@ -15,7 +15,7 @@ use worth_query_execution::facade::domain_computation::WorthQueryManagedGraphCal
 
 #[test]
 fn invalid_incumbent_transition_preserves_committed_direct_and_workflow_history() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -88,7 +88,7 @@ fn invalid_incumbent_transition_preserves_committed_direct_and_workflow_history(
 
 #[test]
 fn invalid_domain_report_preserves_the_previously_committed_history() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -163,7 +163,7 @@ pub fn request(identity: &str) -> WorthQueryManagedGraphCallRequest {
 }
 
 pub fn advance_direct(
-    execution: &worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
 
     epoch: worth_query_execution::facade::convergence_epoch::WorthQueryIteratingDirectConvergenceEpoch,
     identity: &str,
@@ -186,7 +186,7 @@ pub fn advance_direct(
 }
 
 pub fn advance_workflow(
-    execution: &worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
 
     epoch: worth_query_execution::facade::convergence_epoch::WorthQueryIteratingWorkflowConvergenceEpoch,
     identity: &str,

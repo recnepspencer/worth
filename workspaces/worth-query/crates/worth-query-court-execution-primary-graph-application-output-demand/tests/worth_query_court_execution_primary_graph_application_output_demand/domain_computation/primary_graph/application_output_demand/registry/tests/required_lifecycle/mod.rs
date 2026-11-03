@@ -1,10 +1,10 @@
 use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::application_attempt::compare_and_commit::commit_receipt::certification::CertificationWorthQueryApplicationCommitReceiptForTest;
 use crate::domain_computation::primary_graph::application_output_demand::registry::tests::*;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::BoundOutputSource;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::source_custody::PreparedOutputRootKind;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::WorthQueryPerformedOutputDemandSource;
-use worth_query_execution::equality_type_id::EqualityTypeId as TypeId;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::BoundOutputSource;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::source_custody::PreparedOutputRootKind;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryPerformedOutputDemandSource;
+use worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId as TypeId;
 
 #[test]
 fn an_open_ordinary_interest_is_required_until_its_last_handle_closes() {
@@ -18,7 +18,7 @@ fn an_open_ordinary_interest_is_required_until_its_last_handle_closes() {
                 None,
                 scope,
                 occurrence(),
-                worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::DemandAdmissionKind::Ordinary,
+                worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandAdmissionKind::Ordinary,
                 None,
                 None,
             )
@@ -51,7 +51,7 @@ fn closing_a_required_interest_removes_it_from_the_required_set() {
             None,
             scope,
             occurrence(),
-            worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::DemandAdmissionKind::Required,
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandAdmissionKind::Required,
             None,
             None,
         )
@@ -77,7 +77,7 @@ fn closing_a_required_interest_removes_it_from_the_required_set() {
             None,
             scope,
             occurrence(),
-            worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::DemandAdmissionKind::Required,
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandAdmissionKind::Required,
             None,
             None,
         )
@@ -170,20 +170,20 @@ fn settlement_releases_only_the_ready_authority_it_accepted() {
         .clone()
         .with_provider_runtime_instance_id_for_test(u64::MAX);
     let output = key("ready-replaced", 1, 1);
-    let expected = worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::WorthQueryAcceptedOutputAuthority::Committed(receipt);
-    let actual = worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::WorthQueryAcceptedOutputAuthority::Committed(replacement.clone());
-    let completion = worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::WorthQueryCompletedOutputDemand {
+    let expected = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryAcceptedOutputAuthority::Committed(receipt);
+    let actual = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryAcceptedOutputAuthority::Committed(replacement.clone());
+    let completion = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryCompletedOutputDemand {
         authority: actual.clone(),
         readiness: worth_query_execution::facade::domain_computation::WorthQueryOutputReadinessDeliveryEvidence::for_test(),
     };
     let mut retained = record(
         occurrence(),
-        DemandState::Output(worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputProgress::new(
-            WorthQueryOutputCheckpoint::Ready(worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::ready_backing::ReadyCompletion::for_test(completion)),
+        DemandState::Output(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputProgress::new(
+            WorthQueryOutputCheckpoint::Ready(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::ready_backing::ReadyCompletion::for_test(completion)),
         )),
         1,
     );
-    retained.performed_obligations = vec![worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::PerformedOutputObligation {
+    retained.performed_obligations = vec![worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::PerformedOutputObligation {
         source_commit: replacement
             .committed_product_publication()
             .composite_commit()

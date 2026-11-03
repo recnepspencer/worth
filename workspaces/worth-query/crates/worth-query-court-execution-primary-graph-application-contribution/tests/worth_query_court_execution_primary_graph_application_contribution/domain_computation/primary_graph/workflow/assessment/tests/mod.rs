@@ -4,12 +4,12 @@ use worth_relational::facade::symbols::ClientKey;
 use worth_relational::facade::transactions::CreatedEntityRef;
 use worth_relational::facade::identity::EntityId;
 use worth_relational::facade::transactions::EntityReference;
-use worth_query_execution::domain_computation::primary_graph::workflow::assessment::WorkflowAssessmentEvidenceMeaning;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::effect_program::model::WorthQueryApplicationCreationPartition;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::effect_program::model::WorthQueryApplicationRealizedEffect;
-use worth_query_execution::domain_computation::primary_graph::workflow::assessment::dependency;
-use worth_query_execution::domain_computation::primary_graph::workflow::assessment::text;
-use worth_query_execution::domain_computation::primary_graph::workflow::assessment::workflow_evidence_retained_bytes;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::assessment::WorkflowAssessmentEvidenceMeaning;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::model::WorthQueryApplicationCreationPartition;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::model::WorthQueryApplicationRealizedEffect;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::assessment::dependency;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::assessment::text;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::assessment::workflow_evidence_retained_bytes;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::installed_layout;
 
 pub fn created(
@@ -82,7 +82,7 @@ fn evidence_and_each_dependency_charge_their_field_widths_and_nothing_else_does(
 
 #[test]
 fn performed_entity_kind_dependency_uses_a_distinct_durable_shape() {
-    use worth_query_execution::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact as Fact;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact as Fact;
 
     let primary = installed_layout();
     let layout = primary.workflow();
@@ -114,7 +114,7 @@ fn performed_entity_kind_dependency_uses_a_distinct_durable_shape() {
     };
     let projected = |fact| {
         let mut effects = Vec::new();
-        worth_query_execution::domain_computation::primary_graph::workflow::assessment::dependency::visit_dependency_facts(
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::assessment::dependency::visit_dependency_facts(
             layout,
             &evidence,
             &make_meaning(fact),

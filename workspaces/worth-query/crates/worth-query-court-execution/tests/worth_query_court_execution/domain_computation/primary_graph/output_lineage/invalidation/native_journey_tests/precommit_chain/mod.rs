@@ -1,6 +1,6 @@
 //! A selected B output carries its actual A edge into C's precommit check.
-pub use worth_query_execution::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
-pub use worth_query_execution::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts;
 
 pub use std::collections::BTreeMap;
 pub use std::sync::Arc;
@@ -13,15 +13,15 @@ pub use crate::domain_computation::primary_graph::output_lineage::invalidation::
 pub use crate::domain_computation::primary_graph::output_lineage::invalidation::native_journey_tests::snapshot;
 pub use crate::domain_computation::primary_graph::output_lineage::invalidation::native_journey_tests::AccountLabel;
 pub use crate::domain_computation::primary_graph::output_lineage::invalidation::native_journey_tests::AccountStatus;
-pub use worth_query_execution::domain_computation::primary_graph::output_lineage::semantic_source::SemanticSource;
-pub use worth_query_execution::domain_computation::primary_graph::invariant_projection::consumed_output::ConsumedOutputEvidence;
-pub use worth_query_execution::domain_computation::primary_graph::invariant_projection::consumed_output::verification::ConsumedOutputVerification;
-pub use worth_query_execution::domain_computation::primary_graph::invariant_projection::consumed_output::verification::ConsumedOutputVerificationStop;
-pub use worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::mark_state::FullVerificationReason;
-pub use worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::settlement::SettlementRegistration;
-pub use worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::derived::SourceSettlementCurrentness;
-pub use worth_query_execution::domain_computation::primary_graph::output_lineage::ProductCoordinate;
-pub use worth_query_execution::domain_computation::primary_graph::output_lineage::settlement_identity::RecordedSettlementIdentity;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::semantic_source::SemanticSource;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::consumed_output::ConsumedOutputEvidence;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::consumed_output::verification::ConsumedOutputVerification;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::consumed_output::verification::ConsumedOutputVerificationStop;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::mark_state::FullVerificationReason;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::settlement::SettlementRegistration;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::derived::SourceSettlementCurrentness;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::ProductCoordinate;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::settlement_identity::RecordedSettlementIdentity;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::product_publication::publish_relational_mutation;

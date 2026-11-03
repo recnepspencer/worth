@@ -3,12 +3,12 @@
 use crate::domain_computation::primary_graph::application_output_demand::registry::tests::support::key;
 use crate::domain_computation::primary_graph::application_output_demand::registry::tests::support::occurrence;
 use crate::domain_computation::primary_graph::application_output_demand::registry::tests::support::record;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::DemandRegistryState;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::DemandState;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandRegistryState;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandState;
 
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::refreshed_rejoin::awaited_by_stale_owner;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::refreshed_rejoin::newest_of_occurrence;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::refreshed_rejoin::occurrence_rows;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::refreshed_rejoin::awaited_by_stale_owner;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::refreshed_rejoin::newest_of_occurrence;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::refreshed_rejoin::occurrence_rows;
 use crate::domain_computation::primary_graph::application_output_demand::registry::tests::*;
 use crate::domain_computation::primary_graph::tests::recoverable_commit_support;
 pub fn check(search: usize) {
@@ -30,7 +30,7 @@ pub fn check(search: usize) {
             );
         }
         add_custody(&mut state, &receipts[..entries], neighbors);
-        let before = worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::record_map::occurrence_rows_visited();
+        let before = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::record_map::occurrence_rows_visited();
         match search {
             0 => assert_eq!(occurrence_rows(&state.records, &selected).count(), 3),
             1 => assert_eq!(
@@ -40,7 +40,7 @@ pub fn check(search: usize) {
             2 => assert!(!awaited_by_stale_owner(&state.records, &selected)),
             _ => panic!("unknown occurrence search"),
         }
-        contacts.push(worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::record_map::occurrence_rows_visited() - before);
+        contacts.push(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::record_map::occurrence_rows_visited() - before);
     }
     assert_eq!(contacts, vec![3, 3], "search {search}");
 }
@@ -110,14 +110,14 @@ pub fn add_custody_with_completion(
         }
         state.source_custody.insert(
             commit.clone(),
-            worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::SourceCustody {
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::SourceCustody {
                 occurrence: receipt.product_branch().occurrence(),
-                root_kind: worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::source_custody::PreparedOutputRootKind::Discovered(
-                    worth_query_execution::equality_type_id::EqualityTypeId::of::<()>(),
+                root_kind: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::source_custody::PreparedOutputRootKind::Discovered(
+                    worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId::of::<()>(),
                 ),
                 source: None,
                 discovery: None,
-                bound_sources: Some(vec![worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::BoundOutputSource {
+                bound_sources: Some(vec![worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::BoundOutputSource {
                     scope,
                     identity: selected.source.clone(),
                 }]),

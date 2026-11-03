@@ -9,7 +9,7 @@ use worth_foundational::DeterminismContract;
 use worth_foundational::ExecutionBudget;
 use worth_foundational::ExecutionPosture;
 use worth_foundational::ExecutionRequestPolicy;
-use worth_query_execution::domain_computation::primary_graph::bootstrap_publication::build_requested_indexes;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::bootstrap_publication::build_requested_indexes;
 use worth_relational::facade::identity::KindId;
 use worth_relational::facade::identity::PartitionId;
 use worth_relational::facade::indexes::DerivedIndexBuildRequest;

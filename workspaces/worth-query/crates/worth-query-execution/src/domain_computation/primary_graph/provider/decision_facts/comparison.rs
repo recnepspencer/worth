@@ -15,10 +15,10 @@ use crate::domain_computation::{
     WorthQueryFreshDecisionReadSet, WorthQueryProviderSessionView,
 };
 
-mod indexed;
+pub(crate) mod indexed;
 use indexed::PreparedSelections;
 
-pub(in crate::domain_computation) struct PrimaryDecisionReadSetComparison<'provider> {
+pub struct PrimaryDecisionReadSetComparison<'provider> {
     provider: &'provider WorthQueryPrimaryGraphProvider,
     facts: Arc<crate::domain_computation::primary_graph::ApplicationFactTable>,
     registration: crate::domain_computation::primary_graph::RegisteredPrimaryRead,

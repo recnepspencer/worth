@@ -6,10 +6,10 @@ pub use std::collections::BTreeMap;
 
 pub use worth_foundational::facade::PartitionIdentity;
 
-pub use worth_query_execution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::retained::RetainedPartitions;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::retained::RetainedPartitions;
 pub use crate::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tests::*;
-pub use worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::computation_routing::ComputationFactReaders;
-pub use worth_query_execution::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationFactKey;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::computation_routing::ComputationFactReaders;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationFactKey;
 
 /// One item as a number: its identity, its key and its value, so a changed
 /// key or value is a changed digest.
@@ -217,7 +217,7 @@ fn every_edit_retains_what_a_fresh_full_run_retains() {
 #[test]
 fn every_record_absence_rebuilds_the_same_state_as_a_fresh_run() {
     let _observation = QueryObservation::install_on_this_thread();
-    use worth_query_execution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::prior_absence::PriorAbsence;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::prior_absence::PriorAbsence;
     let world = installed_authorization_world(true);
     let installed = WorthQueryInstalledPartitionedComputation::<_, _, Computation, _>::new(
         Rerouted::default(),
@@ -238,15 +238,15 @@ fn every_record_absence_rebuilds_the_same_state_as_a_fresh_run() {
         (PriorAbsence::Unmeasured, Cause::Unmeasured),
         (PriorAbsence::Stopped, Cause::Stopped),
         (
-            PriorAbsence::Suppressed(worth_query_execution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::prior_absence::Suppression::Policy),
+            PriorAbsence::Suppressed(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::prior_absence::Suppression::Policy),
             Cause::RetentionPolicy,
         ),
         (
-            PriorAbsence::Suppressed(worth_query_execution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::prior_absence::Suppression::Several),
+            PriorAbsence::Suppressed(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::prior_absence::Suppression::Several),
             Cause::SeveralComputations,
         ),
         (
-            PriorAbsence::Suppressed(worth_query_execution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::prior_absence::Suppression::Collision),
+            PriorAbsence::Suppressed(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::prior_absence::Suppression::Collision),
             Cause::CollisionSuppressed,
         ),
     ] {
@@ -283,10 +283,10 @@ fn every_record_absence_rebuilds_the_same_state_as_a_fresh_run() {
 #[test]
 fn a_missing_call_measurement_is_recorded_as_unmeasured_at_the_discard() {
     let _observation = QueryObservation::install_on_this_thread();
-    use worth_query_execution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::recording::FullRecording;
-    use worth_query_execution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::prior_absence::CompletedComputationRetention;
-    use worth_query_execution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::prior_absence::PriorAbsence;
-    use worth_query_execution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::RetainedBasisToken;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::recording::FullRecording;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::prior_absence::CompletedComputationRetention;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::prior_absence::PriorAbsence;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::RetainedBasisToken;
     let world = installed_authorization_world(true);
     let installed = installed(StatusRead::Gather(1), sum);
     let first = first_run(&world, &installed);
@@ -305,7 +305,7 @@ fn a_missing_call_measurement_is_recorded_as_unmeasured_at_the_discard() {
     let request = live_scope();
     let execution = QueryRequestExecution::open(
         RuntimeWorldExecutionPlacement::Serial(
-            worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy(
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy(
                 std::num::NonZeroUsize::MIN,
                 None,
             ),

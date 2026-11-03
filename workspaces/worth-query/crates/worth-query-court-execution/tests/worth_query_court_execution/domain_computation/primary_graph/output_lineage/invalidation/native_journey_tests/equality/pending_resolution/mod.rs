@@ -2,29 +2,29 @@
 
 use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::application_query::observed_source::source_identity::membership::tests::TestsWorthQueryObservedSourceSelectionForTest;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::native_journey_tests::equality::*;
-use worth_query_execution::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 use std::sync::Mutex;
 use std::sync::OnceLock;
 
-use worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::handler_fact_boundary::CompletedHandlerFactBoundary;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::fact::movement::Movement;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::decision_reuse::PreparedDecisionReuseContext;
-use worth_query_execution::domain_computation::primary_graph::application_contribution::producer::registry::semantic_edition::InstalledProducerEdition;
-use worth_query_execution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::prior_absence::PriorAbsence;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::handler_fact_boundary::CompletedHandlerFactBoundary;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::movement::Movement;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::decision_reuse::PreparedDecisionReuseContext;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::registry::semantic_edition::InstalledProducerEdition;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::prior_absence::PriorAbsence;
 use worth_query_execution::facade::application_contribution::WorthQueryDecisionContextDependencies;
 use worth_query_execution::facade::application_contribution::WorthQueryProducerInputReuseContract;
-use worth_query_execution::domain_computation::primary_graph::application_query::observed_source::source_identity::membership::WorthQueryObservedSourceSelection;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::input_cutoff::verification::InputCutoffDecision;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::input_cutoff::verification::refusal::InputCutoffVerificationStop;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::input_cutoff::selected_basis::PreparedInputCutoffBasis;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::input_cutoff::RetainedInputCutoffCandidate;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::membership::WorthQueryObservedSourceSelection;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::input_cutoff::verification::InputCutoffDecision;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::input_cutoff::verification::refusal::InputCutoffVerificationStop;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::input_cutoff::selected_basis::PreparedInputCutoffBasis;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::input_cutoff::RetainedInputCutoffCandidate;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::output_lineage::own_write_fixture::with_generated_own_write;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::retained_computation::RecordedComputation;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::input_reuse_key::PreparedInputReuseKey;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::recorded_output::RecordedOutput;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::recorded_output::RecordedOutputMutable;
-use worth_query_execution::domain_computation::primary_graph::handler::decision_context_use::DecisionContextUse;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::retained_computation::RecordedComputation;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::input_reuse_key::PreparedInputReuseKey;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::recorded_output::RecordedOutput;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::recorded_output::RecordedOutputMutable;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::handler::decision_context_use::DecisionContextUse;
 
 pub enum Successor {
     Equal,
@@ -132,7 +132,7 @@ pub fn cutoff_journey(
                 assert!(matches!(owner.consumed_output_currentness(
                     &live, &b,
                 ).unwrap(),
-                    worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::derived::ConsumedOutputCurrentness::CanonicallyEqualClean(identity)
+                    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::derived::ConsumedOutputCurrentness::CanonicallyEqualClean(identity)
                         if identity == b_successor),
                     "the cutoff's exact pending edge must have a certified equal clean successor");
             }
@@ -144,7 +144,7 @@ pub fn cutoff_journey(
                 let upstream = owner.consumed_output_currentness(
                     &live, &a0,
                 ).unwrap();
-                use worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::derived::ConsumedOutputCurrentness;
+                use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::derived::ConsumedOutputCurrentness;
                 match successor {
                     Successor::Unequal => assert!(matches!(upstream,
                         ConsumedOutputCurrentness::Direct(SourceSettlementCurrentness::Dirty(_))),

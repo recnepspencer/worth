@@ -29,9 +29,9 @@ pub use worth_relational::facade::transactions::MutationIntent;
 pub use worth_relational::facade::transactions::WorkerIntentBatch;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_world;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::IdentityWorld;
-pub use worth_query_execution::domain_computation::primary_graph::merge_unique_values::admit_merge_unique_values;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::merge_unique_values::admit_merge_unique_values;
 pub use worth_query_execution::facade::integration::WorthQueryMergeUniqueValueDenialKind as Kind;
-pub use worth_query_execution::domain_computation::primary_graph::schema_layout::unique_fields::WorthQueryUniqueFieldFixture;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::schema_layout::unique_fields::WorthQueryUniqueFieldFixture;
 pub use worth_query_execution::facade::integration::WorthQueryPrimaryGraphIntegrationHandle;
 #[test]
 fn a_merge_that_creates_a_value_the_target_holds_is_denied() {

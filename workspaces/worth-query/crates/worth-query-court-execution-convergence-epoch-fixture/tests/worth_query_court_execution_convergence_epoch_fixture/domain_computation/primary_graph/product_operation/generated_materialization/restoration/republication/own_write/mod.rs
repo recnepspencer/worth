@@ -1,6 +1,6 @@
 //! Native suspension/restoration must preserve the computation's original basis.
-use worth_query_execution::domain_computation::primary_graph::product_operation::generated_materialization::ProducerQualification;
-use worth_query_execution::domain_computation::execution_runtime::product_world::publication_denial::WorthQueryProductPublicationOutcome as PublicationOutcome;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::product_operation::generated_materialization::ProducerQualification;
+use worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::publication_denial::WorthQueryProductPublicationOutcome as PublicationOutcome;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::output_lineage::own_write_fixture::with_generated_own_write;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::authenticated_principal;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::resolved_account;
@@ -13,7 +13,7 @@ use worth_query_testkit_execution_primary_graph_application_contribution::domain
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::AccountMembershipTag;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::AccountStatus;
 use worth_query_execution::facade::domain_computation::WorthQueryCurrentOutputDenialKind;
-use worth_query_execution::equality_type_id::EqualityTypeId as TypeId;
+use worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId as TypeId;
 use std::collections::BTreeMap;
 use worth_foundational::facade::AspectValue;
 use worth_foundational::facade::InternedString;
@@ -46,8 +46,8 @@ pub fn suspend_restore_and_read() {
             application.runtime.authority_identity().as_u64(),
             &application.installed_schema.binding_identity(), receipt.principal_scope().scope(),
             observation.lifecycle_incarnation(), observation.reference_generation().get(),
-            worth_query_execution::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryRuntimeSourceIdentity::new([11;32]),
-            worth_query_execution::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryCheckpointSourceIdentity::new([11;32]),
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryRuntimeSourceIdentity::new([11;32]),
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryCheckpointSourceIdentity::new([11;32]),
         ).expect("the real committed record qualifies its suspension");
         // Provider registration is irrelevant to record continuity; all runtime,
         // correspondence, facts and source identity come from that exact record.
@@ -56,8 +56,8 @@ pub fn suspend_restore_and_read() {
             binding_type: TypeId::of::<OwnWriteOutputs>(),
             output_binding_type: TypeId::of::<OwnWriteOutputs>(),
             binding_identity: "test-own-write", provider_identity: "test-own-write",
-            runtime_source_identity: worth_query_execution::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryRuntimeSourceIdentity::new([11;32]),
-            checkpoint_source_identity: worth_query_execution::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryCheckpointSourceIdentity::new([11;32]),
+            runtime_source_identity: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryRuntimeSourceIdentity::new([11;32]),
+            checkpoint_source_identity: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryCheckpointSourceIdentity::new([11;32]),
             recorded_source_identity: exact.source_identity,
             source_partition_identity: exact.source_partition_identity,
             producer_dependency_identity: exact.producer_dependency_identity,

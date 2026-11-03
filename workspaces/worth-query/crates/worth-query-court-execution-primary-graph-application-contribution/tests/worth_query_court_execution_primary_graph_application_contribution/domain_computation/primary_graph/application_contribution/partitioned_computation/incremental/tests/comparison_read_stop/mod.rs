@@ -12,7 +12,7 @@ fn incremental_comparison_keeps_the_retained_fact_read_stop() {
     let prior = prior_of(first_run(&world, &installed), false);
     let source = WorthQueryCancellationSource::new();
     let request = WorthQueryRequestScope::new(None, source.token());
-    let policy = worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy(
+    let policy = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy(
         std::num::NonZeroUsize::MIN,
         None,
     );
@@ -31,7 +31,7 @@ fn incremental_comparison_keeps_the_retained_fact_read_stop() {
             let fired = std::rc::Rc::clone(&fired);
             observer = Some(worth_query_execution::test_read_stops::observe_consults_for_test(
                 move |at| {
-                    if worth_query_execution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::observed::retained_fact_comparison_is_active_for_test()
+                    if worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::observed::retained_fact_comparison_is_active_for_test()
                         && fired.get().is_none()
                     {
                         fired.set(Some(at));

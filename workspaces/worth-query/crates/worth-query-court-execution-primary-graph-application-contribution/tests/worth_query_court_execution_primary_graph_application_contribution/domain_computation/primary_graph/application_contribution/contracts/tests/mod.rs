@@ -1,6 +1,6 @@
-use worth_query_execution::equality_type_id::EqualityTypeId as TypeId;
+use worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId as TypeId;
 
-use worth_query_execution::domain_computation::primary_graph::application_contribution::producer::registry::DeclaredProducerBinding;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::registry::DeclaredProducerBinding;
 use worth_query_execution::facade::domain_computation::WorthQueryPrimaryGraphInstallationDenialKind as DenialKind;
 use worth_query_execution::facade::application_contribution::WorthQueryApplicationContractCatalog;
 use worth_query_execution::facade::application_contribution::WorthQueryProducerApplicability;

@@ -169,13 +169,13 @@ pub fn observe_case(
         && case.query_interruption.is_none())
     .then(|| canonical_roots[1]);
     let (witness, _witness_scope) =
-        worth_query_execution::domain_computation::primary_graph::application_query::read_execution::dispatch_witness::DispatchWitness::install(
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::read_execution::dispatch_witness::DispatchWitness::install(
             later,
         );
     if let Some((index, is_deadline)) = case.interrupt {
         let root = canonical_roots[index];
         let earlier = canonical_roots[..index].to_vec();
-        use worth_query_execution::domain_computation::primary_graph::application_query::read_execution::dispatch_witness::Interrupt;
+        use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::read_execution::dispatch_witness::Interrupt;
         witness.interrupt(if is_deadline {
             Interrupt::Deadline {
                 root,
@@ -190,7 +190,7 @@ pub fn observe_case(
             }
         });
     } else if let Some(interruption) = case.query_interruption {
-        use worth_query_execution::domain_computation::primary_graph::application_query::read_execution::dispatch_witness::Interrupt;
+        use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::read_execution::dispatch_witness::Interrupt;
         let root = *canonical_roots.last().unwrap();
         let earlier = canonical_roots[..count - 1].to_vec();
         witness.interrupt(match interruption {

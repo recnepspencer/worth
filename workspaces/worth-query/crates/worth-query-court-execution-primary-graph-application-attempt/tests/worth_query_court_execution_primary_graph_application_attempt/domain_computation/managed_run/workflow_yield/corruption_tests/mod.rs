@@ -1,11 +1,11 @@
-use worth_query_execution::domain_computation::managed_run::readmission::WorthQueryWorkflowReadmissionCleanupOutcome;
+use worth_query_execution::facade::domain_computation::WorthQueryArtifactGenerationRollbackEvidence;
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::managed_run::tests::yield_fixture::YieldProvider;
 use worth_query_execution::facade::domain_computation::WorthQueryWorkflowGraphStepOutcome;
 use worth_query_execution::facade::domain_computation::WorthQueryWorkflowRunCleanupOutcome;
 
 #[test]
 fn workflow_checkpoint_failure_and_generation_disruption_become_cleanup_only_authority() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -93,7 +93,7 @@ fn workflow_checkpoint_failure_and_generation_disruption_become_cleanup_only_aut
 
 #[test]
 fn workflow_generation_mismatch_denies_before_fresh_authority_and_rolls_back_cleanly() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 

@@ -1,7 +1,7 @@
 //! Cancellation raised inside a read reaches the public commit door by value.
 use crate::process::domain_computation::primary_graph::tests::application_attempt::*;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::observation::take_native_field_contacts;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::observation::read_rendezvous::ReadRendezvous;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::observation::take_native_field_contacts;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::observation::read_rendezvous::ReadRendezvous;
 use worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 

@@ -2,7 +2,7 @@
 use super::WorthQueryMemberExecution;
 use std::any::Any;
 
-pub(in crate::domain_computation::primary_graph) struct PreparedCompute {
+pub struct PreparedCompute {
     run: Box<dyn for<'a> FnOnce(WorthQueryMemberExecution<'a>) -> ComputedSlot + Send>,
 }
 

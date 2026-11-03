@@ -16,11 +16,11 @@ mod prepared_inputs;
 pub(in crate::domain_computation::primary_graph) use borrowed::BorrowedOperationProjection;
 pub(in crate::domain_computation::primary_graph) use prepared_inputs::PreparedCurrentInputs;
 mod component_reads;
-mod computation_calls;
-mod current_output;
+pub(crate) mod computation_calls;
+pub(crate) mod current_output;
 pub(super) use current_output::CertifiedOutputCorrespondence;
-mod decision_plan;
-mod decision_reads;
+pub(crate) mod decision_plan;
+pub(crate) mod decision_reads;
 mod derived_relation;
 pub use derived_relation::{
     WorthQueryInvariantDerivedMemberRelation, WorthQueryInvariantDerivedRelation,

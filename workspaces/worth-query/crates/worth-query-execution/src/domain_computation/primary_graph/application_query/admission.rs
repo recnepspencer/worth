@@ -20,7 +20,7 @@ pub(in crate::domain_computation::primary_graph) use funded_parameters::capture_
 pub(in crate::domain_computation) use funded_parameters::CapturedApplicationQueryParameters;
 mod governed_access;
 mod live_readmission;
-mod permission;
+pub(crate) mod permission;
 mod source_readmission;
 mod work_limit;
 pub(in crate::domain_computation::primary_graph::application_query) use governed_access::governance_denial;

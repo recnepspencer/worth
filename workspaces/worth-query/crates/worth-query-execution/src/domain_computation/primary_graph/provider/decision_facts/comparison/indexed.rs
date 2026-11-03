@@ -19,7 +19,7 @@ use worth_relational::facade::{
 
 // This directory is call-local and descriptive; its map backing is not charged
 // as ExecutionArray payload. Every value is the native owner's exact-root token.
-pub(super) struct PreparedSelections {
+pub struct PreparedSelections {
     pub(super) selectors:
         BTreeMap<(DerivedIndexId, KindId, AspectFieldLocator), PreparedEntityFieldLookup>,
 }
@@ -106,7 +106,7 @@ impl PreparedSelections {
     }
 }
 
-fn comparison_stop(
+pub fn comparison_stop(
     stop: BoundedEntityFieldLookupAdmissionStop<WorthQueryDecisionReadSetFailure>,
 ) -> Result<bool, WorthQueryDecisionReadSetFailure> {
     match stop {

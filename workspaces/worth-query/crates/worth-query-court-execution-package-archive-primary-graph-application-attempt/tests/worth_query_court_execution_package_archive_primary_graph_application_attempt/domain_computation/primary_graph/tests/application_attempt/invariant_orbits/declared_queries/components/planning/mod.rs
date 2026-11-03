@@ -36,7 +36,7 @@ fn installed_components_require_native_support_in_both_planning_lanes() {
     .unwrap();
     assert_eq!(ordinary, admitted);
     let layout = world.application.runtime.primary_graph().unwrap().layout();
-    let actual=worth_query_execution::domain_computation::primary_graph::application_query::runtime_support::primary_graph_support_inventory(query.read_graph(), layout, None, None, &ordinary).unwrap();
+    let actual=worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::runtime_support::primary_graph_support_inventory(query.read_graph(), layout, None, None, &ordinary).unwrap();
     assert!(
         match_graph_index_inventory_for_requirements(&ordinary, &actual)
             .matches()
@@ -44,7 +44,7 @@ fn installed_components_require_native_support_in_both_planning_lanes() {
             .all(|row| row.outcome().as_str() == "exact_match")
     );
     let noncomponent = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::declared_queries::read::installed(&world, Orbit::reference());
-    let wrong=worth_query_execution::domain_computation::primary_graph::application_query::runtime_support::primary_graph_support_inventory(noncomponent.read_graph(), layout, None, None, &ordinary).unwrap();
+    let wrong=worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::runtime_support::primary_graph_support_inventory(noncomponent.read_graph(), layout, None, None, &ordinary).unwrap();
     assert!(wrong.row_for_requirement_kind(&WorthQueryGraphReadAccessRequirementKind::AggregateSelection).is_none(), "a relationless aggregate row cannot borrow orbit support or omit its installed component contract");
 
     assert_eq!(ordinary.counters().aggregate_selection_count(), 1);

@@ -23,7 +23,7 @@ use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation
 use crate::domain_computation::provider_session::WorthQueryPreparedProductReadSessionIdentity;
 
 mod current_ready;
-mod fresh;
+pub(crate) mod fresh;
 mod principal_dependency;
 mod read_authorization;
 mod selected_access;

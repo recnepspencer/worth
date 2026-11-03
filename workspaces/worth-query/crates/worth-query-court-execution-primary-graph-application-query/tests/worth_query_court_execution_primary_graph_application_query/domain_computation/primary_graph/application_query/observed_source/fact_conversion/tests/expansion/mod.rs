@@ -1,6 +1,6 @@
 //! Focused physical-fact merging; literals describe coordinates, never authority.
-use worth_query_execution::domain_computation::primary_graph::application_query::observed_source::fact_conversion::materialization::merge_facts;
-use worth_query_execution::domain_computation::primary_graph::application_query::observed_source::fact_conversion::control::SourceFactExpansionControl;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::fact_conversion::materialization::merge_facts;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::fact_conversion::control::SourceFactExpansionControl;
 use crate::domain_computation::primary_graph::application_query::observed_source::fact_conversion::tests::*;
 use worth_execution::CancellationSource;
 use worth_execution::ExecutionRequest;

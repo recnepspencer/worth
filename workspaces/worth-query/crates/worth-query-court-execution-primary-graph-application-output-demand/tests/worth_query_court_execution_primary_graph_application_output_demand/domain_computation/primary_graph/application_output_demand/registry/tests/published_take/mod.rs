@@ -1,6 +1,6 @@
 //! A previously Published observation grants no take after the row moves.
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::row_stage::OutputRowStage;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::advance_admission::WorthQueryOutputDemandAdvanceAdmission as Admission;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::row_stage::OutputRowStage;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::advance_admission::WorthQueryOutputDemandAdvanceAdmission as Admission;
 use crate::domain_computation::primary_graph::application_output_demand::registry::tests::published_retirement::admit;
 use crate::domain_computation::primary_graph::application_output_demand::registry::tests::published_retirement::publish;
 use crate::domain_computation::primary_graph::application_output_demand::registry::tests::*;
@@ -9,14 +9,14 @@ use crate::domain_computation::primary_graph::application_output_demand::registr
 fn a_take_checks_the_live_stage_under_its_own_lock() {
     let receipt = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application();
     let _occurrence = occurrence();
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|_| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|_| {
         for stopped in [false, true] {
             let registry = WorthQueryOutputDemandRegistry::default();
             let row = key("checked-take", 1, 1);
             let first = admit(&registry, &row);
             let _peer = admit(&registry, &row);
             publish(&registry, &first, receipt.clone());
-            let held: worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::held_successor::HeldRequiredSuccessor = Box::new(row.clone());
+            let held: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::held_successor::HeldRequiredSuccessor = Box::new(row.clone());
             assert!(registry
                 .hold_required_successor(held, |held| held
                     .downcast_ref::<WorthQueryOutputDemandKey>())

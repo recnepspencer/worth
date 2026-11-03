@@ -33,7 +33,7 @@ fn a_refused_author_host_call_completes_on_the_owner_and_applies_only_its_prefix
                         }
                     } else { Ok(rank) }
                 })], |mut slots| {
-                    assert!(!worth_query_execution::domain_computation::primary_graph::application_contribution::computation::worker_custody::active(), "completion stays on the owner");
+                    assert!(!worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::computation::worker_custody::active(), "completion stays on the owner");
                     slots.pop().unwrap().into_value::<Result<usize, WorthQueryAdvancementDenial>>()
                 })
             }).collect();

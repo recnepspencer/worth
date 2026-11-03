@@ -10,10 +10,10 @@ pub use worth_query_execution::facade::domain_computation::WorthQueryExecutionPl
 pub use worth_query_execution::facade::application_contribution::WorthQueryManagedComputationResourceDenial;
 pub use worth_query_execution::facade::domain_computation::advancement_requests_on_this_thread_for_test;
 pub use worth_query_execution::facade::domain_computation::bound_advancement_requests_on_this_thread_for_test;
-pub use worth_query_execution::domain_computation::primary_graph::denial;
-pub use worth_query_execution::domain_computation::primary_graph::observations;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::denial;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::observations;
 pub use worth_query_execution::facade::domain_computation::place_managed_computations_on_this_thread_for_test;
-pub use worth_query_execution::domain_computation::primary_graph::root;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::root;
 pub use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::tests::application_attempt::invariant_walks::schema::Node;
 pub use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::tests::application_attempt::invariant_walks::schema::WalkSchema;
 pub use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_walks::world::World;

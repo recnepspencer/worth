@@ -8,13 +8,13 @@ use worth_relational::facade::mvcc::BranchBoundRelationalTransaction;
 use worth_relational::facade::transactions::CommitResult;
 use worth_relational::facade::transactions::WorkerIntentBatch;
 
-use worth_query_execution::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider;
-use worth_query_execution::domain_computation::application_aftermath::external_effect::correlation::derive_external_effect_correlation_identity;
-use worth_query_execution::domain_computation::application_aftermath::external_effect::outbox::dispatch_outbox_create_intent;
-use worth_query_execution::domain_computation::application_aftermath::external_effect::correlation::ExternalEffectCorrelationBasis;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider;
+use worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::correlation::derive_external_effect_correlation_identity;
+use worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::outbox::dispatch_outbox_create_intent;
+use worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::correlation::ExternalEffectCorrelationBasis;
 use worth_query_execution::facade::domain_computation::WorthQueryDispatchOutboxRecord;
-use worth_query_execution::domain_computation::primary_graph::application_branch::primary_relational_branch_id;
-use worth_query_execution::domain_computation::primary_graph::provider::session_commit::outbox_commit::WorthQueryCommittedDispatchOutboxBinding;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_branch::primary_relational_branch_id;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::session_commit::outbox_commit::WorthQueryCommittedDispatchOutboxBinding;
 
 pub fn commit_record(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -58,11 +58,11 @@ pub fn commit_record(
         .unwrap();
         let commit = committed.outcome().commit.clone();
         retain_commit_basis(provider, runtime, &committed);
-        let snapshot = worth_query_execution::domain_computation::primary_graph::exact_basis_access::open_current_branch_snapshot(runtime, &branch)
+        let snapshot = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::exact_basis_access::open_current_branch_snapshot(runtime, &branch)
             .unwrap();
         let runtime_id = snapshot.runtime_instance_id();
         release_commit_snapshot(runtime, &committed);
-        worth_query_execution::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
+        worth_query_execution::court_doors_for_test::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
         (binding, commit, runtime_id)
     });
     (binding, commit, runtime_id)
@@ -72,7 +72,7 @@ pub fn release_commit_snapshot(
     runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
     committed: &CommitResult,
 ) {
-    worth_query_execution::relational_snapshot_release::release_query_snapshot(
+    worth_query_execution::court_doors_for_test::relational_snapshot_release::release_query_snapshot(
         runtime,
         &committed.snapshot,
     );

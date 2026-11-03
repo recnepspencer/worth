@@ -1,15 +1,15 @@
 //! Exact issued-body custody and failed-call veto at actual admitted read sealing.
-use worth_query_execution::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact as Fact;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact as Fact;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationAttemptDenialKind;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationFactKey;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationFactKey;
 use worth_query_execution::facade::domain_computation::WorthQueryPrincipalResolutionMode;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::denial;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::denial;
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_walks::program::authorization::authorize;
 use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::tests::application_attempt::invariant_walks::schema::*;
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_walks::world;
 use worth_query_execution::facade::domain_computation::WorthQueryInvariantProjectionTraversalDenialKind;
-use worth_query_execution::domain_computation::primary_graph::denial;
-use worth_query_execution::domain_computation::primary_graph::root;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::denial;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::root;
 use worth_execution::ExecutionAllocationPolicy as Allocation;
 use worth_query_declaration::facade::application_schema::RelationDirection::Forward;
 #[test]
@@ -33,7 +33,7 @@ fn sealing_keeps_the_one_original_issued_body_and_requires_explicit_relation_fac
         let original=std::sync::Arc::clone(expected.structural_walk(key,attempt.admission.admission_identity(),
             &attempt.admission.retain_graph_contract(),attempt.lease.snapshot()).unwrap());
         let (other,_)=authorize(&world,&phase,&execution,&request,0,InspectWalk::reference(),None);
-        let denial=worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::structural_walk::observe(&execution,&other,&attempt.lease,&attempt.read_scope,expected,key,None).err().unwrap();
+        let denial=worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::structural_walk::observe(&execution,&other,&attempt.lease,&attempt.read_scope,expected,key,None).err().unwrap();
         assert_eq!(denial.kind(),WorthQueryApplicationAttemptDenialKind::ProjectionAdmissionMismatch,
             "even identical graph truth and contracts cannot relabel the actual value to another admission");
         let completed=attempt.complete_projected_dependencies(&phase,Allocation::SystemAllocation).unwrap();
@@ -44,8 +44,8 @@ fn sealing_keeps_the_one_original_issued_body_and_requires_explicit_relation_fac
         assert!(std::sync::Arc::ptr_eq(&original,values[0]),"seal consumed the exact original issued Arc");
         assert_eq!(original.native().visits().len(),4);
         assert_eq!(original.native().relations().len(),3);
-        assert!(worth_query_execution::domain_computation::primary_graph::application_checkpoint::facts::encoding::encode_funded(
-            &completed.facts,worth_query_execution::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new(Allocation::SystemAllocation,Some(&request))).is_err(),
+        assert!(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::encoding::encode_funded(
+            &completed.facts,worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new(Allocation::SystemAllocation,Some(&request))).is_err(),
             "live walk facts deliberately have no checkpoint reconstruction door");
         let selected=world.application.select_product_branch(&execution,world.application.product_runtime().default_branch()).unwrap();
         let target=selected.resolve_entity(&phase,NodeKey::reference(),1,&request,WorthQueryPrincipalResolutionMode::Ordinary).unwrap();
@@ -140,7 +140,7 @@ fn a_descriptor_without_this_projections_issued_value_cannot_be_completed() {
                     Allocation::SystemAllocation,
                 )
                 .unwrap();
-            let denial = worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::structural_walk::observe(
+            let denial = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::structural_walk::observe(
                 &execution,
                 &raw.admission,
                 &raw.lease,
@@ -159,7 +159,7 @@ fn a_descriptor_without_this_projections_issued_value_cannot_be_completed() {
                 .lease
                 .handle()
                 .with_runtime(&execution, |runtime| {
-                    worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::fact_observation::observe_fact(
+                    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::fact_observation::observe_fact(
                         &execution,
                         runtime,
                         raw.lease.snapshot(),

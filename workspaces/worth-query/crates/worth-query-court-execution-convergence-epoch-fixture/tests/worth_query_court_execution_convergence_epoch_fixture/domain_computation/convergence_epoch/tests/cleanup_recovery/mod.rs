@@ -5,7 +5,7 @@ use worth_query_execution::facade::convergence_epoch::WorthQueryWorkflowConverge
 
 #[test]
 fn direct_cleanup_recovery_preserves_epoch_evidence_and_counts_the_retry() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -43,7 +43,7 @@ fn direct_cleanup_recovery_preserves_epoch_evidence_and_counts_the_retry() {
 
 #[test]
 fn workflow_cleanup_recovery_preserves_epoch_evidence_and_counts_the_retry() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 

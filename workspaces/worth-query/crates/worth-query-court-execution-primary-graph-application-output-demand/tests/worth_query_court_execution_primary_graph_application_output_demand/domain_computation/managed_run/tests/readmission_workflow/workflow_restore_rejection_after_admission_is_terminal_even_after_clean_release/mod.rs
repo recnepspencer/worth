@@ -1,12 +1,12 @@
 //! Workflow restore rejection after admission is terminal even after clean release.
 
-use worth_query_execution::domain_computation::managed_run::readmission::WorthQueryWorkflowReadmissionCleanupOutcome;
+use worth_query_execution::facade::domain_computation::WorthQueryArtifactGenerationRollbackEvidence;
 
 use crate::domain_computation::managed_run::tests::readmission_workflow::*;
 
 #[test]
 fn workflow_restore_rejection_after_admission_is_terminal_even_after_clean_release() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 

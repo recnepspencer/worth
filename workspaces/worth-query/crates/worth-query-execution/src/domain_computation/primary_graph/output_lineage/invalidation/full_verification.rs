@@ -26,13 +26,13 @@ mod root_source;
 use crate::domain_computation::primary_graph::invariant_projection::EvidenceView;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum FullVerificationDecision {
+pub enum FullVerificationDecision {
     Current,
     Changed,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum FullVerificationStop {
+pub enum FullVerificationStop {
     Alignment(FullVerificationReason),
     /// The selected source or a row it reaches belongs to another source.
     Foreign,

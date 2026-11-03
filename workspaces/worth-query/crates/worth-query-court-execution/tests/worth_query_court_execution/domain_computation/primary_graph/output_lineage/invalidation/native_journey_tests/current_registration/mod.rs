@@ -1,9 +1,9 @@
 //! Stable preparation cannot reinterpret a cutoff at an older source root.
-use worth_query_execution::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts;
 
 use crate::domain_computation::primary_graph::output_lineage::invalidation::native_journey_tests::*;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::derived::SettlementRegistrationStop;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::derived::SettlementRegistrationStop;
 use worth_relational::facade::mvcc::CompanionCellEditStop;
 
 #[test]
@@ -119,7 +119,7 @@ fn current_source_registration_rejects_native_movement_while_ordinary_replay_rem
     assert!(matches!(
         currentness(owner, &after, &next),
         SourceSettlementCurrentness::FullVerificationRequired(
-            worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::mark_state::FullVerificationReason::MissingSettlement
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::mark_state::FullVerificationReason::MissingSettlement
         )
     ));
     // An ordinary post-effect registration must still replay deliveries from

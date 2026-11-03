@@ -9,7 +9,7 @@ use std::sync::Arc;
 /// installed edition, the state the selected record retained, and that
 /// record.
 #[derive(Clone)]
-pub(in crate::domain_computation) struct ComputationPrior {
+pub struct ComputationPrior {
     pub(super) edition: InstalledProducerEdition,
     pub retained: Result<Arc<RetainedComputation>, WorthQueryPartitionedComputationFullCause>,
     record: Option<PriorComputationRecord>,

@@ -19,7 +19,7 @@ use worth_runtime_world::facade::RuntimeWorldExecutionPlacement;
 use super::execution_denial::{interruption_stop, lease_denial, memory_denial};
 use super::{WorthQueryManagedComputationInterruption, WorthQueryManagedComputationResourceDenial};
 
-mod test_placement;
+pub(crate) mod test_placement;
 pub(in crate::domain_computation::primary_graph) use test_placement::test_policy;
 pub(in crate::domain_computation::primary_graph) use test_placement::FixturePlacement;
 pub use test_placement::{
@@ -32,7 +32,7 @@ mod serial_placement;
 mod test_authority;
 pub use test_authority::query_test_execution_authority_for_test;
 
-type Resource = WorthQueryManagedComputationResourceDenial;
+pub type Resource = WorthQueryManagedComputationResourceDenial;
 
 mod accounting;
 mod decision_stage;
@@ -40,7 +40,7 @@ mod descendants;
 mod retained_dispatch;
 mod tree_charge;
 pub(in crate::domain_computation::primary_graph) use descendants::MemberRequestExecution;
-pub(in crate::domain_computation::primary_graph) mod advancement;
+pub(crate) mod advancement;
 pub(in crate::domain_computation::primary_graph) use advancement::advancement_denial;
 
 pub use advancement::{
@@ -49,7 +49,7 @@ pub use advancement::{
 
 /// One request's execution, borrowed from the World owner the request entry
 /// holds for the request's duration.
-pub(in crate::domain_computation::primary_graph) struct QueryRequestExecution<'a> {
+pub struct QueryRequestExecution<'a> {
     cancellation: worth_execution::CancellationToken,
     deadline: Option<std::time::Instant>,
     declared_work: Option<u64>,
@@ -173,7 +173,7 @@ impl<'a> QueryRequestExecution<'a> {
 }
 
 /// Bytes held against the request's lease lineage until the reservation drops.
-pub(in crate::domain_computation::primary_graph) struct QueryMemoryReservation {
+pub struct QueryMemoryReservation {
     held: Option<ExecutionMemoryReservation>,
     bytes: u64,
 }

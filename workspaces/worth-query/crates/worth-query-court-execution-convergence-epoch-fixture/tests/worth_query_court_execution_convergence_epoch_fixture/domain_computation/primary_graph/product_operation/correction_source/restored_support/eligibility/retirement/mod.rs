@@ -1,11 +1,11 @@
 //! The receiving comparison consumes real retirement metadata at both roots.
 use worth_query_execution::facade::domain_computation::WorthQueryCorrectionDerivationDenial as Denial;
 use worth_execution::ExecutionRequest;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact as Fact;
-use worth_query_execution::domain_computation::primary_graph::application_checkpoint::facts::payload::FactPayload;
-use worth_query_execution::domain_computation::primary_graph::product_operation::correction_source::restored_support::eligibility::compare;
-use worth_query_execution::domain_computation::primary_graph::product_operation::correction_source::restored_support::history;
-use worth_query_execution::domain_computation::primary_graph::product_operation::correction_source::restored_support::overlap;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact as Fact;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::payload::FactPayload;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::product_operation::correction_source::restored_support::eligibility::compare;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::product_operation::correction_source::restored_support::history;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::product_operation::correction_source::restored_support::overlap;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::product_publication::publish_relational_mutation;
@@ -79,7 +79,7 @@ fn paired_retirement_support_checks_original_and_target_exact_metadata() {
             let original_view = runtime.read_truth().project_snapshot(original_snapshot).unwrap();
             let target_view = runtime.read_truth().project_snapshot(target_snapshot).unwrap();
             let facts = payload(fact.clone());
-            let selection = worth_query_execution::domain_computation::primary_graph::product_operation::correction_source::restored_support::overlap::select(execution, &facts, runtime, &original_view, &target_view).unwrap();
+            let selection = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::product_operation::correction_source::restored_support::overlap::select(execution, &facts, runtime, &original_view, &target_view).unwrap();
             let keys = selection.keys.iter().cloned().collect::<Vec<_>>();
             assert_eq!(keys, [RelationalAuthoredWriteSelector::Record {
                 record: RecordRef::Entity(entity), scope: RelationalAuthoredWriteScope::Lifecycle,

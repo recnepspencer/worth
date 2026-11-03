@@ -23,7 +23,7 @@ use super::{
     WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationEmission,
 };
 
-pub(in crate::domain_computation) struct WorthQueryPreparedApplicationProviderAttempt {
+pub struct WorthQueryPreparedApplicationProviderAttempt {
     workflow_origin: Option<crate::domain_computation::primary_graph::workflow::operation_output::WorkflowOperationOrigin>,
     local_action_settlement: Option<super::workflow_transition_program::LocalActionSettlementProof>,
     required_output_demand: Option<crate::domain_computation::primary_graph::RequiredOutputDemandContext>,
@@ -118,7 +118,7 @@ pub(super) fn installed_preimage_demand(
     }
 }
 
-pub(super) fn prepare_provider_attempt<'layout>(
+pub fn prepare_provider_attempt<'layout>(
     unique_fields: crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFields<
         'layout,
     >,

@@ -1,16 +1,16 @@
 //! A real World authority mismatch stops delivery without freezing its peers.
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint as Checkpoint;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryPendingOutputDelivery as Delivery;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint as Checkpoint;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryPendingOutputDelivery as Delivery;
 use worth_query_execution::facade::product::WorthQueryPerformedRelationalProductChangeDeliveryDenialKind as DeliveryDenialKind;
-use worth_query_execution::domain_computation::primary_graph::application_contribution::producer::demand::checkpoint_delivery::PreparedSelectedDelivery;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::demand::checkpoint_delivery::PreparedSelectedDelivery;
 use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandAdvance;
 use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandDenialKind;
-use worth_query_execution::domain_computation::primary_graph::application_contribution::producer::demand::progression::denial;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::ready_backing::PreparedReadyBacking;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::publication_head::PublicationHeadSelection;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::lifecycle::selected_execution_finish::RunningSelectedExecution;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::advance_admission::WorthQueryOutputDemandAdvanceAdmission as Admission;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::demand_key::WorthQueryOutputDemandKey;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::demand::progression::denial;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::ready_backing::PreparedReadyBacking;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::publication_head::PublicationHeadSelection;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::lifecycle::selected_execution_finish::RunningSelectedExecution;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::advance_admission::WorthQueryOutputDemandAdvanceAdmission as Admission;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::demand_key::WorthQueryOutputDemandKey;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture;
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::recoverable_commit_support;
 use worth_runtime_bridge::facade::*;
@@ -58,7 +58,7 @@ fn a_terminal_delivery_stop_releases_the_head_with_a_peer_still_present() {
     );
     let key = WorthQueryOutputDemandKey::new("terminal-delivery-family", "terminal-delivery".into(),
         worth_query_execution::facade::application_contribution::WorthQueryProducerApplicability::new("terminal-delivery", worth_query_execution::facade::application_contribution::WorthQueryProducerLifecyclePosture::Preserve),
-        worth_query_execution::domain_computation::primary_graph::application_query::observed_source::source_identity::WorthQueryObservedSourceEpoch::new([1;32], [2;32], root, occurrence, 1, [3;32]));
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::WorthQueryObservedSourceEpoch::new([1;32], [2;32], root, occurrence, 1, [3;32]));
     let registry = &world.application.output_demands;
     let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity(root);
     let request = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
@@ -86,10 +86,10 @@ fn a_terminal_delivery_stop_releases_the_head_with_a_peer_still_present() {
         })
         .unwrap();
     world.application.with_application_advancement(&request, |phase| {
-        let owner = registry.admit(key.clone(), None, scope, occurrence, worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::DemandAdmissionKind::Ordinary, None, None).map(|(interest, _pause)| interest).unwrap();
-        let peer = registry.admit(key.clone(), None, scope, occurrence, worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::DemandAdmissionKind::Ordinary, None, None).map(|(interest, _pause)| interest).unwrap();
+        let owner = registry.admit(key.clone(), None, scope, occurrence, worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandAdmissionKind::Ordinary, None, None).map(|(interest, _pause)| interest).unwrap();
+        let peer = registry.admit(key.clone(), None, scope, occurrence, worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandAdmissionKind::Ordinary, None, None).map(|(interest, _pause)| interest).unwrap();
         assert!(matches!(registry.begin(&owner), Admission::Schedule(None)));
-        registry.finish_scheduling(&owner, None, &mut Ok(worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::WorthQueryOutputSchedulingResult::Scheduled));
+        registry.finish_scheduling(&owner, None, &mut Ok(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryOutputSchedulingResult::Scheduled));
         let finish = registry.prepare_selected_execution_finish(&owner).unwrap();
         assert!(matches!(registry.begin(&owner), Admission::Execute { .. }));
         assert!(RunningSelectedExecution::new(finish).publish(Checkpoint::Published {

@@ -9,7 +9,7 @@ use worth_relational::facade::transactions::EntityReference;
 use super::super::read_set::WorthQueryCompleteApplicationReadSet;
 use super::super::WorthQueryProjectedApplicationMutation;
 
-mod emission;
+pub(crate) mod emission;
 pub(in crate::domain_computation::primary_graph) use emission::{
     WorthQueryAdmittedApplicationEmissionBatch, WorthQueryApplicationEmission,
 };
@@ -43,7 +43,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationOpt
         Option<AspectValue>,
 }
 
-pub(in crate::domain_computation::primary_graph) enum WorthQueryApplicationRealizedEffect {
+pub enum WorthQueryApplicationRealizedEffect {
     CreateEntity {
         kind: KindId,
         key: String,
@@ -166,7 +166,7 @@ pub struct WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, S
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum WorthQueryApplicationCreationPartition {
+pub enum WorthQueryApplicationCreationPartition {
     Issued,
     Context(worth_relational::facade::identity::PartitionId),
 }

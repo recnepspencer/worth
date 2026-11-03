@@ -1,10 +1,10 @@
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitOutcomeIdentity;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationIdempotencyBinding;
-use worth_query_execution::domain_computation::primary_graph::provider::idempotency::product_affinity::WorthQueryProductIdempotencyAffinity;
-use worth_query_execution::domain_computation::primary_graph::provider::idempotency::WorthQueryProviderIdempotencyResolution;
-use worth_query_execution::domain_computation::primary_graph::provider::idempotency::WorthQueryProviderIdempotencyResolutionDenial;
-use worth_query_execution::domain_computation::primary_graph::provider::idempotency::snapshot_resolution::idempotency_read_stop;
-use worth_query_execution::domain_computation::primary_graph::provider::idempotency::snapshot_resolution::resolve_at_snapshot;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::idempotency::product_affinity::WorthQueryProductIdempotencyAffinity;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::idempotency::WorthQueryProviderIdempotencyResolution;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::idempotency::WorthQueryProviderIdempotencyResolutionDenial;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::idempotency::snapshot_resolution::idempotency_read_stop;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::idempotency::snapshot_resolution::resolve_at_snapshot;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::product_publication::publish_relational_mutation;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
@@ -24,7 +24,7 @@ fn durable_idempotency_door_preserves_stops_at_every_consult() {
                 worth_relational::facade::transactions::WorkerIntentBatch::new(
                     "paid-idempotency-proof",
                 )
-                .push(worth_query_execution::domain_computation::primary_graph::provider::idempotency::idempotency_create_intent(
+                .push(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::idempotency::idempotency_create_intent(
                     &layout,
                     binding,
                     WorthQueryApplicationCommitOutcomeIdentity::restore(1).unwrap(),

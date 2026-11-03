@@ -1,15 +1,15 @@
-use worth_query_execution::domain_computation::managed_run::readmission::WorthQueryWorkflowReadmissionCleanupOutcome;
-use worth_query_execution::domain_computation::managed_run::readmission::WorthQueryWorkflowReadmissionCleanupPending;
-use worth_query_execution::domain_computation::managed_run::readmission::WorthQueryWorkflowReadmissionCleanupPendingInspection;
-use worth_query_execution::domain_computation::managed_run::readmission::WorthQueryWorkflowReadmissionCleanupRequired;
+use worth_query_execution::facade::domain_computation::WorthQueryArtifactGenerationRollbackEvidence;
+use worth_query_execution::facade::domain_computation::WorthQueryArtifactGenerationRollbackEvidence;
+use worth_query_execution::facade::domain_computation::WorthQueryArtifactGenerationRollbackEvidence;
+use worth_query_execution::facade::domain_computation::WorthQueryArtifactGenerationRollbackEvidence;
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::managed_run::tests::readmission_workflow::yielded_workflow_with_retained_artifact;
 use crate::domain_computation::managed_run::tests::readmission_workflow_association::shared_yielded_workflow_peers_with_provider;
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::managed_run::tests::yield_fixture::YieldProvider;
 use crate::process::domain_computation::managed_run::tests::*;
 use worth_query_execution::facade::domain_computation::WorthQueryDirectReadmissionCleanupInspection;
 use worth_query_execution::facade::domain_computation::WorthQueryDirectReadmissionCleanupReceipt;
-use worth_query_execution::domain_computation::managed_run::readmission::WorthQueryWorkflowReadmissionCleanupInspection;
-use worth_query_execution::domain_computation::managed_run::readmission::WorthQueryWorkflowReadmissionCleanupReceipt;
+use worth_query_execution::facade::domain_computation::WorthQueryArtifactGenerationRollbackEvidence;
+use worth_query_execution::facade::domain_computation::WorthQueryArtifactGenerationRollbackEvidence;
 
 #[test]
 fn completed_readmission_cleanup_receipts_are_exact_inspection_newtypes() {
@@ -25,7 +25,7 @@ fn completed_readmission_cleanup_receipts_are_exact_inspection_newtypes() {
 
 #[test]
 fn workflow_cleanup_pending_peers_keep_exact_yielded_association_through_rightful_retry() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -61,7 +61,7 @@ fn workflow_cleanup_pending_peers_keep_exact_yielded_association_through_rightfu
 
 #[test]
 fn retained_artifact_is_the_only_pending_axis_and_retry_observes_its_release() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -108,7 +108,7 @@ fn retained_artifact_is_the_only_pending_axis_and_retry_observes_its_release() {
 }
 
 pub fn workflow_recovery_cleanup(
-    execution: &worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
 
     yielded: worth_query_execution::facade::domain_computation::WorthQueryYieldedWorkflowRun,
     runtime: &WorthQueryExecutionRuntime,

@@ -10,11 +10,11 @@ use super::operation_progression::{
     WorthQueryCapabilityContextKey, WorthQueryResolvedCapabilityRequest,
 };
 
-mod context;
+pub(crate) mod context;
 pub(super) mod material;
-mod use_identity;
+pub(crate) mod use_identity;
 pub(in crate::domain_computation) use use_identity::WorthQueryCapabilityUseIdentity;
-mod portable;
+pub(crate) mod portable;
 use context::RetainedContext;
 pub(in crate::domain_computation) use portable::MAXIMUM_PORTABLE_BYTES;
 pub(in crate::domain_computation) use portable::{
@@ -22,14 +22,14 @@ pub(in crate::domain_computation) use portable::{
 };
 
 #[derive(Clone)]
-pub(in crate::domain_computation) struct WorthQueryRetainedCapabilityRequest {
+pub struct WorthQueryRetainedCapabilityRequest {
     pub(super) recorded_actor: Option<Arc<crate::domain_computation::primary_graph::application_attempt::workflow_transition_program::WorkflowRecordedActorObservation>>,
     principal: worth_relational::facade::identity::EntityId,
     capability_identity: [u8; 32],
     resource: worth_relational::facade::identity::EntityId,
     data: Arc<RetainedCapabilityRequestData>,
 }
-pub(in crate::domain_computation) struct RetainedCapabilityRequestData {
+pub struct RetainedCapabilityRequestData {
     resource_entity: Arc<str>,
     elevation: Option<worth_relational::facade::identity::EntityId>,
     action: AspectValue,

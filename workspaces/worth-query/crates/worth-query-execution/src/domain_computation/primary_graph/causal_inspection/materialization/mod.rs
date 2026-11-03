@@ -4,7 +4,7 @@ pub use denied::materialize_denied_causal_inspection;
 
 mod artifacts;
 mod bridge_denial;
-mod contract;
+pub(crate) mod contract;
 mod exploration;
 mod performance;
 mod policy;
@@ -143,7 +143,7 @@ pub fn materialize_advisory_causal_inspection(
     ))
 }
 
-fn validate_bridge_summary(
+pub fn validate_bridge_summary(
     query_admission_identity: &super::identity::CausalInspectionOutcomeIdentity,
     anchor_identity: &super::observation_identity::CausalObservationAnchorDigest,
     expected_kind: BridgeCausalInspectionAdmissionSummaryKind,

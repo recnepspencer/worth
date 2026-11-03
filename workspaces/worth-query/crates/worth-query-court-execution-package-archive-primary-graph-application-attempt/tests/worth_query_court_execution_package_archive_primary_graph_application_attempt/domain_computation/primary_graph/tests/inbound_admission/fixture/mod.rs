@@ -29,7 +29,7 @@ pub use crate::domain_computation::primary_graph::tests::inbound_admission::sche
 pub use crate::domain_computation::primary_graph::tests::inbound_admission::schema::Target;
 pub use crate::domain_computation::primary_graph::tests::inbound_admission::schema::TargetKey;
 pub use crate::domain_computation::primary_graph::tests::inbound_admission::verifier::TestVerifier;
-pub use worth_query_execution::domain_computation::execution_runtime::product_world::resources::test_product_world_resources;
+pub use worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::resources::test_product_world_resources;
 pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitOutcome;
 pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitReceipt;
 pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationEntityKey;

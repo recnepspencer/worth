@@ -1,5 +1,5 @@
 use crate::domain_computation::primary_graph::tests::index_maintenance_interruptions::*;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_compare_denial::provider_session_denied;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_compare_denial::provider_session_denied;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitDenialStage;
 use worth_query_execution::facade::domain_computation::WorthQueryProviderSessionFailure;
 use worth_query_execution::facade::domain_computation::WorthQueryProviderSessionProtocolStage;
@@ -27,14 +27,14 @@ pub fn currency_consumer(consumer: u8) {
    let host=SerialRequest::from_memory(SerialMemoryBudget::new(None),source.token(),None);let execution=ExecutionRequest::serial(&host);
    let (result,_)=with_request_consult_observer_for_test(move |at|if at==k{cancel.cancel();},||handle.ensure_primary_indexes_for_basis(&execution,runtime,&basis));
    if k>count {result.unwrap();continue;}
-   let Err(worth_query_execution::domain_computation::primary_graph::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Execution(stop))=result else{panic!("consult {k} must return its request stop")};
+   let Err(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Execution(stop))=result else{panic!("consult {k} must return its request stop")};
    let stop=worth_query_execution::facade::domain_computation::relational_execution_kind(stop,None);assert_eq!(stop,Err(Control::Cancelled),"consult {k}");
    assert_consumer(stop,consumer);
   }
   discard(runtime);
   let (healthy,report)=setup.run(ExecutionWorkCeiling::new(Some(100_000)),|_|handle.ensure_primary_indexes_for_basis(&setup,runtime,&basis)).unwrap();healthy.unwrap();discard(runtime);
   let (short,_)=setup.run(ExecutionWorkCeiling::new(Some(report.charged_work()-1)),|_|handle.ensure_primary_indexes_for_basis(&setup,runtime,&basis)).unwrap();
-  let Err(worth_query_execution::domain_computation::primary_graph::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Execution(stop))=short else{panic!("work-short must stay typed")};
+  let Err(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Execution(stop))=short else{panic!("work-short must stay typed")};
   let stop=worth_query_execution::facade::domain_computation::relational_execution_kind(stop,None);assert_eq!(stop,Ok(Kind::ExecutionResource{denial:Resource::WorkExhausted,partition_identity:None,policy_ancestor:None}));assert_consumer(stop,consumer);
  });
 }
@@ -46,7 +46,7 @@ pub fn assert_consumer(stop: Result<Kind, Control>, consumer: u8) {
     );
     if consumer == 0 {
         assert_eq!(
-            worth_query_execution::domain_computation::primary_graph::provider::relational_execution_denial::native_preparation_kind(
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::relational_execution_denial::native_preparation_kind(
                 &failure
             ),
             stop.map(Some)

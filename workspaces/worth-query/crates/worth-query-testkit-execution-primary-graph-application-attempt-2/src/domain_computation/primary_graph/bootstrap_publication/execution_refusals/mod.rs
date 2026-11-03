@@ -21,7 +21,7 @@ use worth_foundational::DeterminismContract;
 use worth_foundational::ExecutionBudget;
 use worth_foundational::ExecutionPosture;
 use worth_foundational::ExecutionRequestPolicy;
-use worth_query_execution::domain_computation::primary_graph::bootstrap_publication::identity_indexes_built;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::bootstrap_publication::identity_indexes_built;
 use worth_query_execution::facade::application_contribution::WorthQueryManagedComputationResourceDenial as Resource;
 use worth_query_execution::facade::application_contribution::WorthQueryMemoryLimitLevel;
 use worth_query_execution::facade::domain_computation::WorthQueryProviderSessionControlStopKind as Control;

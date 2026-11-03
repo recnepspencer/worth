@@ -1,18 +1,18 @@
 //! A request that compares a retained output in full pays to record its row.
-use worth_query_execution::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts;
 
 use std::sync::OnceLock;
 
 use crate::domain_computation::primary_graph::output_lineage::invalidation::native_journey_tests::*;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondence;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondence;
 use worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture as WorthQueryApplicationOutputPosture;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryCheckpointOutputRole;
-use worth_query_execution::domain_computation::primary_graph::invariant_projection::consumed_output::ConsumedOutputEvidence;
-use worth_query_execution::domain_computation::primary_graph::invariant_projection::consumed_output::verification::ConsumedOutputVerification;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::mark_state::FullVerificationReason;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::current_output::RetainedOutputCurrentnessRead;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::native_output_witness::SealedNativeOutputWitness;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryCheckpointOutputRole;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::consumed_output::ConsumedOutputEvidence;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::consumed_output::verification::ConsumedOutputVerification;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::mark_state::FullVerificationReason;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::current_output::RetainedOutputCurrentnessRead;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::native_output_witness::SealedNativeOutputWitness;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::product_publication::publish_relational_mutation;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::authorization_world_installation::AuthorizationWorld;
 
@@ -110,7 +110,7 @@ fn a_verification_records_the_row_it_compared() {
                 })
             .expect("the row requires verification at the selected source");
         let verify = || {
-            ConsumedOutputEvidence::verify_at_observation(&host_custody.borrowed_request_for_test(), &identity, &worth_query_execution::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts::for_test(false, Arc::clone(&facts)).for_comparison().unwrap(), &[], None, &witness, owner, runtime, snapshot, &positioned)
+            ConsumedOutputEvidence::verify_at_observation(&host_custody.borrowed_request_for_test(), &identity, &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts::for_test(false, Arc::clone(&facts)).for_comparison().unwrap(), &[], None, &witness, owner, runtime, snapshot, &positioned)
         };
 let recorded = || {
             matches!(

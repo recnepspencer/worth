@@ -22,7 +22,7 @@ impl WorthQueryManagedRelationalObservationIdentity {
     }
 }
 
-pub(in crate::domain_computation) struct WorthQueryManagedRelationalObservation {
+pub struct WorthQueryManagedRelationalObservation {
     identity: WorthQueryManagedRelationalObservationIdentity,
     current_at_admission: bool,
     owner_identity: Option<worth_runtime_world::facade::RuntimeWorldOwnerIdentity>,

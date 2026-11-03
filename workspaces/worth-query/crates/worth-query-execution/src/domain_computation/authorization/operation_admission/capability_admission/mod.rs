@@ -17,7 +17,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrimaryGraphApplicationRuntime,
 };
 
-mod preparation;
+pub(crate) mod preparation;
 
 pub use preparation::WorthQueryAdmittedApplicationCapabilityAccess;
 use preparation::{
@@ -81,7 +81,7 @@ where
 /// Admission reuses the carrier's identity as the governed input identity and
 /// reports only the work the carrier still has to report, so the input is
 /// never encoded twice for one request.
-pub(in crate::domain_computation) fn admit_encoded_capability_access<
+pub fn admit_encoded_capability_access<
     Schema,
     Principal,
     PrincipalIdentity,

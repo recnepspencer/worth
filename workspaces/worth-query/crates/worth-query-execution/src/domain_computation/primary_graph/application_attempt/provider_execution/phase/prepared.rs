@@ -25,15 +25,15 @@ use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedApplicationOperation, WorthQueryPrimaryGraphApplicationRuntime,
 };
 
-mod currentness;
+pub(crate) mod currentness;
 mod domain_value_write;
 mod local_workflow_settlement;
-mod native_reference_invariants;
+pub(crate) mod native_reference_invariants;
 use currentness::{
     readmit_current_basis, select_current_product, validate_elevation_currentness,
     validate_operation_currentness, validate_workflow_deadline,
 };
-pub(super) mod running;
+pub(crate) mod running;
 pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) use local_workflow_settlement::LocalWorkflowSettlementPublication;
 
 pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) struct WorthQueryPreparedApplicationCommit<
@@ -142,7 +142,7 @@ struct WorthQueryCurrentApplicationCommit<Schema, Operation, Input, Scope> {
         Option<crate::domain_computation::authorization::WorthQueryWorkflowApprovalAuthorityBasis>,
 }
 
-mod commit_preparation;
+pub(crate) mod commit_preparation;
 pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) use commit_preparation::prepare_application_commit;
 
 fn prepare_authorized_application_commit<Schema, Operation, Input, Scope>(

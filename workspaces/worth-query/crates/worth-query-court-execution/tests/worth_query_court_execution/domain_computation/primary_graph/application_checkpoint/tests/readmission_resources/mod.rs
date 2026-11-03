@@ -26,13 +26,13 @@ fn bootstrap_metadata_keeps_its_charge_and_refuses_an_unfunded_row() {
             panic!("bootstrap must supply its admitted lease")
         };
         let mut accepted = accepted_with_raw_role(b"subject", 0, b"Entity", entity_bytes());
-        let source = worth_query_execution::domain_computation::primary_graph::application_checkpoint::facts::encode(&[
-            worth_query_execution::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact::SourceEntity {
+        let source = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::encode(&[
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact::SourceEntity {
                 entity_id: worth_relational::facade::identity::EntityId::new(
                     worth_relational::facade::identity::PartitionId::main(), 1, 1),
             }]).unwrap();
         accepted.truncate(accepted.len() - 10);
-        accepted.extend_from_slice(&worth_query_execution::domain_computation::primary_graph::application_checkpoint::facts::WIRE_VERSION.to_be_bytes());
+        accepted.extend_from_slice(&worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::WIRE_VERSION.to_be_bytes());
         accepted.extend_from_slice(&(source.len() as u64).to_be_bytes());
         accepted.extend_from_slice(&source);
         let checkpoint = checkpoint_from_body(checkpoint_body(1, accepted));
@@ -46,10 +46,10 @@ fn bootstrap_metadata_keeps_its_charge_and_refuses_an_unfunded_row() {
             lease.charged_memory_bytes() > before,
             "decoded metadata retains its reservation beyond decode scope"
         );
-        let recovered = worth_query_execution::domain_computation::primary_graph::application_output_demand::recovered_outputs::WorthQueryRecoveredOutputs::from_checkpoint(
-            decoded, &execution, |accepted| worth_query_execution::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles(
-                worth_query_execution::equality_type_id::EqualityTypeId::of::<()>(),
-                worth_query_execution::equality_type_id::EqualityTypeId::of::<()>(), std::iter::empty(), &accepted.roles, |_| Some(worth_query_execution::equality_type_id::EqualityTypeId::of::<()>()), &execution)
+        let recovered = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::recovered_outputs::WorthQueryRecoveredOutputs::from_checkpoint(
+            decoded, &execution, |accepted| worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles(
+                worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId::of::<()>(),
+                worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId::of::<()>(), std::iter::empty(), &accepted.roles, |_| Some(worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId::of::<()>()), &execution)
                 .map(std::sync::Arc::new)).unwrap();
         let escaped = recovered.iter().next().unwrap().clone();
         let twin = escaped.clone();
@@ -97,8 +97,8 @@ fn bootstrap_metadata_keeps_its_charge_and_refuses_an_unfunded_row() {
 
 #[test]
 fn actor_fact_execution_causes_remain_native_at_bootstrap() {
-    use worth_query_execution::domain_computation::primary_graph::application_checkpoint::header::CheckpointDecodeDenial;
-    use worth_query_execution::domain_computation::primary_graph::application_checkpoint::facts::fact_decode_denial::FactDecodeDenial;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::header::CheckpointDecodeDenial;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::fact_decode_denial::FactDecodeDenial;
     use worth_query_execution::facade::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
     use worth_relational::facade::transactions::RelationalExecutionDenialCause as Native;
     for (cause, expected) in [

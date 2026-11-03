@@ -17,7 +17,7 @@ pub enum Stage {
     Inspection,
 }
 pub fn discard_at_stage(
-    execution: &worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     stage: Stage,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) {
@@ -43,7 +43,7 @@ pub fn discard_at_stage(
     cleanup(running);
 }
 pub fn abandon_at_stage(
-    execution: &worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     stage: Stage,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) {

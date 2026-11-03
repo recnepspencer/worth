@@ -51,7 +51,7 @@ use worth_query_decl::facade::worth_query_portable_type;
 use worth_query_decl::facade::worth_query_structured_value_binding;
 use worth_query_decl::facade::worth_query_unit;
 
-use worth_query_execution::domain_computation::primary_graph;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph;
 use worth_query_execution::facade as runtime_api;
 use worth_query_execution::facade::domain_computation::CandidateWriter;
 use worth_query_execution::facade::domain_computation::DecisionReader;

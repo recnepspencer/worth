@@ -66,7 +66,7 @@ pub type ReviewReads = WorthQueryCompleteApplicationReadSet<
 >;
 
 pub fn close_access(
-    phase_custody: &worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     world: &World,
     principal: &Authenticated,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
@@ -89,7 +89,7 @@ pub fn close_access(
 }
 
 pub fn close_access_with_input(
-    phase_custody: &worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     world: &World,
     principal: &Authenticated,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
@@ -123,7 +123,7 @@ pub fn close_access_with_input(
 }
 
 pub fn review_access(
-    phase_custody: &worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     world: &World,
     principal: &Authenticated,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
@@ -146,7 +146,7 @@ pub fn review_access(
 }
 
 pub fn review_access_with_input(
-    phase_custody: &worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     world: &World,
     principal: &Authenticated,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
@@ -180,7 +180,7 @@ pub fn review_access_with_input(
 }
 
 pub fn materialize_close(
-    phase_custody: &worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     world: &World,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     approved: WorthQueryApprovedElevation,
@@ -229,7 +229,7 @@ pub fn close_exact(
 }
 
 pub fn materialize_review(
-    phase_custody: &worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     world: &World,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     mandatory: WorthQueryMandatoryReview,
@@ -250,7 +250,7 @@ pub fn materialize_review(
 }
 
 pub fn review_reads(
-    phase_custody: &worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     world: &World,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     mandatory: WorthQueryMandatoryReview,

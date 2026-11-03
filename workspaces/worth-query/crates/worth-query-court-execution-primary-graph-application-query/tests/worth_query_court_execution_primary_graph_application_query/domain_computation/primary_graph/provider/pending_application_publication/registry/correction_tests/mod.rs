@@ -2,8 +2,8 @@
 use std::sync::Arc;
 use std::sync::Mutex;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationIdempotencyBinding;
-use worth_query_execution::domain_computation::primary_graph::provider::pending_application_publication::registry::WorthQueryPendingApplicationIdempotency;
-use worth_query_execution::domain_computation::primary_graph::provider::pending_application_publication::registry::WorthQueryPendingApplicationPublicationRegistry;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::pending_application_publication::registry::WorthQueryPendingApplicationIdempotency;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::pending_application_publication::registry::WorthQueryPendingApplicationPublicationRegistry;
 
 #[test]
 fn reserved_command_is_visible_across_branches_and_released_with_its_slot() {

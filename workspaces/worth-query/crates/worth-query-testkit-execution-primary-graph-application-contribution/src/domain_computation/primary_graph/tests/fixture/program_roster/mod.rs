@@ -19,8 +19,8 @@ use worth_query_declaration::facade::application_program::ValidatedApplicationPr
 use worth_query_installation::facade::WorthQueryInstalledApplicationSchema;
 use worth_query_installation::facade::WorthQueryProgramSupportAdmission;
 
-use worth_query_execution::domain_computation::primary_graph::program_occurrence::activation_cell::WorthQueryProgramActivationCell;
-use worth_query_execution::domain_computation::primary_graph::program_occurrence::WorthQueryInstalledProgramSupport;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::program_occurrence::activation_cell::WorthQueryProgramActivationCell;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::program_occurrence::WorthQueryInstalledProgramSupport;
 
 pub struct ProgramRequiredFeature;
 

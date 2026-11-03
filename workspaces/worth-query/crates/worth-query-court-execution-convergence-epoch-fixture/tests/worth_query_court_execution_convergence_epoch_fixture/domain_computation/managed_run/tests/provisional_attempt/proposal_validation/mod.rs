@@ -8,7 +8,7 @@ use worth_query_execution::facade::domain_computation::WorthQueryProvisionalProp
 
 #[test]
 fn proposal_dimensions_and_symbol_order_are_checked_before_provider_staging() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -91,7 +91,7 @@ fn proposal_dimensions_and_symbol_order_are_checked_before_provider_staging() {
 
 #[test]
 fn proposal_from_a_peer_session_cannot_be_repaired_by_equal_rendered_basis() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 

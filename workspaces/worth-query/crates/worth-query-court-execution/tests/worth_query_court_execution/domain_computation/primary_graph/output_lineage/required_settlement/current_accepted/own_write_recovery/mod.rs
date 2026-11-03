@@ -1,11 +1,11 @@
 //! Registration recovery must preserve the original computation's own-write staleness.
-use worth_query_execution::domain_computation::primary_graph::output_lineage::required_settlement::AcceptedCurrentCandidate;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::required_settlement::current_accepted::CurrentAcceptedResult;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::ready_backing::ReadyCompletion;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::WorthQueryAcceptedOutputAuthority;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::WorthQueryCompletedOutputDemand;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::required_settlement::AcceptedCurrentCandidate;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::required_settlement::current_accepted::CurrentAcceptedResult;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::ready_backing::ReadyCompletion;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryAcceptedOutputAuthority;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryCompletedOutputDemand;
 use worth_query_execution::facade::domain_computation::WorthQueryOutputReadinessDeliveryEvidence;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::input_cutoff::RetainedInputCutoffCandidate;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::input_cutoff::RetainedInputCutoffCandidate;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::resolved_account;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope;
 

@@ -1,6 +1,6 @@
 //! Actual measured call custody funds each persistent view and exact reach index.
 use crate::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tests::*;
-use worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy;
 #[test]
 fn measured_call_shape_view_keeps_its_own_grant_after_the_sequence_drops() {
     let _observation = QueryObservation::install_on_this_thread();
@@ -10,7 +10,7 @@ fn measured_call_shape_view_keeps_its_own_grant_after_the_sequence_drops() {
     let prior = sealed
         .state
         .typed
-        .downcast_ref::<worth_query_execution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::retained::RetainedPartitions<Parity, Number, u64>>()
+        .downcast_ref::<worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::retained::RetainedPartitions<Parity, Number, u64>>()
         .unwrap();
     let request = live_scope();
     let execution = QueryRequestExecution::open(
@@ -20,7 +20,7 @@ fn measured_call_shape_view_keeps_its_own_grant_after_the_sequence_drops() {
         )),
         &request,
     );
-    let sequence=worth_query_execution::domain_computation::primary_graph::invariant_projection::operation_reader::computation_calls::sequence::ComputationCallSequence::build(||std::iter::once((ComputationRead::Membership,&prior.membership.charge,prior.membership.declared_units))
+    let sequence=worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::operation_reader::computation_calls::sequence::ComputationCallSequence::build(||std::iter::once((ComputationRead::Membership,&prior.membership.charge,prior.membership.declared_units))
         .chain(prior.item_keys.iter().map(|(item,call)|(ComputationRead::ItemKey(*item),&call.charge,call.declared_units)))
         .chain(prior.partitions.iter().map(|(id,partition)|(ComputationRead::Partition(*id),&partition.gather,Some(0)))),&execution).unwrap();
     let shape = Arc::clone(sequence.shape());
@@ -45,7 +45,7 @@ fn measured_call_sequence_refuses_before_copy_and_holds_its_view_until_final_dro
     let prior = sealed
         .state
         .typed
-        .downcast_ref::<worth_query_execution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::retained::RetainedPartitions<Parity, Number, u64>>()
+        .downcast_ref::<worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::retained::RetainedPartitions<Parity, Number, u64>>()
         .unwrap();
     let sequence = &prior.call_sequence;
     let before = sequence.bytes();
@@ -64,7 +64,7 @@ fn measured_call_sequence_refuses_before_copy_and_holds_its_view_until_final_dro
     );
     assert!(matches!(
         sequence.patched(change(), &narrow),
-        Err(worth_query_execution::domain_computation::primary_graph::invariant_projection::operation_reader::computation_calls::sequence::CallSequenceDenial::Storage(worth_execution::ExecutionOrderedMapDenial::Allocation(_)))
+        Err(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::operation_reader::computation_calls::sequence::CallSequenceDenial::Storage(worth_execution::ExecutionOrderedMapDenial::Allocation(_)))
     ));
     assert_eq!(sequence.bytes(), before);
     let fresh = QueryRequestExecution::open(
@@ -94,7 +94,7 @@ fn measured_call_scope_index_requires_a_reaching_call_inside_the_carried_range()
     let prior = sealed
         .state
         .typed
-        .downcast_ref::<worth_query_execution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::retained::RetainedPartitions<Parity, Number, u64>>()
+        .downcast_ref::<worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::retained::RetainedPartitions<Parity, Number, u64>>()
         .unwrap();
     let entity = sealed
         .state

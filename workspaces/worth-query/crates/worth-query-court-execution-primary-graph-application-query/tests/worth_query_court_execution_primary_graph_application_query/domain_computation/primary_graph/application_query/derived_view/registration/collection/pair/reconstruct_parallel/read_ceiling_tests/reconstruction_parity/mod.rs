@@ -1,8 +1,8 @@
 //! Answers and work at real read/reconstruction doors, also run on master.
 use crate::domain_computation::primary_graph::application_query::derived_view::registration::collection::pair::reconstruct_parallel::read_ceiling_tests::*;
-use worth_query_execution::domain_computation::primary_graph::application_query::authorized_read::WorthQueryAuthorizedApplicationReadDenial;
-use worth_query_execution::domain_computation::primary_graph::application_query::one_shot::map_authorized_read_denial;
-use worth_query_execution::domain_computation::primary_graph::application_query::read_execution::read_bounded_root_rows;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::authorized_read::WorthQueryAuthorizedApplicationReadDenial;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::one_shot::map_authorized_read_denial;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::read_execution::read_bounded_root_rows;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationOneShotDenialKind as OneShot;
 
 #[test]

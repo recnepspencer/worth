@@ -11,7 +11,7 @@ use crate::domain_computation::{
 };
 
 #[derive(Default)]
-pub(in crate::domain_computation::primary_graph) struct WorthQueryRecoveredOutputs {
+pub struct WorthQueryRecoveredOutputs {
     records: Vec<WorthQueryReadmittedAcceptedOutput>,
     by_source_partition: Vec<usize>,
     // Declared last: every retained row/string/role/wire and index drops first.

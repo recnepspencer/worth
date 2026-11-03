@@ -1,6 +1,6 @@
 //! The fixture names are declared independently of Rust build identity.
-use worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::mark_state::FactPosting;
-use worth_query_execution::equality_type_id::EqualityTypeId as TypeId;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::mark_state::FactPosting;
+use worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId as TypeId;
 use std::collections::BTreeMap;
 
 pub struct A;
@@ -34,9 +34,9 @@ fn postings_and_prior_output_visits_follow_declared_binding_order() {
             source.output_binding = lineage.fixture_binding(binding, name);
             lineage.by_source.insert(source.clone(), BTreeMap::new());
             postings.insert(FactPosting {
-                settlement: worth_query_execution::domain_computation::primary_graph::output_lineage::settlement_identity::RecordedSettlementIdentity::retain(
+                settlement: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::settlement_identity::RecordedSettlementIdentity::retain(
                     &source,
-                    worth_query_execution::domain_computation::primary_graph::output_lineage::ProductCoordinate {
+                    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::ProductCoordinate {
                         occurrence: seed.address().0,
                         generation: 1,
                     },

@@ -5,8 +5,8 @@ use worth_query_testkit_execution_primary_graph_application_attempt::domain_comp
 use worth_foundational::facade::AspectFieldLocator;
 use worth_foundational::facade::LocatorAuthority;
 
-use worth_query_execution::domain_computation::primary_graph::output_lineage::input_cutoff::verification::source_facts::marked_facts_permit_reuse;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::input_cutoff::verification::source_facts::marked_facts_permit_reuse;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::AccountStatus;
@@ -85,30 +85,30 @@ fn a_marked_fact_is_reverified_at_the_real_native_snapshot() {
 #[test]
 fn a_clean_settlement_reuses_without_fact_reverification() {
     use worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding;
-    use worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::handler_fact_boundary::CompletedHandlerFactBoundary;
-    use worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::decision_reuse::PreparedDecisionReuseContext;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::handler_fact_boundary::CompletedHandlerFactBoundary;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::decision_reuse::PreparedDecisionReuseContext;
     use worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture as WorthQueryApplicationOutputPosture;
-    use worth_query_execution::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryCheckpointOutputRole;
-    use worth_query_execution::domain_computation::primary_graph::application_contribution::producer::registry::semantic_edition::InstalledProducerEdition;
-    use worth_query_execution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::prior_absence::PriorAbsence;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryCheckpointOutputRole;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::registry::semantic_edition::InstalledProducerEdition;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::prior_absence::PriorAbsence;
     use worth_query_execution::facade::application_contribution::WorthQueryDecisionContextDependencies;
     use worth_query_execution::facade::application_contribution::WorthQueryProducerInputReuseContract;
-    use worth_query_execution::domain_computation::primary_graph::application_query::observed_source::source_identity::membership::WorthQueryObservedSourceSelection;
-    use worth_query_execution::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
-    use worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::settlement::SettlementRegistration;
-    use worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::derived::SourceSettlementCurrentness;
-    use worth_query_execution::domain_computation::primary_graph::output_lineage::recorded_output::RecordedOutput;
-    use worth_query_execution::domain_computation::primary_graph::output_lineage::recorded_output::RecordedOutputMutable;
-    use worth_query_execution::domain_computation::primary_graph::output_lineage::retained_computation::RecordedComputation;
-    use worth_query_execution::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence;
-    use worth_query_execution::domain_computation::primary_graph::output_lineage::input_reuse_key::PreparedInputReuseKey;
-    use worth_query_execution::domain_computation::primary_graph::output_lineage::native_output_witness::PreparedNativeOutputWitness;
-    use worth_query_execution::domain_computation::primary_graph::output_lineage::ProductCoordinate;
-    use worth_query_execution::domain_computation::primary_graph::output_lineage::settlement_identity::RecordedSettlementIdentity;
-    use worth_query_execution::domain_computation::primary_graph::output_lineage::semantic_source::SemanticSource;
-    use worth_query_execution::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondence;
-    use worth_query_execution::domain_computation::primary_graph::handler::decision_context_use::DecisionContextUse;
-    use worth_query_execution::equality_type_id::EqualityTypeId as TypeId;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::membership::WorthQueryObservedSourceSelection;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::settlement::SettlementRegistration;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::derived::SourceSettlementCurrentness;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::recorded_output::RecordedOutput;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::recorded_output::RecordedOutputMutable;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::retained_computation::RecordedComputation;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::input_reuse_key::PreparedInputReuseKey;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::native_output_witness::PreparedNativeOutputWitness;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::ProductCoordinate;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::settlement_identity::RecordedSettlementIdentity;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::semantic_source::SemanticSource;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondence;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::handler::decision_context_use::DecisionContextUse;
+    use worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId as TypeId;
     use std::sync::Arc;
     use std::sync::Mutex;
     use std::sync::OnceLock;
@@ -281,7 +281,7 @@ fn a_clean_settlement_reuses_without_fact_reverification() {
                         RecordedComputation::Absent(PriorAbsence::FirstRun),
                     )),
                 };
-                let candidate = worth_query_execution::domain_computation::primary_graph::output_lineage::input_cutoff::RetainedInputCutoffCandidate::from_exact_cell(Arc::new(
+                let candidate = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::input_cutoff::RetainedInputCutoffCandidate::from_exact_cell(Arc::new(
                     OnceLock::from(row),
                 ));
 

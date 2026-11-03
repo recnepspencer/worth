@@ -25,9 +25,9 @@ use worth_relational::facade::transactions::MutationIntent;
 use worth_relational::facade::transactions::WorkerIntentBatch;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_world;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::IdentityWorld;
-use worth_query_execution::domain_computation::primary_graph::merge_unique_values::admit_merge_unique_values;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::merge_unique_values::admit_merge_unique_values;
 use worth_query_execution::facade::integration::WorthQueryMergeUniqueValueDenialKind as Kind;
-use worth_query_execution::domain_computation::primary_graph::schema_layout::unique_fields::WorthQueryUniqueFieldFixture;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::schema_layout::unique_fields::WorthQueryUniqueFieldFixture;
 use worth_query_execution::facade::integration::WorthQueryPrimaryGraphIntegrationHandle;
 pub const FEATURE: &str = "unique-feature";
 pub struct MergeWorld {
@@ -116,7 +116,7 @@ impl MergeWorld {
             let entity = committed
                 .created_entity(&created)
                 .expect("the create issued");
-            worth_query_execution::relational_snapshot_release::release_query_snapshot(
+            worth_query_execution::court_doors_for_test::relational_snapshot_release::release_query_snapshot(
                 runtime,
                 &committed.snapshot,
             );

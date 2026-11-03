@@ -1,6 +1,6 @@
 //! Exact required-work hints shared by the demand record and native marks.
 
-mod wave_admission;
+pub(crate) mod wave_admission;
 pub(in crate::domain_computation::primary_graph) use wave_admission::AdmittedRequiredWave;
 pub(in crate::domain_computation::primary_graph) use wave_admission::PreparedRequiredInputs;
 mod branch_selection;
@@ -11,10 +11,10 @@ mod discontinuity;
 mod interest_readmission;
 mod native_hints;
 mod pending_readmission;
-mod queue;
+pub(crate) mod queue;
 mod refresh_claim;
 mod requested_claim;
-mod selection;
+pub(crate) mod selection;
 mod subsumed;
 mod successor_join;
 
@@ -44,7 +44,7 @@ use crate::domain_computation::primary_graph::output_lineage::RecordedSettlement
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
 
-pub(in crate::domain_computation::primary_graph) struct RequiredWorkMembership {
+pub struct RequiredWorkMembership {
     key: Arc<WorthQueryOutputDemandKey>,
     queue: Weak<RequiredWorkQueue>,
     state: Mutex<MembershipState>,
@@ -76,7 +76,7 @@ struct MembershipState {
         Option<crate::domain_computation::primary_graph::application_contribution::CurrentBasis>,
 }
 
-pub(in crate::domain_computation::primary_graph) struct SelectedRequiredWork {
+pub struct SelectedRequiredWork {
     pub(in crate::domain_computation::primary_graph) membership: Arc<RequiredWorkMembership>,
     pub(in crate::domain_computation::primary_graph) version: u64,
     // The registry pins the row that answers this occurrence after succession.
@@ -85,7 +85,7 @@ pub(in crate::domain_computation::primary_graph) struct SelectedRequiredWork {
     armed: bool,
 }
 
-pub(in crate::domain_computation::primary_graph) enum SelectedRequiredWorkKind {
+pub enum SelectedRequiredWorkKind {
     Native {
         observer: CompanionPublicationCompletionObserver,
         branch: Arc<NativeBranch>,

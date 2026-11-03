@@ -5,7 +5,7 @@ use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_co
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::bootstrap_publication::execution_refusals::request;
 use worth_relational::facade::identity::PartitionId;
 use worth_query_execution::facade::domain_computation::WorthQueryPrimaryGraphInstallationDenialKind;
-use worth_query_execution::domain_computation::primary_graph::bootstrap_publication::commit_denial::map_bootstrap_commit_denial;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::bootstrap_publication::commit_denial::map_bootstrap_commit_denial;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitOutcome;
 use worth_query_execution::facade::application_contribution::WorthQueryManagedComputationResourceDenial as Resource;
 use worth_query_execution::facade::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
@@ -65,7 +65,7 @@ fn bootstrap_commit_preserves_real_leased_work_refusal() {
                     Some(1),
                     "residency admission attributes the refused Head read to main"
                 );
-                let validation = worth_query_execution::domain_computation::primary_graph::provider::invariant_execution_failure::map_validation_failure(error.clone());
+                let validation = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::invariant_execution_failure::map_validation_failure(error.clone());
                 assert_eq!(
                 validation.kind(),
                 worth_query_execution::facade::domain_computation::WorthQueryInvariantExecutionDenialKind::ExecutionDenied(
@@ -92,7 +92,7 @@ fn bootstrap_commit_preserves_real_leased_work_refusal() {
                 else {
                     panic!("installation lost the execution refusal");
                 };
-                let application = worth_query_execution::domain_computation::primary_graph::application_attempt::provider_compare_denial::provider_session_denied(
+                let application = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_compare_denial::provider_session_denied(
             worth_query_execution::facade::domain_computation::WorthQueryProviderSessionFailure::new(
                 kind, worth_query_execution::facade::domain_computation::WorthQueryProviderSessionProtocolStage::Commit,
                 "commit preparation execution refused", Default::default(),

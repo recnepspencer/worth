@@ -4,21 +4,21 @@ use super::member_stop::StopRecording;
 use super::*;
 use crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandRegistry;
 
-pub(super) enum RefusalRow<'a> {
+pub enum RefusalRow<'a> {
     Member,
     HeldHead(&'a WorthQueryOutputDemandKey),
 }
-pub(super) enum RefusalEnd {
+pub enum RefusalEnd {
     Held,
     QueueBudget,
 }
 /// A caller keeps its continuation for recovery; a queue refusal ends it.
-pub(super) enum RefusalCustody<'a, Schema: ApplicationSchema> {
+pub enum RefusalCustody<'a, Schema: ApplicationSchema> {
     Caller,
     Queue(&'a mut RequiredContinuations<Schema>),
 }
 
-pub(super) struct RefusingMember<'a, Schema: ApplicationSchema> {
+pub struct RefusingMember<'a, Schema: ApplicationSchema> {
     pub registry: &'a WorthQueryOutputDemandRegistry,
     pub member: &'a mut RequiredMember,
     pub row: RefusalRow<'a>,

@@ -1,19 +1,19 @@
 //! Arithmetic/prefix oracles, not native result or source-custody issuance.
 use std::sync::Arc;
 use std::collections::BTreeSet;
-use worth_query_execution::domain_computation::primary_graph::invariant_projection::operation_reader::computation_calls::sequence::Call;
-use worth_query_execution::domain_computation::primary_graph::invariant_projection::operation_reader::computation_calls::sequence::CallVisit;
-use worth_query_execution::domain_computation::primary_graph::invariant_projection::operation_reader::computation_calls::ComputationCallAccounting;
-use worth_query_execution::domain_computation::primary_graph::invariant_projection::operation_reader::computation_calls::ComputationCallCharge;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::computation_routing::ComputationRead;
-use worth_query_execution::domain_computation::primary_graph::invariant_projection::operation_reader::computation_calls::sequence::Node;
-use worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::QueryRequestExecution;
-use worth_query_execution::domain_computation::primary_graph::invariant_projection::operation_reader::computation_calls::sequence::tree::build;
-use worth_query_execution::domain_computation::primary_graph::invariant_projection::operation_reader::computation_calls::sequence::reached;
-use worth_query_execution::domain_computation::primary_graph::invariant_projection::operation_reader::computation_calls::sequence::tree::summary;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::operation_reader::computation_calls::sequence::Call;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::operation_reader::computation_calls::sequence::CallVisit;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::operation_reader::computation_calls::ComputationCallAccounting;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::operation_reader::computation_calls::ComputationCallCharge;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::computation_routing::ComputationRead;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::operation_reader::computation_calls::sequence::Node;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::QueryRequestExecution;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::operation_reader::computation_calls::sequence::tree::build;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::operation_reader::computation_calls::sequence::reached;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::operation_reader::computation_calls::sequence::tree::summary;
 use crate::domain_computation::primary_graph::invariant_projection::operation_reader::computation_calls::sequence::tests;
-use worth_query_execution::domain_computation::primary_graph::invariant_projection::operation_reader::computation_calls::sequence::tree;
-use worth_query_execution::domain_computation::primary_graph::invariant_projection::operation_reader::computation_calls::sequence::tree::visit;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::operation_reader::computation_calls::sequence::tree;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::operation_reader::computation_calls::sequence::tree::visit;
 pub fn calls() -> Vec<(ComputationRead, Call)> {
     [(9, 2), (1, 1), (8, 3), (2, 2), (11, 1), (3, 2)]
         .into_iter()
@@ -34,7 +34,7 @@ pub fn calls() -> Vec<(ComputationRead, Call)> {
 }
 #[test]
 fn call_range_demand_and_consumption_match_independent_sequential_prefixes() {
-    use worth_query_execution::domain_computation::primary_graph::invariant_projection::work::WorthQueryInvariantProjectionWorkBudget as Budget;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::work::WorthQueryInvariantProjectionWorkBudget as Budget;
     let calls = calls();
     let tree = funded_tree(&calls);
     for start in 0..calls.len() {
@@ -73,7 +73,7 @@ fn call_range_demand_and_consumption_match_independent_sequential_prefixes() {
 }
 #[test]
 fn call_range_refusal_descends_to_the_first_actual_unfitting_call() {
-    use worth_query_execution::domain_computation::primary_graph::invariant_projection::work::WorthQueryInvariantProjectionWorkBudget as Budget;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::work::WorthQueryInvariantProjectionWorkBudget as Budget;
     let calls = calls();
     let tree = funded_tree(&calls);
     for remaining in 0..40 {
@@ -119,8 +119,8 @@ fn call_range_refusal_descends_to_the_first_actual_unfitting_call() {
 }
 
 pub fn funded_tree(calls: &[(ComputationRead, Call)]) -> Arc<Node> {
-    use worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy;
-    use worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::QueryRequestExecution;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::QueryRequestExecution;
     use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope;
     let request = live_scope();
     let execution = QueryRequestExecution::open(

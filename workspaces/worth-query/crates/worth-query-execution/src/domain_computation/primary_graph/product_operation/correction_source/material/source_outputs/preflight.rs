@@ -6,7 +6,7 @@ use worth_query_declaration::facade::application_aftermath::{
 };
 use worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog;
 
-pub(in crate::domain_computation::primary_graph) fn validate_witness<S>(
+pub fn validate_witness<S>(
     source: TypeId,
     manifest: &[DeclaredCorrectionOutputField],
     bindings: &WorthQueryInstalledApplicationValueBindingCatalog,

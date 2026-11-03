@@ -8,7 +8,7 @@ use worth_relational::facade::identity::EntityId;
 
 mod back_action;
 mod coverage;
-mod dispatch;
+pub(crate) mod dispatch;
 mod global_actions;
 mod identity;
 mod resume;
@@ -21,7 +21,7 @@ pub(super) use dispatch::CompiledWorkflowDispatch;
 /// This phase carries no principal, currentness, reservation, or execution
 /// authority. The instance owner must freshly admit every use.
 #[derive(Clone)]
-pub(in crate::domain_computation::primary_graph) struct CompiledWorkflowDefinition {
+pub struct CompiledWorkflowDefinition {
     pub(super) publication: Arc<CompiledWorkflowPublicationPlan>,
     pub(super) content_identity: ApplicationWorkflowDefinitionContentIdentity,
     pub(super) program_revision: ApplicationProgramRevision,
@@ -29,7 +29,7 @@ pub(in crate::domain_computation::primary_graph) struct CompiledWorkflowDefiniti
     pub(super) resume: Option<usize>,
 }
 
-pub(super) struct CompiledWorkflowPublicationPlan {
+pub struct CompiledWorkflowPublicationPlan {
     pub(super) lineage: EntityId,
     pub(super) definition: EntityId,
     pub(super) start: usize,
@@ -41,19 +41,19 @@ pub(super) struct CompiledWorkflowPublicationPlan {
     pub(super) dispatch: Arc<CompiledWorkflowDispatch>,
 }
 
-pub(in crate::domain_computation::primary_graph) struct CompiledWorkflowNode {
+pub struct CompiledWorkflowNode {
     pub(super) entity: EntityId,
     pub(super) meaning: Arc<CompiledWorkflowNodeMeaning>,
 }
 
 #[derive(Debug, Eq, PartialEq)]
-pub(super) struct CompiledWorkflowNodeMeaning {
+pub struct CompiledWorkflowNodeMeaning {
     pub(super) path: String,
     pub(super) kind: CompiledWorkflowNodeKind,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum CompiledWorkflowNodeKind {
+pub enum CompiledWorkflowNodeKind {
     Operation {
         operation: String,
         input_type: String,
@@ -100,7 +100,7 @@ pub(in crate::domain_computation::primary_graph) enum CompiledWorkflowAssessment
     },
 }
 
-pub(in crate::domain_computation::primary_graph) struct CompiledWorkflowConnection {
+pub struct CompiledWorkflowConnection {
     pub(super) entity: EntityId,
     pub(super) source: EntityId,
     pub(super) target: EntityId,
@@ -108,7 +108,7 @@ pub(in crate::domain_computation::primary_graph) struct CompiledWorkflowConnecti
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum CompiledWorkflowConnectionKind {
+pub enum CompiledWorkflowConnectionKind {
     Control(ApplicationWorkflowControlOutcome),
     Data(ApplicationWorkflowDataFlow),
     BackAction {
@@ -125,7 +125,7 @@ pub(in crate::domain_computation::primary_graph) enum CompiledWorkflowConnection
 }
 
 #[derive(Debug, Eq, PartialEq)]
-pub(super) struct CompiledWorkflowSemanticConnection {
+pub struct CompiledWorkflowSemanticConnection {
     pub(super) source: usize,
     pub(super) target: usize,
     pub(super) kind: Arc<CompiledWorkflowConnectionKind>,

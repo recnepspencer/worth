@@ -1,6 +1,6 @@
 mod cleanup_inspection;
 mod counters;
-mod direct_lane;
+pub(crate) mod direct_lane;
 mod direct_outcome;
 mod evidence;
 mod readmitted_execution;

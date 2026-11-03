@@ -9,7 +9,7 @@ use worth_query_execution::facade::domain_computation::WorthQueryApplicationComm
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationEffectProgram;
 use worth_query_execution::facade::domain_computation::WorthQueryGeneratedOutputInvariantAdmissionDenial;
 use worth_query_execution::facade::application_contribution::WorthQueryProducerInvariantRequirement;
-use worth_query_execution::domain_computation::primary_graph::denial;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::denial;
 use worth_query_execution::facade::domain_computation::WorthQueryInvariantExecutionDenialKind as Invariant;
 use std::sync::Arc;
 use std::sync::Mutex;

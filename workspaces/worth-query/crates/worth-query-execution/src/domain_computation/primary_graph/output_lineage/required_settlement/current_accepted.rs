@@ -23,7 +23,7 @@ use super::super::invalidation::SettlementRegistrationStop;
 use super::super::invalidation::VerifiedCurrentCleanup;
 use super::AcceptedCurrentCandidate;
 
-pub(in crate::domain_computation::primary_graph) enum CurrentAcceptedResult<'basis> {
+pub enum CurrentAcceptedResult<'basis> {
     Current(CurrentAcceptedOutput<'basis>),
     PendingExact(SelectedPendingConsumedOutput<'basis>),
     PendingUnresolved,

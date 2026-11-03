@@ -6,7 +6,7 @@ use worth_query_installation::facade::WorthQueryPortableDomainPackage;
 use worth_relational::facade::schema::RelationalSchemaRegistry;
 
 use crate::domain_computation::primary_graph::tests::fixture::IdentityExecutionSchema;
-use worth_query_execution::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout;
 use worth_query_execution::facade::domain_computation::WorthQueryExecutionRuntimeInstaller;
 
 /// The primary-graph layout an installed identity schema lowers to.

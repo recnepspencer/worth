@@ -13,7 +13,7 @@ use worth_relational::facade::identity::KindId;
 
 /// Borrowed installed meaning, never a read permission or a rewritten descriptor.
 #[derive(Clone, Copy, Debug)]
-pub(in crate::domain_computation::primary_graph) struct InstalledFieldCoordinate<'a> {
+pub struct InstalledFieldCoordinate<'a> {
     field: &'a WorthQueryPrimaryFieldLayout,
     native: &'a WorthQueryInstalledApplicationAspectContract,
 }

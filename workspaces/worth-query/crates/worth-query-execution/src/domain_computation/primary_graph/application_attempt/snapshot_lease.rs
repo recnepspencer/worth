@@ -76,7 +76,7 @@ impl SnapshotCustody {
     }
 }
 
-pub(in crate::domain_computation) struct WorthQueryApplicationSnapshotLease {
+pub struct WorthQueryApplicationSnapshotLease {
     custody: Option<SnapshotCustody>,
     product: crate::basis::WorthQueryProductBranchLease,
     selection_origin: super::super::product_operation::SelectedQueryOrigin,

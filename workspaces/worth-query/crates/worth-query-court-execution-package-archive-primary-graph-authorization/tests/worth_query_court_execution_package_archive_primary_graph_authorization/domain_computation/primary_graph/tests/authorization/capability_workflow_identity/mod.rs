@@ -27,7 +27,7 @@ use worth_query_testkit_execution_primary_graph_application_contribution::domain
 use crate::domain_computation::primary_graph::tests::authorization::capability_progression::build_touch_program;
 use crate::domain_computation::primary_graph::tests::authorization::capability_progression::capability_input;
 use crate::domain_computation::primary_graph::tests::authorization::capability_progression::time;
-use worth_query_execution::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::capability_admission::admit_encoded_capability_access;
+use worth_query_execution::court_doors_for_test::domain_computation::authorization::operation_progression::authority_validation::precondition_binding::transition::admitted_operation::capability_admission::admit_encoded_capability_access;
 use worth_query_execution::publication_boundary::capability_workflow::WorthQueryCapabilityWorkflowIdempotency;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitOutcome;
 

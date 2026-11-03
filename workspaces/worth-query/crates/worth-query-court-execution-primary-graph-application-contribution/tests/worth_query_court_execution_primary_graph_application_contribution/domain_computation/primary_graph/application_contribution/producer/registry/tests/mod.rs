@@ -1,5 +1,5 @@
 pub use worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture as WorthQueryApplicationOutputPosture;
-pub use worth_query_execution::equality_type_id::EqualityTypeId as TypeId;
+pub use worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId as TypeId;
 pub use worth_query_execution::facade::domain_computation::WorthQueryPrimaryGraphInstallationDenialKind as DenialKind;
 
 pub use worth_query_declaration::facade::application_operation::ApplicationMutationOutputPostureSet;
@@ -16,12 +16,12 @@ pub use worth_query_declaration::facade::application_schema::ApplicationEntityMa
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::Account;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::IdentityExecutionSchema as Schema;
 
-pub use worth_query_execution::domain_computation::primary_graph::application_contribution::producer::registry::checkpoint::installed_checkpoint_producer;
-pub use worth_query_execution::domain_computation::primary_graph::application_contribution::producer::registry::checkpoint::validate_checkpoint_output_meaning;
-pub use worth_query_execution::domain_computation::primary_graph::application_contribution::producer::registry::operation_binding_uniqueness::duplicate_operation_binding;
-pub use worth_query_execution::domain_computation::primary_graph::application_contribution::producer::registry::DeclaredProducerBinding;
-pub use worth_query_execution::domain_computation::primary_graph::application_contribution::producer::registry::semantic_edition::InstalledProducerEdition;
-pub use worth_query_execution::domain_computation::primary_graph::application_contribution::producer::registry::InstalledProducerProvider;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::registry::checkpoint::installed_checkpoint_producer;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::registry::checkpoint::validate_checkpoint_output_meaning;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::registry::operation_binding_uniqueness::duplicate_operation_binding;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::registry::DeclaredProducerBinding;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::registry::semantic_edition::InstalledProducerEdition;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::registry::InstalledProducerProvider;
 
 #[test]
 fn every_producer_edition_includes_the_application_build_even_without_input_reuse() {
@@ -195,13 +195,13 @@ fn checkpoint_cannot_underfill_an_installed_role_family() {
 
 pub fn checkpoint(
     roles: Vec<
-        worth_query_execution::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryCheckpointOutputRole,
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryCheckpointOutputRole,
     >,
-) -> worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointIdentity{
-    worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointIdentity {
+) -> worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointIdentity{
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointIdentity {
         implementation: worth_relational::facade::mvcc::RequiredOutputProducingImplementation::from_checkpoint([0x11; 16], [0x22; 32]).unwrap(),
         producer: ("producer".to_owned()).into(),
-        posture: worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointPosture::Performed,
+        posture: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointPosture::Performed,
         source: [0; 32],
         scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity(
             worth_relational::facade::identity::EntityId::new(
@@ -221,8 +221,8 @@ pub fn checkpoint(
 
 pub fn role(
     name: &str,
-) -> worth_query_execution::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryCheckpointOutputRole{
-    worth_query_execution::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryCheckpointOutputRole {
+) -> worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryCheckpointOutputRole{
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryCheckpointOutputRole {
         role: name.into(),
         posture:
             WorthQueryApplicationOutputPosture::Preserve,
@@ -326,12 +326,12 @@ fn cascade_ownership_is_installed_identity_and_family_wide_meaning() {
         ("initial".into(), owned.clone()),
         ("preserve".into(), preserve),
     ]);
-    let denial = worth_query_execution::domain_computation::primary_graph::application_contribution::producer::registry::scope_ownership::require_family_agreement(&mixed).unwrap_err();
+    let denial = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::registry::scope_ownership::require_family_agreement(&mixed).unwrap_err();
     assert_eq!(denial.kind(), DenialKind::ProducerFamilyOwnershipMismatch);
     let mut preserve = owned.clone();
     preserve.identity = "preserve".into();
     assert!(
-        worth_query_execution::domain_computation::primary_graph::application_contribution::producer::registry::scope_ownership::require_family_agreement(&std::collections::BTreeMap::from([
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::registry::scope_ownership::require_family_agreement(&std::collections::BTreeMap::from([
             ("initial".into(), owned),
             ("preserve".into(), preserve),
         ]))

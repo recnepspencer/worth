@@ -5,11 +5,11 @@ use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_co
 
 use std::sync::Arc;
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::support::key;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::required_work::RequiredWorkMembership;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::required_work::queue::RequiredWorkPop;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::required_work::queue::RequiredWorkQueue;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::required_work::SelectedRequiredWork;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::required_work::SelectedRequiredWorkKind;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::required_work::RequiredWorkMembership;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::required_work::queue::RequiredWorkPop;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::required_work::queue::RequiredWorkQueue;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::required_work::SelectedRequiredWork;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::required_work::SelectedRequiredWorkKind;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::output_lineage::registry_fixture;
 #[test]
 fn activation_and_newer_hint_survive_an_older_selected_ack() {
@@ -123,7 +123,7 @@ fn a_claim_selects_newer_causes_and_current_acknowledges_the_row_once() {
         matches!(selected.kind(), SelectedRequiredWorkKind::Local { settlement } if Arc::ptr_eq(settlement, &later)),
         "inspection selects the live cause, not the popped one"
     );
-    worth_query_execution::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::performed::certification::CurrentProof::with_current_fixture_basis(&member, |proof| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::performed::certification::CurrentProof::with_current_fixture_basis(&member, |proof| {
         assert!(selected.acknowledge_current_admitted(proof).unwrap().is_some());
     });
     drop(claim);
@@ -136,13 +136,13 @@ fn a_claim_selects_newer_causes_and_current_acknowledges_the_row_once() {
 fn discontinuity_selects_the_first_declared_family_member() {
     for families in worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::demand_key::family_declarations() {
         assert_ne!(families[0].0, families[1].0);
-        let registry = worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::WorthQueryOutputDemandRegistry::default();
+        let registry = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryOutputDemandRegistry::default();
         let occurrence = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::support::occurrence();
         let seed = key("same-producer", 1, 1);
         let outputs = families.map(|(type_id, identity)| {
             (
                 type_id,
-                worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::demand_key::WorthQueryOutputDemandKey::new(
+                worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::demand_key::WorthQueryOutputDemandKey::new(
                     identity,
                     seed.producer_identity().to_owned(),
                     seed.applicability(),

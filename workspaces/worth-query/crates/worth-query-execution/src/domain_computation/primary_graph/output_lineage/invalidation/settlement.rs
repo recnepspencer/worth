@@ -22,11 +22,11 @@ use super::source_alignment::BranchMarkRoot;
 use super::source_alignment::EqualOutputCurrentness;
 use super::source_alignment::SnapshotAlignedMarkState;
 
-mod posting_bindings;
+pub(crate) mod posting_bindings;
 mod posting_continuation;
-mod posting_projection;
-mod posting_removal;
-mod postings;
+pub(crate) mod posting_projection;
+pub(crate) mod posting_removal;
+pub(crate) mod postings;
 pub(super) use posting_bindings::install_physical;
 pub(super) use posting_bindings::PostingBindings;
 pub(in crate::domain_computation::primary_graph) use posting_continuation::PostingContinuation;
@@ -42,7 +42,7 @@ pub(super) enum SettlementReadAlignment {
     Retained,
 }
 
-pub(in crate::domain_computation::primary_graph) struct SettlementRegistration {
+pub struct SettlementRegistration {
     pub(in crate::domain_computation::primary_graph) computation:
         Option<super::ComputationRegistration>,
     pub(in crate::domain_computation::primary_graph) work_membership:

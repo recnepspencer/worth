@@ -1,4 +1,4 @@
-pub use worth_query_execution::domain_computation::primary_graph::application_checkpoint::facts::payload::sequence::FactSequence;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::payload::sequence::FactSequence;
 pub use worth_foundational::facade::AspectFieldLocator;
 pub use worth_foundational::facade::CanonicalFieldPath;
 pub use worth_foundational::facade::FieldKey;
@@ -15,20 +15,20 @@ pub use std::sync::Arc;
 pub use std::collections::BTreeSet;
 pub use worth_relational::facade::mvcc::CompanionPreflightStop;
 pub use worth_query_execution::facade::application_inspection::FactlessCurrentness;
-pub use worth_query_execution::domain_computation::primary_graph::application_checkpoint::facts::payload::native::NativeFactPayloadBuilder;
-pub use worth_query_execution::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::OwnEffect;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::payload::native::NativeFactPayloadBuilder;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::OwnEffect;
 pub use worth_query_execution::facade::application_inspection::OwnEffectOnReads;
-pub use worth_query_execution::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::PreparedSourceFactRebase;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::PreparedSourceFactRebase;
 pub use worth_query_execution::facade::application_inspection::RebaseVerificationReason;
-pub use worth_query_execution::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::RebasedSourceFacts;
-pub use worth_query_execution::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact;
-pub use worth_query_execution::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::rebase;
-pub use worth_query_execution::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::selected;
-pub use worth_query_execution::domain_computation::primary_graph::application_attempt::fact::movement::FactMovement;
-pub use worth_query_execution::domain_computation::primary_graph::application_attempt::fact::movement::Movement;
-pub use worth_query_execution::domain_computation::primary_graph::application_attempt::fact::source_currentness::WorthQuerySourceCurrentnessFailure;
-pub use worth_query_execution::domain_computation::primary_graph::output_reuse::selection::compare_retained_output_dependencies;
-pub use worth_query_execution::domain_computation::primary_graph::output_reuse::selection::OutputDependencySelection;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::RebasedSourceFacts;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::rebase;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::selected;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::movement::FactMovement;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::movement::Movement;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::source_currentness::WorthQuerySourceCurrentnessFailure;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_reuse::selection::compare_retained_output_dependencies;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_reuse::selection::OutputDependencySelection;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::product_publication::publish_relational_mutation;
@@ -159,8 +159,8 @@ fn unavailable_native_revision_never_authorizes_output_reuse() {
             reason,
             ..
         } if reason.reason() == &RebaseVerificationReason::NativeFactRevisionUnavailable
-            && worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::mark_state::FullVerificationReason::from(reason.clone())
-                == worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::mark_state::FullVerificationReason::NativeFactRevisionUnavailable(0)
+            && worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::mark_state::FullVerificationReason::from(reason.clone())
+                == worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::mark_state::FullVerificationReason::NativeFactRevisionUnavailable(0)
     ));
 }
 
@@ -209,7 +209,7 @@ pub fn rebase_at_current(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &AuthorizationWorld,
     facts: Vec<WorthQueryApplicationObservedFact>,
-) -> worth_query_execution::domain_computation::primary_graph::application_checkpoint::facts::payload::FactPayload{
+) -> worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::payload::FactPayload{
     match rebase_result_at_current(phase_custody, execution, world, facts) {
         RebasedSourceFacts::Exact(facts) => facts,
         other => panic!("fresh native facts must be exact: {other:?}"),
@@ -314,7 +314,7 @@ pub fn rebase_result_at_current(
         .unwrap()
         .integration_handle()
         .with_runtime(execution, |runtime| {
-            rebase(execution, runtime, selected.application_basis().snapshot_handle(), PreparedSourceFactRebase::admit(facts, [].into(), worth_query_execution::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(), &BTreeSet::new(), true)
+            rebase(execution, runtime, selected.application_basis().snapshot_handle(), PreparedSourceFactRebase::admit(facts, [].into(), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(), &BTreeSet::new(), true)
         })
 }
 

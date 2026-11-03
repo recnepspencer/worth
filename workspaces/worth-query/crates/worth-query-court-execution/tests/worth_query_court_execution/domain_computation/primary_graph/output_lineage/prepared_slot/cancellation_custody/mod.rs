@@ -1,18 +1,18 @@
 //! Canceling a prepared publication leaves the captured prior and its ticket intact.
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::output_lineage::registry_fixture::recorded_settlement;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::retained_computation::PriorComputationRecord;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::retained_computation::RecordedComputation;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::retained_computation::PriorComputationRecord;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::retained_computation::RecordedComputation;
 use std::sync::Arc;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::prepared_slot::CancelledLineageSlot;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::prepared_slot::CancelledLineageSlot;
 use std::sync::Mutex;
 use std::sync::OnceLock;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::prepared_slot::computation::PreparedComputationCustody;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::prepared_slot::PreparedOutputLineageSlot;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::ProductCoordinate;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::settlement_identity::RecordedSettlementIdentity;
-use worth_query_execution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::prior_absence::SealedComputationRetention;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::prepared_slot::cancellation;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::prepared_slot::computation;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::prepared_slot::computation::PreparedComputationCustody;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::prepared_slot::PreparedOutputLineageSlot;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::ProductCoordinate;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::settlement_identity::RecordedSettlementIdentity;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::prior_absence::SealedComputationRetention;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::prepared_slot::cancellation;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::prepared_slot::computation;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::sealed_run_for_lineage_test;
 
 #[test]

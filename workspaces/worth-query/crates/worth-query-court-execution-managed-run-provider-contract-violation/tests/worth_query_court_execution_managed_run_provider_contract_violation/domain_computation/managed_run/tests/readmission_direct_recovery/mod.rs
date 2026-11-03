@@ -3,7 +3,7 @@ use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_co
 
 #[test]
 fn provider_restore_panic_remains_typed_recovery_with_retained_authority() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -62,7 +62,7 @@ fn provider_restore_panic_remains_typed_recovery_with_retained_authority() {
 
 #[test]
 fn provider_restore_rejection_after_admission_carries_exact_release_evidence() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -134,7 +134,7 @@ fn provider_restore_rejection_after_admission_carries_exact_release_evidence() {
 
 #[test]
 fn restore_panic_and_replacement_destructor_panic_flow_into_terminal_cleanup() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 

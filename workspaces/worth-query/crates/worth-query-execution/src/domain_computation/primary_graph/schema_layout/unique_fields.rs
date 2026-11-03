@@ -42,7 +42,7 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryUniqueFieldIndex
 
 /// The unique fields one installed layout declares.
 #[derive(Clone, Copy)]
-pub(in crate::domain_computation::primary_graph) struct WorthQueryUniqueFields<'layout> {
+pub struct WorthQueryUniqueFields<'layout> {
     names: &'layout BTreeMap<KindId, BTreeMap<AspectFieldLocator, FieldName>>,
     fields: &'layout BTreeMap<FieldName, WorthQueryPrimaryFieldLayout>,
 }
@@ -85,7 +85,7 @@ impl<'layout> WorthQueryUniqueFields<'layout> {
 }
 
 /// One unique field on one kind, owned, for lowering tests.
-pub(in crate::domain_computation::primary_graph) struct WorthQueryUniqueFieldFixture {
+pub struct WorthQueryUniqueFieldFixture {
     names: BTreeMap<KindId, BTreeMap<AspectFieldLocator, FieldName>>,
     fields: BTreeMap<FieldName, WorthQueryPrimaryFieldLayout>,
 }

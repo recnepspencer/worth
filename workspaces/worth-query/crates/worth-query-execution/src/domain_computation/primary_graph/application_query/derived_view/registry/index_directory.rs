@@ -7,11 +7,11 @@ use worth_relational::facade::transactions::RelationalExecutionDenialCause as Ca
 const BTREE_MAXIMUM_NODE_COMPARISONS: u64 = 11;
 
 #[derive(Default)]
-pub(super) struct ManagedIndexDirectory {
+pub struct ManagedIndexDirectory {
     routes: BTreeMap<Key, u64>,
     owned: BTreeMap<u64, RegisteredIndex>,
 }
-pub(super) struct RegisteredIndex {
+pub struct RegisteredIndex {
     pub(super) key: Key,
     pub(super) state: Arc<dyn Any + Send + Sync>,
     cleanup: Arc<dyn RegisteredManagedIndex>,

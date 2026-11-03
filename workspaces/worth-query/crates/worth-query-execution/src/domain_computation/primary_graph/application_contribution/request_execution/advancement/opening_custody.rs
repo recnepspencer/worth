@@ -3,7 +3,7 @@ use super::WorthQueryAdvancementDenial;
 use std::{cell::Cell, marker::PhantomData, rc::Rc};
 thread_local! { static ACTIVE: Cell<bool> = const { Cell::new(false) }; }
 /// Thread-bound plumbing for admission, never a way to obtain execution authority.
-pub(super) struct OpeningCustody {
+pub struct OpeningCustody {
     _thread: PhantomData<Rc<()>>,
 }
 impl OpeningCustody {

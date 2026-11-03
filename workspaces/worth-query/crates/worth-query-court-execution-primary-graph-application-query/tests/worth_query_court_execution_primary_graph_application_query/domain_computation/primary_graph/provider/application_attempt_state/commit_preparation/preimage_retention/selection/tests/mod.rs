@@ -25,12 +25,12 @@ pub use worth_relational::facade::transactions::WorkerIntentBatch;
 
 pub use crate::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::preimage_retention::selection::tests::owner_path_fixture::owner_path_fixture;
 
-pub use worth_query_execution::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::preimage_retention::selection::retain_from_attempt;
-pub use worth_query_execution::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::preimage_retention::selection::retain_matching;
-pub use worth_query_execution::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::preimage_retention::selection::WorthQueryObservedPreImageCandidate;
-pub use worth_query_execution::domain_computation::application_aftermath::retained_preimage::WorthQueryPreImageRetentionDenial;
-pub use worth_query_execution::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact;
-pub use worth_query_execution::domain_computation::primary_graph::provider::application_decision_fact::WorthQueryPrimaryGraphApplicationDecisionFact;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::preimage_retention::selection::retain_from_attempt;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::preimage_retention::selection::retain_matching;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::preimage_retention::selection::WorthQueryObservedPreImageCandidate;
+pub use worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::retained_preimage::WorthQueryPreImageRetentionDenial;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_decision_fact::WorthQueryPrimaryGraphApplicationDecisionFact;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::AccountStatus;
@@ -92,7 +92,7 @@ pub fn retain_from_exact_mutations(
     candidates: &[WorthQueryObservedPreImageCandidate],
     mutation: &[(RecordRef, AspectFieldLocator)],
 ) -> Result<
-    worth_query_execution::domain_computation::application_aftermath::retained_preimage::WorthQueryRetainedPreImage,
+    worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::retained_preimage::WorthQueryRetainedPreImage,
     WorthQueryPreImageRetentionDenial,
 >{
     retain_matching(demand, candidates, mutation.is_empty(), |candidate| {

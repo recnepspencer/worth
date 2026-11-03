@@ -18,9 +18,9 @@ use worth_relational::facade::transactions::RecordRef;
 use worth_relational::facade::transactions::RelationSpec;
 use worth_relational::facade::transactions::WorkerIntentBatch;
 
-use worth_query_execution::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::observation::exact_relations;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::observation::observe_field_value;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::observation::exact_relations;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::observation::observe_field_value;
 
 pub struct CommittedObservationWorld {
     pub update_entity: EntityId,
@@ -79,11 +79,11 @@ pub fn compile_committed_observations(
         axes,
         locators,
     );
-    worth_query_execution::relational_snapshot_release::release_query_snapshot(
+    worth_query_execution::court_doors_for_test::relational_snapshot_release::release_query_snapshot(
         &mut runtime,
         &relation_commit.snapshot,
     );
-    worth_query_execution::relational_snapshot_release::release_query_snapshot(
+    worth_query_execution::court_doors_for_test::relational_snapshot_release::release_query_snapshot(
         &mut runtime,
         &decoy_relation.snapshot,
     );
@@ -155,7 +155,7 @@ pub fn commit_entities(
         decoy_from: issued_entity(&committed, &decoy_from),
         decoy_to: issued_entity(&committed, &decoy_to),
     };
-    worth_query_execution::relational_snapshot_release::release_query_snapshot(
+    worth_query_execution::court_doors_for_test::relational_snapshot_release::release_query_snapshot(
         runtime,
         &committed.snapshot,
     );

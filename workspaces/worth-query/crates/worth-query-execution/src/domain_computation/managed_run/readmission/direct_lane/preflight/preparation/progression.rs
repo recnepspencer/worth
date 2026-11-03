@@ -118,7 +118,7 @@ pub(in crate::domain_computation::managed_run) fn readmit_direct(
     restore_direct(active_request, pending, bridge_runtime, counters)
 }
 
-pub(super) fn restore_direct(
+pub fn restore_direct(
     active_request: worth_execution::ExecutionRequest<'_, '_>,
 
     pending: WorthQueryDirectBridgeReadmissionPending,

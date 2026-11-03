@@ -20,7 +20,7 @@ use worth_query_declaration::facade::application_operation::ApplicationSharedInp
 /// input and its funded allocation through receipt and recovery custody.
 /// Correction preparation accesses the original binding's encoded carrier.
 #[derive(Clone)]
-pub(crate) struct WorthQueryRetainedGovernedInput {
+pub struct WorthQueryRetainedGovernedInput {
     encoded: Option<Arc<dyn Any + Send + Sync>>,
     _value: Arc<dyn Any + Send + Sync>,
     type_id: TypeId,

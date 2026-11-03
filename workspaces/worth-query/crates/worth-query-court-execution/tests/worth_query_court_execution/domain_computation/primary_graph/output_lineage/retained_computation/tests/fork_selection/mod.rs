@@ -1,7 +1,7 @@
 //! Exact fork horizons select one prior, and local absence ends inheritance.
 use crate::domain_computation::primary_graph::output_lineage::retained_computation::tests::*;
-use worth_query_execution::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
-use worth_query_execution::equality_type_id::EqualityTypeId as TypeId;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
+use worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId as TypeId;
 use worth_runtime_world::facade::ProductBranchCreationIntent;
 use worth_runtime_world::facade::ProductBranchCreationPlans;
 use worth_runtime_world::facade::RelationalBranchCreationPlan;
@@ -79,9 +79,9 @@ fn nested_forks_select_the_captured_generation_and_stop_at_local_absence() {
         |lineage: &mut WorthQueryApplicationOutputLineage,
          observation: &worth_runtime_world::facade::ProductBranchObservation| {
             lineage.record_restoration(lineage.binding_type(&source.output_binding), source.runtime_authority, source.schema.clone(), source.scope, observation,
-            Arc::new(worth_query_execution::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondence::default()),
-            worth_query_execution::domain_computation::primary_graph::output_lineage::recorded_source_identity::RecordedSourceIdentity::Checkpoint(worth_query_execution::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryCheckpointSourceIdentity::new([0x72; 32])),
-            partition, None, [0x73; 32], worth_query_execution::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false).retain_facts(Arc::<[worth_query_execution::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact]>::from([])), None, None,
+            Arc::new(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondence::default()),
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::recorded_source_identity::RecordedSourceIdentity::Checkpoint(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryCheckpointSourceIdentity::new([0x72; 32])),
+            partition, None, [0x73; 32], worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false).retain_facts(Arc::<[worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact]>::from([])), None, None,
             None,
         );
         };

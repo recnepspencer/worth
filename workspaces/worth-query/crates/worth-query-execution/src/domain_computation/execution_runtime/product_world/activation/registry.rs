@@ -18,7 +18,7 @@ struct ActivationEntry {
 }
 
 /// Bounded coordination only. Entries contain no head or component selection.
-pub(crate) struct WorthQueryProductActivationRegistry {
+pub struct WorthQueryProductActivationRegistry {
     state: Mutex<ActivationRegistryState>,
     capacity: Arc<ActivationCapacity>,
 }

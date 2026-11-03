@@ -1,11 +1,11 @@
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub(in crate::domain_computation::primary_graph) enum WorthQueryAcceptedOutputCheckpointPosture {
+pub enum WorthQueryAcceptedOutputCheckpointPosture {
     Performed,
     StableReused,
 }
 
 #[derive(Clone, Debug)]
-pub(in crate::domain_computation::primary_graph) struct WorthQueryAcceptedOutputCheckpointIdentity {
+pub struct WorthQueryAcceptedOutputCheckpointIdentity {
     pub(in crate::domain_computation::primary_graph) implementation: worth_relational::facade::mvcc::RequiredOutputProducingImplementation,
     pub(in crate::domain_computation::primary_graph) producer: std::sync::Arc<String>,
     pub(in crate::domain_computation::primary_graph) posture:

@@ -36,14 +36,14 @@ where
 
 mod checkpoint;
 mod member_execution;
-pub(in crate::domain_computation::primary_graph) mod nested_failure;
-pub(in crate::domain_computation::primary_graph) mod worker_custody;
+pub(crate) mod nested_failure;
+pub(crate) mod worker_custody;
 pub use member_execution::WorthQueryMemberExecution;
 mod decision_plan;
 mod denial;
 mod preparation_loans;
-pub(in crate::domain_computation::primary_graph) mod prepared_request;
-pub(in crate::domain_computation::primary_graph) mod wave_dispatch;
+pub(crate) mod prepared_request;
+pub(crate) mod wave_dispatch;
 
 pub use checkpoint::{
     WorthQueryManagedComputationCheckpoint, WorthQueryManagedComputationExecution,

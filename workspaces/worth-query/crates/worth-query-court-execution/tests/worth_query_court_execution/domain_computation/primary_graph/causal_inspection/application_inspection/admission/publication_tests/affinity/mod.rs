@@ -1,6 +1,6 @@
 //! Public and governed binding paths retain exact session target and subject.
 use crate::domain_computation::primary_graph::causal_inspection::application_inspection::admission::publication_tests::*;
-use worth_query_execution::domain_computation::authorization::application_disclosure::decision::binding::WorthQueryApplicationGovernanceBinding;
+use worth_query_execution::court_doors_for_test::domain_computation::authorization::application_disclosure::decision::binding::WorthQueryApplicationGovernanceBinding;
 use worth_relational::facade::identity::EntityId;
 pub fn assert_subject_affinity<Schema, Scope>(
     read: &InspectionRead<'_, '_, Schema, Scope>,

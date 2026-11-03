@@ -16,7 +16,7 @@ use crate::domain_computation::{
 ///
 /// This value is move-only and private to the application-attempt state
 /// machine. The provider session is joined exactly once by [`bind_session`].
-pub(in crate::domain_computation) struct WorthQueryApplicationAttemptBasis {
+pub struct WorthQueryApplicationAttemptBasis {
     core: WorthQueryApplicationAttemptCore,
     product: crate::basis::WorthQueryProductBranchLease,
 }

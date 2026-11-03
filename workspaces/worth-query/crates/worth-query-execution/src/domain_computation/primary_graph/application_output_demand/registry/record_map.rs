@@ -13,7 +13,7 @@ pub(super) use mutation::RecordMutation;
 // coordinate. An iterator borrows the owner, excluding structural mutation.
 type Map = BTreeMap<WorthQueryOutputDemandKey, DemandRecord>;
 #[derive(Default)]
-pub(super) struct DemandRecords(Map, BTreeMap<
+pub struct DemandRecords(Map, BTreeMap<
     crate::domain_computation::primary_graph::application_query::observed_source::source_identity::WorthQueryObservedSourceCoordinate,
     std::collections::BTreeSet<WorthQueryOutputDemandKey>>,
     super::cleanup::ClosedCleanupQueue,
@@ -23,7 +23,7 @@ pub(super) struct DemandRecords(Map, BTreeMap<
 
 thread_local! { static WHOLE_ROWS: std::cell::Cell<Option<u64>> = const { std::cell::Cell::new(Some(0)) }; }
 thread_local! { static OCCURRENCE_ROWS: std::cell::Cell<u64> = const { std::cell::Cell::new(0) }; }
-pub(super) fn occurrence_rows_visited() -> u64 {
+pub fn occurrence_rows_visited() -> u64 {
     OCCURRENCE_ROWS.with(std::cell::Cell::get)
 }
 fn observe_row() {
@@ -35,7 +35,7 @@ fn observe_row() {
     }
     WHOLE_ROWS.with(|count| count.set(count.get().and_then(|prior| prior.checked_add(1))));
 }
-pub(super) fn whole_rows() -> Option<u64> {
+pub fn whole_rows() -> Option<u64> {
     WHOLE_ROWS.with(std::cell::Cell::get)
 }
 impl DemandRecords {

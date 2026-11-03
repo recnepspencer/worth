@@ -10,7 +10,7 @@ pub fn install(population: usize) -> AuthorizationWorld {
         .and_then(|work| work.checked_add(8_000_000))
         .expect("native population fixture work is finite");
     let resources =
-        worth_query_execution::domain_computation::execution_runtime::product_world::resources::test_product_world_resources();
+        worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::resources::test_product_world_resources();
     let declared = resources.execution_policy();
     let policy = worth_foundational::ExecutionRequestPolicy::new(
         declared.posture(),

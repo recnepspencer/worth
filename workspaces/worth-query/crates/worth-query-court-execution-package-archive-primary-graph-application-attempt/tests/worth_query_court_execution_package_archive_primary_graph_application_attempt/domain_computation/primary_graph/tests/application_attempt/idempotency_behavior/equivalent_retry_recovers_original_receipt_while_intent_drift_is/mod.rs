@@ -96,7 +96,7 @@ fn equivalent_retry_recovers_original_receipt_while_intent_drift_is_denied() {
     assert!(first_root.accepts_performed_change(&performed));
 
     let commit = performed.product_commit().clone();
-    let failed = worth_query_execution::domain_computation::execution_runtime::product_world::relational_publication::delivery::preserve_delivery_authority(
+    let failed = worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::relational_publication::delivery::preserve_delivery_authority(
         worth_proof::TransitionOutcome::Failed(
             worth_runtime_bridge::facade::BridgeCorrespondenceAdmissionFailure::SourceLoadFailed(worth_runtime_bridge::facade::RelationalBridgeSourceError::new(
                 worth_runtime_bridge::facade::RelationalBridgeSourceErrorTag::ExternalSourceFailure, "source unavailable",
@@ -114,7 +114,7 @@ fn equivalent_retry_recovers_original_receipt_while_intent_drift_is_denied() {
     assert_eq!(returned.product_commit(), &commit);
     assert!(first_root.accepts_performed_change(&returned));
     let deferred =
-        worth_query_execution::domain_computation::execution_runtime::product_world::relational_publication::delivery::preserve_delivery_authority(
+        worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::relational_publication::delivery::preserve_delivery_authority(
             worth_proof::TransitionOutcome::Deferred(
                 worth_runtime_bridge::facade::BridgeCorrespondenceDeferred::GraphMutationInProgress,
             ),

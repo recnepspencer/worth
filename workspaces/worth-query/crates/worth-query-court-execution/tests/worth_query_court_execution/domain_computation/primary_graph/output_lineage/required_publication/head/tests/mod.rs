@@ -1,10 +1,10 @@
 //! Factory-established ordinary heads differ from unresolved aliases and partial native claims.
 use std::sync::Arc;
 use std::sync::OnceLock;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::recorded_output::RecordedOutput;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::required_publication::head::SelectedRequiredPublicationHead;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::recorded_output::RecordedOutput;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::required_publication::head::SelectedRequiredPublicationHead;
 use worth_relational::facade::mvcc::CompanionPreflightStop as Stop;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::required_publication::head;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::required_publication::head;
 
 #[test]
 fn restored_unattested_head_is_selectable_but_cannot_supply_a_cold_predecessor() {
@@ -34,7 +34,7 @@ fn incomplete_native_predecessor_description_is_not_an_ordinary_factory_head() {
     let mut row = restored_row();
     // Deliberately incomplete metadata is the invalid input, not an issued authority.
     row.native_prior_checkpoint = Some(
-        worth_query_execution::domain_computation::primary_graph::output_lineage::native_prior_checkpoint::NativePriorCheckpointLocator::Performed {
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::native_prior_checkpoint::NativePriorCheckpointLocator::Performed {
             producer: "incomplete-native-claim".to_owned(),
             source: [0; 32],
         },

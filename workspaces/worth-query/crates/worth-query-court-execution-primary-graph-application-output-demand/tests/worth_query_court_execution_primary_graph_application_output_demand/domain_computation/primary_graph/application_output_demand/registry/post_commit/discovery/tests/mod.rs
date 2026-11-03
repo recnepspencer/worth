@@ -2,10 +2,10 @@ use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_co
     use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::support::occurrence;
     use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::support::record;
     use std::sync::Arc;
-    use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::DemandState;
-    use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::settlement_retirement::SupersededSettlements;
-    use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::WorthQueryOutputDemandRegistry;
-    use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::post_commit::discovery::after_publication;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandState;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::settlement_retirement::SupersededSettlements;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryOutputDemandRegistry;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::post_commit::discovery::after_publication;
 #[test]
 fn registry_completed_discovery_body_keeps_its_occurrence_bound() {
     let receipts = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::walk_bounds::receipt_batch();
@@ -26,9 +26,9 @@ fn registry_completed_discovery_body_keeps_its_occurrence_bound() {
                 neighbors,
             );
         let _published = SupersededSettlements::new(registry.clone(), Arc::new(selected.clone()));
-        let before = worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::record_map::occurrence_rows_visited();
+        let before = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::record_map::occurrence_rows_visited();
         assert!(after_publication(&state, &selected).is_empty());
-        contacts.push(worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::record_map::occurrence_rows_visited() - before);
+        contacts.push(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::record_map::occurrence_rows_visited() - before);
     }
     assert_eq!(contacts, [3, 3]);
 }

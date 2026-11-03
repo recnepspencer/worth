@@ -3,7 +3,7 @@ use super::super::OwnedProjectionRows;
 use std::sync::Arc;
 use worth_query_declaration::facade::application_query::ApplicationQueryResultSlotKey;
 
-pub(in crate::domain_computation::primary_graph) struct OriginalProjection {
+pub struct OriginalProjection {
     pub(super) rows: OwnedProjectionRows,
     // Every declared field/relation decision, including withheld slots.
     // The original compiled binding interprets these exact shared slot keys.

@@ -5,9 +5,9 @@ use worth_query_testkit_execution_primary_graph_application_attempt::domain_comp
 use crate::domain_computation::primary_graph::output_lineage::tests::republication::records::performed;
 use crate::domain_computation::primary_graph::output_lineage::tests::republication::*;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::sealed_run_for_lineage_test;
-use worth_query_execution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::prior_absence::PriorAbsence;
-use worth_query_execution::domain_computation::primary_graph::application_query::observed_source::source_identity::membership::WorthQueryObservedSourceSelection;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::retained_computation::RecordedComputation;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::prior_absence::PriorAbsence;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::membership::WorthQueryObservedSourceSelection;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::retained_computation::RecordedComputation;
 
 #[test]
 fn republication_keeps_a_performed_read_without_inventing_cutoff_proofs() {
@@ -40,8 +40,8 @@ fn republication_keeps_a_performed_read_without_inventing_cutoff_proofs() {
         assert!(row.completed_decision_reuse.is_none());
         assert!(row.prepared_input_reuse_key.is_none());
         assert!(matches!(row.mutable.lock().unwrap().computation,
-            worth_query_execution::domain_computation::primary_graph::output_lineage::retained_computation::RecordedComputation::Absent(
-                worth_query_execution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::prior_absence::PriorAbsence::Republished)));
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::retained_computation::RecordedComputation::Absent(
+                worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::prior_absence::PriorAbsence::Republished)));
     });
 }
 
@@ -82,7 +82,7 @@ fn republication_continues_an_opaque_reader_record() {
 
     republish_untracked(
         request_execution,
-        worth_query_execution::domain_computation::primary_graph::handler::decision_context_use::DecisionContextUse::default()
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::handler::decision_context_use::DecisionContextUse::default()
             .raw_reader_for_test(),
     );
 }
@@ -94,14 +94,14 @@ fn republication_continues_a_request_context_record() {
 
     republish_untracked(
         request_execution,
-        worth_query_execution::domain_computation::primary_graph::handler::decision_context_use::DecisionContextUse::default()
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::handler::decision_context_use::DecisionContextUse::default()
             .request_context_for_test(),
     );
 }
 
 pub fn republish_untracked(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
-    context: worth_query_execution::domain_computation::primary_graph::handler::decision_context_use::DecisionContextUse,
+    context: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::handler::decision_context_use::DecisionContextUse,
 ) {
     staged(request_execution, |mut stage| {
         let selection = WorthQueryObservedSourceSelection::selecting_for_test(2);

@@ -10,12 +10,12 @@ mod chunk;
 mod concatenation;
 mod copied;
 mod iteration;
-mod native;
+pub(crate) mod native;
 mod patch;
 mod performed_fields;
 pub(in crate::domain_computation::primary_graph) use patch::NativeFactPatchBuilder;
 
-mod sequence;
+pub(crate) mod sequence;
 #[cfg(test)]
 mod tests;
 pub(in crate::domain_computation::primary_graph) use iteration::FactIter;
@@ -53,7 +53,7 @@ use worth_relational::facade::transactions::RelationalExecutionDenialCause as Na
     }
 }
 #[derive(Clone, Debug)]
-pub(in crate::domain_computation::primary_graph) struct FactPayload {
+pub struct FactPayload {
     storage: FactStorage,
     start: usize,
     length: usize,

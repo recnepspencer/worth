@@ -13,7 +13,7 @@ use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryHostConditionalPredicateProvider,
 };
 
-pub(in crate::domain_computation::primary_graph) struct ConditionalDefinitionAdmission<'a, Schema> {
+pub struct ConditionalDefinitionAdmission<'a, Schema> {
     application: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     product: Option<&'a WorthQueryProductBranchLease>,
 }

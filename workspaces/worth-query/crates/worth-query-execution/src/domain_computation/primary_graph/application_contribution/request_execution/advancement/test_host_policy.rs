@@ -5,7 +5,7 @@ use super::{
 };
 
 #[derive(Clone, Copy)]
-pub(crate) struct TestHostRequest<'scope> {
+pub struct TestHostRequest<'scope> {
     active: &'scope ActiveAdvancement<'scope>,
     installed: Option<(
         AdvancementSource,

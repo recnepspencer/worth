@@ -1,7 +1,7 @@
 use crate::domain_computation::convergence_epoch::tests::yielded_peer_association::*;
 
 pub fn deny_cross_direct_owners(
-    execution: &worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
 
     yielded: WorthQueryYieldedDirectConvergenceIteration,
     owner_runtime: &WorthQueryExecutionRuntime,
@@ -55,7 +55,7 @@ pub fn deny_cross_direct_owners(
 }
 
 pub fn deny_cross_workflow_owners(
-    execution: &worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
 
     yielded: WorthQueryYieldedWorkflowConvergenceIteration,
     owner_runtime: &WorthQueryExecutionRuntime,

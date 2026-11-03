@@ -5,10 +5,10 @@ use crate::domain_computation::primary_graph::application_checkpoint::tests::ass
 use crate::domain_computation::primary_graph::application_checkpoint::tests::checkpoint_body;
 use crate::domain_computation::primary_graph::application_checkpoint::tests::checkpoint_from_body;
 
-use worth_query_execution::domain_computation::primary_graph::application_checkpoint::facts;
-use worth_query_execution::domain_computation::primary_graph::application_checkpoint::facts::WIRE_VERSION;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact as Fact;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointPosture as Posture;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::WIRE_VERSION;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact as Fact;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointPosture as Posture;
 
 pub fn source_entity() -> Fact {
     Fact::SourceEntity {
@@ -71,8 +71,8 @@ fn current_facts_roundtrip_and_hostile_lengths_fail_before_allocation() {
             locator,
         },
     ];
-    let bytes = worth_query_execution::domain_computation::primary_graph::application_checkpoint::facts::encode(&expected).unwrap();
-    let body = body_with_facts(worth_query_execution::domain_computation::primary_graph::application_checkpoint::FORMAT_VERSION, WIRE_VERSION, &bytes);
+    let bytes = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::encode(&expected).unwrap();
+    let body = body_with_facts(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::FORMAT_VERSION, WIRE_VERSION, &bytes);
     let decoded = checkpoint_from_body(body.clone()).decode().unwrap();
     assert_eq!(
         decoded.accepted_outputs[0]
@@ -87,7 +87,7 @@ fn current_facts_roundtrip_and_hostile_lengths_fail_before_allocation() {
     );
     assert_eq!(decoded.accepted_outputs[0].posture, Posture::Performed);
     assert_eq!(
-        worth_query_execution::domain_computation::primary_graph::application_checkpoint::facts::decode(
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::decode(
             &bytes,
             None,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation
@@ -102,13 +102,13 @@ fn current_facts_roundtrip_and_hostile_lengths_fail_before_allocation() {
     let mut hostile = body;
     let length_start = hostile.len() - bytes.len() - 8;
     hostile[length_start..length_start + 8]
-        .copy_from_slice(&((worth_query_execution::domain_computation::primary_graph::application_checkpoint::facts::MAXIMUM_FACT_BYTES + 1) as u64).to_be_bytes());
+        .copy_from_slice(&((worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::MAXIMUM_FACT_BYTES + 1) as u64).to_be_bytes());
     assert_denied(hostile, "producer fact payload length is invalid");
 }
 
 #[test]
 fn current_stable_posture_roundtrips_and_unknown_posture_is_rejected() {
-    use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointPosture;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointPosture;
 
     let mut stable = accepted_without_roles(b"producer", 0);
     let posture_at = 8 + b"producer".len();
@@ -133,13 +133,13 @@ fn current_stable_posture_roundtrips_and_unknown_posture_is_rejected() {
 #[test]
 fn unsupported_fact_wire_refuses_before_interpreting_its_payload() {
     use worth_query_execution::facade::domain_computation::WorthQueryPrimaryGraphInstallationDenialKind as Kind;
-    let mut invalid = worth_query_execution::domain_computation::primary_graph::application_checkpoint::facts::encode(&[source_entity()]).unwrap();
+    let mut invalid = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::encode(&[source_entity()]).unwrap();
     // Keep a valid count and minimum record width, changing only the fact tag.
     invalid[4] = 255;
     for observed in [WIRE_VERSION - 1, WIRE_VERSION + 1] {
         // An invalid fact tag would fail differently if the reader entered it.
         let checkpoint = checkpoint_from_body(body_with_facts(
-            worth_query_execution::domain_computation::primary_graph::application_checkpoint::FORMAT_VERSION,
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::FORMAT_VERSION,
             observed,
             &invalid,
         ));
@@ -156,7 +156,7 @@ fn unsupported_fact_wire_refuses_before_interpreting_its_payload() {
         assert_eq!(retained.bytes(), original);
     }
     assert_denied(
-        body_with_facts(worth_query_execution::domain_computation::primary_graph::application_checkpoint::FORMAT_VERSION, WIRE_VERSION, &invalid),
+        body_with_facts(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::FORMAT_VERSION, WIRE_VERSION, &invalid),
         "checkpoint producer fact kind is unsupported",
     );
 }

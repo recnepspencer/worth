@@ -1,8 +1,8 @@
 use crate::domain_computation::primary_graph::application_output_demand::registry::tests::*;
-use worth_query_execution::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryCheckpointSourceIdentity;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondence;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryCheckpointSourceIdentity;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondence;
 use worth_query_execution::facade::domain_computation::WorthQueryOutputReadinessDeliveryEvidence;
-use worth_query_execution::equality_type_id::EqualityTypeId as TypeId;
+use worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId as TypeId;
 
 #[test]
 fn ready_output_reopens_and_only_its_exact_restored_predecessor_refreshes_it() {
@@ -37,14 +37,14 @@ fn ready_output_reopens_and_only_its_exact_restored_predecessor_refreshes_it() {
         )),
     )
     .expect("empty restored correspondence is valid for a registry lifetime test");
-    let checkpoint = worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointIdentity {
+    let checkpoint = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointIdentity {
         implementation:
             worth_relational::facade::mvcc::RequiredOutputProducingImplementation::from_checkpoint(
                 [0x11; 16], [0x22; 32],
             )
             .unwrap(),
         producer: ("producer".to_owned()).into(),
-        posture: worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointPosture::Performed,
+        posture: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointPosture::Performed,
         source: [1; 32],
         scope,
         source_partition: [2; 32],
@@ -55,9 +55,9 @@ fn ready_output_reopens_and_only_its_exact_restored_predecessor_refreshes_it() {
         producer_fact_wire_version: 0,
         metadata: None,
     };
-    let completion = worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::WorthQueryCompletedOutputDemand {
-        authority: worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::WorthQueryAcceptedOutputAuthority::Restored(
-            worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::restoration::WorthQueryRestoredAcceptedOutput {
+    let completion = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryCompletedOutputDemand {
+        authority: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryAcceptedOutputAuthority::Restored(
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::restoration::WorthQueryRestoredAcceptedOutput {
                 checkpoint,
                 correspondence: Arc::new(correspondence),
                 observation,
@@ -80,8 +80,8 @@ fn ready_output_reopens_and_only_its_exact_restored_predecessor_refreshes_it() {
             wake: Arc::clone(&wake),
             ..record(
                 product_occurrence,
-                DemandState::Output(worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputProgress::restored(
-                    worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::ready_backing::ReadyCompletion::for_test(completion),
+                DemandState::Output(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputProgress::restored(
+                    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::ready_backing::ReadyCompletion::for_test(completion),
                 )),
                 1,
             )
@@ -96,7 +96,7 @@ fn ready_output_reopens_and_only_its_exact_restored_predecessor_refreshes_it() {
             None,
             scope,
             product_occurrence,
-            worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::DemandAdmissionKind::Ordinary,
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandAdmissionKind::Ordinary,
             None,
             None,
         )
@@ -109,15 +109,15 @@ fn ready_output_reopens_and_only_its_exact_restored_predecessor_refreshes_it() {
         .is_some());
     assert!(matches!(
         registry.begin(&reopened),
-        worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::advance_admission::WorthQueryOutputDemandAdvanceAdmission::Ready(_)
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::advance_admission::WorthQueryOutputDemandAdvanceAdmission::Ready(_)
     ));
-    let worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::advance_admission::WorthQueryOutputDemandAdvanceAdmission::Ready(completion) =
+    let worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::advance_admission::WorthQueryOutputDemandAdvanceAdmission::Ready(completion) =
         registry.begin(&reopened)
     else {
         panic!("retained output remains ready")
     };
     let mut lookalike = completion.authority.clone();
-    if let worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::WorthQueryAcceptedOutputAuthority::Restored(restored) = &mut lookalike {
+    if let worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryAcceptedOutputAuthority::Restored(restored) = &mut lookalike {
         restored.checkpoint.idempotency_key = [4; 32];
     }
     let unrelated = registry
@@ -126,9 +126,9 @@ fn ready_output_reopens_and_only_its_exact_restored_predecessor_refreshes_it() {
             None,
             scope,
             product_occurrence,
-            worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::DemandAdmissionKind::Ordinary,
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandAdmissionKind::Ordinary,
             None,
-            Some(worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::refresh_predecessor::OutputRefreshPredecessor::of(
+            Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::refresh_predecessor::OutputRefreshPredecessor::of(
                 &lookalike, &reopened,
             )),
         )
@@ -137,7 +137,7 @@ fn ready_output_reopens_and_only_its_exact_restored_predecessor_refreshes_it() {
     assert!(
         matches!(
             registry.begin(&unrelated),
-            worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::advance_admission::WorthQueryOutputDemandAdvanceAdmission::Ready(_)
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::advance_admission::WorthQueryOutputDemandAdvanceAdmission::Ready(_)
         ),
         "a lookalike predecessor cannot reopen the accepted output"
     );
@@ -148,9 +148,9 @@ fn ready_output_reopens_and_only_its_exact_restored_predecessor_refreshes_it() {
             None,
             scope,
             product_occurrence,
-            worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::DemandAdmissionKind::Ordinary,
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandAdmissionKind::Ordinary,
             None,
-            Some(worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::refresh_predecessor::OutputRefreshPredecessor::of(
+            Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::refresh_predecessor::OutputRefreshPredecessor::of(
                 &completion.authority,
                 &reopened,
             )),
@@ -159,15 +159,15 @@ fn ready_output_reopens_and_only_its_exact_restored_predecessor_refreshes_it() {
         .0;
     assert!(matches!(
         registry.begin(&refreshed),
-        worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::advance_admission::WorthQueryOutputDemandAdvanceAdmission::Schedule(None)
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::advance_admission::WorthQueryOutputDemandAdvanceAdmission::Schedule(None)
     ));
     registry.finish_scheduling(
         &refreshed,
         None,
-        &mut Ok(worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::WorthQueryOutputSchedulingResult::Scheduled),
+        &mut Ok(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryOutputSchedulingResult::Scheduled),
     );
     assert!(
-        matches!(registry.begin(&refreshed), worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::advance_admission::WorthQueryOutputDemandAdvanceAdmission::Execute { successor_of: Some(identity) } if identity == [3; 32]),
+        matches!(registry.begin(&refreshed), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::advance_admission::WorthQueryOutputDemandAdvanceAdmission::Execute { successor_of: Some(identity) } if identity == [3; 32]),
         "the exact restored predecessor reopens with its retained idempotency lineage"
     );
     drop(refreshed);

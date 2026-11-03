@@ -26,7 +26,7 @@ use caller_pass::CallerPass;
 mod refresh;
 mod rejoin;
 mod required_fresh;
-mod required_wave;
+pub(crate) mod required_wave;
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) use required_wave::performed::DecisionInput;
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) use required_wave::performed::PerformedMembers;
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) use required_wave::performed::SelectedDecisionInput;
@@ -334,7 +334,7 @@ where
     }
 }
 
-pub(super) fn denial(
+pub fn denial(
     kind: WorthQueryOutputDemandDenialKind,
     subject: impl Into<std::borrow::Cow<'static, str>>,
 ) -> WorthQueryOutputDemandDenial {

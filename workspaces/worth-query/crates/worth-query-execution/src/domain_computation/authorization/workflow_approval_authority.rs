@@ -2,7 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-pub(in crate::domain_computation) mod decoding;
+pub(crate) mod decoding;
 mod lineage_inventory;
 use crate::domain_computation::primary_graph::workflow::actor::{
     fund_actor_codec, ActorCodecFunding,
@@ -158,7 +158,7 @@ pub(in crate::domain_computation) fn encode_workflow_approval_support(
     )
 }
 
-pub(in crate::domain_computation) fn decode_workflow_approval_support(
+pub fn decode_workflow_approval_support(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     encoded: &str,
 ) -> Result<
@@ -222,7 +222,7 @@ pub(in crate::domain_computation) fn decode_workflow_approval_support(
 }
 
 #[derive(Clone)]
-pub(in crate::domain_computation) struct WorthQueryWorkflowApprovalAuthorityBasis {
+pub struct WorthQueryWorkflowApprovalAuthorityBasis {
     data: Arc<ApprovalAuthorityData>,
 }
 struct ApprovalAuthorityData {

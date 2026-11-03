@@ -33,13 +33,13 @@ mod caller;
 mod requested;
 pub(super) use requested::advance_requested_output;
 mod cycles;
-mod drive;
-mod frontier;
+pub(crate) mod drive;
+pub(crate) mod frontier;
 mod member_key;
-pub(in crate::domain_computation::primary_graph::application_contribution::producer) mod performed;
-mod queued;
+pub(crate) mod performed;
+pub(crate) mod queued;
 mod resolved;
-mod selection;
+pub(crate) mod selection;
 pub(in crate::domain_computation::primary_graph) use resolved::MatchedRequiredPredecessors;
 pub(in crate::domain_computation::primary_graph) use resolved::ReboundConsumedOutput;
 use resolved::ResolvedOnWave;
@@ -112,7 +112,7 @@ fn capacity_denial() -> WorthQueryOutputDemandDenial {
     )
 }
 
-fn denial(
+pub fn denial(
     kind: WorthQueryOutputDemandDenialKind,
     subject: &'static str,
 ) -> WorthQueryOutputDemandDenial {

@@ -1,6 +1,6 @@
 //! Exact-commit evidence minted only from the committed session stage.
 
-mod postcommit_currentness;
+pub(crate) mod postcommit_currentness;
 pub use postcommit_currentness::{FactlessCurrentness, OwnEffectOnReads, RebaseVerificationReason};
 pub(in crate::domain_computation::primary_graph) use postcommit_currentness::{
     FailedRebase, RebaseVerificationFailure,

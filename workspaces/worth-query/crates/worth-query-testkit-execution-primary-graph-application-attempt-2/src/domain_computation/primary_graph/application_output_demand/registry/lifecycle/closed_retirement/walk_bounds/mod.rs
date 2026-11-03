@@ -4,13 +4,13 @@ use crate::domain_computation::primary_graph::application_output_demand::registr
 use crate::domain_computation::primary_graph::application_output_demand::registry::tests::support::key;
 use crate::domain_computation::primary_graph::application_output_demand::registry::tests::support::occurrence;
 use crate::domain_computation::primary_graph::application_output_demand::registry::tests::support::record;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::DemandState;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputProgress;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandState;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputProgress;
 use std::sync::Arc;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::DemandRegistryState;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::lifecycle::closed_retirement::held;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::lifecycle::closed_retirement::newest_ready;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandRegistryState;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::lifecycle::closed_retirement::held;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::lifecycle::closed_retirement::newest_ready;
 use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandDenial;
 use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandDenialKind;
 pub trait WalkBoundsDemandRegistryStateForTest: Sized {
@@ -19,8 +19,8 @@ pub trait WalkBoundsDemandRegistryStateForTest: Sized {
 impl WalkBoundsDemandRegistryStateForTest for DemandRegistryState {
     fn assert_walk_site(site: usize) {
         let ready = crate::domain_computation::primary_graph::application_output_demand::registry::tests::closed_retirement::ready();
-        let worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::DemandState::Output(output) = ready else { panic!("Ready fixture") };
-        let Some(worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint::Ready(completion)) = output.checkpoint else { panic!("Ready fixture") };
+        let worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandState::Output(output) = ready else { panic!("Ready fixture") };
+        let Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint::Ready(completion)) = output.checkpoint else { panic!("Ready fixture") };
         let receipts = crate::domain_computation::primary_graph::application_output_demand::registry::tests::walk_bounds::receipt_batch();
         let mut tally = 0;
         let mut contacts = Vec::new();
@@ -77,7 +77,7 @@ impl WalkBoundsDemandRegistryStateForTest for DemandRegistryState {
                     ));
             }
             crate::domain_computation::primary_graph::application_output_demand::registry::tests::walk_bounds::add_custody(&mut state, &receipts[..entries], neighbors);
-            let before = worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::record_map::occurrence_rows_visited();
+            let before = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::record_map::occurrence_rows_visited();
             match site {
                 0 => {
                     // The dependent has moved its claim before retirement.
@@ -115,7 +115,7 @@ impl WalkBoundsDemandRegistryStateForTest for DemandRegistryState {
                 }
                 _ => panic!("unknown walk site"),
             };
-            let visited = worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::record_map::occurrence_rows_visited() - before;
+            let visited = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::record_map::occurrence_rows_visited() - before;
             assert!(visited > 0, "site {site} was not reached");
             tally += 1;
             contacts.push(visited);

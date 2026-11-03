@@ -23,7 +23,7 @@ impl WorthQueryAftermathCausalRole {
 
 /// Query-owned semantic fact awaiting an ordinary Relational commit.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(crate) struct WorthQueryPendingAftermathCausality {
+pub struct WorthQueryPendingAftermathCausality {
     role: WorthQueryAftermathCausalRole,
     parent: RelationalCommitReceipt,
     target_branch: worth_relational::facade::history::BranchId,

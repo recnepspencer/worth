@@ -32,13 +32,13 @@ impl OutputCheckpointGeneration {
 }
 
 /// Prepared before an output effect. It cannot be read as a Ready completion.
-pub(in crate::domain_computation::primary_graph) struct PreparedReadyBacking {
+pub struct PreparedReadyBacking {
     cell: Arc<ReadyCell>,
 }
 
 /// The completed cell pins the original authority.
 #[derive(Clone)]
-pub(in crate::domain_computation::primary_graph) struct ReadyCompletion(Arc<ReadyCell>);
+pub struct ReadyCompletion(Arc<ReadyCell>);
 
 impl<Schema>
     crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>

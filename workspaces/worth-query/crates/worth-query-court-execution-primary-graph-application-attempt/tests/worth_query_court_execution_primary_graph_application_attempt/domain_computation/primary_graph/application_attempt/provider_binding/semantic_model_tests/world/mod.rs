@@ -18,9 +18,9 @@ use crate::domain_computation::primary_graph::application_attempt::provider_bind
 use crate::domain_computation::primary_graph::application_attempt::provider_binding::semantic_model_tests::model::expected_alternate_model;
 use crate::domain_computation::primary_graph::application_attempt::provider_binding::semantic_model_tests::model::expected_model;
 use crate::domain_computation::primary_graph::application_attempt::provider_binding::semantic_model_tests::model::LoweringObservation;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::effect_program::model::emission::WorthQueryApplicationEmission;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::effect_program::model::WorthQueryApplicationRealizedEffect;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::model::emission::WorthQueryApplicationEmission;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::model::WorthQueryApplicationRealizedEffect;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::AccountActivityBinding;
 
 pub struct MixedEffectWorld {
@@ -122,7 +122,7 @@ pub fn create_alpha(axes: &MixedEffectAxes) -> WorthQueryApplicationRealizedEffe
         key: "created-alpha".to_owned(),
         fields: values([(&axes.created_field, "born")]),
         partition:
-            worth_query_execution::domain_computation::primary_graph::application_attempt::effect_program::model::WorthQueryApplicationCreationPartition::Issued,
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::model::WorthQueryApplicationCreationPartition::Issued,
     }
 }
 
@@ -132,7 +132,7 @@ pub fn create_beta(axes: &MixedEffectAxes) -> WorthQueryApplicationRealizedEffec
         key: "created-beta".to_owned(),
         fields: BTreeMap::new(),
         partition:
-            worth_query_execution::domain_computation::primary_graph::application_attempt::effect_program::model::WorthQueryApplicationCreationPartition::Issued,
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::model::WorthQueryApplicationCreationPartition::Issued,
     }
 }
 

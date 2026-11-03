@@ -7,7 +7,7 @@ use worth_relational::facade::identity::EntityId;
 mod accounting;
 mod captured_inputs;
 mod collection;
-mod locator;
+pub(crate) mod locator;
 mod navigation;
 mod replay;
 mod retention;
@@ -38,7 +38,7 @@ pub(in crate::domain_computation::primary_graph) use update::{
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) struct SettledWorkflowTransition {
+pub struct SettledWorkflowTransition {
     node: EntityId,
     occurrence: u64,
     outcome: ApplicationWorkflowControlOutcome,
@@ -88,7 +88,7 @@ impl SettledWorkflowTransition {
 /// must still prove its source revision and live facts current before use. A
 /// cold rebuild of a completed instance excludes its final terminal settlement.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) struct WorkflowInstanceProgress {
+pub struct WorkflowInstanceProgress {
     captured_inputs: Option<OrdMap<EntityId, captured_inputs::RetainedCapturedInputs>>,
     head: EntityId,
     next_occurrence: u64,

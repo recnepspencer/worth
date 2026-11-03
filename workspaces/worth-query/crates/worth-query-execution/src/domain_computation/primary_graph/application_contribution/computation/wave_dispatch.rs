@@ -8,17 +8,17 @@ use worth_foundational::PartitionIdentity;
 
 // A member outcome cannot stop the map; only its request can.
 enum NoMemberFailure {}
-pub(in crate::domain_computation::primary_graph) struct PreparedMember {
+pub struct PreparedMember {
     pub requests: Vec<PreparedCompute>,
 }
-pub(in crate::domain_computation::primary_graph) struct ComputedMember {
+pub struct ComputedMember {
     slots: Vec<ComputedSlot>,
 }
 
 /// Interruption already present at dispatch has width-independent settlement.
 /// An interruption arriving during compute can be seen by an earlier running
 /// member: only the canonical-prefix safety law is promised across widths.
-pub(in crate::domain_computation::primary_graph) fn dispatch(
+pub fn dispatch(
     execution: &QueryRequestExecution<'_>,
     members: Vec<PreparedMember>,
 ) -> Vec<Result<ComputedMember, WorthQueryAdvancementDenial>> {

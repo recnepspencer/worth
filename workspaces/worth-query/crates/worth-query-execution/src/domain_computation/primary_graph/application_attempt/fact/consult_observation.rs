@@ -5,7 +5,7 @@ use std::{
 };
 use worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource;
 #[derive(Clone, Copy, Eq, PartialEq)]
-pub(in crate::domain_computation) enum Door {
+pub enum Door {
     Equality,
     Approval,
     Activation,
@@ -16,7 +16,7 @@ struct State {
     count: Cell<usize>,
 }
 thread_local! { static ACTIVE: RefCell<Option<Rc<State>>> = const { RefCell::new(None) }; }
-pub(in crate::domain_computation) struct ReadConsultObservationForTest {
+pub struct ReadConsultObservationForTest {
     state: Rc<State>,
     previous: Option<Rc<State>>,
     _listener: worth_execution::ExecutionCheckpointObservationForTest,

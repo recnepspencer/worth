@@ -1,6 +1,6 @@
 //! Real cancelled native reads retain control causes through their Query callers.
 use crate::process::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::commit_execution::stops::leased_requests::*;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationAttemptDenialKind as AttemptKind;
 use worth_query_execution::facade::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
 use worth_query_execution::facade::domain_computation::WorthQueryProviderSessionDenialKind as SessionKind;
@@ -29,7 +29,7 @@ fn cancelled_native_preparation_is_a_control_stop_not_no_kind() {
         .commit(&execution, &runtime)
         .unwrap();
     assert_eq!(admitted.changed_records.len(), 1);
-    worth_query_execution::relational_snapshot_release::release_query_snapshot(
+    worth_query_execution::court_doors_for_test::relational_snapshot_release::release_query_snapshot(
         &mut runtime,
         &admitted.snapshot,
     );
@@ -43,8 +43,8 @@ fn cancelled_native_preparation_is_a_control_stop_not_no_kind() {
         Default::default(),
     )
     .with_native_preparation_error(error);
-    assert_eq!(worth_query_execution::domain_computation::primary_graph::provider::relational_execution_denial::native_preparation_kind(&failure), Err(Control::Cancelled));
-    let denial = worth_query_execution::domain_computation::primary_graph::application_attempt::provider_compare_denial::provider_session_denied(failure);
+    assert_eq!(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::relational_execution_denial::native_preparation_kind(&failure), Err(Control::Cancelled));
+    let denial = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_compare_denial::provider_session_denied(failure);
     assert_eq!(
         denial.execution_denial_cause(),
         Some(Err(Control::Cancelled))
@@ -74,7 +74,7 @@ fn cancelled_relation_equality_is_a_control_stop_not_false() {
         let RecordRef::Entity(entity) = committed.changed_records[0] else {
             panic!("entity commit produced its entity");
         };
-        worth_query_execution::relational_snapshot_release::release_query_snapshot(
+        worth_query_execution::court_doors_for_test::relational_snapshot_release::release_query_snapshot(
             &mut runtime,
             &committed.snapshot,
         );
@@ -131,7 +131,7 @@ fn cancelled_relation_equality_is_a_control_stop_not_false() {
         CommitExecutionDenialKind::Cause(Cause::Cancelled)
     );
     let failure =
-        worth_query_execution::domain_computation::primary_graph::provider::decision_facts::fact_read_set_failure(
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::decision_facts::fact_read_set_failure(
             denial,
         );
     assert_eq!(
@@ -152,7 +152,7 @@ fn cancelled_relation_equality_is_a_control_stop_not_false() {
         denial.execution_denial_cause(),
         Some(Err(Control::Cancelled))
     );
-    worth_query_execution::relational_snapshot_release::release_query_snapshot(
+    worth_query_execution::court_doors_for_test::relational_snapshot_release::release_query_snapshot(
         &mut runtime,
         &committed.snapshot,
     );

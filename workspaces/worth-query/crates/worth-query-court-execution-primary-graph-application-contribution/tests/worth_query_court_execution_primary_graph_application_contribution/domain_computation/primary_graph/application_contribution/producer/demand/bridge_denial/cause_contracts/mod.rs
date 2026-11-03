@@ -1,6 +1,6 @@
 use worth_runtime_bridge::facade::BridgeConditionalDenialKind;
     use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandDenialKind;
-    use worth_query_execution::domain_computation::primary_graph::application_contribution::producer::demand::bridge_denial::bridge_denial_kind;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::demand::bridge_denial::bridge_denial_kind;
     use worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial as RequestDenial;
     use worth_query_execution::facade::application_contribution::WorthQueryManagedComputationResourceDenial as Resource;
 #[test]

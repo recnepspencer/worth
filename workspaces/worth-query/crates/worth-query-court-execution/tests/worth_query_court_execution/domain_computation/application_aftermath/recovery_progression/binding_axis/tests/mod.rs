@@ -2,7 +2,7 @@
 
 use worth_relational::facade::history::BranchId;
 
-use worth_query_execution::domain_computation::application_aftermath::recovery_progression::binding_axis::WorthQueryRecoveryBindingCurrentTruth;
+use worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::recovery_progression::binding_axis::WorthQueryRecoveryBindingCurrentTruth;
 use worth_query_execution::facade::domain_computation::WorthQueryRecoveryHandleBinding;
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::application_aftermath::recovery_handle::binding::WorthQueryRecoveryHandleBindingAxisProbe;
 use worth_query_execution::facade::domain_computation::WorthQueryRecoveryHandleDenialKind;

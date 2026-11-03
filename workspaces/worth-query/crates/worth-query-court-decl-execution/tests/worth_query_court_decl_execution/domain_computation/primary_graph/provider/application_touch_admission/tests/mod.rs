@@ -1,9 +1,9 @@
 //! Native candidate and installed grant controls; no fabricated proof inputs.
-pub use worth_query_execution::domain_computation::primary_graph::provider::application_touch_admission::TouchAdmissionFailure;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_touch_admission::TouchAdmissionFailure;
 pub use worth_relational::facade::mvcc::ValidatedRelationalProposal;
-pub use worth_query_execution::domain_computation::primary_graph::provider::application_touch_admission::WorthQueryInstalledTouchAdmissionEvidence;
-pub use worth_query_execution::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout;
-pub use worth_query_execution::domain_computation::primary_graph::provider::application_touch_admission::admit_validated_application_touches;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_touch_admission::WorthQueryInstalledTouchAdmissionEvidence;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_touch_admission::admit_validated_application_touches;
 pub use worth_execution::ExecutionRequest;
 pub use worth_foundational::facade::PortableAspectPatchOperation as Op;
 pub use worth_relational::facade::mvcc::RelationalTransactionIntent;

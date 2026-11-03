@@ -1,7 +1,7 @@
 //! Generated components share emission; explicit inputs retain validator refusal.
-pub use worth_query_execution::domain_computation::primary_graph::application_contribution::conditional::DeclaredConditionalBinding;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::conditional::DeclaredConditionalBinding;
 pub use worth_query_execution::facade::application_contribution::WorthQueryApplicationContractCatalog;
-pub use worth_query_execution::equality_type_id::EqualityTypeId as TypeId;
+pub use worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId as TypeId;
 pub use worth_query_execution::facade::application_contribution::WorthQueryApplicationConditionalPackageContract as Contract;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::IdentityExecutionSchema as Schema;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::PatchAccountDraftInput;

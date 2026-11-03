@@ -1,10 +1,10 @@
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::ready_backing::ReadyCompletion;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::WorthQueryCompletedOutputDemand;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::ready_backing::ReadyCompletion;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryCompletedOutputDemand;
 use crate::domain_computation::primary_graph::application_output_demand::registry::tests::recovery_posture::*;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputAdvancement;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::DemandAdmissionKind;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::refresh_predecessor::OutputRefreshPredecessor;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::WorthQueryPerformedOutputDemandSource;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputAdvancement;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandAdmissionKind;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::refresh_predecessor::OutputRefreshPredecessor;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryPerformedOutputDemandSource;
 
 #[test]
 fn stale_ready_successor_admission_forces_a_new_execution_cycle() {
@@ -57,7 +57,7 @@ fn stale_ready_successor_admission_forces_a_new_execution_cycle() {
         record
             .successor_of
             .as_ref()
-            .map(worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::succession::Succession::predecessor),
+            .map(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::succession::Succession::predecessor),
         Some(*receipt.idempotency_binding().key_identity())
     );
     assert_eq!(record.interests, 2);

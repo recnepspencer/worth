@@ -26,7 +26,7 @@ fn repeated_restored_admission_joins_one_semantic_source_record() {
             key_with_identity("restored", 1, 1, 80),
             scope,
             occurrence,
-            worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::DemandAdmissionKind::Ordinary,
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandAdmissionKind::Ordinary,
             restored.clone(),
             &settlement,
             None,
@@ -37,7 +37,7 @@ fn repeated_restored_admission_joins_one_semantic_source_record() {
             key_with_identity("restored", 2, 1, 80),
             scope,
             occurrence,
-            worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::DemandAdmissionKind::Ordinary,
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandAdmissionKind::Ordinary,
             restored,
             &settlement,
             None,
@@ -58,12 +58,12 @@ fn repeated_restored_admission_joins_one_semantic_source_record() {
 pub fn restored_output(
     observation: worth_runtime_world::facade::ProductBranchObservation,
     scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding,
-) -> worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::restoration::WorthQueryRestoredAcceptedOutput{
-    worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::restoration::WorthQueryRestoredAcceptedOutput {
-        checkpoint: worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointIdentity {
+) -> worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::restoration::WorthQueryRestoredAcceptedOutput{
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::restoration::WorthQueryRestoredAcceptedOutput {
+        checkpoint: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointIdentity {
             implementation: worth_relational::facade::mvcc::RequiredOutputProducingImplementation::from_checkpoint([0x11; 16], [0x22; 32]).unwrap(),
             producer: ("restored".to_owned()).into(),
-            posture: worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointPosture::Performed,
+            posture: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointPosture::Performed,
             source: [0x55; 32],
             scope,
             source_partition: [0x66; 32],
@@ -75,11 +75,11 @@ pub fn restored_output(
  metadata: None,
 },
         correspondence: Arc::new(
-            worth_query_execution::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondence::default(),
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondence::default(),
         ),
         observation,
         source_scope: scope,
-        source_identity: worth_query_execution::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryCheckpointSourceIdentity::new([0x55; 32]),
+        source_identity: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryCheckpointSourceIdentity::new([0x55; 32]),
         observed_source_facts: Arc::<[_]>::from([]).into(),
         native_output_witness: None,
     }

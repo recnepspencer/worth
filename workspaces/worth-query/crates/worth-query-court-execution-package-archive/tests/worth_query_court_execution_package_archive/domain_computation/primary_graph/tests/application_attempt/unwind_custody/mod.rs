@@ -68,7 +68,7 @@ fn world_unwind_retains_and_releases_the_exact_query_idempotency_slot() {
         })
         .expect("installed host call opens");
     let before_inspections =
-        worth_query_execution::domain_computation::primary_graph::provider::unpublished_idempotency::reservation::unwind_recovery_inspection_count();
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::unpublished_idempotency::reservation::unwind_recovery_inspection_count();
     world
         .application
         .product_runtime()
@@ -91,7 +91,7 @@ fn world_unwind_retains_and_releases_the_exact_query_idempotency_slot() {
         "provider unwind is typed without claiming a product commit: {isolated:?}",
     );
     assert_eq!(
-        worth_query_execution::domain_computation::primary_graph::provider::unpublished_idempotency::reservation::unwind_recovery_inspection_count(),
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::unpublished_idempotency::reservation::unwind_recovery_inspection_count(),
         before_inspections + 1,
         "only the unwind guard inspects its exact World recovery identity",
     );
@@ -115,14 +115,14 @@ fn world_unwind_retains_and_releases_the_exact_query_idempotency_slot() {
         .readmit_product_publication_recovery(row.handle())
         .unwrap();
     let before_retry_inspections =
-        worth_query_execution::domain_computation::primary_graph::provider::unpublished_idempotency::reservation::unwind_recovery_inspection_count();
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::unpublished_idempotency::reservation::unwind_recovery_inspection_count();
     assert_idempotency_refuses_unpublished(world.application.compare_and_commit_application(
         retry_while_retained,
         idempotency(0xD1, 0xD1),
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     ));
     assert_eq!(
-        worth_query_execution::domain_computation::primary_graph::provider::unpublished_idempotency::reservation::unwind_recovery_inspection_count(),
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::unpublished_idempotency::reservation::unwind_recovery_inspection_count(),
         before_retry_inspections,
         "ordinary idempotency resolution must not inspect World recovery",
     );

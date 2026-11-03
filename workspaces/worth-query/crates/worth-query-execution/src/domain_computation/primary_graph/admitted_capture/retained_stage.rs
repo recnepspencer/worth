@@ -31,7 +31,7 @@ impl RetainedCaptureMemory<'_> {
     }
 }
 
-pub(in crate::domain_computation) fn run_retained_stage<Value, E>(
+pub fn run_retained_stage<Value, E>(
     execution: &ExecutionRequest<'_, '_>,
     memory: &mut Option<ExecutionMemoryReservation>,
     kernel: impl FnOnce(

@@ -2,7 +2,7 @@
 
 use super::*;
 
-pub(super) fn select_current_product<Schema: ApplicationSchema>(
+pub fn select_current_product<Schema: ApplicationSchema>(
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     retained: &crate::basis::WorthQueryProductBranchLease,
 ) -> Result<crate::basis::WorthQueryProductBranchLease, WorthQueryApplicationCommitOutcome> {

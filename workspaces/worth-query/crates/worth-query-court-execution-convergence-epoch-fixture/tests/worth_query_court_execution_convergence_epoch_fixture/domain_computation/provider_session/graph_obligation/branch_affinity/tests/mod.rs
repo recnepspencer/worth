@@ -17,7 +17,7 @@ use worth_relational::facade::transactions::MutationIntent;
 use worth_relational::facade::transactions::WorkerIntentBatch;
 use worth_runtime_bridge::facade::TruthBranchIdentity;
 
-use worth_query_execution::domain_computation::provider_session::graph_obligation::branch_affinity::WorthQueryGraphWorkBranchAffinity;
+use worth_query_execution::court_doors_for_test::domain_computation::provider_session::graph_obligation::branch_affinity::WorthQueryGraphWorkBranchAffinity;
 
 #[test]
 fn equal_version_snapshot_from_another_branch_cannot_satisfy_affinity() {

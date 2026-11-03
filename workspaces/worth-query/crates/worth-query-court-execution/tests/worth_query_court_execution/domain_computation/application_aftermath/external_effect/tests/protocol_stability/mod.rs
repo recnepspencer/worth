@@ -15,8 +15,8 @@ use worth_query_installation::facade::WorthQueryInstallationRuntimeIdentity;
 use worth_query_installation::facade::WorthQueryPortableDomainIdentity;
 use worth_query_installation::facade::WorthQueryPortableDomainPackage;
 
-use worth_query_execution::domain_computation::application_aftermath::external_effect::correlation::derive_external_effect_correlation_identity;
-use worth_query_execution::domain_computation::application_aftermath::external_effect::correlation::ExternalEffectCorrelationBasis;
+use worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::correlation::derive_external_effect_correlation_identity;
+use worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::correlation::ExternalEffectCorrelationBasis;
 use worth_query_execution::facade::domain_computation::WorthQueryDispatchOutboxRecord;
 
 pub const FAMILY: BoundaryProtocolIdentity =

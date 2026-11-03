@@ -4,9 +4,9 @@ use crate::domain_computation::primary_graph::{
 };
 use worth_query_declaration::facade::application_operation::ApplicationMutationIdentityDenial;
 
-mod content_identity;
-mod request_execution;
-mod source_readmission;
+pub(crate) mod content_identity;
+pub(crate) mod request_execution;
+pub(crate) mod source_readmission;
 pub(super) use content_identity::identity_failed;
 pub(super) use source_readmission::{query_admission_denied, query_execution_denied};
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) use source_readmission::selected_source_read_denied;
@@ -132,7 +132,7 @@ impl From<WorthQueryOutputDemandDenial> for ProducerExecutionStop {
 
 /// A request that lost its authority mid-attempt stops only that request:
 /// the row it claimed stays for a later advance.
-pub(super) fn execution_failed(
+pub fn execution_failed(
     subject: &str,
     error: MutationHandlerExecutionDenial,
 ) -> ProducerExecutionStop {
@@ -226,7 +226,7 @@ pub(super) fn execution_failed(
 
 /// The budget of the advance a decision projection ran out of, if any. Its
 /// stop stays with the advance and leaves the shared row for a later claim.
-fn projection_budget(
+pub fn projection_budget(
     kind: crate::domain_computation::primary_graph::WorthQueryOperationProjectionDenialKind,
 ) -> Option<WorthQueryOutputDemandDenialKind> {
     use crate::domain_computation::primary_graph::{
@@ -323,14 +323,14 @@ pub(super) fn commit_execution_stopped(
     )
 }
 
-pub(super) fn failed(subject: &str, error: impl std::fmt::Debug) -> WorthQueryOutputDemandDenial {
+pub fn failed(subject: &str, error: impl std::fmt::Debug) -> WorthQueryOutputDemandDenial {
     denial(
         WorthQueryOutputDemandDenialKind::ProducerUnavailable,
         format!("{subject}: {error:?}"),
     )
 }
 
-pub(super) fn denial(
+pub fn denial(
     kind: WorthQueryOutputDemandDenialKind,
     subject: impl Into<std::borrow::Cow<'static, str>>,
 ) -> WorthQueryOutputDemandDenial {

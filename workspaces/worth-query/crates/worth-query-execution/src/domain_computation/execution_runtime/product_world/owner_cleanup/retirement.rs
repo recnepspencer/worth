@@ -27,7 +27,7 @@ impl Drop for Retirement {
 /// Declare before every guard that may enclose cleanup, and borrow through it.
 /// The registry remains the sole Source owner until these actual receipts notify.
 #[derive(Default)]
-pub(crate) struct OwnerCleanupRetirements {
+pub struct OwnerCleanupRetirements {
     entries: Vec<Retirement>,
     _buffer_memory: Option<ExecutionMemoryReservation>,
     // Always retain the upgraded follower, including admission/error paths.

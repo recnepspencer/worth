@@ -22,7 +22,7 @@ pub(super) struct Selection {
 }
 
 /// Project every eligible captured fact or refuse the whole selection.
-pub(super) fn select(
+pub fn select(
     execution: ExecutionRequest<'_, '_>,
     facts: &FactPayload,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,

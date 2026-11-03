@@ -1,13 +1,13 @@
 pub use worth_query_execution::facade::domain_computation::bound_advancement_requests_on_this_thread_for_test as bound;
 pub use worth_query_execution::facade::domain_computation::place_managed_computations_on_this_thread_for_test as place;
 pub use worth_query_execution::facade::domain_computation::WorthQueryExecutionPlacementForTest as Placement;
-pub use worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::QueryRequestExecution;
-pub use worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::Resource;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::QueryRequestExecution;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::Resource;
 pub use worth_execution::WorkCeilingDenial;
 pub use worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial;
 pub use worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase;
 pub use worth_query_execution::facade::application_contribution::WorthQueryManagedComputationInterruption;
-pub use worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::observation;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::observation;
 pub use worth_query_execution::facade::application_contribution::with_bootstrap_advancement;
 pub use std::collections::BTreeMap;
 pub use std::num::NonZeroUsize;
@@ -28,7 +28,7 @@ impl Drop for Restore {
 }
 
 pub fn request() -> QueryRequestExecution<'static> {
-    let policy = worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy(NonZeroUsize::MIN, None);
+    let policy = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy(NonZeroUsize::MIN, None);
     QueryRequestExecution::open_control(
         worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(policy),
         worth_execution::CancellationToken::new(),
@@ -149,7 +149,7 @@ fn reentrant_host_open_is_typed_at_serial_and_leased_placements() {
                 ));
                 assert_eq!(
                     with_bootstrap_advancement(
-                        worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy(NonZeroUsize::MIN, None),
+                        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy(NonZeroUsize::MIN, None),
                         |_| ()
                     ),
                     Err(WorthQueryAdvancementDenial::NestedOpening)
@@ -174,7 +174,7 @@ fn reentrant_host_open_is_typed_at_serial_and_leased_placements() {
 fn unwinding_a_host_callback_releases_opening_custody() {
     let _observation =
         worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation::install_on_this_thread();
-    let policy = worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy(NonZeroUsize::MIN, None);
+    let policy = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy(NonZeroUsize::MIN, None);
     assert!(std::panic::catch_unwind(|| {
         let _ = with_bootstrap_advancement(policy, |_| panic!("host callback"));
     })

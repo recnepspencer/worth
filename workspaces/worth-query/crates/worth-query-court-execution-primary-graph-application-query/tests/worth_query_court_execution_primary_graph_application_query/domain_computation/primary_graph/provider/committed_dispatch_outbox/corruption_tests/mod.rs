@@ -23,17 +23,17 @@ use worth_query_testkit_execution_primary_graph_application_attempt::domain_comp
 use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::provider::committed_dispatch_outbox::owner_test_support::retain_commit_basis;
 use worth_query_execution::facade::primary_graph::WorthQueryCommittedDispatchOutboxReadDenial as Denial;
 use worth_query_execution::facade::domain_computation::WorthQueryDispatchOutboxRecord;
-use worth_query_execution::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider;
-use worth_query_execution::domain_computation::primary_graph::provider::committed_dispatch_outbox::correlation;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::committed_dispatch_outbox::correlation;
 use crate::domain_computation::primary_graph::provider::committed_dispatch_outbox::tests;
-use worth_query_execution::domain_computation::application_aftermath::external_effect::outbox::bind_dispatch_outbox_create_intent;
-use worth_query_execution::domain_computation::application_aftermath::external_effect::correlation::derive_external_effect_correlation_identity;
-use worth_query_execution::domain_computation::application_aftermath::external_effect::correlation::ExternalEffectCorrelationBasis;
+use worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::outbox::bind_dispatch_outbox_create_intent;
+use worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::correlation::derive_external_effect_correlation_identity;
+use worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::correlation::ExternalEffectCorrelationBasis;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitOutcomeIdentity;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationIdempotencyBinding;
-use worth_query_execution::domain_computation::primary_graph::application_branch::primary_relational_branch_id;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_branch::primary_relational_branch_id;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;
-use worth_query_execution::domain_computation::primary_graph::provider::session_commit::outbox_commit::WorthQueryCommittedDispatchOutboxBinding;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::session_commit::outbox_commit::WorthQueryCommittedDispatchOutboxBinding;
 
 #[test]
 fn every_valid_persisted_field_substitution_breaks_whole_record_affinity() {
@@ -88,7 +88,7 @@ fn a_committed_record_of_another_kind_denies_before_projection() {
         )
         .unwrap();
         let idempotency = WorthQueryApplicationIdempotencyBinding::new([91; 32], [92; 32]);
-        let idempotency_intent = worth_query_execution::domain_computation::primary_graph::provider::idempotency::idempotency_create_intent(
+        let idempotency_intent = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::idempotency::idempotency_create_intent(
             provider.graph.layout.provider_idempotency(),
             idempotency,
             WorthQueryApplicationCommitOutcomeIdentity::mint().unwrap(),
@@ -129,10 +129,10 @@ fn a_committed_record_of_another_kind_denies_before_projection() {
         let commit = committed.outcome().commit.clone();
         retain_commit_basis(provider, runtime, &committed);
         release_commit_snapshot(runtime, &committed);
-        let snapshot = worth_query_execution::domain_computation::primary_graph::exact_basis_access::open_current_branch_snapshot(runtime, &primary_relational_branch_id())
+        let snapshot = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::exact_basis_access::open_current_branch_snapshot(runtime, &primary_relational_branch_id())
             .unwrap();
         let runtime_id = snapshot.runtime_instance_id();
-        worth_query_execution::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
+        worth_query_execution::court_doors_for_test::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
         (binding, commit, runtime_id)
     });
 
@@ -202,10 +202,10 @@ fn a_deleted_record_is_non_visible_at_the_requested_commit_without_binding_fallb
         let commit = deleted.outcome().commit.clone();
         retain_commit_basis(provider, runtime, &deleted);
         release_commit_snapshot(runtime, &deleted);
-        let snapshot = worth_query_execution::domain_computation::primary_graph::exact_basis_access::open_current_branch_snapshot(runtime, &primary_relational_branch_id())
+        let snapshot = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::exact_basis_access::open_current_branch_snapshot(runtime, &primary_relational_branch_id())
             .unwrap();
         let runtime_id = snapshot.runtime_instance_id();
-        worth_query_execution::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
+        worth_query_execution::court_doors_for_test::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
         (binding, commit, runtime_id)
     });
 
@@ -276,17 +276,17 @@ pub fn committed_substituted_row(
         let commit = committed.outcome().commit.clone();
         retain_commit_basis(&provider, runtime, &committed);
         release_commit_snapshot(runtime, &committed);
-        let snapshot = worth_query_execution::domain_computation::primary_graph::exact_basis_access::open_current_branch_snapshot(runtime, &branch)
+        let snapshot = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::exact_basis_access::open_current_branch_snapshot(runtime, &branch)
             .unwrap();
         let runtime_id = snapshot.runtime_instance_id();
-        worth_query_execution::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
+        worth_query_execution::court_doors_for_test::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
         (binding, commit, runtime_id)
     });
     (provider, binding, commit, runtime_id)
 }
 
 pub fn corrupted_spec(
-    layout: &worth_query_execution::domain_computation::application_aftermath::external_effect::outbox::WorthQueryDispatchOutboxLayout,
+    layout: &worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::outbox::WorthQueryDispatchOutboxLayout,
     expected: EntitySpec,
     field: usize,
     replacement: AspectValue,
@@ -320,7 +320,7 @@ pub fn valid_field_substitutions() -> Vec<(usize, AspectValue)> {
 }
 
 pub fn field_locator(
-    layout: &worth_query_execution::domain_computation::application_aftermath::external_effect::outbox::WorthQueryDispatchOutboxLayout,
+    layout: &worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::outbox::WorthQueryDispatchOutboxLayout,
     field: usize,
 ) -> worth_foundational::facade::AspectFieldLocator {
     [

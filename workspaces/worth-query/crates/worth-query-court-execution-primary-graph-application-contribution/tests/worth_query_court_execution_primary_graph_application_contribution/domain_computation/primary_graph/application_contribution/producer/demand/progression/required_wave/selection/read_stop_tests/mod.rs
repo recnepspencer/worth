@@ -1,7 +1,7 @@
 //! The required wave names the demand's stop at its real Product/native selection.
 use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandDenialKind;
-use worth_query_execution::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::denial;
-use worth_query_execution::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::selection::select_required_basis;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::denial;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::selection::select_required_basis;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::program_roster::installed_program_support;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::program_roster::rostered_program_revision;

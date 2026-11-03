@@ -1,14 +1,14 @@
 pub use std::collections::BTreeSet;
 pub use worth_relational::facade::identity::EntityId;
-pub use worth_query_execution::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact as Fact;
-pub use worth_query_execution::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::retirement::rebase;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact as Fact;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::retirement::rebase;
 pub use crate::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::retirement::tests;
 pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationSourceAdjacencyEndpoints as AdmittedAdjacencyEndpoints;
-pub use worth_query_execution::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl;
-pub use worth_query_execution::domain_computation::primary_graph::application_checkpoint::facts::payload::sequence::FactSequence;
-pub use worth_query_execution::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationAdjacencyDirection;
-pub use worth_query_execution::domain_computation::primary_graph::output_reuse::selection::compare_retained_output_dependencies;
-pub use worth_query_execution::domain_computation::primary_graph::output_reuse::selection::OutputDependencySelection;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::payload::sequence::FactSequence;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationAdjacencyDirection;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_reuse::selection::compare_retained_output_dependencies;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_reuse::selection::OutputDependencySelection;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::product_publication::publish_relational_mutation;
@@ -151,7 +151,7 @@ pub fn reads(
                 )
                 .unwrap()
                 .revision(),
-                worth_query_execution::domain_computation::primary_graph::application_attempt::fact::adjacency::observe_adjacency(
+                worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::adjacency::observe_adjacency(
                     runtime,
                     execution,
                     selected.application_basis().snapshot_handle(),
@@ -274,7 +274,7 @@ pub fn normal_rebase(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &AuthorizationWorld,
     facts: Vec<Fact>,
-) -> worth_query_execution::domain_computation::primary_graph::application_checkpoint::facts::payload::FactPayload{
+) -> worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::payload::FactPayload{
     let selected = world.selected_product(&(phase_custody).test_host_request());
     world
         .application
@@ -283,14 +283,14 @@ pub fn normal_rebase(
         .unwrap()
         .integration_handle()
         .with_runtime(execution, |runtime| {
-            exact(worth_query_execution::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::rebase(execution, runtime, selected.application_basis().snapshot_handle(), worth_query_execution::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::PreparedSourceFactRebase::admit(facts, [].into(), worth_query_execution::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(), &BTreeSet::new(), true))
+            exact(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::rebase(execution, runtime, selected.application_basis().snapshot_handle(), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::PreparedSourceFactRebase::admit(facts, [].into(), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(), &BTreeSet::new(), true))
         })
 }
 
 /// Facts that need full verification are not exact facts of the commit.
 pub fn exact(
-    rebased: worth_query_execution::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::RebasedSourceFacts,
-) -> worth_query_execution::domain_computation::primary_graph::application_checkpoint::facts::payload::FactPayload{
+    rebased: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::RebasedSourceFacts,
+) -> worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::payload::FactPayload{
     rebased
         .retain_exact()
         .unwrap_or_else(|| std::sync::Arc::<[Fact]>::from([]).into())

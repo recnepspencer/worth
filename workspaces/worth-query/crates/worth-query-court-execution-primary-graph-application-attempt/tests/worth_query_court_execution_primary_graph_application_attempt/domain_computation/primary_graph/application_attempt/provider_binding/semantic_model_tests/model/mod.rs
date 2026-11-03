@@ -17,7 +17,7 @@ use worth_relational::facade::transactions::UpdateEntityFieldsIntent;
 
 use crate::domain_computation::primary_graph::application_attempt::provider_binding::semantic_model_tests::world::values;
 use crate::domain_computation::primary_graph::application_attempt::provider_binding::semantic_model_tests::world::MixedEffectAxes;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_binding::WorthQueryPreparedApplicationProviderAttempt;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_binding::WorthQueryPreparedApplicationProviderAttempt;
 use worth_query_execution::facade::domain_computation::WorthQueryProvisionalEffectAction;
 use worth_query_execution::facade::domain_computation::WorthQueryProvisionalEffectStep;
 

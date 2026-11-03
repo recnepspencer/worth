@@ -7,10 +7,10 @@ use worth_query_testkit_execution_primary_graph_application_contribution::domain
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::AccountMembershipTag;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::AccountStatus;
 use crate::domain_computation::primary_graph::tests::authorization::workflow_approval_revalidation::*;
-use worth_query_execution::domain_computation::execution_runtime::product_world::publication_denial::WorthQueryProductPublicationOutcome as Publication;
-use worth_query_execution::domain_computation::primary_graph::workflow::approval::workflow_approval_fields;
-use worth_query_execution::domain_computation::primary_graph::workflow::approval::field_text::WorkflowApprovalFieldText;
-use worth_query_execution::domain_computation::primary_graph::workflow::approval::WorkflowApprovalMeaning;
+use worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::publication_denial::WorthQueryProductPublicationOutcome as Publication;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::approval::workflow_approval_fields;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::approval::field_text::WorkflowApprovalFieldText;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::approval::WorkflowApprovalMeaning;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationAttemptDenialKind as AttemptKind;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommittedChanges;
 use std::collections::BTreeMap;
@@ -74,7 +74,7 @@ pub fn originals(meaning: &WorkflowApprovalMeaning) -> [String; 5] {
     .map(|text| text.as_str().to_owned())
 }
 pub fn locators(
-    layout: &worth_query_execution::domain_computation::primary_graph::workflow::schema::layout::WorthQueryWorkflowLayout,
+    layout: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::schema::layout::WorthQueryWorkflowLayout,
 ) -> [&AspectFieldLocator; 5] {
     [
         &layout.approval.authorization_request,
@@ -296,8 +296,8 @@ fn original_cancellation_reaches_query_native_receiving_before_any_dictionary_or
             assert_eq!(payer.charged_memory_bytes(), charge, "refusal acquired no payload custody");
             drop(before_pin);
             drop(after_pin);
-            worth_query_execution::relational_snapshot_release::release_query_snapshot(runtime, &before);
-            worth_query_execution::relational_snapshot_release::release_query_snapshot(runtime, &after);
+            worth_query_execution::court_doors_for_test::relational_snapshot_release::release_query_snapshot(runtime, &before);
+            worth_query_execution::court_doors_for_test::relational_snapshot_release::release_query_snapshot(runtime, &after);
             // Legal live counterpart uses the same already-paid original bytes;
             // it does not reset the cancelled request or manufacture admission.
             let admitted_text = WorkflowApprovalFieldText::admit(runtime, &observer, basis, &meaning).unwrap();

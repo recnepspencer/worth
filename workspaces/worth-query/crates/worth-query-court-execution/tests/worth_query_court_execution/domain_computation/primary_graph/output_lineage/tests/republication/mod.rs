@@ -1,9 +1,9 @@
 //! A restored generated output continues the performed record it republishes.
 //! Performed opaque-reader and request-context rows continue without cutoff proofs.
-pub use worth_query_execution::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 
-pub use worth_query_execution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::prior_absence::PriorAbsence;
-pub use worth_query_execution::equality_type_id::EqualityTypeId as TypeId;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::prior_absence::PriorAbsence;
+pub use worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId as TypeId;
 pub use std::collections::BTreeMap;
 pub use std::sync::Arc;
 pub use std::sync::Mutex;
@@ -23,23 +23,23 @@ pub use worth_runtime_world::facade::ProductBranchObservation;
 
 pub use crate::domain_computation::primary_graph::output_lineage::tests::checkpoint_identity;
 pub use crate::domain_computation::primary_graph::output_lineage::tests::RestoredOutputBinding;
-pub use worth_query_execution::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryCheckpointOutputRole;
-pub use worth_query_execution::domain_computation::primary_graph::invariant_projection::consumed_output::ConsumedOutputEvidence;
-pub use worth_query_execution::domain_computation::primary_graph::output_lineage::ProductCoordinate;
-pub use worth_query_execution::domain_computation::primary_graph::output_lineage::recorded_output::RecordedOutput;
-pub use worth_query_execution::domain_computation::primary_graph::output_lineage::recorded_output::RecordedOutputMutable;
-pub use worth_query_execution::domain_computation::primary_graph::output_lineage::settlement_identity::RecordedSettlementIdentity;
-pub use worth_query_execution::domain_computation::primary_graph::output_lineage::native_output_witness::SealedNativeOutputWitness;
-pub use worth_query_execution::domain_computation::primary_graph::output_lineage::semantic_source::SemanticSource;
-pub use worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::owner::SourceInvalidationOwner;
-pub use worth_query_execution::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondence;
-pub use worth_query_execution::domain_computation::primary_graph::output_lineage::WorthQueryApplicationOutputLineage;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryCheckpointOutputRole;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::consumed_output::ConsumedOutputEvidence;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::ProductCoordinate;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::recorded_output::RecordedOutput;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::recorded_output::RecordedOutputMutable;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::settlement_identity::RecordedSettlementIdentity;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::native_output_witness::SealedNativeOutputWitness;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::semantic_source::SemanticSource;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::owner::SourceInvalidationOwner;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondence;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::WorthQueryApplicationOutputLineage;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::product_publication::publish_relational_mutation;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::AccountLabel;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::AccountStatus;
-pub use worth_query_execution::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact as Fact;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact as Fact;
 pub use worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture as WorthQueryApplicationOutputPosture;
 pub use worth_query_execution::facade::domain_computation::WorthQueryPrincipalResolutionMode;
 
@@ -66,7 +66,7 @@ pub struct Stage<'world> {
 pub struct Continued {
     pub identity: Arc<RecordedSettlementIdentity>,
     pub predecessor: Arc<RecordedSettlementIdentity>,
-    pub facts: worth_query_execution::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts,
+    pub facts: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts,
     pub consumed_outputs: Arc<[ConsumedOutputEvidence]>,
     pub witness: Witness,
 }
@@ -231,8 +231,8 @@ impl Stage<'_> {
             completed_decision_reuse: None,
             prepared_input_reuse_key: None,
             native_output_witness: OnceLock::new(),
-            computation_source: worth_query_execution::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false),
-            mutable: Mutex::new(RecordedOutputMutable::new(None, (Some(Arc::clone(facts))).map(|facts| worth_query_execution::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false).retain_facts(facts)), worth_query_execution::domain_computation::primary_graph::output_lineage::retained_computation::RecordedComputation::Absent(PriorAbsence::Restored))),
+            computation_source: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false),
+            mutable: Mutex::new(RecordedOutputMutable::new(None, (Some(Arc::clone(facts))).map(|facts| worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false).retain_facts(facts)), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::retained_computation::RecordedComputation::Absent(PriorAbsence::Restored))),
             settlement_identity: RecordedSettlementIdentity::retain(
                 &self.source,
                 ProductCoordinate {
@@ -268,7 +268,7 @@ impl Stage<'_> {
         facts: &Arc<[Fact]>,
         witness: &Witness,
     ) -> Option<Option<Continued>> {
-        let republished = self.lineage.prepare_republication(self.lineage.binding_type(&self.source.output_binding), self.source.runtime_authority, &self.source.schema, self.source.scope, self.observation.lifecycle_incarnation(), suspended_generation, PARTITION, &self.correspondence, &worth_query_execution::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts::for_test(false, Arc::clone(facts)), Arc::clone(witness), worth_query_execution::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None))?;
+        let republished = self.lineage.prepare_republication(self.lineage.binding_type(&self.source.output_binding), self.source.runtime_authority, &self.source.schema, self.source.scope, self.observation.lifecycle_incarnation(), suspended_generation, PARTITION, &self.correspondence, &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts::for_test(false, Arc::clone(facts)), Arc::clone(witness), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None))?;
         let record = self.lineage.record_republished_restoration(
             self.lineage.binding_type(&self.source.output_binding),
             self.source.runtime_authority,
@@ -280,7 +280,7 @@ impl Stage<'_> {
             PARTITION,
             None,
             IDEMPOTENCY_KEY,
-            worth_query_execution::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts::for_test(
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts::for_test(
                 false,
                 Arc::clone(facts),
             ),

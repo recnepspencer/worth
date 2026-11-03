@@ -213,7 +213,7 @@ pub(super) fn closed_superseded(record: &DemandRecord) -> bool {
 }
 
 /// The newest row of `key`'s occurrence holds a Ready no refresh replaced.
-pub(super) fn newest_ready(records: &Records, key: &WorthQueryOutputDemandKey) -> bool {
+pub fn newest_ready(records: &Records, key: &WorthQueryOutputDemandKey) -> bool {
     ready_at_newest(records, newest_of_occurrence(records, key))
 }
 

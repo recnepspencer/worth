@@ -1,10 +1,10 @@
 //! Existing World, real query completion and real Native field publications.
 pub use std::sync::Arc;
-pub use worth_query_execution::domain_computation::primary_graph::application_query::projection::retained_projection::body::OriginalProjection;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::projection::retained_projection::body::OriginalProjection;
 pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationOneShotDenial;
 pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationOneShotDenialKind;
-pub use worth_query_execution::domain_computation::primary_graph::application_query::projection::retained_projection::body;
-pub use worth_query_execution::domain_computation::primary_graph::application_query::projection::retained_projection::retain;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::projection::retained_projection::body;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::projection::retained_projection::retain;
 pub use crate::domain_computation::primary_graph::application_query::projection::retained_projection::tests;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope;
@@ -65,7 +65,7 @@ fn original_projection_moves_disclosed_rows_and_shares_original_funding_until_fi
                 .any(|original| Arc::ptr_eq(slot, &original)));
         }
         let body_quote = body.rows.iter().fold(
-            (body.rows.capacity() * std::mem::size_of::<worth_query_execution::domain_computation::primary_graph::application_query::projection::projected_tree::WorthQueryApplicationProjectionNode>()) as u64,
+            (body.rows.capacity() * std::mem::size_of::<worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::projection::projected_tree::WorthQueryApplicationProjectionNode>()) as u64,
             |bytes, row| bytes + row.retained_bytes() as u64,
         ) + OriginalProjection::allocation_bytes();
         assert_eq!(body._memory.as_ref().unwrap().bytes(), body_quote);

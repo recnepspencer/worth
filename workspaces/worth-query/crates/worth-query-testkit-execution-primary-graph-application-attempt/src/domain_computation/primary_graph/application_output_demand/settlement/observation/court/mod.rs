@@ -2,17 +2,17 @@
 
 use crate::domain_computation::primary_graph::application_attempt::compare_and_commit::commit_receipt::certification::CertificationWorthQueryApplicationCommitReceiptForTest;
 use std::sync::Arc;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::settlement::observation::OriginalSettledProducerObservation;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::settlement::observation::OriginalSettledProducerSource;
-use worth_query_execution::domain_computation::primary_graph::source_disclosure::inspection::OriginalSourceInspectionDisclosure;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::settlement::receipt_custody::SettlementReceiptCustody;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::settlement::observation::OriginalSettledProducerObservation;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::settlement::observation::OriginalSettledProducerSource;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::source_disclosure::inspection::OriginalSourceInspectionDisclosure;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::settlement::receipt_custody::SettlementReceiptCustody;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitReceipt;
 use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandDenial;
 use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandDenialKind;
 use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandSettlement;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::settlement::observation;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::settlement::producer_identity;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::settlement::observation::provenance;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::settlement::observation;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::settlement::producer_identity;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::settlement::observation::provenance;
 use worth_query_execution::facade::domain_computation::WorthQueryOutputSettlementProvenanceDenial as Reason;
 
 /// Test doors on a library type, owned by the moved courts.
@@ -265,14 +265,14 @@ impl CourtOriginalSourceInspectionDisclosureForTest for OriginalSourceInspection
             !Arc::ptr_eq(&self, &foreign),
             "independently captured owners"
         );
-        worth_query_execution::domain_computation::primary_graph::application_output_demand::settlement::observation::provenance::require_disclosure_owner(Some(&self), Some(&self)).unwrap();
-        worth_query_execution::domain_computation::primary_graph::application_output_demand::settlement::observation::provenance::require_disclosure_owner(None, None).unwrap();
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::settlement::observation::provenance::require_disclosure_owner(Some(&self), Some(&self)).unwrap();
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::settlement::observation::provenance::require_disclosure_owner(None, None).unwrap();
         for (original, expected, reason) in [
             (Some(&foreign), Some(&self), Reason::ForeignDisclosureOwner),
             (None, Some(&self), Reason::OriginalDisclosureMissing),
             (Some(&self), None, Reason::ReceiptDisclosureMissing),
         ] {
-            let cause = worth_query_execution::domain_computation::primary_graph::application_output_demand::settlement::observation::provenance::require_disclosure_owner(original, expected)
+            let cause = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::settlement::observation::provenance::require_disclosure_owner(original, expected)
                 .expect_err("literal disclosure cause");
             assert_eq!(
                 cause.kind(),

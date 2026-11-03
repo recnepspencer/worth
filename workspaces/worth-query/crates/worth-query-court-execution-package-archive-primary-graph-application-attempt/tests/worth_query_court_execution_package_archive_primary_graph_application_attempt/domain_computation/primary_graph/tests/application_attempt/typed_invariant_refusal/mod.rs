@@ -7,7 +7,7 @@ use worth_query_execution::facade::domain_computation::WorthQueryApplicationComm
 use worth_query_execution::facade::domain_computation::WorthQueryExecutionPlacementForTest;
 use worth_query_execution::facade::application_invariants::WorthQueryInvariantProjectionWork;
 use worth_relational::facade::inspection::RecordReservationReport as WorthQueryRecordReservationReport;
-use worth_query_execution::domain_computation::primary_graph::denial;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::denial;
 use worth_query_execution::facade::domain_computation::place_managed_computations_on_this_thread_for_test;
 use worth_query_execution::facade::domain_computation::WorthQueryProviderSessionControlStopKind;
 use crate::domain_computation::primary_graph::tests::application_attempt::typed_invariant_refusal::rule::OtherBinding;

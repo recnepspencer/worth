@@ -15,7 +15,7 @@ use worth_query_execution::facade::domain_computation::WorthQueryGraphProviderFa
 use worth_query_execution::facade::domain_computation::WorthQueryGraphProviderReceipt;
 use worth_query_execution::facade::domain_computation::WorthQueryGraphReadMaterial;
 use worth_query_execution::facade::domain_computation::WorthQueryGraphReadRow;
-use worth_query_execution::domain_computation::provider_session::graph_provider::stream_evidence::WorthQueryGraphReadStreamAccumulator;
+use worth_query_execution::court_doors_for_test::domain_computation::provider_session::graph_provider::stream_evidence::WorthQueryGraphReadStreamAccumulator;
 use worth_query_execution::facade::domain_computation::WorthQueryProviderWorkReport;
 use worth_query_execution::facade::domain_computation::WorthQueryExecutionRuntimeInstaller;
 use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::operation_binding::authority::tests::direct_authority_with_graph;

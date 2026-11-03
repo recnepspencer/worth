@@ -12,7 +12,7 @@ use super::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::domain_computation::application_aftermath::WorthQueryInboundOccurrenceVerifier;
 use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
 
-mod receive;
+pub(crate) mod receive;
 mod transport_binding;
 mod transport_publication_permit;
 pub(in crate::domain_computation) use transport_binding::WorthQueryInstalledTransportCompletionBinding;

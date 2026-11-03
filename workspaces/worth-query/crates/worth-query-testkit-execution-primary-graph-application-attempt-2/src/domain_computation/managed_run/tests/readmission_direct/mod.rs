@@ -16,7 +16,7 @@ use crate::domain_computation::managed_run::tests::managed_graph_run_with_provid
 use crate::domain_computation::managed_run::tests::yield_fixture::YieldProvider;
 use crate::domain_computation::managed_run::tests::*;
 pub fn yielded_direct(
-    execution: &worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (
     worth_query_execution::facade::domain_computation::WorthQueryYieldedDirectRun,
@@ -26,7 +26,7 @@ pub fn yielded_direct(
     yielded_direct_for_binding(execution, "managed-graph-binding", resource_request)
 }
 pub fn yielded_direct_for_binding(
-    execution: &worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
 
     binding_identity: &str,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
@@ -70,7 +70,7 @@ pub fn yielded_direct_for_binding(
     (yielded, bridge, runtime)
 }
 pub fn yielded_direct_with_plan_observation<T>(
-    execution: &worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
 
     observe_plan: impl FnOnce(
         &worth_query_admission::facade::resource_admission::WorthQueryAdmittedExecutionResourcePlan,
@@ -153,7 +153,7 @@ pub fn yielded_direct_with_plan_observation<T>(
     (yielded, bridge, runtime, plan_observation)
 }
 pub fn yielded_direct_with_provider(
-    execution: &worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
 
     provider: YieldProvider,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,

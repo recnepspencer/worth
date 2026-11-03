@@ -3,8 +3,8 @@ use worth_relational::facade::indexes::DerivedIndexId;
 use worth_relational::facade::indexes::DerivedIndexKind;
 use worth_relational::facade::runtime::RelationalRuntimeApi;
 
-use worth_query_execution::domain_computation::primary_graph::root::index_installation::IndexInstallationPosture;
-use worth_query_execution::domain_computation::primary_graph::root::index_installation::register_primary_graph_indexes;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::root::index_installation::IndexInstallationPosture;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::root::index_installation::register_primary_graph_indexes;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::installed_layout;
 
 #[test]

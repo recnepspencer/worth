@@ -1,10 +1,10 @@
 //! A native add/remove restores the same observed relation set. Clearing its
 //! dirty mark requires native verification and a still-current companion image.
-use worth_query_execution::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts;
 
-use worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::verification::DirtyReverification;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::verification::SettlementVerificationStop;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::verification::DirtyReverification;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::verification::SettlementVerificationStop;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::native_journey_tests::*;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::AccountBlocked;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::PrincipalIdentityField;
@@ -96,12 +96,12 @@ fn native_reverification_clears_only_the_verified_live_image() {
                     )
                     .expect("fixture read request remains live")
                     .is_empty());
-                let tracked_facts = worth_query_execution::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts::for_test(false,
+                let tracked_facts = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts::for_test(false,
                     Arc::from([WorthQueryApplicationObservedFact::Relation {
                         relation_kind: kind, from: principal, to: account, matching_relations: Vec::new(),
                     }]));
                 owner.register_settlement(SettlementRegistration {
-                    computation: Some(worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::computation_changes::ComputationRegistration::retained()),
+                    computation: Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::computation_changes::ComputationRegistration::retained()),
                     work_membership: None, identity: identity.clone(), facts: tracked_facts.clone(),
                     output_facts: None, read_basis: basis.clone(), stale_at_read_basis: OrdSet::new(),
                     requirement: None, upstream: OrdSet::new(),
@@ -233,7 +233,7 @@ fn native_reverification_clears_only_the_verified_live_image() {
                 assert!(changes.at_snapshot(runtime, &basis_handle).is_none(), "later evidence cannot bless an earlier source snapshot");
                 let original = tracked_facts.for_comparison().unwrap().facts().clone();
                 let changes = changes.bind_original(original.clone());
-                let control = worth_query_execution::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new(request_execution.allocation_policy(), None);
+                let control = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new(request_execution.allocation_policy(), None);
                 let carry = changes.carry(&original, 1, &OrdSet::new(), &latest_handle, control).unwrap().unwrap();
                 let empty = worth_relational::facade::history::RelationalDescriptiveTouchGraph::Exact(Vec::new());
                 let selected = carry.select(&empty, 1, &[], control).unwrap().unwrap().ordinals;

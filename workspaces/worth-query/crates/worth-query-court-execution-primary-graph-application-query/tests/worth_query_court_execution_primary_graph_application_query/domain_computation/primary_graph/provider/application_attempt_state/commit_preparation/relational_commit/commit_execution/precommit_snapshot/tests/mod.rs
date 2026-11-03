@@ -1,4 +1,4 @@
-use worth_query_execution::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::commit_execution::precommit_snapshot::WorthQueryPrecommitSnapshot;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::commit_execution::precommit_snapshot::WorthQueryPrecommitSnapshot;
 
 #[test]
 fn unwind_releases_only_its_precommit_snapshot() {

@@ -18,7 +18,7 @@ use crate::domain_computation::application_aftermath::{
 };
 use crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxReadDenial;
 
-pub(in crate::domain_computation) enum WorthQueryInboundAdmission {
+pub enum WorthQueryInboundAdmission {
     New(Arc<WorthQueryAcceptedInboundOccurrence>, bool),
     Duplicate(
         Arc<WorthQueryAcceptedInboundOccurrence>,

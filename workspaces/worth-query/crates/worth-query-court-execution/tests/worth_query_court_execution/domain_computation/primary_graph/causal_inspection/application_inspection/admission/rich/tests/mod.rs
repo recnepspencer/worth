@@ -1,14 +1,14 @@
 //! Actual independently admitted rich scopes cannot be substituted even for one original.
 use worth_execution::ExecutionMemoryReservation;
-use worth_query_execution::domain_computation::primary_graph::causal_inspection::application_inspection::admission::InspectionAdmissionDenial;
-use worth_query_execution::domain_computation::primary_graph::causal_inspection::application_inspection::admission::InspectionDiagnosticPreparation;
-use worth_query_execution::domain_computation::primary_graph::causal_inspection::application_inspection::admission::subject::InspectionSubject;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::causal_inspection::application_inspection::admission::InspectionAdmissionDenial;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::causal_inspection::application_inspection::admission::InspectionDiagnosticPreparation;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::causal_inspection::application_inspection::admission::subject::InspectionSubject;
 use worth_query_execution::facade::application_inspection::WorthQueryApplicationMaterializationRequest;
-use worth_query_execution::domain_computation::primary_graph::causal_inspection::application_inspection::admission::preparation::prepare;
-use worth_query_execution::domain_computation::primary_graph::causal_inspection::application_inspection::admission::require_request;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::causal_inspection::application_inspection::admission::preparation::prepare;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::causal_inspection::application_inspection::admission::require_request;
 use crate::domain_computation::primary_graph::causal_inspection::application_inspection::admission::rich::tests;
-use worth_query_execution::domain_computation::authorization::application_disclosure::pending_access::funded::prepare_funded_pending_disclosure;
-use worth_query_execution::domain_computation::primary_graph::application_query::admission::permission::fresh::FreshQueryPermissionStop;
+use worth_query_execution::court_doors_for_test::domain_computation::authorization::application_disclosure::pending_access::funded::prepare_funded_pending_disclosure;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::admission::permission::fresh::FreshQueryPermissionStop;
 use worth_query_execution::facade::application_inspection::WorthQueryApplicationEvidenceFamily as Family;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::diagnostic_comparison::DiagnosticAccountBinding;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::capability_world_installation::installed_inspection_capability_world;

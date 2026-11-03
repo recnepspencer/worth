@@ -9,10 +9,10 @@ pub use worth_execution::ReductionPlan;
 pub use worth_execution::ReductionTree;
 pub use worth_foundational::facade::PartitionIdentity as Id;
 
-pub use worth_query_execution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::retained::RetainedPartitions;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::retained::RetainedPartitions;
 pub use worth_query_execution::facade::application_contribution::WorthQueryPartitionedTreeRebuildCause as Rebuild;
 pub use worth_query_execution::facade::application_contribution::WorthQueryPartitionedTreeRun as TreeRun;
-pub use worth_query_execution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tree_update::next_tree;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tree_update::next_tree;
 pub use crate::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tests::*;
 
 thread_local! {
@@ -69,7 +69,7 @@ pub fn retained(source: &SealedComputationRun, keys: &[Id]) -> Retained {
     )
     .unwrap();
     let partition = template.partitions.values().next().unwrap();
-    let policy = worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy(std::num::NonZeroUsize::MIN, Some(1 << 36));
+    let policy = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy(std::num::NonZeroUsize::MIN, Some(1 << 36));
     let native = worth_execution::SerialRequest::from_policy(
         &policy,
         worth_execution::CancellationToken::new(),
@@ -94,7 +94,7 @@ pub fn retained(source: &SealedComputationRun, keys: &[Id]) -> Retained {
     else {
         panic!("actual native scalar slots")
     };
-    let partitions = worth_query_execution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::partition_metadata::PartitionMetadata::from_recorded(
+    let partitions = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::partition_metadata::PartitionMetadata::from_recorded(
         keys.iter()
             .map(|id| (*id, (Arc::clone(&partition.key), partition.gather.clone())))
             .collect(),
@@ -120,7 +120,7 @@ pub fn plan(keys: &[Id]) -> ReductionPlan {
 
 // Use the execution test lane's serial policy without a payload forecast.
 pub fn serial_placement() -> RuntimeWorldExecutionPlacement<'static> {
-    use worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy;
     RuntimeWorldExecutionPlacement::Serial(test_policy(std::num::NonZeroUsize::MIN, None))
 }
 
@@ -129,7 +129,7 @@ pub fn run(
     keys: &[Id],
     results: BTreeMap<Id, u64>,
     remaining: u64,
-) -> worth_query_execution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tree_report::ReportedTree<Tree, u32>{
+) -> worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tree_report::ReportedTree<Tree, u32>{
     let request = live_scope();
     let execution = QueryRequestExecution::open(serial_placement(), &request);
     let reducer = WorthQueryDeterministicReducer::canonical(|| 0, counted);

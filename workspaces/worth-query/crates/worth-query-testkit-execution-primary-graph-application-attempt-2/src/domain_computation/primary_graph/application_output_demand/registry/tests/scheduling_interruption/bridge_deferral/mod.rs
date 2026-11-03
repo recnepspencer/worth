@@ -85,7 +85,7 @@ impl BridgeDeferralWorthQueryOutputDemandRegistryForTest for WorthQueryOutputDem
         };
         assert!(finish
             .publish(WorthQueryOutputCheckpoint::Ready(
-                worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::ready_backing::ReadyCompletion::for_test(completion)
+                worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::ready_backing::ReadyCompletion::for_test(completion)
             ))
             .is_ok());
         assert!(matches!(

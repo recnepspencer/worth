@@ -1,8 +1,8 @@
 //! Unit-only cancellation immediately before the real native freshness lookup.
 
-use worth_query_execution::domain_computation::primary_graph::entity_resolution::interruption_control::Action;
-use worth_query_execution::domain_computation::primary_graph::entity_resolution::interruption_control::PENDING;
-use worth_query_execution::domain_computation::primary_graph::entity_resolution::interruption_control::Pending;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::entity_resolution::interruption_control::Action;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::entity_resolution::interruption_control::PENDING;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::entity_resolution::interruption_control::Pending;
 use std::cell::Cell;
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -23,7 +23,7 @@ impl FreshnessCancellationGuardForTest {
         Self::install(Action::Deadline(deadline), 0)
     }
     pub fn install(action: Action, preceding_reads: usize) -> Self {
-        assert!(worth_query_execution::domain_computation::execution_observation::is_installed());
+        assert!(worth_query_execution::court_doors_for_test::domain_computation::execution_observation::is_installed());
         let triggered = Rc::new(Cell::new(false));
         let previous = PENDING.replace(Some(Pending {
             action,

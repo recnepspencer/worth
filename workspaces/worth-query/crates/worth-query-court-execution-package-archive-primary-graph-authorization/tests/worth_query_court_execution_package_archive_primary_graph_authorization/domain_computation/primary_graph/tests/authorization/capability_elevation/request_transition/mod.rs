@@ -194,7 +194,7 @@ fn proposed_grant_must_independently_authorize_the_governed_upper_bound() {
 }
 
 pub fn request_reads(
-    phase_custody: &worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     world: &World,
     principal: &worth_query_execution::facade::domain_computation::WorthQueryAuthenticatedPrincipal<
         IdentityExecutionSchema,
@@ -246,7 +246,7 @@ pub fn request_reads(
 }
 
 pub fn request_access(
-    phase_custody: &worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     world: &World,
     principal: &worth_query_execution::facade::domain_computation::WorthQueryAuthenticatedPrincipal<
         IdentityExecutionSchema,
@@ -314,7 +314,7 @@ pub fn honest_input() -> RequestElevationInput {
 }
 
 pub fn resolve_created_identities(
-    phase_custody: &worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &World,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,

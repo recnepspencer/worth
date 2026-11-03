@@ -6,7 +6,7 @@ use worth_execution::{
 };
 
 #[derive(Debug)]
-pub(in crate::domain_computation::primary_graph) struct CheckpointMetadataFunding {
+pub struct CheckpointMetadataFunding {
     held: ExecutionMemoryReservation,
 }
 impl CheckpointMetadataFunding {

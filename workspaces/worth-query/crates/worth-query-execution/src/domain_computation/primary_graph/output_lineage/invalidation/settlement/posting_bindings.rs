@@ -26,7 +26,7 @@ impl PostingBindings {
     }
 }
 
-pub(super) fn bind(
+pub fn bind(
     state: &mut MarkState,
     projection: &Arc<PostingProjection>,
     identity: &Arc<RecordedSettlementIdentity>,

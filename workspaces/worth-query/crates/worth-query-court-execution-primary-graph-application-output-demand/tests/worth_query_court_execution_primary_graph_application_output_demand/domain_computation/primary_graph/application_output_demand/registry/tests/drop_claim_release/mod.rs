@@ -17,7 +17,7 @@ pub fn stopped_ready() -> DemandState {
 fn registry_drop_closed_claim_release_is_two_rows_without_a_registry_pass() {
     let mut contacts = Vec::new();
     for neighbors in [1, 64] {
-        let registry = worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::WorthQueryOutputDemandRegistry::default();
+        let registry = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryOutputDemandRegistry::default();
         let old: Vec<_> = (1..=5).map(|slot| key("quota-chain", 1, slot)).collect();
         let mut state = registry.state.lock().unwrap();
         for (index, key) in old.iter().enumerate() {
@@ -46,12 +46,12 @@ fn registry_drop_closed_claim_release_is_two_rows_without_a_registry_pass() {
         retain_owned_key(&mut state, &old[0]);
         let wake = Arc::clone(&state.records[&old[0]].wake);
         drop(state);
-        let whole = worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::record_map::whole_rows().expect("bounded registry observation");
-        let occurrence = worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::record_map::occurrence_rows_visited();
+        let whole = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::record_map::whole_rows().expect("bounded registry observation");
+        let occurrence = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::record_map::occurrence_rows_visited();
         drop(interest(&registry, old[0].clone(), wake));
-        contacts.push(worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::record_map::occurrence_rows_visited() - occurrence);
+        contacts.push(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::record_map::occurrence_rows_visited() - occurrence);
         assert_eq!(
-            worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::record_map::whole_rows().expect("bounded registry observation"),
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::record_map::whole_rows().expect("bounded registry observation"),
             whole
         );
         let state = registry.state.lock().unwrap();

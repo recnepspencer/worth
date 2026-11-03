@@ -26,7 +26,7 @@ pub use worth_foundational::DeterminismContract;
 pub use worth_foundational::ExecutionBudget;
 pub use worth_foundational::ExecutionPosture;
 pub use worth_foundational::ExecutionRequestPolicy;
-pub use worth_query_execution::domain_computation::primary_graph::bootstrap_publication::identity_indexes_built;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::bootstrap_publication::identity_indexes_built;
 pub use worth_query_execution::facade::application_contribution::WorthQueryManagedComputationResourceDenial as Resource;
 pub use worth_query_execution::facade::application_contribution::WorthQueryMemoryLimitLevel;
 pub use worth_query_execution::facade::domain_computation::WorthQueryPrimaryGraphInstallationDenialKind;

@@ -10,7 +10,7 @@ fn a_consumer_handoff_ends_at_real_row_reclamation() {
     {
         let mut state = registry.state.lock().unwrap();
         let (posting, _cancellation) = state.reserve_settlement_vacancy(&identity).unwrap();
-        worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::settlement_index::SettlementIndex::fill_prepared(
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::settlement_index::SettlementIndex::fill_prepared(
             &posting,
             &identity,
             Arc::clone(&identity),

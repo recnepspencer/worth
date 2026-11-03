@@ -3,7 +3,7 @@
 use crate::domain_computation::primary_graph::tests::inbound_admission::fixture::installed_world;
 use crate::domain_computation::primary_graph::tests::inbound_admission::verifier::signed_envelope;
 use crate::domain_computation::primary_graph::tests::inbound_admission::verifier::signed_envelope_for_token;
-use worth_query_execution::domain_computation::application_aftermath::external_effect::inbound::custody::publication_permit::WorthQueryTransportPublicationPermitDenial;
+use worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::inbound::custody::publication_permit::WorthQueryTransportPublicationPermitDenial;
 use worth_query_execution::facade::domain_computation::WorthQueryExternalDispatchRequest;
 use worth_query_execution::facade::domain_computation::WorthQueryExternalEffectTransport;
 use worth_query_execution::facade::domain_computation::WorthQueryExternalTransportOutcome;

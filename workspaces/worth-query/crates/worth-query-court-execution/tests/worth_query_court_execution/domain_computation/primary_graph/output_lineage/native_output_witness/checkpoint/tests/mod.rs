@@ -1,30 +1,30 @@
 //! Recovered output expectations survive a change outside the source field.
 pub use std::sync::Arc;
 pub use worth_relational::facade::identity::EntityId;
-pub use worth_query_execution::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact as Fact;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact as Fact;
 pub use worth_relational::facade::identity::KindId;
-pub use worth_query_execution::domain_computation::primary_graph::application_attempt::fact::movement::Movement;
-pub use worth_query_execution::domain_computation::primary_graph::output_lineage::native_output_witness::PreparedNativeOutputWitness;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::movement::Movement;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::native_output_witness::PreparedNativeOutputWitness;
 pub use worth_relational::facade::runtime::RelationalRuntime;
-pub use worth_query_execution::domain_computation::primary_graph::output_lineage::native_output_witness::SealedNativeOutputWitness;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::native_output_witness::SealedNativeOutputWitness;
 pub use worth_relational::facade::snapshots::SnapshotHandle;
-pub use worth_query_execution::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondence;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondence;
 pub use worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture as WorthQueryApplicationOutputPosture;
-pub use worth_query_execution::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout;
-pub use worth_query_execution::domain_computation::primary_graph::output_lineage::native_output_witness::retirement;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::native_output_witness::retirement;
 pub use crate::domain_computation::primary_graph::output_lineage::native_output_witness::checkpoint::tests;
 
-pub use worth_query_execution::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryCheckpointOutputRole;
-pub use worth_query_execution::domain_computation::primary_graph::output_reuse::selection::compare_retained_output_dependencies;
-pub use worth_query_execution::domain_computation::primary_graph::output_reuse::selection::compare_retained_output_witness;
-pub use worth_query_execution::domain_computation::primary_graph::output_reuse::selection::OutputDependencySelection;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryCheckpointOutputRole;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_reuse::selection::compare_retained_output_dependencies;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_reuse::selection::compare_retained_output_witness;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_reuse::selection::OutputDependencySelection;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope;
 pub use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::tests::fixture::commit_snapshot_closeout::release_test_commit_snapshot;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::AccountLabel;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::AccountStatus;
 pub use worth_query_execution::facade::domain_computation::WorthQueryPrincipalResolutionMode;
-pub use worth_query_execution::equality_type_id::EqualityTypeId as TypeId;
+pub use worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId as TypeId;
 pub use crate::domain_computation::primary_graph::output_lineage::native_output_witness::checkpoint::tests::mutation::change_label;
 pub use crate::domain_computation::primary_graph::output_lineage::native_output_witness::checkpoint::tests::mutation::snapshot;
 pub use std::collections::BTreeMap;
@@ -180,7 +180,7 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
             .unwrap());
         let index = layout.equality_field(status_ref.entity(), status_ref.aspect(), status_ref.field())
             .unwrap().equality_index_id.unwrap();
-        let indexed = worth_query_execution::domain_computation::primary_graph::application_attempt::fact::indexed_entity_selection::observe_indexed_entity_selection(
+        let indexed = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::indexed_entity_selection::observe_indexed_entity_selection(
             runtime,&host_custody.borrowed_request_for_test(),  &before, index,
             runtime.read_truth() .read_exact_snapshot_live_entity_kind(request_execution, &before, entity).unwrap().unwrap(),
             planned_status.clone(), AspectValue::String("open".into()), 100_001,

@@ -7,7 +7,7 @@ mod partition;
 mod predicate;
 mod publication;
 mod reservation;
-mod subscription;
+pub(crate) mod subscription;
 pub(in crate::domain_computation::primary_graph) use subscription::WorthQueryLiveSubscriptionCapacityExhausted;
 mod testing;
 
@@ -44,7 +44,7 @@ use crate::domain_computation::primary_graph::WorthQueryCommittedProductPublicat
 const RETAINED_COMMIT_BATCH_CAPACITY: usize = 64;
 
 #[derive(Clone, Eq, Hash, Ord, PartialEq, PartialOrd)]
-struct WorthQueryLiveProductKey {
+pub struct WorthQueryLiveProductKey {
     branch: worth_runtime_world::facade::ProductBranchIdentity,
     incarnation: worth_runtime_world::facade::ProductBranchIncarnation,
 }
@@ -65,7 +65,7 @@ impl WorthQueryLiveProductKey {
     }
 }
 
-pub(in crate::domain_computation::primary_graph) struct WorthQueryLiveDeliverySource {
+pub struct WorthQueryLiveDeliverySource {
     state: Arc<Mutex<WorthQueryLiveDeliverySourceState>>,
     batch_capacity: AtomicUsize,
     after_reservation: Mutex<Option<Arc<dyn Fn() + Send + Sync>>>,

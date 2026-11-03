@@ -18,8 +18,8 @@ use worth_query_execution::facade::application_invariants::WorthQueryInvariantPr
 use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandDenialKind;
 use worth_query_execution::facade::domain_computation::WorthQueryPrincipalResolutionMode;
 use worth_query_execution::facade::domain_computation::WorthQueryProductQueryControls;
-use worth_query_execution::domain_computation::primary_graph::application_query;
-use worth_query_execution::domain_computation::primary_graph::root;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::root;
 use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::tests::application_attempt::invariant_walks::declared_queries::declarations::*;
 pub fn diamond(nodes: usize, blocked: Vec<u64>) -> World {
     crate::domain_computation::primary_graph::tests::application_attempt::invariant_walks::world::install(Graph {

@@ -26,9 +26,9 @@ use crate::domain_computation::{
     WorthQueryManagedTruthReadRequest,
 };
 
-pub(in super::super) mod progression;
+pub(crate) mod progression;
 
-pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) struct WorthQueryRunningApplicationCommit<
+pub struct WorthQueryRunningApplicationCommit<
     Schema,
     Operation,
     Input,

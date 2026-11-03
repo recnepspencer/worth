@@ -1,8 +1,8 @@
 //! Real issued sessions isolate the native snapshot and cached-root guards.
 
-use worth_query_execution::domain_computation::primary_graph::application_query::derived_view::reconstruction_denial as denial;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::derived_view::reconstruction_denial as denial;
 use worth_query_execution::facade::domain_computation::WorthQueryManagedDerivedViewDenial as Denial;
-use worth_query_execution::domain_computation::primary_graph::application_query::read_execution::read_plan::ReadPlan;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::read_execution::read_plan::ReadPlan;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::product_publication::publish_relational_mutation;

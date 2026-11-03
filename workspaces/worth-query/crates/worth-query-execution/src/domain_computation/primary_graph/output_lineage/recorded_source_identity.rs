@@ -1,5 +1,5 @@
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum RecordedSourceIdentity {
+pub enum RecordedSourceIdentity {
     Runtime(super::super::application_query::WorthQueryRuntimeSourceIdentity),
     Checkpoint(super::super::application_query::WorthQueryCheckpointSourceIdentity),
 }

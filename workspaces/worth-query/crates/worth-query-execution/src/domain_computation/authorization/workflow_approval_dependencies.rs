@@ -28,7 +28,7 @@ struct Dependencies {
 }
 
 #[derive(Clone)]
-pub(in crate::domain_computation) struct WorthQueryWorkflowApprovalDependencies {
+pub struct WorthQueryWorkflowApprovalDependencies {
     owned: Arc<OwnedDependencies>,
 }
 struct OwnedDependencies {

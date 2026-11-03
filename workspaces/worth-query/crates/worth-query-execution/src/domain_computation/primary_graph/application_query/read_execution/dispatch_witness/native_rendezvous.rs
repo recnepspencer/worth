@@ -34,7 +34,7 @@ struct NativeState {
     initial_acquisitions: Option<u64>,
     exit_acquisitions: Vec<(EntityId, u64)>,
 }
-pub(in crate::domain_computation::primary_graph) struct NativeReadRendezvousGuardForTest {
+pub struct NativeReadRendezvousGuardForTest {
     witness: Arc<DispatchWitness>,
     gate: Arc<NativeReadRendezvous>,
     previous: Option<Arc<dyn NativeReadRendezvousControl>>,

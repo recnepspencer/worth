@@ -8,7 +8,7 @@ use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 
 /// No driver can mint this from a dependency name, level or readiness flag.
 /// The pinned projection remains in owner completion while this token travels.
-pub(in crate::domain_computation::primary_graph) struct PreparedRequiredInputs {
+pub struct PreparedRequiredInputs {
     runtime: u64,
     root: u64,
     owner: WorthQueryOutputDemandRegistry,

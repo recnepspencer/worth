@@ -179,7 +179,7 @@ fn root_path_guard_reads_its_pinned_truth_version() {
         .expect("the fixture read owns its installed host call");
     assert!(matches!(
         unavailable_currentness.unwrap(),
-        Err(worth_query_execution::domain_computation::primary_graph::application_attempt::fact::source_currentness::WorthQuerySourceCurrentnessFailure::Unavailable)
+        Err(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::source_currentness::WorthQuerySourceCurrentnessFailure::Unavailable)
     ), "an unavailable restored field revision must preserve its typed verification failure");
     world
         .application

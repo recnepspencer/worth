@@ -11,7 +11,7 @@ use crate::domain_computation::primary_graph::application_checkpoint::facts::{
 /// Retained postconditions have no slice projection or Deref. Only the one
 /// computation-current door can expose them for comparison.
 #[derive(Clone, Debug)]
-pub(in crate::domain_computation::primary_graph) struct RetainedSourceFacts {
+pub struct RetainedSourceFacts {
     source: ComputationSourceEvidence,
     facts: FactPayload,
     payload_bytes: Option<u64>,

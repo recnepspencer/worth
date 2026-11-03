@@ -1,12 +1,12 @@
 //! Registry claim mechanics over real committed receipts and prepaid cells.
 //! Row replacement and stop schedules are assigned directly; this is not a
 //! producer execution or World publication fixture.
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::progression::checkpoint_finish::CheckpointFinishStop;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::ready_backing::PreparedReadyBacking;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint as Checkpoint;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::advance_admission::WorthQueryOutputDemandAdvanceAdmission as Admission;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputProgress;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryPendingOutputDelivery;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::progression::checkpoint_finish::CheckpointFinishStop;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::ready_backing::PreparedReadyBacking;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint as Checkpoint;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::advance_admission::WorthQueryOutputDemandAdvanceAdmission as Admission;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputProgress;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryPendingOutputDelivery;
 use crate::domain_computation::primary_graph::application_output_demand::registry::tests::*;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitReceipt;
 
@@ -35,7 +35,7 @@ pub fn insert(
 pub fn claim(
     registry: &WorthQueryOutputDemandRegistry,
     owner: &WorthQueryOutputDemandInterest,
-) -> (worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputClaimIdentity, Checkpoint){
+) -> (worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputClaimIdentity, Checkpoint){
     match registry.begin(owner) {
         Admission::AdvanceCheckpoint { claim, checkpoint } => (claim, checkpoint),
         _ => panic!("real checkpoint is claimable"),
@@ -174,7 +174,7 @@ fn cleanup_claim_keeps_the_original_stop_and_refuses_a_second_borrow() {
         let state = registry.state.lock().unwrap();
         assert!(matches!(
             state.records[&key].idle_disposition(false),
-            worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::disposition::IdleRowDisposition::InFlight
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::disposition::IdleRowDisposition::InFlight
         ));
     }
     assert!(

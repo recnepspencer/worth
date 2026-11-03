@@ -12,7 +12,7 @@ use std::sync::Weak;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 use worth_relational::facade::publication::PatchStreamPosition;
 use worth_relational::facade::runtime::PositionedRelationalSnapshot;
-mod marking;
+pub(crate) mod marking;
 mod reclamation;
 mod registration;
 use reclamation::QueryReadBacking;
@@ -38,7 +38,7 @@ pub(in crate::domain_computation::primary_graph) struct QueryFactCoverage {
     slot: Mutex<Option<u64>>,
 }
 #[derive(Clone, Debug)]
-pub(super) struct QueryReadBinding {
+pub struct QueryReadBinding {
     projection: QueryReadBacking,
     identity: Weak<QueryReadIdentity>,
     established: Option<PatchStreamPosition>,

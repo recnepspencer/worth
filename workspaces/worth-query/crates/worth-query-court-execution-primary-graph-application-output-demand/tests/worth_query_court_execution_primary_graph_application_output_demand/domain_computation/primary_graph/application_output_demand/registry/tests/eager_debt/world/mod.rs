@@ -1,15 +1,15 @@
 //! Real publication and scope provenance; plain shapes are shared with the model.
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::BoundOutputSource;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::source_custody::PreparedOutputRootKind;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::SourceCustody;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::BoundOutputSource;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::source_custody::PreparedOutputRootKind;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::SourceCustody;
 use crate::domain_computation::primary_graph::application_output_demand::registry::tests::eager_debt::*;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture;
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::recoverable_commit_support;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitReceipt;
-use worth_query_execution::equality_type_id::EqualityTypeId;
+use worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId;
 use worth_runtime_world::facade::CompositeCommitIdentity;
 pub struct Context {
-    pub source: worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::WorthQueryPerformedOutputDemandSource,
+    pub source: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryPerformedOutputDemandSource,
     pub completed: WorthQueryApplicationCommitReceipt,
     pub scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding,
     pub ready: DemandState,
@@ -29,7 +29,7 @@ impl Context {
             .committed_product_publication()
             .take_output_demand_observation()
             .unwrap();
-        let source = worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::WorthQueryPerformedOutputDemandSource {
+        let source = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryPerformedOutputDemandSource {
             receipt,
             change,
             observation,
@@ -306,7 +306,7 @@ impl<'a> World<'a> {
                 None,
                 self.context.scope,
                 occurrence(),
-                worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::DemandAdmissionKind::Ordinary,
+                worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandAdmissionKind::Ordinary,
                 None,
                 None,
             )
@@ -344,12 +344,12 @@ pub fn copy_ready(ready: &DemandState) -> DemandState {
     let DemandState::Output(output) = ready else {
         panic!("Ready fixture")
     };
-    let Some(worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint::Ready(completion)) =
+    let Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint::Ready(completion)) =
         &output.checkpoint
     else {
         panic!("Ready fixture")
     };
-    DemandState::Output(worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputProgress::new(
-        worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint::Ready(completion.clone()),
+    DemandState::Output(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputProgress::new(
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint::Ready(completion.clone()),
     ))
 }

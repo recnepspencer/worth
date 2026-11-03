@@ -1,7 +1,7 @@
 use worth_query_execution::facade::domain_computation::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
-use worth_query_execution::domain_computation::execution_runtime::product_world::activation::denial::WorthQueryProductActivationDenial;
-use worth_query_execution::domain_computation::execution_runtime::product_world::activation::registry::WorthQueryProductActivationRegistry;
-use worth_query_execution::domain_computation::execution_runtime::product_world::resources::test_product_world_resources;
+use worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::activation::denial::WorthQueryProductActivationDenial;
+use worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::activation::registry::WorthQueryProductActivationRegistry;
+use worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::resources::test_product_world_resources;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;
 
 #[test]

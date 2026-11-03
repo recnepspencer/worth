@@ -35,7 +35,7 @@ use super::post_commit::discovery;
 /// Returned by a settlement publication. Retiring needs the newest row
 /// registered with the invalidation owner, so the publisher calls it after.
 #[must_use = "superseded settlements stay retained until retired"]
-pub(in crate::domain_computation::primary_graph) struct SupersededSettlements {
+pub struct SupersededSettlements {
     registry: WorthQueryOutputDemandRegistry,
     key: Arc<WorthQueryOutputDemandKey>,
 }

@@ -6,7 +6,7 @@ use crate::domain_computation::application_aftermath::{
 use worth_relational::facade::transactions::{CommitResult, RecordRef};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) struct WorthQueryCommittedDispatchOutboxBinding {
+pub struct WorthQueryCommittedDispatchOutboxBinding {
     record: WorthQueryDispatchOutboxRecord,
     record_ref: RecordRef,
 }

@@ -21,7 +21,7 @@ pub(crate) struct WorthQueryProviderSessionAffinity<'run> {
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub(in crate::domain_computation) struct WorthQueryProviderSessionAffinityIdentity(u64);
+pub struct WorthQueryProviderSessionAffinityIdentity(u64);
 
 impl WorthQueryProviderSessionAffinityIdentity {
     pub(super) fn from_token(token: &WorthQueryProviderSessionToken) -> Self {

@@ -1,7 +1,7 @@
 //! Native occurrence-owner evidence; producer entry propagation is tested separately.
 
-use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::program_occurrence_gate::require_occurrence_acts_through;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::program_occurrence_gate::resolve_occurrence_program;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::program_occurrence_gate::require_occurrence_acts_through;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::program_occurrence_gate::resolve_occurrence_program;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::program_fixture::admitted_operation;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::authenticated_principal;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::resolved_account;

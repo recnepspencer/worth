@@ -7,7 +7,7 @@ use worth_foundational::ExecutionPhysicalReport;
 use worth_foundational::ExecutionPosture;
 use worth_foundational::ExecutionReport;
 use worth_foundational::PartitionIdentity;
-use worth_query_execution::domain_computation::primary_graph::resolution_denial::query_read_resolution_denial;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::resolution_denial::query_read_resolution_denial;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationAttemptDenial;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationAttemptDenialKind;
 use worth_query_execution::facade::domain_computation::WorthQueryPrincipalResolutionDenialKind;

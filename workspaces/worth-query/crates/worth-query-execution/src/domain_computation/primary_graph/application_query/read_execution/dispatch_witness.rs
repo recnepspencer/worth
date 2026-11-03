@@ -5,11 +5,11 @@ use std::{
     time::{Duration, Instant},
 };
 use worth_relational::facade::identity::EntityId;
-mod native_rendezvous;
+pub(crate) mod native_rendezvous;
 pub(in crate::domain_computation::primary_graph) use native_rendezvous::NativeReadRendezvousGuardForTest;
 thread_local! { static ACTIVE: RefCell<Option<Arc<DispatchWitness>>> = const { RefCell::new(None) }; }
 #[derive(Default)]
-pub(in crate::domain_computation::primary_graph) struct DispatchWitness {
+pub struct DispatchWitness {
     state: Mutex<State>,
     finished: Condvar,
     native_reads: Mutex<Option<Arc<dyn native_rendezvous::NativeReadRendezvousControl>>>,
@@ -29,12 +29,12 @@ struct State {
     map_prefix: usize,
 }
 #[derive(Clone, Debug)]
-pub(in crate::domain_computation::primary_graph) struct InterruptionPoint {
+pub struct InterruptionPoint {
     pub(in crate::domain_computation::primary_graph) root: EntityId,
     pub(in crate::domain_computation::primary_graph) completed: Vec<EntityId>,
     pub(in crate::domain_computation::primary_graph) fresh: bool,
 }
-pub(in crate::domain_computation::primary_graph) enum Interrupt {
+pub enum Interrupt {
     Cancel {
         root: EntityId,
         earlier: Vec<EntityId>,

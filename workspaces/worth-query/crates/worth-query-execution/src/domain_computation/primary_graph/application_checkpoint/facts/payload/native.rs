@@ -16,7 +16,7 @@ enum BuildStage {
     Postcommit,
 }
 
-pub(in crate::domain_computation::primary_graph) struct NativeFactPayloadBuilder {
+pub struct NativeFactPayloadBuilder {
     chunks: AuthorSlots<ExecutionArrayBuilder<Fact>>,
     joins: AuthorSlots<ExecutionArrayBuilder<FactPayload>>,
     roots: AuthorSlots<FactPayload>,

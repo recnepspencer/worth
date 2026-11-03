@@ -37,7 +37,7 @@ impl<Query> RetainedOutputReadmissionSource<Query> {
 
 /// Erasure transports an owner-issued source to its installed typed executor.
 /// It does not authorize a read, a branch selection, or producer execution.
-pub(in crate::domain_computation::primary_graph) struct RequiredOutputReadmission {
+pub struct RequiredOutputReadmission {
     pub(in crate::domain_computation::primary_graph) source: Arc<dyn Any + Send + Sync>,
     /// Transport the immutable installed entry selected for this exact row.
     /// The typed demand validates its family and identity after downcasting.

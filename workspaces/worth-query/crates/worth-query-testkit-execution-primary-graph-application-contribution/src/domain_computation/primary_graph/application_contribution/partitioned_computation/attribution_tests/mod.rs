@@ -30,7 +30,7 @@ use worth_query_execution::facade::application_contribution::WorthQueryComputati
 use worth_query_execution::facade::application_contribution::WorthQueryDeterministicReducer;
 use worth_query_execution::facade::application_contribution::WorthQueryInstalledPartitionedComputation;
 use worth_query_execution::facade::application_contribution::WorthQueryPartitionedComputationOwner;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::computation_routing::ComputationFactReaders;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::computation_routing::ComputationFactReaders;
 use crate::domain_computation::primary_graph::tests::application_attempt::authenticated_principal;
 use crate::domain_computation::primary_graph::tests::application_attempt::resolved_account;
 use crate::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;
@@ -232,7 +232,7 @@ pub fn routed(
                     status,
                     gathered: Mutex::default(),
                 },
-                worth_query_execution::domain_computation::primary_graph::application_contribution::partitioned_computation::installed::ComputationRetention::Unretained,
+                worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::installed::ComputationRetention::Unretained,
             );
             let (_, projection, _) = world
                 .invariant

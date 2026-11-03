@@ -79,7 +79,7 @@ impl WorthQueryOutputDemandRegistry {
 
 /// A row its owner still holds after a newer source of its occurrence
 /// replaced it. The owner rejoins on its next advance.
-pub(super) fn superseded(record: &DemandRecord) -> bool {
+pub fn superseded(record: &DemandRecord) -> bool {
     match &record.state {
         DemandState::Output(output) => matches!(
             &output.advancement(),
@@ -102,7 +102,7 @@ pub(super) fn superseded(record: &DemandRecord) -> bool {
 /// one that ends first gives the occurrence back to this row.
 /// Charge only the occurrence-local rows actually inspected. A row that is
 /// already required does not need this traversal at all.
-pub(super) fn awaited_by_stale_owner(
+pub fn awaited_by_stale_owner(
     records: &super::record_map::DemandRecords,
     key: &WorthQueryOutputDemandKey,
 ) -> bool {
@@ -153,7 +153,7 @@ pub(super) fn replaced_under_refresh(
 
 /// The newest row of `key`'s occurrence. A closing stale owner of `key` may
 /// have been the last one awaiting it.
-pub(super) fn newest_of_occurrence(
+pub fn newest_of_occurrence(
     records: &super::record_map::DemandRecords,
     key: &WorthQueryOutputDemandKey,
 ) -> Option<WorthQueryOutputDemandKey> {
@@ -162,7 +162,7 @@ pub(super) fn newest_of_occurrence(
 }
 
 /// Incomparable bindings never become a successor through iteration order.
-pub(super) fn newest_lawful_successor<'keys>(
+pub fn newest_lawful_successor<'keys>(
     keys: impl Iterator<Item = &'keys WorthQueryOutputDemandKey>,
     predecessor: &WorthQueryOutputDemandKey,
 ) -> Option<&'keys WorthQueryOutputDemandKey> {
@@ -207,7 +207,7 @@ fn newest_matching_key<'keys, R>(
 /// How `row` orders against `other` among the rows of one occurrence. A
 /// refreshed Stable alias keeps its semantic source and takes the newer
 /// observation, so two rows of one semantic source order by generation.
-pub(super) fn refresh_order(
+pub fn refresh_order(
     row: &WorthQueryOutputDemandKey,
     other: &WorthQueryOutputDemandKey,
 ) -> Option<Ordering> {
@@ -222,7 +222,7 @@ pub(super) fn refresh_order(
 
 /// The rows of `key`'s occurrence. Keys order by family and source occurrence
 /// before generation, so they are the contiguous run of rows around `key`.
-pub(super) fn occurrence_rows<'a>(
+pub fn occurrence_rows<'a>(
     records: &'a super::record_map::DemandRecords,
     key: &'a WorthQueryOutputDemandKey,
 ) -> impl Iterator<Item = (&'a WorthQueryOutputDemandKey, &'a DemandRecord)> + use<'a> {

@@ -5,12 +5,12 @@ use worth_relational::facade::identity::EntityId;
 use worth_relational::facade::identity::KindId;
 use worth_relational::facade::identity::PartitionId;
 
-use worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::computation_routing::ComputationFactAttribution;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::computation_routing::ComputationFactReaders;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::computation_routing::ComputationRead;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::computation_routing::SealedComputationFacts;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationFactKey;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::computation_routing::ComputationFactAttribution;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::computation_routing::ComputationFactReaders;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::computation_routing::ComputationRead;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::computation_routing::SealedComputationFacts;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationFactKey;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact;
 
 pub fn entity(slot: u64) -> EntityId {
     EntityId::new(PartitionId::main(), slot, 1)
@@ -54,7 +54,7 @@ fn every_consuming_partition_survives_in_the_facts_reverse_index() {
         WorthQueryApplicationFactKey::Adjacency {
         relation: "owner".into(),
         anchor: entity(1),
-        direction: worth_query_execution::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationAdjacencyDirection::Incoming,
+        direction: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationAdjacencyDirection::Incoming,
         maximum_work_units: limit,
     }
     };
@@ -75,7 +75,7 @@ fn every_consuming_partition_survives_in_the_facts_reverse_index() {
         WorthQueryApplicationObservedFact::Adjacency {
             relation_kind: KindId::new(3),
             anchor: entity(1),
-            direction: worth_query_execution::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationAdjacencyDirection::Incoming,
+            direction: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationAdjacencyDirection::Incoming,
             maximum_work_units: 9,
             relations: Vec::new(),
         },
@@ -252,9 +252,9 @@ fn ordinal_alignment_includes_handler_gaps_and_retains_shared_call_keys() {
 
 #[test]
 fn completion_metadata_retains_the_exact_original_pre_effect_payload() {
-    use worth_query_execution::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl;
-    use worth_query_execution::domain_computation::primary_graph::application_checkpoint::facts::payload::FactPayload;
-    use worth_query_execution::domain_computation::primary_graph::application_checkpoint::facts::payload::native::NativeFactPayloadBuilder;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::payload::FactPayload;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::payload::native::NativeFactPayloadBuilder;
     let observed: BTreeMap<_, _> = (1..=5)
         .map(|slot| {
             (

@@ -1,5 +1,5 @@
 //! Sealed computes travel; producer completion and publication stay on the owner.
-pub(in crate::domain_computation::primary_graph::application_contribution::producer) mod canonical_apply;
+pub(crate) mod canonical_apply;
 use super::*;
 use crate::domain_computation::primary_graph::application_contribution::computation::prepared_request::ComputedSlot;
 use crate::domain_computation::primary_graph::application_contribution::computation::prepared_request::PreparedCompute;
@@ -11,7 +11,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
 type OwnerCallback<'owner, Value, Stop> =
     Box<dyn FnOnce(Vec<ComputedSlot>) -> Result<Value, Stop> + 'owner>;
 
-pub(in crate::domain_computation::primary_graph) struct OwnerPlan<'owner, Value, Stop> {
+pub struct OwnerPlan<'owner, Value, Stop> {
     requests: Vec<PreparedCompute>,
 
     inputs: Option<

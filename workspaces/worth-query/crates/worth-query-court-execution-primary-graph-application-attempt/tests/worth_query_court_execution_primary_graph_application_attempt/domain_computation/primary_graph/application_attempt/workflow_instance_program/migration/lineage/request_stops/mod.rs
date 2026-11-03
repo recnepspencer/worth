@@ -1,4 +1,4 @@
-use worth_query_execution::domain_computation::primary_graph::application_attempt::workflow_instance_program::migration::lineage::successor_identity;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow_instance_program::migration::lineage::successor_identity;
     use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;
 #[test]
 fn successor_read_keeps_cancellation_at_the_native_frontier() {

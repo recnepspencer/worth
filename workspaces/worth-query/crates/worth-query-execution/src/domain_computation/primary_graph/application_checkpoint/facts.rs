@@ -17,14 +17,14 @@ use worth_relational::facade::runtime::RelationalFieldRevision;
 
 use super::CheckpointCursor;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact as Fact;
-mod fact_decode_denial;
+pub(crate) mod fact_decode_denial;
 pub(in crate::domain_computation::primary_graph) use fact_decode_denial::FactDecodeDenial;
 mod aspect_presence;
-mod encoding;
+pub(crate) mod encoding;
 mod indexed_selection;
 pub(in crate::domain_computation::primary_graph) use encoding::encode_funded;
 use encoding::FactBytes;
-mod payload;
+pub(crate) mod payload;
 mod record;
 
 pub(in crate::domain_computation::primary_graph) use payload::CodecPayloadReservation;
@@ -45,8 +45,8 @@ pub(in crate::domain_computation::primary_graph) use stream::FactDecoder;
 /// missing field within a present aspect. Version12 joins that meaning with
 /// the independently tracked aspect-presence predicate at distinct tag11.
 /// Displaced inner versions10/11 are unsupported.
-pub(in crate::domain_computation::primary_graph) const WIRE_VERSION: u16 = 12;
-pub(super) const MAXIMUM_FACT_BYTES: usize = 16 * 1024 * 1024;
+pub const WIRE_VERSION: u16 = 12;
+pub const MAXIMUM_FACT_BYTES: usize = 16 * 1024 * 1024;
 // SourceEntity is the smallest current fact: one tag and a 16-byte EntityId.
 const MINIMUM_FACT_WIRE_BYTES: usize = 17;
 const MAXIMUM_SET_ENTITIES: usize = 4096;
@@ -199,7 +199,7 @@ fn write_facts(facts: &(impl FactSequence + ?Sized), bytes: &mut impl FactBytes)
     Some(())
 }
 
-pub(in crate::domain_computation::primary_graph) fn decode(
+pub fn decode(
     bytes: &[u8],
     request: Option<
         &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,

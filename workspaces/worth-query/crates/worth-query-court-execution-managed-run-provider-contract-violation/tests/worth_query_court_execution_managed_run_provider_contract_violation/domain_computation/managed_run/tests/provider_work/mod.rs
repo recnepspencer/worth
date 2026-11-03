@@ -11,7 +11,7 @@ use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_co
 use crate::process::domain_computation::managed_run::tests::*;
 #[test]
 fn bounded_provider_steps_stream_exact_terminal_work_evidence() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -117,7 +117,7 @@ fn bounded_provider_steps_stream_exact_terminal_work_evidence() {
 }
 #[test]
 fn provider_failure_preserves_governed_work_and_recovery_authority() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 

@@ -13,7 +13,7 @@ use worth_relational::facade::snapshots::SnapshotHandle;
 
 /// Only a performed record that actually retained a computation requests tracking.
 #[derive(Clone, Copy)]
-pub(in crate::domain_computation::primary_graph) struct ComputationRegistration(());
+pub struct ComputationRegistration(());
 impl ComputationRegistration {
     pub(in crate::domain_computation::primary_graph::output_lineage) fn retained() -> Self {
         Self(())

@@ -16,7 +16,7 @@ use super::publication_denial::{
 use super::WorthQueryProductPublicationBinding;
 
 #[must_use = "a prepared product publication owns a reserved World attempt"]
-pub(crate) struct WorthQueryPreparedProductPublication {
+pub struct WorthQueryPreparedProductPublication {
     publication: RuntimeWorldPublicationPort<(), (), (), (), ()>,
     prepared: PreparedCompositePublicationWithoutSignal,
     control: WorthQueryProductPublicationRequestControl,

@@ -1,7 +1,7 @@
 use worth_relational::facade::runtime::RelationalRuntime;
 use worth_relational::facade::snapshots::SnapshotHandle;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::fact::workflow_history_basis::WorkflowHistoryRequirement;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::fact::workflow_history_basis::remains_equal;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::workflow_history_basis::WorkflowHistoryRequirement;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::workflow_history_basis::remains_equal;
 use worth_relational::facade::history::BranchId;
 use worth_relational::facade::identity::EntityId;
 use worth_relational::facade::identity::KindId;
@@ -141,7 +141,7 @@ fn history_basis_requires_same_owner_branch_version_and_live_candidate() {
         },
         1
     ));
-    worth_query_execution::relational_snapshot_release::release_query_snapshot(
+    worth_query_execution::court_doors_for_test::relational_snapshot_release::release_query_snapshot(
         &mut runtime,
         &second_lease,
     );
@@ -163,30 +163,30 @@ fn history_basis_requires_same_owner_branch_version_and_live_candidate() {
     ));
     // An invalid lease must be distinguished before reading any anchor.
     assert_eq!(
-        worth_query_execution::domain_computation::primary_graph::application_attempt::fact::adjacency::observe_adjacency_checked(
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::adjacency::observe_adjacency_checked(
             &runtime,
             execution,
             &second_lease,
             KindId::new(1),
             EntityId::new(PartitionId::main(), 0, 1),
-            worth_query_execution::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationAdjacencyDirection::Outgoing,
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationAdjacencyDirection::Outgoing,
             0,
         ),
-        Err(worth_query_execution::domain_computation::primary_graph::application_attempt::fact::adjacency::AdjacencyObservationDenial::SnapshotUnavailable)
+        Err(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::adjacency::AdjacencyObservationDenial::SnapshotUnavailable)
     );
-    worth_query_execution::relational_snapshot_release::release_query_snapshot(
+    worth_query_execution::court_doors_for_test::relational_snapshot_release::release_query_snapshot(
         &mut runtime,
         &first,
     );
-    worth_query_execution::relational_snapshot_release::release_query_snapshot(
+    worth_query_execution::court_doors_for_test::relational_snapshot_release::release_query_snapshot(
         &mut runtime,
         &changed,
     );
-    worth_query_execution::relational_snapshot_release::release_query_snapshot(
+    worth_query_execution::court_doors_for_test::relational_snapshot_release::release_query_snapshot(
         &mut runtime,
         &fork_snapshot,
     );
-    worth_query_execution::relational_snapshot_release::release_query_snapshot(
+    worth_query_execution::court_doors_for_test::relational_snapshot_release::release_query_snapshot(
         &mut foreign,
         &foreign_snapshot,
     );

@@ -1,4 +1,4 @@
-use worth_query_execution::domain_computation::execution_runtime::product_world::publication_denial::WorthQueryProductPublicationDenial as PublicationDenial;
+use worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::publication_denial::WorthQueryProductPublicationDenial as PublicationDenial;
 use std::time::Duration;
 use std::time::Instant;
 
@@ -28,7 +28,7 @@ fn cancellation_after_world_preparation_reaches_execution_before_owner_effects()
     );
 
     cancellation.cancel();
-    let outcome = worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|phase| {
+    let outcome = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|phase| {
         prepared.execute(phase.borrowed_request_for_test())
     });
     let Err(PublicationDenial::Stopped(stop)) = outcome else {

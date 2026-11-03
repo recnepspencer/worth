@@ -1,5 +1,5 @@
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(super) struct WorthQueryInvariantProjectionWorkBudget {
+pub struct WorthQueryInvariantProjectionWorkBudget {
     remaining: Option<usize>,
     exceeded: bool,
     overflowed: bool,

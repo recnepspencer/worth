@@ -62,7 +62,7 @@ fn an_upstream_retired_after_the_execution_read_it_is_a_retryable_stale_claim() 
     let reader = required_interest(&registry, reader_key, wake);
     let resources = WorthQueryInvalidationResources::new();
     let source_owner =
-        worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::owner::SourceInvalidationOwner::new(
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::owner::SourceInvalidationOwner::new(
             resources, 1,
         );
 
@@ -89,7 +89,7 @@ fn an_upstream_retired_after_the_execution_read_it_is_a_retryable_stale_claim() 
                 .unwrap();
             Arc::new(runtime.read_truth().positioned_snapshot(&snapshot).unwrap())
         });
-    let consumed = worth_query_execution::domain_computation::primary_graph::invariant_projection::consumed_output::ConsumedOutputEvidence::retained_for_test(retired, Arc::from([]), Vec::new(), None, selected);
+    let consumed = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::consumed_output::ConsumedOutputEvidence::retained_for_test(retired, Arc::from([]), Vec::new(), None, selected);
     let stop = context
         .prepare_prerequisites(std::iter::once(&consumed), &source_owner)
         .err()

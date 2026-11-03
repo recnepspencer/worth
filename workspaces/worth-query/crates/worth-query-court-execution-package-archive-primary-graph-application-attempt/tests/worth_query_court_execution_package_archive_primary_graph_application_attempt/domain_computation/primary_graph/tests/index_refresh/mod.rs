@@ -32,7 +32,7 @@ fn bootstrap_seeds_exact_workflow_transition_lookup_before_any_settlement() {
         assert!(runtime.index_access().read_published_generation_for_observation(&execution,
             transition.identity_index_id, &basis.observation(),
         ).unwrap().is_some(), "bootstrap must seed the exact installed transition index");
-        let snapshot = worth_query_execution::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(runtime, &basis).unwrap();
+        let snapshot = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(runtime, &basis).unwrap();
         let request = BoundedEntityFieldLookupRequest::new(
             snapshot.clone(), transition.identity_index_id, transition.entity_kind,
             transition.identity.clone(), AspectValue::String(InternedString::Raw("unsettled-operation".to_owned())), 2,
@@ -42,7 +42,7 @@ fn bootstrap_seeds_exact_workflow_transition_lookup_before_any_settlement() {
         ).expect("an absent settlement is a lawful empty lookup, not an unavailable generation");
         assert!(outcome.candidate_entity_ids().is_empty());
         assert!(!outcome.overflowed());
-        worth_query_execution::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
+        worth_query_execution::court_doors_for_test::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
     });
 }
 #[test]
@@ -177,7 +177,7 @@ fn captured_before_root_with_missing_generation_uses_explicit_cold_fallback() {
             .expect("index fixture has identity capacity");
         let committed = commit_empty(execution, runtime, "main");
         let (_, basis) = runtime.observe_branch(&identity).unwrap();
-        let refreshed = worth_query_execution::domain_computation::primary_graph::index_maintenance_budget::refresh_with_cold_fallback(
+        let refreshed = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::index_maintenance_budget::refresh_with_cold_fallback(
             execution,
             runtime,
             DerivedIndexBuildRequest {

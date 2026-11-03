@@ -1,4 +1,4 @@
-use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::registered::WorthQueryRegisteredProviderAttempt;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::registered::WorthQueryRegisteredProviderAttempt;
 use crate::domain_computation::primary_graph::tests::fixture::authorization_world_installation::AuthorizationWorld;
 use worth_query_execution::facade::domain_computation::WorthQueryDecisionReadSetFreshnessOutcome;
 use worth_query_execution::facade::domain_computation::WorthQueryProvisionalEffectProgramView;
@@ -14,7 +14,7 @@ pub fn assert_second_real_overlay_is_rejected(
         steps,
         dispatch_outbox: _dispatch_outbox,
     } = registered;
-    let control = worth_query_execution::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new(
+    let control = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new(
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         None,
     );

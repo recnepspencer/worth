@@ -37,7 +37,7 @@ fn non_governed_capability_rejects_an_elevation_selector() {
         .expect("fixture elevation identity must encode"),
     ));
 
-    let denial = worth_query_execution::domain_computation::authorization::capability_elevation_projection::validate_elevation_projection(
+    let denial = worth_query_execution::court_doors_for_test::domain_computation::authorization::capability_elevation_projection::validate_elevation_projection(
         capability.contract(),
         &projection,
     )

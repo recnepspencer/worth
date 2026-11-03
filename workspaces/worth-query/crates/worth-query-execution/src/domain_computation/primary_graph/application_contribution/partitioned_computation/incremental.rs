@@ -21,20 +21,20 @@
 //! combines of the run's own tree, so a ceiling names the partition a full
 //! run would name.
 
-mod carriage;
+pub(crate) mod carriage;
 mod item_bounds;
-mod native_reads;
+pub(crate) mod native_reads;
 mod prepare_ranges;
 mod prepare_rekeys;
 pub(in crate::domain_computation::primary_graph) use native_reads::NativeComputationReads;
 mod deposit;
-mod next_tree;
-mod observed;
+pub(crate) mod next_tree;
+pub(crate) mod observed;
 pub use observed::full_partitioned_computation_preparations_on_this_thread_for_test;
 pub(super) use observed::observe_full_preparation;
 mod prepare;
 use super::preparation_work::PreparationWork;
-mod prior_absence;
+pub(crate) mod prior_absence;
 mod published_state;
 pub(in crate::domain_computation) use published_state::observe_discarded;
 pub(in crate::domain_computation::primary_graph) use published_state::observe_published;
@@ -44,9 +44,9 @@ pub use published_state::{
     WorthQueryPublishedComputationStateForTest,
 };
 mod carried_partitions;
-mod partition_metadata;
-mod recording;
-mod retained;
+pub(crate) mod partition_metadata;
+pub(crate) mod recording;
+pub(crate) mod retained;
 mod sealing;
 mod typed_prior;
 pub(in crate::domain_computation::primary_graph) use deposit::ComputationDeposit;
@@ -54,11 +54,11 @@ pub(in crate::domain_computation::primary_graph) use prior_absence::CompletedCom
 pub(in crate::domain_computation) use prior_absence::{
     PriorAbsence, SealedComputationRetention, Suppression,
 };
-mod tree_attempt;
+pub(crate) mod tree_attempt;
 mod tree_edits;
 mod tree_membership;
-mod tree_report;
-mod tree_update;
+pub(crate) mod tree_report;
+pub(crate) mod tree_update;
 pub(in super::super) use observed::observe_retained_full_tree;
 pub use observed::partitioned_computation_tree_work_on_this_thread_for_test;
 pub use tree_report::{
@@ -121,7 +121,7 @@ pub(super) enum Begun<Key, Item, Reduced> {
 }
 
 /// The basis a full run retains its state under, opaque outside this module.
-pub(super) struct RetainedBasisToken(RetainedBasis);
+pub struct RetainedBasisToken(RetainedBasis);
 
 /// A comparison of a retained run under the same basis: which of its calls
 /// read a fact that moved, and the facts each call read.

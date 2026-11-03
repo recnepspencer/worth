@@ -1,12 +1,12 @@
 //! Lifecycle order does not collapse exact rows or cross output families.
 
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::demand_key::WorthQueryOutputDemandKey;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::demand_key::WorthQueryOutputDemandKey;
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::demand_key::family_declarations;
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::demand_key::initial;
 
 use crate::domain_computation::primary_graph::application_output_demand::registry::tests::*;
 use std::cmp::Ordering;
-use worth_query_execution::equality_type_id::EqualityTypeId as TypeId;
+use worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId as TypeId;
 use worth_query_execution::facade::application_contribution::WorthQueryProducerApplicability;
 use worth_query_execution::facade::application_contribution::WorthQueryProducerLifecyclePosture;
 #[test]
@@ -68,7 +68,7 @@ fn incomparable_preserve_bindings_do_not_pick_a_successor_by_iteration_order() {
     let mut right = left.clone();
     right.producer = "right-preserve".into();
     for candidates in [[&left, &right], [&right, &left]] {
-        assert!(worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::refreshed_rejoin::newest_lawful_successor(
+        assert!(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::refreshed_rejoin::newest_lawful_successor(
             candidates.into_iter(),
             &initial
         )
@@ -79,7 +79,7 @@ fn incomparable_preserve_bindings_do_not_pick_a_successor_by_iteration_order() {
 fn family_scope_profile_and_source_movement_do_not_forge_a_successor() {
     let initial = initial();
     let mut foreign = initial.clone();
-    foreign.family = worth_query_execution::domain_computation::primary_graph::output_family_identity::OutputFamilyIdentity::declared("other-output-family");
+    foreign.family = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_family_identity::OutputFamilyIdentity::declared("other-output-family");
     assert!(!initial.same_occurrence(&foreign));
     assert!(!initial.same_semantic_source(&foreign));
     assert_eq!(initial.replacement_order(&foreign), None);

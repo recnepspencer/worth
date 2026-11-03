@@ -1,5 +1,5 @@
-use worth_query_execution::domain_computation::primary_graph::conditional_operation::clock_observation::erased::ErasedClockObservationOutcome;
-use worth_query_execution::domain_computation::primary_graph::conditional_operation::clock_observation::erased::ErasedClockObservationReceipt;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::conditional_operation::clock_observation::erased::ErasedClockObservationOutcome;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::conditional_operation::clock_observation::erased::ErasedClockObservationReceipt;
 use worth_query_execution::facade::domain_computation::WorthQueryConditionalClockObservationFailureKind;
 use worth_query_execution::facade::domain_computation::WorthQueryConditionalClockObservationOutcome;
 

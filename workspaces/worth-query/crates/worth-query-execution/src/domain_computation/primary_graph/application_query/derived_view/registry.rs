@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex, Weak};
 
 const MAXIMUM_REGISTERED_VIEWS: usize = 64;
-mod index_directory;
+pub(crate) mod index_directory;
 mod managed_index;
 mod managed_source;
 mod native_count;

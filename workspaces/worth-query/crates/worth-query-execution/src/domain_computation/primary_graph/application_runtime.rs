@@ -21,12 +21,12 @@ mod certification_controls;
 mod certification_cost;
 mod conditional_cleanup;
 mod execution_memory;
-mod external_dispatch_attempt;
+pub(crate) mod external_dispatch_attempt;
 mod mutation_partition;
 pub use execution_memory::WorthQueryExecutionLeaseDenial;
-mod inbound_occurrence;
+pub(crate) mod inbound_occurrence;
 pub(in crate::domain_computation::primary_graph) use inbound_occurrence::WorthQueryInboundAdmission;
-mod inbound_publication;
+pub(crate) mod inbound_publication;
 pub use certification_cost::{
     WorthQueryCertificationApplicationWork, WorthQueryCertificationCostObservation,
     WorthQueryCertificationCostRuntimeExt, WorthQueryCertificationCostScope,

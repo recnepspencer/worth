@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 
 #[derive(Clone, Debug)]
-pub(crate) struct WorthQueryInstalledWorkflowArtifactContracts {
+pub struct WorthQueryInstalledWorkflowArtifactContracts {
     input:
         Option<Arc<worth_query_installation::facade::WorthQueryInstalledArtifactContractAuthority>>,
     output:

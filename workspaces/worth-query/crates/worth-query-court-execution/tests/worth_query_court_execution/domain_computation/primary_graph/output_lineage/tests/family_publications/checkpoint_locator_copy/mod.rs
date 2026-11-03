@@ -1,9 +1,9 @@
 //! Descriptive locator selection/copy controls; no producer freshness claim.
 use crate::domain_computation::primary_graph::output_lineage::tests::family_publications::*;
-use worth_query_execution::domain_computation::primary_graph::application_checkpoint::capture::native_priors::merge as merge_native_checkpoint_priors;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointIdentity as Identity;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointPosture as Posture;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::native_prior_checkpoint::NativePriorCheckpointLocator;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::capture::native_priors::merge as merge_native_checkpoint_priors;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointIdentity as Identity;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointPosture as Posture;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::native_prior_checkpoint::NativePriorCheckpointLocator;
 use worth_relational::facade::mvcc::RequiredOutputProducingImplementation as Implementation;
 
 pub fn court() -> Court {
@@ -98,7 +98,7 @@ pub fn expected(court: &Court) -> Identity {
 
 pub fn select<'a>(
     court: &'a Court,
-) -> Vec<worth_query_execution::domain_computation::primary_graph::output_lineage::family_selection::checkpoint_priors::NativePriorCheckpointOutput<'a>>{
+) -> Vec<worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::family_selection::checkpoint_priors::NativePriorCheckpointOutput<'a>>{
     court
         .lineage
         .checkpoint_prior_outputs(
@@ -239,8 +239,8 @@ fn required_native_locator_materializes_the_complete_identity() {
         .unwrap()
         .producing_implementation = None;
     let priors = select(&missing);
-    use worth_query_execution::domain_computation::primary_graph::output_lineage::family_selection::checkpoint_priors::denial::CheckpointPriorSelectionDenial;
-    use worth_query_execution::domain_computation::primary_graph::output_lineage::family_selection::checkpoint_priors::denial::CheckpointPriorStructure;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::family_selection::checkpoint_priors::denial::CheckpointPriorSelectionDenial;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::family_selection::checkpoint_priors::denial::CheckpointPriorStructure;
     assert!(matches!(
         priors[0].materialize_identity(),
         Err(CheckpointPriorSelectionDenial::Structural(

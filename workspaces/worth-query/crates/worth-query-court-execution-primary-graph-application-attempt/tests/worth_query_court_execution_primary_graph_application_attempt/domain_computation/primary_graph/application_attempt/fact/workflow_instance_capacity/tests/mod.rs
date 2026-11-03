@@ -1,9 +1,9 @@
 use worth_relational::facade::identity::EntityId;
 use worth_relational::facade::identity::KindId;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationAdjacencyDirection;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedRelation;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::fact::adjacency::observe_adjacency;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::fact::workflow_instance_capacity::remains_equal;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationAdjacencyDirection;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedRelation;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::adjacency::observe_adjacency;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::workflow_instance_capacity::remains_equal;
 use worth_relational::facade::config::CascadeDeletePolicy;
 use worth_relational::facade::config::CrossContextPolicy;
 use worth_relational::facade::identity::PartitionId;
@@ -98,7 +98,7 @@ fn a_membership_that_gained_an_instance_or_is_full_is_not_current() {
         "the raced membership differs however much room is left",
     );
     for snapshot in [&read.snapshot, &raced.snapshot] {
-        worth_query_execution::relational_snapshot_release::release_query_snapshot(
+        worth_query_execution::court_doors_for_test::relational_snapshot_release::release_query_snapshot(
             &mut runtime,
             snapshot,
         );
@@ -177,7 +177,7 @@ pub fn commit_entities<const N: usize>(
             .created_entity(&created)
             .expect("the fixture commit issued each entity")
     });
-    worth_query_execution::relational_snapshot_release::release_query_snapshot(
+    worth_query_execution::court_doors_for_test::relational_snapshot_release::release_query_snapshot(
         runtime,
         &committed.snapshot,
     );

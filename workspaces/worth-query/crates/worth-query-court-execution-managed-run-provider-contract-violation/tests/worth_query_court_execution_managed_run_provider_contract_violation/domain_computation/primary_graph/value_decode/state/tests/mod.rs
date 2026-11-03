@@ -11,7 +11,7 @@ use worth_foundational::DeterminismContract;
 use worth_foundational::ExecutionBudget;
 use worth_foundational::ExecutionPosture;
 use worth_foundational::ExecutionRequestPolicy;
-use worth_query_execution::domain_computation::primary_graph::value_decode::state::ValueDecodeState;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::value_decode::state::ValueDecodeState;
 use worth_query_execution::facade::domain_computation::WorthQueryValueDecodeDenial as Stop;
 
 pub fn native_request(cancellation: CancellationToken) -> SerialRequest {

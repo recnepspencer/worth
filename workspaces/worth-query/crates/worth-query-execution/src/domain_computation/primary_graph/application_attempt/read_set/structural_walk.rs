@@ -10,7 +10,7 @@ use crate::domain_computation::primary_graph::{
     structural_walk::{StructuralWalkKey, StructuralWalkObservation},
 };
 
-pub(super) fn observe<Schema, Operation, Input, Scope>(
+pub fn observe<Schema, Operation, Input, Scope>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     admission: &crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<
         Schema,

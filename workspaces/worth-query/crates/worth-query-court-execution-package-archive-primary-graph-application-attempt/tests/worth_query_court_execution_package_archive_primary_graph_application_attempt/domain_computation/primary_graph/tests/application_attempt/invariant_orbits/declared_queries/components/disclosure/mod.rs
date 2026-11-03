@@ -8,7 +8,7 @@ fn governed_components_refuse_closed_slots_before_native_and_guard_reads() {
     let world = interleaved_world();
     let _observation =
         worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation::install_on_this_thread();
-    let count=worth_query_execution::domain_computation::primary_graph::application_query::read_execution::entry_observation::component_native_acquisitions_on_this_thread_for_test;
+    let count=worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::read_execution::entry_observation::component_native_acquisitions_on_this_thread_for_test;
     let before = count();
     let allowed = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::declared_queries::read::run(&world, Allowed::reference(), 0);
     assert_eq!(

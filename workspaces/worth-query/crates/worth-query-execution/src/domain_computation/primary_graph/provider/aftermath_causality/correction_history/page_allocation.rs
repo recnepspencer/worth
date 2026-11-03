@@ -6,10 +6,10 @@ use worth_execution::{ExecutionAllocationDenial, ExecutionMemoryReservation, Exe
 use worth_relational::facade::history::{BranchId, CommitId, RelationalCommitReceipt};
 
 #[derive(Debug)]
-pub(in crate::domain_computation::primary_graph) struct WorthQueryCorrectionHistoryPageAllocation {
+pub struct WorthQueryCorrectionHistoryPageAllocation {
     memory: Option<ExecutionMemoryReservation>,
 }
-type Denial = WorthQueryAftermathCausalityReadDenial;
+pub type Denial = WorthQueryAftermathCausalityReadDenial;
 impl WorthQueryCorrectionHistoryPageAllocation {
     pub(super) fn new(execution: &ExecutionRequest<'_, '_>) -> Result<Self, Denial> {
         Ok(Self {

@@ -1,10 +1,10 @@
 //! Only owner admission opens required-wave compute.
-use worth_query_execution::domain_computation::primary_graph::application_contribution::producer::execution::prepared_plan::OwnerPlan;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::execution::prepared_plan::OwnerPlan;
 use worth_relational::facade::runtime::PositionedRelationalSnapshot;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::required_work::wave_admission::PreparedRequiredInputs;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::required_work::wave_admission::PreparedRequiredInputs;
 use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandDenialKind;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::WorthQueryOutputDemandRegistry;
-use worth_query_execution::domain_computation::primary_graph::application_contribution::computation::prepared_request::PreparedCompute;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryOutputDemandRegistry;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::computation::prepared_request::PreparedCompute;
 
 pub fn selected() -> std::sync::Arc<PositionedRelationalSnapshot> {
     let world =

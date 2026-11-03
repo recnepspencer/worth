@@ -373,7 +373,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
 }
 
 /// Preserve the original request stop instead of relabeling it as a basis mismatch.
-fn selection_denial(
+pub fn selection_denial(
     stop: crate::basis::WorthQueryProductBranchAdmissionDenial,
     query_name: &str,
 ) -> WorthQueryApplicationQueryAdmissionDenial {

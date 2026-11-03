@@ -6,7 +6,7 @@ pub use worth_query_testkit_execution_primary_graph_application_contribution::do
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope;
 pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitOutcome;
 pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitTerminalKind;
-pub use worth_query_execution::domain_computation::primary_graph::application_query::basis::historical_authority::WorthQueryApplicationHistoricalRead;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::basis::historical_authority::WorthQueryApplicationHistoricalRead;
 pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationQueryAdmissionDenialKind;
 
 #[test]

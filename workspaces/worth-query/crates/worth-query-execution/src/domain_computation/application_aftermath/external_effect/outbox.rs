@@ -47,7 +47,7 @@ pub(crate) struct WorthQueryDispatchOutboxRestoredFields {
 ///
 /// Keeping these together prevents the post-commit lane from reconstructing record identity
 /// from persisted field content.
-pub(crate) struct WorthQueryPendingDispatchOutbox {
+pub struct WorthQueryPendingDispatchOutbox {
     record: WorthQueryDispatchOutboxRecord,
     created_entity: CreatedEntityRef,
 }
@@ -197,7 +197,7 @@ pub struct WorthQueryDispatchOutboxLayout {
 
 /// Build a create intent for a declared external effect. Returns `None` when
 /// the operation declares no external effect (R8.4 — pay exactly zero).
-pub(crate) fn dispatch_outbox_create_intent(
+pub fn dispatch_outbox_create_intent(
     layout: Option<&WorthQueryDispatchOutboxLayout>,
     record: Option<&WorthQueryDispatchOutboxRecord>,
 ) -> Option<MutationIntent> {
@@ -209,7 +209,7 @@ pub(crate) fn dispatch_outbox_create_intent(
     .map(|(intent, _)| intent)
 }
 
-pub(crate) fn bind_dispatch_outbox_create_intent(
+pub fn bind_dispatch_outbox_create_intent(
     layout: Option<&WorthQueryDispatchOutboxLayout>,
     record: Option<&WorthQueryDispatchOutboxRecord>,
     mutation_partition: worth_relational::facade::identity::PartitionId,

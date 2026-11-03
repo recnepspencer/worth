@@ -20,7 +20,7 @@ use super::super::fact::WorthQueryApplicationFactKey;
 /// One owner call of a partitioned computation that reads through the lent
 /// reader.
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub(in crate::domain_computation::primary_graph) enum ComputationRead {
+pub enum ComputationRead {
     /// `partitions`: which items the input holds.
     Membership,
     /// `partition_key` for one item.
@@ -75,7 +75,7 @@ impl ComputationFactReads {
 /// Every owner call that read one decision fact. Items and partitions are in
 /// ascending order and named once, by type.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) struct ComputationFactReaders {
+pub struct ComputationFactReaders {
     membership: bool,
     item_keys: CanonicalUniqueVec<PartitionItemId>,
     partitions: CanonicalUniqueVec<PartitionIdentity>,
@@ -125,7 +125,7 @@ impl ComputationFactReaders {
 /// The fact keys the owner calls of one attempt read, each with every call
 /// that read it.
 #[derive(Default)]
-pub(in crate::domain_computation::primary_graph) struct ComputationFactAttribution {
+pub struct ComputationFactAttribution {
     readers: BTreeMap<WorthQueryApplicationFactKey, ComputationFactReads>,
     handler: Option<std::sync::Arc<BTreeSet<WorthQueryApplicationFactKey>>>,
     calls: BTreeSet<ComputationRead>,
@@ -311,7 +311,7 @@ struct SealedComputationFact {
 /// Original pre-effect facts with checked ordinal/call correspondence.
 /// Postcommit rebasing never replaces this payload.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) struct SealedComputationFacts {
+pub struct SealedComputationFacts {
     index: std::sync::Arc<index::ComputationFactIndex>,
     metadata: std::sync::Arc<
         worth_execution::ExecutionOrderedMap<WorthQueryApplicationFactKey, SealedComputationFact>,

@@ -7,15 +7,15 @@ use worth_query_installation::facade::{
     WorthQueryOperationWorkflowContract,
 };
 
-mod aftermath_posture;
+pub(crate) mod aftermath_posture;
 #[path = "declared_closure/application.rs"]
-mod application;
+pub(crate) mod application;
 pub(super) use aftermath_posture::reversal_posture;
 pub(super) use application::bind_application_candidate_effect_closure;
 pub(crate) use application::WorthQueryApplicationEffectPosture;
 
 #[derive(Clone, Debug)]
-pub(crate) struct WorthQueryProviderPlanDeclarations {
+pub struct WorthQueryProviderPlanDeclarations {
     direct: BTreeMap<String, WorthQueryProviderPlanDeclaredClosure>,
     workflow: BTreeMap<(String, String), WorthQueryProviderPlanDeclaredClosure>,
     decision_fact_families: Vec<worth_query_installation::facade::WorthQueryDecisionFactFamily>,
@@ -30,7 +30,7 @@ pub(crate) struct WorthQueryProviderPlanDeclarations {
 }
 
 #[derive(Clone, Debug, Default)]
-pub(super) struct WorthQueryProviderPlanDeclaredClosure {
+pub struct WorthQueryProviderPlanDeclaredClosure {
     pub(super) read: Vec<String>,
     pub(super) touch: Vec<String>,
     pub(super) effect: Vec<String>,
@@ -320,7 +320,7 @@ impl WorthQueryProviderPlanDeclaredClosure {
     }
 }
 
-pub(super) fn bind_direct_role_closure(
+pub fn bind_direct_role_closure(
     closure: &mut WorthQueryProviderPlanDeclaredClosure,
     effects: &[String],
     invariants: &[String],

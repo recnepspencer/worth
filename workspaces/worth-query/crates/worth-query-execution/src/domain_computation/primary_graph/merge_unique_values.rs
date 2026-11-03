@@ -7,7 +7,7 @@
 
 use std::collections::BTreeSet;
 thread_local! { static LOOKUPS: std::cell::RefCell<Vec<usize>> = const { std::cell::RefCell::new(Vec::new()) }; }
-pub(super) fn take_lookup_limits() -> Vec<usize> {
+pub fn take_lookup_limits() -> Vec<usize> {
     LOOKUPS.with(|calls| std::mem::take(&mut *calls.borrow_mut()))
 }
 
@@ -89,7 +89,7 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
     }
 }
 
-pub(in crate::domain_computation::primary_graph) fn admit_merge_unique_values(
+pub fn admit_merge_unique_values(
     unique: WorthQueryUniqueFields<'_>,
     runtime: &RelationalRuntime,
     execution: &worth_execution::ExecutionRequest<'_, '_>,

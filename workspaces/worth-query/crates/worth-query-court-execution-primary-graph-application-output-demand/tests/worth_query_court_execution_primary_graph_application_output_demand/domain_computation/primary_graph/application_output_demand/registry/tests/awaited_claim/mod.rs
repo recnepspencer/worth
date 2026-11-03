@@ -5,10 +5,10 @@ use crate::domain_computation::primary_graph::application_output_demand::registr
 use crate::domain_computation::primary_graph::application_output_demand::registry::tests::*;
 
 pub fn source_owner(
-) -> worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::owner::SourceInvalidationOwner{
+) -> worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::owner::SourceInvalidationOwner{
     use worth_query_execution::facade::domain_computation::WorthQueryInvalidationResources;
     let resources = WorthQueryInvalidationResources::new();
-    worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::owner::SourceInvalidationOwner::new(
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::owner::SourceInvalidationOwner::new(
         resources, 1,
     )
 }
@@ -16,7 +16,7 @@ pub fn source_owner(
 pub fn last_claim_closes(held_successor: bool) {
     let receipt = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application();
     let _occurrence = occurrence();
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|_| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|_| {
         let registry = WorthQueryOutputDemandRegistry::default();
         let unrelated = crate::domain_computation::primary_graph::application_output_demand::registry::tests::reservation_baseline::install(
             &mut registry.state.lock().unwrap(),
@@ -54,7 +54,7 @@ pub fn last_claim_closes(held_successor: bool) {
         } else {
             drop(newest);
         }
-        assert!(worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::refreshed_rejoin::awaited_by_stale_owner(
+        assert!(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::refreshed_rejoin::awaited_by_stale_owner(
             &registry.state.lock().unwrap().records,
             &newest_key
         ));
@@ -79,7 +79,7 @@ pub fn last_claim_closes(held_successor: bool) {
             );
             assert!(state.records.iter().all(|(key, record)| key == &unrelated ||
                 !matches!(&record.state, DemandState::Output(output) if matches!(output.checkpoint,
-                    Some(worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint::Published { .. })))));
+                    Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint::Published { .. })))));
         }
 
         assert!(registry

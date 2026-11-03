@@ -6,7 +6,7 @@ use crate::domain_computation::managed_run::tests::*;
 
 #[test]
 fn suspension_and_execution_destructor_panics_are_independently_contained() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -85,7 +85,7 @@ fn suspension_and_execution_destructor_panics_are_independently_contained() {
 
 #[test]
 fn execution_destructor_panic_releases_returned_checkpoint_with_exact_disposition() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -169,7 +169,7 @@ fn execution_destructor_panic_releases_returned_checkpoint_with_exact_dispositio
 
 #[test]
 fn checkpoint_probe_failure_preserves_its_own_release_disposition() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -234,7 +234,7 @@ fn checkpoint_probe_failure_preserves_its_own_release_disposition() {
 
 #[test]
 fn direct_cleanup_contains_and_reports_checkpoint_destructor_panic() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -289,7 +289,7 @@ fn direct_cleanup_contains_and_reports_checkpoint_destructor_panic() {
 
 #[test]
 fn workflow_cleanup_returns_recovery_required_after_checkpoint_destructor_panic() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 

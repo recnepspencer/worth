@@ -3,7 +3,7 @@ mod publication;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::branch::RelationalRematerializationCompletion;
 
-mod failure;
+pub(crate) mod failure;
 mod invariant_admission;
 mod invariant_denial;
 pub(in crate::domain_computation::primary_graph) use invariant_admission::admit_required_invariants;

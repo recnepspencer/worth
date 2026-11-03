@@ -1,6 +1,6 @@
 //! Native read overlap is established by events, never elapsed throughput.
 use crate::domain_computation::primary_graph::application_query::derived_view::registration::collection::pair::reconstruct_parallel::read_ceiling_tests::*;
-use worth_query_execution::domain_computation::primary_graph::application_query::read_execution::dispatch_witness::native_rendezvous::NativeReadRendezvousGuardForTest;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::read_execution::dispatch_witness::native_rendezvous::NativeReadRendezvousGuardForTest;
 #[test]
 fn two_distinct_roots_hold_the_whole_native_read_without_the_owner_lock() {
     use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::tests::fixture::reconstruction_execution::isolated_request_owner;
@@ -87,13 +87,13 @@ fn two_distinct_roots_hold_the_whole_native_read_without_the_owner_lock() {
                 ).unwrap();
             WorthQueryDerivedPairReadPlans::new(admit(), admit())
         }).collect::<Vec<_>>();
-        request.in_scope(|lease| worth_query_execution::domain_computation::primary_graph::application_query::derived_view::registration::collection::pair::reconstruction::owner_stage::run(lease, |context| {
+        request.in_scope(|lease| worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::derived_view::registration::collection::pair::reconstruction::owner_stage::run(lease, |context| {
             for (pair, root) in plans.iter_mut().zip(&roots) {
                 pair.admit(&host_custody.borrowed_request_for_test(), &world.application, root.entity_id(), context)?;
             }
             Ok(())
         })).unwrap().unwrap();
-        let (witness, _installed) = worth_query_execution::domain_computation::primary_graph::application_query::read_execution::dispatch_witness::DispatchWitness::install(None);
+        let (witness, _installed) = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::read_execution::dispatch_witness::DispatchWitness::install(None);
         let held: NativeReadRendezvousGuardForTest = witness.hold_native_reads_for_test(
             [roots[0].entity_id(), roots[1].entity_id()], owner_probe.clone(), &request,
         );

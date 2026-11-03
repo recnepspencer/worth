@@ -2,7 +2,7 @@
 /// bound check against a producer's static reuse declaration, not a source of
 /// declared dependencies.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
-pub(in crate::domain_computation) struct DecisionContextUse(u8);
+pub struct DecisionContextUse(u8);
 
 impl DecisionContextUse {
     const KEY: u8 = 1;

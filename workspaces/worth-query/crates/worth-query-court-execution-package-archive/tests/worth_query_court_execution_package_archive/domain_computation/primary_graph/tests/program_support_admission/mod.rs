@@ -10,7 +10,7 @@ use worth_query_testkit_execution_primary_graph_application_contribution::domain
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::program_roster::installed_program_support;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::program_roster::rostered_program_revision;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::program_roster::unadmitted_program_revision;
-use worth_query_execution::domain_computation::primary_graph::program_occurrence::revision_rendering::program_revision_rendering;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::program_occurrence::revision_rendering::program_revision_rendering;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitDenialKind;
 use worth_query_installation::facade::WorthQueryProgramSupportRetirementDenial;
 

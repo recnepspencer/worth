@@ -61,7 +61,7 @@ use worth_runtime_bridge::facade::TruthPatchScope;
 use worth_runtime_bridge::facade::TruthSnapshotIdentity;
 use worth_runtime_bridge::facade::TruthSnapshotReader;
 
-use worth_query_execution::domain_computation::managed_run::relational_observation::WorthQueryManagedRelationalObservation;
+use worth_query_execution::court_doors_for_test::domain_computation::managed_run::relational_observation::WorthQueryManagedRelationalObservation;
 use worth_query_execution::facade::domain_computation::WorthQueryManagedTruthReadRequest;
 
 pub struct CausalLowerExecutionBasis {
@@ -108,7 +108,7 @@ pub fn managed_admission_context(
         .expect("model should be a valid graph role");
     let registration = relational.retain_branch_basis_for_bridge(&basis).unwrap();
     let registration_snapshot = registration.snapshot_identity().clone();
-    let branch = worth_query_execution::domain_computation::primary_graph::application_branch::primary_truth_branch_identity();
+    let branch = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_branch::primary_truth_branch_identity();
     let bridge = bridge_for_source(relational.clone(), branch.clone(), registration_snapshot);
     CausalManagedAdmissionContext {
         bridge,
@@ -133,7 +133,7 @@ pub fn source_profile_substitution_context(
         .expect("model should be a valid graph role");
     let registration = relational.retain_branch_basis_for_bridge(&basis).unwrap();
     let registration_snapshot = registration.snapshot_identity().clone();
-    let branch = worth_query_execution::domain_computation::primary_graph::application_branch::primary_truth_branch_identity();
+    let branch = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_branch::primary_truth_branch_identity();
     let exact_bridge = bridge_for_source(
         relational.clone(),
         branch.clone(),
@@ -252,7 +252,7 @@ pub fn relational_source_and_lease(
         )
     };
     let snapshot = bridge_basis.identity().snapshot_identity().clone();
-    let branch = worth_query_execution::domain_computation::primary_graph::application_branch::primary_truth_branch_identity();
+    let branch = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_branch::primary_truth_branch_identity();
     (source, bridge_basis, substitute, branch, snapshot)
 }
 

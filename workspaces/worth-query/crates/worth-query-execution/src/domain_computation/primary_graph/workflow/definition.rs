@@ -1,8 +1,8 @@
 mod codec;
-mod compilation;
+pub(crate) mod compilation;
 mod condition;
 mod dependencies;
-mod facts;
+pub(crate) mod facts;
 mod global_actions;
 mod inbound_codec;
 mod preparation;

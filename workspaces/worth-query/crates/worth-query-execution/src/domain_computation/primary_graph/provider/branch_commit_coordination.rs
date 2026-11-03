@@ -10,7 +10,7 @@ use worth_runtime_world::facade::ProductBranchObservation;
 mod contention;
 mod correction;
 pub use contention::WorthQueryApplicationBranchCommitContentionForTest;
-pub(super) struct WorthQueryApplicationBranchCommitCoordinator {
+pub struct WorthQueryApplicationBranchCommitCoordinator {
     corrections: correction::CorrectionCommitLanes,
     contention: Arc<contention::ContentionControl>,
     lanes: Mutex<BTreeMap<ProductBranchIncarnation, Weak<WorthQueryApplicationBranchCommitLane>>>,

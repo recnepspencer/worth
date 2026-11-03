@@ -17,9 +17,9 @@ mod commit_resolution;
 mod fresh;
 mod invariant;
 mod mutation_cleanup;
-pub(in crate::domain_computation::primary_graph::application_attempt) mod progressed;
-mod registered;
-mod session_admission;
+pub(crate) mod progressed;
+pub(crate) mod registered;
+pub(crate) mod session_admission;
 
 pub(in crate::domain_computation::primary_graph::application_attempt) use authorized::WorthQueryManagedEquivalentCommitReceiptPermit;
 pub(in crate::domain_computation::primary_graph::application_attempt) use commit_resolution::WorthQueryFreshCommitReceiptPermit;
@@ -62,7 +62,7 @@ struct WorthQueryProviderProgression<'a, Schema, Operation, Input, Scope> {
     >,
 }
 
-struct WorthQueryProviderProgressionCompletion {
+pub struct WorthQueryProviderProgressionCompletion {
     outcome: WorthQueryProviderProgressionOutcome,
     cleanup: WorthQueryApplicationMutationCleanupOwner,
 }
@@ -86,7 +86,7 @@ impl WorthQueryProviderProgressionCompletion {
     }
 }
 
-struct WorthQueryApplicationCommitProgressionAuthority<
+pub struct WorthQueryApplicationCommitProgressionAuthority<
     'a,
     'provider,
     Schema,

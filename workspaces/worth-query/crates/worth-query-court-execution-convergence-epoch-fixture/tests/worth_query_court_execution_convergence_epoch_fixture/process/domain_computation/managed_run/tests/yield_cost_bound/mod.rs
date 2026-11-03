@@ -122,7 +122,7 @@ pub struct YieldCostEvidence {
 }
 
 pub fn execute_target(
-    execution: &worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     unrelated_width: usize,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> YieldCostEvidence {
@@ -149,7 +149,7 @@ pub use crate::domain_computation::managed_run::tests::yield_cost_bound::allocat
 pub use crate::domain_computation::managed_run::tests::yield_cost_bound::allocation_measurement::measured_workflow_target;
 
 pub fn prepared_target(
-    execution: &worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
 
     unrelated_width: usize,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
@@ -208,7 +208,7 @@ pub fn prepared_target(
 }
 
 pub fn prepared_workflow_target(
-    execution: &worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     unrelated_width: usize,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (

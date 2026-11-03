@@ -3,7 +3,7 @@ use crate::domain_computation::convergence_epoch::tests::fixture::fixture_identi
 use crate::domain_computation::convergence_epoch::tests::fixture::provider::disposition::FixtureDisposition;
 use crate::domain_computation::convergence_epoch::tests::fixture::provider::report_history_probe::FixtureReportHistoryObservation;
 use crate::domain_computation::convergence_epoch::tests::fixture::workflow_installed_world::workflow_admission_fixture_with_report_history_probe;
-use worth_query_execution::domain_computation::WorthQueryConverged;
+use worth_query_execution::court_doors_for_test::domain_computation::WorthQueryConverged;
 use worth_query_execution::facade::convergence_epoch::WorthQueryBoundConvergenceReport;
 use worth_query_execution::facade::convergence_epoch::WorthQueryDirectConvergenceIterationOutcome;
 use worth_query_execution::facade::convergence_epoch::WorthQueryDirectConvergenceStepOutcome;
@@ -18,7 +18,7 @@ use worth_query_execution::facade::domain_computation::WorthQueryManagedGraphCal
 
 #[test]
 fn same_semantic_direct_peers_bind_distinct_report_histories() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -69,7 +69,7 @@ fn same_semantic_direct_peers_bind_distinct_report_histories() {
 
 #[test]
 fn same_stage_workflow_peers_bind_distinct_report_histories() {
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 

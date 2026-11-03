@@ -2,7 +2,7 @@ pub use std::collections::BTreeMap;
 pub use std::num::NonZeroUsize;
 pub use std::time::Duration;
 
-pub use worth_query_execution::domain_computation::primary_graph::application_attempt::fact::movement::Movement;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::movement::Movement;
 pub use worth_foundational::facade::AspectFieldLocator;
 pub use worth_foundational::facade::CanonicalFieldPath;
 pub use worth_foundational::facade::LocatorAuthority;
@@ -22,7 +22,7 @@ pub use worth_query_testkit_execution_primary_graph_application_contribution::do
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::AccountIdentity;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::AccountStatus;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::CrossRootQuery;
-pub use worth_query_execution::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact;
 pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationQueryAccessContext;
 pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationQueryBasisPosture;
 pub use worth_query_execution::facade::domain_computation::WorthQueryPrincipalResolutionMode;

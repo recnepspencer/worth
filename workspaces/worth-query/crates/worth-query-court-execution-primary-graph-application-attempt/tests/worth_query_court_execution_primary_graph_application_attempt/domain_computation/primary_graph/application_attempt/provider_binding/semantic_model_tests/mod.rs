@@ -1,11 +1,11 @@
 use crate::domain_computation::primary_graph::application_attempt::provider_binding::semantic_model_tests::model::assert_created_partition;
 use crate::domain_computation::primary_graph::application_attempt::provider_binding::semantic_model_tests::model::observe;
 use crate::domain_computation::primary_graph::application_attempt::provider_binding::semantic_model_tests::world::mixed_effect_world;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_binding::prepare_provider_attempt;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::effect_program::model::WorthQueryApplicationRealizedEffect;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedRelation;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationAdjacencyDirection;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_binding::prepare_provider_attempt;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::model::WorthQueryApplicationRealizedEffect;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedRelation;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationAdjacencyDirection;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact;
 use worth_relational::facade::identity::EntityId;
 use worth_relational::facade::identity::KindId;
 use worth_relational::facade::identity::PartitionId;
@@ -18,12 +18,12 @@ fn mixed_effects_lower_to_the_exact_independent_semantic_model() {
 
     let world = mixed_effect_world(execution);
     let prepared = prepare_provider_attempt(
-        worth_query_execution::domain_computation::primary_graph::schema_layout::unique_fields::WorthQueryUniqueFields::none(),
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::schema_layout::unique_fields::WorthQueryUniqueFields::none(),
         &|_, _| None,
         PartitionId::main(),
         world.effects.len(),
-        worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::scope_bindings::CompletedReadScopes::EmptyOwnerFixture, worth_query_execution::domain_computation::primary_graph::application_attempt::dependency_identity::content_tree::CompletedFactRoutes::from_facts(
-            worth_query_execution::domain_computation::primary_graph::application_checkpoint::facts::payload::FactPayload::native(admitted(world.facts)), worth_query_execution::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new(
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::scope_bindings::CompletedReadScopes::EmptyOwnerFixture, worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::dependency_identity::content_tree::CompletedFactRoutes::from_facts(
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::payload::FactPayload::native(admitted(world.facts)), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new(
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(), None, None,
         Vec::new(),
         world.effects,
@@ -47,12 +47,12 @@ fn alternate_effect_insertion_preserves_each_exact_association_and_order() {
 
     let world = mixed_effect_world(execution);
     let prepared = prepare_provider_attempt(
-        worth_query_execution::domain_computation::primary_graph::schema_layout::unique_fields::WorthQueryUniqueFields::none(),
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::schema_layout::unique_fields::WorthQueryUniqueFields::none(),
         &|_, _| None,
         PartitionId::main(),
         world.alternate_effects.len(),
-        worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::scope_bindings::CompletedReadScopes::EmptyOwnerFixture, worth_query_execution::domain_computation::primary_graph::application_attempt::dependency_identity::content_tree::CompletedFactRoutes::from_facts(
-            worth_query_execution::domain_computation::primary_graph::application_checkpoint::facts::payload::FactPayload::native(admitted(world.facts)), worth_query_execution::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new(
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::scope_bindings::CompletedReadScopes::EmptyOwnerFixture, worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::dependency_identity::content_tree::CompletedFactRoutes::from_facts(
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::payload::FactPayload::native(admitted(world.facts)), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new(
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(), None, None,
         Vec::new(),
         world.alternate_effects,
@@ -75,12 +75,12 @@ fn created_records_and_symbolic_endpoints_use_the_issued_mutation_partition() {
 
     let world = mixed_effect_world(execution);
     let prepared = prepare_provider_attempt(
-        worth_query_execution::domain_computation::primary_graph::schema_layout::unique_fields::WorthQueryUniqueFields::none(),
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::schema_layout::unique_fields::WorthQueryUniqueFields::none(),
         &|_, _| None,
         PartitionId(7),
         world.effects.len(),
-        worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::scope_bindings::CompletedReadScopes::EmptyOwnerFixture, worth_query_execution::domain_computation::primary_graph::application_attempt::dependency_identity::content_tree::CompletedFactRoutes::from_facts(
-            worth_query_execution::domain_computation::primary_graph::application_checkpoint::facts::payload::FactPayload::native(admitted(world.facts)), worth_query_execution::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new(
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::scope_bindings::CompletedReadScopes::EmptyOwnerFixture, worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::dependency_identity::content_tree::CompletedFactRoutes::from_facts(
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::payload::FactPayload::native(admitted(world.facts)), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new(
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(), None, None,
         Vec::new(),
         world.effects,
@@ -132,12 +132,12 @@ fn two_relation_deletes_from_one_adjacency_share_one_provisional_retirement() {
         },
     ];
     let prepared = prepare_provider_attempt(
-        worth_query_execution::domain_computation::primary_graph::schema_layout::unique_fields::WorthQueryUniqueFields::none(),
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::schema_layout::unique_fields::WorthQueryUniqueFields::none(),
         &|_, _| None,
         PartitionId::main(),
         effects.len(),
-        worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::scope_bindings::CompletedReadScopes::EmptyOwnerFixture, worth_query_execution::domain_computation::primary_graph::application_attempt::dependency_identity::content_tree::CompletedFactRoutes::from_facts(
-            worth_query_execution::domain_computation::primary_graph::application_checkpoint::facts::payload::FactPayload::native(admitted(facts)), worth_query_execution::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new(
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::scope_bindings::CompletedReadScopes::EmptyOwnerFixture, worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::dependency_identity::content_tree::CompletedFactRoutes::from_facts(
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::payload::FactPayload::native(admitted(facts)), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new(
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(), None, None,
         Vec::new(),
         effects,

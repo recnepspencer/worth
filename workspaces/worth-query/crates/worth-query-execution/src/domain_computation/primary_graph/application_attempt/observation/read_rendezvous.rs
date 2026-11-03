@@ -3,7 +3,7 @@ use worth_query_admission::facade::authenticated_principal::WorthQueryCancellati
 std::thread_local! {
     static NEXT_READ: std::cell::RefCell<Option<WorthQueryCancellationSource>> = const { std::cell::RefCell::new(None) };
 }
-pub(in crate::domain_computation::primary_graph) struct ReadRendezvous;
+pub struct ReadRendezvous;
 impl ReadRendezvous {
     pub fn cancel_next(source: WorthQueryCancellationSource) -> Self {
         NEXT_READ.with(|next| {

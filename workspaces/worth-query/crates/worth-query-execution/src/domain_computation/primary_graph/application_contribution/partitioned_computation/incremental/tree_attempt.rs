@@ -14,7 +14,7 @@ pub(super) enum EditDisposition<Tree> {
     Rebuild(Cause),
 }
 
-pub(super) struct TreeAttempt<T, E> {
+pub struct TreeAttempt<T, E> {
     outcome: Result<T, E>,
     work: Metrics,
 }

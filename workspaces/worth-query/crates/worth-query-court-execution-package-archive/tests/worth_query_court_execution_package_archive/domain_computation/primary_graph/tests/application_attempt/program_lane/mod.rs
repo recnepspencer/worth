@@ -2,7 +2,7 @@
 
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::program_fixture::admitted_program_required_program;
 use crate::process::domain_computation::primary_graph::tests::application_attempt::*;
-use worth_query_execution::equality_type_id::EqualityTypeId as TypeId;
+use worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId as TypeId;
 
 #[test]
 fn declaration_derived_program_requirement_denies_the_raw_commit_entry() {

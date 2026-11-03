@@ -1,6 +1,6 @@
 //! Original source disclosure meaning; fresh use must independently authorize it.
-mod inspection;
-mod inspection_capture;
+pub(crate) mod inspection;
+pub(crate) mod inspection_capture;
 mod original;
 mod parameter_capture;
 

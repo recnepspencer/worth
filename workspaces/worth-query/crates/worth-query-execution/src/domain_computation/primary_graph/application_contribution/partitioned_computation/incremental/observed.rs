@@ -139,7 +139,7 @@ impl Drop for RetainedFactComparison {
         RETAINED_FACT_READ.set(RETAINED_FACT_READ.get() - 1);
     }
 }
-pub(crate) fn retained_fact_comparison_is_active_for_test() -> bool {
+pub fn retained_fact_comparison_is_active_for_test() -> bool {
     crate::domain_computation::execution_observation::is_installed()
         && RETAINED_FACT_READ.get() != 0
 }

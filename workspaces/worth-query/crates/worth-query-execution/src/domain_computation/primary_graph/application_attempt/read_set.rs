@@ -28,13 +28,13 @@ mod application_projection;
 pub(in crate::domain_computation) use application_projection::CompletedFactProjection;
 mod original_read;
 pub(in crate::domain_computation) use original_read::CompletedOriginalRead;
-mod admitted_arrays;
+pub(crate) mod admitted_arrays;
 mod completed_facts;
 pub(in crate::domain_computation::primary_graph::application_attempt) use completed_facts::admit_completed_facts;
 mod authority_facts;
 mod binding_proof;
 mod completion;
-mod computation_routing;
+pub(crate) mod computation_routing;
 mod native_completion;
 mod value_decode;
 pub(in crate::domain_computation::primary_graph) use computation_routing::ComputationFactReaders;
@@ -44,29 +44,29 @@ pub(in crate::domain_computation::primary_graph) use computation_routing::{
 };
 pub(in crate::domain_computation::primary_graph) mod request_liveness;
 mod retained_facts;
-mod scope_bindings;
+pub(crate) mod scope_bindings;
 pub(in crate::domain_computation::primary_graph::application_attempt) use admitted_arrays::admit_array;
 pub(in crate::domain_computation::primary_graph) use scope_bindings::{
     CompletedReadScopes, InstalledScopePosition,
 };
-mod decision_reuse;
-mod fact_observation;
+pub(crate) mod decision_reuse;
+pub(crate) mod fact_observation;
 pub(in crate::domain_computation::primary_graph) use decision_reuse::{
     CompletedDecisionReuseProof, PreparedDecisionReuseContext,
 };
 pub(in crate::domain_computation::primary_graph) use fact_observation::observe_admitted_fact;
-mod handler_fact_boundary;
+pub(crate) mod handler_fact_boundary;
 pub(in crate::domain_computation) use handler_fact_boundary::CompletedHandlerFactBoundary;
-mod aggregate;
+pub(crate) mod aggregate;
 mod components;
 mod observation_admission;
 mod observations;
 mod projected_completion;
 mod projected_extension;
 mod relation_observation;
-mod source_facts;
-mod structural_walk;
-mod unique_write_dependencies;
+pub(crate) mod source_facts;
+pub(crate) mod structural_walk;
+pub(crate) mod unique_write_dependencies;
 
 pub(super) use binding_proof::{MutationHandlerBindingProof, WorkflowOperationBindingProof};
 pub use relation_observation::WorthQueryObservedApplicationRelation;
@@ -385,7 +385,7 @@ where
 mod entity_resolution;
 mod workflow_actor;
 
-fn denial(
+pub fn denial(
     kind: WorthQueryApplicationAttemptDenialKind,
     subject: impl Into<String>,
 ) -> WorthQueryApplicationAttemptDenial {

@@ -1,12 +1,12 @@
 //! Installed opener refusals are synchronous and leave the worker usable.
-pub use worth_query_execution::domain_computation::primary_graph::application_contribution::computation::prepared_request::PreparedCompute;
-pub use worth_query_execution::domain_computation::primary_graph::application_contribution::computation::wave_dispatch;
-pub use worth_query_execution::domain_computation::primary_graph::application_contribution::computation::wave_dispatch::PreparedMember;
-pub use worth_query_execution::domain_computation::primary_graph::application_contribution::computation::worker_custody::active;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::computation::prepared_request::PreparedCompute;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::computation::wave_dispatch;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::computation::wave_dispatch::PreparedMember;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::computation::worker_custody::active;
 pub use crate::domain_computation::primary_graph::application_contribution::computation::worker_custody::tests;
 pub use worth_query_execution::facade::domain_computation::query_test_execution_authority_for_test as test_authority;
-pub use worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy;
-pub use worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::QueryRequestExecution;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::QueryRequestExecution;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture;
 pub use worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial;
 pub use std::num::NonZeroUsize;
@@ -65,7 +65,7 @@ fn author_held_application_and_product_handles_receive_nested_opening() {
             .execution_request()
             .unwrap()
             .run(worth_execution::ExecutionWorkCeiling::new(None), |_| {
-                worth_query_execution::domain_computation::primary_graph::application_contribution::computation::wave_dispatch::dispatch(&root, members)
+                worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::computation::wave_dispatch::dispatch(&root, members)
             })
             .unwrap();
         assert_eq!(settled.len(), 4);

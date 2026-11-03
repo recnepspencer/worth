@@ -1,5 +1,5 @@
 //! Translation preserves observed committed facts; it makes no publication claim.
-use worth_query_execution::domain_computation::primary_graph::index_refresh::patch_read_denial;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::index_refresh::patch_read_denial;
 use worth_query_execution::facade::integration::WorthQueryPrimaryGraphIndexRefreshDenialKind;
 
 #[test]

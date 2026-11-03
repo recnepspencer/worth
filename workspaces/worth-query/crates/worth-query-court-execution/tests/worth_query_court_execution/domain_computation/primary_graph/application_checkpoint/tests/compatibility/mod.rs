@@ -23,8 +23,8 @@ fn unsupported_checkpoint_header_refuses_before_malformed_current_body() {
     for observed in [
         0,
         9,
-        worth_query_execution::domain_computation::primary_graph::application_checkpoint::FORMAT_VERSION - 1,
-        worth_query_execution::domain_computation::primary_graph::application_checkpoint::FORMAT_VERSION + 1,
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::FORMAT_VERSION - 1,
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::FORMAT_VERSION + 1,
     ] {
         let mut body = checkpoint_body(0, Vec::new());
         body[..2].copy_from_slice(&observed.to_be_bytes());
@@ -33,7 +33,7 @@ fn unsupported_checkpoint_header_refuses_before_malformed_current_body() {
             body,
             Kind::UnsupportedCheckpointFormat {
                 observed,
-                supported: worth_query_execution::domain_computation::primary_graph::application_checkpoint::FORMAT_VERSION,
+                supported: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::FORMAT_VERSION,
             },
         );
     }

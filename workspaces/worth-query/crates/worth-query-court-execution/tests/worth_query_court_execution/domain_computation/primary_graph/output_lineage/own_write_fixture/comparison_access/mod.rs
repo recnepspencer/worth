@@ -5,7 +5,7 @@ use crate::domain_computation::primary_graph::output_lineage::own_write_fixture:
 fn own_write_cutoff_cannot_project_retained_facts_for_comparison() {
     with_generated_own_write(|_, _, cell, _| {
         let candidate =
-            worth_query_execution::domain_computation::primary_graph::output_lineage::input_cutoff::RetainedInputCutoffCandidate::from_exact_cell(cell);
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::input_cutoff::RetainedInputCutoffCandidate::from_exact_cell(cell);
         assert!(
             candidate.observed_source_facts().unwrap().is_none(),
             "postconditions of a stale computation are not comparable input facts"
@@ -45,7 +45,7 @@ fn own_write_dirty_marks_cannot_be_cleared_by_postcondition_comparison() {
             assert!(
                 matches!(
                     answer,
-                    Ok(worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::verification::DirtyReverification::ChangedComputation)
+                    Ok(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::verification::DirtyReverification::ChangedComputation)
                 ),
                 "comparison of rebased x=2 cannot discharge a computation made from x=1"
             );

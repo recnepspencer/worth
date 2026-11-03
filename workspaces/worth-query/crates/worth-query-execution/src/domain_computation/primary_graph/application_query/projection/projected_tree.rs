@@ -1,4 +1,4 @@
-pub(super) mod content_storage;
+pub(crate) mod content_storage;
 use std::sync::Arc;
 
 use worth_foundational::facade::AspectValue;
@@ -16,11 +16,11 @@ use worth_query_installation::facade::{
 use worth_relational::facade::identity::{EntityId, RelationId};
 
 pub(in crate::domain_computation::primary_graph::application_query::projection) mod comparison;
-pub(in crate::domain_computation::primary_graph::application_query) mod content;
-mod content_comparison;
-mod disclosure_boundary;
+pub(crate) mod content;
+pub(crate) mod content_comparison;
+pub(crate) mod disclosure_boundary;
 mod field;
-mod owned_rows;
+pub(crate) mod owned_rows;
 pub(in crate::domain_computation::primary_graph::application_query) use owned_rows::{
     OwnedProjectionRows, ProjectionDisposal,
 };

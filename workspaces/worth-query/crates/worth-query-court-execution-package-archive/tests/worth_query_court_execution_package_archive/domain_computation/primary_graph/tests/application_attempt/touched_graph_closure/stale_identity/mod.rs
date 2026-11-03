@@ -1,6 +1,6 @@
 //! A later-resolved identity cannot enter an earlier read basis or contact its value provider.
 use crate::domain_computation::primary_graph::tests::application_attempt::touched_graph_closure::*;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::observation::take_native_field_contacts;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::observation::take_native_field_contacts;
 
 #[test]
 fn stale_identity_is_refused_before_counted_native_field_provider_work() {

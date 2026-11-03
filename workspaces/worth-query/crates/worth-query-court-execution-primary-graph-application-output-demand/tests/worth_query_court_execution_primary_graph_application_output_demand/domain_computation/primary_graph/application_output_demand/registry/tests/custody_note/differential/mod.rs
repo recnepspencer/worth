@@ -1,6 +1,6 @@
 //! Full-entry eligibility is independent of the noted order.
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::refreshed_rejoin::refresh_order;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::refreshed_rejoin::superseded;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::refreshed_rejoin::refresh_order;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::refreshed_rejoin::superseded;
 use crate::domain_computation::primary_graph::application_output_demand::registry::tests::custody_note::*;
 use std::cmp::Ordering;
 use worth_runtime_world::facade::CompositeCommitIdentity;

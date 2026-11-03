@@ -2,7 +2,7 @@
 
 use worth_relational::facade::transactions::RecordRef;
 
-use worth_query_execution::domain_computation::application_aftermath::external_effect::causal_event::WorthQueryAdmittedExternalDispatchAttempt;
+use worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::causal_event::WorthQueryAdmittedExternalDispatchAttempt;
 use crate::domain_computation::primary_graph::tests::recoverable_commit_support::recoverable_application_world;
 use crate::domain_computation::primary_graph::tests::recoverable_commit_support::two_recoverable_application_commits;
 

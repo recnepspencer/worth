@@ -7,7 +7,7 @@ use super::super::{
 };
 
 /// Proof that the complete frame and every contained wire length fit this host.
-pub(super) struct ValidatedCheckpointSize {
+pub struct ValidatedCheckpointSize {
     total: usize,
     accepted: usize,
 }

@@ -1,5 +1,5 @@
-use worth_query_execution::domain_computation::primary_graph::invariant_projection::operation_reader::current_output::resolution::cardinality::classify_current_entities;
-use worth_query_execution::domain_computation::primary_graph::invariant_projection::operation_reader::current_output::resolution::cardinality::CurrentOutputCardinality;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::operation_reader::current_output::resolution::cardinality::classify_current_entities;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::operation_reader::current_output::resolution::cardinality::CurrentOutputCardinality;
 
 #[test]
 fn current_role_cardinality_ignores_repeated_identity_but_not_distinct_outputs() {

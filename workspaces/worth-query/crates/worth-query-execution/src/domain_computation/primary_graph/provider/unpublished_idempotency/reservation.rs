@@ -108,6 +108,6 @@ impl Drop for WorthQueryUnpublishedIdempotencyReservation {
 static UNWIND_RECOVERY_INSPECTIONS: std::sync::atomic::AtomicU64 =
     std::sync::atomic::AtomicU64::new(0);
 
-pub(in crate::domain_computation::primary_graph) fn unwind_recovery_inspection_count() -> u64 {
+pub fn unwind_recovery_inspection_count() -> u64 {
     UNWIND_RECOVERY_INSPECTIONS.load(std::sync::atomic::Ordering::Relaxed)
 }

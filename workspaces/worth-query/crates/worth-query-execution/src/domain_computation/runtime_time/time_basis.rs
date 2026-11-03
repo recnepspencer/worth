@@ -35,7 +35,7 @@ impl WorthQueryRuntimeTimeSample {
     }
 }
 
-pub(crate) struct WorthQueryRuntimeClock {
+pub struct WorthQueryRuntimeClock {
     source: Box<dyn WorthQueryRuntimeTimeSource>,
 }
 

@@ -2,17 +2,17 @@ use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_co
     use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::support::record;
 
 use std::sync::Arc;
-    use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::DemandState;
-    use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::source_custody::PreparedOutputRootKind;
-    use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::SourceCustody;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandState;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::source_custody::PreparedOutputRootKind;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::SourceCustody;
     use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandDenial;
     use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandDenialKind;
-    use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::WorthQueryOutputDemandInterest;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryOutputDemandInterest;
     use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandNotifications;
-    use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::WorthQueryOutputDemandRegistry;
-    use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::cleanup;
-    use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::post_commit::discovery;
-    use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::notifications;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryOutputDemandRegistry;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::cleanup;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::post_commit::discovery;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::notifications;
     use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::recoverable_commit_support;
 #[test]
 fn registry_product_retirement_prunes_rows_and_their_notes_together() {
@@ -40,12 +40,12 @@ fn registry_product_retirement_prunes_rows_and_their_notes_together() {
         }
         Arc::clone(&state.records[&held].wake)
     };
-    let before = worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::post_commit::retirement_observation::sweep_contacts();
+    let before = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::post_commit::retirement_observation::sweep_contacts();
     registry.release_product_occurrence(receipt.product_branch().occurrence());
     // Two lifecycle and two prerequisite-custody passes over three rows.
     // Cleanup notes remain separate.
     assert_eq!(
-            worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::post_commit::retirement_observation::sweep_contacts() - before,
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::post_commit::retirement_observation::sweep_contacts() - before,
             12
         );
     {
@@ -95,7 +95,7 @@ fn registry_product_retirement_sweep_names_its_registry_bound() {
                 SourceCustody {
                     occurrence: receipt.product_branch().occurrence(),
                     root_kind: PreparedOutputRootKind::Discovered(
-                        worth_query_execution::equality_type_id::EqualityTypeId::of::<()>(),
+                        worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId::of::<()>(),
                     ),
                     source: None,
                     discovery: None,
@@ -110,9 +110,9 @@ fn registry_product_retirement_sweep_names_its_registry_bound() {
             );
         }
         drop(state);
-        let before = worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::post_commit::retirement_observation::sweep_contacts();
+        let before = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::post_commit::retirement_observation::sweep_contacts();
         registry.release_product_occurrence(receipts[0].product_branch().occurrence());
-        contacts.push(worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::post_commit::retirement_observation::sweep_contacts() - before);
+        contacts.push(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::post_commit::retirement_observation::sweep_contacts() - before);
         assert!(registry
             .state
             .lock()

@@ -3,7 +3,7 @@ use worth_foundational::facade::{AspectContractRevision, AspectKey, FieldKey};
 use worth_relational::facade::identity::{EntityId, KindId, VersionId};
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub(in crate::domain_computation) struct WorthQueryObservedFieldRevision {
+pub struct WorthQueryObservedFieldRevision {
     pub(in crate::domain_computation::primary_graph) entity: EntityId,
     pub(in crate::domain_computation::primary_graph) entity_name: String,
     pub(in crate::domain_computation::primary_graph) aspect: AspectKey,
@@ -13,7 +13,7 @@ pub(in crate::domain_computation) struct WorthQueryObservedFieldRevision {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) struct WorthQueryObservedAdjacencyRevision {
+pub struct WorthQueryObservedAdjacencyRevision {
     pub(in crate::domain_computation::primary_graph) anchor: EntityId,
     pub(in crate::domain_computation::primary_graph) relation_kind: KindId,
     pub direction: worth_relational::facade::runtime::RelationalAdjacencyDirection,

@@ -4,7 +4,7 @@ use super::{AdmittedFactKey, RetainedFact, RetainedFactStore, StorageControl, St
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact as Fact;
 use worth_execution::{ExecutionArray, ExecutionArrayIntoIter};
 
-pub(in crate::domain_computation::primary_graph) struct AuthoringSourceFacts {
+pub struct AuthoringSourceFacts {
     store: RetainedFactStore<Fact>,
     failure: Option<StoreDenial>,
 }

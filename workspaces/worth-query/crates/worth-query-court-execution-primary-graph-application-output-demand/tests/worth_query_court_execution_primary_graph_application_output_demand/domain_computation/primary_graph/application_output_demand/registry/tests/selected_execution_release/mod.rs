@@ -7,7 +7,7 @@ use worth_query_execution::facade::domain_computation::WorthQueryOperationAuthor
 fn selected_execution_failure_fails_the_row_only_for_an_intrinsic_stop() {
     let demand_key = key("selected-execution-failure", 1, 1);
     let product_occurrence = occurrence();
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|_active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|_active_phase| {
         use worth_query_execution::facade::domain_computation::WorthQueryApplicationOneShotDenialKind as Read;
         use WorthQueryOutputDemandDenialKind as Kind;
         for (kind, peer_executes) in [
@@ -30,14 +30,14 @@ fn selected_execution_failure_fails_the_row_only_for_an_intrinsic_stop() {
             let registry = WorthQueryOutputDemandRegistry::default();
             let admit = || {
                 registry
-                .admit(demand_key.clone(), None, worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity(root(1)), product_occurrence, worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::DemandAdmissionKind::Ordinary, None, None)
+                .admit(demand_key.clone(), None, worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity(root(1)), product_occurrence, worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandAdmissionKind::Ordinary, None, None)
                 .expect("the registry creates and joins actual retained membership").0
             };
             let running = admit();
             let peer = admit();
             assert!(matches!(
                 registry.begin(&running),
-                worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::advance_admission::WorthQueryOutputDemandAdvanceAdmission::Schedule(None)
+                worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::advance_admission::WorthQueryOutputDemandAdvanceAdmission::Schedule(None)
             ));
             registry.finish_scheduling(
                 &running,
@@ -49,7 +49,7 @@ fn selected_execution_failure_fails_the_row_only_for_an_intrinsic_stop() {
                 .expect("the owner prepares its finish before Running");
             assert!(matches!(
                 registry.begin(&running),
-                worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::advance_admission::WorthQueryOutputDemandAdvanceAdmission::Execute {
+                worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::advance_admission::WorthQueryOutputDemandAdvanceAdmission::Execute {
                     successor_of: None
                 }
             ));
@@ -69,7 +69,7 @@ fn selected_execution_failure_fails_the_row_only_for_an_intrinsic_stop() {
             finish.failure(&mut denial);
             if !peer_executes {
                 let state = registry.state.lock().unwrap();
-                let dependent = worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::required_stop::head_stop(&state.records, &demand_key)
+                let dependent = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::required_stop::head_stop(&state.records, &demand_key)
                     .expect("a dependent receives the original intrinsic failure");
                 assert_eq!(dependent, denial);
             }
@@ -82,7 +82,7 @@ fn selected_execution_failure_fails_the_row_only_for_an_intrinsic_stop() {
             assert_eq!(
                 matches!(
                     next,
-                    worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::advance_admission::WorthQueryOutputDemandAdvanceAdmission::Execute {
+                    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::advance_admission::WorthQueryOutputDemandAdvanceAdmission::Execute {
                         successor_of: None
                     }
                 ),
@@ -92,14 +92,14 @@ fn selected_execution_failure_fails_the_row_only_for_an_intrinsic_stop() {
             assert_eq!(
                 matches!(
                     next,
-                    worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::advance_admission::WorthQueryOutputDemandAdvanceAdmission::Failed(_)
+                    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::advance_admission::WorthQueryOutputDemandAdvanceAdmission::Failed(_)
                 ),
                 !peer_executes
             );
             // The peer is told the original refusal and its declared value,
             // not a denial rebuilt by the code under test.
             if kind == Kind::ProducerDomainDenied {
-                let worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::advance_admission::WorthQueryOutputDemandAdvanceAdmission::Failed(peer_denial) =
+                let worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::advance_admission::WorthQueryOutputDemandAdvanceAdmission::Failed(peer_denial) =
                     &next
                 else {
                     unreachable!("a domain denial fails the row for every peer")
@@ -120,11 +120,11 @@ fn selected_execution_failure_fails_the_row_only_for_an_intrinsic_stop() {
 /// executes the same row to Ready.
 #[test]
 fn unauthorized_caller_leaves_the_row_for_an_authorized_peer_to_ready() {
-    use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::advance_admission::WorthQueryOutputDemandAdvanceAdmission as Admission;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::advance_admission::WorthQueryOutputDemandAdvanceAdmission as Admission;
     let registry = WorthQueryOutputDemandRegistry::default();
     let admit = || {
         registry
-            .admit(key("unauthorized-caller", 1, 1), None, worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity(root(1)), occurrence(), worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::DemandAdmissionKind::Ordinary, None, None)
+            .admit(key("unauthorized-caller", 1, 1), None, worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity(root(1)), occurrence(), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandAdmissionKind::Ordinary, None, None)
             .expect("the registry creates and joins actual retained membership").0
     };
     let unauthorized = admit();
@@ -166,13 +166,13 @@ fn unauthorized_caller_leaves_the_row_for_an_authorized_peer_to_ready() {
         Admission::Execute { successor_of: None }
     ));
     let receipt = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application();
-    let completion = worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::WorthQueryCompletedOutputDemand {
-        authority: worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::WorthQueryAcceptedOutputAuthority::Committed(receipt),
+    let completion = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryCompletedOutputDemand {
+        authority: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryAcceptedOutputAuthority::Committed(receipt),
         readiness: worth_query_execution::facade::domain_computation::WorthQueryOutputReadinessDeliveryEvidence::for_test(),
     };
     if finish
-        .publish(worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint::Ready(
-            worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::ready_backing::ReadyCompletion::for_test(completion),
+        .publish(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint::Ready(
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::ready_backing::ReadyCompletion::for_test(completion),
         ))
         .is_err()
     {

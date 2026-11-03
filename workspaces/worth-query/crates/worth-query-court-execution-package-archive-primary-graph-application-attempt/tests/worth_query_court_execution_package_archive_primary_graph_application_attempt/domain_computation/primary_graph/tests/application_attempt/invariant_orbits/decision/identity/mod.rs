@@ -8,12 +8,12 @@ use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_co
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::schema::*;
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::world;
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::world::World;
-use worth_query_execution::domain_computation::primary_graph::aggregate_observation::AggregateObservation;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::snapshot_lease::WorthQueryApplicationSnapshotLease;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::aggregate_observation::AggregateObservation;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::snapshot_lease::WorthQueryApplicationSnapshotLease;
 use worth_execution::ExecutionRequest;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitOutcome;
-use worth_query_execution::domain_computation::primary_graph::aggregate_observation;
-use worth_query_execution::domain_computation::primary_graph::application_attempt;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::aggregate_observation;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt;
 use std::sync::Arc;
 use worth_execution::ExecutionAllocationPolicy as Allocation;
 #[test]

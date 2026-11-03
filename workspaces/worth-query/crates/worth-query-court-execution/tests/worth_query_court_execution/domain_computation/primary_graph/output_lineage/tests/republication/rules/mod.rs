@@ -15,12 +15,12 @@ use crate::domain_computation::primary_graph::output_lineage::tests::republicati
 use crate::domain_computation::primary_graph::output_lineage::tests::republication::staged;
 use crate::domain_computation::primary_graph::output_lineage::tests::republication::IDEMPOTENCY_KEY;
 use crate::domain_computation::primary_graph::output_lineage::tests::republication::PARTITION;
-use worth_query_execution::domain_computation::primary_graph::application_query::observed_source::source_identity::membership::WorthQueryObservedSourceSelection;
-use worth_query_execution::domain_computation::primary_graph::invariant_projection::consumed_output::ConsumedOutputEvidence;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::publication::register_republished;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::mark_state::FullVerificationReason;
-use worth_query_execution::domain_computation::primary_graph::output_lineage::recorded_output::RecordedOutput;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact as Fact;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::membership::WorthQueryObservedSourceSelection;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::consumed_output::ConsumedOutputEvidence;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::publication::register_republished;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::mark_state::FullVerificationReason;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::recorded_output::RecordedOutput;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact as Fact;
 
 pub const ALIAS_INPUT: [u8; 32] = [0x63; 32];
 
@@ -133,7 +133,7 @@ fn a_restored_row_without_performed_proof_stays_fresh_until_verified() {
             PARTITION,
             None,
             IDEMPOTENCY_KEY,
-            worth_query_execution::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false).retain_facts(Arc::clone(&facts)),
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false).retain_facts(Arc::clone(&facts)),
             None,
             None,
             None,
@@ -191,13 +191,13 @@ fn a_republished_stable_alias_holds_the_performed_sequence() {
                     producing_implementation: None,
                     required_publication: None,
                     native_prior_checkpoint: None,
-                    computation_source: worth_query_execution::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false),
+                    computation_source: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false),
                     performed_origin: Some(Arc::clone(&origin)),
                     consumed_outputs: Arc::clone(&consumed),
                     prepared_input_reuse_key: Some(input_key(&selection, ALIAS_INPUT)),
                     ..row
                 };
-                let spans = worth_query_execution::domain_computation::primary_graph::output_lineage::input_cutoff::stable_publication::fact_spans::StableFactSpans::new(
+                let spans = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::input_cutoff::stable_publication::fact_spans::StableFactSpans::new(
                     alias_facts.clone().into(), 1, alias_facts.len() - 2).unwrap();
                 let mutable = row.mutable.get_mut().unwrap();
                 // Local representation proof: real witness projection above,
@@ -261,7 +261,7 @@ fn a_stable_alias_is_compared_by_the_witness_of_its_origin() {
                 producing_implementation: None,
                 required_publication: None,
                 native_prior_checkpoint: None,
-                computation_source: worth_query_execution::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false),
+                computation_source: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false),
                 performed_origin: Some(Arc::clone(&origin)),
                 consumed_outputs: Arc::clone(&consumed),
                 prepared_input_reuse_key: Some(input_key(&selection, ALIAS_INPUT)),

@@ -1,7 +1,7 @@
-use worth_query_execution::domain_computation::primary_graph::provider::inbound_completion::WorthQueryInboundCompletionPreparationDenial as Denial;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::inbound_completion::WorthQueryInboundCompletionPreparationDenial as Denial;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitDenialStage as Stage;
-use worth_query_execution::domain_computation::primary_graph::provider::inbound_completion::preparation_denial::preparation_denial;
-use worth_query_execution::domain_computation::primary_graph::provider::inbound_completion::preparation_denial::validation_denial;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::inbound_completion::preparation_denial::preparation_denial;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::inbound_completion::preparation_denial::validation_denial;
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::bootstrap_publication::commit_refusals::refused_commit;
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::bootstrap_publication::commit_refusals::work_refusal;
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::bootstrap_publication::execution_refusals::isolated;

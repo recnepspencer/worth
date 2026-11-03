@@ -37,7 +37,7 @@ pub(super) struct PendingVacancyCleanup {
 }
 
 #[derive(Default)]
-pub(super) struct SettlementIndex {
+pub struct SettlementIndex {
     sources: BTreeMap<SemanticSource, SourcePostings>,
     cancelled_head: Option<Box<PendingVacancyCleanup>>,
 }

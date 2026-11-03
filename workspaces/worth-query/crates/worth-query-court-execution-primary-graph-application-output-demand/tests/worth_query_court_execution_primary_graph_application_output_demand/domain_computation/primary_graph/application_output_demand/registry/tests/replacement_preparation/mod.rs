@@ -33,14 +33,14 @@ pub fn fixture_with_commit(
     for _ in 0..2 {
         old_record
             .performed_obligations
-            .push(worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::PerformedOutputObligation {
+            .push(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::PerformedOutputObligation {
                 source_commit: commit.clone(),
                 source: old.source.clone(),
             });
     }
     old_record
         .performed_obligations
-        .push(worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::PerformedOutputObligation {
+        .push(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::PerformedOutputObligation {
             source_commit: commit.clone(),
             source: key("unmatched", 1, 2).source,
         });

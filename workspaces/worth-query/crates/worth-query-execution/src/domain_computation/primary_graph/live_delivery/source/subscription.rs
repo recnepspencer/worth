@@ -6,7 +6,7 @@ use super::{
 use std::sync::{atomic::Ordering, Arc};
 
 #[derive(Debug)]
-pub(in crate::domain_computation::primary_graph) struct WorthQueryLiveSubscriptionCapacityExhausted;
+pub struct WorthQueryLiveSubscriptionCapacityExhausted;
 
 impl WorthQueryLiveDeliverySource {
     pub(in crate::domain_computation::primary_graph) fn open(

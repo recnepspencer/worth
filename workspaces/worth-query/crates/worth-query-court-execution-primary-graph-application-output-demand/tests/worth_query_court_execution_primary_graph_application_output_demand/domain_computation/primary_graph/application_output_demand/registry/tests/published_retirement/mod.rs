@@ -1,16 +1,16 @@
 //! Interest closure retires undelivered output and its prerequisite claims.
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::ready_backing::PreparedReadyBacking;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::lifecycle::selected_execution_finish::RunningSelectedExecution;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::advance_admission::WorthQueryOutputDemandAdvanceAdmission as Admission;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryPendingOutputDelivery;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::ready_backing::PreparedReadyBacking;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::lifecycle::selected_execution_finish::RunningSelectedExecution;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::advance_admission::WorthQueryOutputDemandAdvanceAdmission as Admission;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryPendingOutputDelivery;
 use crate::domain_computation::primary_graph::application_output_demand::registry::tests::*;
 
 pub fn admit(
     registry: &WorthQueryOutputDemandRegistry,
     key: &WorthQueryOutputDemandKey,
 ) -> WorthQueryOutputDemandInterest {
-    registry.admit(key.clone(), None, worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity(root(1)), occurrence(), worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::DemandAdmissionKind::Ordinary, None, None).map(|(interest, _pause)| interest).unwrap()
+    registry.admit(key.clone(), None, worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity(root(1)), occurrence(), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandAdmissionKind::Ordinary, None, None).map(|(interest, _pause)| interest).unwrap()
 }
 
 pub fn publish(
@@ -48,7 +48,7 @@ pub fn publish(
 fn last_published_interest_releases_its_own_prerequisite_claims() {
     let receipt = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application();
     let _occurrence = occurrence();
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|_| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|_| {
         let registry = WorthQueryOutputDemandRegistry::default();
         let upstream_key = key("held-upstream", 1, 1);
         let upstream = admit(&registry, &upstream_key);
@@ -82,7 +82,7 @@ fn last_published_interest_releases_its_own_prerequisite_claims() {
 fn one_remaining_interest_keeps_the_undelivered_publication() {
     let receipt = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application();
     let _occurrence = occurrence();
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|_| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|_| {
         let registry = WorthQueryOutputDemandRegistry::default();
         let upstream_key = key("remaining-interest-upstream", 1, 1);
         let upstream = admit(&registry, &upstream_key);
@@ -137,13 +137,13 @@ fn one_remaining_interest_keeps_the_undelivered_publication() {
 fn a_registry_successor_is_moved_to_exactly_one_taker() {
     let receipt = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application();
     let _occurrence = occurrence();
-    worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|_| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|_| {
         let registry = WorthQueryOutputDemandRegistry::default();
         let row_key = key("single-successor", 1, 2);
         let first = admit(&registry, &row_key);
         let second = admit(&registry, &row_key);
         publish(&registry, &first, receipt);
-        let successor: worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::held_successor::HeldRequiredSuccessor = Box::new(row_key.clone());
+        let successor: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::held_successor::HeldRequiredSuccessor = Box::new(row_key.clone());
         assert!(registry
             .hold_required_successor(successor, |held| held
                 .downcast_ref::<WorthQueryOutputDemandKey>())

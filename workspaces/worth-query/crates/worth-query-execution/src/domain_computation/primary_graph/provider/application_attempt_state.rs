@@ -10,7 +10,7 @@ use std::{
 };
 
 mod commit_completion;
-mod commit_preparation;
+pub(crate) mod commit_preparation;
 pub(in crate::domain_computation::primary_graph::provider) use commit_preparation::publish_recovered;
 pub(in crate::domain_computation::primary_graph::provider) use commit_preparation::ManagedUnpublishedAttempt;
 mod phase;

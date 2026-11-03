@@ -19,7 +19,7 @@ fn retained_and_batch_selection_keep_original_interruption_causes() {
             WorthQueryApplicationQueryAdmissionDenialKind::DeadlineExceeded,
         ),
     ] {
-        let denial = worth_query_execution::domain_computation::primary_graph::product_operation::query::selection_denial(Branch::Stopped(Err(stop)), "batch-stop");
+        let denial = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::product_operation::query::selection_denial(Branch::Stopped(Err(stop)), "batch-stop");
         assert_eq!(denial.kind(), expected);
     }
 }

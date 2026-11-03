@@ -15,7 +15,7 @@ use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
 
 /// Internal choice; callers can only request an output through demand
 /// admission. FreshRequired never grants authority to preserve an output.
-pub(in crate::domain_computation::primary_graph) enum OutputDependencySelection {
+pub enum OutputDependencySelection {
     Reuse,
     FreshRequired,
 }
@@ -160,7 +160,7 @@ pub(in crate::domain_computation::primary_graph) fn memory_denial() -> WorthQuer
 /// same verdict marking and consumed-output checks reach from this witness.
 /// A row no sealed witness covers is decided by its source facts and by the
 /// full verification its lineage row requires.
-pub(in crate::domain_computation::primary_graph) fn compare_retained_output_witness(
+pub fn compare_retained_output_witness(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,

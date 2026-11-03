@@ -189,7 +189,7 @@ impl From<WorthQueryExternalRedispatchDenial> for WorthQueryRecoveryHandleDenial
 }
 
 /// The runtime's own admission refusal, each cause kept exactly.
-pub(super) const fn from_attempt_admission(
+pub const fn from_attempt_admission(
     denial: WorthQueryExternalDispatchAdmissionDenial,
 ) -> WorthQueryExternalDispatchPreparationDenial {
     use WorthQueryExternalDispatchAdmissionDenial as Admission;
@@ -218,7 +218,7 @@ pub(super) const fn from_attempt_admission(
 }
 
 /// The outstanding-dispatch lease refusal, each cause kept exactly.
-pub(super) const fn from_in_flight(
+pub const fn from_in_flight(
     denial: WorthQueryOutstandingInFlightDenial,
 ) -> WorthQueryExternalDispatchPreparationDenial {
     use WorthQueryExternalDispatchAttemptDenial as Attempt;
@@ -243,7 +243,7 @@ pub(super) const fn from_in_flight(
 
 /// Maps the shared preparation step's refusal onto re-dispatch. The owner row
 /// is read before that step, so its refusal never reaches this mapping.
-pub(super) fn redispatch_preparation(
+pub fn redispatch_preparation(
     denial: WorthQueryExternalDispatchPreparationDenial,
 ) -> WorthQueryExternalRedispatchDenial {
     use WorthQueryExternalDispatchPreparationDenial as Preparation;

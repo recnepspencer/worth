@@ -1,6 +1,6 @@
 //! The private recovery continuation retains the native custody refusal.
 use worth_query_execution::facade::domain_computation::WorthQueryBranchAdoptionRecoveryDenial;
-use worth_query_execution::domain_computation::primary_graph::product_operation::program_adoption::custody::recovery::readmission::recovery_execution;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::product_operation::program_adoption::custody::recovery::readmission::recovery_execution;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;
 use worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial;
 use worth_query_execution::facade::application_contribution::WorthQueryManagedComputationResourceDenial;

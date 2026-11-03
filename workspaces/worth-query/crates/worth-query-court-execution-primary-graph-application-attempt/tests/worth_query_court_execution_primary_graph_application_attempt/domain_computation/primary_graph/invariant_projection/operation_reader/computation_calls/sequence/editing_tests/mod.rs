@@ -1,15 +1,15 @@
 //! Storage/canonical-prefix proofs; no source or native completion is fabricated here.
 use std::sync::Arc;
 use std::collections::BTreeSet;
-use worth_query_execution::domain_computation::primary_graph::invariant_projection::operation_reader::computation_calls::sequence::CallVisit;
-use worth_query_execution::domain_computation::primary_graph::invariant_projection::operation_reader::computation_calls::sequence::ComputationCallSequence;
-use worth_query_execution::domain_computation::primary_graph::application_attempt::read_set::computation_routing::ComputationRead;
-use worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::QueryRequestExecution;
-use worth_query_execution::domain_computation::primary_graph::invariant_projection::operation_reader::computation_calls::sequence::shape;
-use worth_query_execution::domain_computation::primary_graph::invariant_projection::operation_reader::computation_calls::sequence::tree::summary;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::operation_reader::computation_calls::sequence::CallVisit;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::operation_reader::computation_calls::sequence::ComputationCallSequence;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::computation_routing::ComputationRead;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::QueryRequestExecution;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::operation_reader::computation_calls::sequence::shape;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::operation_reader::computation_calls::sequence::tree::summary;
 use crate::domain_computation::primary_graph::invariant_projection::operation_reader::computation_calls::sequence::tests;
-use worth_query_execution::domain_computation::primary_graph::invariant_projection::operation_reader::computation_calls::sequence::tree::visit;
-use worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::operation_reader::computation_calls::sequence::tree::visit;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope;
 pub fn read(id: u64) -> ComputationRead {
     ComputationRead::ItemKey(worth_execution::PartitionItemId(id))
@@ -106,7 +106,7 @@ fn insert_retire_changes_only_paths_preserving_order_history_range_and_fresh_clo
     }
     // The edited sequence must descend to the same actual unfitting call,
     // rather than charging a carried summary beyond its native reader prefix.
-    use worth_query_execution::domain_computation::primary_graph::invariant_projection::work::WorthQueryInvariantProjectionWorkBudget as Budget;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::work::WorthQueryInvariantProjectionWorkBudget as Budget;
     for remaining in 0..40 {
         let mut full = Budget::bounded(remaining);
         let expected = truth.iter().position(|(_, (charge, _))| {

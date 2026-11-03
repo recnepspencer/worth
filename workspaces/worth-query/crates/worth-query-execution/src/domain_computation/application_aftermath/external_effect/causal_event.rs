@@ -91,7 +91,7 @@ pub(super) struct ExternalAcknowledgementEvent {
 ///
 /// Only the runtime can mint the opaque ordinal required by `seal`, and only
 /// this causal owner can decompose the completed admission.
-pub(in crate::domain_computation) struct WorthQueryAdmittedExternalDispatchAttempt {
+pub struct WorthQueryAdmittedExternalDispatchAttempt {
     committed: WorthQueryCommittedDispatchOutboxObservation,
     query_runtime: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
     ordinal: WorthQueryExternalDispatchAttemptOrdinal,

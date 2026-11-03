@@ -1,7 +1,7 @@
 //! Real installed lookup refuses an undeclared binding before inspection projection.
-use worth_query_execution::domain_computation::primary_graph::admitted_capture::CaptureStop;
-use worth_query_execution::domain_computation::primary_graph::causal_inspection::application_inspection::request::binding::InspectionBindingDenial;
-use worth_query_execution::domain_computation::primary_graph::causal_inspection::application_inspection::stop::InspectionCause;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::admitted_capture::CaptureStop;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::causal_inspection::application_inspection::request::binding::InspectionBindingDenial;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::causal_inspection::application_inspection::stop::InspectionCause;
 use worth_query_execution::facade::application_inspection::WorthQueryApplicationInspectionDenial;
 use worth_query_execution::facade::application_inspection::WorthQueryApplicationInspectionOwnerRefusal;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::Account;

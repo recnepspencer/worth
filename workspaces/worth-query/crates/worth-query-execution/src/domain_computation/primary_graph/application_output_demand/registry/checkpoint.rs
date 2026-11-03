@@ -6,12 +6,12 @@ use worth_runtime_world::facade::CompositeCommitIdentity;
 
 use super::ReadyCompletion;
 
-pub(in crate::domain_computation::primary_graph) enum WorthQueryPendingOutputDelivery {
+pub enum WorthQueryPendingOutputDelivery {
     Change(WorthQueryPerformedRelationalProductChange),
     NoChange,
 }
 
-pub(in crate::domain_computation::primary_graph) enum WorthQueryOutputCheckpoint {
+pub enum WorthQueryOutputCheckpoint {
     PublicationPending {
         owner: crate::domain_computation::primary_graph::application_contribution::PendingProducerPublication,
         ready_backing: super::PreparedReadyBacking,
@@ -71,7 +71,7 @@ impl WorthQueryOutputCheckpoint {
     }
 }
 
-pub(super) enum WorthQueryOutputAdvancement {
+pub enum WorthQueryOutputAdvancement {
     Idle,
     Claimed(WorthQueryOutputClaimIdentity),
     Stopped {
@@ -80,7 +80,7 @@ pub(super) enum WorthQueryOutputAdvancement {
     },
 }
 
-pub(super) struct WorthQueryOutputProgress {
+pub struct WorthQueryOutputProgress {
     generation: Option<super::ready_backing::OutputCheckpointGeneration>,
     undelivered: Option<super::publication_head::UndeliveredPublication>,
     publication_head: Option<std::sync::Arc<std::sync::atomic::AtomicUsize>>,

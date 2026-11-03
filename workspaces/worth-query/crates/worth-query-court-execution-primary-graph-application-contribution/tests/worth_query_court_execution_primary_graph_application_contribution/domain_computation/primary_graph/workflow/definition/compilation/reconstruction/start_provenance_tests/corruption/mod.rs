@@ -37,7 +37,7 @@ fn started_revision_reader_refuses_unmanaged_and_unrostered_current_truth() {
             |runtime, basis| {
                 match corrupt {
                 "unmanaged" => AspectValue::String(InternedString::Raw(original.to_string())),
-                "unrostered" => worth_query_execution::domain_computation::primary_graph::workflow::instance::start_provenance::admit(
+                "unrostered" => worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::instance::start_provenance::admit(
                     &execution,
                     runtime,
                     basis,
@@ -58,7 +58,7 @@ fn started_revision_reader_refuses_unmanaged_and_unrostered_current_truth() {
         handle.with_runtime(&execution, |runtime| {
             assert!(
                 matches!(
-                    worth_query_execution::domain_computation::primary_graph::workflow::instance::start_provenance::read(
+                    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::instance::start_provenance::read(
                         &execution,
                         runtime,
                         selected.1.snapshot_handle(),
@@ -66,7 +66,7 @@ fn started_revision_reader_refuses_unmanaged_and_unrostered_current_truth() {
                         instance,
                         &support
                     ),
-                    Err(worth_query_execution::domain_computation::primary_graph::workflow::instance::start_provenance::StartProvenanceReadDenial::Corrupt)
+                    Err(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::instance::start_provenance::StartProvenanceReadDenial::Corrupt)
                 ),
                 "{corrupt}"
             );
@@ -83,7 +83,7 @@ fn started_revision_reader_refuses_unmanaged_and_unrostered_current_truth() {
         let current = crate::domain_computation::primary_graph::workflow::definition::compilation::reconstruction::start_provenance_tests::fixture::selected(&world, &execution);
         handle.with_runtime(&execution, |runtime| {
             assert_eq!(
-                worth_query_execution::domain_computation::primary_graph::workflow::instance::start_provenance::read(
+                worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::instance::start_provenance::read(
                     &execution,
                     runtime,
                     current.1.snapshot_handle(),
@@ -242,7 +242,7 @@ fn started_revision_missing_current_field_is_rejected_by_native_restore_before_p
         .unwrap();
     let snapshot = native_snapshot(&target);
     assert_eq!(
-        worth_query_execution::domain_computation::primary_graph::workflow::instance::start_provenance::read(&execution, &target, &snapshot, &layout, instance, &support)
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::instance::start_provenance::read(&execution, &target, &snapshot, &layout, instance, &support)
             .unwrap(),
         original
     );

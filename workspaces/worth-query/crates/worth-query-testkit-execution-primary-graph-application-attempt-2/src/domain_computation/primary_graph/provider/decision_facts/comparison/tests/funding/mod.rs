@@ -8,7 +8,7 @@ pub fn assert_full_capture_funding(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     authority: &WorthQuerySessionReadAuthority<'_>,
     request: &WorthQueryRequestScope,
-    table: &worth_query_execution::domain_computation::primary_graph::provider::application_decision_fact::application_table::ApplicationFactTable,
+    table: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_decision_fact::application_table::ApplicationFactTable,
 ) {
     // The actual registered fixture selected SystemAllocation. Its complete
     // original-fact path must retain the quote independently of that policy.

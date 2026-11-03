@@ -102,7 +102,7 @@ fn preparation_commit_recovery_and_retry_perform_no_execution_digest_derivation(
             resolved_account(&(phase).test_host_request(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
-    let before = worth_query_execution::execution_digest::test_hash_parts_call_count();
+    let before = worth_query_execution::court_doors_for_test::execution_digest::test_hash_parts_call_count();
     let first = world
         .application
         .with_host_advancement(|phase| {
@@ -139,12 +139,12 @@ fn preparation_commit_recovery_and_retry_perform_no_execution_digest_derivation(
         ),
         WorthQueryApplicationCommitOutcome::Committed(_)
     ));
-    let after_commit = worth_query_execution::execution_digest::test_hash_parts_call_count();
+    let after_commit = worth_query_execution::court_doors_for_test::execution_digest::test_hash_parts_call_count();
     assert_eq!(
         after_commit,
         before,
         "preparation, provider execution, commit, or response-loss recovery derived legacy execution digests: {:?}",
-        worth_query_execution::execution_digest::test_hash_parts_domains_since(before)
+        worth_query_execution::court_doors_for_test::execution_digest::test_hash_parts_domains_since(before)
     );
 
     assert!(matches!(
@@ -156,7 +156,7 @@ fn preparation_commit_recovery_and_retry_perform_no_execution_digest_derivation(
         WorthQueryApplicationCommitOutcome::AlreadyCommitted(_)
     ));
     assert_eq!(
-        worth_query_execution::execution_digest::test_hash_parts_call_count(),
+        worth_query_execution::court_doors_for_test::execution_digest::test_hash_parts_call_count(),
         after_commit,
         "idempotent retry or recovery derived a legacy execution digest"
     );

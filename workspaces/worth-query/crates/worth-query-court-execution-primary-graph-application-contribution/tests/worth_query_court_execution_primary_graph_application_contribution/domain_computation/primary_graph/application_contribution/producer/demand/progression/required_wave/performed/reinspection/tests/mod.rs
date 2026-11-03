@@ -1,19 +1,19 @@
 //! Actual publication receipts, not attempted executions, pay for inspection.
-use worth_query_execution::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::frontier::DependencySchedule;
-use worth_query_execution::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::frontier::selection::MemberInput;
-use worth_query_execution::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::frontier::MemberState;
-use worth_query_execution::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::frontier::RequiredFrontier;
-use worth_query_execution::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::frontier::RequiredMember;
-use worth_query_execution::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::performed::ordinary::DecisionInput;
-use worth_query_execution::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::performed::PerformedMembers;
-use worth_query_execution::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::performed::SelectedDecisionInput;
-use worth_query_execution::domain_computation::primary_graph::application_query::observed_source::source_identity::WorthQueryObservedSourceEpoch;
-use worth_query_execution::domain_computation::primary_graph::application_output_demand::registry::demand_key::WorthQueryOutputDemandKey;
-use worth_query_execution::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::caller;
-use worth_query_execution::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::frontier;
-use worth_query_execution::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::performed::publication;
-use worth_query_execution::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::queued;
-use worth_query_execution::domain_computation::primary_graph::application_contribution::producer::execution::outcome::commit_receipt;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::frontier::DependencySchedule;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::frontier::selection::MemberInput;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::frontier::MemberState;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::frontier::RequiredFrontier;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::frontier::RequiredMember;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::performed::ordinary::DecisionInput;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::performed::PerformedMembers;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::performed::SelectedDecisionInput;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::WorthQueryObservedSourceEpoch;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::demand_key::WorthQueryOutputDemandKey;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::caller;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::frontier;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::performed::publication;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::queued;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::execution::outcome::commit_receipt;
 use worth_query_execution::facade::application_contribution::WorthQueryProducerApplicability;
 use worth_query_execution::facade::application_contribution::WorthQueryProducerLifecyclePosture;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::output_lineage::own_write_fixture::with_committed_own_write;
@@ -61,7 +61,7 @@ pub fn assert_publication_credit(replay: bool, publish: bool) {
                     .unwrap();
                 let runtime = &world.application;
 
-                let (shared, positioned) = worth_query_execution::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::selection::select_required_basis(
+                let (shared, positioned) = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::selection::select_required_basis(
                     &execution,
                     runtime,
                     runtime.current_world(),

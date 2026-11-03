@@ -5,7 +5,7 @@ mod selected_checkpoint_finish;
 mod selected_finish;
 mod supersession;
 pub(in crate::domain_computation::primary_graph) use selected_checkpoint_finish::PreparedSelectedCheckpointFinish;
-mod checkpoint_finish;
+pub(crate) mod checkpoint_finish;
 pub(in crate::domain_computation::primary_graph) use checkpoint_finish::CheckpointFinishStop;
 
 use super::post_commit::release_completed_member;

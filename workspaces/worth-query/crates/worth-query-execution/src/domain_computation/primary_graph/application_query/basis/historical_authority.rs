@@ -5,7 +5,7 @@ use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt
 use worth_relational::facade::history::RelationalCommitReceipt;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(crate) struct WorthQueryApplicationHistoricalRead {
+pub struct WorthQueryApplicationHistoricalRead {
     source: WorthQueryApplicationHistoricalReadSource,
 }
 

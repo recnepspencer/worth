@@ -13,7 +13,7 @@ use crate::domain_computation::primary_graph::{
 
 /// Invocation evidence awaiting the completed, exactly covered handler read.
 /// The static producer declaration supplies the upper bound on context use.
-pub(in crate::domain_computation::primary_graph) struct PreparedDecisionReuseContext {
+pub struct PreparedDecisionReuseContext {
     contract: WorthQueryProducerInputReuseContract,
     key: Option<[u8; 32]>,
     principal: Option<WorthQueryPrincipalReuseWitness>,

@@ -5,7 +5,7 @@ use worth_relational::facade::snapshots::SnapshotHandle;
 use worth_runtime_bridge::facade::TruthBranchIdentity;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) struct WorthQueryGraphWorkBranchAffinity {
+pub struct WorthQueryGraphWorkBranchAffinity {
     relational: BranchId,
     truth: TruthBranchIdentity,
 }

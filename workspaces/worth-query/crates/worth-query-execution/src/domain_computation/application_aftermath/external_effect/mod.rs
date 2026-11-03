@@ -3,15 +3,15 @@
 //! CDC is intentionally not the delivery substrate (R8.8). Dispatch work is
 //! derived from Query-owned outbox records co-committed with the mutation.
 
-mod causal_event;
+pub(crate) mod causal_event;
 pub(crate) mod classification;
-mod correlation;
-mod dispatch;
+pub(crate) mod correlation;
+pub(crate) mod dispatch;
 mod identity;
 mod identity_derivation;
-mod inbound;
+pub(crate) mod inbound;
 mod observation;
-mod outbox;
+pub(crate) mod outbox;
 mod posture;
 mod transport;
 

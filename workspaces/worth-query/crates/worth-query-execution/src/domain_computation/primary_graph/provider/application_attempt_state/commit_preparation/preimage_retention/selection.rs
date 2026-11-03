@@ -17,7 +17,7 @@ use crate::domain_computation::application_aftermath::{
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationDecisionFact;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-struct WorthQueryObservedPreImageCandidate {
+pub struct WorthQueryObservedPreImageCandidate {
     read_scope: WorthQueryOperationGraphReadScope,
     value: AspectValue,
     target_record: RecordRef,
@@ -44,7 +44,7 @@ pub(super) struct WorthQueryRetainedPreImageSelection {
     candidates_materialized: usize,
 }
 
-pub(super) fn retain_from_attempt<'fact>(
+pub fn retain_from_attempt<'fact>(
     demand: &InstalledPreImageDemand,
     facts: impl Iterator<Item = &'fact WorthQueryPrimaryGraphApplicationDecisionFact>,
     mutation: &ValidatedMutationFootprint,
@@ -143,7 +143,7 @@ impl WorthQueryObservedPreImageCandidate {
     }
 }
 
-fn retain_matching(
+pub fn retain_matching(
     demand: &InstalledPreImageDemand,
     candidates: &[WorthQueryObservedPreImageCandidate],
     mutation_is_empty: bool,
