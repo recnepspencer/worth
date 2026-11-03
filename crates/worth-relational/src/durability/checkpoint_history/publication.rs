@@ -167,6 +167,7 @@ impl RetiredCanonicalPlacements {
         &mut self,
         request: &ExecutionRequest<'_, '_>,
         context: &mut MapKernelContext<'_, '_>,
+        source: Option<&dyn crate::durability::medium::RelationalDurableColdSource>,
     ) -> Result<(), Ack> {
         while self.next < self.slots.len() {
             request.check_live().map_err(Ack::Stopped)?;
@@ -183,7 +184,12 @@ impl RetiredCanonicalPlacements {
                 self.next += 1;
                 continue;
             }
-            let slot = &self.slots[self.next];
+            let slot = &mut self.slots[self.next];
+            if let Some(backing) = &mut slot.backing {
+                // The newly installed directory retains the SAME source;
+                // releasing this displaced local edge cannot destroy it.
+                backing.retire_journal_source(source)?;
+            }
             let has_directory = slot.directory.is_some()
                 || slot
                     .backing

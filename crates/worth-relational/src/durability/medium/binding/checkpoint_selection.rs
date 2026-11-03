@@ -231,7 +231,13 @@ impl AcknowledgingCheckpoint {
             }
             self.directory_applied = true;
         }
-        self.retired.advance(execution, context)?;
+        self.retired.advance(
+            execution,
+            context,
+            self.directory
+                .as_ref()
+                .map(|directory| directory.source.as_ref()),
+        )?;
         if let Some(publication) = self.capture.manifest_publication() {
             publication.complete_acknowledgement()?;
         }

@@ -1,6 +1,14 @@
 //! Actual selected cold owners close while original retired payloads remain alive.
 use super::*;
 use worth_relational::facade::history::BranchId;
+use worth_relational::facade::inspection::{
+    RelationalBranchSharingInspectionDenial as Inventory,
+    RelationalRetainedStorageInspectionDenial as Census,
+};
+use worth_relational::facade::storage::{
+    RelationalStorageSubject as Subject, RelationalStorageUnavailable,
+    RelationalStorageUnavailableCause as Cause,
+};
 
 fn writer(
     path: &std::path::Path,
@@ -35,10 +43,26 @@ fn cold_and_materialized_original_sources_physically_close_while_metadata_and_re
         with_bootstrap_advancement_from_request(execution, |phase| {
             let (query, home) = super::super::unshared(path.path(), &phase);
             let home = home.share().consume(|home| home);
+            // Native original-envelope admission may read canonical members
+            // (D12). Prove cold record custody directly, without demanding it.
+            let before_probe = home.relational().cold_storage_reads();
+            let cold = home.relational().runtime().observe_retained_storage();
+            assert!(
+                matches!(
+                    &cold,
+                    Err(Census::OwnerInventory(Inventory::StorageUnavailable(
+                        RelationalStorageUnavailable {
+                            subject: Subject::Region(_),
+                            cause: Cause::SourceUnavailable
+                        }
+                    )))
+                ),
+                "the genuine original region remains cold: {cold:?}"
+            );
             assert_eq!(
-                home.relational().cold_storage_reads().member_reads,
-                0,
-                "the genuine selected readmission starts cold"
+                home.relational().cold_storage_reads(),
+                before_probe,
+                "the coldness probe performs no storage read"
             );
             let pins = if materialize {
                 let native = home.relational().runtime();

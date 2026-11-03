@@ -18,6 +18,22 @@ impl std::fmt::Debug for RetiredCanonicalPlacement {
     }
 }
 impl RetiredCanonicalPlacement {
+    pub(crate) fn retire_journal_source(
+        &mut self,
+        source: Option<&dyn crate::durability::medium::RelationalDurableColdSource>,
+    ) -> Result<(), crate::durability::medium::RelationalCheckpointAcknowledgementDenial> {
+        use crate::durability::medium::RelationalCheckpointAcknowledgementDenial as Ack;
+        match &mut self.backing {
+            Some(EnvelopeBacking::Journal {
+                source: original, ..
+            }) => original
+                .retire(source.ok_or(Ack::CaptureNotBound)?)
+                .map_err(Ack::Retirement),
+            Some(EnvelopeBacking::Memory { .. } | EnvelopeBacking::SelectedCheckpoint { .. })
+            | None => Ok(()),
+        }
+    }
+
     pub(crate) fn has_directory(&self) -> bool {
         matches!(
             self.backing,
