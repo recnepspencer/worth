@@ -209,3 +209,5 @@ fn selector_and_root_reads_require_original_and_native_capacity_before_allocatio
         .join()
         .expect("source read funding worker did not panic");
 }
+
+mod source_slot;

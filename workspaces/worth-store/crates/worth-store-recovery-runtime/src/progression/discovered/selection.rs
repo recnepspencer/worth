@@ -313,7 +313,6 @@ fn select_final_cut(
         .wal_tail
         .select_sources(
             coordination,
-            std::mem::size_of::<FinalSelectionInput>(),
             input.root,
             input.page_facts,
             input.retained_previous_page_facts,

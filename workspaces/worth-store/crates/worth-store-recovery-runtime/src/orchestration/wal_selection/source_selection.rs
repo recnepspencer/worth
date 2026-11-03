@@ -10,25 +10,50 @@ pub(crate) struct ResidentSourceSelection {
     allocation: WalSelectionAllocation,
 }
 
+// Field order keeps every source payload alive only while its native grant lives.
+struct SourceSelectionInput {
+    selection: PhysicalSourceSelection,
+    allocation: WalSelectionAllocation,
+}
+
 impl ResidentSourceSelection {
-    pub(super) fn finish(
-        mut backing: Vec<PhysicalSourceSelection>,
+    pub(super) fn capture(
         selection: PhysicalSourceSelection,
-        mut allocation: WalSelectionAllocation,
-        previously_retained: u64,
+        allocation: WalSelectionAllocation,
+        owner: &worth_store::physical_runtime::PhysicalRecoveryCoordination,
     ) -> Result<Self, worth_store::physical_runtime::RecoveryWalAllocationDenial> {
-        assert!(backing.is_empty() && backing.capacity() == 1);
-        let retained = previously_retained
-            .checked_add(vector_bytes::<PhysicalSourceSelection>(backing.capacity())?)
-            .ok_or(worth_store::physical_runtime::RecoveryWalAllocationDenial::SizeOverflow)?;
-        backing.push(selection);
-        // The actual payload is now in the admitted slot. Only construction
-        // storage is released; existing tail backing remains charged.
-        allocation.settle_after_disposal(retained)?;
-        Ok(Self {
-            selection: backing,
+        use worth_store::physical_runtime::RecoveryWalAllocationDenial;
+        let mut input = SourceSelectionInput {
+            selection,
             allocation,
-        })
+        };
+        let previously_retained = input.allocation.charged_bytes();
+        let construction_bytes = u64::try_from(std::mem::size_of_val(&input))
+            .ok()
+            .and_then(|bytes| {
+                bytes.checked_add(std::mem::size_of::<PhysicalSourceSelection>() as u64)
+            })
+            .ok_or(RecoveryWalAllocationDenial::SizeOverflow)?;
+        let mut backing = input.allocation.prepare_vector::<PhysicalSourceSelection>(
+            owner,
+            1,
+            construction_bytes,
+        )?;
+        // Exact admitted capacity is one; this move cannot grow the allocation.
+        backing.push(input.selection);
+        let mut captured = Self {
+            selection: backing,
+            allocation: input.allocation,
+        };
+        let retained = previously_retained
+            .checked_add(vector_bytes::<PhysicalSourceSelection>(
+                captured.selection.capacity(),
+            )?)
+            .ok_or(RecoveryWalAllocationDenial::SizeOverflow)?;
+        // Every fallible step retains an aggregate whose payload drops before
+        // its grant. Only construction bytes are released after filling.
+        captured.allocation.settle_after_disposal(retained)?;
+        Ok(captured)
     }
 
     pub(crate) const fn facts(&self) -> &PhysicalSourceSelection {

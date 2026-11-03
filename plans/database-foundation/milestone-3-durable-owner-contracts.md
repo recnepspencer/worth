@@ -2901,8 +2901,11 @@ cost-denial path. This changes no persisted format or recovery authority.
 The selected physical source keeps its existing ResidentSourceSelection owner
 and native WAL allocation custody. Its payload moves into one sealed vector
 slot. Before allocation, the original coordination recovery ceiling admits the
-existing reservation, exact requested slot bytes, the discovery owner's actual
-FinalSelectionInput header and one PhysicalSourceSelection construction temporary.
+existing reservation, exact requested slot bytes, its actual SourceSelectionInput
+header and one PhysicalSourceSelection movement temporary. The existing pure
+Physics selection finishes before this new representation admission, preserving
+its semantic refusal precedence. No duplicate validation or new Physics door is
+introduced. The input aggregate disposes selection before its grant on refusal.
 Allocator capacity must remain exact. Filling the slot cannot allocate; subsequent
 settlement retains the original reservation plus actual slot capacity and releases
 only construction storage. The allocation owner preserves its peak after settlement;

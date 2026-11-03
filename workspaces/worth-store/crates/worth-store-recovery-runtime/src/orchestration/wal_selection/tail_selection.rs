@@ -7,9 +7,9 @@ use super::{
 use worth_store::physical_runtime::{PhysicalRecoveryCoordination, RecoveryWalAllocationDenial};
 use worth_store_recovery_physics::{
     admit_physical_wal_tail, select_physical_recovery_sources, PhysicalCheckpointBase,
-    PhysicalRecoveryResidue, PhysicalSourceSelection, PhysicalSourceSelectionDenial,
-    SelectedCompactionProduct, SelectedPhysicalPageFacts, SelectedPhysicalRoot,
-    SelectedPhysicalWalTail, SelectedPhysicalWalTailDenial,
+    PhysicalRecoveryResidue, PhysicalSourceSelectionDenial, SelectedCompactionProduct,
+    SelectedPhysicalPageFacts, SelectedPhysicalRoot, SelectedPhysicalWalTail,
+    SelectedPhysicalWalTailDenial,
 };
 
 #[derive(Debug)]
@@ -76,7 +76,6 @@ impl ResidentWalTail {
     pub(crate) fn select_sources(
         self,
         owner: &PhysicalRecoveryCoordination,
-        input_header_bytes: usize,
         root: SelectedPhysicalRoot,
         page_facts: SelectedPhysicalPageFacts,
         retained_previous: Option<SelectedPhysicalPageFacts>,
@@ -84,33 +83,18 @@ impl ResidentWalTail {
         compaction: Option<SelectedCompactionProduct>,
         residue: Vec<PhysicalRecoveryResidue>,
     ) -> Result<ResidentSourceSelection, ResidentSourceSelectionDenial> {
-        let construction_bytes = u64::try_from(input_header_bytes)
-            .ok()
-            .and_then(|bytes| {
-                bytes.checked_add(std::mem::size_of::<PhysicalSourceSelection>() as u64)
-            })
-            .ok_or(ResidentSourceSelectionDenial::Allocation(
-                RecoveryWalAllocationDenial::SizeOverflow,
-            ))?;
-        let Self {
-            tail,
-            mut allocation,
-        } = self;
-        let previously_retained = allocation.charged_bytes();
-        let backing = allocation
-            .prepare_vector::<PhysicalSourceSelection>(owner, 1, construction_bytes)
-            .map_err(ResidentSourceSelectionDenial::Allocation)?;
+        let input = self;
         let selection = select_physical_recovery_sources(
             root,
             page_facts,
             retained_previous,
             checkpoint,
-            tail,
+            input.tail,
             compaction,
             residue,
         )
         .map_err(ResidentSourceSelectionDenial::Selection)?;
-        ResidentSourceSelection::finish(backing, selection, allocation, previously_retained)
+        ResidentSourceSelection::capture(selection, input.allocation, owner)
             .map_err(ResidentSourceSelectionDenial::Allocation)
     }
 }
