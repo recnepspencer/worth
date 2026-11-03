@@ -44,6 +44,8 @@ impl NativeSourceGraphRetirement {
                 | Stage::Index
                 | Stage::IndexDirectory
                 | Stage::SelectedDirectory
+                | Stage::RetainedDirectory
+                | Stage::RetainedCanonicalDirectory
                 | Stage::Complete => unreachable!("selected physical member"),
             }
             true
@@ -67,6 +69,8 @@ impl NativeSourceGraphRetirement {
                 | Stage::Index
                 | Stage::IndexDirectory
                 | Stage::SelectedDirectory
+                | Stage::RetainedDirectory
+                | Stage::RetainedCanonicalDirectory
                 | Stage::Complete => unreachable!("selected original member loan"),
             };
             complete(observation)?
@@ -87,6 +91,8 @@ impl NativeSourceGraphRetirement {
                 | Stage::Index
                 | Stage::IndexDirectory
                 | Stage::SelectedDirectory
+                | Stage::RetainedDirectory
+                | Stage::RetainedCanonicalDirectory
                 | Stage::Complete => unreachable!("selected original member slot"),
             }
         };
@@ -103,6 +109,8 @@ impl NativeSourceGraphRetirement {
                 | Stage::Index
                 | Stage::IndexDirectory
                 | Stage::SelectedDirectory
+                | Stage::RetainedDirectory
+                | Stage::RetainedCanonicalDirectory
                 | Stage::Complete => unreachable!("completed physical member stage"),
             };
         }
