@@ -268,3 +268,38 @@ def test_attributes(text):
         inner = text[match.start() + stream[comma].end:match.start() + stream[close].start].strip()
         result.append((match.start(), match.start() + stream[end].end, inner))
     return result
+
+
+def unit_extent(text):
+    """End of the field, statement or item that follows an attribute."""
+    stream = tokens(text[:20000])
+    depth = 0
+    for i, token in enumerate(stream):
+        if token.value in ('(', '[', '{'):
+            depth += 1
+        elif token.value in (')', ']', '}'):
+            depth -= 1
+            if depth < 0:
+                return token.start
+            if depth == 0 and token.value == '}':
+                following = stream[i + 1].value if i + 1 < len(stream) else ''
+                if following not in ('.', 'else', '?', ')', ';', ','):
+                    return token.end
+        elif depth == 0 and token.value in (';', ','):
+            return token.end
+    return len(text)
+
+
+def trait_impl(body):
+    from src_hooks import trait_impl as is_trait_impl
+    return is_trait_impl(body)
+
+
+def method_widenings(node, offset, body, called, impl_methods):
+    result = []
+    for method, start, end, _gated in impl_methods(body):
+        if method in called:
+            change = widen(node.text, offset + start, offset + end)
+            if change:
+                result.append(absolute(node, change[0], change[1]) + (change[2],))
+    return result
