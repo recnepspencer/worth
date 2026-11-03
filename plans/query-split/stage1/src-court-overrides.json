@@ -799,6 +799,7 @@
     "domain_computation::managed_run::recovery_registry::WorthQueryRecoveryRegistrySlot",
     "domain_computation::managed_run::relational_observation::WorthQueryManagedRelationalObservationIdentity",
     "domain_computation::operation_binding::authority::WorthQueryApplicationGraphWorkAffinity",
+    "domain_computation::primary_graph::admitted_capture::retained_stage::RetainedStorageDenial",
     "domain_computation::primary_graph::aggregate_observation::key::AggregateKey",
     "domain_computation::primary_graph::aggregate_projection::WorthQueryAggregateProjections",
     "domain_computation::primary_graph::application_attempt::dependency_identity::output_postcondition::OutputCurrentnessFacts",
