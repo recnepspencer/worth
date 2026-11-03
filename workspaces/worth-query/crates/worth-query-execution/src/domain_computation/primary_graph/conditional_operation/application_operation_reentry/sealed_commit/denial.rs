@@ -91,6 +91,8 @@ pub(super) fn classify_denial(denial: &Denial) -> Outcome {
                     }
                     | Session::ProjectionContract { .. }
                     | Session::HistoricalVisibility { .. }
+                    | Session::ContentInconsistency
+                    | Session::Content(_)
                     | Session::StorageUnavailable(_)
                     | Session::ForeignOperationAttempt
                     | Session::ForeignExecutionBasis
@@ -129,7 +131,9 @@ pub(super) fn classify_denial(denial: &Denial) -> Outcome {
 
 fn classify_kind(kind: Kind) -> Outcome {
     match kind {
-        Kind::StorageUnavailable(_) => Outcome::TerminalFailure(Terminal::ApplicationCommit(kind)),
+        Kind::ContentInconsistency | Kind::Content(_) | Kind::StorageUnavailable(_) => {
+            Outcome::TerminalFailure(Terminal::ApplicationCommit(kind))
+        }
         Kind::ActiveSnapshotCapacityExhausted {
             maximum_active_snapshots,
         } => Outcome::SnapshotCapacityBackpressured {

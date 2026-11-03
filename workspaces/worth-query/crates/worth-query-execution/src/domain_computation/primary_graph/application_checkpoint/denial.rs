@@ -11,6 +11,10 @@ pub enum WorthQueryCheckpointCaptureDenial {
     /// Boxed: the native durability refusal is the largest cause, and every
     /// capture result would otherwise reserve its bytes inline.
     Durability(Box<DurabilityError>),
+    Content(worth_relational::facade::content::RelationalContentDenial),
+    ArtifactFrame(
+        worth_relational::facade::durability::RelationalCanonicalCommitArtifactFrameRefusal,
+    ),
     Allocation(ExecutionAllocationDenial),
     /// Original execution stopped, or cannot fund the required capture contract.
     Execution(super::super::WorthQueryPrimaryGraphInstallationDenial),
@@ -19,6 +23,10 @@ pub enum WorthQueryCheckpointCaptureDenial {
 impl From<RelationalNativeCheckpointCaptureDenial> for WorthQueryCheckpointCaptureDenial {
     fn from(error: RelationalNativeCheckpointCaptureDenial) -> Self {
         match error {
+            RelationalNativeCheckpointCaptureDenial::Content(cause) => Self::Content(cause),
+            RelationalNativeCheckpointCaptureDenial::ArtifactFrame(cause) => {
+                Self::ArtifactFrame(cause)
+            }
             RelationalNativeCheckpointCaptureDenial::Durability(error) => error.into(),
             RelationalNativeCheckpointCaptureDenial::Allocation(error) => Self::Allocation(error),
             RelationalNativeCheckpointCaptureDenial::Request(cause) => {
@@ -51,6 +59,8 @@ impl From<ExecutionAllocationDenial> for WorthQueryCheckpointCaptureDenial {
 impl std::fmt::Display for WorthQueryCheckpointCaptureDenial {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::Content(cause) => write!(formatter, "checkpoint content: {cause:?}"),
+            Self::ArtifactFrame(cause) => write!(formatter, "checkpoint artifact frame: {cause:?}"),
             Self::Execution(error) => write!(formatter, "checkpoint execution: {error:?}"),
             Self::ForeignPhase(error) => write!(formatter, "checkpoint phase: {error:?}"),
             Self::Durability(error) => write!(formatter, "checkpoint durability: {error:?}"),

@@ -227,7 +227,7 @@ fn real_pending_refusal_keeps_idempotency_category_stage_and_evidence() {
                         application.kind(),
                         Application::ExecutionResource {
                             denial: Resource::WorkExhausted,
-                            partition_identity: Some(1),
+                            partition_identity: None,
                             policy_ancestor: None
                         }
                     );
@@ -236,7 +236,7 @@ fn real_pending_refusal_keeps_idempotency_category_stage_and_evidence() {
                         application.execution_denial_cause(),
                         Some(Ok(Session::ExecutionResource {
                             denial: Resource::WorkExhausted,
-                            partition_identity: Some(1),
+                            partition_identity: None,
                             policy_ancestor: None,
                         }))
                     );

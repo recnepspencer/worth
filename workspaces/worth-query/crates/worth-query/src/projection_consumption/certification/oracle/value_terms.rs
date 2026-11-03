@@ -98,10 +98,6 @@ pub(super) fn canonical_aspect_value(value: &AspectValue) -> String {
             token(&mut material, "value.kind", "text");
             interned(&mut material, "value.text", value);
         }
-        AspectValue::Bytes(value) => {
-            token(&mut material, "value.kind", "bytes-ref");
-            token(&mut material, "value.bytes-ref", &value.0.to_string());
-        }
         AspectValue::Uuid(value) => {
             token(&mut material, "value.kind", "uuid");
             bytes(&mut material, "value.uuid", value);
@@ -163,7 +159,7 @@ pub(super) fn canonical_aspect_value(value: &AspectValue) -> String {
         }
         AspectValue::ContentRef(value) => {
             token(&mut material, "value.kind", "content-ref");
-            token(&mut material, "value.content-ref", &value.0.to_string());
+            bytes(&mut material, "value.content-ref", &value.0);
         }
     }
     material

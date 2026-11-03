@@ -120,6 +120,10 @@ impl DeclaredManagedIndexSelection {
                     admit,
                     &mut |bytes| execution.reserve_retained_memory(bytes).map_err(Into::into),
                     &mut |cause| cause.into_native(),
+                    &mut |left, right| {
+                        left.same_content(execution, right)
+                            .map_err(|cause| cause.into_execution_cause())
+                    },
                 )? => {}
             _ => return Ok(false),
         }

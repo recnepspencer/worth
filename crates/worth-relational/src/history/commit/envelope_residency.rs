@@ -248,6 +248,7 @@ impl RelationalCommitEnvelopeResidency {
                         cause: Cause::MemoryExhausted,
                     }
                     .into(),
+                    RelationalRecoveryStop::Content(cause) => Failure::Content(cause),
                     RelationalRecoveryStop::Durability(error) => error
                         .storage_unavailable
                         .unwrap_or(RelationalStorageUnavailable {
@@ -296,18 +297,35 @@ impl RelationalCommitEnvelopeResidency {
             subject: RelationalStorageSubject::Envelope(entry.position),
             cause,
         };
-        let bytes = source.read_commit(entry.position, limit).map_err(failure)?;
-        let artifact = RelationalCanonicalCommitArtifact::from_untrusted_bytes(bytes)
-            .map_err(|_| failure(Cause::Damaged))?;
+        let read_limit =
+            limit.min(crate::durability::canonical_commit_artifact::MAXIMUM_ARTIFACT_BYTES as u64);
+        let _read = execution
+            .reserve_retained_memory(read_limit)
+            .map_err(|cause| RelationalRecoveryStop::Request(cause.into()))?;
+        let bytes = source
+            .read_commit(entry.position, read_limit)
+            .map_err(failure)?;
+        let artifact = RelationalCanonicalCommitArtifact::copy_frame_original(&bytes, execution)
+            .map_err(|cause| {
+                use crate::durability::canonical_commit_artifact::ControlledFrameCopyDenial as Copy;
+                match cause {
+                    Copy::Request(cause) => RelationalRecoveryStop::Request(cause),
+                    Copy::Allocation(cause) => RelationalRecoveryStop::Allocation(cause),
+                    Copy::Frame(cause) => crate::durability::data::RelationalNativeCheckpointCaptureDenial::ArtifactFrame(cause).into(),
+                }
+            })?;
+        drop(bytes);
+        drop(_read);
         if artifact.position() != entry.position
             || artifact.commit_id() != entry.commit.commit_id
             || artifact.payload_digest().as_bytes() != &entry.payload_digest
         {
             return Err(failure(Cause::IntegrityMismatch).into());
         }
-        let admitted = RelationalCanonicalCommitArtifact::readmit(artifact.as_bytes(), execution)
+        let admitted = artifact.readmit_framed(execution)
             .map_err(|error| match error {
                 crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal::Request(cause) => RelationalRecoveryStop::Request(cause),
+                crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal::Content(cause) => cause.into(),
                 crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal::FieldText(cause) => crate::symbols::data::field_text_recovery_stop(cause),
                 _ => failure(Cause::Damaged).into(),
             })?.into_positioned();

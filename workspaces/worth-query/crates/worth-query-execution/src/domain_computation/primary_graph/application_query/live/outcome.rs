@@ -11,6 +11,7 @@ use crate::domain_computation::primary_graph::{
 /// The specific reason a live read could not be opened.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationLiveOpenDenialKind {
+    Content(worth_relational::facade::content::RelationalContentDenial),
     /// The installed query declares no live contract.
     LiveContractMissing,
     /// The live cause binding does not match the installed live contract.
@@ -145,6 +146,7 @@ impl<Query, QueryResult> WorthQueryApplicationLiveUpdate<Query, QueryResult> {
 /// Why a buffered live cause could not be turned into a delivery.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationLiveCauseDenialKind {
+    Content(worth_relational::facade::content::RelationalContentDenial),
     /// The cause's target identity could not be resolved.
     TargetIdentityUnavailable,
     /// The cause's target lies outside the subscription's scope.

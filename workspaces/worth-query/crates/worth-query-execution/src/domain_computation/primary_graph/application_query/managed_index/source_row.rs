@@ -1,4 +1,5 @@
-//! A genuine Source row with borrow-confined invocation-owned text.
+//! A genuine Source row with controlled, borrow-confined content and text.
+mod content;
 use super::{
     source_text::SourceText, WorthQueryManagedIndexControl as Control,
     WorthQueryManagedIndexSourceSlot as Slot, WorthQueryManagedIndexStop as Stop,

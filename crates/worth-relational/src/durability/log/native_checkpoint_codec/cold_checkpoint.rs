@@ -60,6 +60,7 @@ pub(super) fn artifact_stop(
         RelationalCanonicalCommitArtifactRefusal::Request(cause) => {
             RelationalRecoveryStop::Request(cause)
         }
+        RelationalCanonicalCommitArtifactRefusal::Content(cause) => cause.into(),
         RelationalCanonicalCommitArtifactRefusal::FieldText(cause) => {
             crate::symbols::data::field_text_recovery_stop(cause)
         }

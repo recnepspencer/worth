@@ -60,6 +60,7 @@ impl<Schema, Operation, Input, Scope>
             retain_client_observation: false,
             producer_required_invariants: &[],
             output_currentness_facts: None,
+            content_attachments: Default::default(),
         };
         validate_elevation_request_program(&program)?;
         Ok(WorthQueryElevationRequestProgram { program })

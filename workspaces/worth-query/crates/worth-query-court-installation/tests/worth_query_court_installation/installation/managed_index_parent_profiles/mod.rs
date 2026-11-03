@@ -79,9 +79,9 @@ fn installed_parent_profiles_preserve_identity_and_refuse_codec_or_disclosure_dr
         declared.operation().contracts().managed_index_reads().len(),
         1
     );
-    let foreign_scope = bind::<4>()
-        .err()
-        .expect("an input-field operation cannot borrow a principal-scoped Parent");
+    let Err(foreign_scope) = bind::<4>() else {
+        panic!("an input-field operation cannot borrow a principal-scoped Parent");
+    };
     assert_eq!(
         foreign_scope.kind(),
         SchemaKind::OperationInstallationDenied
@@ -263,4 +263,23 @@ fn installed_exhaustive_membership_binds_its_profile_without_changing_parent_mea
             .installed_query_binding::<queries::ParentBinding<Checked>>()
             .unwrap()
     ));
+}
+
+#[test]
+fn content_managed_source_projection_installs_with_its_exact_field_recipe() {
+    type Content = model::ParentSchema<8>;
+    let installed = bind::<8>().expect("Native field-bound acquisition is installed");
+    let index = installed
+        .installed_managed_index::<queries::ModelIndex<Content>>()
+        .unwrap();
+    assert!(index.admits_parent(
+        &installed
+            .installed_query_binding::<queries::ParentBinding<Content>>()
+            .unwrap()
+    ));
+    let binding = installed
+        .value_bindings()
+        .field("Principal", "PrincipalFacts", "ContentSamples")
+        .unwrap();
+    assert!(binding.matches_content::<super::content_binding::codec::Good>());
 }

@@ -13,6 +13,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn source_pr
         WorthQueryManagedIndexStop as Stop, WorthQueryManagedIndexWorkDenial as Work,
     };
     match cause {
+        Work::Controlled(Stop::Content(cause)) => Denial::Content(cause),
         Work::Controlled(Stop::MaterialStorage(cause)) => source_storage(cause),
         Work::Controlled(Stop::Request(cause)) => source_storage(cause.into()),
         Work::Controlled(Stop::Storage(worth_execution::ExecutionRequestArrayDenial::Request(

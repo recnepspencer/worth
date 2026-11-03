@@ -25,6 +25,7 @@ fn portable_scope_initializer_requires_matching_declared_units() {
         source: source.clone(),
     };
     let field = |locus: &ApplicationFieldBindingLocus, unit: &str| ApplicationSchemaMember::Field {
+        content_format: None,
         canonical: None,
         entity: locus.entity().to_owned(),
         aspect: locus.aspect().to_owned(),
@@ -120,6 +121,7 @@ fn portable_optional_clear_refuses_a_required_field() {
             ),
         },
         ApplicationSchemaMember::Field {
+            content_format: None,
             canonical: None,
             entity: "Item".to_owned(),
             aspect: "Facts".to_owned(),

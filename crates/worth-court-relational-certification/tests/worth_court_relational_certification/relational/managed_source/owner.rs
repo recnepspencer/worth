@@ -7,6 +7,10 @@ use worth_relational::facade::mvcc::{
 
 #[derive(Default)]
 pub(crate) struct Court {
+    pub(super) probe_content: std::sync::atomic::AtomicBool,
+    pub(super) content_checks: AtomicUsize,
+    pub(super) content_proposed_checks: AtomicUsize,
+    pub(super) content_foreign_checks: AtomicUsize,
     pub(crate) opaque_roots: Mutex<BTreeMap<EntityId, Arc<dyn std::any::Any + Send + Sync>>>,
     pub(crate) source_cells:
         Mutex<BTreeMap<BranchId, CompanionBranchCellSlot<ManagedIndexBranchImage>>>,
@@ -123,6 +127,9 @@ impl RelationalPublicationCompanion for SourceOwner {
         _execution: &ExecutionRequest<'_, '_>,
         source: &ManagedIndexSourcePreparation<'_>,
     ) -> Result<Vec<PreparedManagedIndexSourceRoot>, ManagedIndexSourcePreparationDenial> {
+        if self.0.probe_content.load(Ordering::SeqCst) {
+            super::content::observe(source, &self.0)?;
+        }
         if self.0.probe_row_reads.load(Ordering::SeqCst) {
             super::row_read::observe(source, &self.0)?;
         }
@@ -134,10 +141,13 @@ impl RelationalPublicationCompanion for SourceOwner {
             if let Some(cohorts) = self.0.event_cohorts.lock().unwrap().as_mut() {
                 cohorts.insert(scope.scope(), scope.changed_entities().collect());
             }
-            let committed = if scope.committed_scope_exists()? {
-                Some(Arc::new(rows(scope.committed()?)?) as Arc<dyn std::any::Any + Send + Sync>)
-            } else {
-                None
+            let committed = match scope.committed_scope_exists() {
+                Ok(true) => {
+                    Some(Arc::new(rows(scope.committed()?)?) as Arc<dyn std::any::Any + Send + Sync>)
+                }
+                Ok(false) => None,
+                Err(cause) if cause.source_unavailable() => None,
+                Err(cause) => return Err(cause),
             };
             let proposed = if scope.scope_exists()? {
                 let actual_rows = rows(scope.proposed())?;
@@ -233,6 +243,20 @@ impl CustomInvariantRule for Reader {
         let read = context
             .read_managed_index_source(scope)
             .expect("same actual observation and installed audience");
+        if self.court.probe_content.load(Ordering::SeqCst) {
+            super::content::observe_rows(&read.proposed(), &self.court, true)
+                .map_err(|cause| CustomInvariantExecutionError::new(format!("{cause:?}")))?;
+            match read.committed_root() {
+                Ok(_) => super::content::observe_rows(
+                    &read.committed().expect("the actual committed root exists"),
+                    &self.court,
+                    false,
+                )
+                .map_err(|cause| CustomInvariantExecutionError::new(format!("{cause:?}")))?,
+                Err(cause) if cause.source_unavailable() => {}
+                Err(cause) => return Err(CustomInvariantExecutionError::new(format!("{cause:?}"))),
+            }
+        }
         let expected = self.court.expected.lock().unwrap();
         for key in expected.keys() {
             assert!(
@@ -264,23 +288,20 @@ impl CustomInvariantRule for Reader {
             if previous.is_none() {
                 *previous = Some(scope.clone());
             }
-        } else if previous
-            .as_ref()
-            .is_some_and(|old| old.scope() == scope.scope())
+        } else if let Some(old) = previous.as_ref()
+            && old.scope() == scope.scope()
         {
-            if let Some(old) = previous.as_ref() {
-                assert!(matches!(
-                    context.read_managed_index_source(old),
-                    Err(ManagedIndexSourcePreparationDenial::Source(
-                        DerivedRelationReadDenial::Definition(
-                            DerivedRelationDenial::ForeignObservation
-                        )
-                    ))
-                ));
-                self.court
-                    .foreign_observation
-                    .fetch_add(1, Ordering::SeqCst);
-            }
+            assert!(matches!(
+                context.read_managed_index_source(old),
+                Err(ManagedIndexSourcePreparationDenial::Source(
+                    DerivedRelationReadDenial::Definition(
+                        DerivedRelationDenial::ForeignObservation
+                    )
+                ))
+            ));
+            self.court
+                .foreign_observation
+                .fetch_add(1, Ordering::SeqCst);
         }
         Ok(CustomInvariantVerdict::Pass)
     }

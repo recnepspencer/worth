@@ -84,6 +84,10 @@ fn run(leased: bool, roots: usize, ceiling: Option<u64>, cancel: bool) -> Case {
     let requests = reports();
     assert_eq!(requests.len(), 1, "one original funded application attempt");
     let charged = requests[0].as_ref().unwrap().charged_work();
+    // Verification has a separate funded request; the attempt and its captured
+    // bill retain the original finite ceiling.
+    place(Placement::Serial);
+    bound(None);
     if matches!(outcome, WorthQueryApplicationCommitOutcome::Denied(_)) {
         assert_eq!(world.checkpoint(), before);
     }

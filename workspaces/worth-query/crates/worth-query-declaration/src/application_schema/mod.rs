@@ -19,6 +19,8 @@ mod canonical_decision_read_identity;
 mod canonical_identity;
 mod canonical_operation_identity;
 mod capabilities;
+mod content;
+pub use content::*;
 mod capability_identifier_validation;
 mod capability_member_closure;
 mod component_set;
@@ -309,14 +311,15 @@ pub use value_binding::{
     ApplicationValueSignedAggregatePosture, ApplicationValueSignedAggregateUnavailable,
     ApplicationValueValidationDenial, ArrayDelegate, BinaryValueDelegate, BinaryValueWriter,
     BoolApplicationValueBinding, BoxDelegate, CanonicalDocumentCodec, CanonicalValue,
-    CanonicalValueSeed, DelegatedValueSeed, ErasedApplicationSignedAggregateDecode,
-    ErasedApplicationValueAdmittedDecode, ErasedApplicationValueDecode,
-    ErasedApplicationValueEncode, ErasedApplicationValueValidation, I64ApplicationValueBinding,
-    InternedStringApplicationValueBinding, OptionalDelegate, PairDelegate, SequenceDelegate,
-    StringApplicationValueBinding, U64ApplicationValueBinding, UsizeDelegate, ValueCodecDenial,
-    ValueDecodeAdmission, ValueDecodeBounds, ValueDelegate, ValueFieldDefinition, ValuePrimitive,
-    ValueSeedDelegate, ValueShape, ValueShapeBody, ValueShapeDefinition, ValueShapeEdge,
-    ValueTaggedVariantDefinition, ValueVariantDefinition, WorthValue,
+    CanonicalValueSeed, ContentRefApplicationValueBinding, DelegatedValueSeed,
+    ErasedApplicationSignedAggregateDecode, ErasedApplicationValueAdmittedDecode,
+    ErasedApplicationValueDecode, ErasedApplicationValueEncode, ErasedApplicationValueValidation,
+    I64ApplicationValueBinding, InternedStringApplicationValueBinding, OptionalDelegate,
+    PairDelegate, SequenceDelegate, StringApplicationValueBinding, U64ApplicationValueBinding,
+    UsizeDelegate, ValueCodecDenial, ValueDecodeAdmission, ValueDecodeBounds, ValueDelegate,
+    ValueFieldDefinition, ValuePrimitive, ValueSeedDelegate, ValueShape, ValueShapeBody,
+    ValueShapeDefinition, ValueShapeEdge, ValueTaggedVariantDefinition, ValueVariantDefinition,
+    WorthValue,
 };
 pub use values::{
     DeclaredApplicationFieldValue, OptionalApplicationFieldValue, RequiredApplicationFieldValue,

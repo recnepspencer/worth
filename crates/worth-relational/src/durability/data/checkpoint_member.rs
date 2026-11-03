@@ -48,7 +48,7 @@ impl RelationalCheckpointArtifactPolicy<'_> {
 pub enum RelationalCheckpointMember {
     New {
         locator: RelationalDurableMemberLocator,
-        bytes: Arc<[u8]>,
+        bytes: worth_execution::ExecutionImmutableBytes,
     },
     Carried {
         locator: RelationalDurableMemberLocator,

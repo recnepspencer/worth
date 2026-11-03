@@ -10,6 +10,10 @@ pub enum RelationalCanonicalCommitArtifactFrameRefusal {
     TruncatedHeader { available: usize },
     /// The leading bytes are not the artifact magic.
     UnrecognizedMagic,
+    SizeLimit {
+        declared_payload: u64,
+        maximum_frame: usize,
+    },
     /// The frame names an artifact format version this build does not read.
     UnsupportedVersion { found: u16, supported: u16 },
     /// Fewer payload bytes follow the header than it declares.
@@ -30,6 +34,7 @@ impl std::fmt::Display for RelationalCanonicalCommitArtifactFrameRefusal {
                 formatter,
                 "canonical commit artifact header truncated at {available} bytes"
             ),
+            Self::SizeLimit { declared_payload, maximum_frame } => write!(formatter, "canonical artifact payload {declared_payload} exceeds complete frame bound {maximum_frame}"),
             Self::UnrecognizedMagic => {
                 formatter.write_str("bytes are not a canonical commit artifact")
             }

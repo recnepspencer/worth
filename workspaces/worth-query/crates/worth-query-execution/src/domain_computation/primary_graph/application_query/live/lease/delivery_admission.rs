@@ -219,6 +219,11 @@ where
             Denial::Read(read) => {
                 use crate::domain_computation::primary_graph::application_query::read_execution::WorthQueryApplicationReadExecutionDenialKind as Read;
                 let outcome = match read.kind() {
+                    Read::Content(cause) => Outcome::CauseDenied(
+                        super::super::outcome::WorthQueryApplicationLiveCauseDenialKind::Content(
+                            cause,
+                        ),
+                    ),
                     Read::ExecutionRequest(kind) => Outcome::ExecutionRequest(kind),
                     Read::Cancelled => Outcome::Cancelled,
                     Read::DeadlineExceeded => Outcome::DeadlineExceeded,

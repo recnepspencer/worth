@@ -100,6 +100,9 @@ pub(super) fn map_compilation_denial(
         ),
         ApplicationSchemaCompilationDenial::ValueBinding(denial) => {
             let kind = match denial.kind() {
+                ValueBindingDenialKind::MissingContentBinding => WorthQueryInstalledApplicationSchemaDenialKind::ContentBindingMissing,
+                ValueBindingDenialKind::DuplicateContentFormat => WorthQueryInstalledApplicationSchemaDenialKind::ContentFormatDuplicate,
+                ValueBindingDenialKind::ContentFormatMismatch => WorthQueryInstalledApplicationSchemaDenialKind::ContentFormatMismatch,
                 ValueBindingDenialKind::MissingBinding => {
                     WorthQueryInstalledApplicationSchemaDenialKind::FieldBindingMissing
                 }

@@ -46,8 +46,9 @@ pub(in crate::domain_computation::primary_graph) use observation::take_native_fi
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use observation::ReadRendezvous;
 pub(in crate::domain_computation::primary_graph) use observation::{
-    observe_aspect_absence, observe_field, observe_field_value_borrowed,
-    observe_field_value_borrowed_admitted, WorthQueryApplicationFieldObservation,
+    observe_aspect_absence, observe_field, observe_field_observation_borrowed_admitted,
+    observe_field_value_borrowed, observe_field_value_borrowed_admitted,
+    WorthQueryApplicationFieldObservation,
 };
 pub(in crate::domain_computation::primary_graph) mod precondition_binding;
 mod provider_binding;

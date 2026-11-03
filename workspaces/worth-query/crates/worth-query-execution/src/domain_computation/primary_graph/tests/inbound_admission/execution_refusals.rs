@@ -93,7 +93,7 @@ fn inbound_publication_consumers_keep_real_execution_refusals_and_retry_posture(
                         work_refusal(execution),
                         Ok(Kind::ExecutionResource {
                             denial: Resource::WorkExhausted,
-                            partition_identity: Some(1),
+                            partition_identity: None,
                             policy_ancestor: None,
                         }),
                     ),

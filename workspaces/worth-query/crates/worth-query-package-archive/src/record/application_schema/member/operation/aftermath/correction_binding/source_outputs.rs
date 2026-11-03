@@ -31,7 +31,14 @@ pub(super) fn write(
         write_optional(output, parts.binding_unit.as_ref(), |output, unit| {
             output.text(unit)
         })?;
-        output.u16(if parts.frame.is_some() { 25 } else { 3 })?;
+        output.u16(
+            match (parts.content_format.is_some(), parts.frame.is_some()) {
+                (true, false) => 53,
+                (true, true) => 54,
+                (false, true) => 25,
+                (false, false) => 3,
+            },
+        )?;
         schema::write(output, &member)
     })
 }
@@ -45,7 +52,7 @@ pub(super) fn decode(
         let role = input.text()?.to_owned();
         let binding_unit = decode_optional(input, |input| Ok(input.text()?.to_owned()))?;
         let tag = input.u16()?;
-        if !matches!(tag, 3 | 25) {
+        if !matches!(tag, 3 | 25 | 53 | 54) {
             return Err(Denial::new(Kind::UnsupportedRecordVariant));
         }
         let ApplicationSchemaMember::Field {
@@ -56,6 +63,7 @@ pub(super) fn decode(
             scalar_family,
             value_type,
             canonical,
+            content_format,
             unit,
             frame,
             writable: false,
@@ -79,6 +87,7 @@ pub(super) fn decode(
                 binding_unit,
                 frame,
                 canonical,
+                content_format,
             },
         ))
     })

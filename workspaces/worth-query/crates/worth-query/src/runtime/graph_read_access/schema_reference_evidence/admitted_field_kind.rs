@@ -27,7 +27,6 @@ impl WorthQueryAdmittedNativeFieldFamily {
             ScalarAspectType::BigInt => "big-int",
             ScalarAspectType::Rational => "rational",
             ScalarAspectType::String => "string",
-            ScalarAspectType::Bytes => "bytes",
             ScalarAspectType::Uuid => "uuid",
             ScalarAspectType::Date => "date",
             ScalarAspectType::Time => "time",

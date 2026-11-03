@@ -317,3 +317,19 @@ Relational commit
   -> Query consequence
 ```
 
+## Content custody and atomic scalars
+
+Native owns content identity, format/version admission, integrity, retention
+and reconstruction in its field transaction and recovery authority. A ContentRef
+is a digest, resolved only through admitted field-bound custody. Ordered
+numerical data and splines use this path at every size; above the 16 MiB frame
+limit admission returns a typed refusal before effects.
+
+`InlineBytes` remains a complete canonical atomic field value for pure scalar
+observations without a Native resolver. Its concrete consumers are generic
+certification InlineCounterBinding (including a conditional read), RatioBinding
+and a deliberately broken binary write-admission binding. Native stores their
+whole scalar. Query's installed domain-write seal admits that encoding before
+Native publication; those atoms use no content directory. Size never selects this scalar in place of
+content. Foundation owns its portable carrier. See the
+[complete consumer inventory and boundary rationale](../../docs/inline-atomic-content-boundary.md).

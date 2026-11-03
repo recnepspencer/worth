@@ -38,6 +38,41 @@ pub(crate) fn locator(bytes: &[u8]) -> RelationalDurableMemberLocator {
     }
 }
 
+/// The same physical identity, with original controls during each actual hash chunk.
+pub(crate) fn locator_for_request(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    bytes: &[u8],
+) -> Result<RelationalDurableMemberLocator, crate::execution::RelationalExecutionDenialCause> {
+    let mut answer = None;
+    let handoff = crate::execution::request_stage::optional_stage(
+        execution,
+        |context, _| {
+            answer = Some((|| {
+                let mut digest = Sha256::new();
+                for chunk in bytes.chunks(4096) {
+                    crate::execution::request_stage::checkpoint(context, chunk.len() as u64)
+                        .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
+                    digest.update(chunk);
+                }
+                crate::execution::request_stage::checkpoint(context, 0)
+                    .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
+                Ok(RelationalDurableMemberLocator {
+                    sha256: digest.finalize().into(),
+                    length: bytes.len() as u64,
+                })
+            })());
+        },
+        |_| 0,
+    );
+    match handoff {
+        Ok(()) => answer.expect("completed physical hash stage ran its callback"),
+        Err(cause) => match answer {
+            Some(Err(cause)) => Err(cause),
+            _ => Err(cause),
+        },
+    }
+}
+
 pub(crate) fn decode(
     bytes: &[u8],
     expected: RelationalDurableMemberLocator,

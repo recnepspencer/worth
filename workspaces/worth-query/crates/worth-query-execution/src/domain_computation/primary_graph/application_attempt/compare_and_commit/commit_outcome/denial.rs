@@ -28,6 +28,10 @@ mod workflow;
 /// as presented.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationCommitDenialKind {
+    /// Retained content disagreed with its certified identity before publication.
+    ContentInconsistency,
+    /// Exact Native content refusal, distinct from request/resource stops.
+    Content(worth_relational::facade::content::RelationalContentRejection),
     StorageUnavailable(worth_relational::facade::storage::RelationalStorageUnavailable),
     /// The execution owner refused preparation before any commit effect.
     ExecutionResource {

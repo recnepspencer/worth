@@ -26,3 +26,5 @@ pub fn responsibility() -> ResponsibilityArea {
         "aspect contracts, mutation execution, or runtime storage layout",
     )
 }
+mod content;
+pub use content::{ContentFormat, ContentFormatDenial};

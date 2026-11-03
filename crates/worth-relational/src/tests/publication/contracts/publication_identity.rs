@@ -67,6 +67,7 @@ fn prepared_publication_rejects_an_existing_envelope_before_any_effect() {
     let error = preparation_runtime
         .mvcc_publication_authority()
         .prepare_commit(
+            execution,
             committed.commit.commit_id,
             committed.commit.clone(),
             &binding,
@@ -158,6 +159,7 @@ fn root_capture_sabotage_leaves_storage_index_history_and_reference_unchanged() 
     let error = preparation_runtime
         .mvcc_publication_authority()
         .prepare_commit(
+            execution,
             commit_id,
             future_envelope.commit.clone(),
             &binding,

@@ -1,6 +1,7 @@
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph::application_query) enum WorthQueryApplicationReadExecutionDenialKind
 {
+    Content(worth_relational::facade::content::RelationalContentDenial),
     ExecutionRequest(crate::domain_computation::WorthQueryProviderSessionDenialKind),
     PredicateIndexUnavailable,
     TargetIdentityIndexUnavailable,
@@ -112,3 +113,21 @@ pub(in crate::domain_computation::primary_graph::application_query) fn managed_r
         | Cause::ForeignReadIntent => Ok(Denial::Session),
     }
 }
+
+pub(super) fn content_read_denial(
+    cause: worth_relational::facade::content::RelationalContentDenial,
+    subject: &str,
+) -> WorthQueryApplicationReadExecutionDenial {
+    match cause {
+        worth_relational::facade::content::RelationalContentDenial::Execution(cause) => {
+            relational_read_denial(cause, subject)
+        }
+        cause => read_execution_denial(
+            WorthQueryApplicationReadExecutionDenialKind::Content(cause),
+            subject,
+        ),
+    }
+}
+
+#[cfg(test)]
+mod content_tests;

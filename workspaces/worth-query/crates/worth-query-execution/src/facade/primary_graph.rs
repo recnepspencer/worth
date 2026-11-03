@@ -12,6 +12,10 @@ pub use crate::domain_computation::primary_graph::application_resource::{
     WorthQueryResourceStartStop, WorthQueryResourceState, WorthQueryResourceStopKind,
     WorthQueryResourceVerificationFailure, WorthQueryResourceVerifiedFrame,
 };
+pub use crate::domain_computation::primary_graph::{
+    AdmittedContent, ContentReadDenial, ContentWriteDenial, RelationalContentDenial,
+    RelationalContentRejection,
+};
 pub use managed_index::*;
 /// Read-only aggregate lineage vocabulary and original commit occurrence diagnostics.
 pub use worth_foundational::facade::AggregateLineageKind;

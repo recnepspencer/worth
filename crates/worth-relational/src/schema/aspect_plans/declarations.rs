@@ -195,6 +195,15 @@ fn validate_declared_aspect(
     domain: &RegistrationDomain,
 ) -> Result<(), SchemaRegistryError> {
     validate_declared_aspect_key(kind_id, "aspect key", aspect)?;
+    if matches!(
+        aspect.contract.shape(),
+        AspectShape::Scalar(ScalarAspectType::ContentRef)
+    ) {
+        return Err(SchemaRegistryError::invalid_aspect_declaration(
+            kind_id,
+            "content references require a format-bound struct field",
+        ));
+    }
     match &aspect.binding {
         AspectBinding::EntityField { .. } => {
             if !matches!(domain, RegistrationDomain::Entity) {

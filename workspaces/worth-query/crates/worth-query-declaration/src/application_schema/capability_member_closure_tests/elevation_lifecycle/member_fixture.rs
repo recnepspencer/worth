@@ -26,6 +26,7 @@ pub(super) fn review_field_member(field: &str) -> ApplicationSchemaMember {
 
 fn typed_field_member(entity: &str, aspect: &str, field: &str) -> ApplicationSchemaMember {
     ApplicationSchemaMember::Field {
+        content_format: None,
         entity: entity.to_string(),
         aspect: aspect.to_string(),
         field: field.to_string(),

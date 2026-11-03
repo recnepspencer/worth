@@ -220,24 +220,28 @@ impl Projector<'_, '_, '_> {
                 .ok_or(DerivedRelationReadDenial::Definition(
                     DerivedRelationDenial::InvalidExpression,
                 ))?;
-            let retain = |value: Option<&worth_foundational::facade::AspectValue>| -> Result<_, MaterialDenial> {
+            let retain = |value: Option<&worth_foundational::facade::AspectValue>,
+                          content|
+             -> Result<_, MaterialDenial> {
                 match value {
                     Some(value) => {
                         self.allocation.claim(self.execution, value.owned_allocation_capacity_bytes() as u64)?;
-                        Ok(value.clone())
+                        Ok((value.clone(), content))
                     }
-                    None if projection.presence().schema_presence() == worth_query_declaration::facade::application_schema::ApplicationFieldPresence::Optional => Ok(worth_foundational::facade::AspectValue::Null),
+                    None if projection.presence().schema_presence() == worth_query_declaration::facade::application_schema::ApplicationFieldPresence::Optional => Ok((worth_foundational::facade::AspectValue::Null, content)),
                     None => Err(DerivedRelationReadDenial::Definition(DerivedRelationDenial::RecordUnavailable).into()),
                 }
             };
-            let value = match source {
-                FieldSource::Root(read) => read.with_field(column, retain)??,
+            let (value, content) = match source {
+                FieldSource::Root(read) => read.with_field_content(column, retain)??,
                 FieldSource::Endpoint(read, occurrence) => self
                     .rows
-                    .with_projected_field(read, occurrence, column, retain)??,
+                    .with_projected_field_content(read, occurrence, column, retain)??,
             };
             self.dependency(ViewDependency::Field(entity, field.locator.clone()))?;
-            fields.push(Field::new(projection, value));
+            fields.push(Field::source(projection, value, content).map_err(
+                worth_relational::facade::runtime::ManagedIndexSourcePreparationDenial::Content,
+            )?);
         }
         Ok(fields)
     }

@@ -298,6 +298,7 @@ fn corrupt_replay_keeps_its_durability_failure() {
         RelationalRecoveryStop::Request(cause) => {
             panic!("corrupt evidence became request control: {cause:?}")
         }
+        RelationalRecoveryStop::Content(cause) => panic!("unexpected content refusal: {cause:?}"),
         RelationalRecoveryStop::Allocation(cause) => {
             panic!("corrupt evidence became allocation failure: {cause:?}")
         }

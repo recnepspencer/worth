@@ -22,6 +22,9 @@ mod determinism;
 #[path = "worth_query_court_decl_host/effect_order/mod.rs"]
 mod effect_order;
 
+#[path = "worth_query_court_decl_host/content_door/mod.rs"]
+mod content_door;
+
 #[test]
 fn inspection_refusal_types_are_nameable_and_comparable_through_host() {
     use worth_query_host::facade::causal_inspection::*;

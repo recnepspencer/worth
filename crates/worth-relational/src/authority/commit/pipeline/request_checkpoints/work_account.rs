@@ -140,6 +140,7 @@ fn one_work_account_bounds_the_same_proposal_on_every_entry() {
     assert!(required_work > 0 && required_work < FUNDED_WORK_CEILING);
     let (unwrapped, recorded) = commit(Entry::Ordinary, FUNDED_WORK_CEILING, false, false);
     unwrapped.unwrap();
+    eprintln!("native commit work invoice: actual={required_work} settled={recorded}");
     assert_eq!(
         recorded, required_work,
         "the authoritative account settles all SDK work"

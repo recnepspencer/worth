@@ -1,5 +1,6 @@
 mod catalog;
 mod compilation;
+mod content;
 mod denial;
 mod meaning;
 mod native_contract;

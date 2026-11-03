@@ -1,5 +1,6 @@
 //! One actual Source schema with optional declared Struct-field projection profiles.
 use super::*;
+mod content;
 mod nested;
 use worth_foundational::facade::{
     aspects, AbsenceLaw, AspectBinding, AspectContract, AspectEquivalenceBasis,
@@ -58,6 +59,7 @@ pub(super) enum Profile {
     Fields,
     SchemaFieldsOnly,
     NestedFields,
+    Content,
 }
 pub(super) fn profile(profile: Profile) -> (RelationalSchemaRegistry, ManagedIndexSourceProgram) {
     let mut registry = RelationalSchemaRegistry::new();
@@ -72,7 +74,13 @@ pub(super) fn profile(profile: Profile) -> (RelationalSchemaRegistry, ManagedInd
                 aspect_contract_declarations: if matches!(profile, Profile::Membership) {
                     Default::default()
                 } else {
-                    KindAspectContractDeclarations::new(vec![declared_aspect()])
+                    KindAspectContractDeclarations::new(vec![
+                        if matches!(profile, Profile::Content) {
+                            content::declaration()
+                        } else {
+                            declared_aspect()
+                        },
+                    ])
                 },
             })
             .unwrap();
@@ -121,7 +129,10 @@ pub(super) fn profile(profile: Profile) -> (RelationalSchemaRegistry, ManagedInd
         .unwrap();
     let mut fields = vec![];
     let mut routes = vec![];
-    if matches!(profile, Profile::Fields | Profile::NestedFields) {
+    if matches!(
+        profile,
+        Profile::Fields | Profile::NestedFields | Profile::Content
+    ) {
         let reverse = DerivedRelationIdentity {
             name: "item-owner".into(),
             ..identity.clone()
@@ -159,9 +170,30 @@ pub(super) fn profile(profile: Profile) -> (RelationalSchemaRegistry, ManagedInd
     if matches!(profile, Profile::NestedFields) {
         registry = nested::extend(registry, &identity, &mut routes);
     }
+    if matches!(profile, Profile::Content) {
+        registry = content::formats(registry);
+        let reverse = DerivedRelationIdentity {
+            name: "item-owner".into(),
+            ..identity.clone()
+        };
+        routes.push(
+            ManagedIndexSourceProjectionRoute::new(
+                "owner-alt".into(),
+                registry.derived_relation(&reverse).unwrap(),
+                vec![ManagedIndexSourceField {
+                    locator: locator("value"),
+                }],
+            )
+            .unwrap(),
+        );
+    }
     let handle = registry.derived_relation(&identity).unwrap();
     let program = registry
         .bind_managed_index_source(&handle, fields, routes)
         .unwrap();
     (registry, program)
+}
+
+pub(super) fn content_declaration() -> DeclaredAspectContractBinding {
+    content::declaration()
 }

@@ -72,6 +72,9 @@ pub enum ApplicationOperationDecisionReadTarget {
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub enum ApplicationSchemaMember {
+    ContentFormat {
+        declaration: super::ApplicationContentFormatDeclaration,
+    },
     ApplicationHistory {
         definition: crate::application_history::ErasedApplicationHistoryDefinition,
     },
@@ -120,6 +123,7 @@ pub enum ApplicationSchemaMember {
         scalar_family: ScalarAspectType,
         value_type: String,
         canonical: Option<super::ApplicationCanonicalValueContract>,
+        content_format: Option<[u8; 32]>,
         unit: Option<String>,
         frame: Option<String>,
         writable: bool,

@@ -245,6 +245,7 @@ where
                 retain_client_observation: false,
                 producer_required_invariants: &[],
                 output_currentness_facts: None,
+            content_attachments: Default::default(),
             },
             program_revision: *compiled.program_revision(),
             transition_identity_locator: layout.transition.identity.clone(),

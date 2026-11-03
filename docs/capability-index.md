@@ -223,13 +223,24 @@ propagate stopped-prefix or missing-qualification refusals. Accounted reuse foll
 the original receipt at its work boundary. See
 [persistent native runs](../crates/worth-execution/README.md#persistent-native-runs).
 
-Platform scalar owners can carry opaque atoms using `ScalarAspectType::InlineBytes`
-and the immutable `InlineBytes` carrier. Its native framing ceiling is
+Platform scalar owners carry complete canonical atomic domain values using
+`ScalarAspectType::InlineBytes` and the immutable `InlineBytes` carrier. This
+serves pure observations that receive the whole scalar without Native resolver
+authority. The actual generic certification consumers are InlineCounterBinding
+(the conditional counter), RatioBinding and the deliberately broken binary
+write-admission binding; see the [complete consumer and route inventory](inline-atomic-content-boundary.md).
+Native content owns ordered numerical data and splines at every size through
+ContentRef, including admission, integrity, retention and reconstruction.
+References occupy format-bound fields of a flat Struct aspect; there is no
+whole-aspect content shape or standalone content-contract builder. Size
+never chooses between these meanings; frames above 16 MiB refuse at admission
+before effects. Inline bytes are not an alternative dataset or blob path.
+Its native framing ceiling is
 4,294,967,290 payload bytes; oversized lengths return `InlineBytesLengthDenial`
 before admission. The carrier supplies no domain comparison or index hooks.
 See [inline opaque values](build-an-application.md#inline-opaque-values).
 
-Applications adopt an identity-free, reference-free leaf through the existing
+Applications adopt a complete canonical atomic value through the existing
 value-binding macro's `binary: OwnerDelegate` arm. Its Query-free pure owner
 keeps normalization, canonical bytes, admission and terminal rendering; the entry
 delegate supplies finite bounds, identity, unit and frame. Binary and explicitly
@@ -470,6 +481,7 @@ Choose a task and follow its guide for the exact calls and result handling.
 | Read source values without retaining a query | Use `.inspect_source::<SourceDisclosure>(&receipt).why_performed().materialize(...)` with `WorthQueryApplicationMaterializationRequest::source_effects()` with current source metadata and diagnostics. The owned result can outlive the receipt. | [Materialize source effects](../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md#rich-source-only-inspection) |
 | Explain a cleared optional input | Keep the source receipt that performed the clear/removal and the producer's completed absence read. Equal None or a no-op clear does not create another absence occurrence. | [Absence evidence](../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md#canonical-absence-evidence) |
 | Remove an Optional struct parent without weakening field authority | Declare `OperationRemovesAspects<Operation>`, all child decision reads and `operation_remove_aspect`; call `CandidateWriter::remove_aspect` on the genuine completed target. Complete installed read closure and Optional parent authority are required. Required siblings use `optional_aspect_field` only to interpret genuine parent absence; missing Required content in a present parent refuses. | [Causal inspection](../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md#public-optional-struct-removal) |
+| Store ordered, identity-free numerical content at every size | Declare `ApplicationContentBinding`, register `.content_format::<Format>()`, and bind an existing ContentRef field with `content_field`. `DecisionReader::content` returns admitted immutable payload custody; `CandidateWriter::initialize_content` and `write_content` atomically stage Native bytes plus the reference. Managed Source rows lend the same installed content with `row.with_content(selector, Format, callback)`. Demanded preimages and declared correction content outputs retain genuine Native custody through the existing publication seal. Native owns format/version, integrity, retention, recovery and the 16 MiB complete-frame ceiling. Larger frames refuse before effects. | [Content boundary](../plans/WORTH-query/milestone-9.19-k1c-content-boundary.md) |
 | Declare a foreign domain value through its entry facade | `decl::application_schema::ValueSeedDelegate` supplies the root grammar via `ApplicationCanonicalValueContract::delegated`, `encode_delegated_canonical_value`, and the bounded or admitted delegated decoder. The existing canonical codec borrows the foreign value without requiring a platform trait on its pure owner. | [Typed invariant refusals](build-an-application.md#typed-refusal-from-installed-invariants) |
 | Configure World resources | Pass `RuntimeWorldBudgets`, a clock, invalidation resources and an execution policy to `host::runtime::WorthQueryProductWorldResources::new`. Use `RuntimeWorldBudgets::without_policy_limits()` for standard installation, or install deliberate finite policies. | [World resources](build-an-application.md#runtime-world-policy-ceilings) |
 | Configure Query reads and output settlement | Use `WorthQueryApplicationQueryResourceProfile::new(concurrency)` for graph-work concurrency and `WorthQueryOutputDemandResourceProfile::standard()` for settlement. Convenience settlement continues on `Progressed`, parks on `Pending`, and returns `Settled` when complete. Retain returned owners for later advancement or close. | [Query resource policies](build-an-application.md#ordinary-query-resource-policies) |
@@ -743,6 +755,25 @@ settlement or capture refusal. Existing convenience constructors still own their
 explicit bootstrap request and capture policy. See [original-request transitions](build-an-application.md#44-checkpoint-program-transitions).
 
 ## Known gaps
+
+The K1c Native content owner admits immutable typed frames and closes Native
+transaction references before publication. Native checkpoint and journal recovery
+reconstruct their retained closure through the existing physical member boundary.
+The field-bound Decl/Host content door, managed Source acquisition and recorded
+correction closure use that same Native owner. Application checkpoints recover
+current Native content. A restored maintained Source without its live World image
+returns RootUnavailable until an opted-in authored cold staging transition; bytes
+do not mint that image. Checkpoints do not persist
+live correction occurrences or preimage carriers. Missing live history remains an
+explicit refusal. A decoded or cold Native envelope without its admitted historical
+content directory returns HistoryNotResident. A dangling identity in an admitted
+directory still returns MissingContent. K1c's bounded-cost courts measure complete frames at 1/2/4 MiB
+and local reads/edits against 100/1,000/10,000 unrelated retained entries;
+[qualification evidence](../plans/WORTH-query/milestone-9.19-k1c-content-slice5-evidence.md)
+records exact invoices and typed bounds. Ordered numerical content uses ContentRef
+at every size; values above the complete-frame ceiling refuse at admission.
+Applications must not introduce a separate byte store. See the
+[content boundary and slice order](../plans/WORTH-query/milestone-9.19-k1c-content-boundary.md).
 
 For implementation identity, use the whole-application
 [`ApplicationBuildIdentity`](build-an-application.md#application-build-identity).

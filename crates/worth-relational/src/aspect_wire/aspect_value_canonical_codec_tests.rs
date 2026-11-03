@@ -202,7 +202,6 @@ fn canonical_aspect_value_samples() -> Vec<AspectValue> {
                 .expect("non-zero denominator"),
         ),
         AspectValue::String(InternedString::Raw("alpha".to_string())),
-        AspectValue::Bytes(ContentRefId(41)),
         AspectValue::Uuid([7; 16]),
         AspectValue::Date(CanonicalDate {
             days_from_unix_epoch: 20_000,
@@ -216,7 +215,10 @@ fn canonical_aspect_value_samples() -> Vec<AspectValue> {
             offset_minutes: -360,
         }),
         AspectValue::EntityRef(EntityId::new(PartitionId(9), 10, 11)),
-        AspectValue::ContentRef(ContentRefId(42)),
+        AspectValue::ContentRef(ContentRefId([
+            42, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0,
+        ])),
     ]
 }
 

@@ -35,6 +35,7 @@ use principal_binding::{
 pub(super) fn validate_member_closure(
     members: &[ApplicationSchemaMember],
 ) -> Result<(), ApplicationSchemaDeclarationDenial> {
+    super::content::validation::validate(members)?;
     let index = ClosureIndex::new(members);
     for member in members {
         index.validate(member)?;

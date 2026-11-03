@@ -18,6 +18,10 @@ pub struct CustomInvariantReadBudget<'borrow> {
 }
 
 impl<'borrow> CustomInvariantReadBudget<'borrow> {
+    pub(crate) fn execution(&self) -> worth_execution::ExecutionRequest<'borrow, 'borrow> {
+        self.execution
+    }
+
     /// Spend the installed rule allowance and the actual SDK context once.
     /// Source visits and provider steps share the immediate original SDK account.
     pub fn checkpoint_native(

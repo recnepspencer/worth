@@ -25,6 +25,7 @@ fn envelope_with_patch_and_update(
     update_target: EntityId,
 ) -> CanonicalCommitEnvelope {
     CanonicalCommitEnvelope::new(
+        Default::default(),
         RelationalCommitReceipt {
             commit_id: CommitId(1),
             version_id: VersionId(1),

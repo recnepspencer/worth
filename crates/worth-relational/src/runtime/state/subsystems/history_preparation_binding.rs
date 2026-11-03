@@ -196,6 +196,7 @@ impl RelationalPreparationHistory {
 
     pub(crate) fn prepare_branch_root_capture<P: crate::storage::overlay::PartitionAccess>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         partitions: &P,
         published_delta: &crate::storage::RelationalPublishedPartitionDelta,
         previous: Option<&Arc<RelationalBranchRoot>>,
@@ -210,6 +211,7 @@ impl RelationalPreparationHistory {
             ));
         }
         RelationalBranchRoot::prepare_capture(
+            execution,
             &self.root_ids,
             partitions,
             published_delta,

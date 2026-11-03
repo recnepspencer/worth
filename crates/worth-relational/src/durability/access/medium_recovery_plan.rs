@@ -182,6 +182,18 @@ fn artifact_refusal_stop(
         RelationalCanonicalCommitArtifactRefusal::Request(cause) => {
             RelationalRecoveryStop::Request(cause)
         }
+        RelationalCanonicalCommitArtifactRefusal::Content(cause) => cause.into(),
+        RelationalCanonicalCommitArtifactRefusal::FieldText(cause) => {
+            match crate::symbols::data::field_text_recovery_stop(cause) {
+                RelationalRecoveryStop::Durability(mut error)
+                    if error.class == RecoveryFailureClass::CorruptCheckpoint =>
+                {
+                    error.class = RecoveryFailureClass::CorruptCanonicalArtifact;
+                    error.into()
+                }
+                stop => stop,
+            }
+        }
         refusal => DurabilityError::new(
             RecoveryFailureClass::CorruptCanonicalArtifact,
             format!("canonical artifact at position {position} refused: {refusal:?}"),

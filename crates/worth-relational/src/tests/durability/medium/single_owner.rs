@@ -76,7 +76,7 @@ fn an_attachment_the_medium_moved_out_of_publishes_nothing() {
             .commit_artifact(positioned.commit.commit_id)
             .unwrap()
             .roots(),
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        execution,
     );
 
     assert!(matches!(

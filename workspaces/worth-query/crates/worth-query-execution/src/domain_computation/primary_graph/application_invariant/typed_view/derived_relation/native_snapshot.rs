@@ -16,9 +16,11 @@ fn checkpoint_restores_exact_derived_meaning_instead_of_rebinding_a_changed_reci
         empty_text,
         serde_json::json!({
             "primary_schema_id":null, "primary_schema_version_id":null,
-            "entity_kinds":[], "relation_kinds":[]
+            "entity_kinds":[], "relation_kinds":[],
+            "derived_relations":[], "projected_member_domains":[],
+            "content_formats":{"fields":[], "formats":[]}
         }),
-        "physical-only snapshot keeps the old absent-tail text shape"
+        "physical-only snapshot carries every current authority block"
     );
     assert_eq!(
         serde_json::from_value::<SchemaAuthoritySnapshot>(empty_text).unwrap(),

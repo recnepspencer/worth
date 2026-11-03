@@ -33,7 +33,7 @@ fn restoration_preserves_real_execution_refusals() {
                     kind,
                     Kind::ExecutionResource {
                         denial: Resource::WorkExhausted,
-                        partition_identity: Some(1),
+                        partition_identity: None,
                         policy_ancestor: None
                     }
                 );

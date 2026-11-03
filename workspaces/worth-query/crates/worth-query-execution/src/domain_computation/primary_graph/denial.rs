@@ -12,6 +12,7 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     ProducerFamilyOwnershipMismatch,
     /// Typed readiness declaration or installed field meaning was refused.
     ReadinessContractRejected,
+    ContentAdmissionRejected,
     /// A binding or input belongs to a different runtime.
     ForeignRuntime,
     /// The application's contributions differ from the installed contribution
@@ -228,11 +229,27 @@ pub struct WorthQueryPrimaryGraphInstallationDenial {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 enum InstallationDenialCause {
+    Content(worth_relational::facade::content::RelationalContentDenial),
     Readiness(super::application_contribution::WorthQueryOutputReadinessContractDenial),
     NativeValidation(crate::domain_computation::WorthQueryInvariantExecutionFailure),
 }
 
 impl WorthQueryPrimaryGraphInstallationDenial {
+    pub fn content_cause(
+        &self,
+    ) -> Option<&worth_relational::facade::content::RelationalContentDenial> {
+        match self.cause.as_deref() {
+            Some(InstallationDenialCause::Content(cause)) => Some(cause),
+            _ => None,
+        }
+    }
+    pub(in crate::domain_computation::primary_graph) fn with_content_cause(
+        mut self,
+        cause: worth_relational::facade::content::RelationalContentDenial,
+    ) -> Self {
+        self.cause = Some(Box::new(InstallationDenialCause::Content(cause)));
+        self
+    }
     /// A complete feature's typed handler slot was left unconfigured.
     #[doc(hidden)]
     pub fn missing_mutation_handler<Schema, Binding>() -> Self
