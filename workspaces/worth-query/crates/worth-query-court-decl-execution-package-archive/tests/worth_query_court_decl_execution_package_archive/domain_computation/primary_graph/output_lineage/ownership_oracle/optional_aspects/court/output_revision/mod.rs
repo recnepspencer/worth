@@ -99,8 +99,8 @@ pub fn observe<Schema: BirthSchema>(
         "one actual output of this installed kind"
     );
     let graph = &(*(*runtime.primary_provider_for_test()).graph_for_test());
-    let locator = graph
-        .layout
+    let locator = (*graph
+        .layout_for_test())
         .field_locator(field.entity(), field.aspect(), field.field())
         .unwrap();
     let execution = phase
@@ -108,8 +108,8 @@ pub fn observe<Schema: BirthSchema>(
         .unwrap();
     assert_eq!(locator.aspect().authority(), LocatorAuthority::Planned);
     let (effect, native_locator) = run_retained_stage(&execution, &mut None, |context, _| {
-        let coordinate = graph
-            .layout
+        let coordinate = (*graph
+            .layout_for_test())
             .resolve_declared_field_coordinate(
                 runtime.installed_schema().native_contracts(),
                 field.entity(),

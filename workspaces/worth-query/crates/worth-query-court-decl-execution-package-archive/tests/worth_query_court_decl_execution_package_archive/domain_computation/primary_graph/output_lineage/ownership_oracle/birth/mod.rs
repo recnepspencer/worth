@@ -30,7 +30,7 @@ pub fn admit_genuine_all_create(runtime: &Application) {
             let publisher = graph.application_publication.as_ref().unwrap();
             let target = CreatedEntityRef {
                 partition_id: PartitionId::main(),
-                kind_id: graph.layout.entity_kind("EntrySet").unwrap(),
+                kind_id: (*graph.layout_for_test()).entity_kind("EntrySet").unwrap(),
                 client_key: worth_relational::facade::symbols::ClientKey::raw(
                     "genuine-owner-birth",
                 ),
@@ -64,7 +64,7 @@ pub fn admit_genuine_all_create(runtime: &Application) {
                 posture: RequiredOutputRolePosture::Create,
                 target: EntityReference::Created(target.clone()),
             }];
-            let candidate = graph.with_query_runtime_mut(&execution, |native, layout| {
+            let candidate = graph.with_query_runtime_mut_for_test(&execution, |native, layout| {
                 let fields = AspectFieldPatch::from(BTreeMap::from([
                     (
                         layout
@@ -114,7 +114,7 @@ pub fn admit_genuine_all_create(runtime: &Application) {
                     .bind_required_output_publication(
                         &publisher.native,
                         RequiredOutputPublication::Birth {
-                            admission: publisher.owner.admit_required_output(producer, dependency),
+                            admission: (*publisher.owner_for_test()).admit_required_output(producer, dependency),
                             absence: Some(absence),
                             meaning: meaning.clone(),
                             roles,
@@ -127,7 +127,7 @@ pub fn admit_genuine_all_create(runtime: &Application) {
             });
             let outcome = product
                 .publication_binding_for_test()
-                .prepare_relational_candidate(candidate, &scope, false)
+                .prepare_relational_candidate_for_test(candidate, &scope, false)
                 .unwrap()
                 .execute(execution);
             let Ok(PublicationOutcome::Performed(performed)) = outcome else {

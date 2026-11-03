@@ -1,0 +1,24 @@
+{
+ "authority_doors": [],
+ "constructor_doors": [],
+ "field_doors": [
+  "domain_computation::primary_graph::output_lineage::WorthQueryApplicationOutputLineage.by_source",
+  "domain_computation::primary_graph::root::WorthQueryPrimaryGraphIntegrationHandle.layout",
+  "domain_computation::primary_graph::root::application_publication::ApplicationPublication.owner",
+  "domain_computation::primary_graph::source_facts::revisions::WorthQueryObservedFieldRevision.aspect",
+  "domain_computation::primary_graph::source_facts::revisions::WorthQueryObservedFieldRevision.entity",
+  "domain_computation::primary_graph::source_facts::revisions::WorthQueryObservedFieldRevision.field"
+ ],
+ "method_doors": [
+  "domain_computation::execution_runtime::product_world::request_control::WorthQueryProductPublicationBinding::prepare_relational_candidate",
+  "domain_computation::primary_graph::output_lineage::binding_inventory::WorthQueryApplicationOutputLineage::binding_identity",
+  "domain_computation::primary_graph::output_lineage::current_output::WorthQueryApplicationOutputLineage::source_facts_for_receipt",
+  "domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::WorthQueryPrimaryGraphCommitEvidence::rebased_source_facts",
+  "domain_computation::primary_graph::root::runtime_access::WorthQueryPrimaryGraphIntegrationHandle::with_query_runtime_mut"
+ ],
+ "unplaced": [
+  "associated function `of` is private",
+  "method `admit_required_output_demand` is private",
+  "method `decision_field_with_predecode_admission` is private"
+ ]
+}

@@ -319,3 +319,5 @@ fn retained_currentness_read(
         verification_requirement: recorded.verification_requirement(),
     }))
 }
+
+mod court_doors_for_test;

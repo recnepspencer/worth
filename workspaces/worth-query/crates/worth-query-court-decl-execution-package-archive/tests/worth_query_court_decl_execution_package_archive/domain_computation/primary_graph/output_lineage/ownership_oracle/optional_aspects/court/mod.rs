@@ -45,7 +45,7 @@ pub fn readmit_with_ordinary<Schema: BirthSchema>(
                 .map(|(role, posture, name, entity)| RequiredOutputRoleTarget {
                     role: role.to_owned(),
                     entity_name: name.to_owned(),
-                    kind: graph.layout.entity_kind(name).unwrap(),
+                    kind: (*graph.layout_for_test()).entity_kind(name).unwrap(),
                     posture: match posture {
                         WorthQueryApplicationOutputPosture::Create => {
                             RequiredOutputRolePosture::Create
@@ -84,7 +84,7 @@ pub fn readmit_with_ordinary<Schema: BirthSchema>(
                 runtime_authority: (*runtime.runtime_for_test()).authority_identity().as_u64(),
                 schema: runtime.installed_schema().binding_identity(),
                 scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(source_entity),
-                output_binding: lineage.binding_identity(binding).unwrap(),
+                output_binding: lineage.binding_identity_for_test(binding).unwrap(),
             };
 
             let (occurrence, generation, slot) = match recorded {
@@ -97,7 +97,7 @@ pub fn readmit_with_ordinary<Schema: BirthSchema>(
                     (coordinate.lifecycle_incarnation(), coordinate.reference_generation().get(), 0)
                 }
             };
-            let rows = &lineage.by_source[&source][&occurrence][&generation];
+            let rows = &(*lineage.by_source_for_test())[&source][&occurrence][&generation];
             if recorded.is_none() {
                 assert_eq!(rows.len(), 1, "retained recovered/stable observation is unambiguous");
             }
@@ -187,10 +187,10 @@ pub fn edit_source_to<Schema: BirthSchema>(
                     WorthQueryPrincipalResolutionMode::Ordinary,
                 )
                 .unwrap();
-            let locator =(* (*runtime
+            let locator =(*(* (*runtime
                 .primary_provider_for_test())
                 .graph_for_test())
-                .layout
+                .layout_for_test())
                 .field_locator("Body", "PlanarPosition", "PositionY")
                 .unwrap()
                 .clone();

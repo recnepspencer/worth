@@ -133,15 +133,15 @@ fn ordinary_handler_clear_of_absent_field_retains_aspect_absence() {
             .is_none(),
         "a clear that leaves the aspect absent did not move the read"
     );
-    let aspect =(* (*clearing
+    let aspect =(*(* (*clearing
         .primary_provider_for_test())
         .graph_for_test())
-        .layout
+        .layout_for_test())
         .field_locator("Body", "SourceNotes", "SourceSelection")
         .unwrap()
         .aspect()
         .aspect_key();
-    let facts = completed.commit_evidence().rebased_source_facts().unwrap();
+    let facts = completed.commit_evidence().rebased_source_facts_for_test().unwrap();
     let (entity, revision) = facts
         .iter()
         .find_map(|fact| match fact {
@@ -158,7 +158,7 @@ fn ordinary_handler_clear_of_absent_field_retains_aspect_absence() {
         .with_application_advancement(&request, |phase| {
             let execution = phase.execution_request_for_for_test(&(*clearing.product_runtime_for_test())).unwrap();
             let selected = clearing.on_branch(clearing.current_world()).select(&phase).unwrap();
-            let field =(* (*clearing.primary_provider_for_test()).graph_for_test()).layout
+            let field =(*(* (*clearing.primary_provider_for_test()).graph_for_test()).layout_for_test())
                 .field_locator("Body", "SourceNotes", "SourceSelection").unwrap()
                 .field_path().fields()[0].clone();(*
             (*clearing.primary_provider_for_test()).graph_for_test()).with_runtime(&execution, |native| {

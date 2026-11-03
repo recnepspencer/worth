@@ -30,7 +30,7 @@ pub fn inspect<Query>(
     let captured = CapturedFields {
         original,
         inputs,
-        layout: &(*(*runtime.primary_provider_for_test()).graph_for_test()).layout,
+        layout: &(*(*(*runtime.primary_provider_for_test()).graph_for_test()).layout_for_test()),
         contracts: runtime.installed_schema().native_contracts(),
         producer_version: changes.commit_reference().version_id,
     };
@@ -108,15 +108,15 @@ impl<Query> CapturedFields<'_, Query> {
             };
             for row in self.original.original_row_footprints_for_test() {
                 for observed in &(*row.aspects_for_test()) {
-                    if observed.entity != *entity_id
-                        || observed.aspect != *locator.aspect().aspect_key()
-                        || observed.field != *key
+                    if (*observed.entity_for_test()) != *entity_id
+                        || (*observed.aspect_for_test()) != *locator.aspect().aspect_key()
+                        || (*observed.field_for_test()) != *key
                     {
                         continue;
                     }
                     eprintln!(
                         "query full entity={:?} revision={:?} original={revision:?}",
-                        observed.entity, observed.native_revision
+                        (*observed.entity_for_test()), observed.native_revision
                     );
                     let source = self.inspect_binding(context, locator, observed);
                     different_fields +=

@@ -14,7 +14,7 @@ fn retained_currentness_refuses_corrupted_fact_coordinates_before_clean_marks() 
         let selected = runtime.on_branch(runtime.current_world()).select(&phase).unwrap();
         let mut read = {
             let lineage =(* (*runtime.primary_provider_for_test()).graph_for_test()).output_lineage.lock().unwrap();
-            lineage.source_facts_for_receipt((*runtime.runtime_for_test()).authority_identity().as_u64(),
+            lineage.source_facts_for_receipt_for_test((*runtime.runtime_for_test()).authority_identity().as_u64(),
                 &(*runtime.installed_schema_for_test()).binding_identity(), selected.product().observation_for_test(), receipt, &execution).unwrap().unwrap()
         };
         assert!(!read.facts.as_ref().unwrap().is_empty(), "real retained producer facts");(*

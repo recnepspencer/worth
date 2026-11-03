@@ -62,8 +62,8 @@ pub fn observe_roles<Schema: BirthSchema>(
         .unwrap();
     let graph = &(*(*runtime.primary_provider_for_test()).graph_for_test());
     let field = Value::reference::<Schema>();
-    let locator = graph
-        .layout
+    let locator = (*graph
+        .layout_for_test())
         .field_locator(field.entity(), field.aspect(), field.field())
         .unwrap();
     let aspect = locator.aspect().aspect_key();
@@ -131,7 +131,7 @@ pub fn observe_roles<Schema: BirthSchema>(
             .outgoing_relations_of_kind(
                 &execution,
                 node,
-                graph.layout.relation("Incidence").unwrap().kind,
+                (*graph.layout_for_test()).relation("Incidence").unwrap().kind,
             )
             .unwrap();
         assert_eq!(

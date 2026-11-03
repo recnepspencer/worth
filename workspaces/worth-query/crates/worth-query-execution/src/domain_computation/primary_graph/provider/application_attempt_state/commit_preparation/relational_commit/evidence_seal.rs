@@ -292,3 +292,5 @@ impl WorthQueryPrimaryGraphCommitEvidence {
 pub(in crate::domain_computation::primary_graph) use postcommit_currentness::{
     PreparedRebaseDenial, PreparedSourceFactRebase,
 };
+
+mod court_doors_for_test;
