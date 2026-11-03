@@ -32,10 +32,11 @@ physical_store_recover <store-root> --bounded-profile=c8-phase2-admission-v2 \
 
 The `c8-phase8-fate-coverage-v1` profile is a bounded 4 MiB evidence profile
 used for the explicit all-fates recovery fixture; ordinary Phase 8 admission
-uses the 1 MiB `c8-phase2-admission-v2` profile. The retired v1 profile is
-rejected. The prepaid phase-storage and conversion overlap now need up to
-800,890 bytes in the ordinary tier recovery world; 1 MiB leaves 247,686 bytes
-of headroom. Accounting and the strict allocation-refusal controls are unchanged.
+uses the 2 MiB `c8-phase2-admission-v2` profile. The retired v1 profile is
+rejected. Fixed phase storage needs about 800 KiB; the ordinary WAL rewrite
+also retains record and manifest metadata (1,245,169 bytes at 129 records).
+The ordinary history exceeds the whole 2 MiB allowance. Accounting and the
+strict allocation-refusal controls are unchanged.
 
 The report is descriptive evidence only. The fresh process mints platform
 authority, samples the existing namespace, selects physical sources, and

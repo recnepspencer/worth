@@ -29,7 +29,7 @@ pub(crate) use {
     crate::production::harness::markers::RecoveryRuntimeMarker,
 };
 
-pub(crate) const C8_RECOVERY_MEMORY_BUDGET_BYTES: u64 = 1024 * 1024;
+pub(crate) const C8_RECOVERY_MEMORY_BUDGET_BYTES: u64 = 2 * 1024 * 1024;
 
 pub(crate) struct ProcessWorld {
     pub(crate) parent: TempDir,

@@ -12,16 +12,18 @@ pub(super) fn open_request(
     let configuration = PhysicalRecoveryStaticConfiguration::current();
     let limits = match profile {
         super::arguments::BoundedProfile::PhaseTwoAdmission => {
-            // Original-funded phase backings plus their conversion overlap
-            // now require 800,890 bytes in the ordinary tier recovery world.
-            // A finite 1 MiB envelope admits that real footprint; the owner
+            // Fixed phase storage already needs about 800 KiB; the ordinary
+            // rewrite world adds retained record/manifest metadata and needs
+            // 1,245,169 bytes at 129 records. Use a finite 2 MiB envelope
+            // and qualify with more than 2 MiB of submitted semantic payload.
+            // The owner
             // retains every required-minus-one allocation refusal unchanged.
-            phase_two_admission_limits(1024 * 1024)?
+            phase_two_admission_limits(2 * 1024 * 1024)?
         }
         super::arguments::BoundedProfile::C11BlobCrash => c11_blob_crash_limits()?,
         super::arguments::BoundedProfile::C11BlobMultilevel => c11_blob_multilevel_limits()?,
         // A multi-page extent rewrite stages its source range beside the ordinary
-        // C8 working set; it proves the rewrite applies, not the 1 MiB budget.
+        // C8 working set; it proves the rewrite applies, not the 2 MiB budget.
         super::arguments::BoundedProfile::ExtentRewrite => {
             phase_two_admission_limits(4 * 1024 * 1024)?
         }
@@ -46,7 +48,7 @@ pub(super) fn open_request(
 
 /// The C11 killed-child world uses the C8 arena-crash recovery envelope for
 /// source candidates, WAL/redo, staging, and cleanup. Three blob chunks plus
-/// a tree/publication redo require more than the CLI's 1 MiB admission
+/// a tree/publication redo require more than the CLI's 2 MiB admission
 /// profile (observed planning charge: 3,693,672 bytes); 8 MiB remains finite.
 fn c11_blob_crash_limits() -> Result<PhysicalRecoveryLimits, String> {
     PhysicalRecoveryLimits::admit(PhysicalRecoveryLimitDeclaration {
