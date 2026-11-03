@@ -154,3 +154,10 @@ impl WorthQueryRecoveryHandleBinding {
         Self::from_receipt(receipt, expires_at_unix_ms)
     }
 }
+
+impl WorthQueryRecoveryHandleBinding {
+    #[doc(hidden)]
+    pub fn commit_mut_for_test(&mut self) -> &mut RelationalCommitReceipt {
+        &mut self.commit
+    }
+}

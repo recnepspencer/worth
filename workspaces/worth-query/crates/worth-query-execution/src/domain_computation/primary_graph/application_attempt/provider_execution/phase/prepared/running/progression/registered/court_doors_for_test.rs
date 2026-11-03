@@ -20,3 +20,10 @@ impl<'run> WorthQueryRegisteredProviderAttempt<'run> {
         &self.staged
     }
 }
+
+impl<'run> WorthQueryRegisteredProviderAttempt<'run> {
+    #[doc(hidden)]
+    pub fn staged_into_for_test(self) -> crate::domain_computation::WorthQuerySessionBoundReadsAndEffects<'run> {
+        self.staged
+    }
+}

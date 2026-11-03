@@ -45,7 +45,7 @@ impl ComparisonTestsWorthQueryRegisteredProviderAttemptForTest
                 cancellation,
                 &(*foreign.application.primary_provider_for_test()),
             );
-        let _ = (*self.staged_for_test()).abort();
+        let _ = self.staged_into_for_test().abort();
         assert_eq!(
             world.application.provider_session_resource_count_for_test(),
             0
@@ -68,6 +68,6 @@ impl ComparisonTestsWorthQueryRegisteredProviderAttemptForTest
                 request,
                 relation,
             );
-        let _ = (*self.staged_for_test()).abort();
+        let _ = self.staged_into_for_test().abort();
     }
 }

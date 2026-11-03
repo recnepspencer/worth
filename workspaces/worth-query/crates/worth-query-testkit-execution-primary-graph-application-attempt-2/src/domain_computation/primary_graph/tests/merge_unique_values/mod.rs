@@ -59,17 +59,17 @@ impl MergeWorld {
         let label = field("AccountPolicy", "AccountLabel");
         let status = field("AccountPolicy", "AccountStatus");
         let required = [
-            (*field("AccountPolicy", "AccountIdentity").locator_for_test()),
-            (*field("AccountMembership", "AccountMembershipTag").locator_for_test()),
-            (*field("AccountAnnotations", "AccountAnnotation").locator_for_test()),
+            field("AccountPolicy", "AccountIdentity").locator_into_for_test(),
+            field("AccountMembership", "AccountMembershipTag").locator_into_for_test(),
+            field("AccountAnnotations", "AccountAnnotation").locator_into_for_test(),
         ];
         Self {
             kind: (*label.entity_kind_for_test()),
             index: (*label
                 .equality_index_id_for_test())
                 .expect("the label is equality-indexed"),
-            label: (*label.locator_for_test()),
-            status: (*status.locator_for_test()),
+            label: label.locator_into_for_test(),
+            status: status.locator_into_for_test(),
             required,
             handle,
             _world: world,

@@ -58,3 +58,10 @@ impl WorthQueryPrimaryFieldLayout {
         &self.locator
     }
 }
+
+impl WorthQueryPrimaryFieldLayout {
+    #[doc(hidden)]
+    pub fn locator_into_for_test(self) -> AspectFieldLocator {
+        self.locator
+    }
+}

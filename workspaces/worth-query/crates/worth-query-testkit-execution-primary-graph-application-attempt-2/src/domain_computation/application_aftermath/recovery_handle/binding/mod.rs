@@ -40,7 +40,7 @@ impl WorthQueryRecoveryHandleBindingAxisProbe {
     }
 
     pub fn branch(mut self, value: BranchId) -> Self {
-        (*self.binding.commit_for_test()).branch_id = value;
+        (*self.binding.commit_mut_for_test()).branch_id = value;
         self
     }
 
