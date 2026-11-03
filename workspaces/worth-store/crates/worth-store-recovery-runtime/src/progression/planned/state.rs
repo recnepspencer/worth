@@ -148,7 +148,7 @@ fn construction_scratch(extraction_bytes: u64) -> Option<u64> {
         planned.checked_add(extraction_bytes)?.max(
             planned
                 .checked_add(staging_input)?
-                .checked_add(2 * staged)?,
+                .checked_add(staged.checked_mul(2)?)?,
         ),
     )
 }

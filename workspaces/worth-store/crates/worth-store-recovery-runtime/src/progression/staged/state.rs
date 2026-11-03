@@ -9,12 +9,14 @@ use crate::handoff::RecoveryOperationFateSet;
 use crate::orchestration::{RecoveryCoordination, ResidentSourceSelection};
 
 use super::{
-    PhysicalRecoveryDiscoveryCounters, RecoveryBaseImagePlan, RecoveryIntegrityEvidence,
-    RecoveryPublicationPlan, RecoveryQuiescencePlan,
+    PhysicalRecoveryDiscoveryCounters, RecoveryBaseImagePlan, RecoveryPublicationPlan,
+    RecoveryQuiescencePlan,
 };
 
 use super::ClosedRecoveryStagingGeneration;
-use crate::progression::{PlanningMemoryDenial, PlanningResidentAllowance};
+use crate::progression::{
+    PlanningMemoryDenial, PlanningResidentAllowance, RecoveryIntegrityEvidence,
+};
 
 pub(crate) struct StagedRecoveryState {
     pub(crate) authority: AdmittedPlatformAuthority,

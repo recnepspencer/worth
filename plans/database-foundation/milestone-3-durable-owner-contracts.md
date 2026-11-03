@@ -2963,3 +2963,24 @@ memory/allocation refusal types retain the invoking context and measured peaks.
 This storage changes no publication proof, public plan, source or durable format.
 Default-stack filesystem qualification remains required independently of this
 composition decision.
+
+
+Terminal recovery dispatches each concrete typed owner to its next receiver:
+planned staging, closed-stage publication, namespace-durable reopen, then finish.
+Each returns the existing terminal outcome directly. No future-phase Result is
+reserved in the preceding receiver; Rust tail-call elimination is not assumed.
+This changes no transition order, cancellation, effects, or refusal ownership.
+
+The closed staged payload has its own checked StagedStateBacking. Planning
+prepares this successor slot alongside planned-state backing from the same
+original recovery allowance, before either reservation and before staging effects.
+Aggregate preflight covers requested capacities and the larger of planning or
+staging construction/extraction overlap; actual capacities are admitted afterward.
+Both backing headers remain in the live census and the peak reaches original
+plan-cost admission. The successor backing moves linearly from planned custody
+into RecoveryStagingInput. After the existing interruption checks, staging seals
+its actual closed-state payload once without allocating or failing. Publication
+and closed-stage cancellation consume that same payload. Earlier cancellation or
+staging failure drops only the unused empty successor backing. There is no late
+allocation fallback and no optional phase owner. Filesystem default-stack courts
+remain the qualification for the resulting call chain.
