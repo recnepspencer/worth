@@ -1,18 +1,15 @@
 //! Suspend an admitted selected row until canonical owner application.
 use super::*;
-use crate::domain_computation::primary_graph::application_contribution::producer::execution;
-use crate::domain_computation::primary_graph::application_contribution::producer::execution::prepared_plan::OwnerPlan;
 
 impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand::progression) fn prepare_validated_output_demand_with_schedule<
+    #[inline(never)]
+    pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand::progression) fn prepare_running_output_with_schedule<
         'owner,
         Family,
     >(
         &'owner self,
         phase: &'owner WorthQueryAdvancementPhase<'owner>,
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
-        principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
-        request_scope: &WorthQueryRequestScope,
         delivery_branch: crate::basis::WorthQueryProductBranch,
         disclosure: ValidatedOutputDisclosure<
             FamilySourceQuery<Schema, Family>,
@@ -20,11 +17,11 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         >,
         entry: &InstalledProducerProvider<Schema>,
         commit_authority: WorthQueryProducerCommitAuthority,
-        schedule_progression: ScheduleProgression<'owner, '_, '_, Schema>,
+        schedule_progression: &ScheduleProgression<'owner, '_, '_, Schema>,
 
         performed: &'owner std::cell::RefCell<PerformedMembers>,
     ) -> Result<
-        ExecutionPreparation<
+        OutputPreparation<
             'owner,
             FamilySourceQuery<Schema, Family>,
             FamilySourceValue<Schema, Family>,
@@ -61,7 +58,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                     disclosure,
                     schedule_progression.is_selected(),
                 )
-                .map(ExecutionPreparation::Reached);
+                .map(OutputPreparation::Reached);
         }
         if !schedule_progression.is_selected()
             && self.released_predecessor_needs_source(demand, disclosed_source)?
@@ -73,9 +70,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                 disclosed_source.clone(),
                 None,
             )?;
-            return Ok(ExecutionPreparation::Reached(OwnStages::Refreshed(
-                disclosure,
-            )));
+            return Ok(OutputPreparation::Reached(OwnStages::Refreshed(disclosure)));
         }
         let interest = demand
             .interest
@@ -151,15 +146,15 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                         continue;
                     }
                     Ok(crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputSchedulingResult::Deferred) => {
-                        return Ok(ExecutionPreparation::Reached(waiting()));
+                        return Ok(OutputPreparation::Reached(waiting()));
                     }
                     Ok(crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputSchedulingResult::NoEffect(denial))
                     | Err(denial) => return Err(denial),
                 }
                 }
-                Admission::Pending => return Ok(ExecutionPreparation::Reached(waiting())),
+                Admission::Pending => return Ok(OutputPreparation::Reached(waiting())),
                 Admission::AdvanceCheckpoint { claim, checkpoint } => {
-                    return Ok(ExecutionPreparation::Reached(
+                    return Ok(OutputPreparation::Reached(
                         if self.advance_output_checkpoint(
                             &execution,
                             phase,
@@ -188,7 +183,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                                 ReadyCertification::OnBranch(delivery_branch)
                             },
                         )
-                        .map(ExecutionPreparation::Reached);
+                        .map(OutputPreparation::Reached);
                 }
                 Admission::Failed(denial) => return Err(denial),
                 Admission::Execute { successor_of } => break successor_of,
@@ -219,7 +214,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                 Ok(Some(readiness)) => Some(readiness),
                 Ok(None) => {
                     selected_execution_finish.relinquish();
-                    return Ok(ExecutionPreparation::Reached(waiting()));
+                    return Ok(OutputPreparation::Reached(waiting()));
                 }
                 Err(stop) => {
                     selected_execution_finish.relinquish();
@@ -246,93 +241,29 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             required_output.reuse_live_output_only();
         }
         let required_execution = required_output.prepare_execution(published_mode);
-        let runtime_identity = self.runtime.authority_identity().as_u64();
-        let root = demand.observed_source.source_root();
-        let original_publication = demand.original_producing_publication.clone();
-        let finish = move |result, readiness| {
-            super::execution_completion::finish(
-                result,
-                selected_execution_finish,
-                performed,
-                readiness,
-                runtime_identity,
-                root,
-                original_publication,
-                &execution,
-            )
-        };
-        let prepared_input = demand
-            .prepare_disclosed_input(disclosure)
-            .map_err(execution::ProducerExecutionStop::ExecutionStopped);
-        let result = match schedule_progression {
-            ScheduleProgression::Ordinary => {
-                let result = prepared_input.and_then(|proof| {
-                    proof.with_erased(|input| {
-                        entry.executor.execute(
-                            phase,
-                            self,
-                            principal,
-                            request_scope,
-                            delivery_branch,
-                            required_execution,
-                            input,
-                            successor_of,
-                            commit_authority,
-                            entry.edition,
-                            &mut demand.producer_contacts_in_this_demand,
-                        )
-                    })
-                });
-                match finish(
-                    result,
-                    ordinary_readiness.expect("ordinary effect has publication readiness"),
-                ) {
-                    Ok(progress) => Ok(ExecutionPreparation::Reached(OwnStages::Checkpoint(
-                        progress,
-                    ))),
-                    Err(refusal) => {
-                        demand.unpublished_selected_checkpoint = refusal.checkpoint;
-                        Err(execution::ProducerExecutionStop::ExecutionStopped(
-                            refusal.denial,
-                        ))
-                    }
-                }
-            }
-            ScheduleProgression::Selected {
-                shared,
-                matched_predecessors,
-                readiness,
-            } => {
-                let prepared = prepared_input.and_then(|proof| {
-                    proof.with_erased(|input| {
-                        entry.executor.execute_on_selected(
-                            phase,
-                            self,
-                            principal,
-                            request_scope,
-                            shared,
-                            matched_predecessors,
-                            required_execution,
-                            input,
-                            successor_of,
-                            commit_authority,
-                            entry.edition,
-                            &mut demand.producer_contacts_in_this_demand,
-                        )
-                    })
-                });
-                // A preparation refusal still owns this Running invocation.
-                // Canonical completion applies its normal failure protocol;
-                // abandonment alone cannot substitute for that typed outcome.
-                let plan = match prepared {
-                    Ok(plan) => plan,
-                    Err(stop) => OwnerPlan::immediate(Err(stop)),
-                };
-                Ok(ExecutionPreparation::Planned(
-                    plan.map_result(move |result| finish(result, readiness)),
-                ))
-            }
-        };
-        result.map_err(execution::ProducerExecutionStop::into_output_denial)
+        Ok(OutputPreparation::Running(RunningOutputPreparation {
+            selected_execution_finish,
+            ordinary_readiness,
+            required_execution,
+            disclosure,
+            successor_of,
+            commit_authority,
+        }))
     }
+}
+
+/// Preparation has either reached an existing row or issued one Running phase.
+pub(super) enum OutputPreparation<'owner, Query, Value> {
+    Reached(OwnStages<Query, Value>),
+    Running(RunningOutputPreparation<'owner, Query, Value>),
+}
+
+/// Moves the real prepaid row and source into execution without another allocation.
+pub(super) struct RunningOutputPreparation<'owner, Query, Value> {
+    pub(super) selected_execution_finish: crate::domain_computation::primary_graph::application_output_demand::RunningSelectedExecution<'owner>,
+    pub(super) ordinary_readiness: Option<super::super::required_wave::performed::PublicationReadiness>,
+    pub(super) required_execution: crate::domain_computation::primary_graph::application_output_demand::RequiredOutputExecution,
+    pub(super) disclosure: ValidatedOutputDisclosure<Query, Value>,
+    pub(super) successor_of: Option<[u8; 32]>,
+    pub(super) commit_authority: WorthQueryProducerCommitAuthority,
 }
