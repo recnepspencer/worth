@@ -25,8 +25,14 @@ where
         let binding = self.state.durable.as_ref().ok_or(Denial::NotHomeBound)?;
         let task = close.retirement_task().map_err(Denial::RecoveredCustody)?;
         drop(close);
-        crate::lifecycle::close::retire_recovered(&self.state.recovery, &task, request, native)
-            .map_err(Denial::RecoveredCustody)?;
+        crate::lifecycle::close::retire_recovered(
+            &self.state.recovery,
+            &task,
+            request,
+            native,
+            binding,
+        )
+        .map_err(Denial::RecoveredCustody)?;
         let origin = binding.take_checkpoint_origin()?;
         Ok(origin.retire())
     }

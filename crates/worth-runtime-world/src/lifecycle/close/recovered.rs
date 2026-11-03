@@ -7,19 +7,114 @@ use crate::recovery::{RecoveredNativeCustody, RecoveredWorldPublicationRecord};
 use std::sync::{Arc, Mutex};
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 
-pub(super) struct RecoveredCloseRetirement {
-    record: Arc<RecoveredWorldPublicationRecord>,
+pub(super) enum RecoveredCloseRetirement {
+    Pending(Option<Arc<RecoveredWorldPublicationRecord>>),
+    Retiring(Option<OriginalRecoveredClose>),
+    Retired(OriginalRecoveredClose),
+}
+
+pub(super) struct OriginalRecoveredClose {
+    _identity: crate::identity::ProductUnpublishedOwnerEffectsIdentity,
+    _attempt: crate::identity::CompositePublicationAttemptIdentity,
+    _commit: crate::identity::CompositeCommitIdentity,
+    _open: crate::durability::AdmittedWorldOpenAttempt,
+    _release: Mutex<Option<crate::durability::WorldDurableArtifact>>,
+    _committed_release:
+        Mutex<Option<worth_proof::DurablyCommitted<crate::durability::ActualWorldPublication>>>,
+    _claimed: Mutex<bool>,
+    expected: crate::branch::ProductBranchObservation,
     native: Option<RecoveredNativeRetirement>,
-    initialized: bool,
     expected_basis: Option<crate::history::CompositeCommitRetirement>,
 }
 
 impl RecoveredCloseRetirement {
     fn new(record: Arc<RecoveredWorldPublicationRecord>) -> Self {
+        Self::Pending(Some(record))
+    }
+
+    fn advance(
+        &mut self,
+        request: &ExecutionRequest<'_, '_>,
+        native_owner: &worth_relational::facade::runtime::RelationalRuntime,
+        original_binding: &Arc<crate::durability::WorldDurableMediumBinding>,
+    ) -> Result<bool, Denial> {
+        checkpoint_close_step(request, 1)?;
+        match self {
+            Self::Pending(slot) => {
+                let record = slot.as_ref().expect("retained original recovered record");
+                if !Arc::ptr_eq(&record.binding, original_binding) {
+                    return Err(Denial::CloseProgressInvariant);
+                }
+                let record = slot.take().expect("same original recovered record");
+                match Arc::try_unwrap(record) {
+                    Ok(original) => {
+                        *self = Self::Retiring(Some(OriginalRecoveredClose::new(original)));
+                        Ok(false)
+                    }
+                    Err(record) => {
+                        *slot = Some(record);
+                        Err(Denial::UnresolvedBusinessCustody)
+                    }
+                }
+            }
+            Self::Retiring(slot) => {
+                if !slot
+                    .as_mut()
+                    .expect("original retirement is retained")
+                    .advance(request, native_owner)?
+                {
+                    return Ok(false);
+                }
+                let original = slot.take().expect("completed original retirement");
+                *self = Self::Retired(original);
+                Ok(true)
+            }
+            Self::Retired(_) => Ok(true),
+        }
+    }
+}
+
+impl OriginalRecoveredClose {
+    fn new(original: RecoveredWorldPublicationRecord) -> Self {
+        let RecoveredWorldPublicationRecord {
+            identity,
+            attempt,
+            commit,
+            open,
+            expected,
+            binding,
+            native,
+            claimed,
+            release,
+            committed_release,
+            metadata_bytes: _,
+        } = original;
+        let native = match native
+            .into_inner()
+            .unwrap_or_else(|cause| cause.into_inner())
+        {
+            RecoveredNativeCustody::OpenOnly => None,
+            RecoveredNativeCustody::Relational(original) => {
+                Some(original.consume(RecoveredNativeRetirement::new))
+            }
+            RecoveredNativeCustody::Released => {
+                unreachable!("the exclusive recovered record passed final sealed validation")
+            }
+        };
+        // The caller still borrows the pointer-equal binding in the live World
+        // owner. This is a nonfinal local share, so no medium/provider Drop can
+        // run here. Retired data must not retain this Serving capability.
+        drop(binding);
         Self {
-            record,
-            native: None,
-            initialized: false,
+            _identity: identity,
+            _attempt: attempt,
+            _commit: commit,
+            _open: open,
+            _release: release,
+            _committed_release: committed_release,
+            _claimed: claimed,
+            expected,
+            native,
             expected_basis: None,
         }
     }
@@ -29,25 +124,6 @@ impl RecoveredCloseRetirement {
         request: &ExecutionRequest<'_, '_>,
         native_owner: &worth_relational::facade::runtime::RelationalRuntime,
     ) -> Result<bool, Denial> {
-        checkpoint_close_step(request, 1)?;
-        let record = Arc::get_mut(&mut self.record).ok_or(Denial::UnresolvedBusinessCustody)?;
-        if !self.initialized {
-            let original = std::mem::replace(
-                record
-                    .native
-                    .get_mut()
-                    .unwrap_or_else(|cause| cause.into_inner()),
-                RecoveredNativeCustody::Released,
-            );
-            self.native = match original {
-                RecoveredNativeCustody::OpenOnly => None,
-                RecoveredNativeCustody::Relational(original) => {
-                    Some(original.consume(RecoveredNativeRetirement::new))
-                }
-                RecoveredNativeCustody::Released => return Err(Denial::CloseProgressInvariant),
-            };
-            self.initialized = true;
-        }
         if let Some(native) = self.native.take() {
             let (native, progress) = native.advance(request);
             self.native = Some(native);
@@ -56,13 +132,11 @@ impl RecoveredCloseRetirement {
             }
         }
         if self.expected_basis.is_none() {
-            record
-                .expected
+            self.expected
                 .try_retire_for_close()
                 .map_err(|_| Denial::Busy)?;
             self.expected_basis = Some(
-                record
-                    .expected
+                self.expected
                     .begin_close_basis_retirement()
                     .map_err(|_| Denial::Busy)?,
             );
@@ -110,6 +184,7 @@ pub(in crate::lifecycle) fn retire(
     task: &Arc<Mutex<CloseProgress>>,
     request: &ExecutionRequest<'_, '_>,
     native_owner: &worth_relational::facade::runtime::RelationalRuntime,
+    original_binding: &Arc<crate::durability::WorldDurableMediumBinding>,
 ) -> Result<(), Denial> {
     // This try-only task guard serializes its own progress. No World catalog,
     // lifecycle or branch lock spans the concrete nonwaiting Native protocol.
@@ -128,7 +203,7 @@ pub(in crate::lifecycle) fn retire(
             .pending_recovered
             .as_mut()
             .expect("retained original recovered row")
-            .advance(request, native_owner)?
+            .advance(request, native_owner, original_binding)?
         {
             continue;
         }
@@ -145,10 +220,20 @@ pub(in crate::lifecycle) fn retire(
 
 impl std::fmt::Debug for RecoveredCloseRetirement {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let (phase, identity) = match self {
+            Self::Pending(original) => (
+                "pending",
+                &original.as_ref().expect("original record").identity,
+            ),
+            Self::Retiring(original) => (
+                "retiring",
+                &original.as_ref().expect("original retirement")._identity,
+            ),
+            Self::Retired(original) => ("retired", &original._identity),
+        };
         f.debug_struct("RecoveredCloseRetirement")
-            .field("identity", &self.record.identity)
-            .field("initialized", &self.initialized)
-            .field("expected_basis_started", &self.expected_basis.is_some())
-            .finish_non_exhaustive()
+            .field("phase", &phase)
+            .field("identity", identity)
+            .finish()
     }
 }

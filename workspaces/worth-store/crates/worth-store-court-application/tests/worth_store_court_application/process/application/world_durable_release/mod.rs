@@ -91,13 +91,18 @@ fn killed_native_effect_reopens_original_world_custody_releases_and_reopens_agai
     assert_eq!(retained[0].reserved_commit_identity().ordinal(), number(1));
     assert_eq!(retained[0].native_receipt(), Some(&receipt));
     let closed = sealed.finish_close(&execution);
-    assert!(matches!(
-        &closed,
+    match &closed {
         ApplicationHomeCloseOutcome::Closed {
-            checkpoint: Ok(_),
+            checkpoint: Ok(_), ..
+        } => {}
+        ApplicationHomeCloseOutcome::Closed {
+            checkpoint: Err(cause),
             ..
+        } => panic!("original recovered checkpoint: {cause:?}"),
+        ApplicationHomeCloseOutcome::CloseRefused { reason, .. } => {
+            panic!("original recovered physical close: {reason:?}")
         }
-    ));
+    }
     let fixture = open(&location, &execution);
     let inspection = fixture.home.world().inspection_port();
     let page = inspection.recovery_page(None, maximum()).unwrap();
