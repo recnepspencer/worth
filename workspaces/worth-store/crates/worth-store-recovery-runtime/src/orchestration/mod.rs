@@ -26,7 +26,7 @@ pub(crate) use manifest_facts::{ManifestFactsDiscovery, ManifestFactsState};
 pub(crate) use planning::{
     plan_recovery, ExceededManifestEntries, ValidatedManifestResidueCleanup,
 };
-pub(crate) use publication::publish_recovery;
+pub(crate) use publication::{publish_recovery, PublicationPayload, PublicationStateBacking};
 pub(crate) use recovery::recover;
 pub(crate) use reopen::reopen_recovery;
 pub(crate) use staging::{

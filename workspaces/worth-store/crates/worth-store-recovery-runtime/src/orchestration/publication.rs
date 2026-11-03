@@ -12,6 +12,7 @@ mod outcome;
 mod state;
 
 use state::PublicationState;
+pub(crate) use state::{PublicationPayload, PublicationStateBacking};
 
 pub(crate) fn publish_recovery(
     staged: StagedPhysicalRecovery,

@@ -3017,3 +3017,13 @@ exact escaped-effect predicate and owning session postures remain unchanged.
 This removes coexistence of unrelated fate-local temporaries. No numerical stack
 bound follows from this source decomposition; normal-stack filesystem controls
 remain mandatory.
+
+
+Publication state uses a fifth checked actual-payload slot under that original
+allowance. Closed staging carries its empty backing; from_staged seals the same
+publication proofs once and returns a thin owner plus the existing publication
+plan. Ordinary reads/execute/readiness/preexisting validation borrow the payload.
+Only terminal block, indeterminate or into_namespace consumes it. Aggregate
+requested/actual capacity and movement admission include staged-to-publication
+and publication-to-namespace overlap. No partial-state mutation, authority clone,
+late allocation, alias or alternate publication issuer replaces the existing path.

@@ -9,7 +9,8 @@ pub(super) fn prepare(
     backing: PlannedStateBacking,
     cancellation: RecoveryStagingCancellation,
 ) -> RecoveryStagingInput {
-    let (planned, input_backing, staged_backing, namespace_backing) = backing.into_staging_parts();
+    let (planned, input_backing, staged_backing, namespace_backing, publication_backing) =
+        backing.into_staging_parts();
     let PlannedRecoveryState {
         authority,
         coordination,
@@ -32,6 +33,7 @@ pub(super) fn prepare(
     } = planned;
     drop(redo);
     input_backing.finish(RecoveryStagingInputState {
+        publication_backing,
         namespace_backing,
         staged_backing,
         authority,
