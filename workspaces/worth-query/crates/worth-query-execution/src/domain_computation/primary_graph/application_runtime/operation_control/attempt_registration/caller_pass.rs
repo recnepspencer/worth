@@ -58,7 +58,7 @@ impl CallerPassControl {
         drop(pending);
         drop(previous);
     }
-    pub(in crate::domain_computation::primary_graph) fn run_interleaving(&self) {
+    pub fn run_interleaving(&self) {
         // Unarmed: one atomic read; the callback runs after the mutex is released.
         if self.interleaving_owner.load(Ordering::Acquire) == 0 {
             return;

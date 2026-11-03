@@ -60,7 +60,7 @@ impl SettledWorkflowTransition {
         }
     }
 
-    pub(in crate::domain_computation::primary_graph) const fn occurrence(self) -> u64 {
+    pub const fn occurrence(self) -> u64 {
         self.occurrence
     }
 
