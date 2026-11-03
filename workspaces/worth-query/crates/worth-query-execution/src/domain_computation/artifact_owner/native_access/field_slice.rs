@@ -60,7 +60,7 @@ pub(crate) fn with_borrowed_field<T>(
         let matches = match contract.aspect().shape() {
             AspectShape::Scalar(family) => values.matches_scalar_family(*family),
             AspectShape::Struct(_) => values.is_struct(),
-            AspectShape::Opaque(_) | AspectShape::Reference(_) | AspectShape::Content => false,
+            AspectShape::Opaque(_) | AspectShape::Reference(_) => false,
         };
         if !matches {
             return Err(WorthQueryArtifactProviderAccessDenial::ShapeMismatch);

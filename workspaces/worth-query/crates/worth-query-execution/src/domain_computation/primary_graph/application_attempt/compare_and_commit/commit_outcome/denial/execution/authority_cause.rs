@@ -85,7 +85,11 @@ mod tests {
             .into_iter()
             .filter(|required| *required > 0)
             .collect();
-        for required in unique {
+        eprintln!("authority charge probes={}", unique.len());
+        for (probe, required) in unique.into_iter().enumerate() {
+            if probe % 100 == 0 {
+                eprintln!("authority probe={probe}, required={required}, reached={reached}");
+            }
             let (committed, evidence, _) = commit_at(required - 1);
             assert!(!committed, "charge {required}");
             if let Some((Stage::DecisionReadSet, _, Some(Authority::Stopped(_)))) = evidence {
@@ -98,6 +102,7 @@ mod tests {
                     )),
                     "charge {required}"
                 );
+                eprintln!("authority witness probe={probe}, required={required}");
                 reached += 1;
             }
         }

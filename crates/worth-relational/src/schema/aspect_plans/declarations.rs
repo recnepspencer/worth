@@ -197,7 +197,7 @@ fn validate_declared_aspect(
     validate_declared_aspect_key(kind_id, "aspect key", aspect)?;
     if matches!(
         aspect.contract.shape(),
-        AspectShape::Content | AspectShape::Scalar(ScalarAspectType::ContentRef)
+        AspectShape::Scalar(ScalarAspectType::ContentRef)
     ) {
         return Err(SchemaRegistryError::invalid_aspect_declaration(
             kind_id,

@@ -41,7 +41,7 @@ fn install(
 }
 
 #[test]
-fn content_install_refuses_both_unbound_top_level_forms_on_both_kind_doors() {
+fn content_install_refuses_unbound_scalar_references_on_both_kind_doors() {
     let key = AspectKey::new("samples").unwrap();
     let identity = AspectIdentity(42);
     let revision = AspectContractRevision(1);
@@ -51,17 +51,14 @@ fn content_install_refuses_both_unbound_top_level_forms_on_both_kind_doors() {
         revision,
         ScalarAspectType::ContentRef,
     );
-    let content = AspectContract::content_ref(key.clone(), identity, revision);
     for relation in [false, true] {
-        for contract in [scalar.clone(), content.clone()] {
-            assert_eq!(
-                install(contract, relation).unwrap_err().class,
-                SchemaRegistryErrorClass::InvalidAspectDeclaration {
-                    kind_id: KindId(42),
-                    detail: "content references require a format-bound struct field".into(),
-                }
-            );
-        }
+        assert_eq!(
+            install(scalar.clone(), relation).unwrap_err().class,
+            SchemaRegistryErrorClass::InvalidAspectDeclaration {
+                kind_id: KindId(42),
+                detail: "content references require a format-bound struct field".into(),
+            }
+        );
         install(
             AspectContract::scalar(key.clone(), identity, revision, ScalarAspectType::Int64),
             relation,

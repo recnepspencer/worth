@@ -175,6 +175,33 @@ impl WorthQueryPreparedCorrectionSource {
         }
     }
 
+    pub(in crate::domain_computation::primary_graph) fn authored_retirement_anchor(
+        &self,
+    ) -> Option<EntityId> {
+        self.authored_identity
+            .as_ref()
+            .and_then(|identity| identity.retirement_anchor())
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn authored_restoration_anchor<'a>(
+        &self,
+        roles: impl Iterator<Item = (&'a str, worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture, &'a str, &'a worth_relational::facade::transactions::EntityReference)> + Clone,
+        batch: &worth_relational::facade::transactions::WorkerIntentBatch,
+        request: &WorthQueryRequestScope,
+    ) -> Result<
+        Option<(
+            EntityId,
+            worth_relational::facade::transactions::CreatedEntityRef,
+        )>,
+        super::AuthoredCorrectionCandidateDenial,
+    > {
+        self.validate_authored_candidate(roles.clone(), batch, request)?;
+        Ok(self
+            .authored_identity
+            .as_ref()
+            .and_then(|identity| identity.restoration_anchor(roles)))
+    }
+
     pub(crate) fn source_commit(&self) -> &RelationalCommitReceipt {
         self.material.commit_reference()
     }

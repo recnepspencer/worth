@@ -22,6 +22,8 @@ impl<'de> Visitor<'de> for CanonicalEnvelopeSeed<'_, '_, '_, '_> {
         let mut content = None;
         let mut required_output_codec_retirements = None;
         let mut required_output_origin = None;
+        let mut authored_cascade_restoration = None;
+        let mut authored_cascade_retirement = None;
         let mut required_output_materialization = None;
         let mut authored_index_writes = None;
         let mut commit = None;
@@ -68,6 +70,18 @@ impl<'de> Visitor<'de> for CanonicalEnvelopeSeed<'_, '_, '_, '_> {
                         return Err(M::Error::duplicate_field("required_output_origin"));
                     }
                     required_output_origin = Some(map.next_value()?);
+                }
+                "authored_cascade_retirement" => {
+                    if authored_cascade_retirement.is_some() {
+                        return Err(M::Error::duplicate_field("authored_cascade_retirement"));
+                    }
+                    authored_cascade_retirement = Some(map.next_value()?);
+                }
+                "authored_cascade_restoration" => {
+                    if authored_cascade_restoration.is_some() {
+                        return Err(M::Error::duplicate_field("authored_cascade_restoration"));
+                    }
+                    authored_cascade_restoration = Some(map.next_value()?);
                 }
                 "required_output_materialization" => {
                     if required_output_materialization.is_some() {
@@ -230,6 +244,10 @@ impl<'de> Visitor<'de> for CanonicalEnvelopeSeed<'_, '_, '_, '_> {
                 .ok_or_else(|| M::Error::missing_field("required_output_codec_retirements"))?,
             required_output_origin: required_output_origin
                 .ok_or_else(|| M::Error::missing_field("required_output_origin"))?,
+            authored_cascade_retirement: authored_cascade_retirement
+                .ok_or_else(|| M::Error::missing_field("authored_cascade_retirement"))?,
+            authored_cascade_restoration: authored_cascade_restoration
+                .ok_or_else(|| M::Error::missing_field("authored_cascade_restoration"))?,
             required_output_materialization: required_output_materialization
                 .ok_or_else(|| M::Error::missing_field("required_output_materialization"))?,
             // The current canonical producer omits exactly the unavailable form.

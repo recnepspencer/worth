@@ -133,6 +133,8 @@ fn producer(
     supported: &[WorthQueryProducerApplicability],
 ) -> DeclaredProducerBinding {
     DeclaredProducerBinding {
+        ownership: worth_foundational::facade::ProducerPublicationOwnership::Independent,
+        owned_scope_entity: None,
         owner: "owner".to_owned(),
         identity: identity.to_owned(),
         source_selector: source.to_owned(),

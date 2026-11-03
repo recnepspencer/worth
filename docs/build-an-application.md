@@ -4000,6 +4000,57 @@ prepares and writes the actual effects through the same typed mutation path.
 Source admission, output contracts, currentness and atomic publication remain
 enforced without a producer resource forecast.
 
+#### Source-owned producer publications
+
+A producer defaults to independent publications. Opt in to authored cascade
+retirement on its `WorthQueryApplicationProducerBinding`:
+
+```rust,ignore
+const OWNERSHIP: ProducerPublicationOwnership =
+    ProducerPublicationOwnership::SourceScopeCascade;
+```
+
+The declaration means that the producer's complete publications belong to its
+recorded source scope. Installation requires an entity-specific input-field
+scope and a source query rooted at that same entity, without a context traversal,
+component/orbit selection or managed-index root selection. Shared/context and
+principal scopes refuse with `ProducerOwnershipRequiresEntitySourceScope`, naming
+the producer. Initial and Preserve producers in one family must agree on ownership.
+The ownership rule participates in installed producer identity.
+
+An authored `retire_created` or `restore_retired` binding supplies the exact source
+identity. Native admits an ordinary authored Create as the distinguished anchor
+and independently computes every live opted-in publication scoped by that source,
+then publications scoped by their members. Submit exactly the anchor and every
+live member of those complete publications. Partial, repeated, extra and
+foreign-source rosters refuse with typed causes and affected native records;
+retirement publishes once. Inspect `commit_denial.authored_retirement_error()` for
+its original `authored_retirement_refusal()` and `context.affected_records`.
+`restore_retired` restores the source and every owned
+publication in one transaction, preserving each producer's provenance and route
+while allocating fresh native generations and remapping owned relation endpoints.
+A restoration supplies historical output association, not producer readiness.
+
+An owned publication cannot use the independent single-publication retirement
+path, including a warm publication capsule. It refuses with
+`OwnedPublicationRequiresCascade`, identifying the publication and its owner.
+Anchorless mixed Create/Retire candidates receive the same refusal.
+An intermediate source created by a producer is not a genuine authored anchor.
+Producer succession may replace a leaf member, but cannot retire an intermediate
+source while its owned publications remain live. This also applies when an independent
+publication contains that intermediate source: independence does not permit it
+to sever an opted-in child's live owner. Every intermediate publication must opt
+in for a producer-created source to join the authored root's cascade.
+An owned publication cannot be
+restored or republished without its live source (`PublicationOwnerUnavailable`).
+These checks govern required-output publication custody; an unbound Native
+transaction remains governed by its ordinary schema and cascade-delete policy.
+
+An input dependency or a reference never implies ownership. Two independent
+producers may read the same source without entering its cascade. Opting in does
+not make an external endpoint of a producer-owned relation an owned entity.
+See the [custody contract](../plans/WORTH-query/authored-retirement-custody.md).
+
 #### Typed producer domain denial
 
 Every provider declares `type DenialValue` in one of three forms:

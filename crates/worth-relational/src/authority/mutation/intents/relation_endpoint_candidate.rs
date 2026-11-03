@@ -6,7 +6,7 @@ use worth_foundational::facade::{
 use crate::identity::data::EntityId;
 use crate::schema::data::{AspectBinding, LoweredAspectContractPlan};
 
-pub(super) fn append_authoritative_endpoints(
+pub(crate) fn append_authoritative_endpoints(
     candidate: PortableRecordAspectPatch,
     plan: Option<&LoweredAspectContractPlan>,
     source: EntityId,

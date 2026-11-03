@@ -89,6 +89,14 @@ impl CanonicalCommitEnvelope {
             .required_output_origin
             .as_deref()
             .ok_or("present output has no installed producer publication")?;
+        self.validate_output_origin_header(origin)?;
+        Ok(origin)
+    }
+
+    pub(super) fn validate_output_origin_header(
+        &self,
+        origin: &CanonicalRequiredOutputOrigin,
+    ) -> Result<(), Stop> {
         if origin.commit != self.commit
             || !origin.meaning.implementation.valid()
             || (matches!(
@@ -116,7 +124,8 @@ impl CanonicalCommitEnvelope {
                     || member.birth_producer.is_empty()
                     || match origin.publication {
                         CanonicalOutputPublication::Birth
-                        | CanonicalOutputPublication::BirthAfterCodecRetirement { .. } => {
+                        | CanonicalOutputPublication::BirthAfterCodecRetirement { .. }
+                        | CanonicalOutputPublication::AuthoredRestoration { .. } => {
                             member.posture != Posture::Create
                                 || member.before_write.is_some()
                                 || member.birth != self.commit.commit_id
@@ -135,6 +144,6 @@ impl CanonicalCommitEnvelope {
         {
             return Err("copied or incomplete native output publication membership".into());
         }
-        Ok(origin)
+        Ok(())
     }
 }

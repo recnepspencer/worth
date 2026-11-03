@@ -10,7 +10,6 @@ use crate::aspects::{
     validate_aspect_value, AspectContract, AspectShape, ContractValidatedAspectArtifact,
     ReferenceAspectType,
 };
-use crate::compatibility::content_lowering::lower_json_content_ref;
 use crate::compatibility::reference_lowering::lower_json_entity_ref;
 use crate::compatibility::scalar_lowering::lower_json_scalar;
 use crate::locators::BoundarySourceLocator;
@@ -32,7 +31,6 @@ pub fn lower_json_aspect_value(
         AspectShape::Reference(ReferenceAspectType::Entity) => {
             lower_json_entity_ref(&source, value).map(Into::into)
         }
-        AspectShape::Content => lower_json_content_ref(&source, value).map(Into::into),
         AspectShape::Struct(shape) => lower_json_struct(&source, value, shape).map(Into::into),
         AspectShape::Opaque(_) => Err(JsonCompatibilityLoweringDenial::JsonShapeNotAdmitted {
             source: source.clone(),

@@ -92,7 +92,6 @@ fn update_shape(digest: &mut Sha256, shape: &AspectShape) {
         }
         AspectShape::Opaque(_) => digest.update([3, 1]),
         AspectShape::Reference(_) => digest.update([4, 1]),
-        AspectShape::Content => digest.update([5]),
     }
 }
 

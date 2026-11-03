@@ -25,7 +25,7 @@ These are observations of current code, not capabilities inferred from names:
 
 | Current source | Actual authority and missing handoff |
 |---|---|
-| [values/references.rs](../../crates/worth-foundational/src/values/references.rs) and [content_lowering.rs](../../crates/worth-foundational/src/compatibility/content_lowering.rs) | ContentRefId is a public u64 wrapper; JSON lowering checks only u64 shape. It supplies no availability, format, or admission evidence. |
+| [values/references.rs](../../crates/worth-foundational/src/values/references.rs) and the retired `content_lowering.rs` | ContentRefId is a public u64 wrapper; JSON lowering checks only u64 shape. It supplies no availability, format, or admission evidence. |
 | [aspect value codec](../../crates/worth-relational/src/aspect_wire/aspect_value_canonical_codec/writing.rs) | Bytes and ContentRef both encode that u64. No byte resolver exists behind either scalar. |
 | [branch root](../../crates/worth-relational/src/branch/root.rs), [transaction admission](../../crates/worth-relational/src/mvcc/transaction/admission.rs), and [savepoints](../../crates/worth-relational/src/mvcc/transaction/savepoint.rs) | Native owns immutable roots, genuine branch bases, staged intents, rollback, and retention obligations. A content table must participate in these objects rather than live beside them in Query. |
 | [canonical envelope](../../crates/worth-relational/src/history/data/canonical_commit_envelope.rs) and [publication execution](../../crates/worth-relational/src/authority/commit/pipeline/publication_execution.rs) | Native owns the authoritative commit artifact and preparation/publication sequence. No content payload section exists today. |
@@ -74,6 +74,11 @@ used as the implementation. The smallest legal shape is to extend Native-owned
 artifact/member data through the existing ports, with no reverse import or new
 Store service. This is source inspection, not a claim that a new dependency graph
 has passed boundary-check; no graph changes or builds occur in this slice.
+
+Current cutover status: the standalone content shape and its contract builders
+are deleted, including portable/archive decoding. Native installs ContentRef
+only in format-bound flat Struct fields. The inspection table above records the
+pre-cutover baseline, not a compatibility path.
 
 ## Decision: content-derived identity, descriptive until admitted
 

@@ -86,23 +86,6 @@ impl AspectContract {
         )
     }
 
-    pub fn content_ref(
-        key: AspectKey,
-        identity: AspectIdentity,
-        revision: AspectContractRevision,
-    ) -> Self {
-        Self::new(
-            key,
-            identity,
-            revision,
-            AspectShape::Content,
-            AspectMaskContract::scalar(),
-            AbsenceLaw::Required,
-            AspectEquivalenceBasis::ContentIdentity,
-            AspectEvolutionPolicy::ExplicitBreakRequired,
-        )
-    }
-
     pub fn opaque_token(
         key: AspectKey,
         identity: AspectIdentity,

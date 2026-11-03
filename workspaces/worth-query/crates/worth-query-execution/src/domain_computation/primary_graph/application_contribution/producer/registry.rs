@@ -55,6 +55,9 @@ pub(in crate::domain_computation::primary_graph::application_contribution) struc
     pub(in crate::domain_computation::primary_graph::application_contribution) required_invariants:
         Vec<WorthQueryProducerInvariantRequirement>,
     pub(in crate::domain_computation::primary_graph::application_contribution) reuse_policy: String,
+    pub(in crate::domain_computation::primary_graph::application_contribution) ownership:
+        worth_foundational::facade::ProducerPublicationOwnership,
+    pub(in crate::domain_computation::primary_graph::application_contribution) owned_scope_entity: Option<String>,
     pub(in crate::domain_computation::primary_graph::application_contribution) output_equivalence:
         Option<super::super::native_field_contract::NativeFieldBindingExpectation>,
     pub(in crate::domain_computation::primary_graph::application_contribution) installed_output_equivalence:
@@ -78,6 +81,7 @@ mod operation_binding_uniqueness;
 mod output_family_inventory;
 mod pending;
 mod pending_factory;
+mod scope_ownership;
 mod semantic_edition;
 #[cfg(test)]
 mod tests;

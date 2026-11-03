@@ -7,6 +7,9 @@
 /// conditional bindings, and managed computation owners.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryPrimaryGraphInstallationDenialKind {
+    /// An opted-in producer's source is shared, contextual or not its exact entity scope.
+    ProducerOwnershipRequiresEntitySourceScope,
+    ProducerFamilyOwnershipMismatch,
     /// Typed readiness declaration or installed field meaning was refused.
     ReadinessContractRejected,
     ContentAdmissionRejected,

@@ -169,3 +169,29 @@ fn normalization_refuses_before_mutation_when_value_admission_refuses() {
         before
     );
 }
+
+#[test]
+fn digest_work_refusal_keeps_the_exact_value_checkpoint_cause() {
+    let mut partition = peer_partition();
+    partition.adjacency = SparseAdjacencyTable::default();
+    partition.reverse_adjacency = SparseAdjacencyTable::default();
+    let mut calls = Vec::new();
+    let mut work = 0_u64;
+    assert_eq!(
+        kind_admission::normalize_value(
+            &mut partition,
+            &mut |units, bytes| {
+                calls.push((units, bytes));
+                if units > work {
+                    return Err(Cause::SourceUnavailable);
+                }
+                work -= units;
+                Ok(())
+            },
+            &mut |_, _| panic!("empty partition has no retained entries")
+        ),
+        Err(Cause::SourceUnavailable)
+    );
+    // No graph traversal precedes the one-byte empty MessagePack digest write.
+    assert_eq!(calls, vec![(0, 65_536), (1, 0)]);
+}

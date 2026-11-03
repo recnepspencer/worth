@@ -176,6 +176,23 @@ impl WorthQueryInvariantExecutionFailure {
         }
     }
 
+    pub(crate) fn authored_retirement(
+        error: worth_relational::facade::publication::PublicationError,
+    ) -> Self {
+        let detail = error.detail.clone();
+        Self::native_denied(NativeDenial::AuthoredRetirement(Box::new(error)), detail)
+    }
+
+    /// Original authored retirement refusal and its affected records.
+    pub fn authored_retirement_error(
+        &self,
+    ) -> Option<&worth_relational::facade::publication::PublicationError> {
+        match self.native.as_ref()? {
+            NativeDenial::AuthoredRetirement(error) => Some(error),
+            _ => None,
+        }
+    }
+
     pub(crate) fn native_staging(
         denial: worth_relational::facade::mvcc::RelationalTransactionStagingDenial,
         detail: impl Into<Arc<str>>,

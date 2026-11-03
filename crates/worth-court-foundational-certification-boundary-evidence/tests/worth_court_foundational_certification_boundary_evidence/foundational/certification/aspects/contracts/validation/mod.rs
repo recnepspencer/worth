@@ -118,16 +118,17 @@ fn struct_contract_validation_denies_field_type_mismatch() {
 }
 
 #[test]
-fn reference_and_content_contracts_validate_only_their_declared_families() {
+fn reference_and_content_scalar_contracts_validate_only_their_declared_families() {
     let entity_contract = worth_foundational::AspectContract::reference_entity(
         key("entity.parent"),
         identity(30),
         revision(1),
     );
-    let content_contract = worth_foundational::AspectContract::content_ref(
+    let content_contract = worth_foundational::AspectContract::scalar(
         key("blob.preview"),
         identity(31),
         revision(1),
+        worth_foundational::ScalarAspectType::ContentRef,
     );
 
     let entity_outcome = validate_aspect_value(

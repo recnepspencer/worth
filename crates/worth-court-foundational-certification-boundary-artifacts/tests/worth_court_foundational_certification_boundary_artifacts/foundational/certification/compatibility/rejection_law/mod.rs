@@ -177,33 +177,6 @@ fn json_lowering_rejects_incompatible_reference_shapes() {
 }
 
 #[test]
-fn json_lowering_rejects_content_shape_with_shape_specific_denial() {
-    let contract = worth_foundational::AspectContract::content_ref(
-        key("blob.preview"),
-        identity(52),
-        revision(1),
-    );
-    let source = source_for("blob.preview");
-
-    let outcome =
-        lower_json_record_aspect_state([worth_foundational::JsonCompatibilityAspectInput::new(
-            contract,
-            source.clone(),
-            json!("inline-bytes-are-not-admitted"),
-        )]);
-
-    assert_eq!(
-        outcome,
-        worth_proof::TransitionOutcome::Denied(
-            worth_foundational::JsonCompatibilityLoweringDenial::JsonShapeNotAdmitted {
-                source,
-                expected: "lowercase 32-byte content digest",
-            }
-        )
-    );
-}
-
-#[test]
 fn json_lowering_rejects_scalar_content_ref_with_family_specific_shape_text() {
     let source = source_for("blob.slot");
     let outcome =

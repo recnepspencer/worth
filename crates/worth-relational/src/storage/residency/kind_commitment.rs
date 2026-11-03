@@ -25,22 +25,33 @@ pub(super) fn digest_controlled(
     let mut writer = ProjectionHashWriter {
         hash: &mut hash,
         checkpoint,
+        stopped: None,
     };
-    projection
-        .serialize(&mut rmp_serde::Serializer::new(&mut writer))
-        .map_err(|_| Cause::Damaged)?;
+    let encoded = projection.serialize(&mut rmp_serde::Serializer::new(&mut writer));
+    if let Some(cause) = writer.stopped {
+        return Err(cause);
+    }
+    encoded.map_err(|_| Cause::Damaged)?;
     Ok(hash.finalize().into())
 }
 
 struct ProjectionHashWriter<'borrow, 'control> {
     hash: &'borrow mut Sha256,
     checkpoint: &'borrow mut super::kind_projection::ProjectionCheckpoint<'control>,
+    stopped: Option<Cause>,
 }
 impl std::io::Write for ProjectionHashWriter<'_, '_> {
     fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
         for chunk in bytes.chunks(4096) {
-            (self.checkpoint)(chunk.len() as u64, 0)
-                .map_err(|_| std::io::Error::other("projection admission stopped"))?;
+            if self.stopped.is_some() {
+                return Err(std::io::Error::other(
+                    "projection admission already stopped",
+                ));
+            }
+            if let Err(cause) = (self.checkpoint)(chunk.len() as u64, 0) {
+                self.stopped = Some(cause);
+                return Err(std::io::Error::other("projection admission stopped"));
+            }
             self.hash.update(chunk);
         }
         Ok(bytes.len())

@@ -11,7 +11,6 @@ pub(super) fn digest_shape_name(shape: CanonicalDigestAspectShapeKind) -> &'stat
         CanonicalDigestAspectShapeKind::Struct => "struct",
         CanonicalDigestAspectShapeKind::Opaque => "opaque",
         CanonicalDigestAspectShapeKind::Reference => "reference",
-        CanonicalDigestAspectShapeKind::Content => "content",
     }
 }
 

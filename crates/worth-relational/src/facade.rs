@@ -288,8 +288,8 @@ pub mod publication {
         SubscriberStreamFailureClass,
     };
     pub use crate::publication::data::{
-        PublicationArtifactSnapshot, PublicationDiagnosticsSnapshot, PublicationError,
-        PublicationObservationSnapshot, PublicationSettlementRepairError,
+        AuthoredRetirementRefusal, PublicationArtifactSnapshot, PublicationDiagnosticsSnapshot,
+        PublicationError, PublicationObservationSnapshot, PublicationSettlementRepairError,
     };
     pub use crate::publication::patch::data::{
         PatchDetail, PatchFragmentBudget, PatchOrdering, PatchPublicationMode, PatchStreamBatch,

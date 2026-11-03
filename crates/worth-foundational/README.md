@@ -132,7 +132,9 @@ atomic scalar. Pure observation and binary value-binding contracts receive that
 whole value without a Native content resolver. The generic certification
 InlineCounterBinding conditional is an actual consumer; RatioBinding and the
 broken binary admission binding are the other concrete adopters found.
-`ContentRefId` instead names immutable format-bound Native custody. Ordered
+`ContentRefId` instead names immutable format-bound Native custody. Native
+references live in format-bound Struct fields; the standalone content shape and
+its contract builders have been removed. Ordered
 numerical data and splines use it at every size. The wire ceiling for InlineBytes
 is not permission to store datasets or a size-based alternative to content.
 See the [consumer inventory and authority rationale](../../docs/inline-atomic-content-boundary.md).

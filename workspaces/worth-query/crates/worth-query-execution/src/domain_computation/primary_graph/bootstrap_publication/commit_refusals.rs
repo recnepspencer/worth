@@ -103,9 +103,8 @@ fn bootstrap_commit_preserves_real_leased_work_refusal() {
                 );
                 let partition_identity = denial.partition_identity;
                 assert_eq!(
-                    partition_identity,
-                    Some(1),
-                    "residency admission attributes the refused Head read to main"
+                    partition_identity, None,
+                    "content directory admission exhausts Work before partition residency"
                 );
                 let validation = crate::domain_computation::primary_graph::provider::invariant_execution_failure::map_validation_failure(error.clone());
                 assert_eq!(
