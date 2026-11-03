@@ -105,8 +105,45 @@ def method_signatures(body):
                 break
         if brace is None:
             continue
-        result.append((name, method[:brace].rstrip() + ';', method))
+        result.append((name, without_patterns(method[:brace].rstrip()) + ';', method))
     return result
+
+
+def without_patterns(signature):
+    """Trait method declarations take plain parameter names: `mut x` -> `x`, patterns -> `_argN`."""
+    import re
+    signature = re.sub(r'\bmut\s+self\b', 'self', signature)
+    start = signature.find('(')
+    depth, end = 0, None
+    for i in range(start, len(signature)):
+        depth += {'(': 1, ')': -1}.get(signature[i], 0)
+        if depth == 0:
+            end = i
+            break
+    if start < 0 or end is None:
+        return signature
+    params, current, depth = [], '', 0
+    for ch in signature[start + 1:end]:
+        depth += {'(': 1, '[': 1, '<': 1, '{': 1, ')': -1, ']': -1, '>': -1, '}': -1}.get(ch, 0)
+        if ch == ',' and depth == 0:
+            params.append(current)
+            current = ''
+        else:
+            current += ch
+    if current.strip():
+        params.append(current)
+    cleaned = []
+    for index, param in enumerate(params):
+        head, sep, ty = param.partition(':')
+        name = head.strip()
+        if not sep or name in ('self', '&self', '&mut self') or name.startswith('&'):
+            cleaned.append(param)
+            continue
+        name = re.sub(r'^mut\s+', '', name)
+        if not re.fullmatch(r'[A-Za-z_]\w*', name):
+            name = f'_arg{index}'
+        cleaned.append(f' {name}:{ty}' if param.startswith((' ', '\n')) else f'{name}:{ty}')
+    return signature[:start + 1] + ','.join(cleaned) + signature[end:]
 
 
 def door_traits(model):

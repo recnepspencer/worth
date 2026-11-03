@@ -76,7 +76,8 @@ def effects_for(root, lib, baseline, admissions, workspace, overrides):
     for (crate, kind), parts in sorted(crate_parts.items()):
         measuring = kind == 'court' and any('INSTRUMENTED_SYSTEM' in part['text'] for part in parts)
         sources = crate_sources(crate, kind, parts, '#![recursion_limit = "256"]\n' + (ALLOCATOR if measuring else ''))
-        texts = list(sources.values())
+        texts = list(sources.values()) + sorted({filesystem_path(model.records[part['names']].node.source).read_text(encoding='utf-8')
+                                                 for part in parts if model.records[part['names']].foreign})
         kits = referenced_testkits(texts, kit_names)
         products = set(p['kit_products'].get(crate, set())) | set(p['courts'].get(crate, {}).get('frontier', []))
         sources[f'workspaces/worth-query/crates/{crate}/Cargo.toml'] = manifest(crate, kind, texts, library_table,

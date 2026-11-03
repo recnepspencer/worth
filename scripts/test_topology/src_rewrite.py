@@ -152,6 +152,23 @@ class Rewriter:
             return False
         return name in record.extracted if record.extracted else True
 
+    def module_home(self, module, reader_crate):
+        """Where a module reference resolves: the reader's own copy of the module path when the
+        module or a descendant has a part in the reader's crate, else its testkit, else its court."""
+        for names, parts in sorted(self.placement.items()):
+            if names[:len(module)] == module:
+                for _part, (crate, path) in sorted(parts.items()):
+                    if crate == reader_crate:
+                        return crate, path[:len(path) - (len(names) - len(module))]
+        parts = self.placement[module]
+        if 'testkit' in parts:
+            return parts['testkit']
+        for names, others in sorted(self.placement.items()):
+            if names[:len(module)] == module and 'testkit' in others:
+                crate, path = others['testkit']
+                return crate, path[:len(path) - (len(names) - len(module))]
+        return parts.get('court') or next(iter(parts.values()))
+
     def item_path(self, origin, reader_crate):
         module, name = origin
         if module == '<external>':
@@ -243,7 +260,7 @@ class Rewriter:
 
     def module_path(self, module, reader_crate):
         if module in self.model.records and not self.model.records[module].extracted:
-            crate, path = self.owner_part(module)
+            crate, path = self.module_home(module, reader_crate)
             prefix = 'crate' if crate == reader_crate else crate.replace('-', '_')
             return '::'.join((prefix,) + path)
         self.widen_chain(module)
@@ -253,10 +270,12 @@ class Rewriter:
         text = part_text(record, part, disposition)
         names = record.names
         stream = tokens(text)
-        own = {i.name for i in record.items} | {c.names[-1] for c in record.node.children}
+        from src_move_model import items_of
+        own = {i.name for i in items_of(text) if i.keyword not in ('impl', 'use')} | {c.names[-1] for c in record.node.children}
         words = {t.value for k, t in enumerate(stream)
                  if t.kind == 'ident' and not (k and stream[k - 1].value == '.')} - own
-        uses, paths = scan(text)
+        children = {c.names[-1] for c in self.model.index[names].children} if names in self.model.index else set()
+        uses, paths = scan(text, children)
         changes = []
         for declaration in uses:
             lines = []
@@ -281,7 +300,7 @@ class Rewriter:
                 self.generated |= set(fresh)
                 inner, end = leading_inner_attributes(text)
                 text = inner + '\n' + '\n'.join(fresh) + '\n' + text[end:]
-        if disposition == 'split' or record.extracted:
+        if disposition == 'split' or record.extracted or record.kept_names:
             text = self.with_bare_imports(text, record, reader_crate)
         text = self.with_door_imports(text, record, reader_crate)
         text = without_duplicate_imports(text, self.generated)

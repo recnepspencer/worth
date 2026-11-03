@@ -59,6 +59,10 @@ def build(lib, repository, baseline, admissions, workspace_manifest, overrides, 
         unit_of = {names: record.family for names, record in model.records.items()}
         for _round in range(6):
             kinds = dispositions(model, lambda n: unit_of[n])
+            for names in sorted((n for n in kinds if model.records[n].foreign), key=len):
+                # A mounted foreign source lives with its parent's part: it resolves `super::` there.
+                parent = kinds.get(names[:-1])
+                kinds[names] = 'testkit' if parent in ('testkit', 'split') else 'local'
             testkits = place_testkits(model, kinds, products, frontier_of_products, ceiling - SCAFFOLD_RESERVE)
             kit_of = {n: crate for crate, members in testkits.items() for n in members}
             kit_products = {crate: set().union(*(products(n) for n in members)) for crate, members in testkits.items()}

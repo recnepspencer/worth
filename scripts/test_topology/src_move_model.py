@@ -11,7 +11,7 @@ from pathlib import Path
 from rust_source import tokens
 from src_audit import audit
 from src_families import ExpandedView, families, file_text, function_bodies, included_files
-from src_paths import Reference, module_index, references
+from src_paths import Reference, module_index, references, resolve
 from src_scope import scope_items
 from src_surface import Surface
 
@@ -111,7 +111,7 @@ class MoveModel:
         """(Reference, origin) pairs; module imports expand to the `alias::name` uses in the text."""
         stream = tokens(node.own_text())
         result = []
-        for reference in references(node, self.index):
+        for reference in references(node, self.index) + self.child_paths(node):
             for target in self.expand(reference, node, stream):
                 if target.item is None:
                     result.append((target, (target.module, None)))
@@ -119,6 +119,21 @@ class MoveModel:
                 origin, _gated = self.everything.origin(target.module, target.item)
                 # Macro-generated names resolve no declaration; the named module still owns them.
                 result.append((target, origin or (target.module, target.item)))
+        return result
+
+    def child_paths(self, node):
+        """Unrooted `child::item` paths through the module's own child modules."""
+        from src_occurrences import scan
+        children = {c.names[-1] for c in self.index[node.names].children} if node.names in self.index else set()
+        if not children:
+            return []
+        result = []
+        for occurrence in scan(node.own_text(), children)[1]:
+            if occurrence.segments[0] in children:
+                resolved = resolve(occurrence.segments, node.names, self.index)
+                if resolved is not None:
+                    module, rest = resolved
+                    result.append(Reference(module, rest[0] if rest else None))
         return result
 
     def expand(self, reference, node, stream):
