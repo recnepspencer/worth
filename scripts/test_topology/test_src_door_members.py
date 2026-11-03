@@ -57,6 +57,12 @@ class DoorBodyTests(unittest.TestCase):
         ours = ['let', 'x', '=', '(', '*', 'a', '.', 'f_for_test', '(', ')', ')', ';', 'a', '.', 'get_for_test', '(', ')']
         self.assertEqual(without_doors(ours, renames),
                          ['let', 'x', '=', 'a', '.', 'f', ';', 'a', '.', 'get', '(', ')'])
+        orders = {'P': (True, ['x', 'y'])}
+        ours = ['P', ':', ':', 'new_for_test', '(', 'a', ',', 'f', '(', '1', ')', ')']
+        original = ['P', '{', 'x', ':', 'a', ',', 'y', ':', 'f', '(', '1', ')', ',', '}']
+        self.assertEqual(without_doors(ours, renames, orders), without_doors(original, renames, orders))
+        swapped = ['P', '{', 'y', ':', 'f', '(', '1', ')', ',', 'x', ':', 'a', '}']
+        self.assertNotEqual(without_doors(ours, renames, orders), without_doors(swapped, renames, orders))
         other = ['a', '.', 'install_for_test', '(', ')']
         self.assertEqual(without_doors(other, renames), other)
 

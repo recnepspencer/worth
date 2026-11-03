@@ -4,7 +4,9 @@ The test-name and body multiset of the library at the base revision must equal t
 of the library and every court and testkit now. Bodies are normalized as for the move
 (src_multiset) and, on top, only the member door rewrites are reversed:
 `m_for_test` back to `m` for generated method doors, `(*expr.f_for_test())` and
-`(*expr.f_mut_for_test())` back to `expr.f` for generated field doors. Any other change to a
+`(*expr.f_mut_for_test())` back to `expr.f` for generated field doors, and generated
+`T::new_for_test(..)` constructors back to literals (on both sides spelled with explicit
+`field: value` pairs, in the door's order, so a reordered literal still differs). Any other change to a
 body still changes its digest. Item doors only change paths, which the move's normalization
 already reduces to their last segment.
 """
@@ -35,7 +37,84 @@ def door_renames(reports):
     return renames
 
 
-def without_doors(values, renames):
+def constructor_orders(root):
+    """{struct name: (named, field order)} for every generated `new_for_test` door."""
+    import re
+    orders = {}
+    for path in sorted((root / LIBRARY).rglob('court_doors_for_test.rs')):
+        text = path.read_text(encoding='utf-8')
+        for block in re.finditer(r'impl(?:<[^{]*?>)?\s+(\w+)[^{]*\{\s*#\[doc\(hidden\)\]\s*pub fn new_for_test\(([^)]*)\)', text):
+            params = [p.split(':')[0].strip() for p in block.group(2).split(',') if ':' in p]
+            named = not all(re.fullmatch(r'field\d+', p) for p in params)
+            orders[block.group(1)] = (named, params)
+    return orders
+
+
+def split_arguments(values, open_index, close_index):
+    parts, depth, current = [], 0, []
+    for value in values[open_index + 1:close_index]:
+        if value in ('(', '[', '{', '<'):
+            depth += 1
+        elif value in (')', ']', '}', '>'):
+            depth -= 1
+        if value == ',' and depth == 0:
+            parts.append(current)
+            current = []
+        else:
+            current.append(value)
+    if current:
+        parts.append(current)
+    return parts
+
+
+def matching_close(values, index):
+    depth = 0
+    for j in range(index, len(values)):
+        depth += {'(': 1, '[': 1, '{': 1, ')': -1, ']': -1, '}': -1}.get(values[j], 0)
+        if depth == 0:
+            return j
+    return None
+
+
+def canonical_literals(values, orders):
+    """`T::new_for_test(a, b)` and `T { x: a, y }` literals both as `T { x : a , y : y }`."""
+    out, i = [], 0
+    while i < len(values):
+        value = values[i]
+        if value == 'new_for_test' and i >= 3 and values[i - 2:i] == [':', ':'] and values[i - 3] in orders \
+                and i + 1 < len(values) and values[i + 1] == '(':
+            close = matching_close(values, i + 1)
+            named, fields = orders[values[i - 3]]
+            arguments = split_arguments(values, i + 1, close)
+            if close is not None and len(arguments) == len(fields):
+                out = out[:-2]
+                if named:
+                    out.append('{')
+                    for k, (field, argument) in enumerate(zip(fields, arguments)):
+                        out += ([','] if k else []) + [field, ':'] + argument
+                    out.append('}')
+                else:
+                    out += ['('] + [v for k, a in enumerate(arguments) for v in ([','] if k else []) + a] + [')']
+                i = close + 1
+                continue
+        if value in orders and orders[value][0] and i + 1 < len(values) and values[i + 1] == '{' \
+                and not (i and values[i - 1] in ('struct', 'impl', 'enum', 'for', 'trait')):
+            close = matching_close(values, i + 1)
+            if close is not None:
+                out += [value, '{']
+                for k, part in enumerate(p for p in split_arguments(values, i + 1, close) if p):
+                    if len(part) == 1 and part[0].isidentifier():
+                        part = [part[0], ':', part[0]]
+                    out += ([','] if k else []) + part
+                out.append('}')
+                i = close + 1
+                continue
+        out.append(value)
+        i += 1
+    return out
+
+
+def without_doors(values, renames, orders=None):
     """Token values with the generated member door rewrites reversed."""
     values, drop = list(values), set()
     for i, value in enumerate(values):
@@ -53,14 +132,15 @@ def without_doors(values, renames):
             j -= 1
         if j >= 0 and j + 1 < len(values) and values[j + 1] == '*':
             drop |= {j, j + 1, i + 1, i + 2, i + 3}
-    return [v for k, v in enumerate(values) if k not in drop]
+    values = [v for k, v in enumerate(values) if k not in drop]
+    return canonical_literals(values, orders) if orders else values
 
 
-def multiset(sources, renames):
+def multiset(sources, renames, orders=None):
     original = src_multiset.digest
 
     def door_digest(values):
-        return original(without_doors(values, renames))
+        return original(without_doors(values, renames, orders))
     src_multiset.digest = door_digest
     try:
         counts = Counter()
@@ -93,8 +173,9 @@ def current_sources(root):
 
 def body_check(root, base, reports):
     renames = door_renames(reports)
-    before = multiset(base_sources(root, base), renames)
-    after = multiset(current_sources(root), renames)
+    orders = constructor_orders(root)
+    before = multiset(base_sources(root, base), renames, orders)
+    after = multiset(current_sources(root), renames, orders)
     missing, extra = before - after, after - before
     return {'tests_before': sum(before.values()), 'tests_after': sum(after.values()),
             'missing': sorted('\t'.join(k) for k in missing), 'extra': sorted('\t'.join(k) for k in extra)}
