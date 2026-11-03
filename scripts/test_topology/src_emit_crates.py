@@ -78,7 +78,8 @@ def crate_sources(crate, kind, parts, root_attributes):
     kept = [part for part in parts if not any(part['path'][:len(f)] == f and part['path'] != f for f in foreign)]
     by_path = {part['path']: part for part in kept}
     tree = module_tree(by_path)
-    public = kind == 'testkit'
+    # Court targets are leaves and testkits unpublished: their module tree is open to itself.
+    public = True
     files = {}
     for path, children in sorted(tree.items()):
         if path in foreign:

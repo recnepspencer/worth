@@ -15,7 +15,7 @@ from rust_source import replace_spans, tokens
 from src_occurrences import scan, visibility_markers
 from src_paths import resolve
 from src_glob_words import inherited_words, path_tail
-from src_parts import leading_inner_attributes, part_text
+from src_parts import leading_inner_attributes, part_text, publicized
 
 LIBRARY = 'worth_query_execution'
 
@@ -260,7 +260,7 @@ class Rewriter:
         changes = [(start, end, self.visibility('pub(' + inner + ')', reader_crate))
                    for start, end, inner in visibility_markers(text) if inner.startswith('in ')
                    or '-testkit-' in reader_crate]
-        return replace_spans(text, changes)
+        return publicized(replace_spans(text, changes))
 
     def with_door_imports(self, text, record, reader_crate):
         """A module that calls a door method imports the door trait that now provides it."""
@@ -288,6 +288,8 @@ class Rewriter:
         heads = {t.value for k, t in enumerate(stream) if t.kind == 'ident'
                  and not (k and stream[k - 1].value == '.') and not path_tail(stream, k)
                  and not (k + 1 < len(stream) and stream[k + 1].value == '!')}
+        # Children that glob this fragment read the names it holds elsewhere too.
+        heads |= inherited_words(self.model, record.names, self.__dict__.setdefault('_inherited', {}))
         own = self.module_path(record.names, reader_crate) + '::'
         defined = {item.name for item in items_of(text)}
         uses, _paths = scan(text)

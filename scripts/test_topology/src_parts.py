@@ -67,3 +67,20 @@ def record_without_kept(record, text):
     clone = copy.copy(record)
     clone.items = items_of(text)
     return clone
+
+
+def publicized(text):
+    """Moved test code spans crates: its module-level items and inherent members become `pub`.
+
+    In the library a child module read its ancestors' private items; across a court or testkit
+    crate boundary that needs `pub`. Courts are leaf test targets and testkits are unpublished
+    test support, so this widens no product surface.
+    """
+    from src_families import TEST_ATTRIBUTE
+    from src_kept_impls import public
+    from src_scope import scope_items
+    changes = [(start, end, public(text[start:end]))
+               for attributes, _v, keyword, _n, start, end in scope_items(text)
+               if not TEST_ATTRIBUTE.search(attributes or '') and keyword in ('fn', 'struct', 'enum', 'const', 'static', 'type', 'trait', 'union', 'mod', 'impl')
+               or (keyword not in ('use', 'macro_rules') and text[start:end].lstrip().startswith('thread_local'))]
+    return replace_spans(text, [c for c in changes if c[2] != text[c[0]:c[1]]])

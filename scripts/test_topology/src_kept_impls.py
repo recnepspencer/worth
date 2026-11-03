@@ -231,7 +231,7 @@ def public(text):
     """Kept items are test doors the moved courts call: top-level and inherent members become `pub`."""
     text = re.sub(r'(?m)^(\s*(?:#\s*\[[^\]]*\]\s*)*)pub\s*\([^)]*\)\s+', r'\1pub ', text)
     head = re.match(r'\s*(?:#\s*\[[^\]]*\]\s*)*', text).end()
-    if re.match(r'(?:fn|struct|enum|const|static|type|trait|union)\b', text[head:]):
+    if re.match(r'(?:(?:async|unsafe)\s+)*(?:fn|struct|enum|const|static|type|trait|union|mod)\b', text[head:]):
         text = text[:head] + 'pub ' + text[head:]
     if re.match(r'(?:pub\s+)?struct\b', text[head:]) and '{' in text:
         # Kept structs are built and read by the moved code: their named fields become `pub`.

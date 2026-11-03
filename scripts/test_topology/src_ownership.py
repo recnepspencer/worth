@@ -58,6 +58,28 @@ def dispositions(model, unit_of):
             result[names] = 'split' if has_tests else 'testkit'
         else:
             result[names] = 'court' if has_tests else 'local'
+    return with_glob_hosts(model, result)
+
+
+def with_glob_hosts(model, result):
+    """A testkit scope that a court-side child globs (`use super::*`) also gets a court part.
+
+    The child reads the parent's imports, which a testkit module cannot export; the court part
+    keeps them (and imports the parent's testkit items), so the glob still binds every name.
+    """
+    from src_paths import resolve, use_trees
+    changed = True
+    while changed:
+        changed = False
+        for names, record in model.records.items():
+            parent = names[:-1]
+            if result[names] == 'testkit' or result.get(parent) != 'testkit':
+                continue
+            targets = [resolve(segments, names, model.index)
+                       for segments, glob, _alias in use_trees(record.node.own_text()) if glob]
+            if any(t is not None and t[0] == parent and not t[1] for t in targets):
+                result[parent] = 'split'
+                changed = True
     return result
 
 
