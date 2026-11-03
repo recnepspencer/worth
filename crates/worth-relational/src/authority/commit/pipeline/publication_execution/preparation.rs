@@ -12,6 +12,7 @@ use crate::transactions::data::{CommitLog, TransactionCommitError};
 pub(super) struct PreparedPublicationPhase {
     pub(super) record_allocations: crate::runtime::PendingRecordAllocations,
     pub(super) symbol_meanings: crate::runtime::PreparedSymbolPublication,
+    pub(super) candidate_symbols: crate::runtime::RuntimeSymbolTable,
     pub(super) mirror_publication: crate::storage::PreparedMirrorPublication,
     pub(super) prepared_history: crate::mvcc::PreparedRelationalPublication,
     pub(super) validated_lineage_events: crate::runtime::ValidatedLineageEventBatch,
@@ -337,6 +338,7 @@ pub(super) fn prepare_publication_phase(
     Ok(PreparedPublicationPhase {
         record_allocations: mutation_identities.records,
         symbol_meanings,
+        candidate_symbols: runtime.services.symbols.clone(),
         mirror_publication,
         prepared_history,
         validated_lineage_events,
