@@ -68,7 +68,7 @@ pub fn installed_field(
         .primary_graph()
         .unwrap()
         .layout_for_test()
-        .field_locator(entity, aspect, field)
+        .field_locator_for_test(entity, aspect, field)
         .unwrap()
         .clone()
 }

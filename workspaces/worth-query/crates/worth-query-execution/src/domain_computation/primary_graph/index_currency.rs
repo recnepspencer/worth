@@ -144,3 +144,5 @@ fn index_basis_denial(
         _ => QueryDenial::BranchObservationUnavailable,
     }
 }
+
+mod court_doors_for_test;

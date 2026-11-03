@@ -7,3 +7,10 @@ impl WorthQueryProvisionalOverlayAdmission {
         Self::new(session, binding_identity, program_identity, generation)
     }
 }
+
+impl WorthQueryProvisionalOverlayEvidence {
+    #[doc(hidden)]
+    pub fn view_for_test(&self) -> WorthQueryProvisionalOverlayEvidenceView<'_> {
+        Self::view(self)
+    }
+}

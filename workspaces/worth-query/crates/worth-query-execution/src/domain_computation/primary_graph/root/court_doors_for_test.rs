@@ -21,3 +21,10 @@ impl WorthQueryPrimaryGraph {
         Self::layout(self)
     }
 }
+
+impl WorthQueryPrimaryGraphIntegrationHandle {
+    #[doc(hidden)]
+    pub fn primary_index_ids_for_test(&self) -> &Arc<[worth_relational::facade::indexes::DerivedIndexId]> {
+        &self.primary_index_ids
+    }
+}

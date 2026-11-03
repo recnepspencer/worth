@@ -20,11 +20,11 @@ pub fn seed_program_activation(
     world: &AuthorizationWorld,
     revision: &ApplicationProgramRevision,
 ) {
-    let layout =(* (*world
+    let layout =(*(* (*world
         .application
         .primary_provider_for_test())
         .graph_for_test())
-        .layout
+        .layout_for_test())
         .program_activation()
         .clone();
     let created = CreatedEntityRef {
@@ -62,12 +62,12 @@ pub fn seed_program_activation(
         .application
         .primary_provider_for_test())
         .graph_for_test())
-        .with_runtime_mut(execution, |runtime| {(*
+        .with_runtime_mut_for_test(execution, |runtime| {(*
             (*world
                 .application
                 .primary_provider_for_test())
                 .graph_for_test())
-                .ensure_primary_indexes_for_basis(execution, runtime, &basis)
+                .ensure_primary_indexes_for_basis_for_test(execution, runtime, &basis)
                 .unwrap();
         });
     (*world

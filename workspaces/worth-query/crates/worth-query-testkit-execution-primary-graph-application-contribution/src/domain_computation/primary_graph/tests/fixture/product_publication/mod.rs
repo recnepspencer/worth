@@ -32,7 +32,7 @@ pub fn publish_relational_mutation_on_application<
     drop(performed.consume());
     let graph = (*application.runtime_for_test()).primary_graph().unwrap();
     let handle = graph.integration_handle_for_test();
-    handle.with_runtime_mut(request_execution, |runtime| {
+    handle.with_runtime_mut_for_test(request_execution, |runtime| {
         let observation = published_basis.observation();
         let head = observation
             .commit_receipt()
@@ -42,13 +42,13 @@ pub fn publish_relational_mutation_on_application<
             worth_relational::facade::indexes::DerivedIndexBuildRequest {
                 source_commit_id: head.commit_id,
                 branch_id: head.branch_id.clone(),
-                index_ids: handle.primary_index_ids.to_vec(),
+                index_ids: (*handle.primary_index_ids_for_test()).to_vec(),
             },
             &published_basis,
             Some(before_lease.snapshot_handle()),
         )
         .expect("fixture publication incrementally refreshes its exact indexes");
-        assert_eq!(refreshed.generations.len(), handle.primary_index_ids.len());
+        assert_eq!(refreshed.generations.len(), (*handle.primary_index_ids_for_test()).len());
         assert_eq!(refreshed.work.cold_record_slots, 0);
     });
 }
@@ -82,10 +82,10 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
     let (_, product, application_basis) = selected.into_parts_for_test();
     let graph = (*application.runtime_for_test()).primary_graph().unwrap();
     let handle = graph.integration_handle_for_test();
-    let candidate = handle.with_runtime_mut(execution, |runtime| {
+    let candidate = handle.with_runtime_mut_for_test(execution, |runtime| {
         let mut transaction = runtime
             .begin_branch_transaction(
-                product.relational_basis(),
+                product.relational_basis_for_test(),
                 worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
             )
             .expect("selected product basis admits the fixture transaction");
@@ -101,7 +101,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
     });
 
     let prepared = product
-        .publication_binding()
+        .publication_binding_for_test()
         .prepare_relational_candidate(candidate, request, false)
         .expect("fixture World publication prepares");
     (prepared, application_basis)

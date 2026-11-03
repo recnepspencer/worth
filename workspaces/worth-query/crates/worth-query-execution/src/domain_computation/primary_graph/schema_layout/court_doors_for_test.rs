@@ -14,3 +14,11 @@ impl WorthQueryPrimaryGraphLayout {
         Self::lower(schema, native_contracts, existing_registry)
     }
 }
+
+impl WorthQueryPrimaryGraphLayout {
+    #[doc(hidden)]
+    pub fn field_locator_for_test(
+        &self, entity: &str, aspect: &str, field: &str) -> Option<&AspectFieldLocator> {
+        Self::field_locator(self, entity, aspect, field)
+    }
+}

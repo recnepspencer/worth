@@ -243,8 +243,8 @@ pub fn commit_own_write(
         // prepared-input metadata; Native facts, own-effect evidence and output
         // witness remain the actual commit's. These identities are not under test.
         let mut lineage = handle.output_lineage.lock().unwrap();
-        let cell = lineage
-            .by_source
+        let cell = (*lineage
+            .by_source_for_test())
             .values_mut()
             .flat_map(|branches| branches.values_mut())
             .flat_map(|history| history.values_mut())
@@ -269,11 +269,11 @@ pub fn commit_own_write(
             worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::membership::WorthQueryObservedSourceSelection::selecting_for_test(u64::try_from(count).unwrap()),
             [11;32], worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::registry::semantic_edition::InstalledProducerEdition::for_test_for_test([12;32])));
     }
-    let cell = handle
+    let cell = (*handle
         .output_lineage
         .lock()
         .unwrap()
-        .by_source
+        .by_source_for_test())
         .values()
         .flat_map(|branches| branches.values())
         .flat_map(|history| history.values())
