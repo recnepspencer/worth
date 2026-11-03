@@ -21,3 +21,17 @@ impl WorthQueryOutputDemandRegistry {
         &self.state
     }
 }
+
+impl DemandRegistryState {
+    #[doc(hidden)]
+    pub fn records_for_test(&self) -> &record_map::DemandRecords {
+        &self.records
+    }
+}
+
+impl DemandRegistryState {
+    #[doc(hidden)]
+    pub fn records_mut_for_test(&mut self) -> &mut record_map::DemandRecords {
+        &mut self.records
+    }
+}

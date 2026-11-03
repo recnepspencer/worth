@@ -42,7 +42,7 @@ pub fn commit_record(
         transaction.push_batch(
             WorkerIntentBatch::new("committed-outbox-owner-test").push(
                 dispatch_outbox_create_intent(
-                    Some((*(*provider.graph_for_test()).layout_for_test()).provider_dispatch_outbox()),
+                    Some((*(*provider.graph_for_test()).layout_for_test()).provider_dispatch_outbox_for_test()),
                     Some(&record),
                 )
                 .unwrap(),
@@ -50,7 +50,7 @@ pub fn commit_record(
          worth_execution::ExecutionAllocationPolicy::SystemAllocation).expect("test staging stays within configured resource budgets");
         let committed = transaction.commit(request_execution, runtime).unwrap();
         let binding = WorthQueryCommittedDispatchOutboxBinding::fixture_from_commit_for_test((*
-            (*provider.graph_for_test()).layout_for_test()).provider_dispatch_outbox(),
+            (*provider.graph_for_test()).layout_for_test()).provider_dispatch_outbox_for_test(),
             Some(&record),
             &committed,
         )

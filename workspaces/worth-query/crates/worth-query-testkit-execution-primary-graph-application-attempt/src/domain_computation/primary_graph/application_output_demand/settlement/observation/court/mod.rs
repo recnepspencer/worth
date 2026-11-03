@@ -54,7 +54,7 @@ impl CourtWorthQueryOutputDemandSettlementForTest for WorthQueryOutputDemandSett
             } => {
                 assert!(settlement.is_some());
                 assert!(publication.is_some());
-                let mut corrupted = original.source.clone();
+                let mut corrupted = (*original.source_for_test()).clone();
                 if let OriginalSettledProducerSource::Committed { settlement, .. } = &mut corrupted
                 {
                     *settlement = None;
@@ -72,7 +72,7 @@ impl CourtWorthQueryOutputDemandSettlementForTest for WorthQueryOutputDemandSett
                         .unwrap()
                         .clone();
                     assert!(!Arc::ptr_eq(settlement.as_ref().unwrap(), &foreign));
-                    let mut corrupted = original.source.clone();
+                    let mut corrupted = (*original.source_for_test()).clone();
                     if let OriginalSettledProducerSource::Committed { settlement, .. } =
                         &mut corrupted
                     {
@@ -84,7 +84,7 @@ impl CourtWorthQueryOutputDemandSettlementForTest for WorthQueryOutputDemandSett
                         Reason::ForeignSettlementOwner,
                     ));
                 }
-                let mut corrupted = original.source.clone();
+                let mut corrupted = (*original.source_for_test()).clone();
                 if let OriginalSettledProducerSource::Committed { publication, .. } = &mut corrupted
                 {
                     *publication = None;
@@ -92,7 +92,7 @@ impl CourtWorthQueryOutputDemandSettlementForTest for WorthQueryOutputDemandSett
                 sources.push(("publication", corrupted, Reason::PublicationMismatch));
                 match (disclosure, foreign_disclosure) {
                     (Some(_), _) => {
-                        let mut corrupted = original.source.clone();
+                        let mut corrupted = (*original.source_for_test()).clone();
                         if let OriginalSettledProducerSource::Committed { disclosure, .. } =
                             &mut corrupted
                         {
@@ -105,7 +105,7 @@ impl CourtWorthQueryOutputDemandSettlementForTest for WorthQueryOutputDemandSett
                         ));
                     }
                     (None, Some(foreign)) => {
-                        let mut corrupted = original.source.clone();
+                        let mut corrupted = (*original.source_for_test()).clone();
                         if let OriginalSettledProducerSource::Committed { disclosure, .. } =
                             &mut corrupted
                         {
@@ -154,7 +154,7 @@ impl CourtWorthQueryOutputDemandSettlementForTest for WorthQueryOutputDemandSett
         check(self).unwrap();
         if let OriginalSettledProducerSource::Committed { .. } = original.source() {
             let candidate = self.with_corrupted_provenance(
-                original.source.clone(),
+                (*original.source_for_test()).clone(),
                 Some(
                     self.application_commit_receipt()
                         .unwrap()
@@ -193,11 +193,11 @@ impl CourtWorthQueryOutputDemandSettlementForTest for WorthQueryOutputDemandSett
             !Arc::ptr_eq(&expected, &foreign),
             "two genuine capture owners"
         );
-        let mut source = (*self
+        let mut source =(* (*self
             .observation_for_test())
             .original_settled_producer_for_test()
             .unwrap()
-            .source
+            .source_for_test())
             .clone();
         let OriginalSettledProducerSource::Committed { disclosure, .. } = &mut source else {
             panic!("the actual committed producer supplies this corruption court");
@@ -230,11 +230,11 @@ impl CourtWorthQueryOutputDemandSettlementForTest for WorthQueryOutputDemandSett
     ) -> Self {
         let original = (*self.observation_for_test()).original_settled_producer_for_test().unwrap();
         let seed = Arc::new(OriginalSettledProducerObservation {
-            runtime_authority: original.runtime_authority,
-            schema: original.schema.clone(),
-            read: original.read.clone(),
+            runtime_authority: (*original.runtime_authority_for_test()),
+            schema: (*original.schema_for_test()).clone(),
+            read: (*original.read_for_test()).clone(),
             source,
-            correspondence: original.correspondence.clone(),
+            correspondence: (*original.correspondence_for_test()).clone(),
             _memory: None,
         });
         Self {

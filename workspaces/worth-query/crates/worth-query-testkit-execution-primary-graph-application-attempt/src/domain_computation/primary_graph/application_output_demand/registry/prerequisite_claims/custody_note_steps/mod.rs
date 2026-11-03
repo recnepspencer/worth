@@ -15,13 +15,13 @@ pub fn unhold(
         worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::owner::SourceInvalidationOwner::new(
             WorthQueryInvalidationResources::new(),
             1,
-        );(*
+        );(*(*
     (*interest
         .owner_for_test())
         .state_for_test())
         .lock()
         .unwrap()
-        .records
+        .records_for_test())
         .get_mut(&(*interest.key_for_test()))
         .unwrap()
         .state = DemandState::Running;
@@ -36,21 +36,21 @@ pub fn unhold(
         // The admitted edge's vector and credit change owners, not capacity.
         // This fixture models a claim still held by its unpublished ticket.
         let mut state =(* (*interest.owner_for_test()).state_for_test()).lock().unwrap();
-        claims.claim_batch = state
-            .records
+        (*claims.claim_batch_mut_for_test()) = (*state
+            .records_for_test())
             .get_mut(&(*interest.key_for_test()))
             .unwrap()
             .claim_batch
             .take();
-        if let Some(batch) = &claims.claim_batch {
+        if let Some(batch) = &(*claims.claim_batch_for_test()) {
             batch.deactivate();
         }
-        claims.predecessors =
-            std::mem::take(&mut state.records.get_mut(&(*interest.key_for_test())).unwrap().prerequisites);
+        (*claims.predecessors_mut_for_test()) =
+            std::mem::take(&mut (*state.records_mut_for_test()).get_mut(&(*interest.key_for_test())).unwrap().prerequisites);
         drop(state);
         drop(claims);
     } else {
-        claims.reserve_identity(identity).unwrap();
-        let _published = claims.publish(Arc::clone(identity));
+        claims.reserve_identity_for_test(identity).unwrap();
+        let _published = claims.publish_for_test(Arc::clone(identity));
     }
 }

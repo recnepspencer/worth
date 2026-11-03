@@ -189,3 +189,5 @@ impl OriginalSettledProducerObservation {
         Arc::clone(&self.correspondence)
     }
 }
+
+mod court_doors_for_test;

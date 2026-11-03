@@ -8,3 +8,31 @@ impl RequiredOutputDemandContext {
         Self::prepare_prerequisites(self, inputs, source_owner)
     }
 }
+
+impl PreparedPrerequisiteClaims {
+    #[doc(hidden)]
+    pub fn claim_batch_for_test(&self) -> &Option<super::super::claim_readthrough::ClaimBatch> {
+        &self.claim_batch
+    }
+}
+
+impl PreparedPrerequisiteClaims {
+    #[doc(hidden)]
+    pub fn predecessors_for_test(&self) -> &Vec<Arc<WorthQueryOutputDemandKey>> {
+        &self.predecessors
+    }
+}
+
+impl PreparedPrerequisiteClaims {
+    #[doc(hidden)]
+    pub fn claim_batch_mut_for_test(&mut self) -> &mut Option<super::super::claim_readthrough::ClaimBatch> {
+        &mut self.claim_batch
+    }
+}
+
+impl PreparedPrerequisiteClaims {
+    #[doc(hidden)]
+    pub fn predecessors_mut_for_test(&mut self) -> &mut Vec<Arc<WorthQueryOutputDemandKey>> {
+        &mut self.predecessors
+    }
+}

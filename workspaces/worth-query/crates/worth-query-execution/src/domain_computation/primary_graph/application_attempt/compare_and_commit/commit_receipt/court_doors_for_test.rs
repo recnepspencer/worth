@@ -42,3 +42,10 @@ impl WorthQueryApplicationCommitReceipt {
         Self::exact_output_settlement(self)
     }
 }
+
+impl WorthQueryApplicationCommitReceipt {
+    #[doc(hidden)]
+    pub fn authority_binding_mut_for_test(&mut self) -> &mut WorthQueryApplicationCommitAuthorityBinding {
+        &mut self.authority_binding
+    }
+}
