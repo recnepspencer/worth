@@ -27,12 +27,16 @@ fn program_activation_changed_after_preparation_cannot_readmit_the_old_program()
         AspectFieldPatch, EntityMutationIntent, MutationIntent, UpdateEntityFieldsIntent,
         WorkerIntentBatch,
     };
-    let mut world = installed_authorization_world(true);
+    let mut world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     world.application.program_support = Some(installed_program_support(
         &world.application.installed_schema,
     ));
     let layout = world
         .application
+        .runtime
         .primary_provider
         .graph
         .layout
@@ -142,7 +146,10 @@ fn program_activation_changed_after_preparation_cannot_readmit_the_old_program()
 
 #[test]
 fn a_program_action_on_an_unseeded_occurrence_names_the_unresolved_activation() {
-    let mut world = installed_authorization_world(true);
+    let mut world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     world.application.program_support = Some(installed_program_support(
         &world.application.installed_schema,
     ));
@@ -224,7 +231,10 @@ fn a_program_action_on_an_unseeded_occurrence_names_the_unresolved_activation() 
 
 #[test]
 fn a_required_output_source_on_an_unseeded_occurrence_is_gated_like_its_siblings() {
-    let mut world = installed_authorization_world(true);
+    let mut world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     world.application.program_support = Some(installed_program_support(
         &world.application.installed_schema,
     ));

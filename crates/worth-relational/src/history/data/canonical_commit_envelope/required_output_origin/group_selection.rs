@@ -1,0 +1,161 @@
+//! Exact route/member selection within a multi-route canonical retirement.
+use super::*;
+use crate::{history::data::CodecRetirementClosureStop as Stop, identity::data::RelationId};
+use std::sync::Arc;
+use worth_execution::MapKernelContext;
+
+impl CanonicalCommitEnvelope {
+    pub(crate) fn output_origins(
+        &self,
+    ) -> impl Iterator<Item = &Arc<CanonicalRequiredOutputOrigin>> {
+        self.required_output_origin
+            .iter()
+            .chain(
+                self.producer_cascade_retirement
+                    .iter()
+                    .flat_map(|event| event.publications.iter()),
+            )
+            .chain(
+                self.authored_cascade_retirement
+                    .iter()
+                    .flat_map(|event| event.publications.iter()),
+            )
+            .chain(
+                self.authored_cascade_restoration
+                    .iter()
+                    .flat_map(|event| event.publications.iter()),
+            )
+    }
+
+    pub(crate) fn output_origin_for_entity(
+        &self,
+        id: EntityId,
+        context: &mut MapKernelContext<'_, '_>,
+    ) -> Result<&Arc<CanonicalRequiredOutputOrigin>, Stop> {
+        self.validate_cascade_header(context)?;
+        for origin in self.output_origins() {
+            super::super::super::codec_retirement_closure::charge(
+                context,
+                (usize::BITS - origin.outputs.len().leading_zeros()) as usize
+                    + origin.members.len()
+                    + 1,
+            )?;
+            if origin.outputs.binary_search(&id).is_ok() {
+                self.validate_output_origin_header(origin)?;
+                return Ok(origin);
+            }
+        }
+        Err("exact member has no canonical publication".into())
+    }
+
+    pub(crate) fn output_origin_for_relation(
+        &self,
+        id: RelationId,
+        context: &mut MapKernelContext<'_, '_>,
+    ) -> Result<&Arc<CanonicalRequiredOutputOrigin>, Stop> {
+        self.validate_cascade_header(context)?;
+        for origin in self.output_origins() {
+            super::super::super::codec_retirement_closure::charge(
+                context,
+                origin.relations.len() + origin.members.len() + 1,
+            )?;
+            if origin.relations.iter().any(|edge| edge.id == id) {
+                self.validate_output_origin_header(origin)?;
+                return Ok(origin);
+            }
+        }
+        Err("incident relation is outside complete publication membership".into())
+    }
+
+    pub(crate) fn output_origin_for_route(
+        &self,
+        meaning: &crate::mvcc::RequiredOutputPublicationMeaning,
+        context: &mut MapKernelContext<'_, '_>,
+    ) -> Result<&Arc<CanonicalRequiredOutputOrigin>, Stop> {
+        self.validate_cascade_header(context)?;
+        for origin in self.output_origins() {
+            super::super::super::codec_retirement_closure::charge(
+                context,
+                origin.meaning.family.len() + meaning.family.len() + origin.members.len() + 65,
+            )?;
+            if origin.meaning.same_route(meaning) {
+                self.validate_output_origin_header(origin)?;
+                return Ok(origin);
+            }
+        }
+        Err("exact route has no canonical publication".into())
+    }
+
+    fn validate_cascade_header(&self, context: &mut MapKernelContext<'_, '_>) -> Result<(), Stop> {
+        self.validate_restoration_header(context)?;
+        self.validate_producer_retirement_header(context)?;
+        let Some(event) = &self.authored_cascade_retirement else {
+            return Ok(());
+        };
+        use crate::{
+            mvcc::RequiredOutputRolePosture as Posture,
+            publication::patch::data::RecordStructuralChange as Change,
+            transactions::data::RecordRef,
+        };
+        let charge = super::super::super::codec_retirement_closure::charge;
+        charge(context, self.patch.authoritative_record_patches.len() + 1)?;
+        if self.producer_cascade_retirement.is_some()
+            || self.required_output_origin.is_some()
+            || event.publications.is_empty()
+            || !self.patch.authoritative_record_patches.iter().any(|patch| {
+                patch.target == RecordRef::Entity(event.anchor)
+                    && patch.structural_change == Change::Deleted
+            })
+        {
+            return Err("copied or mixed canonical authored cascade".into());
+        }
+        for (index, origin) in event.publications.iter().enumerate() {
+            charge(context, origin.members.len() + 1)?;
+            self.validate_output_origin_header(origin)?;
+            if !origin.source_scope_owned
+                || origin.publication.predecessor().is_none()
+                || origin
+                    .members
+                    .iter()
+                    .any(|member| member.posture != Posture::Retire || member.id == event.anchor)
+            {
+                return Err("canonical cascade contains an unowned or live publication".into());
+            }
+            for prior in &event.publications[..index] {
+                charge(
+                    context,
+                    origin.meaning.family.len()
+                        + prior.meaning.family.len()
+                        + 64
+                        + origin.members.len().saturating_mul(prior.members.len()),
+                )?;
+                if prior.meaning.same_route(&origin.meaning)
+                    || origin
+                        .members
+                        .iter()
+                        .any(|member| prior.outputs.binary_search(&member.id).is_ok())
+                {
+                    return Err("canonical cascade repeats a route or member".into());
+                }
+            }
+            let mut source = origin.meaning.source_scope;
+            for _ in 0..event.publications.len() {
+                if source == event.anchor {
+                    break;
+                }
+                let mut parent = None;
+                for candidate in &event.publications {
+                    charge(context, candidate.members.len() + 1)?;
+                    if candidate.outputs.binary_search(&source).is_ok() {
+                        parent = Some(candidate.meaning.source_scope);
+                    }
+                }
+                source = parent.ok_or("canonical cascade has a different source owner")?;
+            }
+            if source != event.anchor {
+                return Err("canonical cascade source ownership is cyclic".into());
+            }
+        }
+        Ok(())
+    }
+}

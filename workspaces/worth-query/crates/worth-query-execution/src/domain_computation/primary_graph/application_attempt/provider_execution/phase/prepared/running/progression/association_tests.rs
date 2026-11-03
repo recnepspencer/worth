@@ -19,7 +19,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationIdempotencyBinding, WorthQueryPrimaryGraphApplicationRuntime,
 };
 use crate::facade::runtime::ExecutionAllocationPolicy;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
 };
@@ -117,9 +117,7 @@ fn assert_interleaved_terminal(
     assert_victim: impl FnOnce(&WorthQueryApplicationCommitOutcome),
 ) {
     let world =
-        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
-            true,
-        );
+        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     world
         .application
         .with_host_advancement(|active_phase| {
@@ -272,9 +270,14 @@ fn start(
 > {
     let prepared = prepare_application_commit(
         &phase.borrowed_request_for_test(),
-        phase,
-        application,
-        WorthQueryApplicationCommitPreparationRequest::new(program, idempotency, None, None),
+        WorthQueryApplicationCommitPreparationRequest::new(
+            application
+                .validate_commit_program_in_advancement(phase, program)
+                .unwrap_or_else(|outcome| panic!("fixture admission: {outcome:?}")),
+            idempotency,
+            None,
+            None,
+        ),
     );
     let WorthQueryApplicationCommitPreparation::Ready(prepared) = prepared else {
         panic!("association fixture must reach ordinary prepared posture")

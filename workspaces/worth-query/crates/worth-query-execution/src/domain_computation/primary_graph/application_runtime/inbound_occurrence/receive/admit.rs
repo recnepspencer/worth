@@ -35,6 +35,7 @@ where
         let envelope = authenticated.envelope;
         let installed = &authenticated.installed;
         let custody = self
+            .runtime
             .inbound_custody
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
@@ -61,7 +62,11 @@ where
             .cost
             .terminal_key_probes
             .fetch_add(1, Ordering::Relaxed);
-        match self.primary_provider.lookup_completed_inbound(&correlation) {
+        match self
+            .runtime
+            .primary_provider
+            .lookup_completed_inbound(&correlation)
+        {
             Ok(Some(terminal)) => {
                 if !terminal.matches_effect(operation, claims) {
                     return Err(authenticated_owner_conflict(
@@ -107,14 +112,15 @@ where
         let publication = owner.committed_product_publication();
         if owner.relational_runtime_instance_id()
             != self
+                .runtime
                 .product_runtime
                 .source
                 .authoritative_source_profile()
                 .runtime_instance_id()
             || publication.product_branch().owner_identity()
-                != self.product_runtime.owner.owner_identity()
+                != self.runtime.product_runtime.owner.owner_identity()
             || publication.product_incarnation().owner_identity()
-                != self.product_runtime.owner.owner_identity()
+                != self.runtime.product_runtime.owner.owner_identity()
             || owner.commit_reference() != publication.relational_commit()
         {
             return Err(Denial::ForeignOwner);
@@ -157,6 +163,7 @@ where
         } = authenticated;
         // A caller may hold either public phase beyond the signed cutoff.
         let sample = self
+            .runtime
             .authorization_clock
             .sample(ApplicationCapabilityValidityTimeline::UnixEpochSeconds)
             .map_err(|_| Denial::TimeUnavailable)?;
@@ -172,6 +179,7 @@ where
             }
             CorrelationDecision::ExistingCustody(existing) => {
                 let mut custody = self
+                    .runtime
                     .inbound_custody
                     .lock()
                     .unwrap_or_else(|poisoned| poisoned.into_inner());
@@ -187,6 +195,7 @@ where
                     WorthQueryInboundSourcePosture::Revoked => return Err(Denial::SourceRevoked),
                 }
                 let mut custody = self
+                    .runtime
                     .inbound_custody
                     .lock()
                     .unwrap_or_else(|poisoned| poisoned.into_inner());

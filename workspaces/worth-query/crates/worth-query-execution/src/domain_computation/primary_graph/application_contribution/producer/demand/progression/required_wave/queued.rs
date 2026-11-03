@@ -111,26 +111,34 @@ impl QueuedRequiredRoots {
         wave: &RequiredWaveSelection<'_, Schema>,
     ) -> Result<Option<(usize, RequiredWorkClaim)>, WorthQueryOutputDemandDenial> {
         if self.drained {
-            runtime.output_demands.maintain_selected_required_cleanup(
+            runtime
+                .runtime
+                .output_demands
+                .maintain_selected_required_cleanup(
+                    wave.shared.selected().product().read_lease_ref(),
+                    &wave.positioned,
+                    &runtime
+                        .runtime
+                        .primary_provider
+                        .graph
+                        .source_owner
+                        .invalidation_owner,
+                )?;
+            return Ok(None);
+        }
+        let Some(claim) = runtime
+            .runtime
+            .output_demands
+            .next_required_claim_for_selected(
                 wave.shared.selected().product().read_lease_ref(),
                 &wave.positioned,
                 &runtime
+                    .runtime
                     .primary_provider
                     .graph
                     .source_owner
                     .invalidation_owner,
-            )?;
-            return Ok(None);
-        }
-        let Some(claim) = runtime.output_demands.next_required_claim_for_selected(
-            wave.shared.selected().product().read_lease_ref(),
-            &wave.positioned,
-            &runtime
-                .primary_provider
-                .graph
-                .source_owner
-                .invalidation_owner,
-        )?
+            )?
         else {
             self.drained = true;
             return Ok(None);
@@ -169,7 +177,11 @@ impl QueuedRequiredRoots {
         let Some(work) = self.prepare_selection(claim, runtime, wave)? else {
             return Ok(None);
         };
-        let Some(ready) = runtime.output_demands.selected_ready_completion(&work)? else {
+        let Some(ready) = runtime
+            .runtime
+            .output_demands
+            .selected_ready_completion(&work)?
+        else {
             self.hold(work)?;
             return Ok(None);
         };
@@ -212,6 +224,7 @@ impl QueuedRequiredRoots {
         wave: &RequiredWaveSelection<'_, Schema>,
     ) -> Result<Option<SelectedRequiredWork>, WorthQueryOutputDemandDenial> {
         let Some(work) = runtime
+            .runtime
             .output_demands
             .select_required_claim(claim, &wave.positioned)?
         else {
@@ -295,6 +308,7 @@ fn head_is_selected<Schema>(
     wave: &RequiredWaveSelection<'_, Schema>,
 ) -> Result<bool, WorthQueryOutputDemandDenial> {
     match runtime
+        .runtime
         .primary_provider
         .graph
         .source_owner

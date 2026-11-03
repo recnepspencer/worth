@@ -10,7 +10,10 @@ use reads::{read, set_label};
 
 #[test]
 fn original_projection_moves_disclosed_rows_and_shares_original_funding_until_final_close() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let query = world
         .application
         .installed_schema()
@@ -100,7 +103,10 @@ fn original_projection_moves_disclosed_rows_and_shares_original_funding_until_fi
 
 #[test]
 fn original_projection_retains_bound_empty_results_but_refuses_unbound_capture() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let registry = world.application.application_query_basis_observer();
     let baseline = registry.observe().active();
     let (observation, weak) = world

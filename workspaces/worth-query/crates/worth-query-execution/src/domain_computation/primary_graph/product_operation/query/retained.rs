@@ -31,6 +31,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         }
         let security = self
             .application()
+            .runtime
             .product_runtime
             .security_observation_for(execution, self.product())
             .map_err(|stop| super::selection_denial(stop, query_name))?;
@@ -106,7 +107,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
     where
         Input: ApplicationCapabilityRequest<Schema, Capability, Scope = Scope>,
     {
-        let request = match phase.execution_request_for(&self.application().product_runtime) {
+        let request = match phase.execution_request_for(&self.application().runtime.product_runtime) {
             Ok(request) => request,
             Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind::Authorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase)), query.name())),
         };
@@ -157,7 +158,7 @@ mod tests {
 
     #[test]
     fn retained_query_rejects_security_from_a_sibling_branch() {
-        let world = installed_authorization_world(true);
+        let world = installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let application = &world.application;
         let root = application.current_world();
         let sibling = world
@@ -186,7 +187,7 @@ mod tests {
         let denied = application
             .with_host_advancement(|phase| {
                 let execution = phase
-                    .execution_request_for(&application.product_runtime)
+                    .execution_request_for(&application.runtime.product_runtime)
                     .unwrap();
                 security.retained_query_controls(&execution, retained, "sibling", controls)
             })

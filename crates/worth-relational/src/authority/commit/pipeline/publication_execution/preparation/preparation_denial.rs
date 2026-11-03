@@ -11,6 +11,12 @@ pub(super) fn transaction_error(
     commit_log: CommitLog,
 ) -> TransactionCommitError {
     let error = match denial {
+        PublicationPreparationDenial::Execution(cause) => {
+            TransactionCommitError::execution(crate::transactions::data::CommitExecutionDenial {
+                kind: crate::transactions::data::CommitExecutionDenialKind::Cause(cause),
+                partition_identity: None,
+            })
+        }
         PublicationPreparationDenial::StorageUnavailable(failure) => {
             TransactionCommitError::preparation(CommitPreparationError::storage_unavailable(
                 basis.identity().branch_id().clone(),

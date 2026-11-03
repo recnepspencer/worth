@@ -6,7 +6,10 @@ use worth_foundational::{DeterminismContract, ExecutionPosture, ExecutionRequest
 
 #[test]
 fn native_serial_capture_uses_effective_ancestor_funding_and_releases_its_last_payload() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let original = OptionalOutputInput {
         status: "open".to_owned(),
@@ -47,7 +50,27 @@ fn native_serial_capture_uses_effective_ancestor_funding_and_releases_its_last_p
             .unwrap()
         })
         .unwrap();
+    let (foreign, _) = execution
+        .run_native_with_checkpoint(|_| {
+            let scope = account.retain_scope_selector_funded(&execution).unwrap();
+            capture_inspection::<IdentityExecutionSchema, OptionalOutputMutationBinding>(
+                &execution,
+                &world.application,
+                input.input(),
+                Some(&scope),
+            )
+            .unwrap()
+            .unwrap()
+        })
+        .unwrap();
+    payload
+        .clone()
+        .court_public_settlement_rejects_foreign_receipt(foreign.clone());
+    payload
+        .clone()
+        .court_rejects_present_foreign_disclosure(foreign);
     assert_eq!(payload.scope().subject(), account.entity_id());
+    payload.clone().court_public_settlement_rejects_disclosure();
     drop(payload);
 
     for saturate in [false, true] {

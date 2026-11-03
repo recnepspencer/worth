@@ -58,7 +58,10 @@ impl<'runtime> DurabilityAuthority<'runtime> {
                 captured,
                 policy,
                 &artifact_policy,
+                crate::durability::log::native_checkpoint_codec::CheckpointEncodingControl::Original(*execution),
             )?;
+        crate::execution::check_request(execution)
+            .map_err(crate::durability::data::RelationalNativeCheckpointCaptureDenial::Request)?;
         if self.runtime.durability.medium().is_some() {
             self.runtime
                 .history
@@ -91,7 +94,7 @@ impl<'runtime> DurabilityAuthority<'runtime> {
         let captured = self
             .capture_checkpoint_basis()?
             .demand_memory_image(self.runtime, execution)?;
-        self.finalize_captured_checkpoint(captured)
+        self.finalize_captured_checkpoint(captured, execution)
     }
 
     pub(super) fn capture_checkpoint_basis(
@@ -111,8 +114,9 @@ impl<'runtime> DurabilityAuthority<'runtime> {
     pub(super) fn finalize_captured_checkpoint(
         &self,
         captured: super::checkpoint_capture::CapturedCheckpointBasis,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<DurableCheckpoint, crate::durability::data::RelationalRecoveryStop> {
-        let checkpoint = captured.build_checkpoint_image()?;
+        let checkpoint = captured.build_checkpoint_image(execution)?;
         self.runtime
             .publication_authority()
             .push_bounded_diagnostic(

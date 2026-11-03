@@ -33,7 +33,6 @@ worth_query_schema! {
             field RationalValue("native", "rational", Rational) => [equality(CanonicalRational), native_comparable];
             field RawStringValue("native", "raw-string", String) => [equality(String)];
             field InternedStringValue("native", "interned-string", String) => [equality(InternedString)];
-            field BytesValue("native", "bytes", Bytes) => [equality(ContentRefId)];
             field UuidValue("native", "uuid", Uuid) => [equality([u8; 16])];
             field DateValue("native", "date", Date) => [equality(CanonicalDate), native_comparable];
             field TimeValue("native", "time", Time) => [equality(CanonicalTime), native_comparable];
@@ -147,7 +146,6 @@ fn typed_schema_contract_mapping_preserves_every_native_family() {
         ),
         typed::<RawStringValue>("alpha".to_string()),
         typed::<InternedStringValue>(InternedString::Symbol(Symbol(17))),
-        typed::<BytesValue>(ContentRefId(41)),
         typed::<UuidValue>([7; 16]),
         typed::<DateValue>(CanonicalDate {
             days_from_unix_epoch: 20_000,
@@ -161,7 +159,10 @@ fn typed_schema_contract_mapping_preserves_every_native_family() {
             offset_minutes: -360,
         }),
         typed::<EntityRefValue>(EntityId::new(PartitionId(9), 10, 11)),
-        typed::<ContentRefValue>(ContentRefId(42)),
+        typed::<ContentRefValue>(ContentRefId([
+            42, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0,
+        ])),
     ];
     assert_eq!(typed, samples);
 }
@@ -269,7 +270,6 @@ fn scalar_samples() -> Vec<AspectValue> {
         ),
         AspectValue::String(InternedString::Raw("alpha".into())),
         AspectValue::String(InternedString::Symbol(Symbol(17))),
-        AspectValue::Bytes(ContentRefId(41)),
         AspectValue::Uuid([7; 16]),
         AspectValue::Date(CanonicalDate {
             days_from_unix_epoch: 20_000,
@@ -283,6 +283,9 @@ fn scalar_samples() -> Vec<AspectValue> {
             offset_minutes: -360,
         }),
         AspectValue::EntityRef(EntityId::new(PartitionId(9), 10, 11)),
-        AspectValue::ContentRef(ContentRefId(42)),
+        AspectValue::ContentRef(ContentRefId([
+            42, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0,
+        ])),
     ]
 }

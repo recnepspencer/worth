@@ -207,7 +207,10 @@ fn routed(
     runs: usize,
     handler_reads_status: bool,
 ) -> (Option<Vec<ComputationFactReaders>>, Vec<PartitionIdentity>) {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     world
         .application
@@ -250,7 +253,7 @@ fn routed(
                     &admission,
                     |reader, root| {
                         let execution = phase
-                            .execution_for(&world.application.product_runtime)
+                            .execution_for(&world.application.runtime.product_runtime)
                             .expect("the installed fixture lends its computation execution");
                         for _ in 0..runs {
                             if installed.prepare_through(reader, execution, root).is_err() {

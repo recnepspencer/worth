@@ -29,7 +29,7 @@ pub(super) fn inspect<Query>(
     let captured = CapturedFields {
         original,
         inputs,
-        layout: &runtime.primary_provider.graph.layout,
+        layout: &runtime.runtime.primary_provider.graph.layout,
         contracts: runtime.installed_schema().native_contracts(),
         producer_version: changes.commit_reference().version_id,
     };

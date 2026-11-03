@@ -26,7 +26,11 @@ pub(super) fn resolve<Schema: ApplicationSchema + 'static>(
     let Some(requested) = stop.take_requested_output() else {
         return Ok(RequestedRefusal::Unavailable);
     };
-    match custody.requested_readmission(&runtime.output_demands, &requested, &wave.positioned)? {
+    match custody.requested_readmission(
+        &runtime.runtime.output_demands,
+        &requested,
+        &wave.positioned,
+    )? {
         PendingUpstream::Ready(upstream) => {
             if super::super::cycles::upstream_cycles(
                 &upstream,

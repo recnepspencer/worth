@@ -53,7 +53,7 @@ fn authenticated_bootstrap_registers_the_exact_installed_native_contract() {
             .unwrap()
             .0;
 
-        let bootstrap = authority.prepare_primary_graph(&phase.bootstrap_for_test(), &runtime, &schema, crate::domain_computation::execution_runtime::product_world::test_product_world_resources()).unwrap();
+        let bootstrap = authority.prepare_primary_graph(&phase.bootstrap_for_test(), &runtime, &schema, crate::domain_computation::execution_runtime::product_world::test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system())).unwrap();
         let registered = bootstrap
             .graph
             .registered_entity_aspect(
@@ -134,7 +134,7 @@ fn provider_identity_exhaustion_denies_before_relational_installation() {
             .bind_application_schema(declaration)
             .unwrap();
         let denial = authority
-        .prepare_primary_graph(&phase.bootstrap_for_test(), &runtime, &schema, crate::domain_computation::execution_runtime::product_world::test_product_world_resources())
+        .prepare_primary_graph(&phase.bootstrap_for_test(), &runtime, &schema, crate::domain_computation::execution_runtime::product_world::test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()))
         .err()
         .unwrap();
 
@@ -180,7 +180,7 @@ fn invalidation_keeps_no_window_so_a_finite_world_history_installs() {
         // Invalidation keeps no position the World no longer keeps a commit for.
         // Since ee07da2b0e it keeps no retention window at all, so even the
         // shortest finite World history admits it; nothing is refused.
-        let (budgets, clock, _defaults, execution) = test_product_world_resources().into_parts();
+        let (budgets, clock, _defaults, execution) = test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()).into_parts();
         assert!(
             budgets.retained_composite_commits().get().is_some(),
             "explicit finite history policy"
@@ -242,7 +242,7 @@ fn duplicate_typed_principal_identity_denies_without_poisoning_bootstrap() {
         let binding = schema
             .principal_binding(IdentityBinding::reference())
             .unwrap();
-        let mut bootstrap = authority.prepare_primary_graph(&phase.bootstrap_for_test(), &runtime, &schema, crate::domain_computation::execution_runtime::product_world::test_product_world_resources()).unwrap();
+        let mut bootstrap = authority.prepare_primary_graph(&phase.bootstrap_for_test(), &runtime, &schema, crate::domain_computation::execution_runtime::product_world::test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system())).unwrap();
 
         bootstrap
             .bind_principal(

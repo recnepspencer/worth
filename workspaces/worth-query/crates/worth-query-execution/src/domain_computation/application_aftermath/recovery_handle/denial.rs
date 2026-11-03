@@ -9,6 +9,10 @@ pub enum WorthQueryRecoveryHandleDenialKind {
     CompletionExecutionRequest(
         crate::domain_computation::primary_graph::WorthQueryAdvancementDenial,
     ),
+    /// Exact installed admission refusal before any effect or owner read.
+    AdmissionAuthorization(
+        crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind,
+    ),
     RecoveryNotAdmitted,
     /// This authoritative commit already opened its sole recovery handle.
     RecoveryAlreadyMinted,

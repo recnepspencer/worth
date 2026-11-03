@@ -114,19 +114,6 @@ impl<K: Ord + Copy, V: Clone> MapNode<K, V> {
         previous
     }
 
-    pub(super) fn collect_mut<'a>(
-        root: &'a mut Option<Arc<Self>>,
-        values: &mut Vec<(&'a K, &'a mut V)>,
-    ) {
-        let Some(current) = root else {
-            return;
-        };
-        let node = Arc::make_mut(current);
-        Self::collect_mut(&mut node.left, values);
-        values.push((&node.key, Arc::make_mut(&mut node.value)));
-        Self::collect_mut(&mut node.right, values);
-    }
-
     pub(super) fn into_values(root: Option<Arc<Self>>, values: &mut Vec<(K, V)>) {
         let Some(current) = root else {
             return;

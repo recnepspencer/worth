@@ -111,6 +111,7 @@ impl World {
             schema.installed_declaration(),
             schema.native_contracts(),
             &worth_relational::facade::schema::RelationalSchemaRegistry::new(),
+            schema.value_bindings(),
         )
         .unwrap();
         let native = worth_relational::facade::runtime::RelationalRuntimeApi::builder()

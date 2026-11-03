@@ -171,6 +171,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
             return Err(WorthQueryCorrectionSelectionDenial::ForeignRuntime);
         }
         let occurrence = application
+            .runtime
             .primary_provider
             .observe_completed_application(receipt.commit_reference())
             .ok_or(WorthQueryCorrectionSelectionDenial::SourceUnavailable)?;
@@ -231,6 +232,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
     > {
         let occurrence = self
             .application()
+            .runtime
             .primary_provider
             .observe_completed_application(locator.relational())
             .ok_or(WorthQueryCorrectionSelectionDenial::SourceUnavailable)?;
@@ -266,7 +268,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
     > {
         let application = self.application();
         let execution = phase
-            .execution_request_for(&application.product_runtime)
+            .execution_request_for(&application.runtime.product_runtime)
             .map_err(|_| WorthQueryCorrectionSelectionDenial::ForeignPhase)?;
         let performed = occurrence.committed_product_publication();
         let original = occurrence.commit_evidence().original_authority();
@@ -277,6 +279,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
             return Err(WorthQueryCorrectionSelectionDenial::SourceNotCorrectable);
         }
         let ancestry = application
+            .runtime
             .product_runtime
             .owner
             .observation_port()

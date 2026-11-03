@@ -33,8 +33,17 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
         {
             return Err(ApplicationSchemaDeclarationDenial::ConflictingFieldBinding);
         }
-        if self.members.windows(2).any(|pair| pair[0] == pair[1]) {
-            return Err(ApplicationSchemaDeclarationDenial::DuplicateMember);
+        if let Some(pair) = self.members.windows(2).find(|pair| pair[0] == pair[1]) {
+            return Err(
+                if matches!(
+                    pair[0],
+                    crate::application_schema::ApplicationSchemaMember::ContentFormat { .. }
+                ) {
+                    ApplicationSchemaDeclarationDenial::DuplicateContentFormat
+                } else {
+                    ApplicationSchemaDeclarationDenial::DuplicateMember
+                },
+            );
         }
         let contributions = lower_authored_contributions(self.contributions, &self.members)?;
         validate_member_closure(&self.members)?;

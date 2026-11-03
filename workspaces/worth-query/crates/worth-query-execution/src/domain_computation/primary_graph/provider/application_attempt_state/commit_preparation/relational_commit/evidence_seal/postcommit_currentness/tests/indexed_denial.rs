@@ -97,6 +97,7 @@ fn committed_indexed_facts(world: &AuthorizationWorld) -> Vec<WorthQueryApplicat
     };
     let facts = world
         .application
+        .runtime
         .primary_provider
         .graph
         .output_lineage
@@ -110,7 +111,10 @@ fn committed_indexed_facts(world: &AuthorizationWorld) -> Vec<WorthQueryApplicat
 
 #[test]
 fn indexed_postcommit_rebase_preserves_the_native_denial_and_fact_ordinal() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     {
         let mut facts = committed_indexed_facts(&world);
         let mut ordinal = facts
@@ -154,14 +158,12 @@ fn indexed_postcommit_rebase_preserves_the_native_denial_and_fact_ordinal() {
             matches!(
                 &outcome,
                 RebasedSourceFacts::VerificationRequired {
-                    reason: RebaseVerificationReason::IndexedSelectionFactDenied(
-                        actual_ordinal,
-                        IndexedSelectionReobserveDenial::Lookup(
-                            BoundedEntityFieldLookupDenialKind::IndexNotInstalled
-                        )
-                    ),
-                    ..
-                } if *actual_ordinal == ordinal
+                    reason, ..
+                } if reason.reason() == &RebaseVerificationReason::IndexedSelectionFactDenied(
+                    IndexedSelectionReobserveDenial::Lookup(BoundedEntityFieldLookupDenialKind::IndexNotInstalled))
+                    && crate::domain_computation::primary_graph::output_lineage::invalidation::FullVerificationReason::from(reason.clone())
+                        == crate::domain_computation::primary_graph::output_lineage::invalidation::FullVerificationReason::IndexedSelectionFactDenied(ordinal,
+                            IndexedSelectionReobserveDenial::Lookup(BoundedEntityFieldLookupDenialKind::IndexNotInstalled))
             ),
             "the native denial and its actual nonzero ordinal must survive rebase: {outcome:?}"
         );
@@ -170,7 +172,10 @@ fn indexed_postcommit_rebase_preserves_the_native_denial_and_fact_ordinal() {
 
 #[test]
 fn sparse_indexed_rebase_keeps_complete_dependencies_without_work_estimates() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     {
         let committed = committed_indexed_facts(&world);
         let selected_value =
@@ -206,7 +211,7 @@ fn sparse_indexed_rebase_keeps_complete_dependencies_without_work_estimates() {
             })
             .expect("the fixture read owns its installed host call");
         let graph = world.application.runtime.primary_graph().unwrap();
-        let observed = world.application.with_host_advancement(|phase| {   let borrowed_execution = phase.execution_request_for(&world.application.product_runtime).expect("fixture borrows its runtime request"); let execution = &borrowed_execution; graph.integration_handle().with_runtime(&phase.borrowed_request_for_test(), |runtime| {
+        let observed = world.application.with_host_advancement(|phase| {   let borrowed_execution = phase.execution_request_for(&world.application.runtime.product_runtime).expect("fixture borrows its runtime request"); let execution = &borrowed_execution; graph.integration_handle().with_runtime(&phase.borrowed_request_for_test(), |runtime| {
         let snapshot = selected.application_basis().snapshot_handle();
         let observed = crate::domain_computation::primary_graph::application_attempt::observe_indexed_entity_selection(
             runtime,execution,  snapshot, *index_id, *entity_kind, locator.clone(), value.clone(), 100_001,
@@ -280,7 +285,7 @@ fn sparse_indexed_rebase_keeps_complete_dependencies_without_work_estimates() {
             .application
             .with_host_advancement(|phase| {
                 let borrowed_execution = phase
-                    .execution_request_for(&world.application.product_runtime)
+                    .execution_request_for(&world.application.runtime.product_runtime)
                     .expect("fixture borrows its runtime request");
                 let execution = &borrowed_execution;
                 graph

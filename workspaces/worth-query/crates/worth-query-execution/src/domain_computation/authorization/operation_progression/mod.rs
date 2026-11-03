@@ -132,3 +132,7 @@ where
     let bound = authority_validation::bind_conventional_preconditions(validated, preconditions)?;
     authority_validation::transition_conventional_operation(execution, bound)
 }
+
+pub(in crate::domain_computation) use authority_validation::{
+    BrandTag, ReadCompletionAdmission, WorthQueryAdmittedOperation,
+};

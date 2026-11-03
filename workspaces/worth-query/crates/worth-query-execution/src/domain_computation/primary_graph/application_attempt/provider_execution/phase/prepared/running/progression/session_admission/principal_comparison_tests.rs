@@ -14,14 +14,16 @@ use crate::domain_computation::primary_graph::tests::fixture::installed_authoriz
 
 #[test]
 fn principal_staleness_and_request_stop_keep_their_distinct_answers() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let cancellation =
         worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource::new();
     let request =
         worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope::new(
             Some(std::time::Instant::now() + std::time::Duration::from_secs(60)),
-            cancellation.token(),
-        );
+            cancellation.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     let principal = world
         .application
         .with_host_advancement(|phase| {
@@ -56,10 +58,11 @@ fn principal_staleness_and_request_stop_keep_their_distinct_answers() {
                 let phase = &active_phase;
                 let prepared = prepare_application_commit(
                     &phase.borrowed_request_for_test(),
-                    phase,
-                    &world.application,
                     WorthQueryApplicationCommitPreparationRequest::new(
-                        program,
+                        world
+                            .application
+                            .validate_commit_program_in_advancement(phase, program)
+                            .unwrap_or_else(|outcome| panic!("fixture admission: {outcome:?}")),
                         idempotency(187, 188),
                         None,
                         None,
@@ -86,7 +89,7 @@ fn principal_staleness_and_request_stop_keep_their_distinct_answers() {
                 let admitted_session = admit_provider_session(
                     phase,
                     &mut running,
-                    &world.application.primary_graph_authority,
+                    world.application.runtime.primary_graph_authority(),
                     attempt_basis.retained_product(),
                     mutation_run,
                 )
@@ -100,7 +103,7 @@ fn principal_staleness_and_request_stop_keep_their_distinct_answers() {
                         provider_attempt,
                         attempt_basis,
                         WorthQueryProviderAttemptRegistrationContext::new(
-                            &world.application.primary_provider,
+                            &world.application.runtime.primary_provider,
                             &admission,
                             retained_idempotency,
                             outcome_identity,

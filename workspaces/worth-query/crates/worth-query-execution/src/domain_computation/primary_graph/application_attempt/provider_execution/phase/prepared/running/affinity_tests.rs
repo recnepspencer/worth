@@ -33,13 +33,9 @@ type RetainedProgram = WorthQueryApplicationEffectProgram<
 #[test]
 fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_branch_drift() {
     let world =
-        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
-            true,
-        );
+        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     let foreign_world =
-        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
-            true,
-        );
+        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     world
         .application
         .with_host_advancement(|active_phase| {
@@ -83,7 +79,7 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
 
             let substitute_lease = WorthQueryApplicationSnapshotLease::acquire(
                 &phase
-                    .execution_request_for(&world.application.product_runtime)
+                    .execution_request_for(&world.application.runtime.product_runtime)
                     .expect("fixture issuer"),
                 lease.handle().clone(),
                 std::sync::Arc::clone(&lease.layout),
@@ -105,7 +101,7 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
 
             let foreign_branch_snapshot = lease.handle().with_runtime_mut(
                 &phase
-                    .execution_request_for(&world.application.product_runtime)
+                    .execution_request_for(&world.application.runtime.product_runtime)
                     .expect("fixture issuer"),
                 |runtime| {
                     let foreign = worth_relational::facade::history::BranchId(
@@ -117,7 +113,7 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
                     runtime
                         .fork_branch(
                             &phase
-                                .execution_request_for(&world.application.product_runtime)
+                                .execution_request_for(&world.application.runtime.product_runtime)
                                 .expect("fixture issuer"),
                             foreign.clone(),
                             fork_basis,
@@ -140,7 +136,7 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
             .is_err());
             assert!(lease.handle().with_runtime_mut(
                 &phase
-                    .execution_request_for(&world.application.product_runtime)
+                    .execution_request_for(&world.application.runtime.product_runtime)
                     .expect("fixture issuer"),
                 |runtime| {
                     runtime
@@ -158,9 +154,7 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
 #[test]
 fn a_real_peer_plan_and_session_cannot_substitute_for_the_captured_attempt() {
     let world =
-        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
-            true,
-        );
+        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     world
         .application
         .with_host_advancement(|active_phase| {
@@ -289,7 +283,7 @@ fn real_terminal_session<'run>(
     product: crate::basis::WorthQueryProductBranchLease,
 ) -> crate::domain_computation::WorthQuerySessionBoundReadsAndEffects<'run> {
     running
-        .admit_provider_execution_plan(&world.application.primary_graph_authority)
+        .admit_provider_execution_plan(world.application.runtime.primary_graph_authority())
         .expect("real application authorities must admit their provider plan")
         .bind_application_product(product)
         .expect("the exact selected product must bind its provider plan")
@@ -329,9 +323,15 @@ fn start(
 > {
     let prepared = prepare_application_commit(
         &phase.borrowed_request_for_test(),
-        phase,
-        &world.application,
-        WorthQueryApplicationCommitPreparationRequest::new(program, idempotency, None, None),
+        WorthQueryApplicationCommitPreparationRequest::new(
+            world
+                .application
+                .validate_commit_program_in_advancement(phase, program)
+                .unwrap_or_else(|outcome| panic!("fixture admission: {outcome:?}")),
+            idempotency,
+            None,
+            None,
+        ),
     );
     let WorthQueryApplicationCommitPreparation::Ready(prepared) = prepared else {
         panic!("affinity fixture must reach ordinary prepared posture")

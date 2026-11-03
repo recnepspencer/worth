@@ -8,8 +8,14 @@ use crate::domain_computation::primary_graph::{
 
 #[test]
 fn unavailable_completion_checks_foreign_phase_before_foreign_demand() {
-    let owner = installed_authorization_world(true);
-    let other = installed_authorization_world(true);
+    let owner = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
+    let other = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     for (foreign_phase, foreign_demand) in [(true, true), (true, false), (false, true)] {
         let caller = if foreign_phase { &other } else { &owner };
         caller
@@ -18,7 +24,7 @@ fn unavailable_completion_checks_foreign_phase_before_foreign_demand() {
                 let mut demand_checks = 0;
                 let denial = admit_unavailable_completion(
                     &phase,
-                    &owner.application.product_runtime,
+                    &owner.application.runtime.product_runtime,
                     || {
                         demand_checks += 1;
                         !foreign_demand

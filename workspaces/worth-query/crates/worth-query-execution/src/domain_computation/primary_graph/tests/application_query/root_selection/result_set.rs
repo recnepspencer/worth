@@ -5,7 +5,10 @@ fn empty_path_union_stales_when_a_matching_edge_is_inserted() {
     let host_request = crate::test_request_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = super::super::super::fixture::live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world

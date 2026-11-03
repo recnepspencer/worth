@@ -1,7 +1,7 @@
 use std::future::Future;
 use std::pin::pin;
 use std::task::{Context, Poll, Waker};
-use std::time::{Duration, Instant, SystemTime};
+use std::time::{Duration, SystemTime};
 
 use worth_query_host::facade::{
     admission::authenticated_principal as authentication,
@@ -72,11 +72,19 @@ pub(super) fn external_identity() -> WorthQueryExternalPrincipalIdentity {
 pub(super) fn admit<Schema: ApplicationSchema>(
     schema: &WorthQueryInstalledApplicationSchema<Schema>,
 ) -> authentication::WorthQueryAdmittedAuthenticationAdapter<Schema, LocalIdentityAdapter> {
+    admit_with_clock(schema, authentication::WorthQueryAdmissionClock::system())
+}
+
+pub(super) fn admit_with_clock<Schema: ApplicationSchema>(
+    schema: &WorthQueryInstalledApplicationSchema<Schema>,
+    clock: authentication::WorthQueryAdmissionClock,
+) -> authentication::WorthQueryAdmittedAuthenticationAdapter<Schema, LocalIdentityAdapter> {
     authentication::admit_authentication_adapter(
         schema,
         authentication::WorthQueryAuthenticationAdapterAdmission::new(
             authentication::WorthQueryAuthenticationAudience::new("consumer-root").unwrap(),
             authentication::WorthQueryAuthenticationMethod::new("local-credential").unwrap(),
+            clock,
         ),
         LocalIdentityAdapter,
     )
@@ -84,10 +92,17 @@ pub(super) fn admit<Schema: ApplicationSchema>(
 }
 
 pub(super) fn request_scope() -> authentication::WorthQueryRequestScope {
+    request_scope_with_clock(authentication::WorthQueryAdmissionClock::system())
+}
+
+pub(super) fn request_scope_with_clock(
+    clock: authentication::WorthQueryAdmissionClock,
+) -> authentication::WorthQueryRequestScope {
     let cancellation = authentication::WorthQueryCancellationSource::new();
     authentication::WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(120)),
+        Some(clock.now() + Duration::from_secs(120)),
         cancellation.token(),
+        clock,
     )
 }
 

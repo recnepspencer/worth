@@ -23,7 +23,7 @@ pub(super) fn require<Schema: ApplicationSchema>(
     execution: ExecutionRequest<'_, '_>,
     occurrences: &Occurrences,
 ) -> Result<(), Denial> {
-    let provider = &target.application().primary_provider;
+    let provider = &target.application().runtime.primary_provider;
     let mut witnesses = Witnesses::default();
     let mut covered = ExecutionOrderedMap::<CommitId, ()>::default();
     super::admit_work(execution, occurrences.len() as u64).map_err(Denial::RestoredSupport)?;
@@ -119,6 +119,7 @@ fn require_pair<Schema: ApplicationSchema>(
         return Err(Denial::RestoredSupport(Stop::CanonicalAssociationMismatch));
     }
     if !application
+        .runtime
         .primary_provider
         .validate_correction_witness(execution, target.product().relational_basis(), sealed)
         .map_err(witness_denial)?
@@ -129,6 +130,7 @@ fn require_pair<Schema: ApplicationSchema>(
     // its existing ancestry work remains separate from selected posting visits.
     for (witness, occurrence) in [(before, source), (after, reverse)] {
         let ancestor = application
+            .runtime
             .product_runtime
             .owner
             .observation_port()

@@ -71,7 +71,7 @@ impl<Schema>
         &self,
         request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> (usize, usize, usize, usize) {
-        let world = self.product_runtime.owner.inspection_port();
+        let world = self.runtime.product_runtime.owner.inspection_port();
         let history = world
             .history_snapshot()
             .expect("an installed product World is available");
@@ -82,7 +82,8 @@ impl<Schema>
             history.installed_commits(),
             history.metadata().total_occupancy(),
             retention.unique_pins(),
-            self.primary_provider
+            self.runtime
+                .primary_provider
                 .graph
                 .with_runtime(request_execution, |runtime| {
                     runtime.retired_branch_root_count()
@@ -93,6 +94,6 @@ impl<Schema>
     /// Exact completed idempotency evidence entries retained by this owner.
     #[doc(hidden)]
     pub fn completed_evidence_retained_for_test(&self) -> usize {
-        self.primary_provider.completed_evidence_retained()
+        self.runtime.primary_provider.completed_evidence_retained()
     }
 }

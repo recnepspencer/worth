@@ -4,7 +4,7 @@ use super::*;
 #[test]
 fn external_receipt_clones_do_not_pin_an_evicted_historical_basis() {
     {
-        let world = installed_authorization_world(true);
+        let world = installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
 
         let selected = world
             .application
@@ -17,6 +17,7 @@ fn external_receipt_clones_do_not_pin_an_evicted_historical_basis() {
             .expect("the fixture read owns its installed host call");
         let _live = world
             .application
+            .runtime
             .primary_provider
             .observe_application_commit_causality(selected.product());
         let request = live_scope();
@@ -128,6 +129,7 @@ fn external_receipt_clones_do_not_pin_an_evicted_historical_basis() {
         assert!(
             world
                 .application
+                .runtime
                 .primary_provider
                 .committed_application_emissions(original.committed_product_publication())
                 .is_empty(),
@@ -153,6 +155,7 @@ fn external_receipt_clones_do_not_pin_an_evicted_historical_basis() {
         assert_eq!(
             world
                 .application
+                .runtime
                 .primary_provider
                 .retained_receipt_basis_count(),
             64,

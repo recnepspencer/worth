@@ -152,6 +152,7 @@ pub(super) fn kernel_failure<Stopped>(
             | Resource::WorkLimit
             | Resource::NestedLeaseMisuse
             | Resource::NestedAdvancementOpening
+            | Resource::ForeignAdmissionClock
             | Resource::ForeignAdvancementPhase
             | Resource::NoActiveExecutionScope
             | Resource::EquivalenceContractUnavailable => {

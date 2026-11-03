@@ -10,7 +10,7 @@ use std::{
         mpsc::{sync_channel, Receiver, SyncSender},
         Arc, Mutex,
     },
-    time::{Duration, Instant},
+    time::Duration,
 };
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
@@ -99,20 +99,22 @@ fn placements() -> [Placement; 3] {
 #[test]
 fn cancellation_during_bridge_read_remains_cancellation_in_the_advancement() {
     let _observer = crate::domain_computation::execution_observation::WorthQueryExecutionObservation::install_on_this_thread();
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let _restore = Restore(place(Placement::World));
     for placement in placements() {
         place(placement);
         let cancellation = WorthQueryCancellationSource::new();
         let scope = WorthQueryRequestScope::new(
-            Some(Instant::now() + Duration::from_secs(60)),
-            cancellation.token(),
-        );
+            Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(60)),
+            cancellation.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let (entered, ready) = sync_channel(1);
         let (release, released) = sync_channel(1);
-        let source = world.application.product_runtime.source.clone();
+        let source = world.application.runtime.product_runtime.source.clone();
         let (_, basis) = source
-            .observe_branch_basis(&world.application.relational_branch_identity)
+            .observe_branch_basis(&world.application.runtime.relational_branch_identity)
             .unwrap();
         let retained = source.retain_branch_basis_for_bridge(&basis).unwrap();
         let branch =
@@ -145,7 +147,7 @@ fn cancellation_during_bridge_read_remains_cancellation_in_the_advancement() {
             .application
             .with_application_advancement(&scope, |phase| {
                 let request = phase
-                    .execution_request_for(&world.application.product_runtime)
+                    .execution_request_for(&world.application.runtime.product_runtime)
                     .unwrap();
                 let planned = bridge
                     .plan_truth_view_packet(declaration, SnapshotReadPacket::new(vec![]), request)
@@ -168,7 +170,7 @@ fn cancellation_during_bridge_read_remains_cancellation_in_the_advancement() {
                 .with_application_advancement(&scope, |phase| {
                     observation.read_planned_packet(
                         phase
-                            .execution_request_for(&world.application.product_runtime)
+                            .execution_request_for(&world.application.runtime.product_runtime)
                             .unwrap(),
                     )
                 })
@@ -194,15 +196,17 @@ fn cancellation_during_signal_evaluation_remains_cancellation_in_the_advancement
         SignalExecutionStopReason, SignalGraph,
     };
     let _observer = crate::domain_computation::execution_observation::WorthQueryExecutionObservation::install_on_this_thread();
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let _restore = Restore(place(Placement::World));
     for placement in placements() {
         place(placement);
         let cancellation = WorthQueryCancellationSource::new();
         let scope = WorthQueryRequestScope::new(
-            Some(Instant::now() + Duration::from_secs(60)),
-            cancellation.token(),
-        );
+            Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(60)),
+            cancellation.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let (entered, ready) = sync_channel(1);
         let (release, released) = sync_channel(1);
         let gate = Gate {
@@ -243,7 +247,7 @@ fn cancellation_during_signal_evaluation_remains_cancellation_in_the_advancement
                             Ok(AspectVersion::zero().with(Aspect::new(0), 9))
                         },
                         phase
-                            .execution_request_for(&world.application.product_runtime)
+                            .execution_request_for(&world.application.runtime.product_runtime)
                             .unwrap(),
                     )
                 })

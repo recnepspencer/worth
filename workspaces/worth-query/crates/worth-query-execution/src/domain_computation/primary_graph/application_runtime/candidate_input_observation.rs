@@ -8,7 +8,8 @@ impl<Schema: ApplicationSchema + 'static> super::WorthQueryPrimaryGraphApplicati
     pub fn custom_invariant_candidate_input_counters(
         &self,
     ) -> worth_relational::facade::runtime::RelationalCandidateInputCounters {
-        self.primary_provider
+        self.runtime
+            .primary_provider
             .graph
             .source_owner
             .custom_invariant_candidate_input_counters()

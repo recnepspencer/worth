@@ -21,6 +21,7 @@ pub(in crate::domain_computation::primary_graph) fn seed_program_activation(
 ) {
     let layout = world
         .application
+        .runtime
         .primary_provider
         .graph
         .layout
@@ -42,7 +43,11 @@ pub(in crate::domain_computation::primary_graph) fn seed_program_activation(
             )])),
         }),
     ));
-    let request = super::live_scope();
+    let request = worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope::new(
+        None,
+        worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource::new().token(),
+        world.application.product_runtime().clock.admission_clock.clone(),
+    );
     let prepared =
         prepare_relational_mutation_on_application(execution, &world.application, batch, &request);
     let Ok(PublicationOutcome::Performed(performed)) = prepared.execute(*execution) else {
@@ -58,11 +63,13 @@ pub(in crate::domain_computation::primary_graph) fn seed_program_activation(
     drop(performed.consume());
     world
         .application
+        .runtime
         .primary_provider
         .graph
         .with_runtime_mut(execution, |runtime| {
             world
                 .application
+                .runtime
                 .primary_provider
                 .graph
                 .ensure_primary_indexes_for_basis(execution, runtime, &basis)

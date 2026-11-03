@@ -22,7 +22,8 @@ where
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     ) -> Result<WorthQueryRestoredGeneratedOutput, WorthQueryGeneratedOutputRestorationFailure>
     {
-        let publication_execution = match phase.execution_request_for(&self.product_runtime) {
+        let publication_execution = match phase.execution_request_for(&self.runtime.product_runtime)
+        {
             Ok(execution) => execution,
             Err(cause) => {
                 return Err(restoration_failure(
@@ -39,7 +40,21 @@ where
         };
         let prepared = match publication.prepare_relational_candidate(candidate, request, true) {
             Ok(prepared) => prepared,
-            Err(PublicationDenial::Stopped(stop)) => {
+            Err(PublicationDenial::ClockMismatch) => {
+                return Err(restoration_failure(
+                    suspended_from_completion(
+                        publication,
+                        branch,
+                        correspondence,
+                        producer,
+                        completion,
+                    ),
+                    WorthQueryGeneratedOutputRestorationFailureCause::advancement(
+                        crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock),
+                    ),
+                ))
+            },
+Err(PublicationDenial::Stopped(stop)) => {
                 return Err(restoration_failure(
                     suspended_from_completion(
                         publication,
@@ -95,7 +110,17 @@ where
                     ),
                 })
             }
-            Err(PublicationDenial::Stopped(stop)) => Err(restoration_failure(
+            Err(PublicationDenial::ClockMismatch) => Err(restoration_failure(
+                suspended_from_completion(
+                    publication,
+                    branch,
+                    correspondence,
+                    producer,
+                    completion,
+                ),
+                WorthQueryGeneratedOutputRestorationFailureCause::advancement(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock)),
+            )),
+Err(PublicationDenial::Stopped(stop)) => Err(restoration_failure(
                 suspended_from_completion(
                     publication,
                     branch,

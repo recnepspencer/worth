@@ -44,6 +44,7 @@ pub(in crate::domain_computation::primary_graph) fn installed_schema_layout<
         installed.installed_declaration(),
         installed.native_contracts(),
         &RelationalSchemaRegistry::new(),
+        installed.value_bindings(),
     )
     .unwrap()
 }

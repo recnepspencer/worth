@@ -135,6 +135,7 @@ impl WorthQuerySuspendedGeneratedOutput {
         Producer: WorthQueryApplicationProducerBinding<Schema>,
     {
         runtime
+            .runtime
             .primary_provider
             .graph
             .output_lineage

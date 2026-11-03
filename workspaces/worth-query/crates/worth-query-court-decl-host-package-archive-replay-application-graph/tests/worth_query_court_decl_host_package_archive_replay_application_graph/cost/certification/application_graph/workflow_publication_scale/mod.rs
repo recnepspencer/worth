@@ -21,8 +21,7 @@ fn public_ten_thousand_node_definition_publishes() {
     let scope =
         worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope::new(
             Some(std::time::Instant::now() + std::time::Duration::from_secs(300)),
-            cancellation.token(),
-        );
+            cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
     let cost_scope = application
         .with_host_advancement(|host_phase| {
@@ -130,8 +129,7 @@ fn cold_compilation_of_large_definition_uses_bounded_start_facts() {
     let scope =
         worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope::new(
             Some(std::time::Instant::now() + std::time::Duration::from_secs(300)),
-            cancellation.token(),
-        );
+            cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
     let publication = runtime
         .with_host_advancement(|host_phase| {

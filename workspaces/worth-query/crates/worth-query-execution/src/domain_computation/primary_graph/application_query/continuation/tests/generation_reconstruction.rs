@@ -21,7 +21,10 @@ fn discarded_ordered_generation_rebuilds_without_reviving_old_query_cursors() {
     let host_request = crate::test_request_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let context = ContinuationTestContext::new(Duration::from_secs(60));
+    let context = ContinuationTestContext::new(
+        Duration::from_secs(60),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let old_cursor = context
         .world
         .application
@@ -41,7 +44,7 @@ fn discarded_ordered_generation_rebuilds_without_reviving_old_query_cursors() {
     assert_eq!(old_cursor.index_generation, cold_cursor.index_generation);
     let index_id = old_cursor.index_id;
     let basis = old_cursor.product.relational_basis().clone();
-    let graph = &context.world.application.primary_provider.graph;
+    let graph = &context.world.application.runtime.primary_provider.graph;
     let child_kind = context
         .world
         .application

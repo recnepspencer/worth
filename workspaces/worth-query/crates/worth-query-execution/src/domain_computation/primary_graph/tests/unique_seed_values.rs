@@ -117,7 +117,7 @@ fn prepared_bootstrap() -> WorthQueryPrimaryGraphBootstrap<UniqueSeedSchema> {
                 &phase.bootstrap_for_test(),
                 &runtime,
                 &schema,
-                test_product_world_resources(),
+                test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()),
             )
             .unwrap()
     })

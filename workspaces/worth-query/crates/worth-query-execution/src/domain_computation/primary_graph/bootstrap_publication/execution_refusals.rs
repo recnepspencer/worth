@@ -7,7 +7,7 @@ use crate::domain_computation::{
     WorthQueryProviderSessionControlStopKind as Control,
     WorthQueryProviderSessionDenialKind as QueryKind,
 };
-use std::{num::NonZeroUsize, sync::OnceLock, time::Instant};
+use std::{num::NonZeroUsize, sync::OnceLock};
 use worth_execution::{
     CancellationSource, CancellationToken, ExecutionAuthority, ExecutionAuthorityConfig,
     LeaseRequest,
@@ -161,7 +161,10 @@ fn cancellation_and_deadline_are_control_stops() {
             let mut cancelled = request();
             cancelled.cancellation = cancellation.token();
             let mut timed_out = request();
-            timed_out.deadline = Some(Instant::now());
+            timed_out.deadline = Some({
+                let clock = worth_execution::MonotonicClock::system();
+                clock.deadline_at(clock.now())
+            });
             for (request, expected) in [
                 (cancelled, Control::Cancelled),
                 (timed_out, Control::TimedOut),
@@ -196,7 +199,10 @@ fn unleased_bootstrap_index_stop_keeps_execution_denial() {
         let host = SerialRequest::from_memory(
             SerialMemoryBudget::new(None),
             source.token(),
-            expired.then(Instant::now),
+            expired.then(|| {
+                let clock = worth_execution::MonotonicClock::system();
+                clock.deadline_at(clock.now())
+            }),
         );
         let execution = worth_execution::ExecutionRequest::serial(&host);
         let build = runtime

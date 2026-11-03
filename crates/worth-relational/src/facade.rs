@@ -1,4 +1,14 @@
 //! Public API boundary for `worth-relational`.
+pub mod content {
+    pub use crate::content::{
+        RelationalContentAttachments, RelationalContentCodec, RelationalContentControl,
+        RelationalContentDenial, RelationalContentFieldBinding, RelationalContentFormat,
+        RelationalContentFormatDeclaration, RelationalContentFormatRegistry,
+        RelationalContentFrame, RelationalContentReadClosure, RelationalContentRejection,
+        RelationalContentSchemaSnapshot, RelationalContentSink, MAXIMUM_CONTENT_FRAME_BYTES,
+        MAXIMUM_STAGED_CONTENT_BYTES,
+    };
+}
 #[path = "facade/authorization.rs"]
 pub mod authorization;
 #[path = "facade/branch.rs"]
@@ -278,8 +288,8 @@ pub mod publication {
         SubscriberStreamFailureClass,
     };
     pub use crate::publication::data::{
-        PublicationArtifactSnapshot, PublicationDiagnosticsSnapshot, PublicationError,
-        PublicationObservationSnapshot, PublicationSettlementRepairError,
+        AuthoredRetirementRefusal, PublicationArtifactSnapshot, PublicationDiagnosticsSnapshot,
+        PublicationError, PublicationObservationSnapshot, PublicationSettlementRepairError,
     };
     pub use crate::publication::patch::data::{
         PatchDetail, PatchFragmentBudget, PatchOrdering, PatchPublicationMode, PatchStreamBatch,

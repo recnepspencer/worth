@@ -3,7 +3,7 @@ use super::*;
 #[test]
 fn concurrent_independent_attempts_preserve_one_product_winner_and_the_exact_loser_posture() {
     {
-        let world = installed_authorization_world(true);
+        let world = installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let request = live_scope();
 
         let principal = world
@@ -57,6 +57,7 @@ fn concurrent_independent_attempts_preserve_one_product_winner_and_the_exact_los
                     let host_custody = phase.test_host_request();
                     world
                         .application
+                        .runtime
                         .primary_provider
                         .graph
                         .with_runtime(&host_custody.borrowed_request_for_test(), |runtime| {

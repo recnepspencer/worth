@@ -9,7 +9,8 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         &self,
     ) -> Result<WorthQueryPublicationFaultGuardForTest, WorthQueryPublicationFaultRegistrationDenial>
     {
-        self.primary_provider
+        self.runtime
+            .primary_provider
             .publication_fault_control
             .reject_pretransaction()
     }
@@ -17,7 +18,8 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         &self,
     ) -> Result<WorthQueryPublicationFaultGuardForTest, WorthQueryPublicationFaultRegistrationDenial>
     {
-        self.primary_provider
+        self.runtime
+            .primary_provider
             .publication_fault_control
             .hold_snapshot_failure()
     }

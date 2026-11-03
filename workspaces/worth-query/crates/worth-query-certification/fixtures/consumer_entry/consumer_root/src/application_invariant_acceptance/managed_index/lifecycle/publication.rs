@@ -46,7 +46,7 @@ fn pending_world() {
         .world_operation_control_for_test()
         .pause_before_product_compare_for_test(NonZeroUsize::MIN);
     let cancellation = WorthQueryCancellationSource::new();
-    let original_scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let original_scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let outcome = std::thread::scope(|threads| {
         let inspected_world = &world;
         let inspected_index = &index;

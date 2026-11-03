@@ -82,7 +82,7 @@ where
                     authorization,
                     runtime,
                     snapshot,
-                    self.authorization.bridge(),
+                    self.runtime.authorization.bridge(),
                 )
             })
     }
@@ -219,7 +219,12 @@ where
         }
         if !capability
             .decision()
-            .remains_current_in(execution, runtime, snapshot, self.authorization.bridge())
+            .remains_current_in(
+                execution,
+                runtime,
+                snapshot,
+                self.runtime.authorization.bridge(),
+            )
             .map_err(|cause| {
                 crate::domain_computation::authorization::denial::relational_read_denial(
                     cause,
@@ -233,7 +238,7 @@ where
             session: capability.decision().session_identity(),
             relational: runtime,
             snapshot,
-            bridge: self.authorization.bridge(),
+            bridge: self.runtime.authorization.bridge(),
             installed,
             request: capability.request(),
             sample,

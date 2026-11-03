@@ -159,6 +159,7 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
             ),
             WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(receipt) => Some(
                 runtime
+                    .runtime
                     .primary_provider
                     .graph
                     .with_runtime(execution, |relational| {

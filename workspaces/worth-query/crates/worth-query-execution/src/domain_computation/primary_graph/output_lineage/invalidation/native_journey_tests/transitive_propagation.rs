@@ -3,7 +3,10 @@ use super::*;
 
 #[test]
 fn native_invalidation_marks_the_second_and_third_downstream_levels() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     world.application.with_host_advancement(|phase| {
     let execution = phase.borrowed_request_for_test();
     let selected = world.selected_product(&phase.test_host_request());

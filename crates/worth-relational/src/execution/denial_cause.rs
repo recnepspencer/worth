@@ -42,6 +42,10 @@ pub enum RelationalExecutionDenialCause {
     UncheckedCustomKernel,
     ExpectedIdentitiesNotCanonical,
     MemoryOverflow,
+    /// Independently checked retained content disagrees with its identity.
+    ContentInconsistency,
+    /// The exact semantic refusal from Native content readmission.
+    Content(crate::content::RelationalContentRejection),
 }
 
 impl RelationalExecutionDenialCause {

@@ -173,7 +173,6 @@ impl PreparedBranchPublicationPreflight {
         let next_root = &self.movement.root;
         let reservation_pause = &self.control;
         let medium = self.medium.clone();
-        let durable_policy = execution.allocation_policy();
         // A durable publisher waits for a publisher whose durable I/O holds
         // the reservation. Memory-only commits defer only behind other commits.
         let admission = match &medium {
@@ -191,7 +190,7 @@ impl PreparedBranchPublicationPreflight {
                 admission,
                 deadline.map(|deadline| deadline.min(self.expires_at)),
                 |positioned, roots| match &medium {
-                    Some(medium) => medium.publish(positioned, roots, durable_policy).map(Some),
+                    Some(medium) => medium.publish(positioned, roots, execution).map(Some),
                     None => Ok(None),
                 },
                 |position| {

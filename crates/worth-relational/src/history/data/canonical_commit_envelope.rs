@@ -21,11 +21,13 @@ use crate::transactions::data::{
 };
 
 mod authored_index_writes;
+mod construction;
 mod live_managed_source_history;
 pub(crate) use authored_index_writes::{CanonicalAuthoredIndexWrite, CanonicalAuthoredIndexWrites};
 pub(crate) use live_managed_source_history::LiveManagedSourceHistory;
 mod authoritative_artifact_encoding;
 mod embedded_checkpoint;
+mod lineage_projection;
 mod payload_digest;
 mod retained_entity_selection;
 pub(crate) use authoritative_artifact_encoding::AuthoritativeArtifactEnvelopeRef;
@@ -46,13 +48,16 @@ pub(crate) use required_output_codec_retirement::{
 pub(crate) use required_output_materialization::{
     CanonicalRequiredOutputMaterialization, CanonicalRequiredOutputMaterializationRecord,
 };
+pub(crate) use required_output_origin::validate_authored_restoration_candidate;
 pub(crate) use required_output_origin::{
-    CanonicalOutputMember, CanonicalOutputPublication, CanonicalRequiredOutputOrigin,
+    CanonicalAuthoredRestoration, CanonicalAuthoredRetirement, CanonicalOutputMember,
+    CanonicalOutputPublication, CanonicalProducerRetirement, CanonicalRequiredOutputOrigin,
     CanonicalRequiredOutputRelation,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CanonicalCommitEnvelope {
+    pub(crate) content: crate::content::ContentPublication,
     /// Live exact-envelope acceleration; deep Clone and all codecs omit it.
     #[serde(skip)]
     pub(crate) live_managed_source_history: LiveManagedSourceHistory,
@@ -60,6 +65,10 @@ pub struct CanonicalCommitEnvelope {
         Vec<std::sync::Arc<CanonicalRequiredOutputCodecRetirement>>,
     #[serde(default)]
     pub(crate) required_output_origin: Option<std::sync::Arc<CanonicalRequiredOutputOrigin>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) producer_cascade_retirement: Option<std::sync::Arc<CanonicalProducerRetirement>>,
+    pub(crate) authored_cascade_retirement: Option<std::sync::Arc<CanonicalAuthoredRetirement>>,
+    pub(crate) authored_cascade_restoration: Option<std::sync::Arc<CanonicalAuthoredRestoration>>,
     #[serde(default)]
     pub(crate) required_output_materialization:
         Option<std::sync::Arc<CanonicalRequiredOutputMaterialization>>,
@@ -134,64 +143,6 @@ pub(crate) struct CommittedRecordChange<'a> {
 }
 
 impl CanonicalCommitEnvelope {
-    #[allow(clippy::too_many_arguments)]
-    pub(crate) fn new(
-        commit: RelationalCommitReceipt,
-        branch_context: BranchId,
-        authority_kind: CanonicalCommitAuthorityKind,
-        strategy_artifacts: Option<crate::commit_strategies::data::StrategyCommitArtifactBundle>,
-        merge_execution_authority: Option<PublishedMergeExecutionAuthority>,
-        merge_parent_branches: Vec<BranchId>,
-        merge_base_commits: Vec<CommitId>,
-        schema_version: SchemaVersionId,
-        schema_authority: SchemaAuthoritySnapshot,
-        merged_plan: MergedCommitPlan,
-        patch: CanonicalAuthoritativePatch,
-        descriptive_touches: RelationalDescriptiveTouchGraph,
-        diagnostics_summary: RelationalDiagnosticArtifact,
-        lineage: PublishedLineageArtifact,
-        derived_index_artifacts: DerivedIndexArtifacts,
-        schema_transition: Option<SchemaTransitionArtifact>,
-        schema_continuation_descriptor: Option<SchemaContinuationDescriptor>,
-        schema_reconciliation_descriptor: Option<SchemaReconciliationDescriptor>,
-        descriptor_semantics_version: DescriptorSemanticsVersion,
-    ) -> Self {
-        Self {
-            authored_index_writes: CanonicalAuthoredIndexWrites::default(),
-            live_managed_source_history: LiveManagedSourceHistory::default(),
-            required_output_codec_retirements: Vec::new(),
-            required_output_origin: None,
-            required_output_materialization: None,
-            commit,
-            branch_context,
-            branch_cell_checkpoint: None,
-            authority_kind,
-            strategy_artifacts,
-            merge_execution_authority,
-            merge_parent_branches,
-            merge_base_commits,
-            schema_version,
-            schema_authority,
-            merged_plan,
-            record_allocations: Vec::new(),
-            symbol_texts: Default::default(),
-            revision_symbol_references: Vec::new(),
-            patch,
-            descriptive_touches,
-            diagnostics_summary,
-            lineage,
-            derived_index_artifacts,
-            schema_transition,
-            schema_continuation_descriptor,
-            schema_reconciliation_descriptor,
-            descriptor_semantics_version,
-        }
-    }
-
-    pub fn lineage_event_ids(&self) -> &[u64] {
-        self.lineage.lineage_event_ids()
-    }
-
     pub fn descriptive_touches(&self) -> &RelationalDescriptiveTouchGraph {
         &self.descriptive_touches
     }
@@ -206,35 +157,6 @@ impl CanonicalCommitEnvelope {
     pub(crate) fn record_allocations(&self) -> &[crate::history::data::CanonicalRecordAllocation] {
         &self.record_allocations
     }
-    pub fn lineage_events(&self) -> &[LineageEventRecord] {
-        self.lineage.lineage_events()
-    }
-    pub fn lineage_decision_log(&self) -> &[LineageDecisionRecord] {
-        self.lineage.lineage_decision_log()
-    }
-    pub fn lineage_decisions_for_event_id(&self, event_id: u64) -> Vec<&LineageDecisionRecord> {
-        self.lineage.decisions_for_event_id(event_id).collect()
-    }
-
-    pub fn lineage_digest_basis(&self) -> &LineageDigestBasis {
-        self.lineage.digest_basis()
-    }
-    pub fn event_batch_digest_basis(&self) -> &LineageEventBatchDigestBasis {
-        self.lineage.event_batch_digest_basis()
-    }
-
-    pub fn decision_log_digest_basis(&self) -> &LineageDecisionLogDigestBasis {
-        self.lineage.decision_log_digest_basis()
-    }
-
-    pub fn lineage_artifact_counters(&self) -> LineageArtifactCounters {
-        self.lineage.counters()
-    }
-
-    pub fn has_lineage_authority(&self) -> bool {
-        self.lineage.has_authority_content()
-    }
-
     pub fn authority_kind(&self) -> CanonicalCommitAuthorityKind {
         self.authority_kind.clone()
     }
@@ -305,6 +227,8 @@ impl CanonicalCommitEnvelope {
         );
         let canonical_semantics = (
             &self.required_output_origin,
+            &self.authored_cascade_retirement,
+            &self.authored_cascade_restoration,
             &self.required_output_materialization,
             &self.schema_version,
             &self.schema_authority,
@@ -318,6 +242,17 @@ impl CanonicalCommitEnvelope {
             &self.schema_reconciliation_descriptor,
             &self.descriptor_semantics_version,
         );
+        if let Some(event) = &self.producer_cascade_retirement {
+            return rmp_serde::encode::write_named(
+                writer,
+                &(
+                    identity_and_authority,
+                    canonical_semantics,
+                    &self.authored_index_writes,
+                    event,
+                ),
+            );
+        }
         if self.authored_index_writes.is_unavailable() {
             rmp_serde::encode::write_named(writer, &(identity_and_authority, canonical_semantics))
         } else {
@@ -397,4 +332,4 @@ pub struct RelationalReplayRecord {
 mod tests;
 #[path = "canonical_commit_envelope/text_wire.rs"]
 mod text_wire;
-pub(crate) use text_wire::CanonicalEnvelopeWire;
+pub(crate) use text_wire::{CanonicalEnvelopeWire, PositionedEnvelopeSeed};

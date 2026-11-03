@@ -87,7 +87,7 @@ pub(crate) fn lease(
     width: usize,
     work: u64,
     cancellation: CancellationToken,
-    deadline: Option<Instant>,
+    deadline: Option<worth_execution::MonotonicDeadline>,
     determinism: DeterminismContract,
 ) -> worth_execution::ExecutionResourceLease<'static> {
     authority()

@@ -1,5 +1,4 @@
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
-use std::time::Instant;
 
 use worth_query_declaration::facade::application_capability::ApplicationCapabilityRequest;
 use worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity;
@@ -43,6 +42,7 @@ where
     Input: ApplicationCapabilityRequest<Schema, Capability>,
 {
     let lifecycle = runtime
+        .runtime
         .authorization
         .elevation_lifecycle_operation::<Schema, Operation>(
             operation.operation(),
@@ -162,7 +162,7 @@ where
     Input: ApplicationCapabilityRequest<Schema, Capability>,
 {
     admit_request(&access.request_scope, &access.operation)?;
-    if Instant::now() >= access.authentication_valid_until {
+    if access.request_scope.clock().now() >= access.authentication_valid_until {
         return Err(denial(
             WorthQueryOperationAuthorizationDenialKind::Refused(
                 AuthorizationRefusal::ExpiredAuthentication,

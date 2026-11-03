@@ -279,7 +279,7 @@ where
         performed: &std::cell::RefCell<PerformedMembers>,
     ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial> {
         let execution = phase
-            .execution_request_for(&runtime.product_runtime)
+            .execution_request_for(&runtime.runtime.product_runtime)
             .map_err(|cause| {
                 WorthQueryOutputDemandDenial::new(
                     super::super::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),

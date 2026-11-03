@@ -13,7 +13,10 @@ fn real_sibling_denial_is_inspectable_releasable_and_leaves_no_recovery_orphan()
     let host_request = crate::test_request_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let (recovery, occupied_branch) = fork_failure::create(&world, request_execution);
     let inspection = recovery
         .inspect()
@@ -123,7 +126,10 @@ fn real_sibling_denial_is_inspectable_releasable_and_leaves_no_recovery_orphan()
 
 #[test]
 fn cleanup_capacity_denial_precedes_world_retirement() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let branch = world
         .application
         .with_host_advancement(|phase| {
@@ -139,6 +145,7 @@ fn cleanup_capacity_denial_precedes_world_retirement() {
     let mut held = Vec::new();
     while let Ok(reservation) = world
         .application
+        .runtime
         .product_runtime
         .reserve_owner_cleanup_for_creation()
     {
@@ -183,7 +190,10 @@ fn cleanup_capacity_denial_precedes_world_retirement() {
 
 #[test]
 fn unwind_after_retirement_install_leaves_discoverable_cleanup() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let branch = world
         .application
         .with_host_advancement(|phase| {
@@ -198,6 +208,7 @@ fn unwind_after_retirement_install_leaves_discoverable_cleanup() {
         .expect("the fixture read owns its installed host call");
     world
         .application
+        .runtime
         .product_runtime
         .replace_owner_cleanup_after_install_hook(Some(Box::new(|| {
             panic!("injected unwind after retirement cleanup installation")
@@ -213,6 +224,7 @@ fn unwind_after_retirement_install_leaves_discoverable_cleanup() {
     assert!(unwind.is_err());
     world
         .application
+        .runtime
         .product_runtime
         .replace_owner_cleanup_after_install_hook(None);
     world
@@ -243,7 +255,10 @@ fn unwind_after_retirement_install_leaves_discoverable_cleanup() {
 
 #[test]
 fn retry_unwind_restores_progress_without_repeating_owner_retirement() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let branch = world
         .application
         .with_host_advancement(|phase| {
@@ -258,6 +273,7 @@ fn retry_unwind_restores_progress_without_repeating_owner_retirement() {
         .expect("the fixture read owns its installed host call");
     world
         .application
+        .runtime
         .product_runtime
         .replace_owner_cleanup_after_component_progress_hook(Some(Box::new(|| {
             panic!("injected unwind after one owner retirement")
@@ -285,6 +301,7 @@ fn retry_unwind_restores_progress_without_repeating_owner_retirement() {
     ));
     world
         .application
+        .runtime
         .product_runtime
         .replace_owner_cleanup_after_component_progress_hook(None);
 

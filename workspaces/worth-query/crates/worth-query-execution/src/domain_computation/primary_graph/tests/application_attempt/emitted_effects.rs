@@ -9,13 +9,17 @@ use crate::domain_computation::primary_graph::{
 
 #[test]
 fn typed_emission_is_published_with_the_exact_provider_commit() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let selected = world
         .application
         .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
         .expect("the fixture read owns its installed host call");
     let _live = world
         .application
+        .runtime
         .primary_provider
         .observe_application_commit_causality(selected.product());
     let request = live_scope();
@@ -58,6 +62,7 @@ fn typed_emission_is_published_with_the_exact_provider_commit() {
     assert_eq!(receipt.emitted_effect_count(), 1);
     let emissions = world
         .application
+        .runtime
         .primary_provider
         .committed_application_emissions(receipt.committed_product_publication());
     assert_eq!(emissions.len(), 1);
@@ -70,7 +75,10 @@ fn typed_emission_is_published_with_the_exact_provider_commit() {
 
 #[test]
 fn response_loss_recovers_emit_receipt_without_duplicate_publication() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application
@@ -145,6 +153,7 @@ fn response_loss_recovers_emit_receipt_without_duplicate_publication() {
     assert_eq!(
         world
             .application
+            .runtime
             .primary_provider
             .published_application_commit_count(),
         1
@@ -156,7 +165,10 @@ mod external_receipt_clones_do_not_pin_an_evicted_historical_basis;
 
 #[test]
 fn in_window_receipt_admits_its_exact_historical_basis() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application

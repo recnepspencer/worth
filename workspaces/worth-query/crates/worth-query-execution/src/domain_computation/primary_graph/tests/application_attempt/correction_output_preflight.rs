@@ -131,7 +131,10 @@ fn other_codec() -> ApplicationCorrectionOutputField<S> {
 
 #[test]
 fn correction_output_preflight_checks_source_manifest_and_native_codec() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let catalog = world.application.installed_schema().value_bindings();
     let field = field();
     let manifest = [field.declaration().clone()];
@@ -165,7 +168,10 @@ fn correction_output_preflight_checks_source_manifest_and_native_codec() {
 
 #[test]
 fn correction_output_preflight_refusal_survives_a_successful_callback() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let catalog = world.application.installed_schema().value_bindings();
     let field = field();
     let manifest = [field.declaration().clone()];

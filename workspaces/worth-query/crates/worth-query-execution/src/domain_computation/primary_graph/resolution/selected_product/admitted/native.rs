@@ -36,8 +36,14 @@ impl<'runtime, Schema: ApplicationSchema>
         PrincipalIdentity: 'static,
     {
         let binding = installed_binding.binding();
+        validate_principal_clock(
+            &self.application().runtime,
+            external.clock(),
+            scope,
+            binding,
+        )?;
         admit_resolution_request(scope, binding, external.is_expired())?;
-        let runtime = &self.application().runtime;
+        let runtime = self.application().runtime.execution();
         if let Some(validated) = validated {
             if !runtime
                 .installed_packages()
@@ -126,6 +132,12 @@ impl<'runtime, Schema: ApplicationSchema>
                 }
             })
         })?;
+        validate_principal_clock(
+            &self.application().runtime,
+            external.clock(),
+            scope,
+            binding,
+        )?;
         admit_resolution_request(scope, binding, external.is_expired())?;
         Ok(WorthQueryAuthenticatedPrincipal::mint(external, evidence))
     }

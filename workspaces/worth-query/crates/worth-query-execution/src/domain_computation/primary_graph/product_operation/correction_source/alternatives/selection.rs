@@ -52,10 +52,11 @@ impl<'runtime, S: ApplicationSchema> WorthQuerySelectedProductOperation<'runtime
             .map_err(|cause| Denial::Selection(Box::new(cause)))?;
         let source = super::super::lineage::source_locator(&source);
         let execution = phase
-            .execution_request_for(&self.application().product_runtime)
+            .execution_request_for(&self.application().runtime.product_runtime)
             .map_err(|_| Denial::ForeignPhase)?;
         let fact = self
             .application()
+            .runtime
             .primary_provider
             .reversal_of_source_at_basis(&execution, self.product().relational_basis(), &source)
             .map_err(Denial::History)?

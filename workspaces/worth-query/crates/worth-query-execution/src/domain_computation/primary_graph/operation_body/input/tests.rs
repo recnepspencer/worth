@@ -27,7 +27,7 @@ fn decoder_is_not_called_when_its_declared_work_or_memory_is_refused() {
         ),
     ] {
         let cancellation = WorthQueryCancellationSource::new();
-        let scope = WorthQueryRequestScope::new(None, cancellation.token());
+        let scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let policy = ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
             DeterminismContract::CanonicalBitwise,

@@ -93,12 +93,15 @@ impl WorthQueryOutputDemandSettlement {
             ));
         };
         let readiness_delivery = &completion.readiness;
-        let _held_world_observations =
-            if runtime.primary_provider.take_ready_read_snapshot_pressure() {
-                Some(runtime.hold_world_snapshot_pressure_for_test(receipt.product_branch()))
-            } else {
-                None
-            };
+        let _held_world_observations = if runtime
+            .runtime
+            .primary_provider
+            .take_ready_read_snapshot_pressure()
+        {
+            Some(runtime.hold_world_snapshot_pressure_for_test(receipt.product_branch()))
+        } else {
+            None
+        };
         let observation = reacquire_current_committed_output(execution, runtime, receipt)?
             .ok_or_else(|| {
                 WorthQueryOutputDemandDenial::new(
@@ -252,6 +255,7 @@ where
             None => self.select_output_demand_settlement(execution, settlement)?,
         };
         let lineage = self
+            .runtime
             .primary_provider
             .graph
             .output_lineage

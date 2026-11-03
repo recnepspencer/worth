@@ -11,7 +11,7 @@ pub(super) fn open<T, Schema: ApplicationSchema>(
     let handoff =
         runtime.with_funded_application_advancement(request, allocation_policy, |phase| {
             completed = Some(
-                match phase.checked_execution_request_for(&runtime.product_runtime) {
+                match phase.checked_execution_request_for(&runtime.runtime.product_runtime) {
                     Ok(execution) => body(&execution),
                     Err(cause) => Err(InspectionCause::Advancement(cause)),
                 },

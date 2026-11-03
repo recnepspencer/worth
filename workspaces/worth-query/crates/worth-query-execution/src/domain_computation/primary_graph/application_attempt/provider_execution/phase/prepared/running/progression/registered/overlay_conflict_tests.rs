@@ -21,11 +21,13 @@ pub(in crate::domain_computation::primary_graph::application_attempt::provider_e
     );
     let receipt = world
         .application
+        .runtime
         .primary_provider
         .capture_application_read_set(execution, &staged.read_authority(), control)
         .expect("real registered facts must produce a decision read set");
     let fresh = match world
         .application
+        .runtime
         .primary_provider
         .compare_application_read_set(execution, &staged.read_authority(), receipt, control)
         .expect("real registered facts must compare")

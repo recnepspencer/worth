@@ -48,7 +48,7 @@ pub fn install(value: NestedValue) -> Result<Host, WorthQueryInMemoryApplication
         CanonicalSchema::declaration().unwrap(),
         ((),),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        host_limits(),
+        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         |_, graph, installed| {
             let binding = installed
                 .principal_binding(DocumentPrincipalBinding::reference())
@@ -84,7 +84,7 @@ pub fn restore(checkpoint: WorthQueryApplicationCheckpoint) -> Host {
         CanonicalSchema::declaration().unwrap(),
         ((),),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        host_limits(),
+        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         checkpoint,
     )
     .expect("current-format native checkpoint restores")

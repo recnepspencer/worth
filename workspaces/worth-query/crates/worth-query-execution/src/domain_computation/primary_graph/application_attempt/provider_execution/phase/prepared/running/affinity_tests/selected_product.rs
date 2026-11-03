@@ -5,9 +5,7 @@ fn an_exact_sibling_product_cannot_substitute_at_provider_plan_binding() {
     let _observation =
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let world =
-        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
-            true,
-        );
+        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     world
         .application
         .with_host_advancement(|active_phase| {
@@ -46,7 +44,7 @@ fn an_exact_sibling_product_cannot_substitute_at_provider_plan_binding() {
             drop(sibling_application_basis);
 
             let result = direct_run
-                .admit_provider_execution_plan(&world.application.primary_graph_authority)
+                .admit_provider_execution_plan(world.application.runtime.primary_graph_authority())
                 .expect("the application authorities admit the provider plan")
                 .bind_application_product(sibling_product);
             assert!(result.is_err());
@@ -60,9 +58,7 @@ fn the_exact_selected_product_binds_at_provider_plan_boundary() {
     let _observation =
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let world =
-        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
-            true,
-        );
+        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     world
         .application
         .with_host_advancement(|active_phase| {
@@ -93,7 +89,7 @@ fn the_exact_selected_product_binds_at_provider_plan_boundary() {
                 workflow_settlement_publication: _workflow_settlement_publication,
             } = running;
             let result = direct_run
-                .admit_provider_execution_plan(&world.application.primary_graph_authority)
+                .admit_provider_execution_plan(world.application.runtime.primary_graph_authority())
                 .expect("the application authorities admit the provider plan")
                 .bind_application_product(lease.product().retained_clone());
             assert!(result.is_ok());
@@ -120,13 +116,9 @@ fn foreign_installed_phase_refuses_provider_readmission_before_read_or_charge() 
     ] {
         let previous = place(placement);
         let a =
-            crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
-                true,
-            );
+            crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let b =
-            crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
-                true,
-            );
+            crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let scope = live_scope();
         let mut arun = a
             .application
@@ -156,7 +148,7 @@ fn foreign_installed_phase_refuses_provider_readmission_before_read_or_charge() 
                 let before = reads();
                 let plan = brun
                     .running
-                    .admit_provider_execution_plan(&b.application.primary_graph_authority)
+                    .admit_provider_execution_plan(b.application.runtime.primary_graph_authority())
                     .unwrap()
                     .bind_application_product(brun.lease.product().retained_clone())
                     .unwrap();

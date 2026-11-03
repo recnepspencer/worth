@@ -200,7 +200,7 @@ where
                 installed,
                 instance,
                 request_kind,
-                &self.application().authorization_clock,
+                &self.application().runtime.authorization_clock,
             )
             .map_err(WorkflowTransitionPreparationDenial::Attempt)
     }
@@ -293,7 +293,7 @@ where
                 required,
                 proposal,
                 decision,
-                &self.application().authorization_clock,
+                &self.application().runtime.authorization_clock,
             )
             .map_err(WorkflowTransitionPreparationDenial::Attempt)
     }

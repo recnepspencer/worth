@@ -6,7 +6,6 @@ use std::{
         atomic::{AtomicU64, AtomicUsize, Ordering},
         Arc,
     },
-    time::Instant,
 };
 
 use crate::{
@@ -108,7 +107,7 @@ impl<E> From<KernelStop> for KernelFailure<E> {
 pub(crate) struct RunLimits {
     work_loan_affinity: Option<Arc<work_loan::WorkLoanAffinity>>,
     tokens: Vec<CancellationToken>,
-    deadline: Option<Instant>,
+    deadline: Option<crate::MonotonicDeadline>,
     ceiling: Option<u64>,
     ceiling_owner: NestedStopOwner,
     worker_activity: Arc<WorkerActivity>,
@@ -216,7 +215,8 @@ impl RunLimits {
         }
         if self
             .deadline
-            .is_some_and(|deadline| Instant::now() >= deadline)
+            .as_ref()
+            .is_some_and(|deadline| deadline.is_elapsed())
         {
             stop.record(NestedStopOwner::Request);
             return Err(KernelStop::DeadlineElapsed);

@@ -132,6 +132,7 @@ where
             })?;
         let truth = WorthQueryConditionalTruthBasis::from_selected(selected);
         let mut bridge_candidate = self
+            .runtime
             .bridge
             .conditional()
             .prepare_conditional_reconstitution(truth.signal_basis())
@@ -160,6 +161,7 @@ where
             .sum();
         registry.reconcile_prepared_runtime_reinstallation(&mut bridge_candidate, &mut prepared)?;
         let lower_runtime_reconstitution = self
+            .runtime
             .bridge
             .conditional_lifecycle()
             .activate_conditional_reconstitution(bridge_candidate)
@@ -172,7 +174,9 @@ where
                 )
             })?;
         registry.apply_derived_runtime_reinstallation(prepared);
-        self.granular_invalidation.advance_runtime_generation();
+        self.runtime
+            .granular_invalidation
+            .advance_runtime_generation();
         let work = registry.reconstruction_work();
         Ok(WorthQueryConditionalRuntimeReinstallationReceipt {
             lower_runtime_reconstitution,
@@ -182,7 +186,7 @@ where
             projected_record_count: work.projected_records,
             projected_field_count: work.projected_fields,
             total_work_units: work.total_work_units,
-            successor_invalidation_installation: self.granular_invalidation.current(),
+            successor_invalidation_installation: self.runtime.granular_invalidation.current(),
         })
     }
 }

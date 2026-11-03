@@ -2,7 +2,10 @@ use super::*;
 
 #[test]
 fn rejection_before_transaction_publishes_no_emit_causality() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application
@@ -48,6 +51,7 @@ fn rejection_before_transaction_publishes_no_emit_causality() {
     assert_eq!(
         world
             .application
+            .runtime
             .primary_provider
             .published_application_commit_count(),
         0

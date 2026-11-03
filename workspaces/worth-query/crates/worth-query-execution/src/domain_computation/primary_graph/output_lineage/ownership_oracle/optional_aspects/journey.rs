@@ -76,7 +76,7 @@ fn demand_expected<Schema: BirthSchema>(
     runtime
         .with_application_advancement(&scope, |phase| {
             let execution = phase
-                .execution_request_for(&runtime.product_runtime)
+                .execution_request_for(&runtime.runtime.product_runtime)
                 .unwrap();
             let branch = runtime.current_world();
             let principal_binding = runtime
@@ -144,7 +144,7 @@ fn demand_expected<Schema: BirthSchema>(
             let mut original_output_revision = None;
             if matches!(expected, Expected::Materialized | Expected::RequiredAdmission) {
                 assert!(matches!(advanced, WorthQueryOutputDemandAdvance::Progressed), "the original born-stale publication progressed without settling current");
-                let locator = runtime.primary_provider.graph.layout.field_locator("Body", "SourceNotes", "SourceSelection").unwrap();
+                let locator = runtime.runtime.primary_provider.graph.layout.field_locator("Body", "SourceNotes", "SourceSelection").unwrap();
                 demand.assert_born_stale_absence_for_test(runtime, &phase, &execution, root, locator, |receipt| {
                     original_roster = Some(court::observe_performed_receipt(runtime, &phase, receipt, WorthQueryApplicationOutputPosture::Create));
                     if matches!(expected, Expected::Materialized) {

@@ -28,6 +28,7 @@ fn equal_contract_on_another_operation_cannot_claim_the_original_dispatch() {
     ));
     assert!(world
         .application
+        .runtime
         .primary_provider
         .lookup_completed_inbound(outbox.correlation())
         .unwrap()
@@ -80,6 +81,7 @@ fn workflow_settlement_joins_the_original_committed_operation_to_world_terminal(
     );
     let terminal = world
         .application
+        .runtime
         .primary_provider
         .lookup_completed_inbound(record.correlation())
         .expect("canonical terminal index remains available")
@@ -168,6 +170,7 @@ fn duplicate_callback_keeps_the_original_terminal_out_of_a_sibling_fork() {
         .expect("the sibling owner remains pending"));
     let terminal = world
         .application
+        .runtime
         .primary_provider
         .lookup_completed_inbound(original_record.correlation())
         .unwrap()

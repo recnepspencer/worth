@@ -58,6 +58,7 @@ impl PerformedMembers {
             }
 
             let candidate = runtime
+                .runtime
                 .primary_provider
                 .graph
                 .output_lineage

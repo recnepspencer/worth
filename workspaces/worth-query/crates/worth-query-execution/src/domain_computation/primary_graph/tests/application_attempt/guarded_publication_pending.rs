@@ -9,7 +9,10 @@ use crate::domain_computation::primary_graph::application_attempt::WorthQueryGua
 
 #[test]
 fn reserved_slot_naming_the_exact_binding_is_publication_pending() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application
@@ -59,6 +62,7 @@ fn reserved_slot_naming_the_exact_binding_is_publication_pending() {
         .with_host_advancement(|phase| {
             world
                 .application
+                .runtime
                 .primary_provider
                 .reserve_application_publication_recovery(
                     world

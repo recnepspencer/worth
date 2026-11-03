@@ -34,7 +34,7 @@ pub(super) fn confirm_with_request<S: ApplicationSchema, Value>(
     ),
     (Value, Denial),
 > {
-    let execution = match phase.execution_request_for(&runtime.product_runtime) {
+    let execution = match phase.execution_request_for(&runtime.runtime.product_runtime) {
         Ok(execution) => execution,
         Err(_) => return Err((value, Denial::ForeignPhase)),
     };
@@ -81,12 +81,14 @@ pub(super) fn confirm_in_execution_with_effect<S: ApplicationSchema, Value>(
         return Err((value, stopped(stop)));
     }
     let lane = runtime
+        .runtime
         .primary_provider
         .application_branch_commit_lane_for_occurrence(
             product.observation().lifecycle_incarnation(),
         );
     let _coordination = lane.enter();
     runtime
+        .runtime
         .primary_provider
         .graph
         .with_runtime(execution, |native| {
@@ -162,7 +164,7 @@ fn confirm_in_native_with_effect<S: ApplicationSchema, Value>(
     {
         return Err((value, Denial::NativeBasis(denial)));
     }
-    let world = runtime.product_runtime.owner.observation_port();
+    let world = runtime.runtime.product_runtime.owner.observation_port();
     match world.while_product_branch_current(product.observation(), value, |mut value, _current| {
         if let Err(stop) = execution.check_live() {
             return Err((value, stopped(stop)));

@@ -107,7 +107,7 @@ fn tree(
                         !entered.get(),
                         "original cancellation precedes the next nested callback"
                     );
-                    return Err(stopped.err().expect("original nested request is cancelled"));
+                    return Err(stopped.expect_err("original nested request is cancelled"));
                 }
             }
             previous = Some((child.entity(), leaves, occurrences));

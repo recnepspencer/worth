@@ -321,7 +321,7 @@ pub fn history_omission_diagnostics_and_actual_private_cancellation_remain_disti
     drop(denied);
     assert!(!cancellation.token().is_cancelled());
     assert_eq!(lease.charged_memory_bytes(), charged);
-    let cancelled = WorthQueryRequestScope::new(None, cancellation.token());
+    let cancelled = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let denied = rich(
         &application,
         &principal,

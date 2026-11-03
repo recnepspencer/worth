@@ -27,7 +27,7 @@ pub(super) fn assert_original_join_cancellation(
     // Each pass traverses these same two original groups; this is no work quota.
     for stop_at in [1, 3, 5] {
         let cancel = WorthQueryCancellationSource::new();
-        let scope = WorthQueryRequestScope::new(None, cancel.token());
+        let scope = WorthQueryRequestScope::new(None, cancel.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let visits = std::cell::Cell::new(0);
         let attempt = world.application.with_application_advancement(&scope, |phase| {
             let selected = world.selected_product(&phase.test_host_request());

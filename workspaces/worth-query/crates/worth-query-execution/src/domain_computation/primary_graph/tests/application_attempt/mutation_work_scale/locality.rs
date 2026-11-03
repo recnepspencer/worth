@@ -62,7 +62,10 @@ fn assert_locality(populations: &[usize]) {
 
 fn run_locality(count: usize) -> LocalityRun {
     let installation_start = Instant::now();
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let installation = installation_start.elapsed();
     let population_start = Instant::now();
     {
@@ -92,7 +95,7 @@ fn run_locality(count: usize) -> LocalityRun {
             .with_host_advancement(|phase| {
                 grow_unrelated_accounts(
                     &phase
-                        .execution_request_for(&world.application.product_runtime)
+                        .execution_request_for(&world.application.runtime.product_runtime)
                         .unwrap(),
                     &world,
                     count,

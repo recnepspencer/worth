@@ -1,7 +1,7 @@
 use crate::domain_computation::execution_runtime::product_world::publication_denial::WorthQueryProductPublicationOutcome as PublicationOutcome;
 use worth_relational::facade::transactions::WorkerIntentBatch;
 
-use super::{live_scope, AuthorizationWorld};
+use super::AuthorizationWorld;
 
 /// Publishes one fixture mutation through the real World owner boundary.
 pub(in crate::domain_computation::primary_graph) fn publish_relational_mutation(
@@ -19,7 +19,11 @@ pub(in crate::domain_computation::primary_graph) fn publish_relational_mutation_
     application: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     batch: WorkerIntentBatch,
 ) {
-    let request = live_scope();
+    let request = worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope::new(
+        None,
+        worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource::new().token(),
+        application.product_runtime().clock.admission_clock.clone(),
+    );
 
     let (prepared, before_lease) =
         prepare_relational_mutation_with_before(request_execution, application, batch, &request);

@@ -1,5 +1,5 @@
 use super::*;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 use worth_query_host::facade::admission::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
 };
@@ -86,9 +86,8 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
 
     let cancellation = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(120)),
-        cancellation.token(),
-    );
+        Some(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(120)),
+        cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let adapter = authentication::admit(world.application.installed_schema());
     let principal = authentication::block_on(adapter.authenticate(
         authentication::LocalCredential::issued_for_model_owner(),

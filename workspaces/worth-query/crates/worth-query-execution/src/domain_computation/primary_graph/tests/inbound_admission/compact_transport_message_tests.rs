@@ -2,7 +2,7 @@
 
 use std::num::NonZeroUsize;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
@@ -52,6 +52,7 @@ fn transport_winner_retains_compact_signed_meaning_until_cutoff() {
         .unwrap();
     let in_flight = world
         .application
+        .runtime
         .primary_provider
         .begin_external_dispatch_in_flight(&owner)
         .unwrap()
@@ -72,8 +73,9 @@ fn transport_winner_retains_compact_signed_meaning_until_cutoff() {
     let cancellation = WorthQueryCancellationSource::new();
     cancellation.cancel();
     let cancelled = WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(60)),
+        Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(60)),
         cancellation.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     let accepted = world
         .application

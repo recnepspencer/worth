@@ -26,7 +26,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         FamilySourceQuery<Schema, Family>: 'static,
     {
         let execution = phase
-            .execution_request_for(&self.product_runtime)
+            .execution_request_for(&self.runtime.product_runtime)
             .map_err(|cause| WorthQueryOutputDemandDenial::request_admission(cause.into()))?;
         let mut demand = self
             .admit_recovered_output_demand::<Family>(&execution, retained, current, limits, receipt)
@@ -41,7 +41,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             .interest
             .as_ref()
             .expect("Recovery retains its admitted interest");
-        let crate::domain_computation::primary_graph::application_output_demand::OutputRowStage::Ready(completion) = self.output_demands.row_stage(interest) else {
+        let crate::domain_computation::primary_graph::application_output_demand::OutputRowStage::Ready(completion) = self.runtime.output_demands.row_stage(interest) else {
             panic!("the direct-door probe must join the exact Ready before refreshing");
         };
 

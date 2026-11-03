@@ -1,6 +1,7 @@
 //! Pre-publication application denial categories and owner evidence.
 
 mod advancement;
+mod authored_retirement;
 mod capacity;
 mod decision_read_set;
 mod denial_cause;
@@ -27,6 +28,10 @@ mod workflow;
 /// as presented.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationCommitDenialKind {
+    /// Retained content disagreed with its certified identity before publication.
+    ContentInconsistency,
+    /// Exact Native content refusal, distinct from request/resource stops.
+    Content(worth_relational::facade::content::RelationalContentRejection),
     StorageUnavailable(worth_relational::facade::storage::RelationalStorageUnavailable),
     /// The execution owner refused preparation before any commit effect.
     ExecutionResource {

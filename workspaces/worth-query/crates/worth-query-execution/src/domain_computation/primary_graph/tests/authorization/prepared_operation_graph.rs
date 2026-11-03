@@ -8,8 +8,14 @@ use crate::domain_computation::primary_graph::application_resource_request;
 
 #[test]
 fn installed_operation_template_keeps_exact_operation_and_support_authority() {
-    let current = installed_authorization_world(true);
-    let foreign = installed_authorization_world(true);
+    let current = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
+    let foreign = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let operation = current
         .application
         .installed_schema()
@@ -34,7 +40,22 @@ fn installed_operation_template_keeps_exact_operation_and_support_authority() {
         current_support,
     )
     .expect("matching installed operation and provider admit");
-    drop(plan);
+    plan.release()
+        .expect("untransferred genuine operation releases");
+    let mut transferred = admit_prepared_application_operation_graph_work(
+        &operation,
+        &prepared,
+        "transferred-invocation",
+        current_support,
+    )
+    .expect("actual second admitted operation");
+    let capacity = transferred
+        .take_operation_capacity()
+        .expect("actual custody transfer");
+    assert!(matches!(transferred.release(), Err(
+        worth_query_admission::facade::graph_obligation::WorthQueryGraphWorkReleaseDenial::OperationCapacityTransferred
+    )));
+    capacity.release();
 
     let foreign_operation = admit_prepared_application_operation_graph_work(
         &other_operation,

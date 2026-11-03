@@ -126,6 +126,29 @@ impl<'source> ManagedIndexSourceRows<'source> {
     }
 }
 impl PreparedManagedIndexSourceRowRead<'_, '_> {
+    /// Retain only content selected through this exact field and membership ticket.
+    pub fn with_field_content<T>(
+        &self,
+        column: usize,
+        project: impl FnOnce(
+            Option<&worth_foundational::facade::AspectValue>,
+            Option<crate::content::RelationalContentFrame>,
+        ) -> T,
+    ) -> Result<T, super::super::ManagedIndexSourcePreparationDenial> {
+        self.rows.projection.checkpoint(0)?;
+        let field = self
+            .rows
+            .program()
+            .fields()
+            .get(column)
+            .ok_or(Definition::InvalidExpression)?;
+        self.rows.projection.with_field_content_at(
+            self.occurrence.row,
+            self.rows.program().row_kind(),
+            field,
+            project,
+        )
+    }
     /// The field borrows its own actual loan; no caller can substitute another view.
     pub fn with_field<T>(
         &self,

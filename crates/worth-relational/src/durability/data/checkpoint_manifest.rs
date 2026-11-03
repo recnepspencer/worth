@@ -61,6 +61,8 @@ pub(crate) struct RelationalCheckpointRoot {
     pub(crate) commit_id: CommitId,
     pub(crate) schema_carrier_digest: [u8; 32],
     pub(crate) regions: Vec<RelationalCheckpointRegion>,
+    #[serde(default)]
+    pub(crate) content: Vec<RelationalCheckpointContent>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -83,4 +85,12 @@ pub(crate) struct RelationalCheckpointRegion {
 pub(crate) struct RelationalCheckpointSymbolBucket {
     pub(crate) bucket: u8,
     pub(crate) pages: Vec<RelationalDurableMemberLocator>,
+}
+
+/// The Native identity and the physical member locator are checked independently.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct RelationalCheckpointContent {
+    pub(crate) identity: worth_foundational::facade::ContentRefId,
+    pub(crate) member: RelationalDurableMemberLocator,
 }

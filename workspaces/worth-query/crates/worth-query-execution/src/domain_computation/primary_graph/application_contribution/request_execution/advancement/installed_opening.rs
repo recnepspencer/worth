@@ -7,7 +7,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
     ) -> Result<R, WorthQueryAdvancementDenial> {
         let _custody = OpeningCustody::enter()?;
-        let world = std::sync::Arc::clone(&self.product_runtime.owner);
+        let world = std::sync::Arc::clone(&self.runtime.product_runtime.owner);
         let execution = QueryRequestExecution::open_control(
             world.execution_placement(),
             worth_execution::CancellationToken::new(),
@@ -16,7 +16,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         execution.run_advancement(
             Some(world.owner_identity()),
             Some(
-                self.product_runtime
+                self.runtime
+                    .product_runtime
                     .source
                     .authoritative_source_profile()
                     .runtime_instance_id(),
@@ -70,11 +71,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         &self,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
         cancellation: worth_execution::CancellationToken,
-        deadline: Option<std::time::Instant>,
+        deadline: Option<worth_execution::MonotonicDeadline>,
         body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
     ) -> Result<R, WorthQueryAdvancementDenial> {
         let _custody = OpeningCustody::enter()?;
-        let world = std::sync::Arc::clone(&self.product_runtime.owner);
+        let world = std::sync::Arc::clone(&self.runtime.product_runtime.owner);
         let execution = match allocation_policy {
             worth_execution::ExecutionAllocationPolicy::SystemAllocation => {
                 QueryRequestExecution::open_control(
@@ -90,7 +91,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         execution.run_advancement(
             Some(world.owner_identity()),
             Some(
-                self.product_runtime
+                self.runtime
+                    .product_runtime
                     .source
                     .authoritative_source_profile()
                     .runtime_instance_id(),
@@ -105,7 +107,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         phase: &WorthQueryAdvancementPhase<'_>,
     ) -> Result<(), WorthQueryForeignAdvancementPhase> {
         phase
-            .execution_request_for(&self.product_runtime)
+            .execution_request_for(&self.runtime.product_runtime)
             .map(|_| ())
     }
 
@@ -119,12 +121,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
     ) -> Result<R, WorthQueryAdvancementDenial> {
         let _custody = OpeningCustody::enter()?;
-        let world = std::sync::Arc::clone(&self.product_runtime.owner);
+        let world = std::sync::Arc::clone(&self.runtime.product_runtime.owner);
         let execution = QueryRequestExecution::open(world.execution_placement(), request);
         execution.run_advancement(
             Some(world.owner_identity()),
             Some(
-                self.product_runtime
+                self.runtime
+                    .product_runtime
                     .source
                     .authoritative_source_profile()
                     .runtime_instance_id(),
@@ -163,7 +166,7 @@ impl crate::domain_computation::execution_runtime::product_world::WorthQueryProd
     fn open_host_advancement<R>(
         &self,
         cancellation: worth_execution::CancellationToken,
-        deadline: Option<std::time::Instant>,
+        deadline: Option<worth_execution::MonotonicDeadline>,
         body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
     ) -> Result<R, WorthQueryAdvancementDenial> {
         let _custody = OpeningCustody::enter()?;

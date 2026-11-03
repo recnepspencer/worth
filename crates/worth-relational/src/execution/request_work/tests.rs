@@ -34,7 +34,8 @@ fn parent(
                 ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), None, Some(100)),
             ),
             cancellation,
-            deadline,
+            deadline: deadline
+                .map(|instant| worth_execution::MonotonicClock::system().deadline_at(instant)),
         })
         .unwrap()
 }

@@ -135,6 +135,7 @@ fn cleanup_verification_of_a_completed_inbound_keeps_the_terminal_owner() {
     );
     let sealed = world
         .application
+        .runtime
         .primary_provider
         .lookup_completed_inbound(&correlation)
         .unwrap()
@@ -146,6 +147,7 @@ fn cleanup_verification_of_a_completed_inbound_keeps_the_terminal_owner() {
     assert_eq!(
         world
             .application
+            .runtime
             .primary_provider
             .lookup_completed_inbound(&correlation)
             .unwrap(),

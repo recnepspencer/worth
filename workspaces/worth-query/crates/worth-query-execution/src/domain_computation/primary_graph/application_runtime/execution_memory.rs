@@ -35,7 +35,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         &self,
         request: LeaseRequest,
     ) -> Result<ExecutionResourceLease<'_>, WorthQueryExecutionLeaseDenial> {
-        self.product_runtime
+        self.runtime
+            .product_runtime
             .owner
             .execution_authority()
             .ok_or(WorthQueryExecutionLeaseDenial::Unavailable)?

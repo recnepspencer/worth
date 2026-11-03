@@ -108,6 +108,10 @@ impl BulkImportStage {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ConflictClass {
+    #[serde(skip)]
+    ContentAdmission {
+        denial: crate::content::RelationalContentDenial,
+    },
     SymbolIdentityExhausted,
     /// In-process physical refusal; never a serialized graph verdict.
     #[serde(skip)]

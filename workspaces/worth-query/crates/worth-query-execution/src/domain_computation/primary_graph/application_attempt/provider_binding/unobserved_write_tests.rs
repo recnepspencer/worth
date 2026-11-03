@@ -16,7 +16,10 @@ use worth_foundational::facade::AspectValue;
 
 #[test]
 fn unobserved_effect_keeps_coordinates_at_public_lowering_without_idempotency_residue() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let (principal, account, mut program, before) = world
         .application
@@ -37,6 +40,7 @@ fn unobserved_effect_keeps_coordinates_at_public_lowering_without_idempotency_re
     let field = AccountLabel::reference();
     let locator = world
         .application
+        .runtime
         .primary_provider
         .graph
         .layout

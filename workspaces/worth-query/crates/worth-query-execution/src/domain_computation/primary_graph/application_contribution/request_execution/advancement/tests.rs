@@ -112,7 +112,10 @@ fn reentrant_host_open_is_typed_at_serial_and_leased_placements() {
     use crate::domain_computation::primary_graph::tests::fixture::{
         installed_authorization_world, live_scope,
     };
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let scope = live_scope();
     let _restore = Restore(place(Placement::World), bound(None));
     for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
@@ -129,7 +132,7 @@ fn reentrant_host_open_is_typed_at_serial_and_leased_placements() {
                 assert!(matches!(
                     charged_request(
                         phase
-                            .execution_request_for(&world.application.product_runtime)
+                            .execution_request_for(&world.application.runtime.product_runtime)
                             .expect("the issuer accepts its own phase"),
                         1
                     ),

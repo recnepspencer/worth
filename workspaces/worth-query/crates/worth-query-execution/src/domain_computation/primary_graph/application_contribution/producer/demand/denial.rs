@@ -1,3 +1,5 @@
+mod settlement_provenance;
+pub use settlement_provenance::WorthQueryOutputSettlementProvenanceDenial;
 pub(super) mod cleanup_custody;
 mod diagnostic_copy;
 mod history_source;
@@ -6,6 +8,7 @@ mod kind;
 mod output_comparison;
 mod producer_value;
 mod publication_stale;
+mod retirement_refusal;
 pub use kind::{WorthQueryOutputDemandDenialKind, WorthQueryOutputDemandRecoveryPosture};
 pub(in crate::domain_computation::primary_graph) use publication_stale::ProducerPublicationStale;
 
@@ -54,6 +57,7 @@ struct DemandDenialEvidence {
     capacity_stop: Option<
         crate::domain_computation::primary_graph::invariant_projection::VerificationCapacityStop,
     >,
+    retirement: Option<std::sync::Arc<worth_relational::facade::publication::PublicationError>>,
 }
 
 impl WorthQueryOutputDemandDenial {

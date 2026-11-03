@@ -172,6 +172,7 @@ fn dependencies() -> Vec<ApplicationSchemaMember> {
             revision: worth_foundational::facade::AspectContractRevision(1),
         },
         ApplicationSchemaMember::Field {
+            content_format: None,
             entity: "Account".to_string(),
             aspect: "AccountFacts".to_string(),
             field: "AccountId".to_string(),
@@ -205,6 +206,7 @@ fn relation_predicate_dependencies(equality_queryable: bool) -> Vec<ApplicationS
             revision: worth_foundational::facade::AspectContractRevision(1),
         },
         ApplicationSchemaMember::Field {
+            content_format: None,
             entity: "Activity".to_owned(),
             aspect: "ActivityFacts".to_owned(),
             field: "ActivityId".to_owned(),

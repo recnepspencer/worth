@@ -98,13 +98,13 @@ fn observe<Schema: BirthSchema>(
         roles.next().is_none(),
         "one actual output of this installed kind"
     );
-    let graph = &runtime.primary_provider.graph;
+    let graph = &runtime.runtime.primary_provider.graph;
     let locator = graph
         .layout
         .field_locator(field.entity(), field.aspect(), field.field())
         .unwrap();
     let execution = phase
-        .execution_request_for(&runtime.product_runtime)
+        .execution_request_for(&runtime.runtime.product_runtime)
         .unwrap();
     assert_eq!(locator.aspect().authority(), LocatorAuthority::Planned);
     let (effect, native_locator) = run_retained_stage(&execution, &mut None, |context, _| {

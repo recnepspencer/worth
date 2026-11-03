@@ -27,7 +27,10 @@ use crate::domain_computation::primary_graph::application_attempt::{
 fn an_unobservable_key_gathers_its_partition_again_and_denies_nothing() {
     let _observation =
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let installed = installed(StatusRead::Gather(1), sum);
     let first = first_run(&world, &installed);
     let outcome = *first.outcome.as_ref().unwrap();
@@ -68,7 +71,10 @@ fn more_retained_keys_than_the_request_work_runs_in_full_uncompared() {
     let _observation =
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     bound_observation_work();
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let installed = installed(StatusRead::Gather(1), sum);
     let first = first_run(&world, &installed);
     let outcome = *first.outcome.as_ref().unwrap();
@@ -121,7 +127,10 @@ fn a_few_adjacency_keys_whose_worst_case_passes_the_request_work_run_in_full() {
     let _observation =
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     bound_observation_work();
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let installed = installed(StatusRead::Gather(1), sum);
     let first = first_run(&world, &installed);
     let outcome = *first.outcome.as_ref().unwrap();

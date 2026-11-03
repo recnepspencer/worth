@@ -5,7 +5,7 @@
 //! Mounted from the application-attempt tests, whose installed worlds and
 //! entries it drives; the doors it uses live beside the brand.
 
-use std::time::{Duration, SystemTime};
+use std::time::Duration;
 
 use super::{
     authenticated_principal, idempotency, installed_authorization_world, live_scope,
@@ -162,7 +162,10 @@ fn assert_projection_refused(
 
 #[test]
 fn a_core_rewrapped_as_another_operation_is_stale_before_any_work() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let (principal, account) = party(&world, &request);
     let identity = *principal.principal_identity();
@@ -206,8 +209,14 @@ fn a_core_rewrapped_as_another_operation_is_stale_before_any_work() {
 
 #[test]
 fn a_core_from_another_runtime_is_foreign_under_either_brand() {
-    let source = installed_authorization_world(true);
-    let target = installed_authorization_world(true);
+    let source = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
+    let target = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let (source_principal, source_account) = party(&source, &request);
     let (target_principal, target_account) = party(&target, &request);
@@ -246,7 +255,10 @@ fn a_core_from_another_runtime_is_foreign_under_either_brand() {
 
 #[test]
 fn a_flipped_seal_byte_is_stale_at_mutation_and_foreign_at_idempotency() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let (principal, account) = party(&world, &request);
     let mut forged = admit!(
@@ -280,7 +292,10 @@ fn a_flipped_seal_byte_is_stale_at_mutation_and_foreign_at_idempotency() {
 
 #[test]
 fn a_successor_core_from_another_admission_is_refused_at_rewrap() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let (principal, account) = party(&world, &request);
     let predecessor = admit!(
@@ -309,7 +324,10 @@ fn a_successor_core_from_another_admission_is_refused_at_rewrap() {
 
 #[test]
 fn a_brand_the_installed_binding_does_not_name_never_reaches_its_handler() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let (principal, account) = party(&world, &request);
     let identity = *principal.principal_identity();
@@ -351,3 +369,12 @@ mod allocation;
 mod decision_entry;
 #[path = "erased_core_forgery_tests/precedence.rs"]
 mod precedence;
+
+#[path = "erased_core_forgery_tests/commit_entries.rs"]
+mod commit_entries;
+#[path = "erased_core_forgery_tests/installed_seal.rs"]
+mod installed_seal;
+#[path = "erased_core_forgery_tests/recovery_entries.rs"]
+mod recovery_entries;
+#[path = "erased_core_forgery_tests/workflow_entry.rs"]
+mod workflow_entry;

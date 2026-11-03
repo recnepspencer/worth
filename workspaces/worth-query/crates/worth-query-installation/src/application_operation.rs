@@ -19,6 +19,8 @@ mod installed_contract_support;
 mod operation_declaration_resolution;
 mod portable_contract_spine;
 mod precondition_contract;
+#[doc(hidden)]
+pub use installed::{InstalledOperationCatalog, InstalledOperationSource, InstalledOperationView};
 pub(crate) mod source_disclosure;
 
 #[cfg(test)]

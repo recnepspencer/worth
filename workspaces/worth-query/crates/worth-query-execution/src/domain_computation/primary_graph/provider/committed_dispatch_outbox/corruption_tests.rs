@@ -70,8 +70,11 @@ fn a_committed_record_of_another_kind_denies_before_projection() {
     let host_request = crate::test_request_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let world = installed_authorization_world(true);
-    let provider = &world.application.primary_provider;
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
+    let provider = &world.application.runtime.primary_provider;
     let record = record();
     let (binding, commit, runtime_id) = provider.graph.with_runtime_mut(execution, |runtime| {
         let (outbox_intent, pending) = bind_dispatch_outbox_create_intent(
@@ -140,8 +143,11 @@ fn a_deleted_record_is_non_visible_at_the_requested_commit_without_binding_fallb
     let host_request = crate::test_request_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let world = installed_authorization_world(true);
-    let provider = &world.application.primary_provider;
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
+    let provider = &world.application.runtime.primary_provider;
     let record = record();
     let (binding, deletion_commit, runtime_id) = provider.graph.with_runtime_mut(execution, |runtime| {
         let (intent, pending) = bind_dispatch_outbox_create_intent(
@@ -218,8 +224,11 @@ fn committed_substituted_row(
     worth_relational::facade::history::RelationalCommitReceipt,
     u64,
 ) {
-    let world = installed_authorization_world(true);
-    let provider = world.application.primary_provider.clone();
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
+    let provider = world.application.runtime.primary_provider.clone();
     let record = record();
     let layout = provider.graph.layout.provider_dispatch_outbox().clone();
     let branch = primary_relational_branch_id();

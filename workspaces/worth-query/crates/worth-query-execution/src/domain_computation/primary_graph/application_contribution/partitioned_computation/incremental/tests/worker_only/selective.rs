@@ -81,7 +81,7 @@ impl TestOwner for SourceOwner {
 fn native_value_key_and_membership_edits_carry_unaffected_partitions() {
     let _observations = QueryObservation::install_on_this_thread();
     let world = crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world_with_product_resources(
-        crate::domain_computation::execution_runtime::product_world::test_product_world_resources().with_execution_policy(policy()));
+        crate::domain_computation::execution_runtime::product_world::test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()).with_execution_policy(policy()));
     let installed =
         WorthQueryInstalledPartitionedComputation::<Schema, Feature, Computation, _>::new(
             SourceOwner::default(),
@@ -116,6 +116,7 @@ fn native_value_key_and_membership_edits_carry_unaffected_partitions() {
         let field = AccountLabel::reference();
         let locator = world
             .application
+            .runtime
             .primary_provider
             .graph
             .layout
@@ -124,7 +125,7 @@ fn native_value_key_and_membership_edits_carry_unaffected_partitions() {
             .clone();
         let request = live_scope();
         world.application.with_application_advancement(&request, |phase| {
-            let active = phase.execution_for(&world.application.product_runtime).unwrap();
+            let active = phase.execution_for(&world.application.runtime.product_runtime).unwrap();
             let execution = active.execution_request().unwrap();
             crate::domain_computation::primary_graph::tests::fixture::publish_relational_mutation(
                 &execution, &world, WorkerIntentBatch::new("native-membership-edit").push(

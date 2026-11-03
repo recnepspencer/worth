@@ -144,7 +144,7 @@ pub(super) fn complete_source<S: ApplicationSchema, I: ApplicationManagedIndexBi
     )?;
     let parts = completed.into_source_parts(execution)?;
     let authorization = crate::domain_computation::primary_graph::application_attempt::SourceReadAuthorization::complete(
-        execution, &parts.terminal, binding, source_identity, parts.authorization, &application.authorization, &allocation,
+        execution, &parts.terminal, binding, source_identity, parts.authorization, &application.runtime.authorization, &allocation,
     ).map_err(SourceDenial::Admission)?.ok_or_else(|| one_shot::denial(Kind::ForeignPlan, query, query))?;
     let tree = tree.expect("successful completion moved the genuine disclosed source once");
     let order = super::source_order::canonical(execution, &tree)?;

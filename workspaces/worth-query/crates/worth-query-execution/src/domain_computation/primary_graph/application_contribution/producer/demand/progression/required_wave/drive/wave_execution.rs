@@ -87,7 +87,7 @@ where
                         Ok(receipt) => delivered = receipt,
                         Err(stop) => {
                             RefusingMember {
-                                registry: &runtime.output_demands,
+                                registry: &runtime.runtime.output_demands,
                                 member: &mut frontier.members[0],
                                 row: RefusalRow::HeldHead(delivery.key()),
                                 custody: RefusalCustody::<Schema>::Caller,
@@ -149,11 +149,13 @@ where
     let keys = worth_proof::CanonicalUniqueVec::try_from_sorted_unique(keys)
         .map_err(|_| foreign_denial())?;
     let execution = phase
-        .execution_for(&runtime.product_runtime)
+        .execution_for(&runtime.runtime.product_runtime)
         .map_err(|_| foreign_denial())?;
-    let admitted = runtime
-        .output_demands
-        .admit_prepared_wave(&wave.positioned, keys, plans)?;
+    let admitted =
+        runtime
+            .runtime
+            .output_demands
+            .admit_prepared_wave(&wave.positioned, keys, plans)?;
     let cursor = CanonicalApplyCursor::compute_admitted(admitted, execution);
     let mut moved = false;
     let mut deferred = false;
@@ -188,9 +190,13 @@ where
                 // both loops obtain their checkpoint turns from the paid owner.
                 loop {
                     let successor = storage.last_mut();
-                    let stage = match successor.checkpoint().inspect(&runtime.output_demands) {
+                    let stage = match successor
+                        .checkpoint()
+                        .inspect(&runtime.runtime.output_demands)
+                    {
                         Ok(WaveCheckpointTurn::Current(ready)) => {
                             runtime
+                                .runtime
                                 .output_demands
                                 .clear_required_stop(successor.interest().key());
                             moved |= committed_ready(ready.ready())
@@ -204,7 +210,7 @@ where
                         Err(stop) => {
                             return Err(MemberStop::checkpoint(
                                 index,
-                                &runtime.output_demands,
+                                &runtime.runtime.output_demands,
                                 successor.interest().key(),
                                 stop,
                             ))
@@ -223,7 +229,7 @@ where
                         Err(stop) => {
                             return Err(MemberStop::checkpoint(
                                 index,
-                                &runtime.output_demands,
+                                &runtime.runtime.output_demands,
                                 storage.last_mut().interest().key(),
                                 stop,
                             ))
@@ -313,7 +319,7 @@ where
                 failure.stop = failure.stop.with_managed_cleanup(cleanup);
                 let (index, stop, recording) = failure.into_parts();
                 recording.record_if_needed(
-                    &runtime.output_demands,
+                    &runtime.runtime.output_demands,
                     frontier.members[index].key(),
                     &stop,
                 );

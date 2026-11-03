@@ -176,7 +176,7 @@ where
         let producer = self.original_settled_producer().cloned();
         let (application, product, application_basis) = self.into_parts();
         let execution = phase
-            .execution_request_for(&application.product_runtime)
+            .execution_request_for(&application.runtime.product_runtime)
             .map_err(|_| {
                 open_denial(
                     WorthQueryApplicationLiveOpenDenialKind::ForeignAdvancementPhase,
@@ -279,7 +279,7 @@ where
         Binding: ApplicationQueryLiveCauseBinding<Schema, Query, Scope, Target>,
     {
         let execution = phase
-            .execution_request_for(&self.product_runtime)
+            .execution_request_for(&self.runtime.product_runtime)
             .map_err(|_| {
                 open_denial(
                     WorthQueryApplicationLiveOpenDenialKind::ForeignAdvancementPhase,
@@ -327,7 +327,7 @@ where
         )?;
         let buffer_capacity = request.controls.buffer_capacity();
         let queue = WorthQueryLiveCauseQueue::open(
-            &self.primary_provider.live_delivery,
+            &self.runtime.primary_provider.live_delivery,
             retained_product.observation(),
             buffer_capacity,
         )

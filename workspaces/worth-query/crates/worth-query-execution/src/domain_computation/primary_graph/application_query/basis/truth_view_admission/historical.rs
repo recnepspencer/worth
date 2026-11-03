@@ -54,7 +54,10 @@ where
             } => {
                 if provider_runtime_instance_id != descriptor.runtime_instance_id()
                     || provider_runtime_instance_id
-                        != self.relational_branch_identity.runtime_instance_id()
+                        != self
+                            .runtime
+                            .relational_branch_identity
+                            .runtime_instance_id()
                     || commit.branch_id != *descriptor.branch_id()
                 {
                     return Err(denial(
@@ -64,6 +67,7 @@ where
                 }
                 let retention = match retention {
                     WorthQueryApplicationHistoricalRetention::OwnerLifecycle => self
+                        .runtime
                         .primary_provider
                         .retained_application_commit_basis(&commit),
                 }
@@ -80,22 +84,23 @@ where
                     ));
                 }
                 let basis = self
+                    .runtime
                     .primary_provider
                     .graph
                     .with_runtime(request_execution, |runtime| {
                         runtime.readmit_retained_branch_basis(&descriptor, retention.lease())
                     })
                     .map_err(super::super::map_basis_denial)?;
-                let selected_commit =
-                    self.primary_provider
-                        .graph
-                        .with_runtime(request_execution, |runtime| {
-                            runtime
-                                .history()
-                                .branch_head_for_observation(&basis.observation())
-                                .ok()
-                                .flatten()
-                        });
+                let selected_commit = self.runtime.primary_provider.graph.with_runtime(
+                    request_execution,
+                    |runtime| {
+                        runtime
+                            .history()
+                            .branch_head_for_observation(&basis.observation())
+                            .ok()
+                            .flatten()
+                    },
+                );
                 if selected_commit.as_ref() != Some(&commit) {
                     return Err(denial(
                         WorthQueryApplicationQueryAdmissionDenialKind::BasisUnavailable,

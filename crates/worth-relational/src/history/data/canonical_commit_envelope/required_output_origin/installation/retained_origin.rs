@@ -56,6 +56,57 @@ pub(super) fn compare_retained_origin(
             .map_err(origin_request)?;
     }
     if carried != canonical {
+        if canonical.source_scope_owned {
+            use crate::{
+                publication::data::{AuthoredRetirementRefusal, PublicationError},
+                transactions::data::RecordRef,
+            };
+            let mut subject = RecordRef::Entity(canonical.meaning.source_scope);
+            for (index, member) in canonical.members.iter().enumerate() {
+                let other = carried.members.get(index);
+                context
+                    .checkpoint(
+                        (std::mem::size_of_val(member)
+                            + member.role.len()
+                            + member.entity_name.len()
+                            + member.birth_producer.len()
+                            + other.map_or(0, |other| {
+                                other.role.len()
+                                    + other.entity_name.len()
+                                    + other.birth_producer.len()
+                            })) as u64,
+                    )
+                    .map_err(origin_request)?;
+                if other != Some(member) {
+                    subject = RecordRef::Entity(member.id);
+                    break;
+                }
+            }
+            context
+                .checkpoint(
+                    canonical
+                        .relations
+                        .len()
+                        .saturating_mul(std::mem::size_of::<CanonicalRequiredOutputRelation>())
+                        as u64,
+                )
+                .map_err(origin_request)?;
+            if subject == RecordRef::Entity(canonical.meaning.source_scope)
+                && let Some((_, relation)) = canonical
+                    .relations
+                    .iter()
+                    .enumerate()
+                    .find(|(index, relation)| carried.relations.get(*index) != Some(*relation))
+            {
+                subject = RecordRef::Relation(relation.id);
+            }
+            return Err(TransactionCommitError::publication(
+                PublicationError::authored_retirement(
+                    AuthoredRetirementRefusal::CorruptPublication,
+                    subject,
+                ),
+            ));
+        }
         return Err(crate::mvcc::origin_denial(
             "retained publication custody differs from exact canonical membership",
         ));

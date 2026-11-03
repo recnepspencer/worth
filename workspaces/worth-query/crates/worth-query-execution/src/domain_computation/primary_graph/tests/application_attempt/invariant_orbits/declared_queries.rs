@@ -17,7 +17,12 @@ use crate::domain_computation::primary_graph::*;
 use declarations::*;
 
 pub(in crate::domain_computation::primary_graph) fn world() -> World {
-    world::install_orbit(
+    world_on_clock(worth_execution::MonotonicClock::system())
+}
+pub(in crate::domain_computation::primary_graph) fn world_on_clock(
+    clock: worth_execution::MonotonicClock,
+) -> World {
+    world::install_orbit_on_clock(
         Graph {
             nodes: 5,
             edges: vec![(0, 2), (2, 1), (1, 0), (3, 4), (4, 3)],
@@ -25,6 +30,7 @@ pub(in crate::domain_computation::primary_graph) fn world() -> World {
             blocked: vec![],
         },
         probe::Probe::new(|_, _, _| {}),
+        clock,
     )
 }
 #[test]

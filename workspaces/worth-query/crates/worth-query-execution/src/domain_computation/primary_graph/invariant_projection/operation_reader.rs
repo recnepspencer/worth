@@ -12,6 +12,7 @@ use worth_query_installation::facade::{
 mod admitted;
 mod admitted_projection;
 mod borrowed;
+mod content;
 mod prepared_inputs;
 pub(in crate::domain_computation::primary_graph) use borrowed::BorrowedOperationProjection;
 pub(in crate::domain_computation::primary_graph) use prepared_inputs::PreparedCurrentInputs;
@@ -28,6 +29,7 @@ pub use derived_relation::{
     WorthQueryInvariantGraphComponent, WorthQueryInvariantGraphMember,
 };
 mod managed_index;
+pub(in crate::domain_computation::primary_graph) use managed_index::native_index_decision_cause;
 mod output_availability;
 pub use output_availability::{
     WorthQueryObservedOutputAvailability, WorthQueryOutputAvailabilityDenial,
@@ -270,7 +272,11 @@ where
         WorthQueryCompletedOperationInvariantProjection<Schema, Operation, Output>,
         WorthQueryOperationProjectionDenial,
     > {
-        admission.validate_projection_authority(self.runtime_authority, &self.binding_identity)?;
+        admission.validate_projection_authority(
+            self.runtime_authority,
+            &self.binding_identity,
+            &self.installed_operations,
+        )?;
         let owner = admission
             .graph_work()
             .mutation_lease()

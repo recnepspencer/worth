@@ -12,7 +12,10 @@ use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionMode;
 
 #[test]
 fn a_marked_fact_is_reverified_at_the_real_native_snapshot() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     world
         .application
         .with_host_advancement(|phase| {
@@ -43,6 +46,7 @@ fn a_marked_fact_is_reverified_at_the_real_native_snapshot() {
 
             world
                 .application
+                .runtime
                 .primary_provider
                 .graph
                 .with_runtime(&execution, |runtime| {
@@ -111,7 +115,10 @@ fn a_clean_settlement_reuses_without_fact_reverification() {
     use std::sync::Mutex;
     use std::sync::OnceLock;
 
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     world
         .application
         .with_host_advancement(|phase| {

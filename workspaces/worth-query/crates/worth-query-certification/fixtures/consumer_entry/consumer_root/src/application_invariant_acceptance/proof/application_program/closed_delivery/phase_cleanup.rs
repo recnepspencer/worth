@@ -68,7 +68,7 @@ fn original_delivery_cleanup_uses_owning_phase_after_scope_loss_and_keeps_close_
     ));
     assert_eq!(refused.branch(), branch);
     let cancellation = WorthQueryCancellationSource::new();
-    let stopped = WorthQueryRequestScope::new(None, cancellation.token());
+    let stopped = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let mut retained = None;
     let _stopped_result = world
         .application
@@ -153,7 +153,7 @@ fn unstarted_original_cleanup_refuses_cancellation_before_any_native_tree_exists
         .application
         .producer_contacts_on_this_thread_for_test();
     let cancellation = WorthQueryCancellationSource::new();
-    let stopped = WorthQueryRequestScope::new(None, cancellation.token());
+    let stopped = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let mut retained = None;
     let _stopped_result = world
         .application

@@ -9,11 +9,15 @@ use worth_query_admission::facade::authenticated_principal::{
 
 #[test]
 fn cancellation_inside_a_native_read_stops_the_public_commit_door() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let source = WorthQueryCancellationSource::new();
     let request = WorthQueryRequestScope::new(
         Some(std::time::Instant::now() + Duration::from_secs(60)),
         source.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     let program = world
         .application
@@ -63,6 +67,7 @@ fn cancellation_inside_a_native_read_stops_the_public_commit_door() {
     assert_eq!(
         world
             .application
+            .runtime
             .primary_provider
             .published_application_commit_count(),
         0

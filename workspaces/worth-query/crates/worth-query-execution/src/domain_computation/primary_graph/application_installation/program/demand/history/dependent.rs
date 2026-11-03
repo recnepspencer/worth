@@ -74,7 +74,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         {
             return Err(Denial::Demand(foreign_source()));
         }
-        let execution = phase.checked_execution_request_for(&runtime.product_runtime)
+        let execution = phase.checked_execution_request_for(&runtime.runtime.product_runtime)
             .map_err(|cause| Denial::Authority(crate::domain_computation::primary_graph::WorthQueryHistoryNavigationDenial::Stopped(cause)))?;
         let retained = self
             .select_dependent_output_basis(&execution, &parent.settled, basis, minimum)

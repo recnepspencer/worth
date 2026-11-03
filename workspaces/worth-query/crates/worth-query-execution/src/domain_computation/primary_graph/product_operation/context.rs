@@ -56,7 +56,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         &self,
     ) -> &crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime
     {
-        &self.product_runtime
+        &self.runtime.product_runtime
     }
 
     #[cfg(test)]
@@ -70,7 +70,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     > {
         self.on_product(
             execution,
-            self.product_runtime.admit_product_branch(identity)?,
+            self.runtime
+                .product_runtime
+                .admit_product_branch(identity)?,
         )
     }
 
@@ -129,7 +131,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             &worth_runtime_world::facade::ProductBranchObservation,
         ) -> Result<(), Stop>,
     ) -> Result<WorthQuerySelectedProductOperation<'_, Schema>, Stop> {
-        if product.observation().owner_identity() != self.product_runtime.owner.owner_identity() {
+        if product.observation().owner_identity()
+            != self.runtime.product_runtime.owner.owner_identity()
+        {
             return Err(WorthQueryProductBranchAdmissionDenial::Refused(
                 AdmissionRefusal::ForeignOwner,
             )
@@ -161,7 +165,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         WorthQuerySelectedProductOperation<'_, Schema>,
         WorthQueryProductBranchAdmissionDenial,
     > {
-        if product.observation().owner_identity() != self.product_runtime.owner.owner_identity() {
+        if product.observation().owner_identity()
+            != self.runtime.product_runtime.owner.owner_identity()
+        {
             return Err(WorthQueryProductBranchAdmissionDenial::Refused(
                 AdmissionRefusal::ForeignOwner,
             ));
@@ -201,6 +207,7 @@ where
         let application = self.application;
         let product = application.admit_with_observation_room(|| {
             application
+                .runtime
                 .product_runtime
                 .admit_product_occurrence(self.branch.occurrence())
         })?;
@@ -218,7 +225,7 @@ where
         WorthQueryProductBranchAdmissionDenial,
     > {
         let request = phase
-            .execution_request_for(&self.application.product_runtime)
+            .execution_request_for(&self.application.runtime.product_runtime)
             .map_err(|_| {
                 WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::ForeignPhase)
             })?;
@@ -237,6 +244,7 @@ where
             request,
             application.admit_with_observation_room(|| {
                 application
+                    .runtime
                     .product_runtime
                     .admit_product_occurrence(self.branch.occurrence())
             })?,

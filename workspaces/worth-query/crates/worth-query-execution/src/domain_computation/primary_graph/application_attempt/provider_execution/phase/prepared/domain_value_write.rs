@@ -11,16 +11,33 @@ use worth_query_installation::facade::{
     AdmittedFieldBindingStop, ApplicationFieldBindingOwnerKind as Owner,
     WorthQueryInstalledApplicationValueBindingCatalog as Catalog,
 };
+use worth_relational::facade::content::RelationalContentAttachments;
 
 pub(super) fn admit(
     execution: &ExecutionRequest<'_, '_>,
     bindings: &Catalog,
     layout: &Layout,
     effects: &[Effect],
-) -> Result<(), Denial> {
+    basis: &worth_relational::facade::branch::AdmittedRelationalBranchBasis,
+    attachments: &RelationalContentAttachments,
+    retained: Option<&RelationalContentAttachments>,
+) -> Result<RelationalContentAttachments, Denial> {
+    let mut content = match retained {
+        Some(retained) => {
+            basis.prepare_content_reads_with_retained(execution, attachments, retained)
+        }
+        None => basis.prepare_content_reads(execution, attachments),
+    }
+    .map_err(|cause| Denial::domain_value_admission_rejected(Stop::Content(cause)))?;
     let state = ValueDecodeState::admitted(bindings.clone());
     let result = state
         .run(execution, |session| {
+            let mut admission = WriteAdmission {
+                session,
+                bindings,
+                execution,
+                content: &mut content,
+            };
             for effect in effects {
                 session
                     .admit_write_quantities(1, 0)
@@ -35,11 +52,11 @@ pub(super) fn admit(
                         // Absence in the actual kind catalogue means an internal
                         // platform record, which has no application domain binding.
                         if let Some(name) = name {
-                            fields_admitted(session, bindings, Owner::Entity, name, fields.iter())?;
+                            admission.fields(Owner::Entity, name, fields)?;
                         }
                     }
                     Effect::UpdateEntity { entity, fields, .. } => {
-                        fields_admitted(session, bindings, Owner::Entity, entity, fields.iter())?
+                        admission.fields(Owner::Entity, entity, fields)?
                     }
                     Effect::PatchOptionalEntityFields { entity, fields, .. } => {
                         for (locator, write) in fields {
@@ -47,14 +64,7 @@ pub(super) fn admit(
                                 .admit_write_quantities(1, 0)
                                 .map_err(Denial::domain_value_admission_rejected)?;
                             if let Some(value) = &write.value {
-                                field_admitted(
-                                    session,
-                                    bindings,
-                                    Owner::Entity,
-                                    entity,
-                                    locator,
-                                    value,
-                                )?;
+                                admission.field(Owner::Entity, entity, locator, value)?;
                             }
                         }
                     }
@@ -65,13 +75,7 @@ pub(super) fn admit(
                             })
                             .map_err(Denial::domain_value_admission_rejected)?;
                         if let Some(name) = name {
-                            fields_admitted(
-                                session,
-                                bindings,
-                                Owner::Relation,
-                                name,
-                                fields.iter(),
-                            )?;
+                            admission.fields(Owner::Relation, name, fields)?;
                         }
                     }
                     Effect::DeleteEntity { .. }
@@ -86,67 +90,110 @@ pub(super) fn admit(
     result?;
     state
         .check(execution)
-        .map_err(Denial::domain_value_admission_rejected)
-}
-fn fields_admitted<'a>(
-    session: &ValueDecodeSession<'_>,
-    bindings: &Catalog,
-    owner: Owner,
-    name: &str,
-    fields: impl Iterator<Item = (&'a AspectFieldLocator, &'a AspectValue)>,
-) -> Result<(), Denial> {
-    for (locator, value) in fields {
-        session
-            .admit_write_quantities(1, 0)
-            .map_err(Denial::domain_value_admission_rejected)?;
-        field_admitted(session, bindings, owner, name, locator, value)?;
+        .map_err(Denial::domain_value_admission_rejected)?;
+    match retained {
+        Some(_) => content
+            .attachments_for_reads(execution, attachments)
+            .map_err(|cause| Denial::domain_value_admission_rejected(Stop::Content(cause))),
+        None => Ok(attachments.clone()),
     }
-    Ok(())
 }
-fn field_admitted(
-    session: &ValueDecodeSession<'_>,
-    bindings: &Catalog,
-    owner: Owner,
-    name: &str,
-    locator: &AspectFieldLocator,
-    value: &AspectValue,
-) -> Result<(), Denial> {
-    let [field] = locator.field_path().fields() else {
-        return Err(Denial::domain_value_admission_rejected(
-            Stop::BindingContractMismatch,
-        ));
-    };
-    let mut fund = |work, bytes| session.admit_write_quantities(work, bytes);
-    let binding = match owner {
-        Owner::Entity => bindings.field_admitted(
-            name,
-            locator.aspect().aspect_key().as_str(),
-            field.as_str(),
-            &mut fund,
-        ),
-        Owner::Relation => bindings.relation_field_admitted(
-            name,
-            locator.aspect().aspect_key().as_str(),
-            field.as_str(),
-            &mut fund,
-        ),
+struct WriteAdmission<'a, 'b, 'run, 'host> {
+    session: &'a ValueDecodeSession<'b>,
+    bindings: &'a Catalog,
+    execution: &'a ExecutionRequest<'run, 'host>,
+    content: &'a mut worth_relational::facade::content::RelationalContentReadClosure,
+}
+impl WriteAdmission<'_, '_, '_, '_> {
+    fn fields(
+        &mut self,
+        owner: Owner,
+        name: &str,
+        fields: &std::collections::BTreeMap<AspectFieldLocator, AspectValue>,
+    ) -> Result<(), Denial> {
+        for (locator, value) in fields {
+            self.session
+                .admit_write_quantities(1, 0)
+                .map_err(Denial::domain_value_admission_rejected)?;
+            self.field(owner, name, locator, value)?;
+        }
+        Ok(())
     }
-    .map_err(|cause| {
-        Denial::domain_value_admission_rejected(match cause {
-            AdmittedFieldBindingStop::Admission(stop) => stop,
-            AdmittedFieldBindingStop::AccountingOverflow => Stop::AccountingOverflow,
-        })
-    })?;
-    // The immutable installed catalogue is the authority for domain membership.
-    // Internal fields have no entry. Structured artifacts incur no round trip.
-    if let Some(binding) = binding.filter(|binding| {
-        binding
+    fn field(
+        &mut self,
+        owner: Owner,
+        name: &str,
+        locator: &AspectFieldLocator,
+        value: &AspectValue,
+    ) -> Result<(), Denial> {
+        let [field] = locator.field_path().fields() else {
+            return Err(Denial::domain_value_admission_rejected(
+                Stop::BindingContractMismatch,
+            ));
+        };
+        let mut fund = |work, bytes| self.session.admit_write_quantities(work, bytes);
+        let binding = match owner {
+            Owner::Entity => self.bindings.field_admitted(
+                name,
+                locator.aspect().aspect_key().as_str(),
+                field.as_str(),
+                &mut fund,
+            ),
+            Owner::Relation => self.bindings.relation_field_admitted(
+                name,
+                locator.aspect().aspect_key().as_str(),
+                field.as_str(),
+                &mut fund,
+            ),
+        }
+        .map_err(|cause| {
+            Denial::domain_value_admission_rejected(match cause {
+                AdmittedFieldBindingStop::Admission(stop) => stop,
+                AdmittedFieldBindingStop::AccountingOverflow => Stop::AccountingOverflow,
+            })
+        })?;
+        let Some(binding) = binding else {
+            return Ok(());
+        };
+        // This same seal owns both canonical domain values and typed content fields.
+        if binding
             .canonical_contract()
             .is_some_and(|contract| contract.is_domain_value())
-    }) {
-        session
-            .validate_domain_write(binding, value)
-            .map_err(Denial::domain_value_rejected)?;
+        {
+            self.session
+                .validate_domain_write(binding, value)
+                .map_err(Denial::domain_value_rejected)?;
+        }
+        if binding.scalar_family() == worth_foundational::facade::ScalarAspectType::ContentRef
+            && binding.content_format().is_none()
+        {
+            return Err(Denial::domain_value_admission_rejected(Stop::Content(
+                worth_relational::facade::content::RelationalContentDenial::FormatBindingMissing,
+            )));
+        }
+        if let Some(format) = binding.content_format() {
+            let AspectValue::ContentRef(identity) = value else {
+                return Err(Denial::domain_value_admission_rejected(
+                    Stop::BindingContractMismatch,
+                ));
+            };
+            let frame = self
+                .content
+                .read(
+                    self.execution,
+                    *identity,
+                    worth_foundational::facade::CanonicalDigestId::new(
+                        format.declaration().identity,
+                    ),
+                )
+                .map_err(|cause| Denial::domain_value_admission_rejected(Stop::Content(cause)))?;
+            crate::domain_computation::primary_graph::content::require_contract(
+                self.execution,
+                &frame,
+                format,
+            )
+            .map_err(|cause| Denial::domain_value_admission_rejected(Stop::Content(cause)))?;
+        }
+        Ok(())
     }
-    Ok(())
 }

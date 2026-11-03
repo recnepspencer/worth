@@ -15,7 +15,10 @@ use worth_relational::facade::transactions::{
 
 #[test]
 fn optional_aspect_initialization_reconstructed_presence_detects_present_empty() {
-    let world = fixture::installed_authorization_world(true);
+    let world = fixture::installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = fixture::live_scope();
     world.application.with_host_advancement(|phase| {
         let host = phase.test_host_request();

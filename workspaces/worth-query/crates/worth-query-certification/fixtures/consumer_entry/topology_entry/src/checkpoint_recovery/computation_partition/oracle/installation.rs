@@ -273,6 +273,7 @@ pub(super) fn install_variant_with_observations<
         invalidation,
         524_288 + 4_096 * additional_observations,
         execution_policy,
+        authentication::WorthQueryAdmissionClock::system(),
     );
     let seed = |graph: &mut Graph| {
         support::seed_cycle(graph);

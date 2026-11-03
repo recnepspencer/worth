@@ -45,7 +45,10 @@ mod response_loss_and_interleaving_preserve_one_preimage_and_outbox;
 
 #[test]
 fn later_commit_recovery_selects_exact_evidence_and_rejects_foreign_reference_axes() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application
@@ -153,7 +156,7 @@ fn later_commit_recovery_selects_exact_evidence_and_rejects_foreign_reference_ax
         assert!(
             world
                 .application
-                .primary_provider
+                .runtime.primary_provider
                 .observe_completed_application(&foreign)
                 .is_none(),
             "equal CommitId with any foreign RelationalCommitReceipt axis must not observe evidence"
@@ -197,7 +200,10 @@ fn demanded_mutation_work(
     breadth: RetentionMutationBreadth,
     key: u8,
 ) -> crate::domain_computation::primary_graph::provider::WorthQueryPrimaryMutationWorkEvidence {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application

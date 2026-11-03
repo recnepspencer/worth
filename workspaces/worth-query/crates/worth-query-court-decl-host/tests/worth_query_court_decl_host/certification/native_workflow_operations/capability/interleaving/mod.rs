@@ -94,8 +94,7 @@ fn authorized_revocation_without_partial_is_a_real_published_transition() {
     let stopped =
         worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope::new(
             None,
-            cancellation.token(),
-        );
+            cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let (owner, cause) = owner
         .close(&host.application.runtime().request(&actor, &stopped))
         .err()

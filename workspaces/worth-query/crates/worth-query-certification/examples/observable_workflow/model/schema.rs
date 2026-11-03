@@ -42,6 +42,7 @@ worth_query_application_contribution! {
         identity: "document_retention_courtroom.application_graph.v1",
         corrections: [super::correctable_retention::RestoreReviewedRetention],
         members: |schema| {
+            let schema = super::model_lifecycle::declare(schema);
             let schema = schema
                 .entity(ExternalMapping::reference())
                 .entity(Principal::reference())

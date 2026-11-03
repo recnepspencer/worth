@@ -27,6 +27,7 @@ fn publication_stop_transport_completion_remains_ready_without_redispatch() {
         .unwrap();
     let in_flight = world
         .application
+        .runtime
         .primary_provider
         .begin_external_dispatch_in_flight(&owner)
         .unwrap()
@@ -39,7 +40,11 @@ fn publication_stop_transport_completion_remains_ready_without_redispatch() {
         .record_installed_transport_completion(evidence, in_flight)
         .unwrap();
     let source = WorthQueryCancellationSource::new();
-    let request = WorthQueryRequestScope::new(None, source.token());
+    let request = WorthQueryRequestScope::new(
+        None,
+        source.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     source.cancel();
     let result = world
         .application

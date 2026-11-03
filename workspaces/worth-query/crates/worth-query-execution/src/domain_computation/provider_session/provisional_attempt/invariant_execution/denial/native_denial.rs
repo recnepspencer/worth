@@ -15,6 +15,8 @@ use worth_relational::facade::mvcc::{
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(super) enum NativeDenial {
     Staging(RelationalTransactionStagingDenial),
+    Content(worth_relational::facade::content::RelationalContentDenial),
+    AuthoredRetirement(Box<worth_relational::facade::publication::PublicationError>),
     Allocation(ExecutionAllocationDenial),
     RelationLaw(Box<worth_relational::facade::transactions::InvariantViolationFields>),
     ManagedSource(worth_relational::facade::runtime::ManagedIndexSourcePreparationDenial),
@@ -22,9 +24,10 @@ pub(super) enum NativeDenial {
 impl NativeDenial {
     pub(super) fn allocation(&self) -> Option<&ExecutionAllocationDenial> {
         match self {
+            Self::AuthoredRetirement(_) => None,
             Self::Staging(denial) => denial.allocation_denial(),
             Self::Allocation(denial) => Some(denial),
-            Self::RelationLaw(_) | Self::ManagedSource(_) => None,
+            Self::RelationLaw(_) | Self::ManagedSource(_) | Self::Content(_) => None,
         }
     }
     pub(super) fn classification(&self) -> (Kind, Posture) {

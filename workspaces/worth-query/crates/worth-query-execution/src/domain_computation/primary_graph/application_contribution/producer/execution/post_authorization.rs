@@ -54,12 +54,14 @@ where
             SourceQuery<Schema, Binding>,
         >,
 {
-    let member_execution = phase.execution_for(&runtime.product_runtime).map_err(|_| {
-        denial(
-            WorthQueryOutputDemandDenialKind::ForeignSettlement,
-            Binding::IDENTITY,
-        )
-    })?;
+    let member_execution = phase
+        .execution_for(&runtime.runtime.product_runtime)
+        .map_err(|_| {
+            denial(
+                WorthQueryOutputDemandDenialKind::ForeignSettlement,
+                Binding::IDENTITY,
+            )
+        })?;
     let plan = prepare_authorized::<Schema, Binding>(
         phase,
         runtime,

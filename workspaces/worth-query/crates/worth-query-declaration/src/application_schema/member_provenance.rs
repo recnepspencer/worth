@@ -1,3 +1,4 @@
+mod content;
 use std::any::TypeId;
 
 use super::{ApplicationFieldBindingLocus, ApplicationFieldBindingRecipe};
@@ -47,6 +48,11 @@ impl DeclaredApplicationMemberMarker {
 pub struct ApplicationSchemaMemberProvenance {
     entities: Vec<(String, TypeId)>,
     field_bindings: Vec<ApplicationFieldBindingRecipe>,
+    content_bindings: Vec<super::ApplicationContentBindingRecipe>,
+    content_fields: Vec<(
+        ApplicationFieldBindingLocus,
+        super::ApplicationContentBindingRecipe,
+    )>,
     conflicting_field_binding: bool,
     operations: Vec<DeclaredApplicationMemberMarker>,
     effects: Vec<DeclaredApplicationMemberMarker>,
@@ -88,6 +94,8 @@ impl ApplicationSchemaMemberProvenance {
     #[doc(hidden)]
     pub fn is_empty(&self) -> bool {
         self.field_bindings.is_empty()
+            && self.content_bindings.is_empty()
+            && self.content_fields.is_empty()
             && self.entities.is_empty()
             && self.operations.is_empty()
             && self.effects.is_empty()

@@ -67,7 +67,7 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
         phase: &WorthQueryAdvancementPhase<'_>,
     ) -> Result<WorthQueryStorageRetentionProgress, WorthQueryStorageRetentionDenial> {
         let execution = phase
-            .execution_request_for(&self.product_runtime)
+            .execution_request_for(&self.runtime.product_runtime)
             .map_err(|cause| WorthQueryStorageRetentionDenial {
                 progress: WorthQueryStorageRetentionProgress::default(),
                 stop: WorthQueryStorageRetentionStop::ForeignPhase(cause),

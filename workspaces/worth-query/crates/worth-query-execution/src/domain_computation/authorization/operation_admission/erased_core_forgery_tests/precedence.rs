@@ -8,9 +8,8 @@ fn expiring(
     world: &AuthorizationWorld,
     request: &WorthQueryRequestScope,
     count: usize,
-) -> (Vec<Admission>, SystemTime, u64) {
+) -> (Vec<Admission>, u64) {
     let external = world.authenticate("alice", Duration::from_secs(2), request);
-    let expires_at = external.expires_at();
     let principal = world
         .application
         .with_host_advancement(|phase| {
@@ -38,21 +37,25 @@ fn expiring(
             )
         })
         .collect();
-    (admissions, expires_at, *principal.principal_identity())
+    (admissions, *principal.principal_identity())
 }
 
 #[test]
 fn a_forged_and_expired_core_is_refused_as_forged_at_every_entry() {
-    let world = installed_authorization_world(true);
-    let request = live_scope();
-    let (mut admissions, expires_at, identity) = expiring(&world, &request, 3);
+    let time = worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionTimeController::new().unwrap();
+    let held = time.hold();
+    let world = installed_authorization_world(true, time.clock());
+    let request = WorthQueryRequestScope::new(
+        Some(held + Duration::from_secs(60)),
+        worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource::new()
+            .token(),
+        time.clock(),
+    );
+    let (mut admissions, identity) = expiring(&world, &request, 3);
     for admission in &mut admissions {
         admission.flip_core_seal_byte_for_test();
     }
-    let until_expiry = expires_at
-        .duration_since(SystemTime::now())
-        .unwrap_or_default();
-    std::thread::sleep(until_expiry + Duration::from_millis(10));
+    time.advance(Duration::from_secs(3)).unwrap();
     assert_eq!(
         admissions[0]
             .validate_current_authority()

@@ -9,7 +9,10 @@ use worth_execution::ExecutionWorkCeiling;
 fn members_admitted_across_a_commit_are_stale_after_the_same_charged_reads() {
     let _observation =
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let scope = live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &scope);
     world
@@ -89,7 +92,7 @@ fn members_admitted_across_a_commit_are_stale_after_the_same_charged_reads() {
                     .unwrap()
             };
             let first = WorthQueryDerivedPairReadPlans::new(admit(), admit());
-            let graph = &world.application.primary_provider.graph;
+            let graph = &world.application.runtime.primary_provider.graph;
             let label = AccountLabel::reference();
             let locator = graph
                 .layout

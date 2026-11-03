@@ -59,7 +59,11 @@ fn fact(id: u64) -> Fact {
 fn literal_order_keeps_conversion_after_admission_and_drop_before_final_check() {
     let events = Events::default();
     let cancellation = WorthQueryCancellationSource::new();
-    let request = WorthQueryRequestScope::new(None, cancellation.token());
+    let request = WorthQueryRequestScope::new(
+        None,
+        cancellation.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let facts = admit_completed_facts(
         2,
         Values {
@@ -133,7 +137,7 @@ fn every_authority_refusal_keeps_its_exact_subject_and_iterator_drop_position() 
     for (refuse_at, expected) in (1..=4).zip(expected) {
         let events = Events::default();
         let cancellation = WorthQueryCancellationSource::new();
-        let request = WorthQueryRequestScope::new(None, cancellation.token());
+        let request = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let mut checks = 0;
         let refused = admit_completed_facts(
             2,
@@ -167,7 +171,11 @@ fn every_authority_refusal_keeps_its_exact_subject_and_iterator_drop_position() 
 fn stopped_allocation_does_not_convert_or_advance_the_iterator() {
     let events = Events::default();
     let cancellation = WorthQueryCancellationSource::new();
-    let request = WorthQueryRequestScope::new(None, cancellation.token());
+    let request = WorthQueryRequestScope::new(
+        None,
+        cancellation.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     cancellation.cancel();
     let refused = admit_completed_facts(
         2,

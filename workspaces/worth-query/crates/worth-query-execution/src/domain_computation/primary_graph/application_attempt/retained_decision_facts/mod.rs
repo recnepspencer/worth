@@ -34,7 +34,7 @@ pub(in crate::domain_computation::primary_graph) struct RetainedFact<T> {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) enum StoreDenial {
+pub enum StoreDenial {
     Allocation(ExecutionAllocationDenial),
     ExecutionRequest(worth_execution::WorkCeilingDenial),
     RequestInterruption(
@@ -43,6 +43,8 @@ pub(in crate::domain_computation) enum StoreDenial {
     Representability,
     PhysicalAllocation,
     ConflictingBody,
+    ContentInconsistency,
+    Content(worth_relational::facade::content::RelationalContentDenial),
     #[cfg(test)]
     InvalidOrdinal,
 }
@@ -83,11 +85,15 @@ impl StoreDenial {
             WorthQueryApplicationAttemptDenial as Denial,
             WorthQueryApplicationAttemptDenialKind as Kind,
         };
+        if let Self::Content(cause) = self {
+            return Denial::relational_read_stopped(cause.into_execution_cause(), subject);
+        }
         let kind = match &self {
             Self::Allocation(_) | Self::PhysicalAllocation => Kind::AllocationDenied,
             Self::RequestInterruption(_) => Kind::CurrentAuthorityDenied,
             Self::ExecutionRequest(_) => Kind::RetainedSourceStorageDenied,
             Self::ConflictingBody => Kind::DecisionDependencyMismatch,
+            Self::ContentInconsistency => Kind::ContentInconsistency,
             _ => Kind::RetainedSourceStorageDenied,
         };
         Denial::retained_source_denied(kind, subject, self)
@@ -111,7 +117,11 @@ impl worth_execution::ChargedBytes for StoreDenial {
                 inline(cause);
                 0
             }
-            Self::Representability | Self::ConflictingBody | Self::PhysicalAllocation => 0,
+            Self::Representability
+            | Self::ConflictingBody
+            | Self::PhysicalAllocation
+            | Self::ContentInconsistency
+            | Self::Content(_) => 0,
             #[cfg(test)]
             Self::InvalidOrdinal => 0,
         }

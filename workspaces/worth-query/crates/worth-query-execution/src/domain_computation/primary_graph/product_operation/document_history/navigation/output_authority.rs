@@ -67,7 +67,7 @@ impl WorthQueryHistoryOutputAuthority<'_, '_> {
             return Err(Denial::ForeignDocument);
         }
         phase
-            .check_live_for(&runtime.product_runtime)
+            .check_live_for(&runtime.runtime.product_runtime)
             .map_err(Denial::Stopped)?;
         if let Some(lapse) = self.request.lapse() {
             return Err(Denial::Authorization(
@@ -178,7 +178,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             return Err(Denial::ForeignDocument);
         }
         let execution = phase
-            .checked_execution_request_for(&self.application().product_runtime)
+            .checked_execution_request_for(&self.application().runtime.product_runtime)
             .map_err(Denial::Stopped)?;
         let selection = {
             let mut selected = self.selection.lock();

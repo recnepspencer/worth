@@ -11,6 +11,7 @@ use super::super::WorthQueryApplicationProjectionDenialKind;
 /// be used: admit the query again.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationOneShotDenialKind {
+    Content(worth_relational::facade::content::RelationalContentDenial),
     ExecutionRequest(crate::domain_computation::WorthQueryProviderSessionDenialKind),
     /// The plan belongs to a different runtime or is not a one-shot plan.
     ForeignPlan,

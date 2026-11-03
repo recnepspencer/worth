@@ -157,7 +157,7 @@ impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> ManagedIndexSta
         if state.status == Status::Disposed {
             return Err(Denial::Disposed);
         }
-        if matches!(state.root, Some(RetainedIndexImage::Maintained(_))) {
+        if matches!(state.root, Some(RetainedIndexImage::Maintained { .. })) {
             return Err(Denial::InvariantOwned);
         }
         let next = state.epoch.checked_add(1);

@@ -3,7 +3,10 @@ use super::*;
 
 #[test]
 fn correction_disclosure_requires_the_original_native_root_after_filtering() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     world
@@ -45,7 +48,7 @@ fn correction_disclosure_requires_the_original_native_root_after_filtering() {
                     )
                     .unwrap();
                 let execution = phase
-                    .execution_request_for(&world.application.product_runtime)
+                    .execution_request_for(&world.application.runtime.product_runtime)
                     .unwrap();
                 assert_eq!(
                     world
@@ -91,7 +94,7 @@ fn correction_disclosure_requires_the_original_native_root_after_filtering() {
                 )
                 .unwrap();
             let execution = phase
-                .execution_request_for(&world.application.product_runtime)
+                .execution_request_for(&world.application.runtime.product_runtime)
                 .unwrap();
             assert!(!world
                 .application
@@ -103,7 +106,10 @@ fn correction_disclosure_requires_the_original_native_root_after_filtering() {
 
 #[test]
 fn correction_disclosure_never_calls_the_application_projector() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     world.application.with_host_advancement(|phase| {
@@ -123,7 +129,7 @@ fn correction_disclosure_never_calls_the_application_projector() {
             ApplicationQueryParameterSet::new().bind(status_parameter(), "open".to_owned()).unwrap(),
             current_controls(&request),
         ).unwrap();
-        let execution = phase.execution_request_for(&world.application.product_runtime).unwrap();
+        let execution = phase.execution_request_for(&world.application.runtime.product_runtime).unwrap();
         assert!(world.application.execute_correction_disclosure(&execution, plan, subject).unwrap());
         // The unchanged ordinary projection is a distinguishing counterpart: its
         // forged field selector fails, while the native root above remains real.

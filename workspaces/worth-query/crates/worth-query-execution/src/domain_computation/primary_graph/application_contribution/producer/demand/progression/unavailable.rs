@@ -22,7 +22,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         Family: WorthQueryProducerOutputFamily<Schema>,
     {
         phase
-            .execution_request_for(&self.product_runtime)
+            .execution_request_for(&self.runtime.product_runtime)
             .map_err(|cause| {
                 denial(
                     WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
@@ -59,10 +59,15 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             demand.installed_entry.edition,
         )?;
 
-        let result = self.output_demands.finish_unavailable_source(
+        let result = self.runtime.output_demands.finish_unavailable_source(
             prepared,
             interest,
-            &self.primary_provider.graph.source_owner.invalidation_owner,
+            &self
+                .runtime
+                .primary_provider
+                .graph
+                .source_owner
+                .invalidation_owner,
         )?;
         demand.close();
         Ok(result)

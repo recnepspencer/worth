@@ -82,6 +82,9 @@ pub fn admit_prepared_managed_index_read_graph_work<Refusal>(
     let capacity = reserve_graph_provider_capacity_admitted(provider, admit)
         .map_err(|cause| match cause {
             WorthQueryCapacityReservationAdmissionStop::Admission(cause) => Stop::Admission(cause),
+            WorthQueryCapacityReservationAdmissionStop::ReservationIdentityExhausted(cause) => {
+                Stop::Denial(Denial::from(cause))
+            }
             WorthQueryCapacityReservationAdmissionStop::AccountingOverflow => {
                 Stop::AccountingOverflow
             }
@@ -92,7 +95,7 @@ pub fn admit_prepared_managed_index_read_graph_work<Refusal>(
         selected,
         WorthQueryGraphWorkAdmissionMechanics::ManagedIndexRead { capacity },
     )
-    .ok_or(Stop::Denial(Denial::IdentityExhausted))
+    .map_err(Stop::Denial)
 }
 
 fn provider<'a, Refusal>(

@@ -3,7 +3,10 @@ use super::*;
 
 #[test]
 fn sealed_adjacency_membership_supplies_exact_unlink_evidence() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let actor = world
         .application

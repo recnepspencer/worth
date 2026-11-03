@@ -68,6 +68,10 @@ fn cancelled<T>(result: Result<T, Failure>) {
 }
 
 #[test]
+#[expect(
+    clippy::disallowed_methods,
+    reason = "certification-harness thread-scope=1 scoped-thread-spawn=1: cancellation_before_the_admitted_window_effect_preserves_eligibility_target_and_cursor joins the bounded native owner and competing host or control actors to certify custody at the real handoff."
+)]
 fn cancellation_before_the_admitted_window_effect_preserves_eligibility_target_and_cursor() {
     let host = publish_on_first_program();
     let (mut document, root) = filled(&host);
@@ -87,7 +91,7 @@ fn cancellation_before_the_admitted_window_effect_preserves_eligibility_target_a
         .unwrap();
     let pause = document.pause_before_history_retention_change_for_test();
     let cancellation = WorthQueryCancellationSource::new();
-    let stopped_scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let stopped_scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let stopped = host.request(&principal, &stopped_scope);
     let (reached, result) = std::thread::scope(|threads| {
         let worker = threads.spawn(|| {
@@ -134,6 +138,10 @@ fn cancellation_before_the_admitted_window_effect_preserves_eligibility_target_a
 }
 
 #[test]
+#[expect(
+    clippy::disallowed_methods,
+    reason = "certification-harness thread-scope=1 scoped-thread-spawn=1: cancellation_after_one_window_batch_preserves_its_prefix_and_original_disposal_owners joins the bounded native owner and competing host or control actors to certify custody at the real handoff."
+)]
 fn cancellation_after_one_window_batch_preserves_its_prefix_and_original_disposal_owners() {
     let host = publish_on_first_program();
     let (mut document, root) = filled(&host);
@@ -161,7 +169,7 @@ fn cancellation_after_one_window_batch_preserves_its_prefix_and_original_disposa
         .unwrap();
     let pause = document.pause_after_history_retention_change_for_test();
     let cancellation = WorthQueryCancellationSource::new();
-    let stopped_scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let stopped_scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let stopped = host.request(&principal, &stopped_scope);
     let target = ApplicationHistoryRecentSteps::new(NonZeroUsize::MIN);
     let (reached, result) = std::thread::scope(|threads| {

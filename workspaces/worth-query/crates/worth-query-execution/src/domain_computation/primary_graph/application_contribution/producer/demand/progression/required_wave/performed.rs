@@ -159,7 +159,7 @@ impl<Schema: ApplicationSchema + 'static> SelectedDecisionInput<'_, '_, Schema> 
         request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         input: &AcceptedCurrentCandidate,
     ) -> Result<bool, ProducerExecutionStop> {
-        let graph = &self.runtime.primary_provider.graph;
+        let graph = &self.runtime.runtime.primary_provider.graph;
         graph
             .with_runtime(request_execution, |runtime| {
                 input.decision_input_changed_at(

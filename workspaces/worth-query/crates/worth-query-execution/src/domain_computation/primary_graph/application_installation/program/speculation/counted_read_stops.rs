@@ -97,7 +97,7 @@ fn begin_preview_preserves_admission_stops_at_every_consult() {
         |request, ceiling| runtime.with_application_advancement(request, |phase| {
             let ordinal = identity.get();
             identity.set(ordinal + 1);
-            phase.execution_request_for(&runtime.product_runtime).unwrap().run(worth_execution::ExecutionWorkCeiling::new(Some(ceiling)), |_| {
+            phase.execution_request_for(&runtime.runtime.product_runtime).unwrap().run(worth_execution::ExecutionWorkCeiling::new(Some(ceiling)), |_| {
                 runtime.begin_preview(&phase, &observation, WorthQueryApplicationPreviewRequest::new(format!("counted-preview-{ordinal}")))
                 .map(|session| session.discard().unwrap())
                 .inspect_err(|denial| {
@@ -124,7 +124,7 @@ fn installed_preview_runtime() -> WorthQueryProgramApplicationRuntime<PreviewSch
         program, PreviewSchema::declaration().unwrap(), ((),),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         WorthQueryInMemoryApplicationLimits::new(
-            crate::domain_computation::execution_runtime::product_world::test_product_world_resources(),
+            crate::domain_computation::execution_runtime::product_world::test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()),
             Default::default(),
             worth_signal::facade::runtime::SignalConditionalEvaluationBudget::development(),
         ),
@@ -156,7 +156,7 @@ fn readmit_preview_keeps_source_selection_stops_at_every_consult() {
             let preview = runtime.with_host_advancement(|phase| runtime.begin_preview(&phase, &observation, WorthQueryApplicationPreviewRequest::new(format!("readmit-preview-{ordinal}")))).unwrap().unwrap();
             let preview = std::cell::RefCell::new(Some(preview));
             counted(&|request, ceiling| runtime.with_application_advancement(request, |phase| {
-                phase.execution_request_for(&runtime.product_runtime).unwrap().run(worth_execution::ExecutionWorkCeiling::new(Some(ceiling)), |_| preview.borrow_mut().take().unwrap().readmit(&phase, &runtime).map(|readmitted| readmitted.discard().unwrap()).map_err(|(preview, denial)| { preview.discard().unwrap(); denial })).unwrap().0
+                phase.execution_request_for(&runtime.runtime.product_runtime).unwrap().run(worth_execution::ExecutionWorkCeiling::new(Some(ceiling)), |_| preview.borrow_mut().take().unwrap().readmit(&phase, &runtime).map(|readmitted| readmitted.discard().unwrap()).map_err(|(preview, denial)| { preview.discard().unwrap(); denial })).unwrap().0
             }).unwrap())
         },
         WorthQueryApplicationPreviewReadmissionDenial::SourceSelection(Branch::Stopped(Err(Control::Cancelled))),
@@ -200,7 +200,11 @@ fn branch_creation_keeps_the_source_program_resolver_read_stop() {
     let runtime = installed_preview_runtime();
     let before = runtime.current_world();
     let source = WorthQueryCancellationSource::new();
-    let request = WorthQueryRequestScope::new(None, source.token());
+    let request = WorthQueryRequestScope::new(
+        None,
+        source.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let _named = runtime
         .product_runtime()
         .observe_named_read_consults_for_test();
@@ -282,7 +286,7 @@ fn failed_preview_discard_retains_original_owner_after_every_readmission_stop() 
             let preview = std::cell::RefCell::new(Some(preview));
             let retained = std::cell::RefCell::new(None);
             let answer = counted(&|request, ceiling| runtime.with_application_advancement(request, |phase| {
-                phase.execution_request_for(&runtime.product_runtime).unwrap().run(worth_execution::ExecutionWorkCeiling::new(Some(ceiling)), |_| {
+                phase.execution_request_for(&runtime.runtime.product_runtime).unwrap().run(worth_execution::ExecutionWorkCeiling::new(Some(ceiling)), |_| {
                     let (preview, cause) = match preview.borrow_mut().take().unwrap().readmit(&phase, &runtime) {
                         Ok(readmitted) => (readmitted.session, None),
                         Err((preview, denial)) => (preview, Some(denial)),

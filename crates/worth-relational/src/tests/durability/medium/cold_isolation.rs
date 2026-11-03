@@ -112,7 +112,7 @@ fn recover_shape_inner(
             .iter()
             .filter_map(|member| match member {
                 RelationalCheckpointMember::New { locator, bytes } if Some(*locator) != missing => {
-                    Some((*locator, bytes.clone()))
+                    Some((*locator, std::sync::Arc::<[u8]>::from(bytes.bytes())))
                 }
                 RelationalCheckpointMember::New { .. } => None,
                 _ => panic!("first capture owns all members"),

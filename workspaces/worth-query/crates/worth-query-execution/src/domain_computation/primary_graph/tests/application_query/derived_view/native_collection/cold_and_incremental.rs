@@ -2,7 +2,10 @@ use super::*;
 
 #[test]
 fn one_collection_cold_reads_two_declared_queries_then_refreshes_only_dirty_entry() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     world

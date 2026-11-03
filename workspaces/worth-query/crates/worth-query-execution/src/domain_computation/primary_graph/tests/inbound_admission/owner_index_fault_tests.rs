@@ -15,6 +15,7 @@ fn authenticated_callback_retries_before_acceptance_while_owner_index_is_unavail
     let request = super::super::fixture::live_scope();
     world
         .application
+        .runtime
         .primary_provider
         .destroy_completed_inbound_index_for_test();
     assert!(matches!(

@@ -182,13 +182,12 @@ pub(super) fn rebuild_runtime_from_plan(
     let recovered_symbols = restored.services.symbols.interner_snapshot();
     unshared_state(&mut restored)?
         .history
-        .install_recovered_canonical_inventory(recovered_canonical_commits, &recovered_symbols)
-        .map_err(|detail| {
-            DurabilityError::new(
-                crate::durability::data::RecoveryFailureClass::CorruptCheckpoint,
-                detail,
-            )
-        })?;
+        .install_recovered_canonical_inventory(
+            execution,
+            recovered_canonical_commits,
+            &recovered_symbols,
+        )
+        .map_err(RelationalRecoveryStop::from)?;
     reconcile_recovered_lineage_artifacts(&mut restored, &finalized_tail)?;
     refresh_checkpoint_counters(&mut restored)?;
     let log = finalized_tail

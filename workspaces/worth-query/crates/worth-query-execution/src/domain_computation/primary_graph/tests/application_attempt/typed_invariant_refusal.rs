@@ -73,6 +73,7 @@ fn checkpoint(world: &world::World) -> Vec<u8> {
             let execution = phase.borrowed_request_for_test();
             world
                 .application
+                .runtime
                 .primary_provider
                 .graph
                 .with_runtime(&execution, |runtime| {
@@ -108,7 +109,11 @@ fn run_cancelled_by(status: String, canceller: Option<u64>) -> Case {
     };
     let world = world::install(rule(1), rule(2));
     reads.lock().unwrap().clear();
-    let scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let scope = WorthQueryRequestScope::new(
+        None,
+        cancellation.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let program = program::prepare(&world, &scope, status);
     let before = checkpoint(&world);
     let reservations = world

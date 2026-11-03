@@ -8,11 +8,18 @@ use worth_query_admission::facade::authenticated_principal::{
 #[test]
 fn incremental_comparison_keeps_the_retained_fact_read_stop() {
     let _observation = QueryObservation::install_on_this_thread();
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let installed = installed(StatusRead::Gather(1), sum);
     let prior = prior_of(first_run(&world, &installed), false);
     let source = WorthQueryCancellationSource::new();
-    let request = WorthQueryRequestScope::new(None, source.token());
+    let request = WorthQueryRequestScope::new(
+        None,
+        source.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let policy = crate::domain_computation::primary_graph::application_contribution::test_policy(
         std::num::NonZeroUsize::MIN,
         None,

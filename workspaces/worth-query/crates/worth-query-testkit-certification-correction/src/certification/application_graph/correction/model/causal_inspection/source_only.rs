@@ -186,7 +186,7 @@ pub fn revoked_cancelled_and_expired_requests_release_source_inspection() {
     let application = host::install();
     let source = source(&application, "source-only-currentness");
     let cancellation = WorthQueryCancellationSource::new();
-    let scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let principal = authenticate_operator(application.installed_schema(), &scope);
     let request = application.runtime().request(&principal, &scope);
     let readers = application.application_query_basis_observer();
@@ -208,8 +208,7 @@ pub fn revoked_cancelled_and_expired_requests_release_source_inspection() {
     assert_eq!(readers.observe().active(), baseline);
     let expired = WorthQueryRequestScope::new(
         Some(std::time::Instant::now() - std::time::Duration::from_secs(1)),
-        WorthQueryCancellationSource::new().token(),
-    );
+        WorthQueryCancellationSource::new().token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let refused = application
         .runtime()
         .request(&principal, &expired)

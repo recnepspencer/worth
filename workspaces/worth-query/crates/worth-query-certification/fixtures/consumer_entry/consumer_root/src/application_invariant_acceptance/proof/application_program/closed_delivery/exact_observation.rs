@@ -131,7 +131,7 @@ fn one_caller_observation(
 ) {
     let common = request.retain_current_read().unwrap();
     let cancellation = WorthQueryCancellationSource::new();
-    let stopped_scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let stopped_scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let adapter = authentication::admit(world.application.installed_schema());
     let principal = authentication::block_on(adapter.authenticate(
         authentication::LocalCredential::issued_for_model_owner(),

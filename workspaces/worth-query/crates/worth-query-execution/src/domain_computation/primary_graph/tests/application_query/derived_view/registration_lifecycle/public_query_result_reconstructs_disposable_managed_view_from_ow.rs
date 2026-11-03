@@ -3,7 +3,10 @@ use super::*;
 
 #[test]
 fn public_query_result_reconstructs_disposable_managed_view_from_owner_observations() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let selected = world
@@ -75,7 +78,10 @@ fn public_query_result_reconstructs_disposable_managed_view_from_owner_observati
         .application
         .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
         .expect("the fixture read owns its installed host call");
-    let foreign = installed_authorization_world(true);
+    let foreign = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     foreign
         .application
         .with_host_advancement(|phase| {

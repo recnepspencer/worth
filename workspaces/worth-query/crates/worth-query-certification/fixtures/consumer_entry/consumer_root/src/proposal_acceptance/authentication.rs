@@ -10,14 +10,12 @@ use worth_query_host::facade::{
 use std::future::Future;
 use std::pin::pin;
 use std::task::{Context, Poll, Waker};
-use std::time::Instant;
 
 pub fn request_scope() -> WorthQueryRequestScope {
     let cancellation = WorthQueryCancellationSource::new();
     WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(120)),
-        cancellation.token(),
-    )
+        Some(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(120)),
+        cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system())
 }
 
 fn block_on<T>(future: impl Future<Output = T>) -> T {
@@ -93,8 +91,7 @@ pub fn authenticate<'scope>(
         installed,
         WorthQueryAuthenticationAdapterAdmission::new(
             WorthQueryAuthenticationAudience::new("proposals").unwrap(),
-            WorthQueryAuthenticationMethod::new("local-credential").unwrap(),
-        ),
+            WorthQueryAuthenticationMethod::new("local-credential").unwrap(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         Adapter,
     )
     .unwrap();

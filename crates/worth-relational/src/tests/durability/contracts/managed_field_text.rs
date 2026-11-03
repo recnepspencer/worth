@@ -180,8 +180,19 @@ fn native_field_text_checkpoint_readmission_denial_keeps_bytes_and_target_root_i
         .durability_recovery()
         .restore_native_checkpoint(&ExecutionRequest::leased(&limited), &native)
         .unwrap_err();
-    assert!(
-        matches!(error,RelationalRecoveryStop::Request(crate::execution::RelationalExecutionDenialCause::PolicyMemoryExhausted { requested, admitted:1, .. }) if requested == JSON.len() as u64)
+    // Physical hashing now enters a funded SDK native scope before member
+    // copying or managed text. Freeze that first framework admission invoice.
+    // The owned monotonic deadline adds 8 bytes to the kernel framework layout.
+    const FIRST_SCOPE_BYTES: u64 = 416;
+    assert_eq!(
+        error,
+        RelationalRecoveryStop::Request(
+            crate::execution::RelationalExecutionDenialCause::PolicyMemoryExhausted {
+                requested: FIRST_SCOPE_BYTES,
+                admitted: 1,
+                ancestor: 0,
+            }
+        )
     );
     assert_eq!(native.bytes(), before);
     assert_eq!(target.observe_branch(&identity).unwrap().0, original);

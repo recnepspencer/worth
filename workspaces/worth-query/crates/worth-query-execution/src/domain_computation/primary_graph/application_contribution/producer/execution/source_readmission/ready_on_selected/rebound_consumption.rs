@@ -14,7 +14,7 @@ pub(super) fn retain<Schema: worth_query_installation::facade::ApplicationSchema
     snapshot: &SnapshotHandle,
     positioned: &PositionedRelationalSnapshot,
 ) -> Result<ReboundConsumedOutput, ProducerExecutionStop> {
-    let handle = &runtime.primary_provider.graph;
+    let handle = &runtime.runtime.primary_provider.graph;
     let candidate = handle.output_lineage.lock().unwrap_or_else(std::sync::PoisonError::into_inner)
         .resolve_required_settlement(runtime.runtime.authority_identity().as_u64(), &runtime.installed_schema.binding_identity(), completion)
         .map_err(|stop| match stop {

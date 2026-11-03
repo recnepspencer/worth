@@ -15,9 +15,8 @@ pub(in super::super) fn retain_read<Schema: ApplicationSchema + 'static>(
 > {
     let cancellation = authentication::WorthQueryCancellationSource::new();
     let scope = authentication::WorthQueryRequestScope::new(
-        Some(std::time::Instant::now() + std::time::Duration::from_secs(120)),
-        cancellation.token(),
-    );
+        None,
+        cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     application
         .with_application_advancement(&scope, |phase| request.retain_read(&phase))
         .expect("the fixture observation host policy admits its call")
@@ -31,9 +30,8 @@ pub(in super::super) fn host_call<Schema: ApplicationSchema + 'static, Output>(
 ) -> Output {
     let cancellation = authentication::WorthQueryCancellationSource::new();
     let scope = authentication::WorthQueryRequestScope::new(
-        Some(std::time::Instant::now() + std::time::Duration::from_secs(120)),
-        cancellation.token(),
-    );
+        None,
+        cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     application
         .with_application_advancement(&scope, |phase| operation(&phase))
         .expect("the fixture host policy admits its call")

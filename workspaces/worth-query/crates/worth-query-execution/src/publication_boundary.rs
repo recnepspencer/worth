@@ -191,3 +191,19 @@ pub mod operation_input_capture {
 pub mod capability_command {
     pub use crate::domain_computation::primary_graph::authenticated_principal::WorthQueryCommandPrincipalPin;
 }
+
+#[cfg(test)]
+#[test]
+fn foreign_installed_seal_is_stale_at_history_constraint_before_work() {
+    crate::domain_computation::primary_graph::WorthQueryDocumentHistoryOperationConstraint::assert_foreign_installed_seal_is_stale_before_history_work(
+        &program_publication_access(),
+    );
+}
+
+#[cfg(test)]
+#[test]
+fn entry_custody_foreign_history_model_precedes_authentication_lapse() {
+    crate::domain_computation::primary_graph::WorthQueryDocumentHistoryOperationConstraint::assert_foreign_history_model_precedes_authentication_lapse(
+        &program_publication_access(),
+    );
+}

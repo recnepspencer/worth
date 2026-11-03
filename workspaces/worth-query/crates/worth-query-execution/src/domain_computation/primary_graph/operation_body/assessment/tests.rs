@@ -25,7 +25,10 @@ fn returned_findings(
 
 #[test]
 fn returned_findings_retain_native_request_memory_until_the_result_drops() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let _observation =
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     crate::facade::primary_graph::place_managed_computations_on_this_thread_for_test(
@@ -42,7 +45,7 @@ fn returned_findings_retain_native_request_memory_until_the_result_drops() {
         .application
         .with_host_advancement(|phase| {
             let execution = phase
-                .execution_for(&world.application.product_runtime)
+                .execution_for(&world.application.runtime.product_runtime)
                 .unwrap();
             let available = match execution.reserve(1_u64 << 60) {
                 Err(Resource::MemoryLimit { admitted, .. }) => admitted,

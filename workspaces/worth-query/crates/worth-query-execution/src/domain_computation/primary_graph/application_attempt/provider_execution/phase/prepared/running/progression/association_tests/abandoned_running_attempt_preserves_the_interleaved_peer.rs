@@ -5,9 +5,7 @@ use super::*;
 #[test]
 fn abandoned_running_attempt_preserves_the_interleaved_peer() {
     let world =
-        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
-            true,
-        );
+        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     world
         .application
         .with_host_advancement(|active_phase| {

@@ -56,7 +56,7 @@ mod request_stops {
     fn successor_read_keeps_cancellation_at_the_native_frontier() {
         let _observation =
             crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
-        let world = installed_authorization_world(true);
+        let world = installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         world.application.with_host_advancement(|phase| {
             let host = phase.test_host_request();
             let execution = host.borrowed_request_for_test();

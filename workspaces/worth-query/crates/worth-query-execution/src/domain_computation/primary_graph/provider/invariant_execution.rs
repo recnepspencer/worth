@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+mod authored_restoration;
 mod material;
 mod receipt_closure;
 mod relational_validation;
@@ -151,17 +152,20 @@ impl WorthQueryPrimaryGraphProvider {
         material: ApplicationInvariantCandidateMaterial,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<(), WorthQueryInvariantExecutionFailure> {
+        let material = self.prepare_authored_restoration(execution, material)?;
         let semantic_work = u64::try_from(material.semantic.expected.len()).map_err(|_| {
             closure_failure("candidate semantic cardinality exceeds work representation")
         })?;
         let (candidate, predicate) = self.validate_relational_candidate(
             execution,
             material.batch,
+            &material.content_attachments,
             &material.branch,
             &material.product,
             &material.request,
             &material.application_touches,
             material.aftermath_causality.as_ref(),
+            material.restoration_publication,
             allocation_policy,
         )?;
         let owner_work = receipt_closure::validate_receipt_closure(

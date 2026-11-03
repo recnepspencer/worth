@@ -3,7 +3,10 @@ use crate::domain_computation::primary_graph::tests::fixture::installed_authoriz
 
 #[test]
 fn genuinely_interleaved_equivalent_sessions_validate_retry_cleanup_separately() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     world
         .application
         .with_application_advancement(

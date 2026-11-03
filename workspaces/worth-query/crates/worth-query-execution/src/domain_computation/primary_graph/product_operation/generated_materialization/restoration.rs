@@ -148,7 +148,9 @@ where
         &self,
         observation: worth_runtime_world::facade::ProductBranchObservation,
     ) -> WorthQueryProductPublicationBinding {
-        self.product_runtime.publication_binding(observation)
+        self.runtime
+            .product_runtime
+            .publication_binding(observation)
     }
 
     pub(super) fn unpublished_materialization(
@@ -167,7 +169,9 @@ where
         crate::domain_computation::WorthQueryProductUnpublishedApplication::new(
             effects,
             publication.recovery(),
-            self.primary_provider.unpublished_idempotency_disposition(),
+            self.runtime
+                .primary_provider
+                .unpublished_idempotency_disposition(),
         )
     }
 }

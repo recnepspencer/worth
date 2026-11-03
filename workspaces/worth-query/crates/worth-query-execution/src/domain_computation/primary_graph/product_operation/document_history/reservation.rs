@@ -110,7 +110,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             .operation_label::<M>()
             .expect("membership was admitted");
         let execution = phase
-            .checked_execution_request_for(&runtime.product_runtime)
+            .checked_execution_request_for(&runtime.runtime.product_runtime)
             .map_err(Denial::Stopped)?;
         let record = selected.journal.reserve(&execution, meaning, label)?;
         Ok(WorthQueryDocumentHistoryRecordPreparation::Reserved(

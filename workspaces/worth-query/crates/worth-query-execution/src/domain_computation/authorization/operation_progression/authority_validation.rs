@@ -84,6 +84,12 @@ pub(super) fn validate_conventional_operation<
 where
     Schema: ApplicationSchema,
 {
+    crate::domain_computation::authorization::admission::validate_admission_clock(
+        &runtime.runtime,
+        principal.clock(),
+        request,
+        operation.operation(),
+    )?;
     crate::domain_computation::authorization::admission::admit_request(
         request,
         operation.operation(),
@@ -142,3 +148,7 @@ where
         operation,
     })
 }
+
+pub(in crate::domain_computation) use precondition_binding::{
+    BrandTag, ReadCompletionAdmission, WorthQueryAdmittedOperation,
+};

@@ -2,7 +2,7 @@ use std::{
     cell::{Cell, RefCell},
     num::NonZeroUsize,
     rc::Rc,
-    time::{Duration, Instant},
+    time::Duration,
 };
 
 use crate::domain_computation::{
@@ -55,8 +55,9 @@ fn cancellation_during_real_nested_materialization_releases_all_read_resources()
     );
     let cancellation = WorthQueryCancellationSource::new();
     let request = WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(60)),
+        Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(60)),
         cancellation.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let selected = world
@@ -160,7 +161,11 @@ fn cancellation_during_real_nested_materialization_releases_all_read_resources()
 #[test]
 fn deadline_is_checked_at_kernel_safe_points() {
     let cancellation = WorthQueryCancellationSource::new();
-    let request = WorthQueryRequestScope::new(Some(Instant::now()), cancellation.token());
+    let request = WorthQueryRequestScope::new(
+        Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now()),
+        cancellation.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let denial = super::checkpoint(&request, "root/relation[0]").unwrap_err();
     assert_eq!(
         denial.kind(),

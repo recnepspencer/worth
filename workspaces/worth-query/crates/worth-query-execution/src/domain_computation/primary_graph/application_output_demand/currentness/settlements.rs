@@ -38,7 +38,9 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             if !settlement.belongs_to(runtime) {
                 return Err(denial(WorthQueryOutputDemandDenialKind::ForeignSettlement));
             }
+            settlement.require_original_provenance(&execution)?;
             let lineage = runtime
+                .runtime
                 .primary_provider
                 .graph
                 .output_lineage

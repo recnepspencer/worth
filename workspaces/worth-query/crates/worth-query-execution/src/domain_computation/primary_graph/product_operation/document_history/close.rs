@@ -38,7 +38,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         WorthQueryDocumentHistoryCloseFailure<'runtime, S, H>,
     > {
         if phase
-            .execution_request_for(&self.application().product_runtime)
+            .execution_request_for(&self.application().runtime.product_runtime)
             .is_err()
         {
             return Err(WorthQueryDocumentHistoryCloseFailure::Retained {

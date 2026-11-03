@@ -98,7 +98,10 @@ impl WorthQueryPartitionedComputationOwner<Schema, Feature, Digests> for DigestO
 fn unretained_runs_serialize_neither_input_nor_items_for_digests() {
     let _observation =
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     for retention in [
         ComputationRetention::ProducerOperation,
         ComputationRetention::Unretained,
@@ -145,7 +148,7 @@ fn unretained_runs_serialize_neither_input_nor_items_for_digests() {
                         &admitted,
                         |reader, root| {
                             let execution = phase
-                                .execution_for(&world.application.product_runtime)
+                                .execution_for(&world.application.runtime.product_runtime)
                                 .expect("the installed fixture lends its computation execution");
                             installed
                                 .prepare_through(reader, execution, &Value(root.clone()))?

@@ -10,12 +10,15 @@ use crate::domain_computation::managed_run::WorthQueryRecoveryHandleRegistry;
 
 use super::provider::WorthQueryPrimaryGraphProvider;
 use super::{
-    authentication_clock::WorthQueryAuthenticationClock, WorthQueryPrimaryGraphBootstrap,
-    WorthQueryPrimaryGraphInstallationDenial, WorthQueryPrimaryGraphInstallationDenialKind,
-    WorthQueryPrimaryGraphPublication,
+    WorthQueryPrimaryGraphBootstrap, WorthQueryPrimaryGraphInstallationDenial,
+    WorthQueryPrimaryGraphInstallationDenialKind, WorthQueryPrimaryGraphPublication,
 };
 pub use crate::domain_computation::application_aftermath::WorthQueryInboundCleanupReport;
 use crate::domain_computation::authorization::WorthQueryInstalledAuthorizationRegistry;
+
+#[path = "application_runtime_core.rs"]
+mod runtime_core;
+pub(in crate::domain_computation) use runtime_core::WorthQueryApplicationRuntimeCore;
 
 mod certification_controls;
 mod certification_cost;
@@ -23,6 +26,7 @@ mod conditional_cleanup;
 mod execution_memory;
 mod external_dispatch_attempt;
 mod mutation_partition;
+mod teardown;
 pub use execution_memory::WorthQueryExecutionLeaseDenial;
 mod inbound_occurrence;
 #[cfg(test)]
@@ -115,65 +119,19 @@ pub(in crate::domain_computation) use external_dispatch_attempt::{
 /// }
 /// ```
 pub struct WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    pub(in crate::domain_computation) runtime: WorthQueryExecutionRuntime,
     pub(in crate::domain_computation) installed_schema:
         WorthQueryInstalledApplicationSchema<Schema>,
-    pub(super) application_readiness_schema_token: String,
-    publication: WorthQueryPrimaryGraphPublication,
-    checkpoint_restore_work: Option<worth_relational::facade::durability::CheckpointRestoreWork>,
-    pub(in crate::domain_computation) authorization: Arc<WorthQueryInstalledAuthorizationRegistry>,
-    pub(in crate::domain_computation) authorization_clock: Arc<WorthQueryRuntimeClock>,
-    authentication_clock: WorthQueryAuthenticationClock,
-    pub(super) relational_branch_identity:
-        worth_relational::facade::branch::RelationalBranchIdentity,
-    pub(crate) bridge: super::managed_bridge::WorthQueryInstalledApplicationBridge,
-    pub(crate) product_runtime:
-        crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime,
-    pub(super) recovered_program_source_delivery:
-        super::provider::recovered_program_source_delivery::RecoveredProgramSourceDeliveryRegistration,
-    pub(super) basis_leases:
-        super::application_query::resource_lifecycle::WorthQueryApplicationBasisRegistry,
-    pub(super) granular_invalidation: super::WorthQueryGranularInvalidationInstallation,
+    pub(in crate::domain_computation) runtime: WorthQueryApplicationRuntimeCore,
     pub(super) conditional_operations: std::sync::Mutex<
         super::conditional_operation::WorthQueryConditionalOperationRegistry<Schema>,
     >,
-    pub(crate) primary_provider: std::sync::Arc<WorthQueryPrimaryGraphProvider>,
-    pub(super) primary_graph_authority:
-        worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
-
-    pub(super) source_meanings:
-        super::application_query::observed_source::source_identity::WorthQueryObservedSourceMeaningRegistry,
-    pub(super) next_external_dispatch_attempt: AtomicU64,
-    pub(super) external_effect_transport:
-        std::sync::OnceLock<std::sync::Arc<dyn WorthQueryExternalEffectTransport>>,
-    inbound_verifiers: std::sync::Mutex<
-        std::collections::BTreeMap<
-            String,
-            std::sync::Arc<inbound_occurrence::WorthQueryInstalledInboundVerifier>,
-        >,
-    >,
-    inbound_custody: Arc<std::sync::Mutex<
-        crate::domain_computation::application_aftermath::WorthQueryInboundCustody,
-    >>,
-    transport_completion_custody: std::sync::Mutex<
-        inbound_publication::InstalledTransportCompletionCustody,
-    >,
-    inbound_maintenance_turn: AtomicU64,
-    /// Instance-local recovery-handle live set (Q8.9 / R8.29).
-    pub(crate) recovery_handles: Arc<WorthQueryRecoveryHandleRegistry>,
+    post_conditional_teardown: teardown::ApplicationPostConditionalTeardown,
     pub(super) mutation_handlers: super::handler::InstalledMutationHandlerRegistry<Schema>,
     pub(super) mutation_projection:
         super::WorthQueryApplicationInvariantProjectionAuthority<Schema>,
     pub(super) installed_producers:
         super::application_contribution::WorthQueryInstalledApplicationProducerRegistry<Schema>,
-    pub(super) output_producer_routes:
-        super::application_contribution::WorthQueryInstalledOutputProducerRoutes,
-    pub(super) output_readiness_routes:
-        super::application_contribution::WorthQueryInstalledOutputReadinessRoutes,
-    pub(super) next_output_producer_attempt: AtomicU64,
-    pub(super) next_application_mutation_partition: AtomicU32,
-    pub(super) output_demands: super::application_output_demand::WorthQueryOutputDemandRegistry,
-    pub(super) recovered_outputs: super::application_output_demand::WorthQueryRecoveredOutputs,
+    output_teardown: teardown::ApplicationOutputTeardown,
     pub(super) program_required_bindings: std::collections::HashSet<TypeId>,
     pub(super) program_required_operations: std::collections::HashSet<TypeId>,
     pub(super) workflow_guarded_operations: std::collections::HashSet<TypeId>,
@@ -185,8 +143,7 @@ pub struct WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub(super) installed_resources:
         super::application_resource::installation::InstalledResourceRegistry<Schema>,
     pub(super) managed_indexes: super::application_query::managed_index::ManagedIndexProviderCatalog<Schema>,
-    pub(in crate::domain_computation::primary_graph) workflow_coverage:
-        super::workflow::adoption::WorkflowVocabularyCoverageRegistry,
+    workflow_teardown: teardown::ApplicationWorkflowTeardown,
 }
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
@@ -236,16 +193,12 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
 }
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    #[inline]
     pub(in crate::domain_computation) fn authentication_is_expired(
         &self,
         valid_until: std::time::Instant,
     ) -> bool {
-        self.authentication_clock.is_expired(valid_until)
-    }
-
-    #[cfg(test)]
-    pub(crate) fn fix_authentication_time(&mut self, now: std::time::Instant) {
-        self.authentication_clock = WorthQueryAuthenticationClock::fixed(now);
+        self.runtime.authentication_is_expired(valid_until)
     }
 }
 
@@ -271,83 +224,86 @@ where
         &self.installed_schema
     }
 
+    #[inline]
     pub fn publication(&self) -> &WorthQueryPrimaryGraphPublication {
-        &self.publication
+        self.runtime.publication()
     }
 
     /// Native checkpoint readmission work for this installation, if it was
     /// restored. This is diagnostic only and grants no recovered authority.
+    #[inline]
     pub fn checkpoint_restore_work(
         &self,
     ) -> Option<worth_relational::facade::durability::CheckpointRestoreWork> {
-        self.checkpoint_restore_work
+        self.runtime.checkpoint_restore_work()
     }
 
     /// Retains the opaque installation needed to bind Query maintenance to
     /// this exact primary application runtime.
+    #[inline]
     pub fn granular_invalidation_installation(
         &self,
     ) -> super::WorthQueryGranularInvalidationInstallation {
-        self.granular_invalidation.current()
+        self.runtime.granular_invalidation_installation()
     }
 
+    #[inline]
     pub fn application_query_basis_observer(
         &self,
     ) -> super::application_query::WorthQueryApplicationBasisObserver {
-        self.basis_leases.observer()
+        self.runtime.application_query_basis_observer()
     }
 
+    #[inline]
     pub fn capability_plan_compilation_evidence(
         &self,
     ) -> crate::domain_computation::authorization::WorthQueryCapabilityPlanCompilationEvidence {
-        self.authorization.capability_compilation()
+        self.runtime.capability_plan_compilation_evidence()
     }
 
     #[doc(hidden)]
+    #[inline]
     pub fn workflow_compilation_reuse_counters(
         &self,
     ) -> super::WorthQueryWorkflowCompilationReuseCounters {
-        self.runtime
-            .retain_primary_graph_integration_handle()
-            .expect("a published application runtime retains its primary graph")
-            .workflow_compilation_reuse_counters()
+        self.runtime.workflow_compilation_reuse_counters()
     }
 
     #[doc(hidden)]
+    #[inline]
     pub fn workflow_instance_progress_counters(
         &self,
     ) -> super::WorthQueryWorkflowInstanceProgressCounters {
-        self.runtime
-            .retain_primary_graph_integration_handle()
-            .expect("a published application runtime retains its primary graph")
-            .workflow_instance_progress_counters()
+        self.runtime.workflow_instance_progress_counters()
     }
 
+    #[inline]
     pub(in crate::domain_computation) fn graph_work_resource_support(
         &self,
     ) -> worth_query_admission::facade::resource_admission::WorthQueryExecutionResourceSupportSnapshot
     {
-        self.primary_provider.application_resource_support()
+        self.runtime.graph_work_resource_support()
     }
 
+    #[inline]
     pub(in crate::domain_computation) fn graph_work_resource_support_ref(
         &self,
     ) -> &worth_query_admission::facade::resource_admission::WorthQueryExecutionResourceSupportSnapshot
 {
-        self.primary_provider.application_resource_support_ref()
+        self.runtime.graph_work_resource_support_ref()
     }
 
+    #[inline]
     pub(in crate::domain_computation) fn graph_work_provider_identity(&self) -> &str {
-        self.primary_graph_authority.provider_identity()
+        self.runtime.graph_work_provider_identity()
     }
 
     /// Closes ordinary live delivery without closing the authoritative graph.
     /// Later commits retain their compact idempotency causality but no longer
     /// enter this runtime's delivery ring.
+    #[inline]
     pub fn close_live_delivery(&self) -> WorthQueryApplicationLiveDeliveryCloseReceipt {
-        WorthQueryApplicationLiveDeliveryCloseReceipt {
-            remaining_live_consumers: self.primary_provider.live_delivery.close(),
-        }
+        self.runtime.close_live_delivery()
     }
 }
 

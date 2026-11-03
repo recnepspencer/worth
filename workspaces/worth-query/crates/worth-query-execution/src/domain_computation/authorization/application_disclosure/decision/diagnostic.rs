@@ -19,7 +19,7 @@ pub(in crate::domain_computation) struct DiagnosticComparisonAdmission<'a> {
 }
 
 #[derive(Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) enum DiagnosticComparisonDenial {
+pub enum DiagnosticComparisonDenial {
     NotDeclared,
     UnsupportedShape,
     ForeignBinding,

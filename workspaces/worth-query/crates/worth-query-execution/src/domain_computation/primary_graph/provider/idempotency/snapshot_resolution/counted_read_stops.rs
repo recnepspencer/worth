@@ -5,12 +5,15 @@ use crate::domain_computation::primary_graph::tests::fixture::{
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
 #[test]
 fn durable_idempotency_door_preserves_stops_at_every_consult() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     world
         .application
         .with_host_advancement(|phase| {
             let execution = phase.borrowed_request_for_test();
-            let provider = &world.application.primary_provider;
+            let provider = &world.application.runtime.primary_provider;
             let layout = provider.graph.layout.provider_idempotency().clone();
             let binding = WorthQueryApplicationIdempotencyBinding::new([9; 32], [7; 32]);
             publish_relational_mutation(

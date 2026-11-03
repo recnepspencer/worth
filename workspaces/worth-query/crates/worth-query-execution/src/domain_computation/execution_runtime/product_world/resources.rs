@@ -78,6 +78,13 @@ impl WorthQueryProductWorldResources {
         self.invalidation.clone()
     }
 
+    pub(in crate::domain_computation) fn admits_clock(
+        &self,
+        clock: &worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock,
+    ) -> bool {
+        self.clock.admission_clock.same_clock(clock)
+    }
+
     pub(crate) fn into_parts(
         self,
     ) -> (
@@ -97,12 +104,14 @@ impl WorthQueryProductWorldResources {
 
 #[cfg(test)]
 pub(in crate::domain_computation) fn test_product_world_resources(
+    clock: worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock,
 ) -> WorthQueryProductWorldResources {
-    test_product_world_resources_with_history_limit_for_test(1_024)
+    test_product_world_resources_with_history_limit_for_test(1_024, clock)
 }
 
 pub(crate) fn test_product_world_resources_with_history_limit_for_test(
     retained_composite_commits: u64,
+    clock: worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock,
 ) -> WorthQueryProductWorldResources {
     use worth_runtime_world::facade::RuntimeWorldBranchBudgetInstallation;
     use worth_runtime_world::facade::RuntimeWorldBudgetInstallation;
@@ -141,7 +150,7 @@ pub(crate) fn test_product_world_resources_with_history_limit_for_test(
             },
         })
         .expect("the test Product World budget is valid"),
-        WorthQueryProductWorldClock::start(),
+        WorthQueryProductWorldClock::start(clock),
         super::super::WorthQueryInvalidationResources::new(),
         ExecutionRequestPolicy::new(
             worth_foundational::ExecutionPosture::Serial,

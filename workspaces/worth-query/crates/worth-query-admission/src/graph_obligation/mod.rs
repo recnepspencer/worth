@@ -5,7 +5,10 @@ mod selected_set;
 mod selection;
 mod support_admission;
 
-pub use admitted_plan::{WorthQueryAdmittedGraphWorkPlan, WorthQueryGraphWorkPlanIdentity};
+pub use admitted_plan::{
+    WorthQueryAdmittedGraphWorkPlan, WorthQueryGraphWorkPlanIdentity,
+    WorthQueryGraphWorkReleaseDenial,
+};
 pub use counters::WorthQueryGraphObligationSelectionCounters;
 pub use denial::{
     WorthQueryGraphObligationSelectionDenial, WorthQueryGraphObligationSelectionDenialKind,

@@ -57,7 +57,7 @@ fn commit_own_write(
     ),
 ) {
     let product_resources =
-        crate::domain_computation::execution_runtime::product_world::test_product_world_resources();
+        crate::domain_computation::execution_runtime::product_world::test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     let resources = product_resources.invalidation_resources();
     let world = crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world_with_product_resources(product_resources);
     world.declare_output_contract::<OwnWriteOutputs>("OwnWriteOutputs");
@@ -285,6 +285,7 @@ fn commit_own_write(
         .expect("the committed output has a retained cell");
     let completed = world
         .application
+        .runtime
         .primary_provider
         .observe_completed_application(receipt.commit_reference())
         .unwrap();

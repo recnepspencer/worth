@@ -68,7 +68,7 @@ where
         Operation: ApplicationOperationMarkerIdentity<Schema>,
         Input: ApplicationCapabilityRequest<Schema, Capability>,
     {
-        let phase_request = match phase.execution_request_for(&self.product_runtime) {
+        let phase_request = match phase.execution_request_for(&self.runtime.product_runtime) {
             Ok(request) => request,
             Err(_) => return Err(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody")),
         };

@@ -5,6 +5,7 @@
 /// authority it leases from.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryManagedComputationResourceDenial {
+    ForeignAdmissionClock,
     /// The computation's declared work, or the policy's work ceiling, is
     /// spent.
     WorkExhausted,

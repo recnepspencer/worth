@@ -12,7 +12,8 @@ where
         &super::super::capability_registry::WorthQueryInstalledCapabilityPlan,
         WorthQueryOperationAuthorizationDenial,
     > {
-        self.authorization
+        self.runtime
+            .authorization
             .capability_plan_by_identity(&request.capability_identity())
             .ok_or_else(|| {
                 denial(
@@ -31,7 +32,8 @@ where
         crate::domain_computation::authorization::WorthQueryRuntimeTimeSample,
         WorthQueryOperationAuthorizationDenial,
     > {
-        self.authorization_clock
+        self.runtime
+            .authorization_clock
             .sample(installed.request().timeline)
             .map_err(|_| {
                 denial(

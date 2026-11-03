@@ -4,12 +4,25 @@ use installation::{Application, OwnerSchema, ANCHOR};
 use primary_graph::application_output_demand::OriginalSettledProducerSource;
 use std::{sync::Arc, time::Duration};
 use worth_query_decl::facade::application_query::ApplicationQueryParameterSet;
+mod currentness;
 mod field_coordinates;
+mod provenance;
 
 #[test]
 fn real_settlement_seed_preserves_producer_a_and_later_query_basis_b_without_read_custody() {
     let runtime = installation::install();
     let original = journey::complete(&runtime);
+    runtime
+        .with_host_advancement(|phase| {
+            let selected = runtime
+                .on_branch(runtime.current_world())
+                .select(&phase)
+                .unwrap();
+            original.assert_original_provenance(None, None, |settled| {
+                selected.require_current_output_settlements(&phase, [settled])
+            });
+        })
+        .unwrap();
     let original_read = original.retained_read();
     let original_weak = Arc::downgrade(&original_read);
     let native = original
@@ -82,7 +95,7 @@ fn observe(
     runtime
         .with_application_advancement(&request, |phase| {
             let execution = phase
-                .execution_request_for(&runtime.product_runtime)
+                .execution_request_for(&runtime.runtime.product_runtime)
                 .unwrap();
             let current = runtime
                 .on_branch(runtime.current_world())

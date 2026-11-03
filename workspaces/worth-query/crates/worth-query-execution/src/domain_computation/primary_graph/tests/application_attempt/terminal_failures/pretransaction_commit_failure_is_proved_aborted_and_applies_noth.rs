@@ -3,7 +3,10 @@ use super::*;
 
 #[test]
 fn pretransaction_commit_failure_is_proved_aborted_and_applies_nothing() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application

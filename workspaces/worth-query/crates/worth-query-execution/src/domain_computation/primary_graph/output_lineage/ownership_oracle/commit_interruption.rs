@@ -17,7 +17,11 @@ fn cancelling_one_caller_during_producer_commit_keeps_the_other_callers_row_live
     let app = installation::install_with_interruption(interruption.clone());
     let runtime = &app;
     let cancellation = WorthQueryCancellationSource::new();
-    let scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let scope = WorthQueryRequestScope::new(
+        None,
+        cancellation.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let external = primary_graph::tests::fixture::authenticate_external(
         runtime.installed_schema(),
         "alice",
@@ -28,7 +32,7 @@ fn cancelling_one_caller_during_producer_commit_keeps_the_other_callers_row_live
         .with_application_advancement(&scope, |phase| {
             use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
             let execution = phase
-                .execution_request_for(&runtime.product_runtime)
+                .execution_request_for(&runtime.runtime.product_runtime)
                 .unwrap();
             let admit = || {
                 runtime
@@ -81,7 +85,7 @@ fn cancelling_one_caller_during_producer_commit_keeps_the_other_callers_row_live
     runtime
         .with_application_advancement(&fresh, |phase| {
             let execution = phase
-                .execution_request_for(&runtime.product_runtime)
+                .execution_request_for(&runtime.runtime.product_runtime)
                 .unwrap();
             let advanced = runtime
                 .advance_program_output_demand(

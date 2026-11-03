@@ -14,8 +14,14 @@ use super::super::{
 
 #[test]
 fn equal_version_snapshot_from_another_relational_runtime_is_rejected() {
-    let first = installed_authorization_world(true);
-    let second = installed_authorization_world(true);
+    let first = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
+    let second = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let first_graph = first.application.runtime.primary_graph().unwrap();
     let second_graph = second.application.runtime.primary_graph().unwrap();
     let installed = first_graph.retain_entity_resolution_context();
@@ -73,7 +79,10 @@ fn equal_version_snapshot_from_another_relational_runtime_is_rejected() {
 
 #[test]
 fn rebuilt_index_generation_preserves_stable_entity_meaning() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     world
         .application
@@ -146,7 +155,10 @@ fn rebuilt_index_generation_preserves_stable_entity_meaning() {
 
 #[test]
 fn installed_context_derives_binding_layout_and_index_from_its_graph() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let graph = world.application.runtime.primary_graph().unwrap();
     let installed = graph.retain_entity_resolution_context();
     world.application.with_host_advancement(|phase| {

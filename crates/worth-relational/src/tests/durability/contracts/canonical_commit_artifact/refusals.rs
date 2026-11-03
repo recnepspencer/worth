@@ -82,12 +82,22 @@ fn frame_defects_refuse_before_decoding_each_with_its_own_refusal() {
     ));
 
     let mut future_version = frame.bytes.clone();
-    future_version[VERSION].copy_from_slice(&2_u16.to_le_bytes());
+    future_version[VERSION].copy_from_slice(&4_u16.to_le_bytes());
     assert!(matches!(
         refusal(&future_version, execution),
         Refusal::Frame(FrameRefusal::UnsupportedVersion {
-            found: 2,
-            supported: 1
+            found: 4,
+            supported: 3
+        })
+    ));
+
+    let mut retired_version = frame.bytes.clone();
+    retired_version[VERSION].copy_from_slice(&1_u16.to_le_bytes());
+    assert!(matches!(
+        refusal(&retired_version, execution),
+        Refusal::Frame(FrameRefusal::UnsupportedVersion {
+            found: 1,
+            supported: 3
         })
     ));
 

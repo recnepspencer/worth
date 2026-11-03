@@ -4,6 +4,8 @@ use worth_execution::{ExecutionRequestArrayDenial, WorkCeilingDenial};
 /// Why controlled index work stopped before producing a usable answer.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryManagedIndexStop {
+    Projection(crate::domain_computation::primary_graph::application_query::WorthQueryApplicationProjectionDenial),
+    Content(worth_relational::facade::content::RelationalContentDenial),
     Coverage(worth_proof::ManagedIndexCoverageDenial),
     ForeignCoverage,
     IncompleteCoverage,

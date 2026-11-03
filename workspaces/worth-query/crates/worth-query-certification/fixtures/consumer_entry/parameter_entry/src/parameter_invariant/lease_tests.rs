@@ -1,8 +1,5 @@
 //! The shipped parameter invariant runs at its authorized application commit door.
-use std::{
-    num::NonZeroUsize,
-    time::{Duration, Instant},
-};
+use std::{num::NonZeroUsize, time::Duration};
 use worth_query_host::facade::{
     admission::authenticated_principal::{WorthQueryCancellationSource, WorthQueryRequestScope},
     application_contribution::{
@@ -46,9 +43,8 @@ fn run(leased: bool, ceiling: Option<u64>, cancel: bool) -> Case {
     let world = world::install();
     let source = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(120)),
-        source.token(),
-    );
+        Some(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(120)),
+        source.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let program = program::prepare(&world, &scope);
     reports();
     place(if leased {

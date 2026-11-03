@@ -3,7 +3,7 @@
 //! interruption is never retried as a rebuild.
 
 use std::cell::{Cell, RefCell};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
@@ -36,8 +36,9 @@ fn cancelled_in_reducer(
 ) -> (Attempt, usize) {
     let source = WorthQueryCancellationSource::new();
     let request = WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(60)),
+        Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(60)),
         source.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     COMBINES.set(0);
     ARMED.set(Some(source));
@@ -58,7 +59,10 @@ fn cancelled() -> Outcome {
 fn a_full_run_cancelled_inside_a_combine_stops_at_the_next_tree_node() {
     let _observation =
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let installed = installed_over(4, StatusRead::Gather(1), cancelling_sum);
     COMBINES.set(0);
     let whole = attempt(&world, &installed, None);
@@ -103,7 +107,10 @@ fn a_full_run_cancelled_inside_a_combine_stops_at_the_next_tree_node() {
 fn an_incremental_run_cancelled_inside_a_recombine_stops_and_does_not_rebuild() {
     let _observation =
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let installed = installed_over(4, StatusRead::Gather(1), cancelling_sum);
     let first = attempt(
         &world,

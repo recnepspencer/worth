@@ -6,12 +6,13 @@ use crate::runtime::{HistorySubsystem, RelationalRuntime};
 use std::sync::Arc;
 
 pub(super) fn prepare_history(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     restored: &mut RelationalRuntime,
     checkpoint: &DurableCheckpoint,
     mut branch_roots: branch_root_images::RestoredBranchRootImages,
     symbols: &crate::symbols::data::StringInterner,
     work: &mut CheckpointRestoreWork,
-) -> Result<HistorySubsystem, DurabilityError> {
+) -> Result<HistorySubsystem, crate::durability::data::RelationalRecoveryStop> {
     let mut history = restored
         .history
         .detached_owner_snapshot()
@@ -89,6 +90,7 @@ pub(super) fn prepare_history(
         .collect::<Result<_, _>>()?;
     history.with_ledger_mut(|ledger| ledger.commit_envelopes = cells);
     let roots = root_readmission::readmit_selected_images(
+        execution,
         &history,
         checkpoint,
         &mut branch_roots,

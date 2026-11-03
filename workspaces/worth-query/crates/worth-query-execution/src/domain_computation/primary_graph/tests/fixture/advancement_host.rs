@@ -7,11 +7,12 @@ impl AdvancementHost {
     ) -> worth_runtime_world::facade::RuntimeWorldExecutionPlacement<'_> {
         self.0
             .application
+            .runtime
             .product_runtime
             .owner
             .execution_placement()
     }
     pub(crate) fn install() -> Self {
-        Self(installed_authorization_world(true))
+        Self(installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()))
     }
 }

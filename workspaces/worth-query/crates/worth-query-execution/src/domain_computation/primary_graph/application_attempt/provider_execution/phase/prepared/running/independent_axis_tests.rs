@@ -103,13 +103,9 @@ impl WorthQueryApplicationAttemptAffinityView for TestAffinityView {
 #[test]
 fn every_plan_session_and_attempt_axis_is_rejected_independently() {
     let world =
-        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
-            true,
-        );
+        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     let foreign_world =
-        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
-            true,
-        );
+        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     // Foreign evidence is data; its provider executes only under its own opener.
     let foreign_view = foreign_world
         .application
@@ -227,7 +223,7 @@ fn real_terminal_session<'run>(
     running: &'run mut crate::domain_computation::WorthQueryRunningDirectRun,
 ) -> crate::domain_computation::WorthQuerySessionBoundReadsAndEffects<'run> {
     running
-        .admit_provider_execution_plan(&world.application.primary_graph_authority)
+        .admit_provider_execution_plan(world.application.runtime.primary_graph_authority())
         .unwrap()
         .readmit(execution)
         .unwrap()
@@ -277,9 +273,15 @@ fn start(
     );
     let WorthQueryApplicationCommitPreparation::Ready(prepared) = prepare_application_commit(
         &phase.borrowed_request_for_test(),
-        phase,
-        &world.application,
-        WorthQueryApplicationCommitPreparationRequest::new(program, idempotency, None, None),
+        WorthQueryApplicationCommitPreparationRequest::new(
+            world
+                .application
+                .validate_commit_program_in_advancement(phase, program)
+                .unwrap_or_else(|outcome| panic!("fixture admission: {outcome:?}")),
+            idempotency,
+            None,
+            None,
+        ),
     ) else {
         panic!("affinity fixture must prepare")
     };

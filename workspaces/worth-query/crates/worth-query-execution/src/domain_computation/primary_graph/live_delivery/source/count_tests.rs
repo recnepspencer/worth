@@ -5,9 +5,7 @@ use std::panic::{catch_unwind, AssertUnwindSafe};
 #[test]
 fn subscription_count_exhaustion_refuses_without_panicking() {
     let world =
-        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
-            true,
-        );
+        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     let runtime = world.application.product_runtime();
     let product = runtime
         .admit_product_branch(runtime.default_branch())
@@ -87,9 +85,7 @@ fn subscription_count_exhaustion_refuses_without_panicking() {
 #[test]
 fn subscription_drop_saturates_underflow_without_panicking() {
     let world =
-        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
-            true,
-        );
+        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     let runtime = world.application.product_runtime();
     let product = runtime
         .admit_product_branch(runtime.default_branch())

@@ -8,9 +8,26 @@ pub(in crate::storage::residency) fn rebuild(
     projection: &[RegionRelationProjection],
     basis: AdjacencyKindBasis,
 ) -> Result<(), Cause> {
+    rebuild_controlled(
+        partition,
+        projection,
+        basis,
+        &mut |_, _| Ok(()),
+        &mut |_, _| Ok(None),
+    )
+}
+
+pub(in crate::storage::residency) fn rebuild_controlled(
+    partition: &mut PartitionState,
+    projection: &[RegionRelationProjection],
+    basis: AdjacencyKindBasis,
+    checkpoint: &mut ProjectionCheckpoint<'_>,
+    retain: &mut ProjectionRetention<'_>,
+) -> Result<(), Cause> {
     let mut expected = BTreeMap::<RelationId, RegionRelationProjection>::new();
     for entry in projection {
-        if expected.insert(entry.relation, entry.clone()).is_some() {
+        let cloned = clone_claim(entry, checkpoint)?;
+        if expected.insert(entry.relation, cloned).is_some() {
             return Err(Cause::Damaged);
         }
     }
@@ -18,13 +35,23 @@ pub(in crate::storage::residency) fn rebuild(
     if historical {
         // Discard every supplied claim about locally owned history, and derive
         // it again from the authenticated arena, including retired generations.
-        expected.retain(|id, _| id.partition_id != partition.partition_id);
-        project_owned_history(partition, &mut expected)?;
-        if expected.values().cloned().collect::<Vec<_>>() != projection {
+        let mut owned = Vec::new();
+        for id in expected.keys() {
+            checkpoint(1, 2 * size_of::<RelationId>() as u64)?;
+            if id.partition_id == partition.partition_id {
+                owned.push(*id);
+            }
+        }
+        for id in owned {
+            checkpoint(1, 0)?;
+            expected.remove(&id);
+        }
+        project_owned_history(partition, &mut expected, checkpoint)?;
+        if !claims_match(&expected, projection, checkpoint)? {
             return Err(Cause::IntegrityMismatch);
         }
     }
-    install_projection(partition, &expected, basis)?;
+    install_projection(partition, &expected, basis, checkpoint, retain)?;
     if !historical {
         for entry in expected
             .values()
@@ -46,6 +73,7 @@ pub(in crate::storage::residency) fn rebuild(
                 entry.relation,
                 entry.kind,
                 view.extra().endpoints.as_ref().ok_or(Cause::Damaged)?,
+                checkpoint,
             )?;
             if local.get(&entry.relation) != Some(entry) {
                 return Err(Cause::IntegrityMismatch);
@@ -61,14 +89,16 @@ pub(in crate::storage::residency) fn rebuild_head_history(
     partition: &mut PartitionState,
     projection: &[RegionRelationProjection],
 ) -> Result<(), Cause> {
+    let checkpoint: &mut ProjectionCheckpoint<'_> = &mut |_, _| Ok(());
     let mut expected = BTreeMap::new();
     for entry in projection {
-        if expected.insert(entry.relation, entry.clone()).is_some() {
+        let cloned = clone_claim(entry, checkpoint)?;
+        if expected.insert(entry.relation, cloned).is_some() {
             return Err(Cause::Damaged);
         }
     }
     let mut known = BTreeMap::new();
-    project_owned_history(partition, &mut known)?;
+    project_owned_history(partition, &mut known, checkpoint)?;
     for (relation, claim) in known {
         let supplied = expected.get(&relation).ok_or(Cause::IntegrityMismatch)?;
         if claim.kind != supplied.kind
@@ -78,33 +108,68 @@ pub(in crate::storage::residency) fn rebuild_head_history(
             return Err(Cause::IntegrityMismatch);
         }
     }
-    install_projection(partition, &expected, AdjacencyKindBasis::Historical)
+    install_projection(
+        partition,
+        &expected,
+        AdjacencyKindBasis::Historical,
+        checkpoint,
+        &mut |_, _| Ok(None),
+    )
 }
 
 fn install_projection(
     partition: &mut PartitionState,
     expected: &BTreeMap<RelationId, RegionRelationProjection>,
     basis: AdjacencyKindBasis,
+    checkpoint: &mut ProjectionCheckpoint<'_>,
+    retain: &mut ProjectionRetention<'_>,
 ) -> Result<(), Cause> {
     let historical = matches!(basis, AdjacencyKindBasis::Historical);
     for (incoming, table) in [
         (false, &mut partition.adjacency),
         (true, &mut partition.reverse_adjacency),
     ] {
-        for (_, adjacency) in table.iter_mut() {
+        let mut keys = Vec::new();
+        for (&slot, _) in table.iter() {
+            checkpoint(1, 2 * size_of::<usize>() as u64)?;
+            keys.push(slot);
+        }
+        for slot in keys {
+            let admission = table
+                .adoption_allocation_bound(1)
+                .ok_or(Cause::MemoryExhausted)?;
+            let admission = admission.checked_add(256).ok_or(Cause::MemoryExhausted)?;
+            checkpoint(table.navigation_work_bound() as u64, 0)?;
+            let custody = retain(None, admission)?;
+            let adjacency = table.get_mut(slot).ok_or(Cause::IntegrityMismatch)?;
             if historical {
-                adjacency.reset_historical_kind_buckets();
+                adjacency.reset_historical_kind_buckets_with_custody(custody);
             } else {
                 adjacency.reset_kind_buckets();
             }
         }
         for entry in expected.values() {
+            checkpoint(1, 0)?;
             let slots = if incoming {
                 &entry.incoming
             } else {
                 &entry.outgoing
             };
             for &slot in slots {
+                checkpoint(table.navigation_work_bound() as u64, 0)?;
+                let admission = table
+                    .adoption_allocation_bound(1)
+                    .and_then(|bytes| bytes.checked_add(256))
+                    .ok_or(Cause::MemoryExhausted)?;
+                let set = table.get(slot).ok_or(Cause::IntegrityMismatch)?;
+                let admission = admission
+                    .checked_add(
+                        set.historical_kind_insertion_bound(entry.kind)
+                            .ok_or(Cause::MemoryExhausted)?,
+                    )
+                    .ok_or(Cause::MemoryExhausted)?;
+                checkpoint(128, 0)?;
+                retain(set.historical_kind_custody(), admission)?;
                 let adjacency = table.get_mut(slot).ok_or(Cause::IntegrityMismatch)?;
                 if historical {
                     adjacency.index_historical_kind(entry.kind, entry.relation);
@@ -130,139 +195,33 @@ fn install_projection(
     Ok(())
 }
 
-fn add_owned(
-    partition: &PartitionState,
-    target: &mut BTreeMap<RelationId, RegionRelationProjection>,
-    relation: RelationId,
-    kind: KindId,
-    endpoints: &crate::storage::substrate::RelationEndpoints,
-) -> Result<(), Cause> {
-    let entry = target
-        .entry(relation)
-        .or_insert_with(|| RegionRelationProjection {
-            relation,
-            kind,
-            outgoing: BTreeSet::new(),
-            incoming: BTreeSet::new(),
-        });
-    if entry.kind != kind {
-        return Err(Cause::IntegrityMismatch);
-    }
-    if endpoints.source.partition_id == partition.partition_id
-        && partition
-            .adjacency
-            .get(endpoints.source.slot_index())
-            .is_some()
-    {
-        entry.outgoing.insert(endpoints.source.slot_index());
-    }
-    if endpoints.target.partition_id == partition.partition_id
-        && partition
-            .reverse_adjacency
-            .get(endpoints.target.slot_index())
-            .is_some()
-    {
-        entry.incoming.insert(endpoints.target.slot_index());
-    }
-    if entry.outgoing.is_empty() && entry.incoming.is_empty() {
-        target.remove(&relation);
-    }
-    Ok(())
-}
-
 pub(in crate::storage::residency) fn canonical_history(
     partition: &PartitionState,
 ) -> Result<Vec<RegionRelationProjection>, Cause> {
-    let mut expected = capture(partition, AdjacencyKindBasis::Historical)?
-        .into_iter()
-        .filter(|entry| entry.relation.partition_id != partition.partition_id)
-        .map(|entry| (entry.relation, entry))
-        .collect();
-    project_owned_history(partition, &mut expected)?;
-    Ok(expected.into_values().collect())
+    canonical_history_controlled(partition, &mut |_, _| Ok(()))
 }
 
-fn project_owned_history(
+pub(in crate::storage::residency) fn canonical_history_controlled(
     partition: &PartitionState,
-    expected: &mut BTreeMap<RelationId, RegionRelationProjection>,
-) -> Result<(), Cause> {
-    for slot in partition.relation_arena.occupied_slots() {
-        project_prefix(partition, slot, expected)?;
-        for metadata in partition
-            .relation_arena
-            .metadata_history_at(slot)
-            .into_iter()
-            .flatten()
-        {
-            add_owned(
-                partition,
-                expected,
-                RelationId::new(partition.partition_id, slot as u64, metadata.generation),
-                metadata.kind_id,
-                &metadata.endpoints,
-            )?;
-        }
-        if let Some(view) = partition.relation_arena.get_slot(slot)
-            && let (Some(kind), Some(endpoints)) = (view.kind_id(), view.extra().endpoints.as_ref())
-        {
-            add_owned(
-                partition,
-                expected,
-                RelationId::new(partition.partition_id, slot as u64, view.generation()),
-                kind,
-                endpoints,
-            )?;
+    checkpoint: &mut ProjectionCheckpoint<'_>,
+) -> Result<Vec<RegionRelationProjection>, Cause> {
+    let mut expected = BTreeMap::new();
+    for entry in capture_controlled(partition, AdjacencyKindBasis::Historical, checkpoint)? {
+        checkpoint(1, 4096)?;
+        if entry.relation.partition_id != partition.partition_id {
+            expected.insert(entry.relation, entry);
         }
     }
-    Ok(())
+    project_owned_history(partition, &mut expected, checkpoint)?;
+    let mut answer = Vec::new();
+    for entry in expected.into_values() {
+        checkpoint(1, 2 * size_of::<RegionRelationProjection>() as u64)?;
+        answer.push(entry);
+    }
+    Ok(answer)
 }
 
-fn project_prefix(
-    partition: &PartitionState,
-    slot: usize,
-    expected: &mut BTreeMap<RelationId, RegionRelationProjection>,
-) -> Result<(), Cause> {
-    let physical = partition
-        .relation_arena
-        .physical_index(slot)
-        .ok_or(Cause::IntegrityMismatch)?;
-    let Some(prefix) = &partition.relation_arena.history_prefixes[physical] else {
-        return Ok(());
-    };
-    for claim in &prefix.history_opening.historical_relations {
-        if claim.relation.partition_id != partition.partition_id
-            || claim.relation.slot_index() != slot
-        {
-            return Err(Cause::IntegrityMismatch);
-        }
-        let entry = expected
-            .entry(claim.relation)
-            .or_insert_with(|| RegionRelationProjection {
-                relation: claim.relation,
-                kind: claim.kind,
-                outgoing: BTreeSet::new(),
-                incoming: BTreeSet::new(),
-            });
-        if entry.kind != claim.kind {
-            return Err(Cause::IntegrityMismatch);
-        }
-        entry.outgoing.extend(
-            claim
-                .outgoing
-                .iter()
-                .filter(|&&slot| partition.adjacency.get(slot).is_some())
-                .copied(),
-        );
-        entry.incoming.extend(
-            claim
-                .incoming
-                .iter()
-                .filter(|&&slot| partition.reverse_adjacency.get(slot).is_some())
-                .copied(),
-        );
-        if entry.outgoing.is_empty() && entry.incoming.is_empty() {
-            expected.remove(&claim.relation);
-        }
-    }
-    Ok(())
-}
+mod owned_history;
+use owned_history::{add_owned, project_owned_history};
+mod claim_copy;
+use claim_copy::{claims_match, clone_claim};

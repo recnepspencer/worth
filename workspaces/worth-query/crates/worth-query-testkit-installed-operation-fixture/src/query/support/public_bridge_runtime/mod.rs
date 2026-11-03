@@ -130,7 +130,7 @@ pub fn public_product_world_resources_with_branch_limit(
                 owner_created_component_custody_records: 256,
             },
         },
-        WorthQueryProductWorldClock::start(),
+        WorthQueryProductWorldClock::start(worth_execution::MonotonicClock::system()),
         worth_query_execution::facade::runtime::WorthQueryInvalidationResources::new(),
         execution_policy,
     )

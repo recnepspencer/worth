@@ -64,9 +64,12 @@ fn installation() -> (
     use worth_signal::facade::{
         SignalConditionalArtifactReuse, SignalConditionalVersionComparator,
     };
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let bridge = RuntimeBridge::builder()
-        .with_relational_source(world.application.product_runtime.source.clone())
+        .with_relational_source(world.application.runtime.product_runtime.source.clone())
         .with_signal_sink(UnusedSink)
         .register_mapping(BridgeMappingRegistration::new(
             BridgeMappingId::from_stable_name("scheduling-busy"),

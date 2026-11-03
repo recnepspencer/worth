@@ -301,12 +301,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     ) -> Result<WorthQueryPreparedBranchSetAdoption, WorthQueryBranchSetAdoptionPreparationDenial>
     {
         self.with_application_advancement(request, |phase| {
-            let phase_request =
-                phase
-                    .execution_request_for(&self.product_runtime)
-                    .map_err(|cause| {
-                        WorthQueryBranchSetAdoptionPreparationDenial::ExecutionDenied(cause.into())
-                    })?;
+            let phase_request = phase
+                .execution_request_for(&self.runtime.product_runtime)
+                .map_err(|cause| {
+                    WorthQueryBranchSetAdoptionPreparationDenial::ExecutionDenied(cause.into())
+                })?;
             let execution = &phase_request;
             let (pending, total_selection_work_units) = self.prepare_branch_set_targets(
                 execution,

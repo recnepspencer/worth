@@ -148,6 +148,7 @@ where
         receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
     ) -> Result<PreparedSelectedDelivery<'a>, WorthQueryOutputDemandDenial> {
         let route = self
+            .runtime
             .output_readiness_routes
             .get(producer_identity)
             .expect("installation retains one readiness route per producer");

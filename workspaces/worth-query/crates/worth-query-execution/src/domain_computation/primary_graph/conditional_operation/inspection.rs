@@ -130,7 +130,11 @@ where
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .snapshot();
         let retained = registry.retained_resource_counts();
-        let bridge = self.bridge.conditional().conditional_lifecycle_probe();
+        let bridge = self
+            .runtime
+            .bridge
+            .conditional()
+            .conditional_lifecycle_probe();
         WorthQueryConditionalRuntimeInspection::from_live_resources(
             registry.len(),
             bridge.live_managed_clock_count(),
@@ -148,7 +152,11 @@ where
     pub fn conditional_runtime_lifecycle_probe(
         &self,
     ) -> super::WorthQueryConditionalRuntimeLifecycleProbe {
-        let bridge = self.bridge.conditional().conditional_lifecycle_probe();
+        let bridge = self
+            .runtime
+            .bridge
+            .conditional()
+            .conditional_lifecycle_probe();
         let registry = self
             .conditional_operations
             .lock()

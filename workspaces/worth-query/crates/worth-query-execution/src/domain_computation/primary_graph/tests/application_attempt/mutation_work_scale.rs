@@ -160,7 +160,10 @@ fn mutation_work(
     unrelated_accounts: usize,
     idempotency_key: u8,
 ) -> super::super::super::provider::WorthQueryPrimaryMutationWorkEvidence {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let program = world
         .application
         .with_host_advancement(|phase| {
@@ -198,7 +201,10 @@ fn no_demand_mutation_work(
     wide: bool,
     idempotency_key: u8,
 ) -> super::super::super::provider::WorthQueryPrimaryMutationWorkEvidence {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let program = world
         .application
         .with_host_advancement(|phase| {
@@ -334,7 +340,7 @@ fn grow_unrelated_accounts(
     if count == 0 {
         return;
     }
-    let graph = world.application.primary_provider.graph.clone();
+    let graph = world.application.runtime.primary_provider.graph.clone();
     let kind = graph
         .layout
         .entity_kind(Account::reference().name())

@@ -83,7 +83,6 @@ impl PortableAspectContract {
                     self.evolution.into(),
                 )
                 .map_err(|_| PortableAspectContractDenial::IncompatibleConfiguration)?,
-            PortableAspectShape::Content => step.content_ref(),
         };
         if Self::from_contract(&contract) != *self {
             return Err(PortableAspectContractDenial::IncompatibleConfiguration);
@@ -98,7 +97,6 @@ enum PortableAspectShape {
     Struct(Vec<PortableFieldDeclaration>),
     ReferenceEntity,
     OpaqueToken,
-    Content,
 }
 
 impl PortableAspectShape {
@@ -116,7 +114,6 @@ impl PortableAspectShape {
                 Self::ReferenceEntity
             }
             AspectShape::Opaque(crate::aspects::OpaqueAspectType::Token) => Self::OpaqueToken,
-            AspectShape::Content => Self::Content,
         }
     }
 }

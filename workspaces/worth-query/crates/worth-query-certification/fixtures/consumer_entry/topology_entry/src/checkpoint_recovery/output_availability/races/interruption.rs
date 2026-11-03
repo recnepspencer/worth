@@ -10,7 +10,7 @@ mod serial {
         let mut app = installation::install();
         let (valid_scope, principal) = authenticate(&app);
         let cancellation = authentication::WorthQueryCancellationSource::new();
-        let scope = authentication::WorthQueryRequestScope::new(None, cancellation.token());
+        let scope = authentication::WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
         let request = app.request(&principal, &scope);
         let original = request
             .demand(producer::Demand("population".into()))

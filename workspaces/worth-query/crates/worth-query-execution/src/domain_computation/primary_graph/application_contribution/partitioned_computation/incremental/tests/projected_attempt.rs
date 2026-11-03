@@ -169,7 +169,7 @@ where
                 |reader, root| {
                     outcome = Some((|| -> Outcome {
                         let execution = phase
-                            .execution_for(&world.application.product_runtime)
+                            .execution_for(&world.application.runtime.product_runtime)
                             .expect("the fixture phase belongs to its installed world");
                         before_computation(execution);
                         let prepared = installed.prepare_through(reader, execution, root)?;

@@ -229,7 +229,7 @@ fn managed_historical_matching_preserves_original_cancellation_and_allows_fresh_
         .selected_commit()
         .clone();
     let cancellation = WorthQueryCancellationSource::new();
-    let stopped_scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let stopped_scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let observed = Arc::new(std::sync::atomic::AtomicBool::new(false));
     let in_match = observed.clone();
     calls.matched_sources.store(1, Ordering::SeqCst);

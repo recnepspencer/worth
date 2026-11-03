@@ -15,6 +15,7 @@ impl RelationalInitialSchemaInstallationReceipt {
             custom_invariant_generation: self.custom_invariant_generation,
             schema_digest: self.retained_schema_authority_digest,
             authority: owner.authority(),
+            source_scope_ownership: Default::default(),
         };
         (owner, installed)
     }

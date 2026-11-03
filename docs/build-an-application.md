@@ -282,7 +282,20 @@ includes a passing capability example and an undeclared-member compile refusal.
 
 ### Inline opaque values
 
-`ScalarAspectType::InlineBytes` carries one opaque inline atom. Its immutable
+`ScalarAspectType::InlineBytes` carries the complete canonical representation of
+one atomic domain value. It can be decoded by a pure observer receiving the
+scalar, without borrowing Native content custody. The generic certification
+counter's conditional predicate is an actual consumer of this contract; the
+ratio binding is a standalone atomic example and the broken binary binding is
+a refusal fixture. See the [full ownership review and inventory](inline-atomic-content-boundary.md).
+
+Use Native ContentRef for ordered identity-free numerical data, including
+splines at every size. Its digest requires the installed format and real Native
+resolver authority. The 16 MiB content frame limit refuses at admission before
+effects; it never redirects the value to InlineBytes. Representation follows
+meaning and authority, never a size threshold.
+
+The immutable
 `InlineBytes` carrier admits at most **4,294,967,290 payload bytes**
 (`u32::MAX - 5`). The existing native scalar frame uses a 32-bit body length;
 one tag byte and four payload-length bytes occupy the remaining five bytes.
@@ -305,7 +318,8 @@ Choose a representation by ownership and change granularity:
 | Independently named or editable object | Entity with stable semantic identity |
 | Link to another object | Typed relation to its actual entity |
 | Fact with an existing scalar meaning | Native scalar field |
-| Identity-free, reference-free leaf with owner-defined meaning | Versioned domain-value binding; one opaque native atom |
+| Complete canonical atomic value used by pure observations | Versioned domain-value binding; one native scalar atom |
+| Ordered identity-free numerical dataset | Format-bound Native ContentRef at every size |
 
 Declare a binary atom with `worth_query_value_binding!` and `binary: OwnerDelegate`,
 plus its intrinsic `unit:` and `frame:` when applicable. The delegate implements
@@ -2766,6 +2780,7 @@ let adapter = admit_authentication_adapter(
     WorthQueryAuthenticationAdapterAdmission::new(
         WorthQueryAuthenticationAudience::new("host")?,
         WorthQueryAuthenticationMethod::new("example")?,
+        admission_clock.clone(), // the observer installed with the runtime time source
     ),
     IdentityAdapter,          // your impl of WorthQueryAuthenticationAdapter
 )?;
@@ -2851,7 +2866,11 @@ use worth_query_host::facade::admission::authenticated_principal::{
 };
 
 let cancellation = WorthQueryCancellationSource::new();
-let scope = WorthQueryRequestScope::new(Some(Instant::now() + Duration::from_secs(60)), cancellation.token());
+let scope = WorthQueryRequestScope::new(
+    Some(admission_clock.now() + Duration::from_secs(60)),
+    cancellation.token(),
+    admission_clock.clone(),
+);
 ```
 
 #### Read governed data at one observation
@@ -3985,6 +4004,71 @@ A `WorthQueryApplicationProducerProvider` supplies its semantic identity,
 prepares and writes the actual effects through the same typed mutation path.
 Source admission, output contracts, currentness and atomic publication remain
 enforced without a producer resource forecast.
+
+#### Source-owned producer publications
+
+A producer defaults to independent publications. Opt in to source-scope cascade
+retirement on its `WorthQueryApplicationProducerBinding`:
+
+```rust,ignore
+const OWNERSHIP: ProducerPublicationOwnership =
+    ProducerPublicationOwnership::SourceScopeCascade;
+```
+
+The declaration means that the producer's complete publications belong to its
+recorded source scope. Installation requires an entity-specific input-field
+scope and a source query rooted at that same entity, without a context traversal,
+component/orbit selection or managed-index root selection. Shared/context and
+principal scopes refuse with `ProducerOwnershipRequiresEntitySourceScope`, naming
+the producer. Initial and Preserve producers in one family must agree on ownership.
+The ownership rule participates in installed producer identity.
+
+An authored `retire_created` or `restore_retired` binding supplies the exact source
+identity. Native admits an ordinary authored Create as the distinguished anchor
+and independently computes every live opted-in publication scoped by that source,
+then publications scoped by their members. Submit exactly the anchor and every
+live member of those complete publications. Partial, repeated, extra and
+foreign-source rosters refuse with typed causes and affected native records;
+retirement publishes once. Inspect `commit_denial.authored_retirement_error()` for
+its original `authored_retirement_refusal()` and `context.affected_records`.
+`restore_retired` restores the source and every owned
+publication in one transaction, preserving each producer's provenance and route
+while allocating fresh native generations and remapping owned relation endpoints.
+A restoration supplies historical output association, not producer readiness.
+
+An owned publication cannot use the independent single-publication retirement
+path, including a warm publication capsule. It refuses with
+`OwnedPublicationRequiresCascade`, identifying the publication and its owner.
+Anchorless mixed Create/Retire candidates receive the same refusal.
+An intermediate source created by a producer is not a genuine authored anchor.
+When a producer succession deletes live members of its own predecessor publication,
+Native treats those exact deleted members as cascade anchors. It computes the
+complete transitive closure of opted-in publications they own from recorded
+history. The producer candidate must delete every live closure member and owned
+edge and declare exactly those retirements, in the same atomic commit as its
+ordinary Create/Preserve/Retire membership. Partial, missing, extra, repeated and
+foreign retirements refuse with typed causes and affected records. Borrow
+`demand_denial.authored_retirement_error()` for that original Native error.
+The surviving generator keeps its own Preserve origin; every retired publication
+retains its own provenance, route and predecessor. This also covers an independent
+generator whose removed members own opted-in children.
+
+Regrowth creates fresh source generations and fresh owned publications through
+the existing producer rules. Undo the authored size edit through its recorded
+correction, then demand outputs again; redo selects the recorded reversal
+alternative and uses reapplication. These size-edit inverses do not restore the
+old derived generations. Whole-source authored restoration retains its existing
+`restore_retired` rules. Every intermediate publication must opt
+in for a producer-created source to join the authored root's cascade.
+An owned publication cannot be
+restored or republished without its live source (`PublicationOwnerUnavailable`).
+These checks govern required-output publication custody; an unbound Native
+transaction remains governed by its ordinary schema and cascade-delete policy.
+
+An input dependency or a reference never implies ownership. Two independent
+producers may read the same source without entering its cascade. Opting in does
+not make an external endpoint of a producer-owned relation an owned entity.
+See the [custody contract](../plans/WORTH-query/authored-retirement-custody.md).
 
 #### Typed producer domain denial
 

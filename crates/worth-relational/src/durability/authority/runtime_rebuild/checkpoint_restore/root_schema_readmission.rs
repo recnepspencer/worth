@@ -3,6 +3,7 @@ use std::sync::Arc;
 
 use crate::durability::data::{
     DurabilityError, DurableBranchRootImage, DurableBranchRootSchemaImage, DurableCheckpoint,
+    RelationalRecoveryStop,
 };
 use crate::runtime::RelationalRuntime;
 
@@ -48,7 +49,8 @@ impl RootSchemaReadmissionCatalog {
         restored: &RelationalRuntime,
         image: &DurableBranchRootImage,
         envelope: &crate::history::data::CanonicalCommitEnvelope,
-    ) -> Result<Arc<crate::branch::RelationalBranchRootSchemaAuthority>, DurabilityError> {
+    ) -> Result<Arc<crate::branch::RelationalBranchRootSchemaAuthority>, RelationalRecoveryStop>
+    {
         if image.format_version == 0 {
             return self.readmit_legacy_root(restored, image, envelope);
         }
@@ -59,7 +61,8 @@ impl RootSchemaReadmissionCatalog {
             {
                 return Err(corrupt_checkpoint(
                     "shared schema carrier disagrees with a linked envelope".to_owned(),
-                ));
+                )
+                .into());
             }
             return Ok(Arc::clone(authority));
         }
@@ -71,7 +74,8 @@ impl RootSchemaReadmissionCatalog {
         restored: &RelationalRuntime,
         image: &DurableBranchRootImage,
         envelope: &crate::history::data::CanonicalCommitEnvelope,
-    ) -> Result<Arc<crate::branch::RelationalBranchRootSchemaAuthority>, DurabilityError> {
+    ) -> Result<Arc<crate::branch::RelationalBranchRootSchemaAuthority>, RelationalRecoveryStop>
+    {
         let allocation_id = self.issue_authority_id()?;
         crate::branch::RelationalBranchRootSchemaAuthority::readmit_exact(
             allocation_id,
@@ -86,6 +90,7 @@ impl RootSchemaReadmissionCatalog {
                 image.commit_id.0
             ))
         })
+        .map_err(Into::into)
     }
 
     fn readmit_new_carrier(
@@ -93,7 +98,8 @@ impl RootSchemaReadmissionCatalog {
         restored: &RelationalRuntime,
         image: &DurableBranchRootImage,
         envelope: &crate::history::data::CanonicalCommitEnvelope,
-    ) -> Result<Arc<crate::branch::RelationalBranchRootSchemaAuthority>, DurabilityError> {
+    ) -> Result<Arc<crate::branch::RelationalBranchRootSchemaAuthority>, RelationalRecoveryStop>
+    {
         let (carrier, registry, retained_contracts) = self
             .carriers
             .get(&image.schema_carrier_digest)
@@ -112,7 +118,8 @@ impl RootSchemaReadmissionCatalog {
             return Err(corrupt_checkpoint(format!(
                 "branch-root image `{}` schema carrier linkage mismatch",
                 image.commit_id.0
-            )));
+            ))
+            .into());
         }
         // Carrier validation alone cannot substitute the configured source
         // issuer. First bind the complete durable meaning to this envelope.
@@ -120,7 +127,8 @@ impl RootSchemaReadmissionCatalog {
             return Err(schema_mismatch(format!(
                 "branch-root image `{}` executable schema differs from its envelope",
                 image.commit_id.0
-            )));
+            ))
+            .into());
         }
         let configured = &restored.config.schema.registry;
         let registry = if (!envelope.schema_authority.derived_relations.is_empty()
@@ -137,6 +145,11 @@ impl RootSchemaReadmissionCatalog {
         } else {
             registry
         };
+        let mut registry = registry;
+        registry.content_formats = registry
+            .content_formats
+            .bind_recorded(&configured.content_formats)
+            .map_err(RelationalRecoveryStop::from)?;
         let allocation_id = self.issue_authority_id()?;
         let authority = crate::branch::RelationalBranchRootSchemaAuthority::readmit_exact(
             allocation_id,
@@ -178,6 +191,7 @@ fn validate_root_image_integrity(image: &DurableBranchRootImage) -> Result<(), D
         image.commit_id,
         image.partition_image_digest,
         image.schema_carrier_digest,
+        &image.content_records,
     );
     if digest == image.root_image_digest {
         Ok(())

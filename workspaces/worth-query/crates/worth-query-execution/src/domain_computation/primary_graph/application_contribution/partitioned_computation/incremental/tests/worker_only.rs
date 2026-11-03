@@ -100,7 +100,7 @@ fn native_attempt<Owned: TestOwner>(
             let phase_custody = phase.test_host_request();
             let admission = projected_attempt::admit(world, &request, &phase);
             let execution = phase
-                .execution_for(&world.application.product_runtime)
+                .execution_for(&world.application.runtime.product_runtime)
                 .unwrap();
             assert!(!execution.has_accounting());
             let allocation = execution.allocation_policy().unwrap();
@@ -221,7 +221,7 @@ fn worker_only_partition_run_retains_facts_reuses_and_observes_a_real_source_edi
     };
     let _observation = QueryObservation::install_on_this_thread();
     let world = crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world_with_product_resources(
-        crate::domain_computation::execution_runtime::product_world::test_product_world_resources()
+        crate::domain_computation::execution_runtime::product_world::test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system())
             .with_execution_policy(policy()),
     );
     let base = installed(StatusRead::Gather(1), sum);
@@ -277,6 +277,7 @@ fn worker_only_partition_run_retains_facts_reuses_and_observes_a_real_source_edi
     let field = AccountLabel::reference();
     let locator = world
         .application
+        .runtime
         .primary_provider
         .graph
         .layout
@@ -289,7 +290,7 @@ fn worker_only_partition_run_retains_facts_reuses_and_observes_a_real_source_edi
         .application
         .with_application_advancement(&request, |phase| {
             let execution = phase
-                .execution_for(&world.application.product_runtime)
+                .execution_for(&world.application.runtime.product_runtime)
                 .unwrap();
             assert!(!execution.has_accounting());
             let execution = execution.execution_request().unwrap();

@@ -311,6 +311,7 @@ fn checkpoint_restore_rejects_incomplete_field_revision_column() {
         root.commit_id,
         root.partition_image_digest,
         root.schema_carrier_digest,
+        &root.content_records,
     );
 
     let mut recovered = runtime_with_test_schema();

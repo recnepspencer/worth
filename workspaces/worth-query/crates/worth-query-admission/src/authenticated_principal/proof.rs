@@ -51,6 +51,7 @@ pub struct WorthQueryAuthenticatedExternalPrincipal<Schema> {
     validated_at: SystemTime,
     expires_at: SystemTime,
     valid_until: Instant,
+    clock: super::WorthQueryAdmissionClock,
     adapter_identity: WorthQueryAuthenticationAdapterIdentity,
     binding_identity: ApplicationSchemaBindingIdentity,
     attributes: Vec<WorthQueryPrincipalAttribute>,
@@ -66,6 +67,7 @@ impl<Schema> WorthQueryAuthenticatedExternalPrincipal<Schema> {
         validated_at: SystemTime,
         expires_at: SystemTime,
         valid_until: Instant,
+        clock: super::WorthQueryAdmissionClock,
         adapter_identity: WorthQueryAuthenticationAdapterIdentity,
         binding_identity: ApplicationSchemaBindingIdentity,
         attributes: Vec<WorthQueryPrincipalAttribute>,
@@ -77,6 +79,7 @@ impl<Schema> WorthQueryAuthenticatedExternalPrincipal<Schema> {
             validated_at,
             expires_at,
             valid_until,
+            clock,
             adapter_identity,
             binding_identity,
             attributes,
@@ -120,8 +123,12 @@ impl<Schema> WorthQueryAuthenticatedExternalPrincipal<Schema> {
         &self.attributes
     }
 
+    pub fn clock(&self) -> &super::WorthQueryAdmissionClock {
+        &self.clock
+    }
+
     pub fn is_expired(&self) -> bool {
-        Instant::now() >= self.valid_until
+        self.clock.now() >= self.valid_until
     }
 }
 

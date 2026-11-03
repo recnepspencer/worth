@@ -173,7 +173,8 @@ pub(super) fn request(
                 ExecutionBudget::new(std::num::NonZeroUsize::MIN, Some(bytes), Some(work)),
             ),
             cancellation,
-            deadline,
+            deadline: deadline
+                .map(|instant| worth_execution::MonotonicClock::system().deadline_at(instant)),
         })
         .unwrap()
 }

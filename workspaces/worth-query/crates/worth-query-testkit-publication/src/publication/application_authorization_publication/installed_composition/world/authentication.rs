@@ -1,7 +1,7 @@
 pub use std::future::Future;
 pub use std::pin::pin;
 pub use std::task::{Context, Poll, Waker};
-pub use std::time::{Duration, Instant, SystemTime};
+pub use std::time::{Duration, SystemTime};
 
 pub use worth_query_admission::facade::authenticated_principal::{
     admit_authentication_adapter, WorthQueryAuthenticatedExternalPrincipal,
@@ -24,8 +24,7 @@ pub fn authenticate_external(
         schema,
         WorthQueryAuthenticationAdapterAdmission::new(
             WorthQueryAuthenticationAudience::new("publication-proof").unwrap(),
-            WorthQueryAuthenticationMethod::new("causal-test").unwrap(),
-        ),
+            WorthQueryAuthenticationMethod::new("causal-test").unwrap(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()),
         CausalIdentityAdapter,
     )
     .unwrap();
@@ -40,8 +39,9 @@ pub fn external_identity() -> WorthQueryExternalPrincipalIdentity {
 pub fn request_scope() -> WorthQueryRequestScope {
     let cancellation = WorthQueryCancellationSource::new();
     WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(60)),
+        Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(60)),
         cancellation.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     )
 }
 

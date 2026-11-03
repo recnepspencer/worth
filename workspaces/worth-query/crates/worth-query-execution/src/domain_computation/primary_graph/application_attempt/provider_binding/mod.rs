@@ -48,6 +48,14 @@ pub(in crate::domain_computation) struct WorthQueryPreparedApplicationProviderAt
 }
 
 impl WorthQueryPreparedApplicationProviderAttempt {
+    pub(in crate::domain_computation::primary_graph::application_attempt) fn with_content_attachments(
+        mut self,
+        attachments: worth_relational::facade::content::RelationalContentAttachments,
+    ) -> Self {
+        self.effects.bind_content_attachments(attachments);
+        self
+    }
+
     pub(in crate::domain_computation::primary_graph::application_attempt) fn with_workflow_origin(
         mut self,
         origin: Option<crate::domain_computation::primary_graph::workflow::operation_output::WorkflowOperationOrigin>,

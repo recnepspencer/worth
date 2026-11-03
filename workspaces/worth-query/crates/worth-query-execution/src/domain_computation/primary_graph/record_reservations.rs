@@ -28,9 +28,10 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static>
     ) -> Result<WorthQueryRecordReservationObservation, WorthQueryRecordReservationObservationDenial>
     {
         let execution = phase
-            .execution_request_for(&self.product_runtime)
+            .execution_request_for(&self.runtime.product_runtime)
             .map_err(WorthQueryRecordReservationObservationDenial::ForeignPhase)?;
-        self.primary_provider
+        self.runtime
+            .primary_provider
             .graph
             .with_runtime(&execution, |runtime| {
                 runtime

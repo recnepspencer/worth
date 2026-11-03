@@ -3,7 +3,10 @@ use super::*;
 
 #[test]
 fn lifecycle_replay_resolvers_have_no_replay_for_an_ordinary_admission() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application

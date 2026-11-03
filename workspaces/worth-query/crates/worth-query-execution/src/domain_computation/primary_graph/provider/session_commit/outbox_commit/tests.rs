@@ -67,8 +67,11 @@ struct CommittedOutboxResolutionEvidence {
 fn commit_only_other_outbox(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> CommittedOutboxResolutionEvidence {
-    let world = installed_authorization_world(true);
-    let provider = &world.application.primary_provider;
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
+    let provider = &world.application.runtime.primary_provider;
     let (_, requested) = bind_dispatch_outbox_create_intent(
         Some(provider.graph.layout.provider_dispatch_outbox()),
         Some(&record(1)),

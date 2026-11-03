@@ -28,7 +28,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
     {
         use WorthQueryHistoryOutputReadDenial as ReadDenial;
         let execution = phase
-            .checked_execution_request_for(&self.product_runtime)
+            .checked_execution_request_for(&self.runtime.product_runtime)
             .map_err(|cause| ReadDenial::Authority(NavigationDenial::Stopped(cause)))?;
         profile
             .source_intent()

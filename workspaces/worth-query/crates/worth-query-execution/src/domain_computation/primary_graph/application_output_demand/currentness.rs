@@ -1,6 +1,7 @@
 mod consumed;
 mod facts;
 mod settlements;
+mod verification_context;
 use facts::require_current_facts;
 use facts::require_witnessed_output;
 
@@ -27,7 +28,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         let runtime = self.application();
         let execution = phase
-            .execution_request_for(&runtime.product_runtime)
+            .execution_request_for(&runtime.runtime.product_runtime)
             .map_err(|cause| {
                 denial(WorthQueryOutputDemandDenialKind::ExecutionRequest(
                     cause.into(),
@@ -35,6 +36,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             })?;
 
         runtime
+            .runtime
             .primary_provider
             .graph
             .with_runtime(&execution, |relational| {
@@ -52,7 +54,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         let runtime = self.application();
         let execution = phase
-            .execution_request_for(&runtime.product_runtime)
+            .execution_request_for(&runtime.runtime.product_runtime)
             .map_err(|cause| {
                 denial(WorthQueryOutputDemandDenialKind::ExecutionRequest(
                     cause.into(),
@@ -60,6 +62,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             })?;
 
         runtime
+            .runtime
             .primary_provider
             .graph
             .with_runtime(&execution, |relational| {
@@ -71,6 +74,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                         return Err(denial(WorthQueryOutputDemandDenialKind::ForeignSettlement));
                     }
                     let lineage = runtime
+                        .runtime
                         .primary_provider
                         .graph
                         .output_lineage
@@ -130,8 +134,13 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             require_own_publication(receipt, self.product().observation())?;
             return self.require_current_consumed(execution, relational, read);
         };
+        let context = verification_context::VerificationContext::resolve(
+            facts,
+            read.verification_requirement,
+        )?;
         let owner = &self
             .application()
+            .runtime
             .primary_provider
             .graph
             .source_owner
@@ -163,28 +172,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 return Ok(());
             }
         }
-        require_current_facts(verification, facts).map_err(
-            |error| match read.verification_requirement {
-                Some(crate::domain_computation::primary_graph::output_lineage::invalidation::FullVerificationReason::NativeFactRevisionUnavailable(ordinal)) => WorthQueryOutputDemandDenial::new(
-                    error.kind(),
-                    format!("{}; native revision unavailable for: {}", error.subject(),
-                        facts.get(ordinal).map_or_else(|| "unavailable retained fact".into(), |fact| fact.locator_identity())),
-                ),
-                Some(crate::domain_computation::primary_graph::output_lineage::invalidation::FullVerificationReason::IndexedSelectionFactDenied(ordinal, denial)) => WorthQueryOutputDemandDenial::new(
-                    error.kind(),
-                    format!("{}; indexed selection reobservation denied: {denial:?}; fact: {}", error.subject(),
-                        facts.get(ordinal).map_or_else(|| "unavailable retained fact".into(), |fact| fact.locator_identity())),
-                ),
-                Some(reason) => WorthQueryOutputDemandDenial::new(
-                    error.kind(),
-                    format!(
-                        "{}; output requires full verification: {reason:?}",
-                        error.subject()
-                    ),
-                ),
-                None => error,
-            },
-        )?;
+        require_current_facts(verification, facts).map_err(|error| context.describe(error))?;
         self.require_current_consumed(execution, relational, read)?;
         if let Ok(selected) = relational.read_truth().positioned_snapshot(snapshot) {
             let witness = read.native_output_witness.as_ref();

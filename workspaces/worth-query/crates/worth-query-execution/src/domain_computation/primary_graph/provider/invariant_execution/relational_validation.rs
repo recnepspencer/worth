@@ -7,6 +7,7 @@ impl WorthQueryPrimaryGraphProvider {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         batch: worth_relational::facade::transactions::WorkerIntentBatch,
+        content: &worth_relational::facade::content::RelationalContentAttachments,
         branch: &worth_relational::facade::history::BranchId,
         product: &crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
@@ -14,6 +15,7 @@ impl WorthQueryPrimaryGraphProvider {
         aftermath_causality: Option<
             &crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
         >,
+        restoration: Option<worth_relational::facade::mvcc::RequiredOutputPublication>,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         (worth_relational::facade::mvcc::ValidatedRelationalProposal, Option<crate::domain_computation::primary_graph::application_query::derived_view::PredicatePreparationOwner>),
@@ -76,6 +78,14 @@ impl WorthQueryPrimaryGraphProvider {
                 )
                 .map_err(map_transaction_admission_failure)?;
             transaction
+                .attach_content(execution, content)
+                .map_err(|cause| {
+                    WorthQueryInvariantExecutionFailure::content(
+                        cause,
+                        "Native candidate content attachment refused",
+                    )
+                })?;
+            transaction
                 .push_batch(batch, allocation_control.policy())
                 .map_err(map_transaction_staging_failure)?;
             #[cfg(test)]
@@ -90,6 +100,20 @@ impl WorthQueryPrimaryGraphProvider {
             })
         });
         let candidate = candidate?.map_err(|failure| map_failed_candidate(failure, &control))?;
+        let candidate = match restoration {
+            Some(publication) => candidate
+                .bind_required_output_publication(
+                    &self
+                        .graph
+                        .application_publication
+                        .as_ref()
+                        .ok_or_else(owner_failure)?
+                        .native,
+                    publication,
+                )
+                .map_err(map_validation_failure)?,
+            None => candidate,
+        };
         validate_owner_evidence(candidate.invariant_evidence(), branch)?;
         let predicate = factory.map(|factory| {
             factory.promote(execution, candidate.managed_source_preparation_metadata().ok_or_else(owner_failure)?)
@@ -160,8 +184,7 @@ mod tests {
         let request =
             worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope::new(
                 Some(std::time::Instant::now() + std::time::Duration::from_secs(60)),
-                source.token(),
-            );
+                source.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let control = super::super::validation_control::ValidationRequestControl::new(&request);
         source.cancel();
         assert_eq!(

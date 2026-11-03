@@ -17,8 +17,7 @@ fn governed_published_receipts_enter_fresh_paired_host_inspection() {
     let cancellation = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(
         Some(std::time::Instant::now() + std::time::Duration::from_secs(60)),
-        cancellation.token(),
-    );
+        cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let external = authenticate(application.installed_schema(), &scope);
     let request = application.request(&external, &scope);
     let registry = application.application_query_basis_observer();

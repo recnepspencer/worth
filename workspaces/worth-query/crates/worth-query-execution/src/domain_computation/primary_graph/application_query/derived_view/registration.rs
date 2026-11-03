@@ -155,6 +155,7 @@ where
             return Err(Denial::ForeignInstallation);
         }
         let current = self
+            .runtime
             .product_runtime
             .with_product_observation(&view.state.product_branch, |observation| {
                 Ok((
@@ -308,6 +309,7 @@ where
         product: &WorthQueryProductBranchLease,
     ) -> Result<(), Denial> {
         let current = self
+            .runtime
             .product_runtime
             .with_product_observation(product.branch_identity(), |observation| {
                 Ok((

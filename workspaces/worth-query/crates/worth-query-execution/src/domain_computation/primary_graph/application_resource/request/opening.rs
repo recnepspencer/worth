@@ -13,7 +13,8 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationResourcesRequest<'_, '_, '_
             .runtime
             .with_application_advancement(self.request, |phase| {
                 completed = Some(
-                    match phase.checked_execution_request_for(&self.runtime.product_runtime) {
+                    match phase.checked_execution_request_for(&self.runtime.runtime.product_runtime)
+                    {
                         Ok(execution) => body(&execution),
                         Err(cause) => Err(ResourceCause::Advancement(cause)),
                     },

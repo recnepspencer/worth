@@ -22,7 +22,10 @@ fn assert_live_reservation_denial(
     identity: u8,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application
@@ -48,10 +51,12 @@ fn assert_live_reservation_denial(
     let bridge_before = bridge_head_commit(&world, resource_request);
     let _live = world
         .application
+        .runtime
         .primary_provider
         .observe_application_commit_causality(selected.product());
     world
         .application
+        .runtime
         .primary_provider
         .set_application_commit_causality_limits(batch_capacity);
     let program = world
@@ -98,6 +103,7 @@ fn assert_live_reservation_denial(
     assert_eq!(
         world
             .application
+            .runtime
             .primary_provider
             .published_application_commit_count(),
         0
@@ -116,6 +122,7 @@ fn bridge_head_commit(
 ) -> worth_runtime_bridge::facade::TruthCommitIdentity {
     world
         .application
+        .runtime
         .primary_provider
         .graph
         .relational_bridge_source()

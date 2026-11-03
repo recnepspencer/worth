@@ -19,7 +19,10 @@ fn policy(memory: u64) -> ExecutionRequestPolicy {
 
 /// A full run under `memory`, leased, then serial.
 fn under(memory: u64) -> [Attempt; 2] {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let installed = installed(StatusRead::Gather(1), sum);
     [false, true].map(|serial| {
         let placement = |memory| {

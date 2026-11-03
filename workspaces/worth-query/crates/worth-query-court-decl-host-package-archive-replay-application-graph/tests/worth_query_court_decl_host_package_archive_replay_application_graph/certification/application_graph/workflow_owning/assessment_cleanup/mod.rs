@@ -66,8 +66,7 @@ fn workflow_owning_assessment_retains_failed_producer_until_fresh_owner_close() 
     let stopped =
         worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope::new(
             None,
-            cancel.token(),
-        );
+            cancel.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let (mut owner, _) = owner
         .close(
             &runtime

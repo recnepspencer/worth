@@ -50,7 +50,8 @@ const FRESH_AUTHORITY: [Kind; 3] = [
 /// refusal cannot skip this court.
 fn every_refusal() -> Vec<Redispatch> {
     let listed = |denial: Redispatch| match denial {
-        Redispatch::FreshAuthority(_)
+        Redispatch::AdmissionAuthorization(_)
+        | Redispatch::FreshAuthority(_)
         | Redispatch::AdmissionCancelled
         | Redispatch::AdmissionDeadlineExceeded
         | Redispatch::AdmissionAuthenticationExpired
@@ -73,6 +74,8 @@ fn every_refusal() -> Vec<Redispatch> {
         | Redispatch::CompletionExecutionRequest(_) => denial,
     };
     [
+        Redispatch::AdmissionAuthorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind::StaleInstalledOperation)),
+        Redispatch::AdmissionAuthorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind::InputNotAdmitted)),
         Redispatch::AdmissionCancelled,
         Redispatch::AdmissionDeadlineExceeded,
         Redispatch::AdmissionAuthenticationExpired,
@@ -200,5 +203,12 @@ fn fresh_authority_and_current_admission_refusals_stay_distinct() {
         kind(Redispatch::AdmissionAuthenticationExpired),
         Kind::AdmissionAuthenticationExpired
     );
+    for refusal in [
+        crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind::StaleInstalledOperation,
+        crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind::InputNotAdmitted,
+    ] {
+        let cause = crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(refusal);
+        assert_eq!(kind(Redispatch::AdmissionAuthorization(cause)), Kind::AdmissionAuthorization(cause));
+    }
     assert_eq!(kind(Redispatch::ForeignAdmission), Kind::ForeignRuntime);
 }

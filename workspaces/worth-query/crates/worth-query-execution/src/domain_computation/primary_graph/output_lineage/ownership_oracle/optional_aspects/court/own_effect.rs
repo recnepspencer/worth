@@ -15,6 +15,7 @@ pub(in super::super) fn observe_performed_receipt<Schema: BirthSchema>(
                 role: role.to_owned(),
                 entity_name: name.to_owned(),
                 kind: runtime
+                    .runtime
                     .primary_provider
                     .graph
                     .layout

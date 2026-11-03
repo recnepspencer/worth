@@ -12,12 +12,13 @@ use crate::indexes::data::{
 fn stopped_backings(mut run: impl FnMut(&ExecutionRequest<'_, '_>, Cause)) {
     for deadline in [false, true] {
         let source = worth_execution::CancellationSource::new();
-        let deadline_at =
-            deadline.then(|| std::time::Instant::now() - std::time::Duration::from_secs(1));
+        let time = worth_execution::MonotonicTimeController::new().unwrap();
+        let held = time.hold();
+        let deadline_at = deadline.then(|| time.clock().deadline_at(held));
         let serial = worth_execution::SerialRequest::from_memory(
             worth_execution::SerialMemoryBudget::new(None),
             source.token(),
-            deadline_at,
+            deadline_at.clone(),
         );
         let lease = test_execution_authority()
             .request_lease(LeaseRequest {

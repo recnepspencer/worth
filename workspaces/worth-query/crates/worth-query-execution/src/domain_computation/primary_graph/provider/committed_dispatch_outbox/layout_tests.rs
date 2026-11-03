@@ -13,9 +13,13 @@ use crate::domain_computation::primary_graph::tests::fixture::installed_authoriz
 
 #[test]
 fn installed_outbox_layout_preserves_every_frozen_physical_field_name() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let layout = world
         .application
+        .runtime
         .primary_provider
         .graph
         .layout

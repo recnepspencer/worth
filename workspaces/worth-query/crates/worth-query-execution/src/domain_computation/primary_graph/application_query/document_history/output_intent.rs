@@ -199,7 +199,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             ));
         }
         let execution = phase
-            .checked_execution_request_for(&self.product_runtime)
+            .checked_execution_request_for(&self.runtime.product_runtime)
             .map_err(|cause| {
                 ReadDenial::Authority(WorthQueryHistoryNavigationDenial::Stopped(cause))
             })?;

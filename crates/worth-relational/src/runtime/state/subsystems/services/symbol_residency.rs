@@ -299,7 +299,7 @@ impl RuntimeSymbolResidency {
                 pages.insert(locator, Err(*failure));
             }
             Err(Failure::StorageUnavailable(_)) => {}
-            Err(Failure::Request(_)) => {}
+            Err(Failure::Request(_) | Failure::Content(_)) => {}
         }
         result.map(|_| ())
     }

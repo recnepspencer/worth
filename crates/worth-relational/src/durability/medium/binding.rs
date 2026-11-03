@@ -100,12 +100,13 @@ impl RelationalDurableMediumBinding {
         &self,
         commit: &PositionedCanonicalCommit,
         roots: &crate::branch::RelationalBranchRootDescriptor,
-        policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<RelationalDurableCommitReadmission, RelationalDurableStepStop> {
         let mut state = self.state();
         let medium = state.admitting_medium()?;
-        let artifact = RelationalCanonicalCommitArtifact::from_positioned(commit, policy)
-            .map_err(|denial| refused(RelationalDurablePublicationRefusal::Encoding(denial)))?;
+        let artifact =
+            RelationalCanonicalCommitArtifact::from_positioned_request(commit, execution)
+                .map_err(|denial| refused(RelationalDurablePublicationRefusal::Encoding(denial)))?;
         let entry = crate::history::RelationalCommitIndexEntry {
             commit: commit.commit.clone(),
             position: commit.position(),
@@ -113,6 +114,11 @@ impl RelationalDurableMediumBinding {
             payload_digest: *artifact.payload_digest().as_bytes(),
             schema_version: commit.schema_version,
         };
+        crate::execution::check_request(execution).map_err(|cause| {
+            refused(RelationalDurablePublicationRefusal::Encoding(
+                crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactEncodeDenial::Request(cause),
+            ))
+        })?;
         let answer = medium.publish(&artifact);
         state.settle(
             answer,

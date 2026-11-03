@@ -17,7 +17,10 @@ impl RegisteredManagedIndex for Cleanup {
 
 #[test]
 fn registration_memory_refusal_preserves_old_pair_and_funded_retry_releases_backing() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let keys = world
         .application

@@ -15,7 +15,7 @@ use crate::storage::overlay::{PartitionContentCommitment, PartitionState};
 pub(crate) struct CapturedManifest {
     pub(crate) manifest: RelationalCheckpointManifest,
     pub(crate) members: BTreeMap<RelationalDurableMemberLocator, RelationalCheckpointMember>,
-    pub(crate) envelopes: Vec<Vec<u8>>,
+    pub(crate) envelopes: Vec<worth_execution::ExecutionImmutableBytes>,
     pub(crate) envelope_cells: BTreeMap<
         crate::publication::patch::data::PatchStreamPosition,
         Arc<crate::history::RelationalCommitEnvelopeResidency>,
@@ -40,6 +40,7 @@ impl CapturedManifest {
         prior: Option<&RelationalCheckpointManifest>,
         placement: &RelationalCheckpointArtifactPolicy<'_>,
         journal_index: Vec<crate::history::RelationalCommitIndexEntry>,
+        control: super::checkpoint_encoding::CheckpointEncodingControl<'_, '_>,
     ) -> Result<Self, RelationalNativeCheckpointCaptureDenial> {
         let mut members = BTreeMap::new();
         let mut commits = BTreeMap::new();
@@ -75,11 +76,21 @@ impl CapturedManifest {
                     );
                 }
             } else {
-                let payload_digest =
-                    RelationalCanonicalCommitArtifact::positioned_payload_digest(positioned)
-                        .map_err(|error| {
-                            corrupt(format!("canonical checkpoint digest: {error}"))
-                        })?;
+                let payload_digest = match control {
+                    super::checkpoint_encoding::CheckpointEncodingControl::Original(execution) => {
+                        RelationalCanonicalCommitArtifact::positioned_payload_digest_original(
+                            positioned, &execution,
+                        )
+                        .map_err(RelationalNativeCheckpointCaptureDenial::from)?
+                    }
+                    #[cfg(test)]
+                    super::checkpoint_encoding::CheckpointEncodingControl::Policy(_) => {
+                        RelationalCanonicalCommitArtifact::positioned_payload_digest(positioned)
+                            .map_err(|error| {
+                                corrupt(format!("canonical checkpoint digest: {error}"))
+                            })?
+                    }
+                };
                 commits.insert(
                     positioned.position(),
                     crate::history::RelationalCommitIndexEntry {
@@ -93,12 +104,11 @@ impl CapturedManifest {
             }
             if placement.is_embedded() {
                 embedded_positions.insert(positioned.position());
-                envelopes.push(
-                    rmp_serde::to_vec_named(&super::embedded_commit::EmbeddedCommitRef::new(
-                        positioned,
-                    ))
-                    .map_err(|error| corrupt(format!("embedded checkpoint envelope: {error}")))?,
-                );
+                envelopes.push(super::checkpoint_encoding::encode_value(
+                    control,
+                    b"",
+                    &super::embedded_commit::EmbeddedCommitRef::new(positioned),
+                )?);
             }
         }
         let commits = commits.into_values().collect::<Vec<_>>();
@@ -195,6 +205,7 @@ impl CapturedManifest {
             None,
             &RelationalCheckpointArtifactPolicy::Embedded,
             Vec::new(),
+            super::checkpoint_encoding::CheckpointEncodingControl::Policy(policy),
         )?;
         let rows = checkpoint
             .envelopes
@@ -251,6 +262,23 @@ impl CapturedManifest {
                 commit_id: root.commit_id,
                 schema_carrier_digest: root.schema_carrier_digest,
                 regions,
+                content: root
+                    .content_records
+                    .records()
+                    .map(|record| {
+                        let member = add(
+                            &mut members,
+                            (
+                                member_frame::locator(record.bytes()),
+                                record.bytes().to_vec(),
+                            ),
+                        );
+                        RelationalCheckpointContent {
+                            identity: record.identity(),
+                            member,
+                        }
+                    })
+                    .collect(),
             });
         }
         let mirror = if checkpoint.partition_images.is_empty() {
@@ -348,7 +376,9 @@ pub(super) fn add(
         .entry(locator)
         .or_insert_with(|| RelationalCheckpointMember::New {
             locator,
-            bytes: bytes.into(),
+            bytes: worth_execution::ExecutionImmutableBytes::from_external_bytes(
+                std::sync::Arc::new(bytes.into_boxed_slice()),
+            ),
         });
     locator
 }

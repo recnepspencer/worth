@@ -11,7 +11,7 @@ pub(super) fn install(population: usize) -> AuthorizationWorld {
         .and_then(|work| work.checked_add(8_000_000))
         .expect("native population fixture work is finite");
     let resources =
-        crate::domain_computation::execution_runtime::product_world::test_product_world_resources();
+        crate::domain_computation::execution_runtime::product_world::test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     let declared = resources.execution_policy();
     let policy = worth_foundational::ExecutionRequestPolicy::new(
         declared.posture(),

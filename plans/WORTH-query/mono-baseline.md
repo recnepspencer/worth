@@ -281,3 +281,38 @@ another slice by the remaining measured common bodies. This is a deliberate
 marginal-benefit judgment, not a hard-rule blocker or a claim that the remaining
 engine cannot be optimized. The record identifies where to resume with a new
 boundary review. No court or refusal was weakened to obtain these numbers.
+
+## Engine-once slice 4: read completion
+
+Source parent: `f399b14c7ba0a394de06a2ecc8d2aa5cdd1f784b` plus this cut. The latest brief's
+one-ranked-item scope selects native/full read completion (baseline families
+6 and 8, 340,488 and 277,896 code bytes, each with 24 copies).
+
+| Metric | Original baseline | Landed pre-slice (`f399b14c7b`) | After this cut |
+| --- | ---: | ---: | ---: |
+| Defined external symbols | 160,719 | 150,756 | 147,315 |
+| Archive bytes | 674,508,286 | 622,208,582 | 608,125,004 |
+| Physical code bytes | 48,544,077 | 45,014,698 | 43,865,724 |
+
+This cut changes symbols by -3,441, archive bytes by
+-14,083,578 and code bytes by -1,148,974. Upstream changes
+between the original baseline and the landed pre-slice are not this cut's saving.
+The independent LLVM symbol and code-byte reports agree at the after totals.
+
+Native/full completion now runs in concrete bodies borrowing the original
+attempt's state. An Authorization-owned loan keeps its mutable core private;
+it exposes shared observation and only completion-fact/work recording. The
+shell retains the original admission, typed inputs and phase. No AspectShape
+form or public Decl/Host signature changes. The displaced generic bodies are
+deleted. Typed invariant-projection and DecisionReader seams remain unchanged;
+this cut does not claim their erasure or any later design slice.
+
+The 7-or-more-copy slope proxy (sum of bytes/copies) changes from
+1,802,401.771237 to 1,766,893.061652
+for all owners, and 1,385,124.143361 to
+1,350,100.143361 for Query Execution.
+[mono-read-completion.json](mono-read-completion.json) records the exact
+reproduction commands, hashes, namespace counts and top 40 disappeared families.
+Use the existing test profile and the same successful-Cargo-artifact selection
+as above. No automatic size gate is added because this fixture requires the
+large court build; the measurement remains the permitted growth record.

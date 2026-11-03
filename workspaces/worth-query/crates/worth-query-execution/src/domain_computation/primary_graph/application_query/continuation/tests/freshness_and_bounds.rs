@@ -1,4 +1,4 @@
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
@@ -9,7 +9,9 @@ use crate::domain_computation::primary_graph::application_query::WorthQueryAppli
 
 #[test]
 fn authentication_expiry_denies_resume_without_a_basis() {
-    let mut context = ContinuationTestContext::new(Duration::from_secs(60));
+    let time = worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionTimeController::new().unwrap();
+    time.hold();
+    let context = ContinuationTestContext::new(Duration::from_secs(1), time.clock());
     let continuation = context
         .world
         .application
@@ -19,8 +21,12 @@ fn authentication_expiry_denies_resume_without_a_basis() {
         })
         .expect("the fixture read owns its installed host call");
     let acquisitions = context.basis_acquisitions();
-    context.expire_authentication();
-    let request = crate::domain_computation::primary_graph::tests::fixture::live_scope();
+    time.advance(Duration::from_secs(2)).unwrap();
+    let request = WorthQueryRequestScope::new(
+        Some(time.clock().now() + Duration::from_secs(60)),
+        WorthQueryCancellationSource::new().token(),
+        time.clock(),
+    );
 
     let denial = context
         .world
@@ -41,7 +47,10 @@ fn authentication_expiry_denies_resume_without_a_basis() {
 
 #[test]
 fn stale_principal_and_scope_deny_and_release_readmission_bases() {
-    let principal_context = ContinuationTestContext::new(Duration::from_secs(60));
+    let principal_context = ContinuationTestContext::new(
+        Duration::from_secs(60),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let principal_continuation = principal_context
         .world
         .application
@@ -87,7 +96,10 @@ fn stale_principal_and_scope_deny_and_release_readmission_bases() {
     );
     principal_context.assert_resource_baseline();
 
-    let scope_context = ContinuationTestContext::new(Duration::from_secs(60));
+    let scope_context = ContinuationTestContext::new(
+        Duration::from_secs(60),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let scope_continuation = scope_context
         .world
         .application
@@ -136,7 +148,10 @@ fn stale_principal_and_scope_deny_and_release_readmission_bases() {
 
 #[test]
 fn cancellation_and_deadline_deny_resume_before_basis_acquisition() {
-    let cancelled_context = ContinuationTestContext::new(Duration::from_secs(60));
+    let cancelled_context = ContinuationTestContext::new(
+        Duration::from_secs(60),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let cancelled_continuation = cancelled_context
         .world
         .application
@@ -149,8 +164,9 @@ fn cancellation_and_deadline_deny_resume_before_basis_acquisition() {
     let cancellation = WorthQueryCancellationSource::new();
     cancellation.cancel();
     let cancelled_request = WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(60)),
+        Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(60)),
         cancellation.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     let cancelled = cancelled_context
         .world
@@ -176,7 +192,10 @@ fn cancellation_and_deadline_deny_resume_before_basis_acquisition() {
     );
     cancelled_context.assert_resource_baseline();
 
-    let deadline_context = ContinuationTestContext::new(Duration::from_secs(60));
+    let deadline_context = ContinuationTestContext::new(
+        Duration::from_secs(60),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let deadline_continuation = deadline_context
         .world
         .application
@@ -187,8 +206,11 @@ fn cancellation_and_deadline_deny_resume_before_basis_acquisition() {
         .expect("the fixture read owns its installed host call");
     let deadline_acquisitions = deadline_context.basis_acquisitions();
     let deadline_source = WorthQueryCancellationSource::new();
-    let deadline_request =
-        WorthQueryRequestScope::new(Some(Instant::now()), deadline_source.token());
+    let deadline_request = WorthQueryRequestScope::new(
+        Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now()),
+        deadline_source.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let deadline = deadline_context
         .world
         .application
@@ -213,7 +235,10 @@ fn cancellation_and_deadline_deny_resume_before_basis_acquisition() {
 
 #[test]
 fn foreign_continuation_basis_denies_without_registering_a_lease() {
-    let context = ContinuationTestContext::new(Duration::from_secs(60));
+    let context = ContinuationTestContext::new(
+        Duration::from_secs(60),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let mut continuation = context
         .world
         .application
@@ -222,7 +247,10 @@ fn foreign_continuation_basis_denies_without_registering_a_lease() {
             context.issue(&host_custody)
         })
         .expect("the fixture read owns its installed host call");
-    let foreign = ContinuationTestContext::new(Duration::from_secs(60));
+    let foreign = ContinuationTestContext::new(
+        Duration::from_secs(60),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     foreign
         .world
         .application
@@ -253,7 +281,10 @@ fn foreign_continuation_basis_denies_without_registering_a_lease() {
 
 #[test]
 fn unsupported_page_width_mints_no_resumed_plan_or_basis() {
-    let width_context = ContinuationTestContext::new(Duration::from_secs(60));
+    let width_context = ContinuationTestContext::new(
+        Duration::from_secs(60),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let width_continuation = width_context
         .world
         .application
@@ -285,7 +316,10 @@ fn unsupported_page_width_mints_no_resumed_plan_or_basis() {
     assert_eq!(width_context.basis_acquisitions(), width_acquisitions);
     width_context.assert_resource_baseline();
 
-    let work_context = ContinuationTestContext::new(Duration::from_secs(60));
+    let work_context = ContinuationTestContext::new(
+        Duration::from_secs(60),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let work_continuation = work_context
         .world
         .application

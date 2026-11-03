@@ -3,6 +3,7 @@ use super::*;
 pub(super) fn publish_authorization_world(
     phase: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     prepared: PreparedAuthorizationWorld,
+    admission_clock: worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock,
 ) -> AuthorizationWorld {
     let PreparedAuthorizationWorld {
         runtime,
@@ -14,7 +15,7 @@ pub(super) fn publish_authorization_world(
     super::super::handler_installation::install_fixture_handlers(&schema, &mut bootstrap);
 
     let invariant = bootstrap.retain_invariant_projection_authority();
-    let authorization_time = AuthorizationTimeController::default();
+    let authorization_time = AuthorizationTimeController::on_clock(admission_clock);
     let faults = std::sync::Arc::new(
         crate::domain_computation::primary_graph::tests::fault_controller::PrimaryGraphFaultController::default(),
     );

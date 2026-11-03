@@ -95,6 +95,9 @@ pub(in crate::domain_computation::primary_graph) fn map_validation_failure(
             return map_invariant_failure(fields, detail);
         }
         Error::Publication { error, .. } => {
+            if error.authored_retirement_refusal().is_some() {
+                return WorthQueryInvariantExecutionFailure::authored_retirement(error);
+            }
             return match error.into_invariant_violation() {
                 Some(violation) => map_invariant_failure(violation.fields, violation.detail),
                 None => owner_failure(),

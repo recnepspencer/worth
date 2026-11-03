@@ -16,8 +16,7 @@ macro_rules! cancelled_middle_advance {
         let cancellation = authentication::WorthQueryCancellationSource::new();
         let cancelled_scope = authentication::WorthQueryRequestScope::new(
             None,
-            cancellation.token(),
-        );
+            cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
         let cancelled = $application.request(&$principal, &cancelled_scope);
         take_decisions("anchor-b");
         let cancel: fn(authentication::WorthQueryCancellationSource) = $cancel;

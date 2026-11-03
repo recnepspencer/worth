@@ -14,10 +14,6 @@ impl ComparedOutputProfile {
             _ => false,
         }
     }
-
-    pub(super) fn into_original(self) -> Option<WorthQueryHistoryOutputProfile> {
-        self.original
-    }
 }
 
 impl<S: worth_query_installation::facade::ApplicationSchema> NavigationAttempt<'_, S> {
@@ -41,7 +37,7 @@ impl<S: worth_query_installation::facade::ApplicationSchema> NavigationAttempt<'
             (None, None) => true,
             (Some(original), Some(supplied)) => {
                 let execution = phase
-                    .checked_execution_request_for(&application.product_runtime)
+                    .checked_execution_request_for(&application.runtime.product_runtime)
                     .map_err(Denial::Stopped)?;
                 original.equivalent(&execution, supplied).map_err(|cause| {
                     Denial::Document(super::super::WorthQueryDocumentHistoryDenial::Recording(

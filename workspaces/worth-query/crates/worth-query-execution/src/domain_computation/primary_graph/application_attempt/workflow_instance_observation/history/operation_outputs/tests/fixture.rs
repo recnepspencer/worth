@@ -29,7 +29,7 @@ pub(super) struct Context {
 
 impl Context {
     pub(super) fn publish(defect: Option<&str>, retire_source: bool) -> Self {
-        let world = installed_authorization_world(true);
+        let world = installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let host = payer();
         let execution = worth_execution::ExecutionRequest::serial(&host);
         let (source, actor) = world

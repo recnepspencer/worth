@@ -26,9 +26,6 @@ pub fn validate_aspect_value(
             AspectShape::Reference(ReferenceAspectType::Entity),
             ContractValidationInput::Scalar(value),
         ) => validate_scalar_family(contract, value, ScalarAspectType::EntityRef),
-        (AspectShape::Content, ContractValidationInput::Scalar(value)) => {
-            validate_scalar_family(contract, value, ScalarAspectType::ContentRef)
-        }
         (AspectShape::Opaque(_), ContractValidationInput::Scalar(_)) => {
             TransitionOutcome::denied(ContractValidationDenial::ScalarValueRequired)
         }

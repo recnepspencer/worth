@@ -151,7 +151,6 @@ fn aspect_value_to_terminal_json(
                 "symbolic string requires explicit symbol table projection",
             ),
         ),
-        AspectValue::Bytes(value) => Ok(Number::from(value.0).into()),
         AspectValue::Uuid(value) => Ok(Value::Array(
             value
                 .iter()
@@ -167,7 +166,7 @@ fn aspect_value_to_terminal_json(
             ),
         ),
         AspectValue::EntityRef(value) => Ok(entity_ref_to_terminal_json(value)),
-        AspectValue::ContentRef(value) => Ok(Number::from(value.0).into()),
+        AspectValue::ContentRef(value) => Ok(Value::String(value.to_string())),
     }
 }
 

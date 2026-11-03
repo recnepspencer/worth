@@ -2,6 +2,10 @@
 mod advancement_custody;
 #[path = "application_attempt/product_races.rs"]
 mod product_races;
+#[path = "application_attempt/recovery_custody.rs"]
+mod recovery_custody;
+#[path = "application_attempt/transaction_custody.rs"]
+mod transaction_custody;
 
 use std::time::Duration;
 
@@ -105,7 +109,10 @@ pub(in crate::domain_computation::primary_graph) use decision_currentness::{
 
 #[test]
 fn concurrent_equivalent_attempts_publish_one_transaction() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application
@@ -170,7 +177,10 @@ mod response_loss_resolves_the_published_commit_before_returning;
 
 #[test]
 fn preparation_commit_recovery_and_retry_perform_no_execution_digest_derivation() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application

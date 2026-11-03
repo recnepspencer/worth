@@ -2,8 +2,8 @@ pub use worth_foundational::facade::{
     AbsenceLaw, AspectContract, AspectContractRevision, AspectEvolutionPolicy, AspectIdentity,
     AspectKey, AspectValue, CanonicalBigInt, CanonicalDate, CanonicalDecimal, CanonicalF32,
     CanonicalF64, CanonicalRational, CanonicalTime, CanonicalTimestamp, CanonicalTimestampTz,
-    ContentRefId, FieldDeclaration, FieldKey, FieldRequirement, InternedString, PartitionId,
-    ScalarAspectType, StructAspectShape, StructAspectValue, Symbol,
+    FieldDeclaration, FieldKey, FieldRequirement, InternedString, PartitionId, ScalarAspectType,
+    StructAspectShape, StructAspectValue, Symbol,
 };
 
 pub const MATRIX_ASPECT: &str = "native.matrix";
@@ -83,7 +83,6 @@ pub fn scalar_samples() -> Vec<AspectValue> {
             CanonicalRational::new(CanonicalBigInt::new("22"), CanonicalBigInt::new("7")).unwrap(),
         ),
         AspectValue::String(InternedString::Raw("alpha".into())),
-        AspectValue::Bytes(ContentRefId(41)),
         AspectValue::Uuid([7; 16]),
         AspectValue::Date(CanonicalDate {
             days_from_unix_epoch: 20_000,
@@ -101,7 +100,6 @@ pub fn scalar_samples() -> Vec<AspectValue> {
             10,
             11,
         )),
-        AspectValue::ContentRef(ContentRefId(42)),
         AspectValue::String(InternedString::Symbol(Symbol(17))),
     ]
 }

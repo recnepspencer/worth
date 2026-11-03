@@ -12,7 +12,7 @@ pub(super) enum CandidateSelectorMaintenanceDenial {
 fn indexes<S: ApplicationSchema>(
     selected: &WorthQuerySelectedProductOperation<'_, S>,
 ) -> Vec<worth_relational::facade::indexes::DerivedIndexId> {
-    let graph = &selected.application().primary_provider.graph;
+    let graph = &selected.application().runtime.primary_provider.graph;
     let mut indexes = std::collections::BTreeSet::new();
     indexes.extend(graph.primary_index_ids.iter().copied());
     indexes.extend(
@@ -38,7 +38,7 @@ fn seed<S: ApplicationSchema>(
     selected: &WorthQuerySelectedProductOperation<'_, S>,
     indexes: Vec<worth_relational::facade::indexes::DerivedIndexId>,
 ) -> Result<(), CandidateSelectorMaintenanceDenial> {
-    let graph = &selected.application().primary_provider.graph;
+    let graph = &selected.application().runtime.primary_provider.graph;
     let basis = selected.product().relational_basis();
     let observation = basis.observation();
     let Some(source_commit_id) = observation.commit_id() else {
@@ -69,7 +69,7 @@ pub(super) fn prepare<S: ApplicationSchema>(
     selected: &WorthQuerySelectedProductOperation<'_, S>,
     candidate: &mut PreparedRelationalCommitCandidate,
 ) -> Result<(), CandidateSelectorMaintenanceDenial> {
-    let graph = &selected.application().primary_provider.graph;
+    let graph = &selected.application().runtime.primary_provider.graph;
     let indexes = indexes(selected);
     seed(execution, selected, indexes.clone())?;
     graph.with_runtime_mut(execution, |runtime| {

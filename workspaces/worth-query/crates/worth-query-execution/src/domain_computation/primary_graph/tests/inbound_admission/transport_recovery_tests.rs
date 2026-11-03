@@ -46,6 +46,7 @@ fn callback_winner_is_recognized_before_transport_world_publication() {
         .unwrap();
     let in_flight = world
         .application
+        .runtime
         .primary_provider
         .begin_external_dispatch_in_flight(&owner)
         .unwrap()
@@ -70,6 +71,7 @@ fn callback_winner_is_recognized_before_transport_world_publication() {
     );
     let before = world
         .application
+        .runtime
         .primary_provider
         .lookup_completed_inbound(&correlation)
         .unwrap()
@@ -94,6 +96,7 @@ fn callback_winner_is_recognized_before_transport_world_publication() {
 
     let after = world
         .application
+        .runtime
         .primary_provider
         .lookup_completed_inbound(&correlation)
         .unwrap()

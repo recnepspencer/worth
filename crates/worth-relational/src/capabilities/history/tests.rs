@@ -85,6 +85,7 @@ impl HistorySource for FakeHistorySource {
 
 fn commit_envelope(commit_id: u64, version_id: u64) -> CanonicalCommitEnvelope {
     CanonicalCommitEnvelope::new(
+        Default::default(),
         RelationalCommitReceipt {
             commit_id: CommitId(commit_id),
             version_id: crate::identity::data::VersionId(version_id),

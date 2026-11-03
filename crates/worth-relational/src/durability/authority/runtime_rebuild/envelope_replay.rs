@@ -53,6 +53,7 @@ pub(super) fn replay_readmitted_envelope(
             DurabilityError::new(RecoveryFailureClass::CorruptCanonicalArtifact, detail)
         })?;
     let had_checkpoint_artifact = prepare_replay_context(
+        execution,
         restored,
         envelope,
         readmitted.position(),
@@ -92,6 +93,7 @@ pub(super) fn replay_readmitted_envelope(
         .into());
     }
     restore_authoritative_artifacts_when_required(
+        execution,
         restored,
         &positioned,
         restore_authoritative_envelope,

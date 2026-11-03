@@ -15,7 +15,10 @@ use std::cell::Cell;
 
 #[test]
 fn present_predecode_field_stales_after_a_competing_actual_change() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application
@@ -120,7 +123,10 @@ fn present_predecode_field_stales_after_a_competing_actual_change() {
 
 #[test]
 fn absence_skips_admission_and_stales_after_a_competing_presence_change() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let called = Cell::new(false);
     let loser = world
         .application

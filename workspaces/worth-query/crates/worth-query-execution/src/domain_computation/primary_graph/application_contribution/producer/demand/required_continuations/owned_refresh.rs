@@ -48,7 +48,7 @@ pub(in super::super) fn resume_owned_refresh<Schema: ApplicationSchema + 'static
     // A reopened attempt may have returned exactly the Ready it replaced.
     // Existing owner cleanup ends that entry before another claim of the Ready.
     custody
-        .end_restored(&runtime.output_demands)
+        .end_restored(&runtime.runtime.output_demands)
         .map_err(OwnedRefreshStop::Selection)?;
     let Some(index) = custody
         .refresh_position(selected)
@@ -68,6 +68,7 @@ pub(in super::super) fn resume_owned_refresh<Schema: ApplicationSchema + 'static
             super::super::WorthQueryOutputDemandDenialKind::ExecutionRequest(_)
         ) {
             runtime
+                .runtime
                 .output_demands
                 .record_required_stop(custody.entries[index].interest().key(), &stop);
         }

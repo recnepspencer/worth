@@ -140,8 +140,9 @@ fn a_request_finding_every_process_worker_held_runs_inline() {
 #[test]
 fn a_run_inside_a_serial_oracle_names_the_oracle() {
     let _serial = TEST_LOCK.lock().unwrap();
-    let parent = authority().request_lease(request(2, 1_900, 10)).unwrap();
-    let child = parent.child(request(2, 1_000, 10)).unwrap();
+    // Oracle scheduling is independent of the request's retained byte layout.
+    let parent = authority().request_lease(accounted_request(2, 10)).unwrap();
+    let child = parent.child(accounted_request(2, 10)).unwrap();
     let admitted = batch(&[1, 2], 5);
     let outer = run_checked_batch(Some(&parent), &admitted, BackendKind::Serial, &|_, _| {
         let nested =

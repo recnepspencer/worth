@@ -5,7 +5,10 @@ fn primary_product_selection_composes_one_exact_application_snapshot() {
     let host_request = crate::test_request_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let lease = world
         .application
         .product_runtime()
@@ -22,6 +25,7 @@ fn primary_product_selection_composes_one_exact_application_snapshot() {
     assert_eq!(observer.observe().acquisitions(), before.acquisitions() + 1);
     assert!(world
         .application
+        .runtime
         .primary_provider
         .graph
         .with_runtime(execution, |runtime| runtime

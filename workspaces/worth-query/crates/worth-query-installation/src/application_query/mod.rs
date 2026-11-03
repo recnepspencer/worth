@@ -19,6 +19,8 @@ pub use managed_index::{
 mod inspection;
 mod installed_binding;
 mod installed_contract;
+#[doc(hidden)]
+pub use installed_contract::InstalledQueryView;
 mod live_contract;
 mod output_dependency_contract;
 mod planning_contract;
