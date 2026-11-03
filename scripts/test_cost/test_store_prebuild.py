@@ -90,7 +90,9 @@ class StoreExecutablePrebuildTests(unittest.TestCase):
             self.assertNotIn('--bins', calls[0])
             self.assertEqual([calls[0][index + 1] for index, argument in enumerate(calls[0])
                               if argument == '--package'],
-                             [*dict.fromkeys(request['package'] for request in REQUESTS), 'native-owner'])
+                             [*dict.fromkeys(request['package'] for request in REQUESTS),
+                              'native-owner', 'authority'])
+            self.assertIn('--no-default-features', calls[0])
             self.assertEqual([calls[0][index + 1] for index, argument in enumerate(calls[0])
                               if argument == '--bin'],
                              [request['binary'] for request in REQUESTS])

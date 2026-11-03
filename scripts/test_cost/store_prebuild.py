@@ -77,11 +77,16 @@ def prepare(repository, output_directory, cargo_runner, profile='dev', *, native
     receipt = {'schema': 1, 'features': native.features, 'inputs': native.inputs,
                'native_packages': native.packages}
     (output / 'native-feature-graph.json').write_text(json.dumps(receipt, indent=2) + '\n', encoding='utf-8')
-    packages = dict.fromkeys([*(request['package'] for request in REQUESTS), *native.packages])
+    # Cargo accepts qualified feature flags only for selected packages or their
+    # direct dependencies. Captured transitive owners must therefore be roots.
+    # Replay their observed defaults explicitly instead of enabling new ones.
+    feature_owners = [qualified.split('/', 1)[0] for qualified in native.features]
+    packages = dict.fromkeys([*(request['package'] for request in REQUESTS),
+                              *native.packages, *feature_owners])
     selection = [argument for package in packages
                  for argument in ('--package', package)]
     selection.extend(argument for request in REQUESTS for argument in ('--bin', request['binary']))
-    result = cargo_runner(['cargo', 'build', *selection, '--locked',
+    result = cargo_runner(['cargo', 'build', *selection, '--locked', '--no-default-features',
                            '--profile', profile, '--features',
                            ','.join(native.features),
                            '--manifest-path', str(workspace / 'Cargo.toml')],
