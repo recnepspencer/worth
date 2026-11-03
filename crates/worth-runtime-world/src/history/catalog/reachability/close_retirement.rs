@@ -1,9 +1,9 @@
-//! One exact head retirement, including its dirty-frontier insertion.
+//! One exact direct-protection retirement, including dirty-frontier insertion.
 use super::HistoryReachabilityIndex;
 use crate::identity::CompositeCommitIdentity;
 
 impl HistoryReachabilityIndex {
-    pub(in crate::history) fn try_retire_product_head(
+    pub(in crate::history) fn try_retire_direct_protection(
         &mut self,
         identity: &CompositeCommitIdentity,
         seated: bool,
@@ -124,5 +124,38 @@ mod tests {
         );
         assert_eq!(released, counts.direct_protection_releases() + 1);
         drop(history);
+    }
+}
+
+#[cfg(test)]
+impl crate::history::CompositeHistoryCatalog {
+    pub(crate) fn assert_observation_close_busy_preserves_history(
+        &self,
+        observation: &mut crate::branch::ProductBranchObservation,
+    ) {
+        let index = self.state.lock().unwrap().reachability.clone();
+        let held = index.lock().unwrap();
+        let slot = held
+            .records
+            .get(observation.selected_commit())
+            .unwrap()
+            .clone();
+        let before = slot.lock().unwrap().as_ref().unwrap().direct_protections;
+        assert!(observation.try_retire_for_close().is_err());
+        assert_eq!(
+            slot.lock().unwrap().as_ref().unwrap().direct_protections,
+            before
+        );
+        drop(held);
+        observation.try_retire_for_close().unwrap();
+        assert_eq!(
+            slot.lock().unwrap().as_ref().unwrap().direct_protections,
+            before - 1
+        );
+        observation.try_retire_for_close().unwrap();
+        assert_eq!(
+            slot.lock().unwrap().as_ref().unwrap().direct_protections,
+            before - 1
+        );
     }
 }

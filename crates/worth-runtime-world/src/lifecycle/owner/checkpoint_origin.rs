@@ -22,10 +22,15 @@ where
             RuntimeWorldCloseState::Closed => {}
         }
         let binding = self.state.durable.as_ref().ok_or(Denial::NotHomeBound)?;
+        let task = close
+            .progress
+            .as_ref()
+            .cloned()
+            .ok_or(Denial::RecoveredCustody(
+                crate::lifecycle::RuntimeWorldCloseDenial::CloseProgressInvariant,
+            ))?;
         drop(close);
-        self.state
-            .recovery
-            .retire_closed_recovered(request)
+        crate::lifecycle::close::retire_recovered(&self.state.recovery, &task, request)
             .map_err(Denial::RecoveredCustody)?;
         let origin = binding.take_checkpoint_origin()?;
         Ok(origin.retire())

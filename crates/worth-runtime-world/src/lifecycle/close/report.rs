@@ -73,6 +73,7 @@ impl RuntimeWorldRetainedRecordReport {
 #[derive(Debug)]
 #[must_use = "a close report enumerates obligations the caller must still address"]
 pub struct RuntimeWorldCloseReport {
+    _retired_close: Option<std::sync::Arc<std::sync::Mutex<super::drain::CloseProgress>>>,
     retained_records: Vec<RuntimeWorldRetainedRecordReport>,
     recovered_custody: Vec<RuntimeWorldRecoveredCustodyReport>,
     _recovered_funding: Option<worth_execution::ExecutionMemoryReservation>,
@@ -99,6 +100,13 @@ pub(crate) struct RuntimeWorldCloseReleaseCounts {
 }
 
 impl RuntimeWorldCloseReport {
+    pub(super) fn retain_close_task(
+        &mut self,
+        task: std::sync::Arc<std::sync::Mutex<super::drain::CloseProgress>>,
+    ) {
+        self._retired_close = Some(task);
+    }
+
     pub(crate) fn new(
         retained_records: Vec<RuntimeWorldRetainedRecordReport>,
         recovered_custody: Vec<RuntimeWorldRecoveredCustodyReport>,
@@ -116,6 +124,7 @@ impl RuntimeWorldCloseReport {
             retired_owner_created_custody,
         } = counts;
         Self {
+            _retired_close: None,
             retained_records,
             recovered_custody,
             _recovered_funding: recovered_funding,

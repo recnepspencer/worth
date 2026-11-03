@@ -25,6 +25,7 @@ mod recovered_publication;
 pub use recovered_publication::{
     RefusedRelationalPublicationReadmission, RelationalRecordedSuccessorRefusal,
     RelationalRecoveredPublicationAdmissionCause, RelationalRecoveredPublicationCustody,
+    RelationalRecoveredPublicationRetirement, RetiredRelationalRecoveredPublication,
 };
 mod fresh_source;
 mod recovery;

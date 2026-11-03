@@ -81,6 +81,7 @@ where
                 | super::RuntimeWorldCloseDenial::PublicationFrontierChanged
                 | super::RuntimeWorldCloseDenial::UnresolvedBusinessCustody
                 | super::RuntimeWorldCloseDenial::CleanupRequired
+                | super::RuntimeWorldCloseDenial::RecoveredNativeRetirement(_)
                 | super::RuntimeWorldCloseDenial::CloseProgressPoisoned
                 | super::RuntimeWorldCloseDenial::CloseProgressInvariant
                 | super::RuntimeWorldCloseDenial::ReportAllocationFailed

@@ -57,6 +57,7 @@ pub use crate::transactions::data::RecoveredRelationalSemanticResult;
 pub use crate::durability::authority::{
     RefusedRelationalPublicationReadmission, RelationalRecordedSuccessorRefusal,
     RelationalRecoveredPublicationAdmissionCause, RelationalRecoveredPublicationCustody,
+    RelationalRecoveredPublicationRetirement, RetiredRelationalRecoveredPublication,
 };
 pub use crate::durability::data::{
     CheckpointAllocatorInspection, CheckpointRecordFrontier, CheckpointRecordIdentity,

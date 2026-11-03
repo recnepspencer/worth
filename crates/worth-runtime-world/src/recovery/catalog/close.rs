@@ -141,23 +141,30 @@ impl ProductUnpublishedRecoveryCatalog {
         Ok(())
     }
 
-    /// Process-local pins retire after the Home checkpoint attempt. This does
-    /// not publish a release disposition: the original durable open survives.
-    pub(crate) fn retire_closed_recovered(
+    /// Move one exclusive original into the already funded close task.
+    /// This neither releases pins nor publishes a durable release disposition.
+    pub(crate) fn try_take_recovered_for_close(
         &self,
+        position: &mut usize,
         request: &ExecutionRequest<'_, '_>,
-    ) -> Result<(), Denial> {
-        let mut position = 0;
+    ) -> Result<
+        Option<
+            std::sync::Arc<crate::recovery::recovered_publication::RecoveredWorldPublicationRecord>,
+        >,
+        Denial,
+    > {
         loop {
             checkpoint(request, 1)?;
             let removed = {
                 let mut state = self.state.try_lock().map_err(|_| Denial::Busy)?;
-                if position >= state.slots.span() {
-                    return Ok(());
+                if *position >= state.slots.span() {
+                    return Ok(None);
                 }
-                let identity = state.slots.at(position).map(|(id, _)| id.clone());
-                position += 1;
-                let Some(identity) = identity else { continue };
+                let identity = state.slots.at(*position).map(|(id, _)| id.clone());
+                let Some(identity) = identity else {
+                    *position += 1;
+                    continue;
+                };
                 match state.slots.get(&identity) {
                     Some(RecoveryEntry::Recovered(record))
                         if std::sync::Arc::strong_count(record) == 1 => {}
@@ -173,11 +180,10 @@ impl ProductUnpublishedRecoveryCatalog {
                     unreachable!("checked exact recovered owner")
                 };
                 state.metadata_bytes -= record.metadata_bytes;
+                *position += 1;
                 record
             };
-            // Native capability and expected-head destruction happen outside
-            // every World catalog/lifecycle lock, through this explicit path.
-            drop(removed);
+            return Ok(Some(removed));
         }
     }
 }

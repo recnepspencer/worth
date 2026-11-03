@@ -4,7 +4,11 @@ use crate::lifecycle::owner::RuntimeWorldOwnerState;
 use worth_execution::ExecutionRequest;
 
 #[derive(Debug, Default)]
-pub(super) struct CloseProgress {
+pub(in crate::lifecycle) struct CloseProgress {
+    pub(super) pending_recovered: Option<super::recovered::RecoveredCloseRetirement>,
+    pub(super) retired_recovered: Vec<super::recovered::RecoveredCloseRetirement>,
+    pub(super) recovered_position: usize,
+    _retired_recovered_funding: Option<worth_execution::ExecutionMemoryReservation>,
     pending: Option<crate::branch::registry::PendingProductHeadClose>,
     released_heads: usize,
     report: Option<RuntimeWorldCloseReport>,
@@ -25,7 +29,13 @@ impl CloseProgress {
             .reserve_retained_memory(layout.pad_to_align().size() as u64)
             .map_err(Denial::Execution)?;
         let (recovered, recovered_funding) = recovery.prepare_close_reports(request)?;
+        let (retired_recovered, retired_recovered_funding) =
+            super::recovered::prepare(request, recovered.len())?;
         Ok(std::sync::Arc::new(std::sync::Mutex::new(Self {
+            pending_recovered: None,
+            retired_recovered,
+            recovered_position: 0,
+            _retired_recovered_funding: retired_recovered_funding,
             pending: None,
             released_heads: 0,
             report: None,
@@ -85,7 +95,9 @@ where
         std::sync::TryLockError::Poisoned(_) => Denial::CloseProgressPoisoned,
     })?;
     drain_heads(state, request, &mut progress)?;
-    finish_report(&state.close, &mut progress)
+    let mut report = finish_report(&state.close, &mut progress)?;
+    report.retain_close_task(task.clone());
+    Ok(report)
 }
 
 fn drain_heads<D, I, E, Ctx, T>(

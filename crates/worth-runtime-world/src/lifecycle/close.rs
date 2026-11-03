@@ -4,9 +4,12 @@ mod admission;
 mod drain;
 pub use admission::RuntimeWorldPreCloseAdmission;
 pub(crate) use admission::{checkpoint as checkpoint_close_step, RecoveredCloseReceipt};
+mod recovered;
+mod recovered_native;
 #[path = "close/report.rs"]
 mod report;
 mod result_snapshots;
+pub(in crate::lifecycle) use recovered::retire as retire_recovered;
 pub use result_snapshots::{
     RuntimeWorldResultSnapshotCleanup, RuntimeWorldResultSnapshotCleanupDenial,
     RuntimeWorldResultSnapshotCleanupProgress, RuntimeWorldResultSnapshotCleanupReport,
@@ -38,6 +41,9 @@ pub enum RuntimeWorldCloseDenial {
     CleanupRequired,
     CloseProgressPoisoned,
     CloseProgressInvariant,
+    RecoveredNativeRetirement(
+        worth_relational::facade::change_source::RelationalRetainedObservationRetirementDenial,
+    ),
     ReportAllocationFailed,
     UndeliveredPublication,
     AlreadyClosing,

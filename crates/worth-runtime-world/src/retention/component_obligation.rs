@@ -98,6 +98,7 @@ pub(crate) struct RetentionReleaseFailure {
 pub(super) trait RetentionControlSurface: Send + Sync {
     fn try_retire_shared_pair(
         &self,
+        dependency: ComponentBasisDependencyClass,
         relational: &ComponentBasisPinClaim,
         signal: &ComponentBasisPinClaim,
     ) -> Result<(), ()>;

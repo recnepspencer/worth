@@ -112,8 +112,9 @@ fn recover(
         .unwrap();
     (runtime, authority)
 }
-fn original_custody(empty: bool) {
-    let host = crate::test_execution_policy::serial_request();
+fn original_custody(empty: bool, retire: bool) {
+    let stop = worth_execution::CancellationSource::new();
+    let host = crate::test_execution_policy::serial_request().with_cancellation(stop.token());
     let execution = &ExecutionRequest::serial(&host);
     let original = original(execution, empty);
     let offers = attached_test_medium(&original.source).offered().len();
@@ -188,16 +189,59 @@ fn original_custody(empty: bool) {
         .envelope_residency()
         .positioned_if_resident()
         .is_none());
-    drop(proof);
-    runtime.prepare_close().unwrap().finish();
+    if retire {
+        use crate::change_source::RelationalRetainedObservationRetirementProgress as Progress;
+        let basis = proof.custody().predecessor().clone();
+        let terminal = runtime
+            .services
+            .instrumentation
+            .external_retention_terminal_accounting();
+        let before = terminal.snapshot();
+        let mut task = proof.consume(|original| original.into_retirement());
+        crate::history::retention::assert_recovered_cut_and_lane_busy(&mut task, &basis, execution);
+        drop(basis);
+        stop.cancel();
+        assert!(matches!(task.advance(execution), Progress::Stopped(_)));
+        assert_eq!(
+            terminal.snapshot().explicit_releases,
+            before.explicit_releases + 1
+        );
+        assert_eq!(
+            terminal.snapshot().dropped_releases,
+            before.dropped_releases
+        );
+        let mut task = task.into_retired().unwrap_err();
+        let retry = crate::test_execution_policy::serial_request();
+        let retry = ExecutionRequest::serial(&retry);
+        let retired = loop {
+            match task.advance(&retry) {
+                Progress::Advanced => continue,
+                Progress::Complete => break task.into_retired().unwrap(),
+                other => panic!("original recovered custody retirement: {other:?}"),
+            }
+        };
+        assert_eq!(
+            terminal.snapshot().explicit_releases,
+            before.explicit_releases + 2
+        );
+        assert_eq!(
+            terminal.snapshot().dropped_releases,
+            before.dropped_releases
+        );
+        runtime.prepare_close().unwrap().finish();
+        retired.reclaim();
+    } else {
+        drop(proof);
+        runtime.prepare_close().unwrap().finish();
+    }
 }
 #[test]
 fn recorded_component_checkpoint_readmits_cold_canonical_predecessor_and_successor() {
-    original_custody(false);
+    original_custody(false, false);
 }
 #[test]
 fn recorded_component_checkpoint_readmits_original_empty_predecessor() {
-    original_custody(true);
+    original_custody(true, false);
 }
 #[test]
 fn recorded_component_checkpoint_omits_released_components_and_plain_observations() {
@@ -263,4 +307,9 @@ fn recorded_component_checkpoint_refuses_chk15_before_source_admission() {
         expect_durability_failure(stop).class,
         crate::durability::data::RecoveryFailureClass::UnsupportedLegacySemantics
     );
+}
+
+#[test]
+fn recorded_original_retirement_preserves_both_leases_across_busy_and_stop() {
+    original_custody(false, true);
 }

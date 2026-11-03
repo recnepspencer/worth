@@ -10,7 +10,9 @@ use worth_execution::{ExecutionOrderedMap, ExecutionOrderedMapCell};
 mod retained_release;
 mod retirement;
 #[cfg(test)]
-pub(crate) use retained_release::assert_external_cut_and_lane_busy;
+pub(crate) use retained_release::{
+    assert_external_cut_and_lane_busy, assert_recovered_cut_and_lane_busy,
+};
 pub(crate) use retained_release::{
     RelationalRetentionRetirementCustody, RelationalRetentionRetirementError,
 };

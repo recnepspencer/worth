@@ -22,6 +22,7 @@ where
 {
     fn try_retire_shared_pair(
         &self,
+        dependency: ComponentBasisDependencyClass,
         relational: &ComponentBasisPinClaim,
         signal: &ComponentBasisPinClaim,
     ) -> Result<(), ()> {
@@ -32,7 +33,7 @@ where
         for claim in [relational, signal] {
             let entry = state.entries.get(&claim.key).ok_or(())?;
             if claim.owner != state.owner_identity
-                || claim.dependency != ComponentBasisDependencyClass::ProductBranchHead
+                || claim.dependency != dependency
                 || entry.lease_identity != claim.lease_identity
                 || entry.owner_lease.is_none()
                 || entry.counts.get(claim.dependency) == 0
