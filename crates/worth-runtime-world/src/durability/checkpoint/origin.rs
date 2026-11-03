@@ -28,6 +28,7 @@ pub enum WorldCheckpointOriginRetirementDenial {
     OwnerNotClosed,
     NotInstalled,
     AlreadyRetired,
+    RecoveredCustody(crate::lifecycle::RuntimeWorldCloseDenial),
 }
 
 #[derive(Debug, Default)]

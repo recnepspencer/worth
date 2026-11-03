@@ -8,12 +8,22 @@ pub(super) struct CloseProgress {
     pending: Option<crate::branch::registry::PendingProductHeadClose>,
     released_heads: usize,
     report: Option<RuntimeWorldCloseReport>,
+    recovered: Vec<super::RuntimeWorldRecoveredCustodyReport>,
+    recovered_funding: Option<worth_execution::ExecutionMemoryReservation>,
     _metadata_funding: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
 impl CloseProgress {
+    #[cfg(test)]
     pub(super) fn prepare_task(
         request: &ExecutionRequest<'_, '_>,
+    ) -> Result<std::sync::Arc<std::sync::Mutex<Self>>, Denial> {
+        Self::prepare_task_with_recovered(request, 0)
+    }
+
+    pub(super) fn prepare_task_with_recovered(
+        request: &ExecutionRequest<'_, '_>,
+        recovered_count: usize,
     ) -> Result<std::sync::Arc<std::sync::Mutex<Self>>, Denial> {
         let (layout, _) = std::alloc::Layout::new::<[std::sync::atomic::AtomicUsize; 2]>()
             .extend(std::alloc::Layout::new::<std::sync::Mutex<Self>>())
@@ -21,10 +31,25 @@ impl CloseProgress {
         let funding = request
             .reserve_retained_memory(layout.pad_to_align().size() as u64)
             .map_err(Denial::Execution)?;
+        let bytes = recovered_count
+            .checked_mul(std::mem::size_of::<super::RuntimeWorldRecoveredCustodyReport>())
+            .ok_or(Denial::CloseProgressInvariant)?;
+        let recovered_funding = request
+            .reserve_retained_memory(bytes as u64)
+            .map_err(Denial::Execution)?;
+        let mut recovered = Vec::new();
+        recovered
+            .try_reserve_exact(recovered_count)
+            .map_err(|_| Denial::CloseProgressInvariant)?;
+        if recovered.capacity() != recovered_count {
+            return Err(Denial::CloseProgressInvariant);
+        }
         Ok(std::sync::Arc::new(std::sync::Mutex::new(Self {
             pending: None,
             released_heads: 0,
             report: None,
+            recovered,
+            recovered_funding,
             _metadata_funding: funding,
         })))
     }
@@ -100,12 +125,13 @@ where
             drop(progress.pending.take());
             continue;
         }
-        // This minimum slice refused unresolved business custody before seal.
-        // These rows are therefore empty because the actual catalog was empty,
-        // not because descriptive inspection substituted for retained custody.
+        state
+            .recovery
+            .append_close_reports(&mut progress.recovered, request)?;
         progress.report = Some(RuntimeWorldCloseReport::new(
             Vec::new(),
-            Vec::new(),
+            std::mem::take(&mut progress.recovered),
+            progress.recovered_funding.take(),
             super::report::RuntimeWorldCloseReleaseCounts {
                 released_product_head_pins: progress.released_heads,
                 ..Default::default()

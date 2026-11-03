@@ -73,6 +73,7 @@ impl RuntimeWorldRetainedRecordReport {
 pub struct RuntimeWorldCloseReport {
     retained_records: Vec<RuntimeWorldRetainedRecordReport>,
     recovered_custody: Vec<RuntimeWorldRecoveredCustodyReport>,
+    _recovered_funding: Option<worth_execution::ExecutionMemoryReservation>,
     outstanding_observations: usize,
     settled_records: usize,
     released_product_head_pins: usize,
@@ -99,6 +100,7 @@ impl RuntimeWorldCloseReport {
     pub(crate) fn new(
         retained_records: Vec<RuntimeWorldRetainedRecordReport>,
         recovered_custody: Vec<RuntimeWorldRecoveredCustodyReport>,
+        recovered_funding: Option<worth_execution::ExecutionMemoryReservation>,
         counts: RuntimeWorldCloseReleaseCounts,
         outstanding_observations: usize,
         outstanding_owner_retirement_work: Vec<OwnerRetirementWork>,
@@ -114,6 +116,7 @@ impl RuntimeWorldCloseReport {
         Self {
             retained_records,
             recovered_custody,
+            _recovered_funding: recovered_funding,
             outstanding_observations,
             settled_records,
             released_product_head_pins,

@@ -11,6 +11,7 @@ where
 {
     pub fn retire_checkpoint_origin(
         &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<WorldCheckpointOriginRetirement, WorldCheckpointOriginRetirementDenial> {
         use WorldCheckpointOriginRetirementDenial as Denial;
         let close = self.state.close.try_lock().map_err(|_| Denial::Busy)?;
@@ -21,8 +22,12 @@ where
             RuntimeWorldCloseState::Closed => {}
         }
         let binding = self.state.durable.as_ref().ok_or(Denial::NotHomeBound)?;
-        let origin = binding.take_checkpoint_origin()?;
         drop(close);
+        self.state
+            .recovery
+            .retire_closed_recovered(request)
+            .map_err(Denial::RecoveredCustody)?;
+        let origin = binding.take_checkpoint_origin()?;
         Ok(origin.retire())
     }
 }
@@ -39,7 +44,8 @@ where
     /// Home close orders this before the Native owner's final retirement.
     pub fn retire_checkpoint_origin(
         &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<WorldCheckpointOriginRetirement, WorldCheckpointOriginRetirementDenial> {
-        self.root.retire_checkpoint_origin()
+        self.root.retire_checkpoint_origin(request)
     }
 }

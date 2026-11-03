@@ -75,7 +75,28 @@ fn killed_native_effect_reopens_original_world_custody_releases_and_reopens_agai
     // Teardown must permit the very reopen needed to inspect terminal journal
     // uncertainty. The actual owner drops its pins; durable custody stays open.
     drop((claim, page));
-    close(fixture.home, &execution);
+    let sealed = fixture
+        .home
+        .seal_world(&execution)
+        .unwrap_or_else(|refused| {
+            panic!(
+                "recovered durable custody must seal: {:?}",
+                refused.reason()
+            )
+        });
+    let retained = sealed.world_close_report().recovered_custody();
+    assert_eq!(retained.len(), 1);
+    assert_eq!(retained[0].identity().ordinal(), number(2));
+    assert_eq!(retained[0].attempt_identity().ordinal(), number(0));
+    assert_eq!(retained[0].reserved_commit_identity().ordinal(), number(1));
+    assert_eq!(retained[0].native_receipt(), Some(&receipt));
+    assert!(matches!(
+        sealed.finish_close(&execution),
+        ApplicationHomeCloseOutcome::Closed {
+            checkpoint: Ok(_),
+            ..
+        }
+    ));
     let fixture = open(&location, &execution);
     let inspection = fixture.home.world().inspection_port();
     let page = inspection.recovery_page(None, maximum()).unwrap();

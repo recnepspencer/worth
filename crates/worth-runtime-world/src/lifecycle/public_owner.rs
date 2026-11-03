@@ -61,16 +61,16 @@ where
         if operation.active != 0
             || operation.recovery_active != 0
             || state
-                .recovery
-                .try_has_close_custody()
-                .map_err(|_| Denial::Busy)?
-            || state
                 .custody
                 .try_has_close_custody()
                 .map_err(|_| Denial::Busy)?
         {
             return Err(Denial::InconsistentSealedCatalog);
         }
+        state
+            .recovery
+            .try_close_recovered_count(state.durable.is_some())
+            .map_err(|_| Denial::InconsistentSealedCatalog)?;
         let frontier = state.history.try_result_snapshot_cleanup_frontier()?;
         Ok(super::RuntimeWorldResultSnapshotCleanup::from_closed_owner(
             state.relational.basis_port(),

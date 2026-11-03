@@ -49,14 +49,13 @@ where
     {
         return Err(Denial::OwnerUnavailable);
     }
-    if state
+    state
         .recovery
+        .try_close_recovered_count(state.durable.is_some())?;
+    if state
+        .custody
         .try_has_close_custody()
         .map_err(|_| Denial::Busy)?
-        || state
-            .custody
-            .try_has_close_custody()
-            .map_err(|_| Denial::Busy)?
     {
         return Err(Denial::UnresolvedBusinessCustody);
     }

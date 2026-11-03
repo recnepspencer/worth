@@ -56,7 +56,9 @@ where
 {
     /// Close under the caller's original request. Busy or stopped admission
     /// leaves Open; after sealing, the SAME retained task resumes in Closing.
-    /// Unresolved business custody refuses before sealing. Head retirement
+    /// Unresolved live business custody refuses before sealing. Unclaimed
+    /// recovered durable obligations remain journal-backed and are reported.
+    /// Head retirement
     /// runs outside admission locks and retains each exact item on refusal.
     pub fn close(
         &self,

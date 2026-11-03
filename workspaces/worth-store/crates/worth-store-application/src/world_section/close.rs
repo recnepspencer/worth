@@ -224,7 +224,7 @@ where
             return Err(WorldHomeCloseRefused { home: self, reason });
         }
         if self.home.context.world_origin_retirement.is_none() {
-            match self.world.retire_checkpoint_origin() {
+            match self.world.retire_checkpoint_origin(request) {
                 Ok(retired) => self.home.context.world_origin_retirement = Some(retired),
                 Err(worth_runtime_world::facade::WorldCheckpointOriginRetirementDenial::NotInstalled) => {
                     // This owner never installed a World basis, so it has no origin obligation.
