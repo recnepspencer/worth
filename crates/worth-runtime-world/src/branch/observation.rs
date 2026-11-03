@@ -260,6 +260,17 @@ impl ProductBranchObservation {
         })
     }
 
+    pub(crate) fn fork_checkpoint_history(
+        &self,
+    ) -> Result<
+        crate::retention::HistoryRetentionObligation,
+        crate::retention::RetentionTransferDenial,
+    > {
+        self.obligation
+            ._components
+            .fork_history(self.snapshot.commit())
+    }
+
     pub fn owner_identity(&self) -> RuntimeWorldOwnerIdentity {
         self.snapshot.owner()
     }

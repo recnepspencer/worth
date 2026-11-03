@@ -21,16 +21,14 @@ fn checkpoint_origin_keeps_exact_component_leases_after_history_claims_retire() 
     }
     assert_eq!(fixture.owner.active_component_obligation_count(), 2);
     let retired = origin.retire();
-    assert_eq!(retired.retention_keys(), &keys);
+    let retired_keys: Vec<_> = retired.retention_keys().cloned().collect();
+    assert_eq!(retired_keys, keys);
     assert_eq!(fixture.owner.active_component_obligation_count(), 0);
     for key in &keys {
         let entry = fixture.owner.inspect_key(key).unwrap().unwrap();
         assert!(!entry.owner_lease_present);
         assert!(entry.dependencies.is_zero());
     }
-    let reclaimed = fixture
-        .owner
-        .reclaim_keys(retired.retention_keys(), 2)
-        .unwrap();
+    let reclaimed = fixture.owner.reclaim_keys(&retired_keys, 2).unwrap();
     assert_eq!(reclaimed.reclaimed(), 2);
 }

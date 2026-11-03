@@ -5,7 +5,7 @@ mod binding;
 mod checkpoint;
 mod codec;
 pub(crate) use checkpoint::WorldCheckpointImage;
-pub(crate) use checkpoint::WorldCheckpointOrigin;
+pub(crate) use checkpoint::{PreparedCheckpointOccurrence, WorldCheckpointOrigin};
 pub use checkpoint::{
     PreparedWorldCheckpoint, WorldCheckpointJournalRecord, WorldCheckpointOriginRetirement,
     WorldCheckpointOriginRetirementDenial, WorldCheckpointPort, WorldCheckpointReadSource,

@@ -3,17 +3,21 @@ use crate::durability::WorldDurableMediumBinding;
 use crate::inspection::RuntimeWorldRetentionKey;
 use crate::retention::HistoryRetentionObligation;
 use worth_relational::facade::branch::AdmittedRelationalBranchBasis;
+mod occurrences;
+use occurrences::CheckpointOccurrences;
+pub(crate) use occurrences::PreparedCheckpointOccurrence;
 
 /// This holder's obligation was released; other holders may still retain the basis.
 #[derive(Debug)]
 pub struct WorldCheckpointOriginRetirement {
     keys: [RuntimeWorldRetentionKey; 2],
+    occurrences: CheckpointOccurrences,
 }
 impl WorldCheckpointOriginRetirement {
     /// Exact registry entries now eligible for the owning close's reclamation.
     /// Other live obligations may still retain either entry.
-    pub fn retention_keys(&self) -> &[RuntimeWorldRetentionKey; 2] {
-        &self.keys
+    pub fn retention_keys(&self) -> impl Iterator<Item = &RuntimeWorldRetentionKey> {
+        self.keys.iter().chain(self.occurrences.retired_keys())
     }
 }
 
@@ -38,6 +42,7 @@ pub(crate) enum WorldCheckpointOriginState {
 pub(crate) struct WorldCheckpointOrigin {
     basis: AdmittedRelationalBranchBasis,
     pins: HistoryRetentionObligation,
+    occurrences: CheckpointOccurrences,
 }
 impl WorldCheckpointOrigin {
     pub(crate) fn new(
@@ -51,14 +56,20 @@ impl WorldCheckpointOrigin {
         Self {
             basis: basis.relational_basis().clone(),
             pins,
+            occurrences: CheckpointOccurrences::default(),
         }
     }
     pub(crate) fn retire(self) -> WorldCheckpointOriginRetirement {
-        let Self { basis, pins } = self;
+        let Self {
+            basis,
+            pins,
+            mut occurrences,
+        } = self;
+        occurrences.retire();
         let keys = pins.retention_keys();
         drop(pins);
         drop(basis);
-        WorldCheckpointOriginRetirement { keys }
+        WorldCheckpointOriginRetirement { keys, occurrences }
     }
 }
 
@@ -75,6 +86,20 @@ impl WorldDurableMediumBinding {
             }
             WorldCheckpointOriginState::Held(_) | WorldCheckpointOriginState::Retired => {
                 panic!("the original Branch recipe installs its custody exactly once");
+            }
+        }
+    }
+
+    /// Move the original request-funded successor pair into the recipe owner.
+    pub(crate) fn retain_checkpoint_occurrence(&self, occurrence: PreparedCheckpointOccurrence) {
+        let mut origin = self
+            .checkpoint_origin
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
+        match &mut *origin {
+            WorldCheckpointOriginState::Held(origin) => origin.occurrences.retain(occurrence),
+            WorldCheckpointOriginState::Uninstalled | WorldCheckpointOriginState::Retired => {
+                panic!("a durable occurrence belongs to an installed live recipe");
             }
         }
     }

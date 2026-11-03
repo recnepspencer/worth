@@ -50,6 +50,7 @@ pub enum WorldDurableMediumDenial {
     PublicationUnresolved,
     StaleCheckpoint,
     CheckpointSelectionRequired,
+    CheckpointOriginRetention,
     Storage(String),
 }
 impl From<WorldDurableFrameDenial> for WorldDurableMediumDenial {

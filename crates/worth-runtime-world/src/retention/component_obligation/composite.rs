@@ -107,12 +107,10 @@ impl ObservationRetentionObligation {
         }
     }
 
-    #[cfg(test)]
     pub(crate) fn relational(&self) -> &ComponentBasisPinObligation {
         &self._relational
     }
 
-    #[cfg(test)]
     pub(crate) fn signal(&self) -> &ComponentBasisPinObligation {
         &self._signal
     }

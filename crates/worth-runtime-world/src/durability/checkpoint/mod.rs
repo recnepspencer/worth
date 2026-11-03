@@ -13,7 +13,9 @@ mod framing;
 mod graph;
 mod image;
 mod origin;
-pub(crate) use origin::{WorldCheckpointOrigin, WorldCheckpointOriginState};
+pub(crate) use origin::{
+    PreparedCheckpointOccurrence, WorldCheckpointOrigin, WorldCheckpointOriginState,
+};
 pub use origin::{WorldCheckpointOriginRetirement, WorldCheckpointOriginRetirementDenial};
 mod port;
 mod source;

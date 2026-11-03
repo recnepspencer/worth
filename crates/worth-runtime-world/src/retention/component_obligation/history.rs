@@ -1,6 +1,7 @@
 use super::super::RetentionTransferDenial;
 use super::{
-    ComponentBasisPinObligation, ProductHeadRetentionObligation, PublicationRetentionObligation,
+    ComponentBasisPinObligation, ObservationRetentionObligation, ProductHeadRetentionObligation,
+    PublicationRetentionObligation,
 };
 use crate::basis::AdmittedCompositeRuntimeWorldBasis;
 use crate::identity::{CompositeBasisKey, RuntimeWorldOwnerIdentity};
@@ -62,5 +63,17 @@ impl ProductHeadRetentionObligation {
             return Err(RetentionTransferDenial::BasisMismatch);
         }
         HistoryRetentionObligation::fork(basis, self.relational(), self.signal())
+    }
+}
+
+impl ObservationRetentionObligation {
+    pub(crate) fn fork_history(
+        &self,
+        commit: &crate::history::CompositeRuntimeWorldCommit,
+    ) -> Result<HistoryRetentionObligation, RetentionTransferDenial> {
+        if !self.matches_captured_head(commit) {
+            return Err(RetentionTransferDenial::BasisMismatch);
+        }
+        HistoryRetentionObligation::fork(commit.basis(), self.relational(), self.signal())
     }
 }

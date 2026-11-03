@@ -1,4 +1,4 @@
-use super::ActiveAttemptCustody;
+use super::{ActiveAttemptCustody, ActivePinCustody};
 use crate::branch::{
     ProductBranchObservation, ProductBranchReferenceCell, ProductBranchReferenceLoss,
 };
@@ -34,6 +34,20 @@ impl ActiveAttemptCustody {
             .durable_occurrence
             .as_mut()
             .expect("pre-effect backing admitted");
+        if occurrence.origin_needs_binding() {
+            let basis = resources
+                .commit
+                .as_ref()
+                .expect("actual Native successor commit")
+                .basis();
+            let ActivePinCustody::Bound(pins) = &resources.pins else {
+                unreachable!("durable publication owns the exact successor pins");
+            };
+            let pins = pins
+                .fork_history(basis)
+                .map_err(|_| WorldDurableMediumDenial::CheckpointOriginRetention)?;
+            occurrence.bind_origin(basis, pins);
+        }
         let subject = occurrence
             .finalize(evidence, binding.binding().incarnation())?
             .clone();
@@ -59,12 +73,19 @@ impl ActiveAttemptCustody {
     ) -> Result<(), WorldDurablePublicationStop> {
         match binding.publish(subject, execution) {
             Ok(committed) => {
-                self.lease_resources()
-                    .resources_mut()
+                let mut lease = self.lease_resources();
+                let resources = lease.resources_mut();
+                resources
                     .durable_movement
                     .as_mut()
                     .expect("same cell movement installed before I/O")
                     .acknowledge(committed);
+                let origin = resources
+                    .durable_occurrence
+                    .as_mut()
+                    .expect("same original occurrence custody")
+                    .take_origin();
+                binding.retain_checkpoint_occurrence(origin);
                 Ok(())
             }
             Err(WorldDurablePublicationStop::Refused(cause)) => {

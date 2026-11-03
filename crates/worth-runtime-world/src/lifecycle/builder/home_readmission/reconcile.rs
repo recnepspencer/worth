@@ -162,6 +162,8 @@ where
                     relational.commit,
                 ))
                 .ok_or(Denial::OccurrenceEvidenceMismatch)?;
+            let mut origin = crate::durability::PreparedCheckpointOccurrence::prepare(execution)
+                .map_err(Denial::Medium)?;
             let admitted = custody.publications[index]
                 .take()
                 .expect("same acquired occurrence cap");
@@ -176,6 +178,13 @@ where
             custody.records.push(record.clone());
             let selected = root.install_readmitted_occurrence(&record, &mut custody.capacities)?;
             custody.observations.push(selected.clone());
+            let pins = selected.fork_checkpoint_history().map_err(|_| {
+                Denial::Medium(
+                    crate::durability::WorldDurableMediumDenial::CheckpointOriginRetention,
+                )
+            })?;
+            origin.bind(selected.basis(), pins);
+            binding.retain_checkpoint_occurrence(origin);
             insert(&mut observations, &open.commit, &selected, execution)?;
         }
         for (open, (attempt, commit, identity), index, slot_index) in opens.values() {
