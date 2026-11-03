@@ -74,8 +74,8 @@ pub fn run(
         bound(None),
     );
     let probe = match work {
-        Some(work) => worth_query_execution::domain_computation::primary_graph::application_attempt::fact::consult_observation::install_with_work_on_this_thread_for_test(
-            worth_query_execution::domain_computation::primary_graph::application_attempt::fact::consult_observation::Approval,
+        Some(work) => worth_query_execution::domain_computation::primary_graph::application_attempt::fact::consult_observation::ReadConsultObservationForTest::install_with_work_on_this_thread_for_test(
+            worth_query_execution::domain_computation::primary_graph::application_attempt::fact::consult_observation::Door::Approval,
             Some(work),
             move |context| {
                 // Exceed the live caller ceiling at the selected read consultation.
@@ -93,8 +93,8 @@ pub fn run(
                 );
             },
         ),
-        None => worth_query_execution::domain_computation::primary_graph::application_attempt::fact::consult_observation::install_on_this_thread_for_test(
-            worth_query_execution::domain_computation::primary_graph::application_attempt::fact::consult_observation::Approval,
+        None => worth_query_execution::domain_computation::primary_graph::application_attempt::fact::consult_observation::ReadConsultObservationForTest::install_on_this_thread_for_test(
+            worth_query_execution::domain_computation::primary_graph::application_attempt::fact::consult_observation::Door::Approval,
             cancel_at.map(|k| (k, source)),
         ),
     };

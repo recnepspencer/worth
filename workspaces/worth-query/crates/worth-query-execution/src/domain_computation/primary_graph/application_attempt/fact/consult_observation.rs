@@ -22,7 +22,7 @@ pub struct ReadConsultObservationForTest {
     _listener: worth_execution::ExecutionCheckpointObservationForTest,
 }
 impl ReadConsultObservationForTest {
-    pub(in crate::domain_computation) fn install_on_this_thread_for_test(
+    pub fn install_on_this_thread_for_test(
         door: Door,
         cancel: Option<(usize, WorthQueryCancellationSource)>,
     ) -> Self {
@@ -33,14 +33,14 @@ impl ReadConsultObservationForTest {
             }
         })
     }
-    pub(in crate::domain_computation) fn install_callback_on_this_thread_for_test(
+    pub fn install_callback_on_this_thread_for_test(
         door: Door,
         at: Option<usize>,
         mut cancel: impl FnMut() + 'static,
     ) -> Self {
         Self::install_with_work_on_this_thread_for_test(door, at, move |_| cancel())
     }
-    pub(in crate::domain_computation) fn install_with_work_on_this_thread_for_test(
+    pub fn install_with_work_on_this_thread_for_test(
         door: Door,
         at: Option<usize>,
         mut stop: impl FnMut(Option<&mut worth_execution::MapKernelContext<'_, '_>>) + 'static,

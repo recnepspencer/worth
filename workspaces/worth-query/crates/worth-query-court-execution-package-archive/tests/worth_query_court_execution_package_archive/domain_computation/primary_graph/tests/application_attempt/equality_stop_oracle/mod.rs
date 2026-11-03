@@ -112,8 +112,8 @@ pub fn run(
         })),
     );
     let probe = match work_at {
-        Some(k) => worth_query_execution::domain_computation::primary_graph::application_attempt::fact::consult_observation::install_with_work_on_this_thread_for_test(
-            worth_query_execution::domain_computation::primary_graph::application_attempt::fact::consult_observation::Equality,
+        Some(k) => worth_query_execution::domain_computation::primary_graph::application_attempt::fact::consult_observation::ReadConsultObservationForTest::install_with_work_on_this_thread_for_test(
+            worth_query_execution::domain_computation::primary_graph::application_attempt::fact::consult_observation::Door::Equality,
             Some(k),
             move |context| {
                 // Exhaust the existing caller meter inside this actual read.
@@ -130,8 +130,8 @@ pub fn run(
                 );
             },
         ),
-        None => worth_query_execution::domain_computation::primary_graph::application_attempt::fact::consult_observation::install_on_this_thread_for_test(
-            worth_query_execution::domain_computation::primary_graph::application_attempt::fact::consult_observation::Equality,
+        None => worth_query_execution::domain_computation::primary_graph::application_attempt::fact::consult_observation::ReadConsultObservationForTest::install_on_this_thread_for_test(
+            worth_query_execution::domain_computation::primary_graph::application_attempt::fact::consult_observation::Door::Equality,
             cancel_at.map(|k| (k, source)),
         ),
     };
