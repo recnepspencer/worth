@@ -11,6 +11,7 @@ use worth_relational::facade::{
 #[derive(Debug, Default)]
 pub(super) struct HomeOwnerRetirementProgress {
     root_started: bool,
+    native_services: Option<worth_relational::facade::branch::RetiredRelationalOwnerServicePorts>,
     correspondence: Option<worth_runtime_bridge::facade::RetiringWorldCorrespondence>,
     root: Option<crate::history::CompositeCommitRetirement>,
     after: Option<crate::identity::CompositeCommitIdentity>,
@@ -129,6 +130,15 @@ where
                     != worth_runtime_bridge::facade::BridgeHomeRetirementProgress::Complete
                 {
                     return Ok(false);
+                }
+            }
+            if let Some(services) = state.relational.take() {
+                match services.into_home_retirement(request, native) {
+                    Ok(retired) => progress.native_services = Some(retired),
+                    Err((services, cause)) => {
+                        state.relational = Some(services);
+                        return Err(Denial::NativeServices(cause));
+                    }
                 }
             }
             if let Some(binding) = &state.durable {

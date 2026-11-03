@@ -62,7 +62,7 @@ fn settlement_unwind_restores_custody_before_catalog_reinstallation() {
                     .expect("retained custody names actual owner repair");
                 owner
                     .state
-                    .relational
+                    .relational_services()
                     .settlement_port()
                     .repair_pending_publication_settlement(identity.commit_id())
                     .unwrap();

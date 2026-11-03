@@ -42,7 +42,7 @@ where
         let ready = match ready.capture_memory_original(
             execution,
             &self.state.history,
-            &self.state.relational.basis_port(),
+            &self.state.relational_services().basis_port(),
         ) {
             Ok(ready) => ready,
             Err((ready, cause)) => {

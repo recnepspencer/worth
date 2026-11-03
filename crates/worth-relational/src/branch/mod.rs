@@ -110,6 +110,7 @@ pub use owner_services::{
     RelationalCommitResultSnapshotCleanupProgress, RelationalCommitResultSnapshotRelease,
     RelationalCommitResultSnapshotReleaseDenial, RelationalMaterializationPort,
     RelationalOwnerLifecycleObservation, RelationalOwnerServicePorts,
+    RelationalOwnerServiceRetirementDenial, RetiredRelationalOwnerServicePorts,
 };
 pub use reference::RelationalBranchCellDenial;
 pub use reference::{

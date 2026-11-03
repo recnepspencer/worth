@@ -106,7 +106,7 @@ where
             })?;
         let frontier = state.history.try_result_snapshot_cleanup_frontier()?;
         Ok(super::RuntimeWorldResultSnapshotCleanup::from_closed_owner(
-            state.relational.basis_port(),
+            state.relational_services().basis_port(),
             state.history.clone(),
             frontier,
         ))

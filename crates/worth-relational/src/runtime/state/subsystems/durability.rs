@@ -186,3 +186,5 @@ impl RuntimeSubsystem for DurabilitySubsystem {
         }
     }
 }
+
+mod service_alias_retirement;

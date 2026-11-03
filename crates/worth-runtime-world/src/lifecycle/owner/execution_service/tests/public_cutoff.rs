@@ -39,7 +39,7 @@ fn final_clock_panic_keeps_owner_effects_without_product_movement() {
         .capture_memory_original(
             &execution,
             &owner.state.history,
-            &owner.state.relational.basis_port(),
+            &owner.state.relational_services().basis_port(),
         )
         .unwrap();
     let cell = owner.state.branches.root_cell().unwrap();
@@ -105,7 +105,7 @@ fn cancellation_during_clock_check_prevents_product_movement() {
         .capture_memory_original(
             &execution,
             &owner.state.history,
-            &owner.state.relational.basis_port(),
+            &owner.state.relational_services().basis_port(),
         )
         .unwrap();
     let cell = owner.state.branches.root_cell().unwrap();

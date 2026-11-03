@@ -55,7 +55,7 @@ where
     ) -> Result<RelationalAttemptProgress, RelationalExecutionFailure> {
         match self
             .state
-            .relational
+            .relational_services()
             .publication_port()
             .compare_and_publish(execution, candidate)
         {
@@ -77,7 +77,7 @@ where
                 ));
                 match self
                     .state
-                    .relational
+                    .relational_services()
                     .settlement_port()
                     .settle_performed_publication(performed)
                 {

@@ -13,6 +13,7 @@ pub enum RuntimeWorldHomeRetirementDenial {
     Close(CloseDenial),
     Medium(crate::durability::WorldDurableMediumDenial),
     Bridge(worth_runtime_bridge::facade::BridgeHomeRetirementDenial),
+    NativeServices(worth_relational::facade::branch::RelationalOwnerServiceRetirementDenial),
 }
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum RuntimeWorldHomeRetirementProgress {

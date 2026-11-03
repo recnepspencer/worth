@@ -105,7 +105,7 @@ fn stale_product_head_is_denied_before_the_first_owner_effect() {
     );
     assert!(
         crate::basis::validate_current(
-            &owner.state.relational.basis_port(),
+            &owner.state.relational_services().basis_port(),
             &owner.state.signal.basis_port(),
             owner.state.bridge.as_ref().expect("serving World owns correspondence"),
             winner.basis().relational_basis(),

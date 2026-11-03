@@ -15,6 +15,13 @@ pub struct RelationalBranchBasisPort {
 }
 
 impl RelationalBranchBasisPort {
+    pub(super) fn matches_home_retirement_owner(
+        &self,
+        owner: &crate::runtime::RelationalRuntime,
+    ) -> bool {
+        self.owner.matches_owner(owner)
+    }
+
     /// Begin cleanup without observing another runtime or granting close authority.
     pub fn begin_commit_result_snapshot_cleanup(
         &self,

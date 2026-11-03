@@ -120,7 +120,7 @@ where
         };
         let native = match self
             .state
-            .relational
+            .relational_services()
             .basis_port()
             .export_recorded_current_component(execution, intent.relational_basis())
         {

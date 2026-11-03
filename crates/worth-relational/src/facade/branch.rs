@@ -29,9 +29,10 @@ pub use crate::branch::{
     RelationalMaterializationPort, RelationalMaterializationRecord,
     RelationalMaterializationSuspension, RelationalMaterializationSuspensionCompletion,
     RelationalOwnerLifecycleObservation, RelationalOwnerServicePorts,
-    RelationalRecordedComponentRefusal, RelationalRelationMaterialization,
-    RelationalRematerializationCompletion, RelationalRematerializationFailure,
-    RelationalRootCorrectnessIndex, ResolvedRelationalBasisDescriptor,
+    RelationalOwnerServiceRetirementDenial, RelationalRecordedComponentRefusal,
+    RelationalRelationMaterialization, RelationalRematerializationCompletion,
+    RelationalRematerializationFailure, RelationalRootCorrectnessIndex,
+    ResolvedRelationalBasisDescriptor, RetiredRelationalOwnerServicePorts,
     SuspendRelationalMaterialization, RELATIONAL_BRANCH_BASIS_DESCRIPTOR_VERSION,
 };
 pub use crate::branch::{

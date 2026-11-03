@@ -8,10 +8,10 @@ use super::{
 #[derive(Debug, Clone)]
 pub struct RelationalOwnerServicePorts {
     preparation: crate::mvcc::RelationalPreparationPort,
-    fork: crate::branch::RelationalForkPort,
-    publication: crate::mvcc::RelationalPublicationPort,
+    pub(super) fork: crate::branch::RelationalForkPort,
+    pub(super) publication: crate::mvcc::RelationalPublicationPort,
     settlement: crate::publication::RelationalSettlementPort,
-    basis: RelationalBranchBasisPort,
+    pub(super) basis: RelationalBranchBasisPort,
     lifecycle: RelationalBranchLifecyclePort,
     transaction_admission: RelationalBranchTransactionAdmissionPort,
     materialization: RelationalMaterializationPort,

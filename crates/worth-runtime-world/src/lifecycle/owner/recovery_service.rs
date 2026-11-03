@@ -303,7 +303,7 @@ where
             Some(performed) => {
                 match self
                     .state
-                    .relational
+                    .relational_services()
                     .settlement_port()
                     .settle_performed_publication(performed)
                 {
@@ -324,7 +324,7 @@ where
                 if let Some(commit_identity) = recovery.take_identity_repair() {
                     match self
                         .state
-                        .relational
+                        .relational_services()
                         .settlement_port()
                         .repair_pending_publication_settlement(commit_identity.commit_id())
                     {

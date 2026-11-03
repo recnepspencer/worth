@@ -279,3 +279,27 @@ fn closed_home_retirement_preserves_shared_root_history_on_busy_and_stop_then_re
         "actual World payload destruction belongs to explicit unbudgeted reclaim"
     );
 }
+
+#[test]
+fn native_service_retirement_refuses_foreign_owner_and_preserves_the_same_bundle_for_retry() {
+    let (fixture, root) = owner();
+    let (foreign_fixture, _foreign_root) = owner();
+    let serial = SerialRequest::from_memory(
+        SerialMemoryBudget::new(None),
+        CancellationToken::new(),
+        None,
+    );
+    let request = ExecutionRequest::serial(&serial);
+    let services = root.state.relational_services().clone();
+    let (services, cause) = services
+        .into_home_retirement(&request, foreign_fixture.relational_runtime())
+        .expect_err("equal-shaped foreign Native owners cannot retire the actual service bundle");
+    assert!(matches!(
+        cause,
+        worth_relational::facade::branch::RelationalOwnerServiceRetirementDenial::ForeignOwner
+    ));
+    let retired = services
+        .into_home_retirement(&request, fixture.relational_runtime())
+        .expect("same original bundle remains available for its actual Native owner");
+    retired.reclaim();
+}
