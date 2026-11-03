@@ -77,6 +77,12 @@ fn resealed_checkpoint_zero_root_is_denied_before_addressed_source_read() {
         .unwrap();
     #[cfg(feature = "certification-test-authority")]
     let observer = coordination.certification_residency_allocations();
+    #[cfg(feature = "certification-test-authority")]
+    let before_read = observer.snapshot().for_dimension(
+        worth_store::physical_runtime::PhysicalResidencyDimension::OperationScope(
+            worth_store::physical_runtime::PhysicalOperationAllocationScope::Recovery,
+        ),
+    );
     let mut allocation = coordination.begin_source_read_allocation().unwrap();
     // Only the checkpoint read fits: a source read would consume a second discovery entry.
     let mut discovery = media.bounded_discovery(1, 4096).unwrap();
@@ -128,13 +134,20 @@ fn resealed_checkpoint_zero_root_is_denied_before_addressed_source_read() {
                 PhysicalOperationAllocationScope::Recovery,
             ));
         assert_eq!(
-            native.admissions(),
+            native.admissions() - before_read.admissions(),
             3,
             "checkpoint file address, capability open and payload; never source or Shared retention"
         );
-        assert!(native.admitted_units() > bytes.len() as u64);
-        assert_eq!(native.released_units(), native.admitted_units());
-        assert_eq!(native.active_units(), 0);
+        assert!(native.admitted_units() - before_read.admitted_units() > bytes.len() as u64);
+        assert_eq!(
+            native.released_units() - before_read.released_units(),
+            native.admitted_units() - before_read.admitted_units()
+        );
+        assert_eq!(
+            before_read.active_units(),
+            PhysicalRecoveryCoordinationCapacity::serving_evidence_backing_bytes()
+        );
+        assert_eq!(native.active_units(), before_read.active_units());
     }
     let ingress = failure.integrity_trace.counters();
     assert_eq!(

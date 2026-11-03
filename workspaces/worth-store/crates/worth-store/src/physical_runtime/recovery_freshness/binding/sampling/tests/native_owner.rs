@@ -238,7 +238,11 @@ fn native_sample_owner_funds_all_retained_capacities_and_releases_scratch_then_r
             );
         });
         let final_bytes = observer.snapshot().for_dimension(dimension);
-        assert_eq!(final_bytes.admitted_units(), final_bytes.released_units());
+        assert_eq!(
+            final_bytes.admitted_units(),
+            final_bytes.released_units()
+                + PhysicalRecoveryCoordinationCapacity::serving_evidence_backing_bytes()
+        );
         disposed_observer = Some(observer);
     });
     let disposed = disposed_observer
