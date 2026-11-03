@@ -12,9 +12,9 @@ class CourtDoorTests(unittest.TestCase):
                 'use worth_query_execution::facade::x::Y;\n'
                 'use worth_query_execution::court_doors_for_test::a::Z;\n'
                 'fn f() { worth_query_execution::domain_computation::a::Item::new(); }\n')
-        found = [r.segments for r in library_paths(Path('f.rs'), text)]
-        self.assertEqual(found, [('domain_computation', 'a', 'Item'),
-                                 ('domain_computation', 'a', 'Item', 'new')])
+        found = [(r.segments, r.through_door) for r in library_paths(Path('f.rs'), text)]
+        self.assertEqual(found, [(('domain_computation', 'a', 'Item'), False), (('a', 'Z'), True),
+                                 (('domain_computation', 'a', 'Item', 'new'), False)])
 
     def test_split_module_stops_at_the_item(self):
         index = {(): 0, ('domain_computation',): 0, ('domain_computation', 'a'): 0}

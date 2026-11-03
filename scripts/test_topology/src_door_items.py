@@ -27,6 +27,7 @@ class Reference:
     end: int
     segments: tuple
     glob: bool = False
+    through_door: bool = False
 
 
 @dataclass
@@ -53,9 +54,13 @@ def library_paths(path, text):
             j += 3
         glob = j + 2 < len(stream) and stream[j].value == ':' and stream[j + 1].value == ':' \
             and stream[j + 2].value == '*'
-        if segments and segments[0] not in ('facade', DOOR):
+        through_door = bool(segments) and segments[0] == DOOR
+        if through_door:
+            # Already a door path: plan it again (so a rerun keeps the door) but do not rewrite.
+            segments = segments[1:]
+        if segments and segments[0] != 'facade':
             end = stream[j - 1].end
-            result.append(Reference(path, token.start, end, tuple(segments), glob))
+            result.append(Reference(path, token.start, end, tuple(segments), glob, through_door))
         i = j
     return result
 
@@ -71,6 +76,8 @@ def public_paths(surface):
     """Defining (module, name) -> shortest public path the facade already offers."""
     best = {}
     for module in sorted(surface.public_modules):
+        if module[:1] == (DOOR,):
+            continue  # the door itself is not a facade
         for name, origin in sorted(surface.exports(module).items()):
             path = module + (name,)
             if origin not in best or len(path) < len(best[origin]):
