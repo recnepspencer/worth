@@ -92,7 +92,7 @@ fn discovered_restored_historical_commit_is_terminal_and_closes_without_rerun() 
         _=>panic!("history cannot complete outputs or recreate a receipt"),
     };
     let outcome = terminal.native_outcome().unwrap();
-    assert!(matches!(outcome, worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome::PreviouslyCommitted(_)), "restored native outcome: {outcome:?}");
+    assert!(matches!(outcome, worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome::RecoveredCommitted(_)), "restored native outcome: {outcome:?}");
     assert!(outcome.receipt().is_none());
     assert!(outcome.result().is_none());
     assert!(terminal.recovered_progress().is_none());
@@ -126,7 +126,7 @@ fn discovered_restored_historical_commit_is_terminal_and_closes_without_rerun() 
         denial,
         worth_query_host::facade::application_entry::WorthQueryOperationCloseDenial::Execution(_)
     ));
-    assert!(matches!(terminal.native_outcome(),Some(worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome::PreviouslyCommitted(_))));
+    assert!(matches!(terminal.native_outcome(),Some(worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome::RecoveredCommitted(_))));
     terminal
         .close(&request)
         .unwrap_or_else(|(_, d)| panic!("historical close: {d:?}"));

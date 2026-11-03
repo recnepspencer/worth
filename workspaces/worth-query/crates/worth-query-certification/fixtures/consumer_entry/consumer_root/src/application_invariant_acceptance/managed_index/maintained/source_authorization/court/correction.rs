@@ -28,7 +28,10 @@ fn source_only_read_revocation_refuses_recorded_correction_before_inverse_read()
             .close_with_evidence(&request)
             .unwrap_or_else(|(_, denial)| panic!("{denial:?}"));
         let (WorthQuerySourceCompletion::Fresh { receipt, .. }
-        | WorthQuerySourceCompletion::Recovered { receipt, .. }) = evidence;
+        | WorthQuerySourceCompletion::Recovered { receipt, .. }) = evidence
+        else {
+            panic!("the fresh authorized source retains its live correction capability");
+        };
         setup.set_readable(false, 0x919c_0051);
         let before = callbacks(&setup.calls.native);
         let head = request.retain_current_read().unwrap();
@@ -81,7 +84,10 @@ fn source_only_read_revocation_refuses_recorded_correction_before_inverse_read()
             .close_with_evidence(&request)
             .unwrap_or_else(|(_, denial)| panic!("{denial:?}"));
         let (WorthQuerySourceCompletion::Fresh { receipt, .. }
-        | WorthQuerySourceCompletion::Recovered { receipt, .. }) = fresh;
+        | WorthQuerySourceCompletion::Recovered { receipt, .. }) = fresh
+        else {
+            panic!("the fresh authorized source retains its live correction capability");
+        };
         let selected = request.corrections().select(&receipt, limits()).unwrap();
         let prepared = request
             .corrections()

@@ -36,7 +36,8 @@ impl RecordResult {
                 WorthQuerySourceCompletion::Fresh { result, .. } => {
                     StoredStepOutcome::Fresh { days: result.days }
                 }
-                WorthQuerySourceCompletion::Recovered { .. } => StoredStepOutcome::Recovered,
+                WorthQuerySourceCompletion::Recovered { .. }
+                | WorthQuerySourceCompletion::Recorded { .. } => StoredStepOutcome::Recovered,
             });
         }
         Ok(Self {

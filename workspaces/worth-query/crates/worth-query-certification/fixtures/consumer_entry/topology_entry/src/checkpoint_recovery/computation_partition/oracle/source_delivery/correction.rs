@@ -36,6 +36,9 @@ pub(in crate::checkpoint_recovery::computation_partition::oracle) fn source<
     match evidence {
         WorthQuerySourceCompletion::Fresh { receipt, .. }
         | WorthQuerySourceCompletion::Recovered { receipt, .. } => receipt,
+        WorthQuerySourceCompletion::Recorded { .. } => {
+            panic!("a fresh source must retain its original live correction capability")
+        }
     }
 }
 
@@ -74,5 +77,8 @@ pub(in crate::checkpoint_recovery::computation_partition::oracle) fn reverse<
     match evidence {
         WorthQuerySourceCompletion::Fresh { receipt, .. }
         | WorthQuerySourceCompletion::Recovered { receipt, .. } => receipt,
+        WorthQuerySourceCompletion::Recorded { .. } => {
+            panic!("a fresh source must retain its original live correction capability")
+        }
     }
 }
