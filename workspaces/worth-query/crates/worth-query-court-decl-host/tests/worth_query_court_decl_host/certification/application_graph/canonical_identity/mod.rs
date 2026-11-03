@@ -97,7 +97,7 @@ fn a_capability_governed_request_encodes_its_input_once_whether_it_commits_or_re
     let WorkflowDefinitionPublicationOutcome::Published(first) = publish() else {
         panic!("the first publication lands");
     };
-    assert!(!first.replayed());
+    // Published is the fresh performed variant, never recovered receipt data.
     assert_eq!(
         SetRetentionInput::encoding_count(),
         1,
@@ -108,14 +108,26 @@ fn a_capability_governed_request_encodes_its_input_once_whether_it_commits_or_re
     assert_request_identity_work(first.receipt().canonical_work().admission(), 66, 275, 5);
 
     SetRetentionInput::reset_encoding_count();
-    let WorkflowDefinitionPublicationOutcome::Published(replayed) = publish() else {
+    let WorkflowDefinitionPublicationOutcome::RecoveredCommitted(replayed) = publish() else {
         panic!("the unchanged retry replays the publication");
     };
-    assert!(replayed.replayed());
+    assert_eq!(
+        first.receipt().commit_reference(),
+        replayed.commit_reference()
+    );
+    assert_eq!(
+        first.receipt().outcome_identity(),
+        Some(replayed.outcome_identity())
+    );
     assert_eq!(
         SetRetentionInput::encoding_count(),
         1,
         "a replay encodes its input once too"
     );
-    assert_request_identity_work(replayed.receipt().canonical_work().admission(), 66, 275, 5);
+    // D17 excludes historical measured work from recovered receipts. The actual
+    // invocation's independent input-encoding count above stays one.
+    assert_eq!(
+        first.receipt().changed_record_count(),
+        replayed.changed_record_count()
+    );
 }

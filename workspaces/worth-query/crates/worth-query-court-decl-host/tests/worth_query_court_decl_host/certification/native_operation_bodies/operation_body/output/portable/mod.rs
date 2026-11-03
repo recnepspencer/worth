@@ -122,7 +122,7 @@ fn output_bodies_reconstruct_and_new_receipts_rebind_exact_entity_types() {
     .unwrap();
     assert!(matches!(
         create(&restored, 312),
-        Outcome::PreviouslyCommitted(_)
+        Outcome::RecoveredCommitted(_)
     ));
     let Outcome::Committed { receipt, .. } = invoke(&restored, 313) else {
         panic!("restored preserve")
