@@ -325,3 +325,5 @@ fn canonical(value: impl Into<Arc<str>>) -> Result<Arc<str>, WorthQueryProvision
     }
     Ok(value)
 }
+
+mod court_doors_for_test;

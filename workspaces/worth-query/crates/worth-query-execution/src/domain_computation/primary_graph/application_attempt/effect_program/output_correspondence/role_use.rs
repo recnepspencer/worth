@@ -80,3 +80,5 @@ where
         panic!("the output-role family does not admit this posture");
     }
 }
+
+mod court_doors_for_test;

@@ -106,3 +106,5 @@ mod tests {
         assert_eq!(reader.published(), Some(activation_record(4)));
     }
 }
+
+mod court_doors_for_test;

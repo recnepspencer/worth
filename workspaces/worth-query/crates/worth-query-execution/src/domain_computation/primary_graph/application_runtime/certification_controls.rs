@@ -359,7 +359,7 @@ where
         Ok(candidate)
     }
 
-    pub(crate) fn provider_session_resource_count_for_test(&self) -> usize {
+    pub fn provider_session_resource_count_for_test(&self) -> usize {
         self.primary_provider.application_attempt_resource_count()
     }
 

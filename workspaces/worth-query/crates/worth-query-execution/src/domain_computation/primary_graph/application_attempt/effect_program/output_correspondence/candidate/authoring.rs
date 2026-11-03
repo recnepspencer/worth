@@ -9,7 +9,7 @@ impl<Schema, Operation, Input, Scope>
 {
     /// Expect the roles and families `Contract` declares, in place of the
     /// operation's own output contract.
-    pub(in crate::domain_computation::primary_graph) fn prepare_output_contract_for_test<Contract>(
+    pub fn prepare_output_contract_for_test<Contract>(
         &mut self,
     ) where
         Schema: ApplicationSchema,
@@ -55,3 +55,5 @@ impl<Schema, Operation, Input, Scope>
         Ok(())
     }
 }
+
+mod court_doors_for_test;

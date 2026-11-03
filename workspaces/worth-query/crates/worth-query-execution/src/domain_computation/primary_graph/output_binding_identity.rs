@@ -37,3 +37,5 @@ impl OutputBindingInventory {
         self.by_identity.get(identity).copied()
     }
 }
+
+mod court_doors_for_test;

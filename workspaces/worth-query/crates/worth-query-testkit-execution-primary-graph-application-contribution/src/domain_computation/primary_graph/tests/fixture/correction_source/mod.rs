@@ -32,7 +32,7 @@ pub struct PreparedLabelCorrection {
 }
 impl PreparedLabelCorrection {
     pub fn pending(&self) -> WorthQueryPendingAftermathCausality {
-        WorthQueryPendingAftermathCausality::recorded_correction(self.source.clone())
+        WorthQueryPendingAftermathCausality::recorded_correction_for_test(self.source.clone())
     }
 }
 
@@ -73,7 +73,7 @@ pub fn edit(
         let key = key.to_owned();
         let identities = ApplicationMutationIdentities::<IdentityExecutionSchema, LabelBinding>::with_encoded_input(&key, &input).unwrap();
         let program = crate::domain_computation::primary_graph::tests::fixture::correction_source::preparation::candidate(world, &phase, &request, &input, &key);
-        let selected = world.selected_product(&phase.test_host_request());
+        let selected = world.selected_product(&phase.test_host_request_for_test());
         let owner = world.application.selected_program_owner(&selected).unwrap();
         committed(owner.commit_program_action_in_advancement::<LabelBinding>(
             &phase, program, &identities, std::convert::identity, ExecutionAllocationPolicy::SystemAllocation,
@@ -116,7 +116,7 @@ pub fn publish_in_advancement(
             &prepared.input,
         )
         .unwrap();
-    let selected = world.selected_product(&phase.test_host_request());
+    let selected = world.selected_product(&phase.test_host_request_for_test());
     let owner = world.application.selected_program_owner(&selected).unwrap();
     owner.commit_program_correction_in_advancement::<LabelBinding>(
         &worth_query_execution::publication_boundary::program_publication_access(),
@@ -138,8 +138,8 @@ pub fn publish_without_causality(
     world
         .application
         .with_application_advancement(&request, |phase| {
-            let support = world.application.installed_program_support().unwrap();
-            let selected = world.selected_product(&phase.test_host_request());
+            let support = world.application.installed_program_support_for_test().unwrap();
+            let selected = world.selected_product(&phase.test_host_request_for_test());
             let inspection = selected.inspect_selected_program().unwrap();
             let presented = support.present(inspection.revision()).unwrap();
             world

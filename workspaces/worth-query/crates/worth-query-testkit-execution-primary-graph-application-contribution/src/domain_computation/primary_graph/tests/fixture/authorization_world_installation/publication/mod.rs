@@ -19,7 +19,7 @@ pub fn publish_authorization_world(
         worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::tests::fault_controller::PrimaryGraphFaultController::default(),
     );
     let application = bootstrap
-        .publish_application_runtime_with_ports(
+        .publish_application_runtime_with_ports_for_test(
             &phase.bootstrap_for_test(),
             runtime,
             authority,

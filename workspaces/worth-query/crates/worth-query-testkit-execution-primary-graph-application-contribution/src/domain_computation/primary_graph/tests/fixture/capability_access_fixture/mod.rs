@@ -38,7 +38,7 @@ pub fn admit_touch_account_capability(
     world
         .selected_product(phase_custody)
         .admit_capability_access(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             principal,
             &capability,
             CapabilityTouchInput {

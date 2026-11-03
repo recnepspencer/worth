@@ -48,13 +48,13 @@ pub fn install(world: &mut AuthorizationWorld) {
         &roster,
     )
     .unwrap();
-    let record = WorthQuerySupportedProgramRecord::installed(Arc::new(installed), &[], &[]);
-    let mut support = WorthQueryInstalledProgramSupport::installed(
+    let record = WorthQuerySupportedProgramRecord::installed_for_test(Arc::new(installed), &[], &[]);
+    let mut support = WorthQueryInstalledProgramSupport::installed_for_test(
         Arc::new(roster),
-        WorthQueryProgramActivationCell::unpublished(),
+        WorthQueryProgramActivationCell::unpublished_for_test(),
     );
-    support.complete_native_installation(vec![Arc::new(record)].into_boxed_slice());
-    world.application.program_support = Some(support);
+    support.complete_native_installation_for_test(vec![Arc::new(record)].into_boxed_slice());
+    (*world.application.program_support_mut_for_test()) = Some(support);
     world
         .application
         .with_host_advancement(|phase| {

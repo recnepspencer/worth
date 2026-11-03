@@ -219,3 +219,5 @@ impl<'a> CheckpointCursor<'a> {
         self.remaining.is_empty()
     }
 }
+
+mod court_doors_for_test;

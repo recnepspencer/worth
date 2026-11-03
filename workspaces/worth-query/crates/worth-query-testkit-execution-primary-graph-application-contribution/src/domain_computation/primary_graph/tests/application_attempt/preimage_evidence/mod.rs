@@ -50,7 +50,7 @@ pub fn demanded_mutation_work(
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let phase_custody = &phase.test_host_request();
+            let phase_custody = &phase.test_host_request_for_test();
 
             authenticated_principal(&(phase_custody).test_host_request(), &world, &request)
         })
@@ -58,7 +58,7 @@ pub fn demanded_mutation_work(
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let phase_custody = &phase.test_host_request();
+            let phase_custody = &phase.test_host_request_for_test();
 
             resolved_account(
                 &(phase_custody).test_host_request(),
@@ -71,7 +71,7 @@ pub fn demanded_mutation_work(
     let program = world
         .application
         .with_host_advancement(|phase| {
-            let phase_custody = &phase.test_host_request();
+            let phase_custody = &phase.test_host_request_for_test();
 
             retained_status_program(
                 phase_custody,
@@ -99,7 +99,7 @@ pub fn assert_retained_status(
     expected: &str,
 ) {
     let retained = receipt
-        .retained_preimage()
+        .retained_preimage_for_test()
         .expect("recorded inverse retains prior truth");
     assert!(receipt.has_retained_preimage());
     assert!(
@@ -141,9 +141,9 @@ pub fn retained_status_program(
         .installed_operation(ExactStatusRetentionOperation::reference())
         .unwrap();
     let admission = world
-        .selected_product(&(phase_custody).test_host_request())
+        .selected_product(&(phase_custody).test_host_request_for_test())
         .authorize_operation(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             principal,
             account,
             &operation,
@@ -153,7 +153,7 @@ pub fn retained_status_program(
         .unwrap();
     let other = matches!(breadth, RetentionMutationBreadth::CrossRecordLabel).then(|| {
         resolved_account(
-            &(phase_custody).test_host_request(),
+            &(phase_custody).test_host_request_for_test(),
             world,
             "unrelated",
             request,
@@ -162,7 +162,7 @@ pub fn retained_status_program(
     let (_, projection, _) = world
         .invariant
         .project_admitted_operation(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             &admission,
             |reader, projected| {
                 reader
@@ -187,7 +187,7 @@ pub fn retained_status_program(
     let reads = world
         .application
         .begin_projected_application_read_attempt(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             admission,
             projection,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -195,7 +195,7 @@ pub fn retained_status_program(
         .unwrap();
     let mut effects = reads
         .complete_projected_dependencies(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap()
@@ -204,7 +204,7 @@ pub fn retained_status_program(
     effects.prepare_output_contract_for_test::<RetentionOutputs>();
     let account = effects.existing_entity(account).unwrap();
     effects
-        .bind_output(OutputRoleUse::fixed::<RetainedAccount>(), &account)
+        .bind_output_for_test(OutputRoleUse::fixed_for_test::<RetainedAccount>(), &account)
         .expect("retained account output belongs to this effect program");
     effects
         .write_field(&account, AccountStatus::reference(), replacement.to_owned())

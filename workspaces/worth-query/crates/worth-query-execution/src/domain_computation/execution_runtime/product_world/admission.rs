@@ -206,3 +206,5 @@ pub(super) fn map_world_denial(
         ) => WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::ObservationRejected),
     }
 }
+
+mod court_doors_for_test;

@@ -38,3 +38,5 @@ impl<Query> super::super::WorthQueryObservedSource<Query> {
         self.source_meaning.checkpoint_identity()
     }
 }
+
+mod court_doors_for_test;

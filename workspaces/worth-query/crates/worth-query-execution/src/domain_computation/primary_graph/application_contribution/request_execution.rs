@@ -275,3 +275,5 @@ pub(in crate::domain_computation::primary_graph) fn certified_wave_seed_for_test
 ) -> Option<u64> {
     request.certified_seed
 }
+
+mod court_doors_for_test;

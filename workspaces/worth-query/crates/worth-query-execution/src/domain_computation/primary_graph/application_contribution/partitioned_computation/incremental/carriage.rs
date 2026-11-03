@@ -92,3 +92,5 @@ impl SealedComputationRun {
         SEALED_IN_TEST.with(|kept| kept.borrow_mut().take())
     }
 }
+
+mod court_doors_for_test;

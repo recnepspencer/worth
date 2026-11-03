@@ -157,3 +157,5 @@ impl<'support, Schema, Program> WorthQuerySupportedProgramHandle<'support, Schem
         self.record.declares_action(TypeId::of::<Binding>())
     }
 }
+
+mod court_doors_for_test;

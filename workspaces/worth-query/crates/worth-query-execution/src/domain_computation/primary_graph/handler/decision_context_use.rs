@@ -64,7 +64,7 @@ impl DecisionContextUse {
         self.opaque_reader()
     }
 
-    pub(in crate::domain_computation::primary_graph) const fn key_for_test(self) -> Self {
+    pub const fn key_for_test(self) -> Self {
         self.key()
     }
 }

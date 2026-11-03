@@ -313,3 +313,5 @@ pub(in crate::domain_computation::primary_graph) struct CompletedComputationRun 
     /// Actual fact-index allocation, grown by sealing before index creation.
     pub(super) attribution_memory: Option<QueryMemoryReservation>,
 }
+
+mod court_doors_for_test;

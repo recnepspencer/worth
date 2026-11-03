@@ -332,3 +332,5 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
             })
     }
 }
+
+mod court_doors_for_test;

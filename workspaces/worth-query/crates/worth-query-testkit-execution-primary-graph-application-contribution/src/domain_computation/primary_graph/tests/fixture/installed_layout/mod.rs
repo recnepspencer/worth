@@ -38,7 +38,7 @@ pub fn installed_schema_layout<Schema: ApplicationSchema>(
         .installed_packages()
         .bind_application_schema(declaration)
         .unwrap();
-    WorthQueryPrimaryGraphLayout::lower(
+    WorthQueryPrimaryGraphLayout::lower_for_test(
         installed.installed_declaration(),
         installed.native_contracts(),
         &RelationalSchemaRegistry::new(),

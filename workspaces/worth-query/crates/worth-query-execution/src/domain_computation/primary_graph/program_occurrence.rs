@@ -251,3 +251,5 @@ impl<Schema> WorthQueryInstalledProgramSupport<Schema> {
             .adoption_requirements(installed_schema, source, target)
     }
 }
+
+mod court_doors_for_test;

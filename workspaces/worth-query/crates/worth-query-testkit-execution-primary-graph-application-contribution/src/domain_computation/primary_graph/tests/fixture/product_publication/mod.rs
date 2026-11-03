@@ -24,13 +24,13 @@ pub fn publish_relational_mutation_on_application<
 
     let (prepared, before_lease) =
         prepare_relational_mutation_with_before(request_execution, application, batch, &request);
-    let outcome = prepared.execute(*request_execution);
+    let outcome = prepared.execute_for_test(*request_execution);
     let Ok(PublicationOutcome::Performed(performed)) = outcome else {
         panic!("fixture World publication must perform: {outcome:?}");
     };
     let published_basis = performed.commit().basis().relational_basis().clone();
     drop(performed.consume());
-    let graph = application.runtime.primary_graph().unwrap();
+    let graph = (*application.runtime_for_test()).primary_graph().unwrap();
     let handle = graph.integration_handle();
     handle.with_runtime_mut(request_execution, |runtime| {
         let observation = published_basis.observation();
@@ -77,10 +77,10 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
     worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::resource_lifecycle::basis_registry::lease::WorthQueryApplicationBasisLease,
 ){
     let selected = application
-        .select_product_branch(execution, application.product_runtime().default_branch())
+        .select_product_branch_for_test(execution, application.product_runtime().default_branch_for_test())
         .expect("the fixture product branch remains admitted");
     let (_, product, application_basis) = selected.into_parts();
-    let graph = application.runtime.primary_graph().unwrap();
+    let graph = (*application.runtime_for_test()).primary_graph().unwrap();
     let handle = graph.integration_handle();
     let candidate = handle.with_runtime_mut(execution, |runtime| {
         let mut transaction = runtime

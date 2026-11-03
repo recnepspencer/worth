@@ -42,17 +42,17 @@ pub fn recorded_settlements(
     let product = world
         .application
         .product_runtime()
-        .admit_product_branch(world.application.product_runtime().default_branch())
+        .admit_product_branch_for_test(world.application.product_runtime().default_branch_for_test())
         .expect("fixture product occurrence is live");
     let observation = product.observation();
-    let runtime_authority = world.application.runtime.authority_identity().as_u64();
-    let schema = world.application.installed_schema.binding_identity();
+    let runtime_authority = (*world.application.runtime_for_test()).authority_identity().as_u64();
+    let schema = (*world.application.installed_schema_for_test()).binding_identity();
     let entity = worth_relational::facade::identity::EntityId::new(
         worth_relational::facade::identity::PartitionId::main(),
         1,
         1,
     );
-    let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity(entity);
+    let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity);
     let mut lineage = WorthQueryApplicationOutputLineage::default();
     lineage.fixture_binding(
         TypeId::of::<RegistryRestoredOutput>(),
@@ -68,12 +68,12 @@ pub fn recorded_settlements(
         observation,
         Arc::new(WorthQueryApplicationOutputCorrespondence::default()),
         RecordedSourceIdentity::Checkpoint(
-            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryCheckpointSourceIdentity::new([0x72; 32]),
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryCheckpointSourceIdentity::new_for_test([0x72; 32]),
         ),
         *partition,
         None,
         [0x73; 32],
-            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false).retain_facts(Arc::from([worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact::SourceEntity {
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false).retain_facts_for_test(Arc::from([worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact::SourceEntity {
             entity_id: entity,
         }])),
             None,
@@ -85,7 +85,7 @@ pub fn recorded_settlements(
         runtime_authority,
         schema,
         scope,
-        output_binding: OutputBindingIdentity::declared("RegistryRestoredOutput"),
+        output_binding: OutputBindingIdentity::declared_for_test("RegistryRestoredOutput"),
     };
     let coordinate = ProductCoordinate {
         occurrence: observation.lifecycle_incarnation(),
@@ -94,7 +94,7 @@ pub fn recorded_settlements(
     let identities = partitions
         .iter()
         .map(|partition| {
-            let recorded = lineage.latest_output_in_partition(&source, coordinate, *partition);
+            let recorded = lineage.latest_output_in_partition_for_test(&source, coordinate, *partition);
             Arc::clone(
                 &recorded
                     .expect("restored output has one actual lineage slot")

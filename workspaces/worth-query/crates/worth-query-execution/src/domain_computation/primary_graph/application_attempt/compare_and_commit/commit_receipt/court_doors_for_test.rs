@@ -49,3 +49,10 @@ impl WorthQueryApplicationCommitReceipt {
         &mut self.authority_binding
     }
 }
+
+impl WorthQueryApplicationCommitReceipt {
+    #[doc(hidden)]
+    pub fn retained_preimage_for_test(&self) -> Option<&WorthQueryRetainedPreImage> {
+        Self::retained_preimage(self)
+    }
+}

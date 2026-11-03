@@ -193,3 +193,5 @@ impl PreparedComputationFacts {
         self.finish(original, layout::SealedReadLayout::OwnerFixture, None)
     }
 }
+
+mod court_doors_for_test;

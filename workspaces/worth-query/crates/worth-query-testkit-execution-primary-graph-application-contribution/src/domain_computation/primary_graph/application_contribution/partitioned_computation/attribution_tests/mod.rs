@@ -203,7 +203,7 @@ pub fn routed(
     world
         .application
         .with_application_advancement(&request, |phase| {
-            let custody = phase.test_host_request();
+            let custody = phase.test_host_request_for_test();
             let principal = authenticated_principal(&custody, &world, &request);
             let account = resolved_account(&custody, &world, "open", &request);
             let operation = world
@@ -241,10 +241,10 @@ pub fn routed(
                     &admission,
                     |reader, root| {
                         let execution = phase
-                            .execution_for(&world.application.product_runtime)
+                            .execution_for_for_test(&(*world.application.product_runtime_for_test()))
                             .expect("the installed fixture lends its computation execution");
                         for _ in 0..runs {
-                            if installed.prepare_through(reader, execution, root).is_err() {
+                            if installed.prepare_through_for_test(reader, execution, root).is_err() {
                                 panic!("the owner's reads are declared reads of the operation");
                             }
                         }
@@ -272,13 +272,13 @@ pub fn routed(
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 )
                 .unwrap();
-            let mut gathered = installed.owner.gathered.lock().unwrap().clone();
+            let mut gathered = (*installed.owner_for_test()).gathered.lock().unwrap().clone();
             gathered.sort_unstable();
             gathered.dedup();
             (
                 read_set.computation_facts().map(|facts| {
                     facts
-                        .facts()
+                        .facts_for_test()
                         .map(|(_, _, readers)| readers.clone())
                         .collect()
                 }),

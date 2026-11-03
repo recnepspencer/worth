@@ -41,7 +41,7 @@ impl<'request> WorthQueryManagedComputationCheckpoint<'request> {
         self.native = lease;
         self
     }
-    pub(in crate::domain_computation::primary_graph) fn native_lease_for_test(
+    pub fn native_lease_for_test(
         &self,
     ) -> Option<&'request worth_execution::ExecutionResourceLease<'request>> {
         crate::domain_computation::execution_observation::owned_control_scope::current_id();

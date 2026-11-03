@@ -218,7 +218,7 @@ pub fn sum(left: &u64, right: &u64) -> u64 {
     left + right
 }
 pub fn edition() -> InstalledProducerEdition {
-    InstalledProducerEdition::for_test([7; 32])
+    InstalledProducerEdition::for_test_for_test([7; 32])
 }
 pub struct Attempt {
     pub outcome: Outcome,
@@ -288,11 +288,11 @@ where
 }
 use crate::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tests::projected_attempt::attempt_placed;
 pub fn prior_of(first: Attempt, moved: bool) -> ComputationPrior {
-    let mut state = first
+    let mut state = (*first
         .sealed
         .unwrap()
         .expect("a producer's run retains")
-        .state;
+        .state_for_test());
     if moved {
         let (key, fact) = state
             .facts
@@ -313,13 +313,13 @@ pub fn prior_of(first: Attempt, moved: bool) -> ComputationPrior {
             WorthQueryApplicationObservedFact::SourceEntity { entity_id },
         );
     }
-    ComputationPrior::new(edition(), Ok(std::sync::Arc::new(state)), None)
+    ComputationPrior::new_for_test(edition(), Ok(std::sync::Arc::new(state)), None)
 }
 pub fn first_run(world: &AuthorizationWorld, installed: &Installed) -> Attempt {
     let first = attempt(
         world,
         installed,
-        Some(ComputationPrior::new(edition(), Err(Cause::FirstRun), None)),
+        Some(ComputationPrior::new_for_test(edition(), Err(Cause::FirstRun), None)),
     );
     assert!(matches!(
         first.runs.as_slice(),

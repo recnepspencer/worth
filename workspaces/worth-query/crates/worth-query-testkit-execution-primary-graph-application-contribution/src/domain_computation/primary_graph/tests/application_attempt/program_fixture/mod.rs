@@ -33,7 +33,7 @@ pub fn admitted_operation(
     account: &WorthQueryApplicationEntityIdentity<Schema, Account>,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
 ) -> WorthQueryAdmittedApplicationOperation<Schema, TouchAccountOperation, Input, Account> {
-    let selected = world.selected_product(&(phase_custody).test_host_request());
+    let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
     let operation = world
         .application
         .installed_schema()
@@ -79,7 +79,7 @@ pub fn admitted_program_required_program(
         .installed_operation(ProgramRequiredOperation::reference())
         .unwrap();
     let admission = world
-        .selected_product(&(phase_custody).test_host_request())
+        .selected_product(&(phase_custody).test_host_request_for_test())
         .authorize_operation(
             phase_custody,
             principal,
@@ -144,7 +144,7 @@ pub fn admitted_mutation_free_program(
         .requirements()
         .is_empty());
     let admission = world
-        .selected_product(&(phase_custody).test_host_request())
+        .selected_product(&(phase_custody).test_host_request_for_test())
         .authorize_operation(
             phase_custody,
             principal,
@@ -317,7 +317,7 @@ pub fn admitted_program_from_options(
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     options: ProgramOptions<'_>,
 ) -> Program {
-    let selected = world.selected_product(&(phase_custody).test_host_request());
+    let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
     admitted_program_from_selected(
         phase_custody,
         world,

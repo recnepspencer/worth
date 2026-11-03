@@ -260,3 +260,5 @@ fn posture_code(posture: ApplicationMutationOutputPosture) -> u8 {
         ApplicationMutationOutputPosture::Retire => 3,
     }
 }
+
+mod court_doors_for_test;

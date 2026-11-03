@@ -112,9 +112,9 @@ pub fn installed_program_support(
         .expect("the fixture program acts through an installed mutation binding")
         .close()
         .expect("the fixture program owns every installed rule contract");
-    WorthQueryInstalledProgramSupport::installed(
+    WorthQueryInstalledProgramSupport::installed_for_test(
         Arc::new(roster),
-        WorthQueryProgramActivationCell::unpublished(),
+        WorthQueryProgramActivationCell::unpublished_for_test(),
     )
 }
 
@@ -150,9 +150,9 @@ pub fn installed_provenance_support(
         .unwrap();
     let revisions = (*source.revision(), *successor.revision());
     (
-        WorthQueryInstalledProgramSupport::installed(
+        WorthQueryInstalledProgramSupport::installed_for_test(
             Arc::new(roster),
-            WorthQueryProgramActivationCell::unpublished(),
+            WorthQueryProgramActivationCell::unpublished_for_test(),
         ),
         revisions.0,
         revisions.1,

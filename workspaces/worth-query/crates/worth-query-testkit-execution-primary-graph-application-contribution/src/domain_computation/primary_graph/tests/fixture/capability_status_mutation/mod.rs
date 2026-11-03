@@ -22,13 +22,13 @@ pub fn revoke_current_capability(
 ) {
     let grant = world
         .application
-        .select_product_branch(
+        .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch(),
+            world.application.product_runtime().default_branch_for_test(),
         )
         .expect("the selected product branch remains admitted")
         .resolve_entity(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             CapabilityIdentity::reference(),
             "capability-1".to_owned(),
             &live_scope(),
@@ -62,9 +62,9 @@ pub fn installed_field(
     aspect: &str,
     field: &str,
 ) -> AspectFieldLocator {
-    world
+    (*world
         .application
-        .runtime
+        .runtime_for_test())
         .primary_graph()
         .unwrap()
         .layout()

@@ -213,3 +213,5 @@ impl WorthQuerySessionEffectAuthority<'_> {
         &self.terminal_binding
     }
 }
+
+mod court_doors_for_test;

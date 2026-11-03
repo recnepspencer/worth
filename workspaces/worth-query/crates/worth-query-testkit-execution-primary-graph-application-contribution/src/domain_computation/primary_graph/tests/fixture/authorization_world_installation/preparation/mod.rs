@@ -24,7 +24,7 @@ pub fn prepare_authorization_world(
         .unwrap();
     let bootstrap = match relational {
         Some(relational) => authority
-            .prepare_primary_graph_with_relational_runtime(
+            .prepare_primary_graph_with_relational_runtime_for_test(
                 &phase.bootstrap_for_test(),
                 &runtime,
                 &schema,

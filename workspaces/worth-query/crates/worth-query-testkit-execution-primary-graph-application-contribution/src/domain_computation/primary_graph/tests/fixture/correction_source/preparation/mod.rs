@@ -13,7 +13,7 @@ pub fn admitted(
     WorthQueryAdmittedApplicationOperation<IdentityExecutionSchema, EditLabel, LabelEdit, Account>,
     u64,
 ) {
-    let custody = phase.test_host_request();
+    let custody = phase.test_host_request_for_test();
     let principal =
         crate::domain_computation::primary_graph::tests::application_attempt::authenticated_principal(&custody, world, request);
     let account =
@@ -87,7 +87,7 @@ pub fn derive(
         let principal = crate::domain_computation::primary_graph::tests::fixture::authentication::authenticate_external(
             world.application.installed_schema(), "alice", std::time::Duration::from_secs(120), &request,
         );
-        let target = world.selected_product(&phase.test_host_request());
+        let target = world.selected_product(&phase.test_host_request_for_test());
         let access = worth_query_execution::publication_boundary::program_publication_access();
         let selected = target.select_correction_source(
             &phase, &principal, &request, source, None, std::num::NonZeroUsize::MIN,

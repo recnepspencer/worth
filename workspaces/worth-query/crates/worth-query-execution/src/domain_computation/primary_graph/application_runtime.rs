@@ -381,3 +381,5 @@ pub use operation_input_capture::WorthQueryOperationInputCaptureDenial;
 pub(in crate::domain_computation::primary_graph) use operation_control::{
     WorthQuerySourcePublicationHeadForTest, WorthQuerySourcePublicationImageForTest,
 };
+
+mod court_doors_for_test;

@@ -65,15 +65,15 @@ pub fn commit_own_write(
         .with_host_advancement(|phase| {
             let phase_custody = &phase;
             let principal =
-                authenticated_principal(&(phase_custody).test_host_request(), &world, &request);
+                authenticated_principal(&(phase_custody).test_host_request_for_test(), &world, &request);
             let account = resolved_account(
-                &(phase_custody).test_host_request(),
+                &(phase_custody).test_host_request_for_test(),
                 &world,
                 "open",
                 &request,
             );
             retained_status_program(
-                &(phase_custody).test_host_request(),
+                &(phase_custody).test_host_request_for_test(),
                 &world,
                 &principal,
                 &account,
@@ -93,15 +93,15 @@ pub fn commit_own_write(
     ));
     let mut program = world.application.with_host_advancement(|phase| {
         let phase_custody = &phase;
-    let principal = authenticated_principal(&(phase_custody).test_host_request(), &world, &request);
-    let account = resolved_account(&(phase_custody).test_host_request(), &world, "1", &request);
+    let principal = authenticated_principal(&(phase_custody).test_host_request_for_test(), &world, &request);
+    let account = resolved_account(&(phase_custody).test_host_request_for_test(), &world, "1", &request);
     let operation = world
         .application
         .installed_schema()
         .installed_operation(OwnWriteComputation::reference())
         .unwrap();
     let mut admitted = world
-        .selected_product(&(phase_custody).test_host_request(), )
+        .selected_product(&(phase_custody).test_host_request_for_test(), )
         .authorize_operation(phase_custody,
             &principal,
             &account,
@@ -119,8 +119,8 @@ pub fn commit_own_write(
                 reader
                     .require_decision_field(projected, AccountLabel::reference())
                     .unwrap();
-                reader.begin_computation_reads();
-                let x = reader.attributed(
+                reader.begin_computation_reads_for_test();
+                let x = reader.attributed_for_test(
                     ComputationRead::Partition(PartitionIdentity::new(7)),
                     |reader| {
                         reader
@@ -161,7 +161,7 @@ pub fn commit_own_write(
             )
             .unwrap();
         effects
-            .bind_output(OutputRoleUse::fixed::<GeneratedAccount>(), &output)
+            .bind_output_for_test(OutputRoleUse::fixed_for_test::<GeneratedAccount>(), &output)
             .unwrap();
         effects.initialize_field(&output, crate::domain_computation::primary_graph::tests::fixture::AccountIdentity::reference(), "computed-own-write".to_owned()).unwrap();
         effects.initialize_field(&output, crate::domain_computation::primary_graph::tests::fixture::AccountMembershipTag::reference(), "open".to_owned()).unwrap();
@@ -172,7 +172,7 @@ pub fn commit_own_write(
     } else {
         effects.prepare_output_contract_for_test::<RetentionOutputs>();
         effects
-            .bind_output(OutputRoleUse::fixed::<RetainedAccount>(), &source)
+            .bind_output_for_test(OutputRoleUse::fixed_for_test::<RetainedAccount>(), &source)
             .unwrap();
         effects.existing_entity(&account).unwrap()
     };
@@ -191,7 +191,7 @@ pub fn commit_own_write(
 
         effects.finish().unwrap().with_output_demand_observation()
     }).expect("the fixture host admits its own-write preparation");
-    let graph = world.application.runtime.primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let handle = graph.integration_handle();
     let (key, dependency) = world
         .application
@@ -222,7 +222,7 @@ pub fn commit_own_write(
         })
         .expect("the installed host lends the identity request");
     let identity =
-        worth_query_execution::facade::domain_computation::WorthQueryApplicationIdempotencyBinding::new(
+        worth_query_execution::facade::domain_computation::WorthQueryApplicationIdempotencyBinding::new_for_test(
             key, [232; 32],
         )
         .bind_source(Some(&[11; 32]))
@@ -257,17 +257,17 @@ pub fn commit_own_write(
             .unwrap();
         let count = recorded.observed_source_facts().unwrap().len();
         let boundary = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::handler_fact_boundary::CompletedHandlerFactBoundary::completed_for_test(count);
-        let context = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::decision_reuse::PreparedDecisionReuseContext::new(
+        let context = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::decision_reuse::PreparedDecisionReuseContext::new_for_test(
             worth_query_execution::facade::application_contribution::WorthQueryProducerInputReuseContract::canonical_bitwise(
                 worth_query_execution::facade::application_contribution::WorthQueryDecisionContextDependencies::KEY), Some([11;32]), None, None).unwrap();
-        recorded.completed_decision_reuse = boundary.seal_decision_reuse(
+        recorded.completed_decision_reuse = boundary.seal_decision_reuse_for_test(
             context,
             worth_query_execution::court_doors_for_test::domain_computation::primary_graph::handler::decision_context_use::DecisionContextUse::default().key_for_test(),
         );
         recorded.completed_handler_facts = Some(boundary);
-        recorded.prepared_input_reuse_key = Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::input_reuse_key::PreparedInputReuseKey::new(
+        recorded.prepared_input_reuse_key = Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::input_reuse_key::PreparedInputReuseKey::new_for_test(
             worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::membership::WorthQueryObservedSourceSelection::selecting_for_test(u64::try_from(count).unwrap()),
-            [11;32], worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::registry::semantic_edition::InstalledProducerEdition::for_test([12;32])));
+            [11;32], worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::registry::semantic_edition::InstalledProducerEdition::for_test_for_test([12;32])));
     }
     let cell = handle
         .output_lineage
@@ -281,9 +281,9 @@ pub fn commit_own_write(
         .rfind(|cell| cell.get().unwrap().source_partition_identity == Some([7; 32]))
         .cloned()
         .expect("the committed output has a retained cell");
-    let completed = world
+    let completed = (*world
         .application
-        .primary_provider
+        .primary_provider_for_test())
         .observe_completed_application(receipt.commit_reference())
         .unwrap();
     assert!(

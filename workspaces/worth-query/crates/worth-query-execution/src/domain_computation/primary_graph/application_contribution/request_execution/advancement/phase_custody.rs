@@ -245,7 +245,9 @@ impl<'scope> WorthQueryAdvancementPhase<'scope> {
     }
 
     /// Budget-only fixture controls borrow the existing host request.
-    pub(crate) fn borrowed_request_for_test(&self) -> ExecutionRequest<'_, '_> {
+    pub fn borrowed_request_for_test(&self) -> ExecutionRequest<'_, '_> {
         self.admitted_request()
     }
 }
+
+mod court_doors_for_test;

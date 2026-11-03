@@ -20,9 +20,9 @@ pub fn seed_program_activation(
     world: &AuthorizationWorld,
     revision: &ApplicationProgramRevision,
 ) {
-    let layout = world
+    let layout = (*world
         .application
-        .primary_provider
+        .primary_provider_for_test())
         .graph
         .layout
         .program_activation()
@@ -47,7 +47,7 @@ pub fn seed_program_activation(
         crate::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
     let prepared =
         prepare_relational_mutation_on_application(execution, &world.application, batch, &request);
-    let Ok(PublicationOutcome::Performed(performed)) = prepared.execute(*execution) else {
+    let Ok(PublicationOutcome::Performed(performed)) = prepared.execute_for_test(*execution) else {
         panic!("activation seed must publish through World");
     };
     let activation = performed
@@ -58,21 +58,21 @@ pub fn seed_program_activation(
         .unwrap();
     let basis = performed.commit().basis().relational_basis().clone();
     drop(performed.consume());
-    world
+    (*world
         .application
-        .primary_provider
+        .primary_provider_for_test())
         .graph
         .with_runtime_mut(execution, |runtime| {
-            world
+            (*world
                 .application
-                .primary_provider
+                .primary_provider_for_test())
                 .graph
                 .ensure_primary_indexes_for_basis(execution, runtime, &basis)
                 .unwrap();
         });
-    world
+    (*world
         .application
-        .program_support
+        .program_support_for_test())
         .as_ref()
         .unwrap()
         .activation()

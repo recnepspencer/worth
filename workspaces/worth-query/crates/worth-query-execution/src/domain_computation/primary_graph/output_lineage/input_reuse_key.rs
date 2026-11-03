@@ -66,3 +66,5 @@ impl PreparedInputReuseKey {
             .same_selected_membership_as(&other.selection, admit)
     }
 }
+
+mod court_doors_for_test;

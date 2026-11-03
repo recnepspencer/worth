@@ -110,7 +110,7 @@ pub fn admit(
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
 ) -> Admission {
-    let phase_custody = phase.test_host_request();
+    let phase_custody = phase.test_host_request_for_test();
     let principal = authenticated_principal(&(phase_custody).test_host_request(), world, request);
     let account = resolved_account(&(phase_custody).test_host_request(), world, "open", request);
     let operation = world
@@ -155,13 +155,13 @@ where
     let finished = world
         .application
         .with_application_advancement(request, |phase| {
-            let phase_custody = phase.test_host_request();
+            let phase_custody = phase.test_host_request_for_test();
             let admission = admit(&phase);
-            installed.owner.gathered().lock().unwrap().clear();
+            (*installed.owner_for_test()).gathered().lock().unwrap().clear();
             runs();
             tree_runs();
-            ComputationPrior::hand_in_test(prior);
-            SealedComputationRun::keep_in_test(None);
+            ComputationPrior::hand_in_test_for_test(prior);
+            SealedComputationRun::keep_in_test_for_test(None);
             let mut outcome = None;
             let mut bill = None;
             let completed = world.invariant.project_admitted_operation(
@@ -170,10 +170,10 @@ where
                 |reader, root| {
                     outcome = Some((|| -> Outcome {
                         let execution = phase
-                            .execution_for(&world.application.product_runtime)
+                            .execution_for_for_test(&(*world.application.product_runtime_for_test()))
                             .expect("the fixture phase belongs to its installed world");
                         before_computation(execution);
-                        let prepared = installed.prepare_through(reader, execution, root)?;
+                        let prepared = installed.prepare_through_for_test(reader, execution, root)?;
                         let prepared = if let Some(receipts) = &kernel_receipts {
                             let receipts = Arc::clone(receipts);
                             prepared.observe_kernel_cost_for_test(move |work, span| {
@@ -230,7 +230,7 @@ let charged = computed.charged_work();
                 }
             };
             let outcome = outcome.expect("the admitted computation ran");
-            ComputationPrior::hand_in_test(None);
+            ComputationPrior::hand_in_test_for_test(None);
             // A refused projection retains no sealed projection or computation run.
             let sealed = if let Some(projection) = projection {
                 world
@@ -246,11 +246,11 @@ let charged = computed.charged_work();
                         &phase_custody.phase_for_application(&world.application),
                         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                     ).map_err(|_| ()))
-                    .map(|_| SealedComputationRun::kept_in_test())
+                    .map(|_| SealedComputationRun::kept_in_test_for_test())
             } else {
                 Err(())
             };
-            let mut gathered = installed.owner.gathered().lock().unwrap().clone();
+            let mut gathered = (*installed.owner_for_test()).gathered().lock().unwrap().clone();
             gathered.sort_unstable();
             observed = Some(Attempt {
                 outcome,

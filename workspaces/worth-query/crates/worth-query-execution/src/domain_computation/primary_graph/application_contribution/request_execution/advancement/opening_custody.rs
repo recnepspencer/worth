@@ -26,3 +26,5 @@ impl Drop for OpeningCustody {
         ACTIVE.with(|active| active.set(false));
     }
 }
+
+mod court_doors_for_test;

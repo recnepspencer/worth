@@ -3,9 +3,9 @@ use crate::domain_computation::primary_graph::tests::fixture::*;
 pub struct AdvancementHost(AuthorizationWorld);
 impl AdvancementHost {
     pub fn placement(&self) -> worth_runtime_world::facade::RuntimeWorldExecutionPlacement<'_> {
-        self.0
+        (*self.0
             .application
-            .product_runtime
+            .product_runtime_for_test())
             .owner
             .execution_placement()
     }
