@@ -154,8 +154,9 @@ def mounted_foreign_text(path, text):
 
 
 def is_import(text, reference):
+    """Whether the reference is a private `use` (a `pub use` serves children that glob it)."""
     line_start = text.rfind('\n', 0, reference.start) + 1
-    return re.match(r'\s*(?:pub(?:\([^)]*\))?\s+)?use\s+$', text[line_start:reference.start]) is not None
+    return re.match(r'\s*use\s+$', text[line_start:reference.start]) is not None
 
 
 def module_alias_uses(text, reference, module, index):
