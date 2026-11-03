@@ -140,6 +140,7 @@ fn medium(cause: worth_runtime_world::facade::WorldDurableMediumDenial) -> Denia
         | Medium::PublicationBusy
         | Medium::PublicationUnresolved
         | Medium::StaleCheckpoint
+        | Medium::CheckpointOriginRetention
         | Medium::CheckpointSelectionRequired
         | Medium::Storage(_) => Denial::Unavailable,
     }

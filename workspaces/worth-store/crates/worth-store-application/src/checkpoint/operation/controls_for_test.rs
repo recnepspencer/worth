@@ -14,6 +14,7 @@ impl ApplicationHomeCheckpointOperation {
             || self.native.prepare(request),
             Some(&observer),
             None,
+            None,
         )
     }
     pub fn checkpoint_with_acknowledgement_observer_for_test(
@@ -27,6 +28,7 @@ impl ApplicationHomeCheckpointOperation {
             Some(&self.world),
             request,
             || self.native.prepare(request),
+            None,
             None,
             Some(&observer),
         )

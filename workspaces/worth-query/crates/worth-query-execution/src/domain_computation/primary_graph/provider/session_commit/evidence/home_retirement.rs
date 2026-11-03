@@ -1,7 +1,7 @@
 //! Keep original evidence indexes while their live publication custody retires.
 use super::*;
 use crate::domain_computation::primary_graph::{
-    WorthQueryHomeRetirementDenial as Denial, WorthQueryHomeRetirementOwner as Owner,
+    WorthQueryHomeRetirementDenial as Denial,
     WorthQueryOperationHomeRetirementProgress as Progress,
 };
 use worth_execution::ExecutionRequest;
@@ -11,9 +11,8 @@ impl WorthQueryCompletedCommitEvidenceStore {
         &mut self,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<(), Denial> {
-        if !self.fresh_history.is_empty() {
-            return Err(Denial::Busy(Owner::PublicationReceipts));
-        }
+        // Durable receipt resolution no longer retains caller history in this
+        // derived index. Retire actual publication custody below.
         for evidence in self.by_commit.values_mut() {
             request.consult().map_err(Denial::Execution)?;
             evidence

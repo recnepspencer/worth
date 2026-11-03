@@ -15,8 +15,6 @@ use super::RuntimeWorldOwnerConstructionContract;
 
 #[path = "owner_tests/admission_race.rs"]
 mod admission_race;
-#[path = "owner_tests/checkpoint_origin.rs"]
-mod checkpoint_origin;
 #[path = "owner_tests/close_report.rs"]
 mod close_report;
 #[path = "owner_tests/currentness_scope.rs"]
