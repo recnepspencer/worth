@@ -1,9 +1,36 @@
 //! One real owning transfer attempt and explicit retained replay feed the independent journal model.
 pub use super::*;
+use worth_query_host::facade::application_entry::{
+    WorthQueryApplicationRequest, WorthQueryCompletedSourceOperation,
+    WorthQuerySourceOnlyOperation, WorthQueryTerminalSourceOperation,
+};
 pub use worth_query_host::facade::application_entry::{
     WorthQuerySourceCompletion as Completion, WorthQuerySourceOnlyAdvance as Advance,
     WorthQuerySourceOnlyDenial as Denial,
 };
+use worth_query_host::facade::declaration::application_program::ApplicationRetainedCommit;
+type TransferOperation = WorthQuerySourceOnlyOperation<
+    BankSchema,
+    SendMoney,
+    bank_server::BankApplication,
+    bank_server::SendMoneyAction,
+    ApplicationRetainedCommit,
+>;
+type CompletedTransfer = WorthQueryCompletedSourceOperation<
+    BankSchema,
+    SendMoney,
+    bank_server::BankApplication,
+    bank_server::SendMoneyAction,
+    ApplicationRetainedCommit,
+>;
+type TerminalTransfer = WorthQueryTerminalSourceOperation<
+    BankSchema,
+    SendMoney,
+    bank_server::BankApplication,
+    bank_server::SendMoneyAction,
+    ApplicationRetainedCommit,
+>;
+type TransferAdvance = Advance<TransferOperation, CompletedTransfer, TerminalTransfer>;
 impl Observer<'_> {
     pub fn transfer(&mut self, input: &Transfer, posture: Posture) -> Result<Outcome, String> {
         use worth_query_host::facade::primary_graph::{
@@ -20,7 +47,8 @@ impl Observer<'_> {
         let actor = self.world.authenticate(input.actor);
         let recipient = if input.to == 12 { 2 } else { 1 };
         let scope = crate::facade::support::request_scope();
-        let request = self.world.world.runtime.request(&actor, &scope);
+        let world = self.world;
+        let request = world.world.runtime.request(&actor, &scope);
         let result = self
             .world
             .world
@@ -49,6 +77,18 @@ impl Observer<'_> {
             "Bank dispatches preserve the requested width"
         );
         place(previous);
+        self.settle_transfer(input, result, &request)
+    }
+
+    // First execution and replay/close own different Native return frames.
+    // Keep later-phase storage off the stack during the actual first commit.
+    #[inline(never)]
+    fn settle_transfer(
+        &mut self,
+        input: &Transfer,
+        result: TransferAdvance,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, BankSchema>,
+    ) -> Result<Outcome, String> {
         let events = self
             .last
             .iter()
@@ -73,21 +113,21 @@ impl Observer<'_> {
                 assert!(self.last.iter().flat_map(|r| &r.applied).all(|event| event.identity == expected), "actual commit event identity");
                 self.receipts.insert(input.command, receipt.clone());
                 let outcome = self.bindings.committed(input.command, result.journal);
-                assert!(completed.close(&request).is_ok());
+                assert!(completed.close(request).is_ok());
                 Ok(outcome)
             }
             Advance::Progress(operation) if operation.posture() == worth_query_host::facade::application_entry::WorthQuerySourceOnlyPosture::RetainedDeliveryPending => {
-                let Advance::Completed(completed) = operation.advance(&request, Some(std::num::NonZeroUsize::new(20_000).unwrap())) else { panic!("original native replay delivery") };
+                let Advance::Completed(completed) = operation.advance(request, Some(std::num::NonZeroUsize::new(20_000).unwrap())) else { panic!("original native replay delivery") };
                 let Completion::Recovered { receipt, .. } = completed.evidence() else { panic!("replay evidence") };
                 assert!(receipt.is_same_authoritative_commit(&self.receipts[&input.command]));
                 let journal = self.bindings.commands[&input.command];
                 let outcome = Outcome::Committed(self.bindings.journals[&journal]);
-                assert!(completed.close(&request).is_ok());
+                assert!(completed.close(request).is_ok());
                 Ok(outcome)
             }
             Advance::Terminal(terminal) => {
                 let insufficient = matches!(terminal.native_outcome(), Some(WorthQueryApplicationMutationOutcome::DomainDenied(BankProposalDenial::InsufficientFunds(_))));
-                assert!(terminal.close(&request).is_ok());
+                assert!(terminal.close(request).is_ok());
                 if insufficient { Ok(Outcome::Insufficient) } else { Err("unexpected native terminal".into()) }
             }
             Advance::Refused { operation, denial: Denial::Mutation(WorthQueryApplicationRequestMutationDenial::Authorization(denial)) } => {
