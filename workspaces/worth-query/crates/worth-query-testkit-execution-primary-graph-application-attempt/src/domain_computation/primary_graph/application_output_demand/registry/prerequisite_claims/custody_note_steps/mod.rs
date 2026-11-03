@@ -21,7 +21,7 @@ pub fn unhold(
         .state_for_test())
         .lock()
         .unwrap()
-        .records_for_test())
+        .records_mut_for_test())
         .get_mut(&(*interest.key_for_test()))
         .unwrap()
         .state_mut_for_test()) = DemandState::Running;
@@ -37,7 +37,7 @@ pub fn unhold(
         // This fixture models a claim still held by its unpublished ticket.
         let mut state =(* (*interest.owner_for_test()).state_for_test()).lock().unwrap();
         (*claims.claim_batch_mut_for_test()) =(* (*state
-            .records_for_test())
+            .records_mut_for_test())
             .get_mut(&(*interest.key_for_test()))
             .unwrap()
             .claim_batch_for_test())
