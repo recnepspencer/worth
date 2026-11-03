@@ -119,8 +119,27 @@ impl Observer<'_> {
             }
             Advance::Progress(operation) if operation.posture() == worth_query_host::facade::application_entry::WorthQuerySourceOnlyPosture::RetainedDeliveryPending => {
                 let Advance::Completed(completed) = operation.advance(request, Some(std::num::NonZeroUsize::new(20_000).unwrap())) else { panic!("original native replay delivery") };
-                let Completion::Recovered { receipt, .. } = completed.evidence() else { panic!("replay evidence") };
-                assert!(receipt.is_same_authoritative_commit(&self.receipts[&input.command]));
+                // D9 / 98b39a07bd: after live completion closes, retry reads
+                // the original owner's recorded projection, not live timing
+                // or performed-publication capabilities.
+                let Completion::Recorded { receipt, .. } = completed.evidence() else { panic!("recorded original replay evidence") };
+                let original = &self.receipts[&input.command];
+                assert_eq!(receipt.commit_reference(), original.commit_reference());
+                assert_eq!(receipt.basis_descriptor(), &original.basis_descriptor().in_canonical_frame().unwrap());
+                assert_eq!(receipt.outcome_identity(), original.outcome_identity());
+                assert_eq!(receipt.idempotency_key_identity(), original.idempotency_binding().key_identity());
+                assert_eq!(receipt.changed_record_count(), original.changed_record_count());
+                assert_eq!(receipt.emitted_effect_count(), original.emitted_effect_count());
+                let head = receipt.new_product_head().memory().expect("original Memory publication");
+                let publication = original.committed_product_publication();
+                assert_eq!(head.owner(), publication.product_branch().owner_identity().get());
+                assert_eq!(head.branch(), publication.product_branch().name().as_str());
+                assert_eq!(head.incarnation(), publication.product_incarnation().ordinal());
+                assert_eq!(head.generation(), publication.product_generation().get());
+                assert_eq!(head.selected_commit(), publication.composite_commit().ordinal());
+                assert_eq!(receipt.attempt_identity().ordinal(), publication.publication_attempt().ordinal());
+                assert!(receipt.world_journal_position().is_none());
+                assert!(receipt.publishing_incarnation().is_none());
                 let journal = self.bindings.commands[&input.command];
                 let outcome = Outcome::Committed(self.bindings.journals[&journal]);
                 assert!(completed.close(request).is_ok());
