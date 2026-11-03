@@ -25,7 +25,7 @@ mod model_ownership;
 mod owner_services;
 pub use model_ownership::{
     RelationalModelOwnership, RelationalModelOwnershipConflict, RelationalModelOwnershipDenial,
-    RelationalModelOwnershipDomain,
+    RelationalModelOwnershipDomain, RelationalOwnedModelEntityBoundary,
 };
 mod record_advance;
 mod reference;

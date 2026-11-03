@@ -154,9 +154,83 @@ as the complete installed one-owner invariant. The checkpoint is not merge-ready
 
 The required handoff is a read-only observation of recorded publication custody
 at an admitted exact basis, with full-generation subjects, transitive source-scope
-parents, charged work and missing-material refusals. Root can have the cascade
-owner expose that observation, or release the owners after landing. Consumer
-capability-index and main-guide updates also await their protected-file release.
+parents, charged work and missing-material refusals. D1114 explicitly defers this
+handoff until root announces the cascade batch's landing. Do not request a new
+door from that lane. Consumer capability-index and main-guide updates also await
+their protected-file release.
+
+## D1114 observation-court boundary and plan
+
+The exact-basis observer consumes owner-admitted immutable branch roots. Its
+structural reader must demand authenticated Head metadata before deciding that
+an entity or ownership edge is absent. Recovery's external-member fixture can
+keep the actual entity and relation partitions cold, and its storage port can
+refuse the required member. This proves a real observation boundary without
+inventing structural facts or supplying an ownership answer from a fixture.
+Native returns the discovered owner; the existing public operation admission
+compares it with the document model and owns the foreign-document refusal.
+
+Add courts to the existing Relational certification court: a generic model
+and member graph with endpoints and relations in separate partitions, successful
+cold ownership observation, unavailable ownership material naming its partition,
+and work/memory refusals with an unchanged selected root. Exercise the existing
+public foreign-member court with an independently resolved full-generation
+subject and unchanged history step as well as unchanged payload. Mutate each
+new guard to establish that its court fails. Run focused Native/public courts,
+formatting, dirty line caps, boundary-check and agent-context.
+
+## D1114 navigation boundary under review
+
+An owned selection needs the union of two independently evaluated closures,
+each reached only through installed ownership relations at its original basis.
+Current-only entities retire and selected-only entities restore. The existing
+single-entity selection cannot represent lifecycle changes or relations in its
+canonical authority and must remain unchanged. No graph selection may masquerade
+as that authority or copy historical metadata over current provenance.
+
+The eventual publication handoff must carry one prepared graph restoration and
+one explicit typed `requires cascade custody` seam until the batch lands.
+Whether ordinary relations crossing the entity closure belong to this domain
+is not determined by endpoint ownership alone; the relation-boundary options
+have been sent to root. Relation restoration implementation waits for that
+ruling. Observation courts do not depend on it.
+
+### Entity-boundary preparation slice
+
+The existing exact-basis structural reader already owns authenticated metadata
+demand, full-generation adjacency and charged traversal. Extend that owner to
+prepare the two entity closures in one request, retaining both original admitted
+bases and all result-memory backing. Expose current, selected and union views
+without a caller-supplied membership list. Require the same concrete model root
+kind at both bases and preserve missing/foreign-basis and request causes. The
+union is an allocation-free view over the retained sets.
+
+This is selection material, not a legal mutation authority or an applied graph
+restoration. The graph publication owner must later consume it together with the
+relation boundary and publication custody. Keep its implementation in Native's
+`branch/model_ownership/selection.rs`; consolidate basis-reader construction in
+`basis.rs` so membership and selection cannot disagree about cold absence. Add
+an exact-basis ownership-move court in the generic Native fixture. It
+must distinguish current-only and selected-only membership, exclude a separate
+model, retain the historical answer after further edits, refuse root-kind
+substitution, and expose traversal-budget bypass mutations. Full relation and
+publication restoration remain unclaimed until their boundaries are resolved.
+
+### Court-placement correction
+
+Boundary-check rejected the first placement under Native `src`: constructing
+`RelationalRuntime` and execution requests there creates a new source court.
+This is scoped implementation debt, not master debt. Move the runtime courts and
+their fixture into the existing `worth-court-relational-certification` binary,
+under its registered `relational/relational_certification` owner. Use public
+Native branch transactions and external checkpoint recovery; introduce no test
+door, baseline exemption, test runner or Cargo target. Public recovery correctly
+rejects a v1 root in a v2-configured runtime, so it cannot construct the schema
+mismatch scenario. Isolate that private admission rule as a pure unit test using
+actual commitments from registries with changed contracts and revisions but
+unchanged kind identities. It constructs no runtime root or admitted basis.
+Preserve all eight test names (seven courts and one unit), and repeat mutation
+probes against these final placements before qualification.
 
 ## #57 boundary findings (implementation not started)
 

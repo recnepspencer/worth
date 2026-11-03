@@ -4,7 +4,9 @@ use std::collections::BTreeSet;
 
 mod basis;
 mod invariant;
+mod selection;
 mod traversal;
+pub use selection::RelationalOwnedModelEntityBoundary;
 
 /// Schema meaning only. Constructing it grants no read or mutation authority.
 #[derive(Clone, Debug)]
@@ -37,6 +39,9 @@ impl RelationalModelOwnershipConflict {
 #[derive(Debug)]
 pub enum RelationalModelOwnershipDenial {
     ForeignBasis,
+    TargetNotCurrent,
+    SchemaChanged,
+    ModelRootKind { model: EntityId, actual: KindId },
     EntityUnavailable(EntityId),
     Conflict(RelationalModelOwnershipConflict),
     Read(crate::validation::data::StructuralReadError),

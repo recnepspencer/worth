@@ -14,36 +14,57 @@ impl RelationalRuntime {
         ownership: &RelationalModelOwnership,
         subject: EntityId,
     ) -> Result<Option<EntityId>, RelationalModelOwnershipDenial> {
-        if basis.identity().runtime_instance_id() != self.runtime_instance_id() {
-            return Err(RelationalModelOwnershipDenial::ForeignBasis);
-        }
-        let version = basis
-            .inner
-            .root
-            .axes()
-            .ok_or(RelationalModelOwnershipDenial::ForeignBasis)?
-            .storage_version;
-        let state = InvariantStateView::new(
+        let (owner, _memory) = observe(self, execution, basis, |read| {
+            ownership.owner(read, subject)
+        })?;
+        Ok(owner)
+    }
+}
+
+/// Keep result backing alongside any traversal material that escapes observation.
+pub(super) fn observe<R>(
+    runtime: &RelationalRuntime,
+    execution: &ExecutionRequest<'_, '_>,
+    basis: &AdmittedRelationalBranchBasis,
+    operation: impl FnOnce(&mut dyn Read) -> Result<R, RelationalModelOwnershipDenial>,
+) -> Result<(R, Vec<worth_execution::ExecutionMemoryReservation>), RelationalModelOwnershipDenial> {
+    let mut result = None;
+    execution
+        .run_native_with_checkpoint(|context| {
+            result = Some(read(runtime, execution, basis, context, operation));
+        })
+        .map_err(RelationalModelOwnershipDenial::Request)?;
+    result.expect("completed native observation")
+}
+
+/// A dependent read uses its caller's original checkpoint, never a fresh meter.
+pub(super) fn read<R>(
+    runtime: &RelationalRuntime,
+    execution: &ExecutionRequest<'_, '_>,
+    basis: &AdmittedRelationalBranchBasis,
+    context: &mut MapKernelContext<'_, '_>,
+    operation: impl FnOnce(&mut dyn Read) -> Result<R, RelationalModelOwnershipDenial>,
+) -> Result<(R, Vec<worth_execution::ExecutionMemoryReservation>), RelationalModelOwnershipDenial> {
+    if basis.identity().runtime_instance_id() != runtime.runtime_instance_id() {
+        return Err(RelationalModelOwnershipDenial::ForeignBasis);
+    }
+    let version = basis
+        .inner
+        .root
+        .axes()
+        .ok_or(RelationalModelOwnershipDenial::ForeignBasis)?
+        .storage_version;
+    let mut read = BasisRead {
+        execution,
+        context,
+        basis,
+        memory: Vec::new(),
+        state: InvariantStateView::new(
             basis.inner.root.as_ref(),
             crate::identity::data::VersionId(version),
-        );
-        let mut result = None;
-        execution
-            .run_native_with_checkpoint(|context| {
-                result = Some(ownership.owner(
-                    &mut BasisRead {
-                        execution,
-                        context,
-                        state,
-                        basis,
-                        memory: Vec::new(),
-                    },
-                    subject,
-                ));
-            })
-            .map_err(RelationalModelOwnershipDenial::Request)?;
-        result.expect("completed native observation")
-    }
+        ),
+    };
+    operation(&mut read).map(|value| (value, read.memory))
 }
 
 struct BasisRead<'a, 'basis, 'context, 'kernel, 'execution, 'request> {

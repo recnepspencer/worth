@@ -93,6 +93,7 @@ fn foreign_members_and_undeclared_reference_links_refuse_before_history_effects(
         let scope = request_scope();
         let principal = authenticate_operator(host.installed_schema(), &scope);
         let request = host.request(&principal, &scope);
+        let step_before = document.current_step(&request).unwrap().id();
         let branch = document
             .selection(&request)
             .unwrap()
@@ -138,6 +139,7 @@ fn foreign_members_and_undeclared_reference_links_refuse_before_history_effects(
         let document = edit
             .discard(&request)
             .unwrap_or_else(|(_, cause)| panic!("{cause:?}"));
+        assert_eq!(document.current_step(&request).unwrap().id(), step_before);
         host.with_host_advancement(|phase| document.close(&phase).unwrap())
             .unwrap();
     }

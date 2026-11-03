@@ -17,7 +17,7 @@ impl RelationalModelOwnership {
     /// Several paths to one root are one owner. A missing subject is not unowned.
     pub(super) fn owner(
         &self,
-        read: &mut impl Read,
+        read: &mut (impl Read + ?Sized),
         subject: EntityId,
     ) -> Result<Option<EntityId>, RelationalModelOwnershipDenial> {
         if read.kind(subject)?.is_none() {
@@ -44,7 +44,7 @@ impl RelationalModelOwnership {
 }
 
 pub(super) fn walk(
-    read: &mut impl Read,
+    read: &mut (impl Read + ?Sized),
     subject: EntityId,
     outgoing: bool,
     relations: &[KindId],
