@@ -1,8 +1,8 @@
 //! Return source selection and planning owners before terminal progression.
 use crate::entry::{PhysicalRecoveryOpenRequest, PhysicalRecoveryOutcome};
 use crate::progression::{
-    AdmittedPhysicalRecovery, PlannedPhysicalRecovery, ReopenedPhysicalRecovery,
-    SelectedPhysicalRecovery,
+    AdmittedPhysicalRecovery, NamespaceDurablePhysicalRecovery, PlannedPhysicalRecovery,
+    SelectedPhysicalRecovery, StagedPhysicalRecovery,
 };
 
 #[inline(never)]
@@ -28,7 +28,23 @@ fn recover_selected(selected: SelectedPhysicalRecovery) -> PhysicalRecoveryOutco
 
 #[inline(never)]
 fn recover_planned(planned: PlannedPhysicalRecovery) -> PhysicalRecoveryOutcome {
-    match progress(planned) {
+    match planned.stage() {
+        Ok(staged) => recover_staged(staged),
+        Err(outcome) => outcome,
+    }
+}
+
+#[inline(never)]
+fn recover_staged(staged: StagedPhysicalRecovery) -> PhysicalRecoveryOutcome {
+    match staged.publish() {
+        Ok(published) => recover_published(published),
+        Err(outcome) => outcome,
+    }
+}
+
+#[inline(never)]
+fn recover_published(published: NamespaceDurablePhysicalRecovery) -> PhysicalRecoveryOutcome {
+    match published.reopen() {
         Ok(reopened) => reopened.finish(),
         Err(outcome) => outcome,
     }
@@ -58,19 +74,4 @@ fn discover_source(
         Err(outcome) => return Err(outcome),
     };
     discovered.select()
-}
-
-#[inline(never)]
-fn progress(
-    planned: PlannedPhysicalRecovery,
-) -> Result<ReopenedPhysicalRecovery, PhysicalRecoveryOutcome> {
-    let staged = match planned.stage() {
-        Ok(staged) => staged,
-        Err(outcome) => return Err(outcome),
-    };
-    let published = match staged.publish() {
-        Ok(published) => published,
-        Err(outcome) => return Err(outcome),
-    };
-    published.reopen()
 }
