@@ -72,8 +72,9 @@ def mark_kept_impls(model):
             text = own[item.start:item.end]
             target, trait = impl_target(text), impl_trait(text)
             trait_origin = model.everything.origin(names, trait)[0] if trait else None
-            if target and library_definition(model, names, target) and \
-                    (trait is None or trait_origin is None or not in_moved(model, trait_origin[0])):
+            # Inherent impls become door traits (src_door_traits); library-trait impls stay.
+            if target and trait is not None and library_definition(model, names, target) and \
+                    (trait_origin is None or not in_moved(model, trait_origin[0])):
                 record.kept.add(index)
                 work.append((names, index))
     while work:

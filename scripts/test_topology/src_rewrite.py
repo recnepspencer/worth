@@ -56,9 +56,10 @@ def leading_inner_attributes(text):
 def part_text(record, part, disposition):
     """The source of one part of a module scope; a split keeps tests and imports in the court."""
     text = record.node.own_text()
-    if record.kept_impls:
-        # Library impls stay compiled in the library; the moved part omits them.
-        text = replace_spans(text, [(start, end, '') for start, end in record.kept_impls])
+    if record.kept_impls or record.doors:
+        # Library-trait impls stay in the library; inherent impls become door traits.
+        text = replace_spans(text, [(start, end, '') for start, end in record.kept_impls]
+                             + [(door.start, door.end, door.replacement) for door in record.doors])
         record = record_without_kept(record, text)
     if disposition != 'split':
         return text
@@ -230,10 +231,29 @@ class Rewriter:
                 text = inner + '\n' + '\n'.join(fresh) + '\n' + text[end:]
         if disposition == 'split' or record.extracted:
             text = self.with_bare_imports(text, record, reader_crate)
+        text = self.with_door_imports(text, record, reader_crate)
         changes = [(start, end, self.visibility('pub(' + inner + ')', reader_crate))
                    for start, end, inner in visibility_markers(text) if inner.startswith('in ')
                    or '-testkit-' in reader_crate]
         return replace_spans(text, changes)
+
+    def with_door_imports(self, text, record, reader_crate):
+        """A module that calls a door method imports the door trait that now provides it."""
+        stream = tokens(text)
+        called = {stream[i + 1].value for i in range(len(stream) - 1)
+                  if stream[i].value in ('.', ':') and stream[i + 1].kind == 'ident'}
+        lines = []
+        for names, other in sorted(self.model.records.items()):
+            for door in other.doors:
+                crate, path = self.owner_part(names)
+                if (names == record.names and crate == reader_crate) or not called & set(door.methods):
+                    continue
+                prefix = 'crate' if crate == reader_crate else crate.replace('-', '_')
+                lines.append(f'use {prefix}::' + '::'.join(path + (door.trait,)) + ';')
+        if not lines:
+            return text
+        inner, end = leading_inner_attributes(text)
+        return inner + '\n' + '\n'.join(sorted(set(lines))) + '\n' + text[end:]
 
     def with_bare_imports(self, text, record, reader_crate):
         """A fragment of a module imports the sibling names it used but no longer holds."""

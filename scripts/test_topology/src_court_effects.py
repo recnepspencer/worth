@@ -164,6 +164,8 @@ def effects_for(root, lib, baseline, admissions, workspace, overrides):
             'forced_families': p['forced'],
             'unresolved': sorted('::'.join(m) + '::' + str(n) for m, n in ledger.unresolved),
             'allocator_moved_from': sorted(allocators),
+            'door_traits': sorted('::'.join(n) + '::' + d.trait + ' [' + ', '.join(d.methods) + ']'
+                                  for n, r in model.records.items() for d in r.doors),
             'kept_library_impls': sorted('::'.join(n) + ' :: ' + model.records[n].node.own_text()[a:b].split('{', 1)[0].strip()
                                          for n in model.records for a, b in model.records[n].kept_impls),
             'renamed_modules': sorted(f'{k} -> {v}' for k, v in p['renames'].items()),
@@ -210,7 +212,11 @@ def config_writes(root, effects, files, moved_sources, moved_inline, relocated, 
     text, _removed = shrink_admissions(path.read_text(encoding='utf-8'), moved_sources)
     effects.write(path, text)
     path = root / (CONFIG + 'control-callers.txt')
-    effects.write(path, control_callers(path.read_text(encoding='utf-8'), relocated, files, library_test_doors(model)))
+    door_owners = {door.trait: f"workspaces/worth-query/crates/{p['placement'][names]['testkit'][0]}/"
+                   for names, record in model.records.items() for door in record.doors
+                   if 'testkit' in p['placement'].get(names, {})}
+    effects.write(path, control_callers(path.read_text(encoding='utf-8'), relocated, files,
+                                        library_test_doors(model), door_owners))
     owners_of = {}
     for name, row in p['courts'].items():
         paths = sorted({'/'.join(p['placement'][n]['court'][1]) for n in row['members']})

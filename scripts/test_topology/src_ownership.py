@@ -25,7 +25,7 @@ def dispositions(model, unit_of):
             if unit_of(target) != reader_unit:
                 supported.add(target)
     supported |= {names for names in model.records if model.records[names].family in root_support(model)}
-    supported |= {names for names, record in model.records.items() if record.extracted}
+    supported |= {names for names, record in model.records.items() if record.extracted or record.doors}
     frontier = list(supported)
     while frontier:
         names = frontier.pop()

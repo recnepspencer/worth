@@ -44,6 +44,7 @@ class ModuleRecord:
     kept_impls: list = field(default_factory=list)
     kept: set = field(default_factory=set)
     kept_names: set = field(default_factory=set)
+    doors: list = field(default_factory=list)
     foreign: bool = False
 
 

@@ -11,7 +11,7 @@ from cargo_inventory import metadata
 from court_partition import CEILING, classification
 from frontier_adapter import frontiers
 from rust_source import tokens
-from src_hooks import all_gated_seeds, classify, method_seeds, staying_support
+from src_hooks import all_gated_seeds, classify, method_seeds
 from src_move_model import MoveModel, add_extracted
 from src_ownership import dispositions
 from src_placement import named_products, place_courts, place_testkits
@@ -112,9 +112,10 @@ def build(lib, repository, baseline, admissions, workspace_manifest, overrides, 
     for _attempt in range(6):
         first = placed(None)
         called = called_methods(model)
-        method_items, _method_families = method_seeds(model, called)
+        method_items, method_families = method_seeds(model, called)
         referenced = set(first['ledger'].hooks) | set(first['ledger'].widen_items) | method_items
-        classes = classify(model, all_gated_seeds(model) | referenced, staying_support(model), referenced, dev)
+        # Staying support modules compile only when the moved code calls into them.
+        classes = classify(model, all_gated_seeds(model) | referenced, method_families, referenced, dev)
         readers = extracted_readers(model, classes) | (classes.family_reads - set(model.moving))
         new = {'::'.join(f) for f in readers} - forced
         anchored = {'::'.join(f) for f in classes.anchored} - excluded
@@ -139,10 +140,12 @@ def build(lib, repository, baseline, admissions, workspace_manifest, overrides, 
 
 def prepare(model, library_root):
     """Mark foreign-mounted scopes and the library impls that must stay in the library."""
+    from src_door_traits import door_traits
     from src_kept_impls import mark_kept_impls
     for record in model.records.values():
         record.foreign = not record.node.source.resolve().is_relative_to(library_root)
     mark_kept_impls(model)
+    door_traits(model)
 
 
 def included_record(record, target):

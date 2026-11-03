@@ -28,7 +28,7 @@ def shrink_admissions(text, moved_sources):
     return json.dumps(data, indent=2) + '\n', before - len(data['audits'])
 
 
-def control_callers(text, relocated, new_files, library_doors):
+def control_callers(text, relocated, new_files, library_doors, door_owners=None):
     """relocated: old caller path -> new file paths; new_files: {path: content}."""
     out, seen = [], set()
     for line in text.splitlines():
@@ -50,6 +50,13 @@ def control_callers(text, relocated, new_files, library_doors):
             if entry not in seen:
                 additions.append(entry)
                 seen.add(entry)
+    for trait, owner in sorted((door_owners or {}).items()):
+        for path, content in sorted(new_files.items()):
+            if not path.startswith(owner) and re.search(r'\b' + trait + r'\b', content):
+                entry = f'{owner} {path}'
+                if entry not in seen:
+                    additions.append(entry)
+                    seen.add(entry)
     if additions:
         out.append('# Execution courts and testkits moved out of src name the original library test doors.')
         out.extend(additions)
