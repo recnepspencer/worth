@@ -244,7 +244,7 @@ pub fn commit_own_write(
         // witness remain the actual commit's. These identities are not under test.
         let mut lineage = handle.output_lineage.lock().unwrap();
         let cell = (*lineage
-            .by_source_for_test())
+            .by_source_mut_for_test())
             .values_mut()
             .flat_map(|branches| branches.values_mut())
             .flat_map(|history| history.values_mut())
