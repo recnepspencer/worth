@@ -25,12 +25,12 @@ pub struct QueryReadProjection {
     keys: OrdMap<Arc<FactPostingKey>, OrdSet<usize>>,
 }
 #[derive(Debug)]
-struct QueryReadIdentity;
+pub struct QueryReadIdentity;
 
 /// Runtime-only custody minted from an original native query capture. Clones
 /// share the one registration; the last owner removes its live index binding.
 /// The slot is a locator only: native identity, epoch and selected image decide.
-pub(in crate::domain_computation::primary_graph) struct QueryFactCoverage {
+pub struct QueryFactCoverage {
     owner: Arc<SourceInvalidationOwner>,
     basis: PositionedRelationalSnapshot,
     pub projection: Arc<QueryReadProjection>,
@@ -75,7 +75,7 @@ impl From<super::SettlementVerificationStop> for QueryCoverageStop {
 }
 
 /// Only exact native selected-image lookup can issue this ephemeral consequence.
-pub(in crate::domain_computation::primary_graph) struct CleanQueryFacts<'selected> {
+pub struct CleanQueryFacts<'selected> {
     _coverage: &'selected QueryFactCoverage,
     _selected: &'selected PositionedRelationalSnapshot,
 }

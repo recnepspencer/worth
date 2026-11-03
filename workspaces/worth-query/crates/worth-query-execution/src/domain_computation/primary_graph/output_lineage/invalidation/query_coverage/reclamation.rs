@@ -3,7 +3,7 @@
 use super::*;
 
 #[derive(Clone, Debug)]
-pub(super) enum QueryReadBacking {
+pub enum QueryReadBacking {
     Live(Arc<QueryReadProjection>),
     Released {
         keys: OrdMap<Arc<FactPostingKey>, OrdSet<usize>>,

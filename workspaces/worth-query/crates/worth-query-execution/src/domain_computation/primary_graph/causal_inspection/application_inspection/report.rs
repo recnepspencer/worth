@@ -48,7 +48,7 @@ pub(super) struct InspectionReportPayload {
     availability: Option<super::availability::WorthQueryInspectionEvidenceAvailability>,
 }
 
-pub(super) struct FundedInspectionReport {
+pub struct FundedInspectionReport {
     payload: InspectionReportPayload,
     session: WorthQueryGraphWorkSessionIdentity,
     managed_run: WorthQueryGraphWorkManagedRunIdentity,
