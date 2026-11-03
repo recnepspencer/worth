@@ -144,3 +144,5 @@ fn installed_reference(
         .expect("newly minted workflow artifact authority must validate");
     Arc::new(authority)
 }
+
+mod court_doors_for_test;

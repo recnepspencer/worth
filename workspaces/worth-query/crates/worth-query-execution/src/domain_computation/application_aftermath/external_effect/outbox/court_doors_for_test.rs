@@ -1,0 +1,9 @@
+//! Sealed test doors over this module's private members.
+use super::*;
+
+impl WorthQueryDispatchOutboxRecord {
+    #[doc(hidden)]
+    pub fn from_installed_contract_for_test( correlation: ExternalEffectCorrelationIdentity, contract: &InstalledExternalEffectContract, payload: Vec<u8>, outcome_identity: u64) -> Option<Self> {
+        Self::from_installed_contract(correlation, contract, payload, outcome_identity)
+    }
+}

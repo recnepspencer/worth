@@ -43,7 +43,7 @@ impl CourtWorthQueryOutputDemandSettlementForTest for WorthQueryOutputDemandSett
         foreign_disclosure: Option<Arc<OriginalSourceInspectionDisclosure>>,
         mut check: impl FnMut(&Self) -> Result<(), WorthQueryOutputDemandDenial>,
     ) {
-        let original = self.observation.original_settled_producer().unwrap();
+        let original = (*self.observation_for_test()).original_settled_producer().unwrap();
         let mut sources = Vec::new();
         match original.source() {
             OriginalSettledProducerSource::Committed {
@@ -68,7 +68,7 @@ impl CourtWorthQueryOutputDemandSettlementForTest for WorthQueryOutputDemandSett
                     let foreign = other
                         .application_commit_receipt()
                         .unwrap()
-                        .exact_output_settlement()
+                        .exact_output_settlement_for_test()
                         .unwrap()
                         .clone();
                     assert!(!Arc::ptr_eq(settlement.as_ref().unwrap(), &foreign));
@@ -125,7 +125,7 @@ impl CourtWorthQueryOutputDemandSettlementForTest for WorthQueryOutputDemandSett
                     .unwrap()
                     .application_commit_receipt()
                     .unwrap()
-                    .exact_output_settlement()
+                    .exact_output_settlement_for_test()
                     .unwrap()
                     .clone();
                 assert_ne!(
@@ -143,7 +143,7 @@ impl CourtWorthQueryOutputDemandSettlementForTest for WorthQueryOutputDemandSett
             }
             OriginalSettledProducerSource::Restored { checkpoint } => {
                 let mut checkpoint = checkpoint.clone();
-                checkpoint.idempotency_key[0] ^= 1;
+                (*checkpoint.idempotency_key_for_test())[0] ^= 1;
                 sources.push((
                     "restored checkpoint",
                     OriginalSettledProducerSource::Restored { checkpoint },
@@ -193,8 +193,8 @@ impl CourtWorthQueryOutputDemandSettlementForTest for WorthQueryOutputDemandSett
             !Arc::ptr_eq(&expected, &foreign),
             "two genuine capture owners"
         );
-        let mut source = self
-            .observation
+        let mut source = (*self
+            .observation_for_test())
             .original_settled_producer()
             .unwrap()
             .source
@@ -228,7 +228,7 @@ impl CourtWorthQueryOutputDemandSettlementForTest for WorthQueryOutputDemandSett
         source: OriginalSettledProducerSource,
         receipt: Option<WorthQueryApplicationCommitReceipt>,
     ) -> Self {
-        let original = self.observation.original_settled_producer().unwrap();
+        let original = (*self.observation_for_test()).original_settled_producer().unwrap();
         let seed = Arc::new(OriginalSettledProducerObservation {
             runtime_authority: original.runtime_authority,
             schema: original.schema.clone(),
@@ -238,18 +238,18 @@ impl CourtWorthQueryOutputDemandSettlementForTest for WorthQueryOutputDemandSett
             _memory: None,
         });
         Self {
-            posture: self.posture,
-            runtime_authority: self.runtime_authority,
-            schema_binding: self.schema_binding.clone(),
-            producer_identity: self.producer_identity.as_str().to_owned().into(),
-            output_family_identity: self.output_family_identity.clone(),
+            posture: (*self.posture_for_test()),
+            runtime_authority: (*self.runtime_authority_for_test()),
+            schema_binding: (*self.schema_binding_for_test()).clone(),
+            producer_identity: (*self.producer_identity_for_test()).as_str().to_owned().into(),
+            output_family_identity: (*self.output_family_identity_for_test()).clone(),
             receipt: receipt.map(SettlementReceiptCustody::Owned),
             stable: self.stable.clone(),
             output_correspondence: self.output_correspondence.clone(),
             restored_source: self.restored_source.clone(),
-            readiness_delivery: self.readiness_delivery.clone(),
-            producer_contacts_in_this_demand: self.producer_contacts_in_this_demand,
-            observation: self.observation.with_original_producer(seed),
+            readiness_delivery: (*self.readiness_delivery_for_test()).clone(),
+            producer_contacts_in_this_demand: (*self.producer_contacts_in_this_demand_for_test()),
+            observation: (*self.observation_for_test()).with_original_producer(seed),
         }
     }
 }

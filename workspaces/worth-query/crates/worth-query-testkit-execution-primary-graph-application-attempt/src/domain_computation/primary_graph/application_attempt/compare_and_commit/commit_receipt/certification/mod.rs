@@ -18,7 +18,7 @@ pub trait CertificationWorthQueryApplicationCommitReceiptForTest: Sized {
 
 impl CertificationWorthQueryApplicationCommitReceiptForTest for WorthQueryApplicationCommitReceipt {
     fn without_settlement_description(mut self) -> Self {
-        self.exact_output_settlement = None;
+        (*self.exact_output_settlement_mut_for_test()) = None;
         self
     }
 
@@ -26,14 +26,14 @@ impl CertificationWorthQueryApplicationCommitReceiptForTest for WorthQueryApplic
         mut self,
         disclosure: std::sync::Arc<worth_query_execution::court_doors_for_test::domain_computation::primary_graph::source_disclosure::inspection::OriginalSourceInspectionDisclosure>,
     ) -> Self {
-        self.authority_binding
+        (*self.authority_binding_for_test())
             .corrupt_original_disclosure(disclosure);
         self
     }
 
     #[cfg(all())]
     fn with_provider_runtime_instance_id_for_test(mut self, runtime: u64) -> Self {
-        self.provider_runtime_instance_id = runtime;
+        (*self.provider_runtime_instance_id_mut_for_test()) = runtime;
         self
     }
 
@@ -42,7 +42,7 @@ impl CertificationWorthQueryApplicationCommitReceiptForTest for WorthQueryApplic
         mut self,
         binding: worth_query_execution::facade::domain_computation::WorthQueryApplicationIdempotencyBinding,
     ) -> Self {
-        self.authority_binding
+        (*self.authority_binding_for_test())
             .replace_idempotency_binding_for_test(binding);
         self
     }

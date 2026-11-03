@@ -380,3 +380,5 @@ impl WorthQueryApplicationCommitReceipt {
 }
 
 pub(in crate::domain_computation::primary_graph) use committed_changes::MaterializedCommittedField;
+
+mod court_doors_for_test;

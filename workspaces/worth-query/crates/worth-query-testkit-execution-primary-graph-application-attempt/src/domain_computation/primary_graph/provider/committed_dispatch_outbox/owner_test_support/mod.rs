@@ -27,7 +27,7 @@ pub fn commit_record(
 ) {
     let record = record_for(identity);
     let branch = primary_relational_branch_id();
-    let (binding, commit, runtime_id) = provider.graph.with_runtime_mut(request_execution, |runtime| {
+    let (binding, commit, runtime_id) = (*provider.graph_for_test()).with_runtime_mut(request_execution, |runtime| {
         let mut transaction: BranchBoundRelationalTransaction = {
     let transaction_validation_input = runtime
                 .admit_branch_basis(&runtime.main_branch_identity())
@@ -42,15 +42,15 @@ pub fn commit_record(
         transaction.push_batch(
             WorkerIntentBatch::new("committed-outbox-owner-test").push(
                 dispatch_outbox_create_intent(
-                    Some(provider.graph.layout.provider_dispatch_outbox()),
+                    Some((*provider.graph_for_test()).layout.provider_dispatch_outbox()),
                     Some(&record),
                 )
                 .unwrap(),
             ),
          worth_execution::ExecutionAllocationPolicy::SystemAllocation).expect("test staging stays within configured resource budgets");
         let committed = transaction.commit(request_execution, runtime).unwrap();
-        let binding = WorthQueryCommittedDispatchOutboxBinding::fixture_from_commit(
-            provider.graph.layout.provider_dispatch_outbox(),
+        let binding = WorthQueryCommittedDispatchOutboxBinding::fixture_from_commit_for_test(
+            (*provider.graph_for_test()).layout.provider_dispatch_outbox(),
             Some(&record),
             &committed,
         )
@@ -93,8 +93,8 @@ pub fn retain_commit_basis(
     let retention = runtime
         .retain_component_basis(&basis)
         .expect("the committed fixture's native basis remains available");
-    provider
-        .receipt_basis_retention
+    (*provider
+        .receipt_basis_retention_for_test())
         .lock()
         .unwrap_or_else(|poisoned| poisoned.into_inner())
         .retain(committed.commit.commit_id, retention, false);
@@ -114,7 +114,7 @@ pub fn record_for(identity: u64) -> WorthQueryDispatchOutboxRecord {
         branch: "main",
     })
     .unwrap();
-    WorthQueryDispatchOutboxRecord::from_installed_contract(
+    WorthQueryDispatchOutboxRecord::from_installed_contract_for_test(
         correlation,
         &InstalledExternalEffectContract::Declared {
             correlation_family:

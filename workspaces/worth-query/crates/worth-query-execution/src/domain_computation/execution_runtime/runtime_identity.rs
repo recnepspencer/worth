@@ -18,7 +18,7 @@ impl WorthQueryRuntimeAuthorityIdentity {
 
     /// Test-only mint for axis probes and registry fixtures. Production minting
     /// remains installer-owned via [`super::WorthQueryExecutionRuntimeInstaller`].
-    pub(crate) fn mint_for_test() -> Self {
+    pub fn mint_for_test() -> Self {
         Self::mint()
     }
 

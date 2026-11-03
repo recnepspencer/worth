@@ -292,3 +292,5 @@ fn hex_digest(digest: &CanonicalDigestId) -> String {
 fn hex_bytes(bytes: &[u8]) -> String {
     bytes.iter().map(|byte| format!("{byte:02x}")).collect()
 }
+
+mod court_doors_for_test;

@@ -47,7 +47,7 @@ impl TestsWorthQueryObservedSourceSelectionForTest for WorthQueryObservedSourceS
     fn selecting_for_test(endpoint: u64) -> Self {
         let authority = worth_query_execution::facade::domain_computation::WorthQueryRuntimeAuthorityIdentity::mint_for_test();
         let meaning = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::WorthQueryObservedSourceMeaningRegistry::new(authority)
-            .intern(
+            .intern_for_test(
                 &[7; 32],
                 &[8; 32],
                 footprint(vec![entity(endpoint)], 4),

@@ -86,7 +86,7 @@ pub struct SourceProfileSubstitutionContext {
 
 impl CausalManagedAdmissionContext {
     pub fn read_request(&self) -> WorthQueryManagedTruthReadRequest {
-        WorthQueryManagedTruthReadRequest::from_relational_basis(
+        WorthQueryManagedTruthReadRequest::from_relational_basis_for_test(
             self.descriptor.clone(),
             SnapshotReadPacket::new(vec![]),
         )
@@ -241,13 +241,13 @@ pub fn relational_source_and_lease(
         .is_ok());
     let source = RuntimeBridgeRelationalSource::for_graph_role(Arc::new(runtime), "model")
         .expect("model should be a valid graph role");
-    let bridge_basis = WorthQueryManagedRelationalObservation::retain(&source, bridge_basis, true)
+    let bridge_basis = WorthQueryManagedRelationalObservation::retain_for_test(&source, bridge_basis, true)
         .expect("Relational source should retain the bridge execution basis");
     let substitute = if matching_snapshot {
         None
     } else {
         Some(
-            WorthQueryManagedRelationalObservation::retain(&source, substitute_basis, true)
+            WorthQueryManagedRelationalObservation::retain_for_test(&source, substitute_basis, true)
                 .expect("same version should admit an independent execution basis"),
         )
     };

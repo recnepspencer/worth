@@ -123,7 +123,7 @@ pub fn assert_candidate_denied(
     candidate: WorthQueryArtifactProductionAuthorityParts,
     expected_kind: WorthQueryArtifactDenialKind,
 ) {
-    let candidate = WorthQueryArtifactProductionAuthority::mint(candidate);
+    let candidate = WorthQueryArtifactProductionAuthority::mint_for_test(candidate);
     let admission = WorthQueryArtifactProductionAuthority::admit(
         &candidate,
         WorthQueryArtifactProductionEvidence::new("provenance", "dependency"),
@@ -136,7 +136,7 @@ pub fn authority(
     contract: Arc<WorthQueryInstalledArtifactContractAuthority>,
     domain_authority: Arc<WorthQueryInstalledDomainExecutionAuthority>,
 ) -> Arc<WorthQueryArtifactProductionAuthority> {
-    WorthQueryArtifactProductionAuthority::mint(authority_parts(contract, domain_authority))
+    WorthQueryArtifactProductionAuthority::mint_for_test(authority_parts(contract, domain_authority))
 }
 pub fn authority_parts(
     contract: Arc<WorthQueryInstalledArtifactContractAuthority>,
@@ -150,10 +150,10 @@ pub fn authority_parts(
         run_identity: "installed-run".into(),
         stage_identity: "producer".into(),
         basis_identity: "installed-basis".into(),
-        registry: Arc::new(WorthQueryWorkflowArtifactRegistry::new(
+        registry: Arc::new(WorthQueryWorkflowArtifactRegistry::new_for_test(
             "installed-run".into(),
         )),
-        production_generation: WorthQueryArtifactProductionGeneration::initial(),
+        production_generation: WorthQueryArtifactProductionGeneration::initial_for_test(),
     }
 }
 pub fn runtime() -> WorthQueryExecutionRuntime {
@@ -169,11 +169,11 @@ pub fn runtime() -> WorthQueryExecutionRuntime {
 pub fn domain_authority(
     runtime: &WorthQueryExecutionRuntime,
 ) -> Arc<WorthQueryInstalledDomainExecutionAuthority> {
-    WorthQueryInstalledDomainExecutionAuthority::mint(
+    WorthQueryInstalledDomainExecutionAuthority::mint_for_test(
         runtime.authority_identity(),
         "WORTH.tests.affinity.owner",
         runtime.installed_packages().generation(),
-        runtime.retain_current_generation(),
+        runtime.retain_current_generation_for_test(),
     )
 }
 pub struct InstalledContracts {

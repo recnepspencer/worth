@@ -249,3 +249,5 @@ fn result_set_query(query: &[u8; 32]) -> [u8; 32] {
     digest.update(query);
     digest.finalize().into()
 }
+
+mod court_doors_for_test;

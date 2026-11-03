@@ -312,3 +312,5 @@ pub(in crate::domain_computation::primary_graph) use application_attempt_state::
 
 pub use managed_cleanup_control::WorthQueryManagedCleanupRegistrationDenial;
 pub use managed_cleanup_control::WorthQueryManagedCleanupScheduleForTest;
+
+mod court_doors_for_test;

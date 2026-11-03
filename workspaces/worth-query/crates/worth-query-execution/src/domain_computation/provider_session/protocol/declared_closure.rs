@@ -359,3 +359,5 @@ fn invariant_slots(contract: &WorthQueryOperationInvariantContract) -> Vec<Strin
         }
     }
 }
+
+mod court_doors_for_test;
