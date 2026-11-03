@@ -9,8 +9,8 @@ and moves to the testkit. Every other item in the closure is compiled into produ
 """
 from dataclasses import dataclass, field
 
-from rust_source import tokens
-from src_families import test_gated
+from rust_source import crate_uses, tokens
+from src_families import expanded_text, test_gated
 from src_paths import Reference, references
 from src_scope import scope_items
 
@@ -31,6 +31,9 @@ class HookClasses:
     family_reads: set = field(default_factory=set)
     compiled_families: set = field(default_factory=set)
     spans: dict = field(default_factory=dict)
+    kept: set = field(default_factory=set)
+    orphaned: dict = field(default_factory=dict)
+    anchored: set = field(default_factory=set)
 
 
 class _TextNode:
@@ -67,7 +70,7 @@ def gated_items(model, module):
                 if token.value in ('static', 'const') and stream[i + 1].kind == 'ident':
                     result.setdefault(stream[i + 1].value, []).append((start, end))
     for attributes, _vis, keyword, name, start, end in scope_items(own):
-        if keyword == 'impl' and not test_gated(attributes):
+        if keyword == 'impl' and not test_gated(attributes) and not trait_impl(own[start:end]):
             for method, ms, me, gated in impl_methods(own[start:end]):
                 if gated:
                     result.setdefault(method, []).append((start + ms, start + me))
@@ -113,6 +116,19 @@ def method_seeds(model, called):
     return items, families
 
 
+def trait_impl(text):
+    """`impl Trait for Type`: its methods take the trait's visibility."""
+    stream = tokens(text)
+    depth = 0
+    for token in stream:
+        if token.value == '{' and depth == 0:
+            return False
+        depth += {'<': 1, '>': -1}.get(token.value, 0)
+        if token.value == 'for' and depth == 0:
+            return True
+    return False
+
+
 def impl_target(text):
     """Self type of an `impl` header: the first type after `for`, else after the generics."""
     stream = tokens(text)
@@ -135,10 +151,17 @@ def impl_target(text):
     return next((t.value for t in header if t.kind == 'ident' and t.value not in ('dyn', 'mut', 'const')), None)
 
 
-def classify(model, seeds, family_seeds=()):
-    """seeds: gated production items moved code names; family_seeds: support modules it calls into."""
+def classify(model, seeds, family_seeds=(), referenced=(), dev_aliases=()):
+    """Partition the gated production closure of `seeds` and `family_seeds`.
+
+    referenced: items the moved code names (paths and called methods); only test-dependent
+    items it reaches (and their test-dependent closure) are extracted, the rest stay gated.
+    dev_aliases: crates only the library's tests may use; reaching one is test-dependent.
+    """
     gated, nodes = {}, {}
     moving = set(model.moving)
+    candidates = set()
+    methods = gated_method_owners(model)
     pending = sorted(seeds) + [('<family>', f) for f in sorted(family_seeds)]
     seen = set()
     while pending:
@@ -148,10 +171,13 @@ def classify(model, seeds, family_seeds=()):
         seen.add(key)
         if key[0] == '<family>':
             family = key[1]
-            if family in moving or has_tests(model, family):
+            if has_tests(model, family):
                 nodes[key] = ([], {('<test>', family)})
                 continue
-            texts = [(n.names, n.own_text()) for n in model.families[family].node.walk()]
+            if family in moving:
+                # Moving support that production test code reaches: it stays if it is self-contained.
+                candidates.add(family)
+            texts = [(n.names, expanded_text(n)) for n in model.families[family].node.walk()]
             nodes[key] = ([], set())
         else:
             module, name = key
@@ -171,37 +197,115 @@ def classify(model, seeds, family_seeds=()):
                     nodes[key][1].add(('<family>', child.names))
                     pending.append(('<family>', child.names))
         for names, text in texts:
+            if dev_aliases and crate_uses(text, set(dev_aliases)):
+                nodes[key][1].add(('<test>', 'dev-dependency'))
+            stream = tokens(text)
+            for i in range(len(stream) - 1):
+                if stream[i].value == '.' and stream[i + 1].kind == 'ident':
+                    for owner in methods.get(stream[i + 1].value, ()):
+                        if owner != key:
+                            nodes[key][1].add(owner)
+                            pending.append(owner)
             for dependency in dependencies(model, names, text, key):
                 nodes[key][1].add(dependency)
                 pending.append(dependency)
-    dependent = {}
-
-    def test_dependent(key, trail=frozenset()):
-        if key[0] == '<test>':
-            return True
+    reverse = {}
+    for key, (_spans, deps) in nodes.items():
+        for dep in deps:
+            reverse.setdefault(dep, set()).add(key)
+    dependent = set()
+    stack = [d for deps in (v[1] for v in nodes.values()) for d in deps if d[0] == '<test>']
+    while stack:
+        key = stack.pop()
         if key in dependent:
-            return dependent[key]
-        if key in trail:
-            return False
-        dependent[key] = any(test_dependent(d, trail | {key}) for d in nodes.get(key, ((), set()))[1])
-        return dependent[key]
+            continue
+        dependent.add(key)
+        stack.extend(reverse.get(key, ()))
+
+    def test_dependent(key):
+        return key in dependent
+
+    moving_dependent, stack = set(), [('<test>', f) for f in moving if f not in candidates or has_tests(model, f)]
+    while stack:
+        key = stack.pop()
+        if key in moving_dependent:
+            continue
+        moving_dependent.add(key)
+        stack.extend(reverse.get(key, ()))
 
     classes = HookClasses()
+    referenced = set(referenced)
+    extract, stack = set(), [k for k in sorted(nodes, key=str) if k in referenced and k[0] not in ('<test>', '<family>')
+                             and test_dependent(k)]
+    while stack:
+        key = stack.pop()
+        if key in extract or key[0] in ('<test>', '<family>') or not test_dependent(key) or is_import(model, key):
+            continue
+        extract.add(key)
+        stack.extend(sorted(nodes.get(key, ((), set()))[1], key=str))
     for key in sorted(nodes, key=str):
         if key[0] == '<test>':
             continue
         if key[0] == '<family>':
             if test_dependent(key):
                 classes.family_reads.add(key[1])
+            elif key[1] in candidates:
+                classes.anchored.add(key[1])
             else:
                 classes.compiled_families.add(key[1])
-        elif test_dependent(key):
+        elif key in extract:
             classes.extracted.setdefault(key[0], []).append((key[1], nodes[key][0]))
             classes.family_reads |= {d[1] for d in nodes[key][1] if d[0] == '<family>'}
+        elif key in moving_dependent:
+            classes.orphaned.setdefault(key[0], []).append((key[1], nodes[key][0]))
+        elif test_dependent(key):
+            classes.kept.add(key)
         else:
             classes.compiled.add(key)
             classes.spans[key] = nodes[key][0]
     return classes
+
+
+def gated_method_owners(model):
+    """Method name -> gated item keys that define it (gated methods and gated impl blocks)."""
+    owners = {}
+    for names, node in model.index.items():
+        if model.production.in_family(names):
+            continue
+        own = node.own_text()
+        for attributes, _vis, keyword, _name, start, end in scope_items(own):
+            if keyword != 'impl':
+                continue
+            gated_impl = test_gated(attributes)
+            target = impl_target(own[start:end])
+            for method, _ms, _me, gated in impl_methods(own[start:end]):
+                if gated_impl and target:
+                    owners.setdefault(method, set()).add((names, target))
+                elif gated and not trait_impl(own[start:end]):
+                    owners.setdefault(method, set()).add((names, method))
+    return owners
+
+
+def is_import(model, key):
+    module, name = key
+    scope = model.production.scopes.get(module)
+    return scope is not None and name in scope.imports and name not in scope.declared
+
+
+def all_gated_seeds(model):
+    """Every gated item of every production module."""
+    seeds = set()
+    for names in model.index:
+        if model.production.in_family(names):
+            continue
+        seeds |= {(names, name) for name in gated_items(model, names)}
+    return seeds
+
+
+def staying_support(model):
+    """Staying `cfg(test)` modules that hold no tests."""
+    moving = set(model.moving)
+    return {f for f in model.families if f not in moving and not has_tests(model, f)}
 
 
 def dependencies(model, names, text, key):
@@ -228,7 +332,7 @@ def dependencies(model, names, text, key):
 
 def has_tests(model, family):
     from src_families import function_bodies, macro_generated
-    return any(function_bodies(n.own_text()) or macro_generated(n.own_text())
+    return any(function_bodies(expanded_text(n)) or macro_generated(expanded_text(n))
                for n in model.families[family].node.walk())
 
 

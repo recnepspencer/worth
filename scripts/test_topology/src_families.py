@@ -1,6 +1,7 @@
 """Inventory the `cfg(test)` families compiled into a library target's own source."""
 from dataclasses import dataclass, field
 import hashlib
+from pathlib import Path
 import re
 
 from filesystem_path import filesystem_path
@@ -126,7 +127,7 @@ def families(lib_source):
 def family(node):
     files, lines, tests, macros = [], 0, [], []
     for member in node.walk():
-        own = member.own_text()
+        own = expanded_text(member)
         tests.extend(function_bodies(own))
         macros.extend(macro_generated(own))
         if member.declaration is not None and member.declaration.body is None:
@@ -139,3 +140,37 @@ def family(node):
 
 def file_text(path):
     return filesystem_path(path).read_text(encoding='utf-8')
+
+
+INCLUDE = re.compile(r'(?m)^\s*include!\s*\(\s*"([^"]+)"\s*\)\s*;?')
+
+
+def included_files(node):
+    """Item-level `include!` targets of a module scope that stay inside the module's package."""
+    base = Path(node.source).resolve().parent
+    package = next((p for p in Path(node.source).resolve().parents if (p / 'Cargo.toml').is_file()), base)
+    result = []
+    for match in INCLUDE.finditer(node.own_text()):
+        target = (base / match.group(1)).resolve()
+        if target.is_relative_to(package) and target.suffix == '.rs' and filesystem_path(target).is_file():
+            result.append((match.group(1), target))
+    return result
+
+
+def expanded_text(node):
+    """A module's own text with its item-level in-package `include!` files appended, for analysis."""
+    text = node.own_text()
+    for _literal, target in included_files(node):
+        text += '\n' + file_text(target)
+    return text
+
+
+class ExpandedView:
+    """A module node read with its included files, for reference analysis."""
+
+    def __init__(self, node):
+        self.names, self.source, self.children = node.names, node.source, node.children
+        self._text = expanded_text(node)
+
+    def own_text(self):
+        return self._text

@@ -77,6 +77,7 @@ class Rewriter:
         self.placement = placement
         self.public = public_paths(model.production)
         self.ledger = Ledger()
+        self.pending_imports = set()
 
     def owner_part(self, names):
         """(crate, module path) that holds a moving scope's non-test items."""
@@ -121,7 +122,7 @@ class Rewriter:
             if module[:depth] not in self.model.production.public_modules:
                 self.ledger.widen_modules.add(module[:depth])
 
-    def resolve_path(self, segments, names, reader_crate):
+    def resolve_path(self, segments, names, reader_crate, context='use'):
         resolved = resolve(segments, names, self.model.index)
         if resolved is None:
             return None
@@ -130,11 +131,12 @@ class Rewriter:
             return self.module_path(module, reader_crate)
         origin, _gated = self.model.everything.origin(module, rest[0])
         origin = origin or (module, rest[0])
-        if origin[0] == '<external>' or (origin[1] is not None and origin[1] != rest[0]):
-            site = self.alias_site(module, rest[0])
-            if site is not None and (origin[0] != '<external>' or origin[1].rsplit('::', 1)[-1] != rest[0]):
-                return '::'.join((self.alias_path(site, rest[0], origin, reader_crate),) + rest[1:])
-        return '::'.join((self.item_path(origin, reader_crate),) + rest[1:])
+        canonical = self.item_path(origin, reader_crate)
+        if context == 'expr' and canonical.rsplit('::', 1)[-1] != rest[0]:
+            # An alias keeps its spelling in the body; the module imports it under that name.
+            self.pending_imports.add(f'use {canonical} as {rest[0]};')
+            return '::'.join(rest)
+        return '::'.join((canonical,) + rest[1:])
 
     def alias_site(self, module, name, seen=frozenset()):
         """The module whose `use` binds `name` as an alias, following glob imports."""
@@ -194,11 +196,19 @@ class Rewriter:
             for segments, glob, alias in declaration.leaves:
                 lines.extend(self.use_lines(segments, glob, alias, names, reader_crate, words, visibility))
             changes.append((declaration.start, declaration.end, '\n'.join(lines)))
+        self.pending_imports = set()
         for occurrence in paths:
-            replacement = self.resolve_path(occurrence.segments, names, reader_crate)
+            replacement = self.resolve_path(occurrence.segments, names, reader_crate, 'expr')
             if replacement is not None:
                 changes.append((occurrence.start, occurrence.end, replacement))
         text = replace_spans(text, changes)
+        if self.pending_imports:
+            bound = {alias or segments[-1] for d in scan(text)[0] for segments, glob, alias in d.leaves
+                     if segments and not glob}
+            fresh = sorted(line for line in self.pending_imports if line.rsplit(' ', 1)[-1].rstrip(';') not in bound)
+            if fresh:
+                inner, end = leading_inner_attributes(text)
+                text = inner + '\n' + '\n'.join(fresh) + '\n' + text[end:]
         if disposition == 'split' or record.extracted:
             text = self.with_bare_imports(text, record, reader_crate)
         changes = [(start, end, self.visibility('pub(' + inner + ')', reader_crate))

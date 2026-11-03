@@ -8,7 +8,7 @@ import json
 from pathlib import Path, PurePosixPath
 
 from rust_source import tokens
-from src_families import families
+from src_families import ExpandedView, families
 from src_paths import Reference, module_index, references
 from src_surface import Surface
 
@@ -58,9 +58,10 @@ def family_row(family, repository, index, surface, owner_of, baseline, admission
     needs, support_edges = Counter(), set()
     identifiers = set()
     for node in family.node.walk():
-        own = node.own_text()
+        view = ExpandedView(node)
+        own = view.own_text()
         identifiers |= member_calls(own)
-        for reference in references(node, index):
+        for reference in references(view, index):
             for target in expand(reference, identifiers_of(own), surface):
                 owner = owner_of.get(target.module)
                 if owner == family.names:

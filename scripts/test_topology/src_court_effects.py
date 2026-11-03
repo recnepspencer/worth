@@ -10,7 +10,8 @@ from src_emit_config import (control_callers, library_test_doors, shrink_admissi
                              splits_toml)
 from src_emit_crates import (LIBRARY_DIR, crate_sources, library_dependencies, manifest, module_files,
                              referenced_testkits)
-from src_emit_production import apply_edits, hook_edits, production_edits, ungate_recorders
+from src_emit_production import apply_edits, hook_edits, production_edits, residual_gates
+from src_families import file_text
 from src_multiset import multiset_of_texts
 
 CONFIG = 'tools/boundary-check/config/'
@@ -65,6 +66,7 @@ def effects_for(root, lib, baseline, admissions, workspace, overrides):
             allocators.append('::'.join(names))
         crate_parts[(row['crate'], 'testkit' if part == 'testkit' else 'court')].append(
             {'path': row['path'], 'text': text, 'attributes': declaration_attributes(node), 'names': names,
+             'includes': row.get('includes', []),
              'source_file': source_file,
              'foreign_file': source_file if row['foreign'] and names[:-1] not in p['foreign'] else None})
     files, crates = {}, []
@@ -111,21 +113,24 @@ def effects_for(root, lib, baseline, admissions, workspace, overrides):
             continue
         relocated[relative(source, root)].append(destination_of[primary])
         effects.move(source, root / destination_of[primary])
+    for (names, part), row in sorted(p['parts'].items()):
+        for literal, target, _text in row.get('includes', []):
+            destination = destination_of[(names, part)].rsplit('/', 1)[0] + '/' + literal.rsplit('/', 1)[-1]
+            effects.move(target, root / destination)
+            relocated[relative(target, root)].append(destination)
     for path, content in sorted(files.items()):
         effects.write(root / path, content)
     ledger = p['ledger']
     edits = production_edits(model, [f for f in model.moving], ledger.widen_modules, ledger.widen_items,
                              set(), ledger.widen_imports)
     classes = p['hooks']
-    for source, changes in hook_edits(model, classes, ledger.hooks | ledger.widen_items, p['called']).items():
+    for source, changes in hook_edits(model, classes, p['referenced'], p['called']).items():
         edits[source].extend(changes)
-    hook_names = {name for _module, name in classes.compiled}
+    for source, changes in residual_sweep(model, classes, edits, p['dev_aliases']).items():
+        edits[source].extend(changes)
     for source, changes in sorted(edits.items(), key=lambda kv: str(kv[0])):
         text = filesystem_path(source).read_text(encoding='utf-8')
-        changes = list(changes)
-        if hook_names:
-            changes += [(s, e, '') for s, e in ungate_recorders(text, hook_names)]
-        effects.write(source, apply_edits(text, changes, str(source)))
+        effects.write(source, apply_edits(text, list(changes), str(source)))
     for blocker in sorted(ledger.cross_court):
         blockers.append({'cross_court_reference': '::'.join(blocker)})
     moved_sources = set(relocated)
@@ -134,8 +139,10 @@ def effects_for(root, lib, baseline, admissions, workspace, overrides):
     staying_text = '\n'.join(n.own_text() for names, f in sorted(model.families.items())
                              if names not in model.moving for n in f.node.walk())
     trim_dev_dependencies(root, effects, staying_text, library_table)
-    before = multiset_of_texts((model.records[n].node.own_text(), relative(model.records[n].node.source.resolve(), root))
-                               for n in model.records if not model.records[n].extracted)
+    before = multiset_of_texts(
+        [(model.records[n].node.own_text(), relative(model.records[n].node.source.resolve(), root))
+         for n in model.records if not model.records[n].extracted]
+        + [(file_text(target), relative(target, root)) for n in model.records for _l, target in model.records[n].includes])
     court_files = sorted([path for path in files if '/tests/' in path and path.endswith('.rs')] + sorted(foreign_files))
     program = effects.program()
     totals = Counter({'moved_families': len(model.moving), 'moved_scopes': len(model.records),
@@ -160,6 +167,35 @@ def effects_for(root, lib, baseline, admissions, workspace, overrides):
             'renamed_modules': sorted(f'{k} -> {v}' for k, v in p['renames'].items()),
             'categories': [{'module': '::'.join(n), 'category': c['category'], 'evidence': c['evidence']}
                            for n, c in sorted(p['categories'].items()) if c['category']]}
+
+
+def residual_sweep(model, classes, edits, dev_aliases=()):
+    """Un-gate the remaining test-only fields and statements of every production file.
+
+    Staying test families, removed spans and statements naming kept test-dependent items
+    or any test family keep their gate.
+    """
+    kept = ({name for _module, name in classes.kept}
+            | {name for items in classes.orphaned.values() for name, _spans in items}
+            | {f[-1] for f in model.families if f not in classes.compiled_families}
+            | set(dev_aliases))
+    skip = defaultdict(list)
+    for family, record in model.families.items():
+        if family in classes.compiled_families:
+            continue
+        parent = model.index[family[:-1]]
+        skip[parent.source].append((parent.offset + record.node.declaration.start,
+                                    parent.offset + record.node.declaration.end))
+    for source, changes in edits.items():
+        skip[source].extend((a, b) for a, b, replacement in changes if replacement == '' and b > a)
+    result = defaultdict(list)
+    sources = {node.source for names, node in model.index.items() if not model.production.in_family(names)}
+    for source in sorted(sources, key=str):
+        text = filesystem_path(source).read_text(encoding='utf-8')
+        if 'cfg(test)' not in text.replace(' ', ''):
+            continue
+        result[source].extend(residual_gates(text, skip[source], kept))
+    return result
 
 
 def config_writes(root, effects, files, moved_sources, moved_inline, relocated, model, p):

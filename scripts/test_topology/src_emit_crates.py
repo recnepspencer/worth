@@ -49,10 +49,17 @@ def relative_to(target, directory):
     return posixpath.relpath(target, directory)
 
 
-def rebase_literals(text, source_file, destination_file):
-    """Relative `include!`/`include_str!`/`include_bytes!` literals keep naming the same file."""
+def rebase_literals(text, source_file, destination_file, moved=None):
+    """Relative `include!`/`include_str!`/`include_bytes!` literals keep naming the same file.
+
+    `moved` maps literals whose included file moves next to this file to their new name.
+    """
+    moved = moved or {}
+
     def replace(match):
         literal = match.group(2)
+        if literal in moved:
+            return match.group(1) + moved[literal] + match.group(3)
         if literal.startswith('/') or '://' in literal:
             return match.group(0)
         target = posixpath.normpath(posixpath.join(posixpath.dirname(source_file), literal))
@@ -80,7 +87,11 @@ def crate_sources(crate, kind, parts, root_attributes):
         text = ''
         if path in by_path:
             part = by_path[path]
-            text = rebase_literals(part['text'], part['source_file'], own_file).rstrip() + '\n'
+            moved = {literal: posixpath.basename(literal) for literal, _target, _text in part.get('includes', [])}
+            text = rebase_literals(part['text'], part['source_file'], own_file, moved).rstrip() + '\n'
+            for literal, _target, included in part.get('includes', []):
+                files[posixpath.dirname(own_file) + '/' + posixpath.basename(literal)] = \
+                    rebase_literals(included, part['source_file'], own_file).rstrip() + '\n'
             if kind == 'testkit':
                 text, _receipts = rebind(text, (), helper=True)
         mounts = ''

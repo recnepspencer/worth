@@ -146,6 +146,10 @@ def ungate_recorders(text, names):
 
 def apply_edits(text, changes, source=''):
     unique = sorted(set(changes))
+    removals = [(a, b) for a, b, replacement in unique if replacement == '' and b > a]
+    # An edit inside a removed span is moot: the whole span leaves production.
+    unique = [(a, b, x) for a, b, x in unique
+              if not any(ra <= a and b <= rb and (ra, rb) != (a, b) for ra, rb in removals)]
     for (a, b, x), (c, d, y) in zip(unique, unique[1:]):
         if c < b:
             raise ValueError(f'overlapping production edits in {source}: {(a, b, x)!r} {(c, d, y)!r}: '
@@ -172,11 +176,12 @@ def hook_edits(model, classes, referenced, called):
                 edits[file_of(node)].append(absolute(node, *gate) + ('',))
             body = node.text[offset:stop]
             is_impl = re.search(r'^\s*(?:#\s*\[[^\]]*\]\s*)*(?:unsafe\s+)?impl\b', body) is not None
-            if not is_impl and (key in referenced or name in called):
+            is_use = re.search(r'^\s*(?:#\s*\[[^\]]*\]\s*)*(?:pub(?:\s*\([^)]*\))?\s+)?use\b', body) is not None
+            if not is_impl and not is_use and (key in referenced or name in called):
                 change = widen(node.text, offset, stop)
                 if change:
                     edits[file_of(node)].append(absolute(node, change[0], change[1]) + (change[2],))
-            if is_impl:
+            if is_impl and not trait_impl(body):
                 edits[file_of(node)].extend(method_widenings(node, offset, body, called, impl_methods))
     for family in sorted(classes.compiled_families):
         node = model.index[family]
@@ -189,14 +194,95 @@ def hook_edits(model, classes, referenced, called):
                 if keyword == 'impl':
                     offset = own_offset(member, s)
                     body = member.text[offset:offset + (e - s)]
-                    edits[file_of(member)].extend(method_widenings(member, offset, body, called, impl_methods))
-    for module, items in sorted(classes.extracted.items()):
-        node = model.index[module]
-        for _name, spans in items:
-            for start, end in spans:
-                offset = own_offset(node, start)
-                edits[file_of(node)].append(absolute(node, offset, offset + (end - start)) + ('',))
+                    if not trait_impl(body):
+                        edits[file_of(member)].extend(method_widenings(member, offset, body, called, impl_methods))
+    for removed in (classes.extracted, classes.orphaned):
+        for module, items in sorted(removed.items()):
+            node = model.index[module]
+            for _name, spans in items:
+                for start, end in spans:
+                    offset = with_docs(node.text, own_offset(node, start))
+                    edits[file_of(node)].append(absolute(node, offset, own_offset(node, start) + (end - start)) + ('',))
     return edits
+
+
+def with_docs(text, start):
+    """Extend a removal start back over the item's preceding `///` doc-comment lines."""
+    line_start = text.rfind('\n', 0, start) + 1
+    if text[line_start:start].strip():
+        return start
+    earliest = start
+    while line_start > 0:
+        previous = text.rfind('\n', 0, line_start - 1) + 1
+        if not text[previous:line_start].strip().startswith('///'):
+            break
+        earliest = line_start = previous
+    return earliest
+
+
+GATE = re.compile(r'#\s*\[\s*cfg\s*\(\s*test\s*\)\s*\]\s*')
+
+
+def residual_gates(text, skip_spans, kept_names):
+    """Remaining exact `#[cfg(test)]` attributes to remove, outside test code and kept items."""
+    result = []
+    for match in GATE.finditer(text):
+        if any(a <= match.start() < b for a, b in skip_spans):
+            continue
+        following = text[match.end():]
+        if re.match(r'(?:#\s*\[[^\]]*\]\s*)*(?:pub(?:\s*\([^)]*\))?\s+)?mod\b', following):
+            continue
+        if set(re.findall(r'\w+', following[:unit_extent(following)])) & kept_names:
+            continue
+        result.append((match.start(), match.end(), ''))
+    for start, end, inner in test_attributes(text):
+        if any(a <= start < b for a, b in skip_spans):
+            continue
+        following = text[end:]
+        if set(re.findall(r'\w+', following[:unit_extent(following)])) & kept_names:
+            continue
+        result.append((start, end, '#[' + inner + ']'))
+    return result
+
+
+def test_attributes(text):
+    """(start, end, attributes) for each `#[cfg_attr(test, attributes)]`."""
+    result = []
+    for match in re.finditer(r'#\s*\[\s*cfg_attr\s*\(\s*test\s*,', text):
+        stream = tokens(text[match.start():match.start() + 4000])
+        matching = pairs(stream)
+        bracket = next(i for i, t in enumerate(stream) if t.value == '[')
+        paren = next(i for i, t in enumerate(stream) if t.value == '(')
+        close = matching[paren]
+        comma = next(i for i in range(paren, close) if stream[i].value == ',')
+        inner = text[match.start() + stream[comma].end:match.start() + stream[close].start].strip()
+        result.append((match.start(), match.start() + stream[matching[bracket]].end, inner))
+    return result
+
+
+def unit_extent(text):
+    """End of the field, statement or item that follows an attribute."""
+    stream = tokens(text[:20000])
+    depth = 0
+    for i, token in enumerate(stream):
+        if token.value in ('(', '[', '{'):
+            depth += 1
+        elif token.value in (')', ']', '}'):
+            depth -= 1
+            if depth < 0:
+                return token.start
+            if depth == 0 and token.value == '}':
+                following = stream[i + 1].value if i + 1 < len(stream) else ''
+                if following not in ('.', 'else', '?', ')', ';', ','):
+                    return token.end
+        elif depth == 0 and token.value in (';', ','):
+            return token.end
+    return len(text)
+
+
+def trait_impl(body):
+    from src_hooks import trait_impl as is_trait_impl
+    return is_trait_impl(body)
 
 
 def method_widenings(node, offset, body, called, impl_methods):

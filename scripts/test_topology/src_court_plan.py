@@ -11,7 +11,7 @@ from cargo_inventory import metadata
 from court_partition import CEILING, classification
 from frontier_adapter import frontiers
 from rust_source import tokens
-from src_hooks import classify, method_seeds
+from src_hooks import all_gated_seeds, classify, method_seeds, staying_support
 from src_move_model import MoveModel, add_extracted
 from src_ownership import dispositions
 from src_placement import named_products, place_courts, place_testkits
@@ -95,24 +95,33 @@ def build(lib, repository, baseline, admissions, workspace_manifest, overrides, 
         parts = {}
         for names in sorted(model.records):
             for part, (crate, path) in sorted(placement[names].items()):
-                text = '' if names in foreign else rewriter.rewrite(model.records[names], part, kinds[names], crate)
-                parts[(names, part)] = {'crate': crate, 'path': path, 'text': text, 'foreign': names in foreign}
+                record = model.records[names]
+                text = '' if names in foreign else rewriter.rewrite(record, part, kinds[names], crate)
+                includes = [] if names in foreign or (kinds[names] == 'split' and part == 'testkit') else [
+                    (literal, target, rewriter.rewrite(included_record(record, target), part, 'court', crate))
+                    for literal, target in record.includes]
+                parts[(names, part)] = {'crate': crate, 'path': path, 'text': text, 'foreign': names in foreign,
+                                        'includes': includes}
         return {'kinds': kinds, 'testkits': testkits, 'courts': courts, 'categories': categories,
                 'placement': dict(placement), 'parts': parts, 'ledger': rewriter.ledger,
                 'kit_products': kit_products}
 
-    forced = set()
-    for _attempt in range(4):
+    forced, excluded = set(), set()
+    dev = dev_only_aliases(Path(lib).resolve().parent.parent / 'Cargo.toml')
+    for _attempt in range(6):
         first = placed(None)
         called = called_methods(model)
-        method_items, method_families = method_seeds(model, called)
-        classes = classify(model, set(first['ledger'].hooks) | method_items, method_families)
+        method_items, _method_families = method_seeds(model, called)
+        referenced = set(first['ledger'].hooks) | set(first['ledger'].widen_items) | method_items
+        classes = classify(model, all_gated_seeds(model) | referenced, staying_support(model), referenced, dev)
         readers = extracted_readers(model, classes) | (classes.family_reads - set(model.moving))
         new = {'::'.join(f) for f in readers} - forced
-        if not new:
+        anchored = {'::'.join(f) for f in classes.anchored} - excluded
+        if not new and not anchored:
             break
         forced |= new
-        model = MoveModel(lib, repository, baseline, admissions, sorted(forced))
+        excluded |= anchored
+        model = MoveModel(lib, repository, baseline, admissions, sorted(forced), sorted(excluded))
         foreign = {n for n, r in model.records.items() if not r.node.source.resolve().is_relative_to(library_root)}
     for module, items in sorted(classes.extracted.items()):
         add_extracted(model, module, items)
@@ -120,8 +129,27 @@ def build(lib, repository, baseline, admissions, workspace_manifest, overrides, 
     measured = {key: row['text'].count('\n') + 4 for key, row in first['parts'].items()}
     result = placed(measured)
     result.update({'model': model, 'foreign': foreign, 'renames': renames, 'hooks': classes,
-                   'called': called, 'forced': sorted(forced)})
+                   'called': called, 'forced': sorted(forced), 'referenced': referenced,
+                   'anchored': sorted(excluded), 'dev_aliases': sorted(dev)})
     return result
+
+
+def included_record(record, target):
+    """An included file rewritten in the context of the module that includes it."""
+    from src_families import file_text
+    from src_move_model import ExtractedNode, ModuleRecord, items_of
+    text = file_text(target)
+    node = ExtractedNode(record.node, text)
+    node.source = target
+    return ModuleRecord(record.names, record.family, node, items_of(text))
+
+
+def dev_only_aliases(manifest_path):
+    """Crates only the library's own tests may name: dev-dependencies that are not dependencies."""
+    import tomllib
+    manifest = tomllib.loads(manifest_path.read_text(encoding='utf-8'))
+    normal = set(manifest.get('dependencies', {}))
+    return {name.replace('-', '_') for name in manifest.get('dev-dependencies', {}) if name not in normal}
 
 
 def called_methods(model):
@@ -136,7 +164,8 @@ def called_methods(model):
 
 def extracted_readers(model, classes):
     """Staying families that name an extracted item: they must move with it."""
-    names = {name for items in classes.extracted.values() for name, _spans in items}
+    names = {name for removed in (classes.extracted, classes.orphaned)
+             for items in removed.values() for name, _spans in items}
     moving = set(model.moving)
     result = set()
     for family, record in model.families.items():

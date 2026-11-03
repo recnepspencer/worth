@@ -10,7 +10,7 @@ from pathlib import Path
 
 from rust_source import tokens
 from src_audit import audit
-from src_families import families, function_bodies
+from src_families import ExpandedView, families, function_bodies, included_files
 from src_paths import Reference, module_index, references
 from src_scope import scope_items
 from src_surface import Surface
@@ -40,19 +40,22 @@ class ModuleRecord:
     uses: list = field(default_factory=list)
     extracted: set = field(default_factory=set)
     extracted_spans: list = field(default_factory=list)
+    includes: list = field(default_factory=list)
 
 
-def moving_families(rows, forced=()):
+def moving_families(rows, forced=(), excluded=()):
+    """excluded: support modules production test code anchors; they stay and compile in place."""
     by_module = {r['module']: r for r in rows}
-    moving = {m for m, r in by_module.items() if r['decision'] in MOVING} | set(forced)
+    excluded = set(excluded)
+    moving = ({m for m, r in by_module.items() if r['decision'] in MOVING} | set(forced)) - excluded
     changed = True
     while changed:
         changed = False
         for module, row in sorted(by_module.items()):
-            if module in moving:
+            if module in moving or module in excluded:
                 continue
             reads = any(s in moving for s in row['support_from'])
-            read = any(module in by_module[m]['support_from'] for m in moving)
+            read = any(module in by_module[m]['support_from'] for m in moving if m in by_module)
             if reads or read:
                 moving.add(module)
                 changed = True
@@ -69,14 +72,14 @@ def items_of(text):
 
 
 class MoveModel:
-    def __init__(self, lib_source, repository, baseline, admissions, forced=()):
+    def __init__(self, lib_source, repository, baseline, admissions, forced=(), excluded=()):
         self.repository = Path(repository).resolve()
         self.lib = Path(lib_source).resolve()
         self.plan = audit(self.lib, self.repository, baseline, admissions)
         self.tree, found = families(self.lib)
         self.index = module_index(self.tree)
         self.families = {f.names: f for f in found}
-        self.moving = [tuple(m.split('::')) for m in moving_families(self.plan['families'], forced)]
+        self.moving = [tuple(m.split('::')) for m in moving_families(self.plan['families'], forced, excluded)]
         self.production = Surface(self.tree, self.index, list(self.families))
         self.everything = Surface(self.tree, self.index, [])
         self.records = {}
@@ -88,7 +91,8 @@ class MoveModel:
         text = node.own_text()
         record = ModuleRecord(node.names, family, node, items_of(text))
         record.tests = [i.name for i in record.items if i.test]
-        record.uses = self.resolved(node)
+        record.includes = included_files(node)
+        record.uses = self.resolved(ExpandedView(node))
         return record
 
     def owner_family(self, names):
