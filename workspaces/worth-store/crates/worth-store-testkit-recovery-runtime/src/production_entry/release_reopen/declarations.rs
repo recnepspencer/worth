@@ -149,7 +149,7 @@ pub fn run(maximum_dropped_records: u16, expect_terminal: bool) -> std::process:
     let root = retained.path().to_path_buf();
     drop(world);
     // The selected head's bounded control/tree closure alone exceeds the
-    // 512 KiB C8 phase-two profile. Use the existing finite C11 envelope;
+    // 1 MiB C8 phase-two profile. Use the existing finite C11 envelope;
     // the phase-two runner and production allocation guard stay unchanged.
     std::process::Command::new(worth_store_testkit_executables::physical_store_recover())
         .arg(&root)

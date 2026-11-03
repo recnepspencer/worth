@@ -3,7 +3,7 @@ use std::path::PathBuf;
 #[path = "arguments/options.rs"]
 mod options;
 
-const PHASE_TWO_PROFILE: &str = "c8-phase2-admission-v1";
+const PHASE_TWO_PROFILE: &str = "c8-phase2-admission-v2";
 const C11_BLOB_CRASH_PROFILE: &str = "c11-blob-crash-v1";
 const C11_BLOB_MULTILEVEL_PROFILE: &str = "c11-blob-multilevel-v1";
 const FATE_COVERAGE_PROFILE: &str = "c8-phase8-fate-coverage-v1";
@@ -78,6 +78,21 @@ pub(super) fn parse(arguments: Vec<std::ffi::OsString>) -> Result<Invocation, St
 #[cfg(test)]
 mod tests {
     use super::{parse, BoundedProfile, C11_BLOB_MULTILEVEL_PROFILE};
+
+    #[test]
+    fn retired_recovery_profile_is_rejected_before_open_request_construction() {
+        assert!(parse(vec![
+            "unused-store-root".into(),
+            "--bounded-profile=c8-phase2-admission-v1".into(),
+        ])
+        .is_err());
+        let current = parse(vec![
+            "unused-store-root".into(),
+            "--bounded-profile=c8-phase2-admission-v2".into(),
+        ])
+        .expect("the current finite ordinary profile is admitted");
+        assert!(matches!(current.profile, BoundedProfile::PhaseTwoAdmission));
+    }
 
     #[test]
     fn named_multilevel_profile_is_explicitly_admitted() {

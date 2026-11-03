@@ -4,7 +4,7 @@ pub(crate) use std::path::Path;
 pub(crate) use crate::history::schedule::in_flight_mutation::ExpectedInFlightMutation;
 pub(crate) use {crate::history::parent_oracle, crate::phase_eight_process::history::schedule};
 
-pub(crate) const RECOVERY_MEMORY_BUDGET_BYTES: usize = 512 * 1024;
+pub(crate) const RECOVERY_MEMORY_BUDGET_BYTES: usize = 1024 * 1024;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct ExpectedWriterHistory {

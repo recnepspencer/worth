@@ -105,7 +105,7 @@ for one another.
 
 ```text
 physical_store_recover D:\stores\orders \
-  --bounded-profile=c8-phase2-admission-v1 \
+  --bounded-profile=c8-phase2-admission-v2 \
   --report=D:\reports\orders-recovery-v1.bin
 ```
 
@@ -126,7 +126,7 @@ Run recovery in one process, then inspect the resulting directory from another:
 
 ```text
 physical_store_recover D:\stores\orders \
-  --bounded-profile=c8-phase2-admission-v1 \
+  --bounded-profile=c8-phase2-admission-v2 \
   --report=D:\reports\runtime-v1.bin
 
 physical_store_offline_observer c8-recovery-observe \
