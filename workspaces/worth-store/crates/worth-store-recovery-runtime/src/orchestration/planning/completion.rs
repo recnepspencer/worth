@@ -39,7 +39,8 @@ pub(super) fn complete(
     let (plan_cost, planning_counters);
     (context, plan_cost, planning_counters) =
         plan_cost::admit(context, basis.state(), &execution, backing_peak)?;
-    context = publication_effects::admit(context, planning_counters, &execution.publication)?;
+    context =
+        publication_effects::admit(context, planning_counters, &execution.state().publication)?;
     planned_recovery::construct(
         context,
         basis.into_state(),

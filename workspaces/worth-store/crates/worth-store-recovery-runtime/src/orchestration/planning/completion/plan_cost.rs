@@ -5,13 +5,13 @@ use worth_store_recovery_physics::{
 use super::super::context::PlanningContext;
 use super::super::denial::plan_cost_limit;
 use super::super::resolved_basis::ResolvedPlanningState;
-use super::execution_basis::ExecutionProducts;
 use crate::entry::PhysicalRecoveryOutcome;
+use crate::progression::ExecutionBasis;
 
 pub(super) fn admit(
     context: PlanningContext,
     basis: &ResolvedPlanningState,
-    execution: &ExecutionProducts,
+    execution: &ExecutionBasis,
     backing_peak: u64,
 ) -> Result<
     (
@@ -37,13 +37,18 @@ pub(super) fn admit(
         .candidate_peak_materialization_bytes
         .checked_add(
             execution
+                .state()
                 .candidate_materialization
                 .comparison_scratch_bytes(),
         )
         .expect("candidate comparison memory accounting cannot overflow");
-    let candidate_lifecycle_peak =
-        candidate_comparison_peak.max(execution.candidate_materialization.publication_bytes());
-    let staging = &execution.staging;
+    let candidate_lifecycle_peak = candidate_comparison_peak.max(
+        execution
+            .state()
+            .candidate_materialization
+            .publication_bytes(),
+    );
+    let staging = &execution.state().staging;
     let legacy_cost_peak = basis
         .observed_pages
         .bytes_read
@@ -83,14 +88,13 @@ pub(super) fn admit(
     // subsequent Store rejoin scratch or every earlier planning allocation.
     let final_live_bytes = super::super::resident_memory::live_bytes(&context, basis)
         .and_then(|bytes| {
-            bytes.checked_add(u64::try_from(std::mem::size_of::<ExecutionProducts>()).ok()?)
+            bytes.checked_add(u64::try_from(std::mem::size_of::<ExecutionBasis>()).ok()?)
         })
-        .and_then(|bytes| bytes.checked_add(execution.staging.owned_heap_bytes()?))
-        .and_then(|bytes| bytes.checked_add(execution.publication.owned_heap_bytes()?))
+        .and_then(|bytes| bytes.checked_add(execution.owned_heap_bytes()?))
         .unwrap_or(u64::MAX);
     let peak_recovery_bytes = legacy_cost_peak
         .max(final_live_bytes)
-        .max(execution.planning_construction_peak)
+        .max(execution.state().planning_construction_peak)
         .max(context.selection.construction_peak_bytes())
         .max(backing_peak)
         .max(basis.capture_peak());

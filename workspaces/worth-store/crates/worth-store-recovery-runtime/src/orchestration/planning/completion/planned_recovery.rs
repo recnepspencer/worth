@@ -6,12 +6,12 @@ use crate::progression::PlanningCustody;
 
 use super::super::context::PlanningContext;
 use super::super::resolved_basis::ResolvedPlanningState;
-use super::execution_basis::ExecutionProducts;
+use crate::progression::ExecutionBasis;
 
 pub(super) fn construct(
     context: PlanningContext,
     basis: ResolvedPlanningState,
-    execution: ExecutionProducts,
+    execution: ExecutionBasis,
     backing: crate::progression::PlannedStateBacking,
     plan_cost: RecoveryPlanCost,
     planning_counters: worth_store_recovery_physics::RecoveryPlanningCounters,
@@ -25,6 +25,7 @@ pub(super) fn construct(
             crate::entry::PhysicalRecoveryPlanningDenial::CustodyUnresolved,
         ));
     }
+    let execution = execution.into_state();
     Ok(PlannedPhysicalRecovery::new(
         backing,
         context.authority,

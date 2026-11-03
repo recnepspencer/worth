@@ -9,17 +9,16 @@ use crate::progression::{PlannedStateBacking, PlanningMemoryDenial, PlanningResi
 
 use super::super::context::PlanningContext;
 use super::super::resolved_basis::ResolvedPlanningState;
-use super::execution_basis::ExecutionProducts;
+use crate::progression::ExecutionBasis;
 
 pub(super) fn prepare(
     context: PlanningContext,
     basis: &ResolvedPlanningState,
-    execution: &ExecutionProducts,
+    execution: &ExecutionBasis,
 ) -> Result<(PlanningContext, PlannedStateBacking, u64), PhysicalRecoveryOutcome> {
     let retained = super::super::resident_memory::live_bytes(&context, basis)
-        .and_then(|bytes| bytes.checked_add(std::mem::size_of::<ExecutionProducts>() as u64))
-        .and_then(|bytes| bytes.checked_add(execution.staging.owned_heap_bytes()?))
-        .and_then(|bytes| bytes.checked_add(execution.publication.owned_heap_bytes()?))
+        .and_then(|bytes| bytes.checked_add(std::mem::size_of::<ExecutionBasis>() as u64))
+        .and_then(|bytes| bytes.checked_add(execution.owned_heap_bytes()?))
         .and_then(|bytes| {
             bytes.checked_add(std::mem::size_of::<PlanningResidentAllowance>() as u64)
         })
@@ -34,7 +33,7 @@ pub(super) fn prepare(
                 context,
                 basis,
                 PlanningMemoryDenial::RecoveryMemoryBytes { observed: u64::MAX },
-                execution.planning_construction_peak,
+                execution.state().planning_construction_peak,
             ))
         }
         Err(denial) => {
@@ -42,20 +41,24 @@ pub(super) fn prepare(
                 context,
                 basis,
                 denial,
-                execution.planning_construction_peak,
+                execution.state().planning_construction_peak,
             ))
         }
     };
     match PlannedStateBacking::prepare(
         &mut allowance,
-        std::mem::size_of::<ResolvedPlanningState>() as u64,
+        (std::mem::size_of::<ResolvedPlanningState>()
+            + std::mem::size_of::<crate::progression::ExecutionBasisState>()) as u64,
     ) {
         Ok(backing) => Ok((context, backing, allowance.peak())),
         Err(denial) => Err(deny(
             context,
             basis,
             denial,
-            execution.planning_construction_peak.max(allowance.peak()),
+            execution
+                .state()
+                .planning_construction_peak
+                .max(allowance.peak()),
         )),
     }
 }

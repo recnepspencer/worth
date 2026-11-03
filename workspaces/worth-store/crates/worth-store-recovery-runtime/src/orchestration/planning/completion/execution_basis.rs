@@ -4,9 +4,8 @@ use crate::entry::{
 };
 use crate::orchestration::recovery_budget::RecoveryAllowance;
 use crate::progression::{
-    derive_execution_basis, requires_successor_candidate, CandidateMaterializationCost,
-    ExecutionBasisDenial, PlanningMemoryDenial, PlanningResidentAllowance, RecoveryPublicationPlan,
-    RecoveryQuiescencePlan, RecoveryStagingLayoutPlan,
+    derive_execution_basis, requires_successor_candidate, ExecutionBasis, ExecutionBasisDenial,
+    ExecutionBasisState, PlanningMemoryDenial, PlanningResidentAllowance,
 };
 
 use super::super::context::PlanningContext;
@@ -18,20 +17,17 @@ use super::super::successor_candidate_observation;
 #[path = "execution_basis/candidate_limit_tests.rs"]
 mod candidate_limit_tests;
 
-pub(super) struct ExecutionProducts {
-    pub(super) staging: RecoveryStagingLayoutPlan,
-    pub(super) publication: RecoveryPublicationPlan,
-    pub(super) quiescence: RecoveryQuiescencePlan,
-    pub(super) candidate_materialization: CandidateMaterializationCost,
-    pub(super) planning_construction_peak: u64,
-}
-
 pub(super) fn derive(
     mut context: PlanningContext,
     basis: &mut ResolvedPlanningState,
-) -> Result<(PlanningContext, ExecutionProducts), PhysicalRecoveryOutcome> {
+) -> Result<(PlanningContext, ExecutionBasis), PhysicalRecoveryOutcome> {
     let retained_memory_bytes = super::super::resident_memory::live_bytes(&context, basis)
-        .and_then(|bytes| bytes.checked_add(std::mem::size_of::<ExecutionProducts>() as u64))
+        .and_then(|bytes| {
+            bytes.checked_add(
+                (std::mem::size_of::<ExecutionBasis>() + std::mem::size_of::<ExecutionBasisState>())
+                    as u64,
+            )
+        })
         .and_then(|bytes| {
             bytes.checked_add(std::mem::size_of::<
                 Option<crate::progression::RecoveryObservedSuccessorCandidate>,
@@ -137,14 +133,7 @@ pub(super) fn derive(
     } else {
         None
     };
-    let (
-        staging,
-        publication,
-        quiescence,
-        candidate_materialization,
-        root_protocol_counters,
-        planning_construction_peak,
-    ) = match derive_execution_basis(
+    let execution = match derive_execution_basis(
         context.authority.media.store_identity(),
         &context.selection,
         &basis.sample,
@@ -257,17 +246,8 @@ pub(super) fn derive(
             return Err(context.redo_block(basis.planning_counters_at_peak(allowance.peak()), None));
         }
     };
-    context.record_staged_selector_route(root_protocol_counters);
-    Ok((
-        context,
-        ExecutionProducts {
-            staging,
-            publication,
-            quiescence,
-            candidate_materialization,
-            planning_construction_peak,
-        },
-    ))
+    context.record_staged_selector_route(execution.state().root_protocol_counters);
+    Ok((context, execution))
 }
 
 fn candidate_limit(

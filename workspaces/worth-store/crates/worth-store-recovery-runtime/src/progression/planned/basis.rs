@@ -31,7 +31,9 @@ mod source_inventory;
 mod staging_cost;
 
 use super::{PlanningMemoryDenial, PlanningResidentAllowance};
-pub(crate) use derivation::{derive_execution_basis, requires_successor_candidate};
+pub(crate) use derivation::{
+    derive_execution_basis, requires_successor_candidate, ExecutionBasis, ExecutionBasisState,
+};
 pub(crate) use publication_candidate::verified_historical_release_transition;
 pub(crate) use publication_candidate::CandidateMaterializationCost;
 pub(crate) use publication_types::RecoveryReleaseTopologyProof;
