@@ -63,3 +63,45 @@ impl RecordedOutput {
         Self::observed_source_facts(self)
     }
 }
+
+impl RecordedOutput {
+    #[doc(hidden)]
+    pub fn correspondence_for_test(&self) -> &Arc<WorthQueryApplicationOutputCorrespondence> {
+        &self.correspondence
+    }
+}
+
+impl RecordedOutput {
+    #[doc(hidden)]
+    pub fn native_output_witness_for_test(&self) -> &OnceLock<Arc<OnceLock<super::super::SealedNativeOutputWitness>>> {
+        &self.native_output_witness
+    }
+}
+
+impl RecordedOutput {
+    #[doc(hidden)]
+    pub fn native_prior_checkpoint_for_test(&self) -> &Option<super::super::native_prior_checkpoint::NativePriorCheckpointLocator> {
+        &self.native_prior_checkpoint
+    }
+}
+
+impl RecordedOutput {
+    #[doc(hidden)]
+    pub fn producer_dependency_identity_for_test(&self) -> &Option<[u8; 32]> {
+        &self.producer_dependency_identity
+    }
+}
+
+impl RecordedOutput {
+    #[doc(hidden)]
+    pub fn producing_implementation_for_test(&self) -> &Option<worth_relational::facade::mvcc::RequiredOutputProducingImplementation> {
+        &self.producing_implementation
+    }
+}
+
+impl RecordedOutput {
+    #[doc(hidden)]
+    pub fn required_publication_for_test(&self) -> &Option<worth_relational::facade::mvcc::RelationalRequiredOutputPublication> {
+        &self.required_publication
+    }
+}

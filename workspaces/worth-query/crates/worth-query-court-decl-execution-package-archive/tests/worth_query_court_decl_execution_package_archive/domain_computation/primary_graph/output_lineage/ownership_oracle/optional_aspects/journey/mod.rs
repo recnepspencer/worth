@@ -149,7 +149,7 @@ pub fn demand_expected<Schema: BirthSchema>(
             let mut original_output_revision = None;
             if matches!(expected, Expected::Materialized | Expected::RequiredAdmission) {
                 assert!(matches!(advanced, WorthQueryOutputDemandAdvance::Progressed), "the original born-stale publication progressed without settling current");
-                let locator =(*(* (*runtime.primary_provider_for_test()).graph_for_test()).layout_for_test()).field_locator("Body", "SourceNotes", "SourceSelection").unwrap();
+                let locator =(*(* (*runtime.primary_provider_for_test()).graph_for_test()).layout_for_test()).field_locator_for_test("Body", "SourceNotes", "SourceSelection").unwrap();
                 demand.assert_born_stale_absence_for_test(runtime, &phase, &execution, root, locator, |receipt| {
                     original_roster = Some(crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::court::own_effect::observe_performed_receipt(runtime, &phase, receipt, WorthQueryApplicationOutputPosture::Create));
                     if matches!(expected, Expected::Materialized) {

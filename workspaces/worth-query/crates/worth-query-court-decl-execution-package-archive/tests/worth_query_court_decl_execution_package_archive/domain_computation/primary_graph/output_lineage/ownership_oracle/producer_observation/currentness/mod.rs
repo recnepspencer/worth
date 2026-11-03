@@ -17,16 +17,16 @@ fn retained_currentness_refuses_corrupted_fact_coordinates_before_clean_marks() 
             lineage.source_facts_for_receipt_for_test((*runtime.runtime_for_test()).authority_identity().as_u64(),
                 &(*runtime.installed_schema_for_test()).binding_identity(), selected.product().observation_for_test(), receipt, &execution).unwrap().unwrap()
         };
-        assert!(!read.facts.as_ref().unwrap().is_empty(), "real retained producer facts");(*
+        assert!(!(*read.facts_for_test()).as_ref().unwrap().is_empty(), "real retained producer facts");(*
         (*runtime.primary_provider_for_test()).graph_for_test()).with_runtime(&execution, |native| {
             selected.require_current_read_for_test(&execution, native, &read, Some(receipt)).unwrap();
             for (valid, requirement, expected) in [
                 (Requirement::NativeFactRevisionUnavailable(0), Requirement::NativeFactRevisionUnavailable(usize::MAX), Reason::NativeFactRevisionUnavailable),
                 (Requirement::IndexedSelectionFactDenied(0, Indexed::Overflow), Requirement::IndexedSelectionFactDenied(usize::MAX, Indexed::Overflow), Reason::IndexedSelectionFactDenied(Indexed::Overflow)),
             ] {
-                read.verification_requirement = Some(valid);
+                (*read.verification_requirement_mut_for_test()) = Some(valid);
                 selected.require_current_read_for_test(&execution, native, &read, Some(receipt)).expect("present retained coordinate in the genuine fact body");
-                read.verification_requirement = Some(requirement);
+                (*read.verification_requirement_mut_for_test()) = Some(requirement);
                 let cause = selected.require_current_read_for_test(&execution, native, &read, Some(receipt)).expect_err("absent retained coordinate");
                 assert_eq!(cause.kind(), worth_query_execution::facade::domain_computation::WorthQueryOutputDemandDenialKind::RetainedVerificationFactUnavailable(expected));
             }

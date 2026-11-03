@@ -19,7 +19,7 @@ pub fn refuse_mixed_and_created_subset(
         let graph = &(*(*runtime.primary_provider_for_test()).graph_for_test());
         let publisher = graph.application_publication.as_ref().expect("actual installed publication owner");
         let roles: Vec<_> = settled.output_correspondence.native_witness_roles_for_test().map(|(role, posture, name, entity)| RequiredOutputRoleTarget {
-            role: role.to_owned(), entity_name: name.to_owned(), kind: (*graph.layout_for_test()).entity_kind(name).unwrap(),
+            role: role.to_owned(), entity_name: name.to_owned(), kind: (*graph.layout_for_test()).entity_kind_for_test(name).unwrap(),
             posture: match posture {
                 WorthQueryApplicationOutputPosture::Create => RequiredOutputRolePosture::Create,
                 WorthQueryApplicationOutputPosture::Preserve => RequiredOutputRolePosture::Preserve,
@@ -44,13 +44,13 @@ pub fn refuse_mixed_and_created_subset(
         // This locator is installed only by the required-claims commit handoff.
         // It proves that the Query completion reached required_origin::bind;
         // merely lacking native custody would be a wrong-reason negative.
-        let locator = row.native_prior_checkpoint.as_ref().expect("real Query required-output publication handoff ran");
+        let locator = (*row.native_prior_checkpoint_for_test()).as_ref().expect("real Query required-output publication handoff ran");
         let producer = locator.producer().to_owned();
-        let dependency = row.producer_dependency_identity.unwrap();
+        let dependency = (*row.producer_dependency_identity_for_test()).unwrap();
         let meaning = RequiredOutputPublicationMeaning {
-            implementation: row.producing_implementation.expect("the actual producer publication retains its original implementation"),
+            implementation: (*row.producing_implementation_for_test()).expect("the actual producer publication retains its original implementation"),
             family: settled.output_family_identity().to_owned(), source_scope: anchor,
-            source_partition: row.source_partition_identity.unwrap(), source_epoch: locator.source(),
+            source_partition: (*row.source_partition_identity_for_test()).unwrap(), source_epoch: locator.source(),
         };
         drop(lineage);
         let created: Vec<_> = roles.iter().filter(|role| role.posture == RequiredOutputRolePosture::Create).cloned().collect();

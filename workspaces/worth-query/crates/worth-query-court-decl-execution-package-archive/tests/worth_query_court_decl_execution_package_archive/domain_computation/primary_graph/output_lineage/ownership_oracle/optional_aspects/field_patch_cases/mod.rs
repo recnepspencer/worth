@@ -49,7 +49,7 @@ fn absent_parent_write_requires_each_actual_target_observation() {
             .primary_provider_for_test())
             .graph_for_test())
             .layout_for_test())
-            .field_locator("Body", "SourceNotes", "SourceContent")
+            .field_locator_for_test("Body", "SourceNotes", "SourceContent")
             .unwrap()
     );
     assert_eq!(

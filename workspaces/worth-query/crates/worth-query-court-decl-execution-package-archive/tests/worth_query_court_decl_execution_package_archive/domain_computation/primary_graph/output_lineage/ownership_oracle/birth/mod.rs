@@ -30,7 +30,7 @@ pub fn admit_genuine_all_create(runtime: &Application) {
             let publisher = graph.application_publication.as_ref().unwrap();
             let target = CreatedEntityRef {
                 partition_id: PartitionId::main(),
-                kind_id: (*graph.layout_for_test()).entity_kind("EntrySet").unwrap(),
+                kind_id: (*graph.layout_for_test()).entity_kind_for_test("EntrySet").unwrap(),
                 client_key: worth_relational::facade::symbols::ClientKey::raw(
                     "genuine-owner-birth",
                 ),
@@ -68,7 +68,7 @@ pub fn admit_genuine_all_create(runtime: &Application) {
                 let fields = AspectFieldPatch::from(BTreeMap::from([
                     (
                         layout
-                            .field_locator("EntrySet", "EntrySetFacts", "EntrySetKey")
+                            .field_locator_for_test("EntrySet", "EntrySetFacts", "EntrySetKey")
                             .unwrap()
                             .clone(),
                         StringApplicationValueBinding::encode(&"genuine-owner-birth".to_owned())
@@ -76,7 +76,7 @@ pub fn admit_genuine_all_create(runtime: &Application) {
                     ),
                     (
                         layout
-                            .field_locator("EntrySet", "EntrySetFacts", "EntrySetWeight")
+                            .field_locator_for_test("EntrySet", "EntrySetFacts", "EntrySetWeight")
                             .unwrap()
                             .clone(),
                         U64ApplicationValueBinding::encode(&9).unwrap(),
@@ -129,7 +129,7 @@ pub fn admit_genuine_all_create(runtime: &Application) {
                 .publication_binding_for_test()
                 .prepare_relational_candidate_for_test(candidate, &scope, false)
                 .unwrap()
-                .execute(execution);
+                .execute_for_test(execution);
             let Ok(PublicationOutcome::Performed(performed)) = outcome else {
                 panic!("genuine all-Create publication must perform: {outcome:?}")
             };

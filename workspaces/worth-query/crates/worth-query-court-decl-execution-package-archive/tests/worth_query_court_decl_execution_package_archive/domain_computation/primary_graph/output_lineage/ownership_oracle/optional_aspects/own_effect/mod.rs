@@ -137,13 +137,13 @@ fn ordinary_handler_clear_of_absent_field_retains_aspect_absence() {
         .primary_provider_for_test())
         .graph_for_test())
         .layout_for_test())
-        .field_locator("Body", "SourceNotes", "SourceSelection")
+        .field_locator_for_test("Body", "SourceNotes", "SourceSelection")
         .unwrap()
         .aspect()
         .aspect_key();
     let facts = completed.commit_evidence().rebased_source_facts_for_test().unwrap();
     let (entity, revision) = facts
-        .iter()
+        .iter_for_test()
         .find_map(|fact| match fact {
             Fact::SourceAspectRevision {
                 entity_id,
@@ -159,7 +159,7 @@ fn ordinary_handler_clear_of_absent_field_retains_aspect_absence() {
             let execution = phase.execution_request_for_for_test(&(*clearing.product_runtime_for_test())).unwrap();
             let selected = clearing.on_branch(clearing.current_world()).select(&phase).unwrap();
             let field =(*(* (*clearing.primary_provider_for_test()).graph_for_test()).layout_for_test())
-                .field_locator("Body", "SourceNotes", "SourceSelection").unwrap()
+                .field_locator_for_test("Body", "SourceNotes", "SourceSelection").unwrap()
                 .field_path().fields()[0].clone();(*
             (*clearing.primary_provider_for_test()).graph_for_test()).with_runtime(&execution, |native| {
                 let view = native.read_truth()

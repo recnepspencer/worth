@@ -22,3 +22,10 @@ impl WorthQueryPrimaryGraphLayout {
         Self::field_locator(self, entity, aspect, field)
     }
 }
+
+impl WorthQueryPrimaryRelationLayout {
+    #[doc(hidden)]
+    pub fn kind_for_test(&self) -> &KindId {
+        &self.kind
+    }
+}

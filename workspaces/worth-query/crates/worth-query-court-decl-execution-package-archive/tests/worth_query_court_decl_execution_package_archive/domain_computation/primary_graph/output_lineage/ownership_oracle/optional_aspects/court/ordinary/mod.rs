@@ -22,7 +22,7 @@ pub fn roles_and_nonownership<Schema: BirthSchema>(
         .flat_map(|g| g.values())
         .flat_map(|rows| rows.iter())
         .filter_map(|row| row.get())
-        .filter(|row| std::sync::Arc::ptr_eq(&row.correspondence, &correspondence))
+        .filter(|row| std::sync::Arc::ptr_eq(&(*row.correspondence_for_test()), &correspondence))
         .collect();
     assert_eq!(
         rows.len(),
@@ -31,15 +31,15 @@ pub fn roles_and_nonownership<Schema: BirthSchema>(
     );
     let row = rows[0];
     assert!(
-        row.native_output_witness
+        (*row.native_output_witness_for_test())
             .get()
             .and_then(|cell| cell.get())
             .is_some(),
         "ordinary native content has a content witness, not producer authority"
     );
-    assert!(row.required_publication.is_none());
-    assert!(row.native_prior_checkpoint.is_none());
-    assert!(row.producer_dependency_identity.is_none());
+    assert!((*row.required_publication_for_test()).is_none());
+    assert!((*row.native_prior_checkpoint_for_test()).is_none());
+    assert!((*row.producer_dependency_identity_for_test()).is_none());
     let roles: Vec<_> = correspondence
         .native_witness_roles_for_test()
         .map(|(role, posture, name, id)| {
@@ -47,7 +47,7 @@ pub fn roles_and_nonownership<Schema: BirthSchema>(
             RequiredOutputRoleTarget {
                 role: role.to_owned(),
                 entity_name: name.to_owned(),
-                kind: (*graph.layout_for_test()).entity_kind(name).unwrap(),
+                kind: (*graph.layout_for_test()).entity_kind_for_test(name).unwrap(),
                 posture: RequiredOutputRolePosture::Create,
                 target: EntityReference::Existing(id),
             }
