@@ -13,16 +13,25 @@ impl UnrecoveredRelationalSection {
             RelationalSectionCloseDenial,
         ),
     > {
-        let Self { attached, prepared_source } = self;
-        match super::super::close::prepare_attached_close(attached, None, preparation, request)
-        {
+        let Self {
+            attached,
+            prepared_source,
+        } = self;
+        match super::super::close::prepare_attached_close(attached, None, preparation, request) {
             Ok(closing) => Ok(closing),
             Err((attached, source, preparation, cause)) => {
                 assert!(
                     source.is_none(),
                     "unrecovered owner never acquired source authority"
                 );
-                Err((Self { attached, prepared_source }, preparation, cause))
+                Err((
+                    Self {
+                        attached,
+                        prepared_source,
+                    },
+                    preparation,
+                    cause,
+                ))
             }
         }
     }

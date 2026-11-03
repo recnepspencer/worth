@@ -29,6 +29,7 @@ pub struct RetiredApplicationHomeAllocation {
     _location: std::path::PathBuf,
     _descriptor: crate::descriptor::HomeDescriptor,
     _world: Option<crate::world_section::RetiredHomeBridgeComposition>,
+    _world_origin: Option<worth_runtime_world::facade::WorldCheckpointOriginRetirement>,
     _world_report: Option<worth_runtime_world::facade::RuntimeWorldCloseReport>,
     _checkpoint: std::sync::Arc<crate::checkpoint::owner::HomeCheckpointOwner>,
     _publications: std::sync::Arc<crate::world_section::WorldPublications>,
@@ -46,6 +47,7 @@ pub enum ApplicationHomeCloseDenial {
     UnsupportedHomeMaintenance,
     Bridge(worth_runtime_bridge::facade::BridgeHomeRetirementDenial),
     WorldCompositionRetained,
+    WorldCheckpointOrigin(worth_runtime_world::facade::WorldCheckpointOriginRetirementDenial),
     CheckpointSettlement(crate::ApplicationHomeCheckpointDenial),
     WorldResultSnapshot(worth_runtime_world::facade::RuntimeWorldResultSnapshotCleanupDenial),
     World(

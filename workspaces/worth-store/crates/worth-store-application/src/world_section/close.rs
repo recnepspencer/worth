@@ -64,6 +64,12 @@ impl WorldSealedApplicationHome {
     pub fn incarnation(&self) -> worth_foundational::facade::HomeIncarnation {
         self.home.incarnation()
     }
+    /// Exact released origin and occurrence image keys, retained until explicit Home reclaim.
+    pub fn checkpoint_origin_retirement(
+        &self,
+    ) -> Option<&worth_runtime_world::facade::WorldCheckpointOriginRetirement> {
+        self.home.context.world_origin_retirement.as_ref()
+    }
     pub fn world_close_report(&self) -> &worth_runtime_world::facade::RuntimeWorldCloseReport {
         self.home
             .context
@@ -216,6 +222,18 @@ where
         }
         if let Err(reason) = checkpoint::settle_before_world_drop(&mut self, request) {
             return Err(WorldHomeCloseRefused { home: self, reason });
+        }
+        if self.home.context.world_origin_retirement.is_none() {
+            match self.world.retire_checkpoint_origin() {
+                Ok(retired) => self.home.context.world_origin_retirement = Some(retired),
+                Err(worth_runtime_world::facade::WorldCheckpointOriginRetirementDenial::NotInstalled) => {
+                    // This owner never installed a World basis, so it has no origin obligation.
+                }
+                Err(cause) => return Err(WorldHomeCloseRefused {
+                    home: self,
+                    reason: crate::ApplicationHomeCloseDenial::WorldCheckpointOrigin(cause),
+                }),
+            }
         }
         let Self {
             home,

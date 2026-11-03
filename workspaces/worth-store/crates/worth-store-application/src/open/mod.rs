@@ -118,6 +118,7 @@ pub fn admit_home(
                 ),
                 world_publications: world_slot.publications(),
                 world_close_report: None,
+                world_origin_retirement: None,
                 world_close_checkpoint: std::sync::Mutex::new(world_close_checkpoint),
                 world_slot: Some(world_slot),
                 checkpoint,

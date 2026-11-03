@@ -80,9 +80,7 @@ impl OriginalSchemaGraph {
                 // A plan clone retains its original immutable directory. The
                 // attempt owns only this fixed-size binding; intrinsic manifest,
                 // history and actual selected-read custody stay shared.
-                let mut binding = directory.as_ref().clone();
-                binding.source_schemas = std::sync::OnceLock::from(graph.schemas.clone());
-                *directory = Arc::new(binding);
+                *directory = directory.with_source_schemas(graph.schemas.clone(), request)?;
             }
         }
         Ok(Some(graph))

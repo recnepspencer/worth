@@ -83,6 +83,14 @@ fn closed_world_releases_its_bridge_and_retains_the_same_native_home_until_exter
     assert_eq!(sealed.home_identity(), identity);
     assert_eq!(sealed.incarnation(), incarnation);
     let _actual_world_report = sealed.world_close_report();
+    let origin = sealed
+        .checkpoint_origin_retirement()
+        .expect("closed World explicitly retired its installed origin");
+    assert_eq!(
+        origin.retention_keys().count(),
+        4,
+        "the initial basis and original occurrence image pair both retire"
+    );
     match crate::durable_run::open(directory.path(), &execution) {
         Err(OpenRefusal::BeforeReadmission(
             worth_store_application::ApplicationHomeOpenRefusal::Physical(refused),
