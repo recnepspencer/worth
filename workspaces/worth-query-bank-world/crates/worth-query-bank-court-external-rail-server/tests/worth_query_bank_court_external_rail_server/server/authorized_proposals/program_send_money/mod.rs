@@ -59,7 +59,20 @@ fn concurrent_program_transfers_cannot_overspend_one_account() {
                 .retain_operation()
                 .unwrap_or_else(|cause| panic!("send construction: {cause:?}"));
             rendezvous.wait();
-            match operation.advance(&request, Some(std::num::NonZeroUsize::new(20_000).unwrap())) {
+            let outcome =
+                operation.advance(&request, Some(std::num::NonZeroUsize::new(20_000).unwrap()));
+            let outcome = match outcome {
+                Advance::Progress(operation) => {
+                    assert_eq!(operation.posture(), worth_query_host::facade::application_entry::WorthQuerySourceOnlyPosture::RetryableNoEffect);
+                    let retry_scope = request_scope();
+                    let retry = world.runtime.request(&actor, &retry_scope);
+                    operation.advance(&retry, Some(std::num::NonZeroUsize::new(20_000).unwrap()))
+                }
+                Advance::Completed(done) => Advance::Completed(done),
+                Advance::Terminal(terminal) => Advance::Terminal(terminal),
+                Advance::Refused { operation, denial } => Advance::Refused { operation, denial },
+            };
+            match outcome {
                 Advance::Completed(done) => {
                     let Completion::Fresh { result, .. } = done.evidence() else {
                         panic!("fresh send evidence")
@@ -80,7 +93,6 @@ fn concurrent_program_transfers_cannot_overspend_one_account() {
                 }
                 worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Refused { denial, .. } => panic!("unexpected transfer refusal: {denial:?}"),
                 worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Progress(operation) => panic!("unexpected transfer progress: {:?}", operation.posture()),
-                worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Terminal(_) => panic!("unexpected terminal transfer custody"),
             }
         })
     };
