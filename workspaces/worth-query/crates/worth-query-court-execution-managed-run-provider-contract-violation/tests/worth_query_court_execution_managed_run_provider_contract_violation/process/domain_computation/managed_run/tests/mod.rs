@@ -13,7 +13,7 @@ pub use worth_query_testkit_execution_primary_graph_application_attempt_2::domai
 
 pub use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::managed_run::tests::graph_material::graph_material;
 pub use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::managed_run::tests::graph_material::graph_material_rows;
-pub(super) use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::managed_run::tests::direct_yield_cleanup_fixture::complete_direct_yield_cleanup;
+pub use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::managed_run::tests::direct_yield_cleanup_fixture::complete_direct_yield_cleanup;
 pub use std::collections::BTreeMap;
 pub use std::sync::atomic::AtomicUsize;
 pub use std::sync::atomic::Ordering;
