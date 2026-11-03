@@ -44,5 +44,17 @@ class MemberDoorTests(unittest.TestCase):
             self.assertTrue(writes(p, 22))
 
 
+
+class DoorBodyTests(unittest.TestCase):
+    def test_only_generated_door_rewrites_are_reversed(self):
+        from src_door_bodies import without_doors
+        renames = {'get_for_test': ('get', 'method'), 'f_for_test': ('f', 'field')}
+        ours = ['let', 'x', '=', '(', '*', 'a', '.', 'f_for_test', '(', ')', ')', ';', 'a', '.', 'get_for_test', '(', ')']
+        self.assertEqual(without_doors(ours, renames),
+                         ['let', 'x', '=', 'a', '.', 'f', ';', 'a', '.', 'get', '(', ')'])
+        other = ['a', '.', 'install_for_test', '(', ')']
+        self.assertEqual(without_doors(other, renames), other)
+
+
 if __name__ == '__main__':
     unittest.main()

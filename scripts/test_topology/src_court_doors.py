@@ -5,6 +5,8 @@ Usage:
     python scripts/test_topology/src_court_doors.py items [--root .] [--report DIR]
     python scripts/test_topology/src_court_doors.py interface CHECK.json [--root .] [--report DIR]
     python scripts/test_topology/src_court_doors.py members CHECK.json [--root .] [--report DIR]
+    python scripts/test_topology/src_court_doors.py bodies [--base REV] [--root .] [--report DIR]
+    python scripts/test_topology/src_court_doors.py callers [--root .]
 
 `items` re-exports every library item the courts and testkits name, once, from
 `worth_query_execution::court_doors_for_test::<path>` (src_door_items), makes it `pub` with
@@ -122,7 +124,8 @@ def write_report(report, name, data):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('step', choices=('items', 'interface', 'members'))
+    parser.add_argument('step', choices=('items', 'interface', 'members', 'bodies', 'callers'))
+    parser.add_argument('--base', default='038ff2869d')
     parser.add_argument('check', nargs='?', type=Path)
     parser.add_argument('--root', type=Path, default=Path.cwd())
     parser.add_argument('--report', type=Path)
@@ -130,6 +133,16 @@ def main(argv=None):
     root = args.root.resolve()
     if args.step == 'items':
         print(f'{items(root, args.report)} item doors')
+    elif args.step == 'callers':
+        from src_door_callers import update_callers
+        print(f'{update_callers(root)} control-callers lines added')
+    elif args.step == 'bodies':
+        from src_door_bodies import body_check
+        reports = sorted((root / 'plans/query-split/stage1').glob('src-court-doors-members-round-*.json'))
+        result = body_check(root, args.base, reports)
+        write_report(args.report, 'bodies', {k: v for k, v in result.items() if isinstance(v, list)})
+        print(json.dumps({k: (len(v) if isinstance(v, list) else v) for k, v in result.items()}))
+        return 1 if result['missing'] or result['extra'] else 0
     elif args.step == 'interface':
         print(f'{interface(root, args.check, args.report)} interface items')
     else:
