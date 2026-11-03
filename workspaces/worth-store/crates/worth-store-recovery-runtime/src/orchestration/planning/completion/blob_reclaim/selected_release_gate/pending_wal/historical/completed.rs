@@ -21,20 +21,28 @@ pub(in crate::orchestration::planning::completion::blob_reclaim::selected_releas
             PlanningCustody::Unresolved | PlanningCustody::SourceHeads(_)
         )
     {
-        return Err(block(context, basis, Denial::CustodyPosture, None));
+        return Err(block(context, basis, 0, Denial::CustodyPosture, None));
     }
     let mut resident = match super::super::super::resident_basis::seed(&context, basis) {
         Ok(resident) => resident,
         Err(limit) => {
             let cause = limit.map_or(Denial::ResidentBasis, |_| Denial::ResidentBoundExceeded);
-            return Err(block(context, basis, cause, limit));
+            return Err(block(context, basis, 0, cause, limit));
         }
     };
     let selected_head_v2 = match std::mem::replace(&mut basis.custody, PlanningCustody::Unresolved)
     {
         PlanningCustody::SourceHeads(base) => Some(base),
         PlanningCustody::Unresolved => None,
-        _ => return Err(block(context, basis, Denial::CustodyPosture, None)),
+        _ => {
+            return Err(block(
+                context,
+                basis,
+                resident.peak(),
+                Denial::CustodyPosture,
+                None,
+            ))
+        }
     };
     let admitted = ordered::admit_roster(
         context,
@@ -65,7 +73,7 @@ pub(in crate::orchestration::planning::completion::blob_reclaim::selected_releas
         .transient(replacement_headers.max(root_encoding))
         .is_err()
     {
-        return Err(resident_block(context, basis, &resident));
+        return Err(resident_block(context, basis, resident.peak(), &resident));
     }
     let source_custody = std::mem::replace(&mut basis.custody, PlanningCustody::Unresolved);
     let claim = if let PlanningCustody::SourceHeads(base) = source_custody {
@@ -79,7 +87,13 @@ pub(in crate::orchestration::planning::completion::blob_reclaim::selected_releas
         )
     } else {
         let Some(shared) = context.coordination.owner().checkpoint() else {
-            return Err(block(context, basis, Denial::MissingCheckpoint, None));
+            return Err(block(
+                context,
+                basis,
+                resident.peak(),
+                Denial::MissingCheckpoint,
+                None,
+            ));
         };
         VerifiedOrderedHistoricalReleaseCustody::admit_no_release(
             &context.selection,
@@ -92,7 +106,15 @@ pub(in crate::orchestration::planning::completion::blob_reclaim::selected_releas
     };
     let claim = match claim {
         Ok(claim) => claim,
-        Err(cause) => return Err(block(context, basis, Denial::CompletedCustody(cause), None)),
+        Err(cause) => {
+            return Err(block(
+                context,
+                basis,
+                resident.peak(),
+                Denial::CompletedCustody(cause),
+                None,
+            ))
+        }
     };
     let effective = VerifiedEffectiveReleaseHeadRosterV14::admit_ordered_completed(
         &claim,
@@ -108,15 +130,29 @@ pub(in crate::orchestration::planning::completion::blob_reclaim::selected_releas
         {
             let _ = resident.transient(past.observed());
             let limit = super::super::super::resident_basis::limit_failure(&context, &resident);
-            return Err(block(context, basis, Denial::EffectiveHeads(cause), limit));
+            return Err(block(
+                context,
+                basis,
+                resident.peak(),
+                Denial::EffectiveHeads(cause),
+                limit,
+            ));
         }
-        Err(cause) => return Err(block(context, basis, Denial::EffectiveHeads(cause), None)),
+        Err(cause) => {
+            return Err(block(
+                context,
+                basis,
+                resident.peak(),
+                Denial::EffectiveHeads(cause),
+                None,
+            ))
+        }
     };
     if resident
         .bytes(effective.head_entries_heap_bytes().unwrap_or(u64::MAX))
         .is_err()
     {
-        return Err(resident_block(context, basis, &resident));
+        return Err(resident_block(context, basis, resident.peak(), &resident));
     }
     basis
         .observed_pages
@@ -137,5 +173,11 @@ fn resident_block(
     resident: &ResidentAllowance,
 ) -> crate::entry::PhysicalRecoveryOutcome {
     let limit = super::super::super::resident_basis::limit_failure(&context, resident);
-    block(context, basis, Denial::ResidentBoundExceeded, limit)
+    block(
+        context,
+        basis,
+        resident.peak(),
+        Denial::ResidentBoundExceeded,
+        limit,
+    )
 }

@@ -31,7 +31,7 @@ pub(super) fn admit(
         .is_err()
     {
         let limit = resident_basis::limit_failure(&context, &resident);
-        return Err(context.redo_block(basis.planning_counters(), limit));
+        return Err(context.redo_block(basis.planning_counters_at_peak(resident.peak()), limit));
     }
     // Admission canonically encodes the source root and descriptor and decodes
     // the drop manifest. Include conversion backing, not just wire length.
@@ -42,7 +42,7 @@ pub(super) fn admit(
         .max(u64::from(context.authority.record_format.page_size().bytes()).saturating_mul(2));
     if resident.transient(controls_decode).is_err() {
         let limit = resident_basis::limit_failure(&context, &resident);
-        return Err(context.redo_block(basis.planning_counters(), limit));
+        return Err(context.redo_block(basis.planning_counters_at_peak(resident.peak()), limit));
     }
     let projection = &basis.redo.projections()[projection_index];
     let source_custody = std::mem::replace(&mut basis.custody, PlanningCustody::Unresolved);
@@ -65,7 +65,9 @@ pub(super) fn admit(
         }
         PlanningCustody::Unresolved => {
             let Some(shared) = context.coordination.owner().checkpoint() else {
-                return Err(context.redo_block(basis.planning_counters(), None));
+                return Err(
+                    context.redo_block(basis.planning_counters_at_peak(resident.peak()), None)
+                );
             };
             VerifiedPendingWalReleaseCustody::admit_with_head_replay(
                 &context.selection,
@@ -82,11 +84,13 @@ pub(super) fn admit(
                 basis.sample.policy_identity(),
             )
         }
-        _ => return Err(context.redo_block(basis.planning_counters(), None)),
+        _ => return Err(context.redo_block(basis.planning_counters_at_peak(resident.peak()), None)),
     };
     let mut claim = match admitted {
         Ok(claim) => claim,
-        Err(_) => return Err(context.redo_block(basis.planning_counters(), None)),
+        Err(_) => {
+            return Err(context.redo_block(basis.planning_counters_at_peak(resident.peak()), None))
+        }
     };
     context = historical::attach(context, basis, &mut claim, &mut resident)?;
     // Reopen must consume these mandatory head copies, not allocate them
@@ -106,7 +110,7 @@ pub(super) fn admit(
             .unwrap_or(u64::MAX);
         if resident.transient(head_backing).is_err() {
             let limit = resident_basis::limit_failure(&context, &resident);
-            return Err(context.redo_block(basis.planning_counters(), limit));
+            return Err(context.redo_block(basis.planning_counters_at_peak(resident.peak()), limit));
         }
         let prepared =
             claim.prepare_effective_heads(context.limits.manifest_entries, resident.remaining());
@@ -118,13 +122,19 @@ pub(super) fn admit(
             {
                 let _ = resident.transient(past.observed());
                 let limit = resident_basis::limit_failure(&context, &resident);
-                return Err(context.redo_block(basis.planning_counters(), limit));
+                return Err(
+                    context.redo_block(basis.planning_counters_at_peak(resident.peak()), limit)
+                );
             }
-            Err(_) => return Err(context.redo_block(basis.planning_counters(), None)),
+            Err(_) => {
+                return Err(
+                    context.redo_block(basis.planning_counters_at_peak(resident.peak()), None)
+                )
+            }
         };
         if resident.bytes(heap_bytes).is_err() {
             let limit = resident_basis::limit_failure(&context, &resident);
-            return Err(context.redo_block(basis.planning_counters(), limit));
+            return Err(context.redo_block(basis.planning_counters_at_peak(resident.peak()), limit));
         }
     }
     basis

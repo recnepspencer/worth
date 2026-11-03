@@ -31,7 +31,13 @@ fn resident_block(
     resident: &ResidentAllowance,
 ) -> crate::entry::PhysicalRecoveryOutcome {
     let limit = super::super::resident_basis::limit_failure(&context, resident);
-    denial::block(context, basis, Denial::ResidentBoundExceeded, limit)
+    denial::block(
+        context,
+        basis,
+        resident.peak(),
+        Denial::ResidentBoundExceeded,
+        limit,
+    )
 }
 
 pub(super) fn attach(
@@ -62,6 +68,7 @@ pub(super) fn attach(
         return Err(denial::block(
             context,
             basis,
+            resident.peak(),
             Denial::PendingAttachment(cause),
             None,
         ));
@@ -82,6 +89,7 @@ pub(super) fn attach(
             return Err(denial::block(
                 context,
                 basis,
+                resident.peak(),
                 Denial::EffectiveHeads(cause),
                 limit,
             ));
@@ -90,6 +98,7 @@ pub(super) fn attach(
             return Err(denial::block(
                 context,
                 basis,
+                resident.peak(),
                 Denial::EffectiveHeads(cause),
                 None,
             ))
@@ -118,7 +127,13 @@ pub(super) fn admit_roster(
     crate::entry::PhysicalRecoveryOutcome,
 > {
     let Some(releases) = basis.observed_pages.ordered_releases.take() else {
-        return Err(denial::block(context, basis, Denial::MissingReleases, None));
+        return Err(denial::block(
+            context,
+            basis,
+            resident.peak(),
+            Denial::MissingReleases,
+            None,
+        ));
     };
     let histories = basis
         .observed_pages
@@ -127,13 +142,25 @@ pub(super) fn admit_roster(
         .map(|evidence| &evidence.ordered_history);
     let mut histories = histories.peekable();
     let Some(history) = histories.next().map(Arc::clone) else {
-        return Err(denial::block(context, basis, Denial::MissingHistory, None));
+        return Err(denial::block(
+            context,
+            basis,
+            resident.peak(),
+            Denial::MissingHistory,
+            None,
+        ));
     };
     if releases.len() < minimum_releases
         || histories.any(|other| !Arc::ptr_eq(other, &history))
         || releases.len() != basis.observed_pages.historical_drops.len()
     {
-        return Err(denial::block(context, basis, Denial::RosterBinding, None));
+        return Err(denial::block(
+            context,
+            basis,
+            resident.peak(),
+            Denial::RosterBinding,
+            None,
+        ));
     }
     let roster_bytes = (releases.len() as u64)
         .checked_mul(std::mem::size_of::<VerifiedOrderedPendingWalReleaseBatch>() as u64)
@@ -155,6 +182,7 @@ pub(super) fn admit_roster(
         return Err(denial::block(
             context,
             basis,
+            resident.peak(),
             Denial::StagingBoundExceeded,
             None,
         ));
@@ -165,6 +193,7 @@ pub(super) fn admit_roster(
             return Err(denial::block(
                 context,
                 basis,
+                resident.peak(),
                 Denial::StagingBoundExceeded,
                 Some(limit.into()),
             ))
@@ -175,7 +204,7 @@ pub(super) fn admit_roster(
     if let Err(cause) = reserve_roster(&mut batches, releases.len(), Storage::BatchRoster, resident)
     {
         let limit = super::super::resident_basis::limit_failure(&context, resident);
-        return Err(denial::block(context, basis, cause, limit));
+        return Err(denial::block(context, basis, resident.peak(), cause, limit));
     }
     if let Err(cause) = reserve_roster(
         &mut head_replays,
@@ -184,12 +213,12 @@ pub(super) fn admit_roster(
         resident,
     ) {
         let limit = super::super::resident_basis::limit_failure(&context, resident);
-        return Err(denial::block(context, basis, cause, limit));
+        return Err(denial::block(context, basis, resident.peak(), cause, limit));
     }
     for release in releases {
         let member = match member_binding::join(&context, basis, &history, &release) {
             Ok(member) => member,
-            Err(cause) => return Err(denial::block(context, basis, cause, None)),
+            Err(cause) => return Err(denial::block(context, basis, resident.peak(), cause, None)),
         };
         let edge_index = member.edge_index();
         let wal_fate = member.wal_fate();
@@ -231,7 +260,7 @@ pub(super) fn admit_roster(
             Ok(batch) => batch,
             Err(cause) => {
                 let (cause, limit) = denial::batch(release.operation, edge_index, cause, staging);
-                return Err(denial::block(context, basis, cause, limit));
+                return Err(denial::block(context, basis, resident.peak(), cause, limit));
             }
         };
         remaining_bytes = remaining_bytes.saturating_sub(batch.retained_bytes());
