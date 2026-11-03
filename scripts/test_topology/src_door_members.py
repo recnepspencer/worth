@@ -90,9 +90,19 @@ def members(root, check, report, write_report):
     for diagnostic in diagnostics(check):
         code = (diagnostic.get('code') or {}).get('code')
         primary = next((s for s in diagnostic['spans'] if s['is_primary']), None)
-        if primary is None or code not in ('E0624', 'E0616', 'E0596', 'E0594', 'E0451', 'E0423'):
+        if primary is None or code not in ('E0624', 'E0616', 'E0596', 'E0594', 'E0507', 'E0451', 'E0423'):
             continue
         site = (root / WORKSPACE / primary['file_name']).resolve()
+        if code == 'E0507':
+            found = moved_sites(diagnostic, site)
+            owner = owning_field_door(index, found[0]) if found else None
+            if owner is None:
+                unplaced.append(diagnostic['message'])
+                continue
+            node, shape = owner
+            doors[node.names][('field_into', found[0], shape['name'])] = field_door(shape, found[0], 'into')
+            sites[site].add(found[1])
+            continue
         if code in ('E0596', 'E0594'):
             found = mutable_sites(diagnostic, site, None)
             owner = owning_field_door(index, found[0]) if found else None
@@ -174,7 +184,9 @@ def members(root, check, report, write_report):
     data = {'constructor_doors': sorted('::'.join(m) + f'::{k[2]}::new' for m, d in doors.items() for k in d if k[0] == 'new'),
             'method_doors': sorted('::'.join(m) + f'::{k[2]}::{k[1]}' for m, d in doors.items() for k in d if k[0] == 'method'),
             'field_doors': sorted('::'.join(m) + f'::{k[2]}.{k[1]}' + (' (mut)' if k[0] == 'field_mut' else '')
-                                  for m, d in doors.items() for k in d if k[0].startswith('field')),
+                                  for m, d in doors.items() for k in d if k[0] in ('field', 'field_mut')),
+            'field_into_doors': sorted('::'.join(m) + f'::{k[2]}.{k[1]}' for m, d in doors.items() for k in d
+                                       if k[0] == 'field_into'),
             'authority_doors': sorted(authority), 'unplaced': sorted(set(unplaced))}
     write_report(report, 'members', data)
     return {k: len(v) for k, v in data.items()}
@@ -208,12 +220,25 @@ def mutable_sites(diagnostic, site, doors_by_field):
     """E0596/E0594 over `(*expr.f_for_test())`: switch to `f_mut_for_test`, add its door."""
     primary = next(s for s in diagnostic['spans'] if s['is_primary'])
     data = site.read_bytes()[primary['byte_start']:primary['byte_end']]
-    match = re.search(rb'\.(\w+)_for_test\(\)\)$', data)
+    match = re.search(rb'\.(\w+?)(?<!_mut)_for_test\(\)\)', data)
     if match is None:
         return None
     field = match.group(1).decode()
     at = primary['byte_start'] + match.start(1)
     return field, (at, at + len(field) + len('_for_test'), field + '_mut_for_test')
+
+
+def moved_sites(diagnostic, site):
+    """E0507 over `(*expr.f_for_test())`: the court moves the field out; use `f_into_for_test`."""
+    primary = next(s for s in diagnostic['spans'] if s['is_primary'])
+    data = site.read_bytes()
+    span = data[primary['byte_start']:primary['byte_end']]
+    match = re.fullmatch(rb'\(\*(.*)\.(\w+)_for_test\(\)\)', span, re.S)
+    if match is None:
+        return None
+    field = match.group(2).decode()
+    replacement = match.group(1).decode() + f'.{field}_into_for_test()'
+    return field, (primary['byte_start'], primary['byte_end'], replacement)
 
 
 def writes(path, end):

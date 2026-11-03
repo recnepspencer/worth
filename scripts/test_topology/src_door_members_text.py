@@ -148,8 +148,12 @@ def self_type(shape):
 
 
 def field_door(shape, field, mutable):
+    """Read door (`&`), mutable door (`mutable=True`), or by-value door (`mutable='into'`)."""
     ty = from_child(shape['fields'][field])
-    suffix, receiver, borrow = ('_mut_for_test', '&mut self', '&mut ') if mutable else ('_for_test', '&self', '&')
+    if mutable == 'into':
+        suffix, receiver, borrow = '_into_for_test', 'self', ''
+    else:
+        suffix, receiver, borrow = ('_mut_for_test', '&mut self', '&mut ') if mutable else ('_for_test', '&self', '&')
     return (impl_header(shape['generics'], self_type(shape), shape['where']) + DOC +
             f'    pub fn {field}{suffix}({receiver}) -> {borrow}{ty} {{\n        {borrow}self.{field}\n    }}\n}}')
 
