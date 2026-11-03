@@ -1,0 +1,8 @@
+{
+  "categories": {
+    "domain_computation::primary_graph::tests::inbound_admission::fixture::cost": ""
+  },
+  "renames": {
+    "domain_computation::primary_graph::tests::inbound_admission::fixture::cost": "scoped_dispatch"
+  }
+}

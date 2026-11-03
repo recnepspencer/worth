@@ -74,7 +74,8 @@ def qualified_paths(text):
     while i < len(stream):
         token = stream[i]
         rooted = token.value in ('crate', 'super', 'self') and token.kind == 'ident'
-        if i in skipped or not rooted or (i and stream[i - 1].value == ':' ) or not following_colons(stream, i):
+        continued = i > 1 and stream[i - 1].value == ':' and stream[i - 2].value == ':'
+        if i in skipped or not rooted or continued or not following_colons(stream, i):
             i += 1
             continue
         segments, j = [token.value], i + 1
