@@ -1,5 +1,5 @@
 //! Shared script dispatch runs actual production operations on each Host.
-use super::protocol::{Action, Disposition};
+use super::protocol::Disposition;
 use super::*;
 use host_observation::{
     projection::HeadProjection,
@@ -7,23 +7,33 @@ use host_observation::{
     requests, OracleHome,
 };
 use std::collections::HashMap;
+enum MutationMode {
+    Ordinary,
+    LostResponse,
+    SettlementFailure,
+    Abandonment,
+    Concurrent,
+}
 
 pub(super) fn mutation(
     home: &OracleHome,
     command: &HostCommand,
     before: &mut HashMap<u64, HeadProjection>,
 ) -> Option<MutationProjection> {
-    let (key, value, lost, failure, abandon) = match command {
-        HostCommand::Mutate { key, value, .. } => (*key, *value, false, false, false),
-        HostCommand::MoveProduct { value, .. } => (None, *value, false, false, false),
-        HostCommand::Retry { key, value } => (Some(*key), *value, false, false, false),
-        HostCommand::LoseResponse { key, value } => (Some(*key), *value, true, false, false),
-        HostCommand::SettlementFailure { key, value } => (Some(*key), *value, false, true, false),
-        HostCommand::AbandonCaller { key, value } => (Some(*key), *value, false, false, true),
+    let (key, value, mode) = match command {
+        HostCommand::Mutate { key, value, .. }
+        | HostCommand::MoveProduct { key, value, .. }
+        | HostCommand::Retry { key, value } => (*key, *value, MutationMode::Ordinary),
+        HostCommand::LoseResponse { key, value } => (*key, *value, MutationMode::LostResponse),
+        HostCommand::SettlementFailure { key, value } => {
+            (*key, *value, MutationMode::SettlementFailure)
+        }
+        HostCommand::AbandonCaller { key, value } => (*key, *value, MutationMode::Abandonment),
+        HostCommand::ConcurrentSameKey { key, value } => (*key, *value, MutationMode::Concurrent),
         HostCommand::Open
         | HostCommand::Initialize
         | HostCommand::CreateBranch(_)
-        | HostCommand::ContinueCustody
+        | HostCommand::ContinueCustody { .. }
         | HostCommand::ReleaseCustody
         | HostCommand::Checkpoint(_)
         | HostCommand::Close
@@ -33,25 +43,27 @@ pub(super) fn mutation(
     };
     let head =
         HeadProjection::observe(&home.runtime().runtime().application_oracle_head_for_test());
-    let original = key
-        .and_then(|key| before.get(&key))
-        .unwrap_or(&head)
-        .clone();
-    let outcome = if failure {
-        host_interruption::publication::settlement_failure(home.runtime(), key.unwrap(), value)
-    } else if abandon {
-        host_interruption::publication::abandon_after_owner(home.runtime(), key.unwrap(), value)
-    } else {
-        requests::set(home.runtime(), key, value).expect("HOST_SCRIPT_BOUNDARY_BLOCKED: full active vocabulary requires a genuine unkeyed Host mutation entry")
+    let original = before.get(&key).unwrap_or(&head).clone();
+    let outcome = match mode {
+        MutationMode::SettlementFailure => {
+            host_interruption::publication::settlement_failure(home.runtime(), key, value)
+        }
+        MutationMode::Abandonment => {
+            host_interruption::publication::abandon_after_owner(home.runtime(), key, value)
+        }
+        MutationMode::Concurrent => {
+            host_observation::concurrent_mutation::execute(home.runtime(), key, value, &original)
+        }
+        MutationMode::Ordinary | MutationMode::LostResponse => {
+            requests::set(home.runtime(), key, value)
+        }
     };
     let observed = receipts::observe(&outcome, &original);
     if observed.fate == receipts::MutationFate::Committed {
-        if let Some(key) = key {
-            before.entry(key).or_insert(head);
-        }
+        before.entry(key).or_insert(head);
     }
     // The observer may see state; the application response is deliberately lost.
-    if lost {
+    if matches!(mode, MutationMode::LostResponse) {
         None
     } else {
         Some(observed)
@@ -59,13 +71,24 @@ pub(super) fn mutation(
 }
 pub(super) fn disposition(home: &OracleHome, command: &HostCommand) -> Option<Disposition> {
     match command {
-        HostCommand::ContinueCustody => Some(Disposition::Continued(
-            host_interruption::publication::continue_custody(home.runtime())
-                .unwrap()
-                .into_iter()
-                .map(|c| c.actions().iter().copied().map(Action::observe).collect())
-                .collect(),
-        )),
+        HostCommand::ContinueCustody { key, value } => {
+            use worth_query_host::facade::primary_graph::WorthQueryApplicationIdempotencyResolution as Resolution;
+            let resolved =
+                host_interruption::publication::continue_custody(home.runtime(), *key, *value)
+                    .unwrap_or_else(|denial| {
+                        panic!("original Query settlement continuation: {denial:?}")
+                    });
+            match resolved {
+                Resolution::RecoveredCommitted(receipt) => Some(Disposition::Continued(
+                    host_observation::receipts::observe_original(&receipt),
+                )),
+                Resolution::ProductPreparationPending(pending) => {
+                    panic!("original remains pending: {pending:?}")
+                }
+                Resolution::Unseen => panic!("original settlement key is absent"),
+                Resolution::IntentDrift => panic!("original settlement intent changed"),
+            }
+        }
         HostCommand::ReleaseCustody => Some(Disposition::Released(
             host_interruption::publication::release_custody(home.runtime()).unwrap(),
         )),
@@ -74,6 +97,7 @@ pub(super) fn disposition(home: &OracleHome, command: &HostCommand) -> Option<Di
         | HostCommand::Mutate { .. }
         | HostCommand::LoseResponse { .. }
         | HostCommand::Retry { .. }
+        | HostCommand::ConcurrentSameKey { .. }
         | HostCommand::CreateBranch(_)
         | HostCommand::MoveProduct { .. }
         | HostCommand::SettlementFailure { .. }

@@ -20,6 +20,7 @@ pub enum OperationActivation {
     LifecycleProgramTransition,
     ReopenCheckpointImage,
     LifecycleDurableSibling,
+    HomeMaintenanceFunding,
 }
 impl OperationActivation {
     pub fn owner_merge(self) -> Option<&'static str> {
@@ -28,9 +29,12 @@ impl OperationActivation {
             Self::LifecycleProgramTransition => {
                 Some("P-C: reviewed codex/m3-p3-lifecycle D16 merge")
             }
-            Self::ReopenCheckpointImage => Some("P-A: reviewed codex/m3-p3-reopen D12 image merge"),
+            Self::ReopenCheckpointImage => Some("P-A: reviewed fab7d6e943 D12 image merge"),
             Self::LifecycleDurableSibling => {
                 Some("P-C: reviewed codex/m3-p3-lifecycle sibling-route merge")
+            }
+            Self::HomeMaintenanceFunding => {
+                Some("P-A: reviewed FUNDING LANDED Home maintenance allowance merge")
             }
         }
     }
@@ -41,7 +45,7 @@ pub enum HostCommand {
     Initialize,
     Mutate {
         branch: BranchLabel,
-        key: Option<u64>,
+        key: u64,
         value: u64,
     },
     LoseResponse {
@@ -52,16 +56,24 @@ pub enum HostCommand {
         key: u64,
         value: u64,
     },
+    ConcurrentSameKey {
+        key: u64,
+        value: u64,
+    },
     CreateBranch(BranchLabel),
     MoveProduct {
         branch: BranchLabel,
+        key: u64,
         value: u64,
     },
     SettlementFailure {
         key: u64,
         value: u64,
     },
-    ContinueCustody,
+    ContinueCustody {
+        key: u64,
+        value: u64,
+    },
     ReleaseCustody,
     AbandonCaller {
         key: u64,
@@ -84,6 +96,9 @@ impl HostCommand {
             Self::Checkpoint(CheckpointKind::ImageAdmission) => {
                 OperationActivation::ReopenCheckpointImage
             }
+            Self::Checkpoint(CheckpointKind::Automatic) => {
+                OperationActivation::HomeMaintenanceFunding
+            }
             Self::CreateBranch(_) => OperationActivation::LifecycleDurableSibling,
             Self::Mutate {
                 branch: BranchLabel::Left | BranchLabel::Right,
@@ -101,15 +116,16 @@ impl HostCommand {
             }
             | Self::LoseResponse { .. }
             | Self::Retry { .. }
+            | Self::ConcurrentSameKey { .. }
             | Self::MoveProduct {
                 branch: BranchLabel::Main,
                 ..
             }
             | Self::SettlementFailure { .. }
-            | Self::ContinueCustody
+            | Self::ContinueCustody { .. }
             | Self::ReleaseCustody
             | Self::AbandonCaller { .. }
-            | Self::Checkpoint(CheckpointKind::Explicit | CheckpointKind::Automatic)
+            | Self::Checkpoint(CheckpointKind::Explicit)
             | Self::Close
             | Self::Reopen => OperationActivation::Current,
         }

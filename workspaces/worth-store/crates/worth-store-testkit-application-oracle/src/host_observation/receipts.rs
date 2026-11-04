@@ -30,7 +30,7 @@ pub enum MutationFate {
     Deferred,
     Unresolved,
 }
-#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct ReceiptProjection {
     pub native: RelationalCommitReceipt,
     pub outcome: Option<u64>,
@@ -43,7 +43,7 @@ pub struct ReceiptProjection {
     pub attempt_owner: WorldOwnerCoordinate,
     pub attempt: u64,
 }
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct MutationProjection {
     pub fate: MutationFate,
     pub receipt: Option<ReceiptProjection>,
@@ -76,21 +76,7 @@ pub fn observe(outcome: &MutationOutcome, original_before: &HeadProjection) -> M
                 }),
             )
         }
-        Outcome::RecoveredCommitted(receipt) => (
-            MutationFate::Committed,
-            Some(ReceiptProjection {
-                native: receipt.commit_reference().clone(),
-                outcome: Some(receipt.outcome_identity().get()),
-                key: Some(CanonicalDigestId::new(*receipt.idempotency_key_identity())),
-                intent: Some(recorded_intent_root(receipt.recorded_intent())),
-                changed: receipt.changed_record_count(),
-                emitted: receipt.emitted_effect_count(),
-                before: HeadProjection::observe(receipt.old_product_head()),
-                after: HeadProjection::observe(receipt.new_product_head()),
-                attempt_owner: receipt.attempt_identity().owner(),
-                attempt: receipt.attempt_identity().ordinal(),
-            }),
-        ),
+        Outcome::RecoveredCommitted(receipt) => return observe_original(receipt),
         Outcome::IdempotencyIntentDrift => (MutationFate::IntentDrift, None),
         Outcome::DomainDenied(()) => (MutationFate::DomainDenied, None),
         Outcome::Cancelled => (MutationFate::Cancelled, None),
@@ -122,6 +108,26 @@ pub fn observe(outcome: &MutationOutcome, original_before: &HeadProjection) -> M
             None,
         ),
     };
+    MutationProjection { fate, receipt }
+}
+pub fn observe_original(
+    receipt: &WorthQueryRecoveredApplicationCommitReceipt,
+) -> MutationProjection {
+    let (fate, receipt) = (
+        MutationFate::Committed,
+        Some(ReceiptProjection {
+            native: receipt.commit_reference().clone(),
+            outcome: Some(receipt.outcome_identity().get()),
+            key: Some(CanonicalDigestId::new(*receipt.idempotency_key_identity())),
+            intent: Some(recorded_intent_root(receipt.recorded_intent())),
+            changed: receipt.changed_record_count(),
+            emitted: receipt.emitted_effect_count(),
+            before: HeadProjection::observe(receipt.old_product_head()),
+            after: HeadProjection::observe(receipt.new_product_head()),
+            attempt_owner: receipt.attempt_identity().owner(),
+            attempt: receipt.attempt_identity().ordinal(),
+        }),
+    );
     MutationProjection { fate, receipt }
 }
 pub fn compare(

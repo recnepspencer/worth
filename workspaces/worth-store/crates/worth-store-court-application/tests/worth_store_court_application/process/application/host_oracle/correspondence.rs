@@ -40,8 +40,8 @@ fn every_seed_generates_the_complete_host_vocabulary_and_explicit_owner_gates() 
         for predicate in [
             |s: &HostCommand| matches!(s, HostCommand::Open),
             |s: &HostCommand| matches!(s, HostCommand::Initialize),
-            |s: &HostCommand| matches!(s, HostCommand::Mutate { key: Some(_), .. }),
-            |s: &HostCommand| matches!(s, HostCommand::Mutate { key: None, .. }),
+            |s: &HostCommand| matches!(s, HostCommand::Mutate { .. }),
+            |s: &HostCommand| matches!(s, HostCommand::ConcurrentSameKey { .. }),
             |s: &HostCommand| matches!(s, HostCommand::LoseResponse { .. }),
             |s: &HostCommand| matches!(s, HostCommand::CreateBranch(_)),
             |s: &HostCommand| {
@@ -63,7 +63,7 @@ fn every_seed_generates_the_complete_host_vocabulary_and_explicit_owner_gates() 
                 )
             },
             |s: &HostCommand| matches!(s, HostCommand::SettlementFailure { .. }),
-            |s: &HostCommand| matches!(s, HostCommand::ContinueCustody),
+            |s: &HostCommand| matches!(s, HostCommand::ContinueCustody { .. }),
             |s: &HostCommand| matches!(s, HostCommand::ReleaseCustody),
             |s: &HostCommand| matches!(s, HostCommand::AbandonCaller { .. }),
             |s: &HostCommand| matches!(s, HostCommand::Checkpoint(CheckpointKind::Explicit)),
@@ -92,5 +92,49 @@ fn every_seed_generates_the_complete_host_vocabulary_and_explicit_owner_gates() 
         assert!(steps
             .iter()
             .any(|s| s.activation() == OperationActivation::LifecycleDurableSibling));
+        assert!(steps
+            .iter()
+            .any(|s| s.activation() == OperationActivation::HomeMaintenanceFunding));
+        let mut fresh = std::collections::HashSet::new();
+        for command in steps {
+            let issued = match command {
+                HostCommand::Mutate { key, .. }
+                | HostCommand::MoveProduct { key, .. }
+                | HostCommand::LoseResponse { key, .. }
+                | HostCommand::ConcurrentSameKey { key, .. }
+                | HostCommand::SettlementFailure { key, .. }
+                | HostCommand::AbandonCaller { key, .. } => Some(*key),
+                HostCommand::Retry { .. }
+                | HostCommand::Open
+                | HostCommand::Initialize
+                | HostCommand::CreateBranch(_)
+                | HostCommand::ContinueCustody { .. }
+                | HostCommand::ReleaseCustody
+                | HostCommand::Checkpoint(_)
+                | HostCommand::Close
+                | HostCommand::Reopen
+                | HostCommand::ProgramTransition { .. }
+                | HostCommand::ResumeTransition => None,
+            };
+            if let Some(key) = issued {
+                assert!(
+                    fresh.insert(key),
+                    "seed {seed} aliases distinct business operations"
+                );
+            }
+        }
+        assert!(fresh.len() > 1);
+        let (key, value) = steps
+            .iter()
+            .find_map(|command| {
+                if let HostCommand::Mutate { key, value, .. } = command {
+                    Some((*key, *value))
+                } else {
+                    None
+                }
+            })
+            .unwrap();
+        assert!(steps.iter().any(|s| matches!(s, HostCommand::Retry { key: retry, value: input } if *retry == key && *input == value)));
+        assert!(steps.iter().any(|s| matches!(s, HostCommand::Retry { key: retry, value: input } if *retry == key && *input != value)));
     }
 }

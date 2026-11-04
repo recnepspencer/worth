@@ -17,13 +17,22 @@ impl HostScript {
             z ^ (z >> 31)
         };
         let key = next();
+        let mut following = key.wrapping_add(1);
+        let mut fresh_key = || {
+            let issued = following;
+            following = following.wrapping_add(1);
+            issued
+        };
+        let distinct_key = fresh_key();
+        let lost_key = fresh_key();
+        let concurrent_key = fresh_key();
         let value = next() % 100_000 + 10;
         let mut commands = vec![
             Command::Open,
             Command::Initialize,
             Command::Mutate {
                 branch: Branch::Main,
-                key: Some(key),
+                key,
                 value,
             },
             Command::Retry { key, value },
@@ -33,17 +42,21 @@ impl HostScript {
             },
             Command::Mutate {
                 branch: Branch::Main,
-                key: None,
+                key: distinct_key,
                 value: next() % 100_000,
             },
             Command::LoseResponse {
-                key: key.wrapping_add(1),
+                key: lost_key,
                 value: value + 2,
             },
             Command::Reopen,
             Command::Retry {
-                key: key.wrapping_add(1),
+                key: lost_key,
                 value: value + 2,
+            },
+            Command::ConcurrentSameKey {
+                key: concurrent_key,
+                value: value + 6,
             },
             Command::CreateBranch(Branch::Left),
             Command::CreateBranch(Branch::Right),
@@ -51,29 +64,34 @@ impl HostScript {
         for branch in [Branch::Main, Branch::Left, Branch::Right] {
             commands.push(Command::MoveProduct {
                 branch,
+                key: fresh_key(),
                 value: next() % 100_000,
             });
             commands.push(Command::Mutate {
                 branch,
-                key: Some(next()),
+                key: fresh_key(),
                 value: next() % 100_000,
             });
         }
+        let settlement_key = fresh_key();
         commands.extend([
             Command::SettlementFailure {
-                key: key.wrapping_add(2),
+                key: settlement_key,
                 value: value + 3,
             },
             Command::Reopen,
-            Command::ContinueCustody,
-            Command::SettlementFailure {
-                key: key.wrapping_add(3),
+            Command::ContinueCustody {
+                key: settlement_key,
+                value: value + 3,
+            },
+            Command::AbandonCaller {
+                key: fresh_key(),
                 value: value + 4,
             },
             Command::Reopen,
             Command::ReleaseCustody,
             Command::AbandonCaller {
-                key: key.wrapping_add(4),
+                key: fresh_key(),
                 value: value + 5,
             },
             Command::Reopen,

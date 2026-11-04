@@ -37,7 +37,7 @@ fn semantic_comparison_refuses_wrong_custody_targets_causes_and_native_occurrenc
     let mut previous_head = None;
     for (key, value) in [(101, 180), (102, 181)] {
         for home in &hosts {
-            assert!(matches!(requests::set(home.runtime(), Some(key), value).unwrap(), worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome::Committed { .. }));
+            assert!(matches!(requests::set(home.runtime(), key, value), worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome::Committed { .. }));
         }
         let home = projection::observe(hosts[0].runtime(), &execution);
         let reference = projection::observe(hosts[1].runtime(), &execution);

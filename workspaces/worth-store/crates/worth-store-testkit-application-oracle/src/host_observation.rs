@@ -1,6 +1,7 @@
 //! Genuine production Host fixture and passive semantic observations.
 pub mod branch_comparison;
 pub mod comparison;
+pub mod concurrent_mutation;
 pub mod custody;
 pub mod idempotency;
 pub mod image_comparison;

@@ -91,12 +91,16 @@ fn run(seed: u64) {
             } else {
                 Request::Step(index)
             });
-        assert_eq!(
-            actual.contacts - directory_contacts,
-            contacts.load(Ordering::SeqCst) - contacts_before,
-            "seed {seed} step {index}: an original retry must not run the handler"
-        );
-        directory_contacts = actual.contacts;
+        if matches!(command, HostCommand::ConcurrentSameKey { .. }) {
+            assert!((1..=2).contains(&(actual.contacts - directory_contacts)));
+            assert!((1..=2).contains(&(contacts.load(Ordering::SeqCst) - contacts_before)));
+        } else {
+            assert_eq!(
+                actual.contacts - directory_contacts,
+                contacts.load(Ordering::SeqCst) - contacts_before,
+                "seed {seed} step {index}: an original retry must not run the handler"
+            );
+        }
         match (&actual.mutation, &expected) {
             (None, None) => (),
             (Some(h), Some(r)) => host_observation::receipts::compare(map.identities_mut(), h, r)
@@ -109,10 +113,27 @@ fn run(seed: u64) {
                 panic!("seed {seed} step {index} response fate presence")
             }
         }
-        assert_eq!(
-            actual.disposition, expected_disposition,
-            "seed {seed} step {index} original custody disposition"
-        );
+        if let (
+            Some(protocol::Disposition::Continued(h)),
+            Some(protocol::Disposition::Continued(r)),
+        ) = (&actual.disposition, &expected_disposition)
+        {
+            host_observation::receipts::compare(map.identities_mut(), h, r).unwrap_or_else(
+                |cause| panic!("seed {seed} step {index} original continuation: {cause:?}"),
+            );
+            assert_eq!(
+                actual.contacts - directory_contacts,
+                0,
+                "continuation resumes original work without a handler"
+            );
+            assert_eq!(contacts.load(Ordering::SeqCst) - contacts_before, 0);
+        } else {
+            assert_eq!(
+                actual.disposition, expected_disposition,
+                "seed {seed} step {index} original custody disposition"
+            );
+        }
+        directory_contacts = actual.contacts;
         if matches!(command, HostCommand::Initialize) {
             assert_eq!(
                 (actual.initialized, initialized.load(Ordering::SeqCst)),

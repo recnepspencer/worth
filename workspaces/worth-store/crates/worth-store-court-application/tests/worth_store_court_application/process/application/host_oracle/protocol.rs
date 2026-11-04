@@ -17,7 +17,6 @@ pub(super) struct Response {
 }
 #[derive(Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 pub(super) enum Disposition {
-    Continued(Vec<Vec<Action>>),
+    Continued(MutationProjection),
     Released(usize),
 }
-pub(super) use host_observation::custody::CustodyAction as Action;

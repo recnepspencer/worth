@@ -9,7 +9,7 @@ use worth_relational::facade::{
 };
 use worth_runtime_world::facade::*;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct HeadProjection {
     pub owner: WorldOwnerCoordinate,
     pub branch: String,

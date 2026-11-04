@@ -8,23 +8,38 @@ use worth_query_testkit_host::facade::host::{
 };
 
 pub type MutationOutcome = WorthQueryApplicationMutationOutcome<(), u64>;
-/// Harness readiness, not a product mutation refusal or a fabricated outcome.
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
-pub enum HostScriptExecutionGap {
-    UnkeyedMutationEntryUnavailable,
-}
-pub fn set(
+pub fn resolve_original(
     runtime: &OracleRuntime,
-    key: Option<u64>,
+    key: u64,
     value: u64,
-) -> Result<MutationOutcome, HostScriptExecutionGap> {
-    let key = key.ok_or(HostScriptExecutionGap::UnkeyedMutationEntryUnavailable)?;
+) -> Result<
+    worth_query_host::facade::primary_graph::WorthQueryApplicationIdempotencyResolution,
+    worth_query_host::facade::application_entry::WorthQueryApplicationRecoveryRequestDenial,
+> {
     let scope = WorthQueryRequestScope::new(None, WorthQueryCancellationSource::new().token());
     let principal = identity::inspection_authentication::authenticate(
         runtime.runtime().installed_schema(),
         &scope,
     );
-    Ok(runtime
+    runtime
+        .request(&principal, &scope)
+        .advanced()
+        .mutate(fixture::native_mutation::SetAccountBalance {
+            account: "account-001".into(),
+            balance: value,
+        })
+        .without_source()
+        .idempotency(&key)
+        .resolve_idempotency_in_program(runtime)
+        .map(|read| read.into_resolution())
+}
+pub fn set(runtime: &OracleRuntime, key: u64, value: u64) -> MutationOutcome {
+    let scope = WorthQueryRequestScope::new(None, WorthQueryCancellationSource::new().token());
+    let principal = identity::inspection_authentication::authenticate(
+        runtime.runtime().installed_schema(),
+        &scope,
+    );
+    runtime
         .request(&principal, &scope)
         .advanced()
         .mutate(fixture::native_mutation::SetAccountBalance {
@@ -37,7 +52,7 @@ pub fn set(
             runtime,
             worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
-        .unwrap())
+        .unwrap()
 }
 pub fn balance(runtime: &OracleRuntime) -> u64 {
     let scope = WorthQueryRequestScope::new(None, WorthQueryCancellationSource::new().token());

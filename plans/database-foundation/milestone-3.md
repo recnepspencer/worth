@@ -1518,10 +1518,13 @@ build guide and Host README must explain this distinction and use the real facad
 **Oracle extension**
 
 - **Reference and script.** A memory-only host running the same program
-  executes a seeded host script. The script covers keyed and unkeyed
-  mutations, response loss, branch creation, product movement on several
+  executes a seeded host script. The script covers keyed mutations, including
+  distinct keys, same-key retries, changed-intent retries and concurrent same-key
+  retries; response loss, branch creation, product movement on several
   branches, settlement failure, custody continue and release, caller
   abandonment, and checkpoints. Every seed in the tested range generates.
+  Application mutations require an idempotency key by contract (build §5.3), so
+  there is no unkeyed route to exercise.
 - **Interruption points.** The oracle interrupts at every durable boundary:
   - before commitment;
   - after durable Relational publication;

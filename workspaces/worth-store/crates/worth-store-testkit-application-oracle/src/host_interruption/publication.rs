@@ -11,14 +11,14 @@ pub fn abandon_after_owner(runtime: &OracleRuntime, key: u64, value: u64) -> Mut
         .panic_before_product_compare_once_for_test();
     // The production application boundary owns unwind isolation and its typed
     // outcome. An escaped panic must fail the court, never become a fake fate.
-    requests::set(runtime, Some(key), value).expect("the genuine keyed mutation entry exists")
+    requests::set(runtime, key, value)
 }
 pub fn settlement_failure(runtime: &OracleRuntime, key: u64, value: u64) -> MutationOutcome {
     let _hold = runtime
         .runtime()
         .hold_post_commit_snapshot_failure_for_test()
         .expect("one actual snapshot settlement fault is armed");
-    requests::set(runtime, Some(key), value).expect("the genuine keyed mutation entry exists")
+    requests::set(runtime, key, value)
 }
 fn handles(
     runtime: &OracleRuntime,
@@ -43,19 +43,15 @@ fn handles(
 }
 pub fn continue_custody(
     runtime: &OracleRuntime,
+    key: u64,
+    value: u64,
 ) -> Result<
-    Vec<worth_runtime_world::facade::RecoveryContinuationContract>,
-    worth_runtime_world::facade::RuntimeWorldRecoveryDenial,
+    worth_query_host::facade::primary_graph::WorthQueryApplicationIdempotencyResolution,
+    worth_query_host::facade::application_entry::WorthQueryApplicationRecoveryRequestDenial,
 > {
-    handles(runtime)
-        .iter()
-        .map(|h| {
-            runtime
-                .runtime()
-                .readmit_product_publication_recovery(h)?
-                .continue_owner_settlement()
-        })
-        .collect()
+    // This explicit recovery action completes the exact retained Query cutover;
+    // an empty World unpublished catalog says nothing about that original work.
+    requests::resolve_original(runtime, key, value)
 }
 pub fn release_custody(
     runtime: &OracleRuntime,
