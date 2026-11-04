@@ -5,9 +5,7 @@ use crate::domain_computation::primary_graph::application_contribution::OwnerPla
 
 fn selected() -> std::sync::Arc<PositionedRelationalSnapshot> {
     let world =
-        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
-            true,
-        );
+        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     world
         .application
         .with_host_advancement(|phase| {

@@ -1,5 +1,6 @@
 mod owned_record_custody;
 mod preparation_denial;
+mod root_admission;
 use std::sync::Arc;
 
 use super::super::artifact_execution::preparation::PublicationPreparation;
@@ -218,12 +219,23 @@ pub(super) fn prepare_publication_phase(
             ))
             .with_commit_log(commit_log.clone())
         })?;
-    owned_record_custody::require(
-        execution,
-        runtime,
-        &canonical_commit_envelope,
-        &branch_basis,
-    )?;
+    let check_custody = || {
+        owned_record_custody::require(
+            execution,
+            runtime,
+            &canonical_commit_envelope,
+            &branch_basis,
+        )
+    };
+    match (
+        super::super::request_lease(execution),
+        runtime.commit_work_budget.as_ref(),
+    ) {
+        (Some(_), Some(budget)) => budget
+            .run_stage(*execution, check_custody)
+            .map_err(|cause| TransactionCommitError::execution(cause.into()))?,
+        _ => check_custody(),
+    }?;
     let published_partition_delta =
         crate::storage::RelationalPublishedPartitionDelta::from_committed_partitions(
             &committed_partitions,
@@ -235,18 +247,20 @@ pub(super) fn prepare_publication_phase(
                 .map(|root| root.schema_authority().registry_arc())
         })
         .unwrap_or_else(|| std::sync::Arc::new(runtime.config.schema.registry.clone()));
-    let prepared_history = runtime
-        .mvcc_publication_authority()
-        .prepare_commit(
-            commit_id,
-            commit_reference.clone(),
-            &branch_basis,
-            &selected_branch_state,
-            published_partition_delta,
-            Arc::clone(&canonical_commit_envelope),
-            publication_schema_registry.as_ref(),
-            output_positions,
-        )
+    let prepared_history =
+        root_admission::run(execution, runtime.commit_work_budget.as_ref(), || {
+            runtime.mvcc_publication_authority().prepare_commit(
+                execution,
+                commit_id,
+                commit_reference.clone(),
+                &branch_basis,
+                &selected_branch_state,
+                published_partition_delta,
+                Arc::clone(&canonical_commit_envelope),
+                publication_schema_registry.as_ref(),
+                output_positions,
+            )
+        })
         .map_err(|denial| {
             preparation_denial::transaction_error(denial, &branch_basis, commit_log.clone())
         })?;

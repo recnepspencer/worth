@@ -4,7 +4,7 @@ use crate::domain_computation::primary_graph::tests::fixture::correction_source;
 
 #[test]
 fn idempotency_without_the_claimed_causal_fact_is_not_equivalent() {
-    let world = correction_source::install();
+    let world = correction_source::install(worth_execution::MonotonicClock::system());
     let source = correction_source::edit(&world, "equivalence-source", "edited-label");
     let first = correction_source::prepare(&world, &source, "causal-equivalence");
     let retry = correction_source::prepare(&world, &source, "causal-equivalence");

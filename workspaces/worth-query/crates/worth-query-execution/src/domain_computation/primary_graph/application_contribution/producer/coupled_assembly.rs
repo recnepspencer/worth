@@ -231,6 +231,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> DeclaredProducerAssembly<'a, 'run, 
                 writer,
                 publication,
                 batch,
+                content,
             } = prepared;
             // Keep the session even when Native requests an ordinary symbol retry;
             // the next actual assembly round closes it before rerunning the handler.
@@ -245,7 +246,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> DeclaredProducerAssembly<'a, 'run, 
                 stage: Some(CoupledWriterStage::Inspected(writer)),
                 meaning: meaning.clone(),
             });
-            candidate.append_preserve(execution, publication, vec![batch])?;
+            candidate.append_preserve(execution, publication, &content, vec![batch])?;
             let after_own = candidate.pin_source(execution)?;
             let writers = self.writers.borrow();
             let Some(CoupledWriterStage::Inspected(writer)) =

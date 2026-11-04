@@ -32,6 +32,8 @@ pub fn relational_execution_kind(
             partition_identity,
         },
         Cause::StorageUnavailable(failure) => Kind::StorageUnavailable(failure),
+        Cause::ContentInconsistency => Kind::ContentInconsistency,
+        Cause::Content(cause) => Kind::Content(cause),
         Cause::WorkerLimitExceedsParent => resource(Resource::WorkerLimit, None),
         Cause::MemoryLimitExceedsParent => resource(Resource::PolicyMemoryLimit, None),
         Cause::WorkLimitExceedsParent => resource(Resource::WorkLimit, None),

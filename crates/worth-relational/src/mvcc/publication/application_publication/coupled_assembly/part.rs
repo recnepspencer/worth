@@ -42,6 +42,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         &mut self,
         execution: &ExecutionRequest<'_, '_>,
         mut publication: RequiredOutputPublication,
+        content: &crate::content::RelationalContentAttachments,
         mut batches: Vec<WorkerIntentBatch>,
     ) -> Result<(), RelationalCoupledAssemblyFailure> {
         let RequiredOutputPublication::Preserve {
@@ -105,6 +106,9 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             .iter()
             .map(|batch| batch.intents.len())
             .sum::<usize>();
+        self.transaction
+            .attach_content(execution, content)
+            .map_err(crate::content::commit_denial)?;
         for mut batch in batches {
             super::fresh_references::retain(
                 execution,
@@ -191,6 +195,22 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             crate::authority::commit::pipeline::request_lease(execution),
             runtime.commit_work_budget.clone(),
             Some(&deferred_edges),
+        )
+        .map_err(RelationalCoupledAssemblyFailure::from_apply)?;
+        let source = self
+            .identity
+            .source_interpretation()
+            .expect("owner-issued writer identity");
+        state.content = crate::authority::commit::phases::applied_mutation::content::prepare(
+            execution,
+            &runtime,
+            root.as_ref(),
+            &self.prepared.schema_authority,
+            content,
+            &state,
+            &outcome.effect.publication.changed_records,
+            self.identity.proposed_version_id(),
+            source.restoration_content(),
         )
         .map_err(RelationalCoupledAssemblyFailure::from_apply)?;
         crate::authority::mutation::apply_adjacency_deltas(

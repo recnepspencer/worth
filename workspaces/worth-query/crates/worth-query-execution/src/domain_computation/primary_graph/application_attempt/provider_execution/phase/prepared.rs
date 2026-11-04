@@ -162,6 +162,7 @@ struct WorthQueryProviderAttemptPreparation {
     original_read: Option<std::sync::Arc<crate::domain_computation::primary_graph::application_attempt::CompletedOriginalRead>>,
     consumed_outputs: Vec<crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence>,
     effects: Vec<WorthQueryApplicationRealizedEffect>,
+    content_attachments: worth_relational::facade::content::RelationalContentAttachments,
     application_effect_count: usize,
     preimage_demand: Option<worth_query_installation::facade::InstalledPreImageDemand>,
     conditional_definition:

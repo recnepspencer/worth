@@ -4,7 +4,10 @@ use std::cell::{Cell, RefCell};
 
 #[test]
 fn dependent_second_scope_reconstructs_atomically_with_original_read_results() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     world

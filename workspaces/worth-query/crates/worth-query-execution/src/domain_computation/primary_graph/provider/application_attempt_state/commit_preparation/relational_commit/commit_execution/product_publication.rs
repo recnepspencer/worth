@@ -61,6 +61,7 @@ pub(super) fn publish(
                 history.as_ref().map(|history| history.current()),
             )
             .map_err(|denial| match denial {
+                PublicationDenial::ClockMismatch => publication_clock_mismatch(),
                 PublicationDenial::Stopped(stop) => publication_request_stop(stop),
                 PublicationDenial::Refused(no_effect) => world_no_effect(no_effect),
             })?;
@@ -121,6 +122,10 @@ pub(super) fn publish(
                     reservation,
                 },
             ),
+            Err(PublicationDenial::ClockMismatch) => {
+                reservation.release();
+                Err(publication_clock_mismatch())
+            }
             Err(PublicationDenial::Stopped(stop)) => {
                 reservation.release();
                 Err(publication_request_stop(stop))
@@ -149,7 +154,8 @@ pub(super) fn publish(
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         let prepared = product
             .prepare_combined_candidate(candidate, &request, successor_observation_requested, history.as_ref().map(|history| history.current()))
-            .map_err(|denial| match denial {PublicationDenial::Stopped(stop)=>publication_request_stop(stop), PublicationDenial::Refused(no_effect)=>world_no_effect(no_effect)})?;
+            .map_err(|denial| match denial {PublicationDenial::ClockMismatch => publication_clock_mismatch(),
+PublicationDenial::Stopped(stop)=>publication_request_stop(stop), PublicationDenial::Refused(no_effect)=>world_no_effect(no_effect)})?;
         let predecessor = bridge
             .admit_exact_conditional_signal_basis(
                 &parts.predecessor,
@@ -205,7 +211,8 @@ pub(super) fn publish(
                     reservation,
                 })
             }
-            Err(PublicationDenial::Stopped(stop)) => {reservation.release(); Err(publication_request_stop(stop))},
+            Err(PublicationDenial::ClockMismatch) => {reservation.release(); Err(publication_clock_mismatch())},
+Err(PublicationDenial::Stopped(stop)) => {reservation.release(); Err(publication_request_stop(stop))},
             Err(PublicationDenial::Refused(no_effect)) => {
                 reservation.release();
                 Err(world_no_effect(no_effect))
@@ -283,4 +290,15 @@ fn capacity_exhausted() -> crate::domain_computation::WorthQueryProviderSessionC
 
 fn denied(detail: &'static str) -> crate::domain_computation::WorthQueryProviderSessionCommitStop {
     crate::domain_computation::WorthQueryProviderSessionCommitStop::Denied(failure(detail))
+}
+
+fn publication_clock_mismatch() -> crate::domain_computation::WorthQueryProviderSessionCommitStop {
+    crate::domain_computation::WorthQueryProviderSessionCommitStop::PreEffectDenied(
+        crate::domain_computation::WorthQueryProviderSessionFailure::new(
+            crate::domain_computation::WorthQueryProviderSessionDenialKind::ExecutionResource { denial: crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock, partition_identity: None, policy_ancestor: None },
+            crate::domain_computation::WorthQueryProviderSessionProtocolStage::Commit,
+            "publication scope belongs to another monotonic clock",
+            crate::domain_computation::WorthQueryProviderSessionProtocolCounters::default(),
+        ),
+    )
 }

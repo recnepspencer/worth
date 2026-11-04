@@ -8,8 +8,14 @@ use crate::domain_computation::primary_graph::application_resource_request;
 
 #[test]
 fn installed_operation_template_keeps_exact_operation_and_support_authority() {
-    let current = installed_authorization_world(true);
-    let foreign = installed_authorization_world(true);
+    let current = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
+    let foreign = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let operation = current
         .application
         .installed_schema()

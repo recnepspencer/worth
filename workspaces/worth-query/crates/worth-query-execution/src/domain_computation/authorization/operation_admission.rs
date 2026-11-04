@@ -281,7 +281,3 @@ mod request_read_stops_tests;
 #[cfg(test)]
 #[path = "operation_admission/forgery_doors.rs"]
 mod forgery_doors;
-
-#[cfg(test)]
-#[path = "operation_admission/authentication_expiry.rs"]
-mod authentication_expiry;

@@ -21,6 +21,10 @@ pub enum WorthQueryProviderSessionProtocolStage {
 /// A provider-session refusal that preserves its protocol or execution cause.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryProviderSessionDenialKind {
+    /// Retained content disagreed with its certified identity.
+    ContentInconsistency,
+    /// Exact Native content refusal, distinct from request/resource stops.
+    Content(worth_relational::facade::content::RelationalContentRejection),
     /// The selected root refused the requested projection contract.
     ProjectionContract {
         denial: worth_relational::facade::runtime::RelationalProjectionContractDenial,
@@ -90,6 +94,8 @@ pub struct WorthQueryProviderSessionFailure {
     >,
     candidate_support:
         Option<std::sync::Arc<crate::domain_computation::WorthQueryInvariantExecutionFailure>>,
+    preimage:
+        Option<crate::domain_computation::application_aftermath::WorthQueryPreImageRetentionDenial>,
     managed_index:
         Option<crate::domain_computation::primary_graph::WorthQueryManagedIndexWorkDenial>,
     kind: WorthQueryProviderSessionDenialKind,
@@ -142,6 +148,20 @@ impl WorthQueryProviderSessionFailure {
         self.candidate_support = Some(std::sync::Arc::new(cause));
         self
     }
+
+    pub(in crate::domain_computation) fn with_preimage_retention_denial(
+        mut self,
+        cause: crate::domain_computation::application_aftermath::WorthQueryPreImageRetentionDenial,
+    ) -> Self {
+        self.preimage = Some(cause);
+        self
+    }
+    pub fn preimage_retention_denial(
+        &self,
+    ) -> Option<crate::domain_computation::application_aftermath::WorthQueryPreImageRetentionDenial>
+    {
+        self.preimage
+    }
     pub fn new(
         kind: WorthQueryProviderSessionDenialKind,
         stage: WorthQueryProviderSessionProtocolStage,
@@ -151,6 +171,7 @@ impl WorthQueryProviderSessionFailure {
         Self {
             relation_preimage: None,
             candidate_support: None,
+            preimage: None,
             managed_index: None,
             kind,
             stage,

@@ -3,6 +3,7 @@ use super::*;
 impl RelationalPreparationHistory {
     pub(crate) fn capture_applied_candidate_root(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         previous: &Arc<RelationalBranchRoot>,
         state: &crate::storage::overlay::WorkingState,
         symbols: &crate::runtime::RuntimeSymbolTable,
@@ -11,6 +12,13 @@ impl RelationalPreparationHistory {
         let delta = crate::storage::RelationalPublishedPartitionDelta::from_committed_partitions(
             &committed,
         );
-        RelationalBranchRoot::capture_applied_candidate(&self.root_ids, previous, &delta, symbols)
+        RelationalBranchRoot::capture_applied_candidate(
+            execution,
+            &self.root_ids,
+            previous,
+            &delta,
+            symbols,
+            state.content.directory()?,
+        )
     }
 }

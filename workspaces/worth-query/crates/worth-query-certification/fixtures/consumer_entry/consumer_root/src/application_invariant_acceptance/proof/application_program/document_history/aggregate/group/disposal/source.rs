@@ -19,7 +19,7 @@ fn interrupt_source(app: &App, group: &mut Group<'_>) -> WorthQueryProductBranch
         .world_operation_control_for_test()
         .pause_before_product_compare_for_test(NonZeroUsize::MIN);
     let cancellation = WorthQueryCancellationSource::new();
-    let scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let reached = std::thread::scope(|threads| {
         let worker = threads.spawn(|| {
             let reached = pause.wait_until_reached(Duration::from_secs(10));

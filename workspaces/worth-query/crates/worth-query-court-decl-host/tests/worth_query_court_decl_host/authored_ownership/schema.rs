@@ -3,8 +3,8 @@ pub trait Scenario:
     ApplicationSchema + ApplicationSchemaComposition<Contributions = (Contribution,)>
 {
     const MODE: u8;
-    const COUPLED: bool = matches!(Self::MODE, 6..=12 | 14..=28 | 30 | 39 | 40 | 41 | 42);
-    const TWO_BODIES: bool = matches!(Self::MODE, 7 | 8 | 9 | 15..=18 | 20 | 27 | 28 | 42);
+    const COUPLED: bool = matches!(Self::MODE, 6..=12 | 14..=28 | 30 | 39 | 40 | 41 | 42 | 43);
+    const TWO_BODIES: bool = matches!(Self::MODE, 7 | 8 | 9 | 15..=18 | 20 | 27 | 28 | 42 | 43);
 }
 pub struct Model<const MODE: u8>;
 impl<const MODE: u8> Scenario for Model<MODE> {
@@ -124,7 +124,7 @@ impl<S: Scenario> ApplicationSchemaContribution<S> for Contribution {
         } else {
             schema
         };
-        let schema = stage_schema::declare(schema);
+        let schema = content::declare(stage_schema::declare(schema));
         let schema = relation_splice::declare(schema);
         let schema = projected_memberships::schema::declare(schema);
         let schema = if S::COUPLED {

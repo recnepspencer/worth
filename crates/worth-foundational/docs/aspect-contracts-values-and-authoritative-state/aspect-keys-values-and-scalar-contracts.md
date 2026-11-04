@@ -29,7 +29,6 @@ Common path:
 - `.scalar(...)`
 - `.scalar_with(...)`
 - `.reference_entity()`
-- `.content_ref()`
 - `.reference_with(...)`
 - `.opaque_token()`
 - `.opaque_with(...)`
@@ -77,7 +76,7 @@ interpretation law for that aspect.
 Milestone 1 also ships two neighboring contract families that should not get
 lost to history:
 
-- reference shapes such as entity references and content references
+- reference shapes such as entity references
 - opaque shapes such as token-like values that are intentionally not interpreted
   as ordinary scalar payloads
 
@@ -142,9 +141,11 @@ let contract = aspects()
 What is authoritative here is the contract, not the callerâ€™s local idea of
 what `"build.status"` ought to mean.
 
-The same is true for reference and opaque shapes. A content reference or opaque
-token is authoritative because the contract says so, not because the payload
-"looks like an id."
+The same is true for entity-reference and opaque shapes: their contract
+defines their meaning. Content uses `ContentRef` fields in a flat Struct aspect.
+The Native schema binds each such field to a format and version; Native admission
+proves available bytes, integrity and domain validity. A descriptive scalar
+`ContentRefId` proves none of that, and no standalone content-shape builder exists.
 
 Opaque contract authoring also preserves one extra law at the front door:
 

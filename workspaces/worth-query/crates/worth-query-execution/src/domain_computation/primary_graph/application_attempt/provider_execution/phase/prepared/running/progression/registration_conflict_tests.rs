@@ -42,9 +42,7 @@ type RunningRetainedCommit = WorthQueryRunningApplicationCommit<
 #[test]
 fn occupied_real_registration_cleans_the_conflict_and_preserves_an_interleaved_peer() {
     let world =
-        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
-            true,
-        );
+        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     world
         .application
         .with_host_advancement(|active_phase| {

@@ -69,6 +69,10 @@ fn abort_settles_the_original_unpublished_member_even_after_the_source_head_dive
     }
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "certification-harness thread-scope=1 scoped-thread-spawn=1: interrupt_first joins the bounded native owner and competing host or control actors to certify custody at the real handoff."
+)]
 fn interrupt_first(host: &App, group: &mut Group<'_>) {
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
@@ -79,7 +83,7 @@ fn interrupt_first(host: &App, group: &mut Group<'_>) {
         execution.advance(document, &request).unwrap();
     }
     let cancellation = WorthQueryCancellationSource::new();
-    let stopped = WorthQueryRequestScope::new(None, cancellation.token());
+    let stopped = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let interrupted_principal = authenticate_operator(host.installed_schema(), &stopped);
     let pause = host
         .world_operation_control_for_test()

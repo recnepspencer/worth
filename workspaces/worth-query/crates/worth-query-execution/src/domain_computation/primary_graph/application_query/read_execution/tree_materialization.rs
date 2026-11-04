@@ -252,7 +252,7 @@ fn project_nodes(
                         let projected = allocate_result_vector::<
                             WorthQueryApplicationProjectedField,
                         >(fields.len(), result_path)?;
-                        project_fields(record, &fields, projected, work)
+                        project_fields(execution, projection, record, &fields, projected, work)
                     },
                 )
             }).map_err(|cause| crate::domain_computation::primary_graph::application_query::read_execution::denial::relational_read_denial(cause, result_path))?

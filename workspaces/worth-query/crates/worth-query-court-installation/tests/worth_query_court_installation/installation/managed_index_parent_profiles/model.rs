@@ -50,6 +50,19 @@ impl<const MODE: u8> ApplicationSchema for ParentSchema<MODE> {
                 Self,
                 queries::ModelIndex<Self>,
             >::new());
+        let declared = if MODE == 8 {
+            declared
+                .content_format::<super::super::content_binding::codec::Good>()
+                .content_field(
+                    Principal::reference(),
+                    content_field(
+                        ContentSamples::reference(),
+                        super::super::content_binding::codec::Good,
+                    ),
+                )
+        } else {
+            declared
+        };
         super::decision_read::declare(declared).build()
     }
 }
@@ -60,6 +73,7 @@ worth_query_aspect!(pub PrincipalFacts for Schema: ModelSchema, Principal; ident
 worth_query_field!(pub ExternalIdentityField for Schema: ModelSchema, Mapping, ExternalIdentity: WorthQueryExternalPrincipalIdentity => WorthQueryExternalPrincipalIdentityBinding, read_only, equality);
 worth_query_field!(pub MappingStatus for Schema: ModelSchema, Mapping, ExternalIdentity: WorthQueryPrincipalMappingStatus => WorthQueryPrincipalMappingStatusBinding, read_write, equality);
 worth_query_field!(pub PrincipalIdentity for Schema: ModelSchema, Principal, PrincipalFacts: u64 => U64ApplicationValueBinding, read_only, equality);
+worth_query_field!(pub ContentSamples for Schema: ModelSchema, Principal, PrincipalFacts: worth_foundational::facade::ContentRefId => ContentRefApplicationValueBinding, read_only, no_equality);
 pub struct MappingTarget;
 impl MappingTarget {
     pub fn reference<S: ModelSchema>() -> ApplicationRelationRef<S, Self, Mapping, Principal> {

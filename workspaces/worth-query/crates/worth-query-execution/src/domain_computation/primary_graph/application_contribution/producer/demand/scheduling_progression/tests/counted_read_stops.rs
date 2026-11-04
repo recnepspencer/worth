@@ -6,7 +6,10 @@ use crate::domain_computation::WorthQueryProviderSessionDenialKind as Kind;
 
 #[test]
 fn scheduling_progression_preserves_admission_stops_at_every_consult() {
-    let mut world = installed_authorization_world(true);
+    let mut world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     world.application.program_support = Some(
         crate::domain_computation::primary_graph::tests::fixture::installed_program_support(
             world.application.installed_schema(),

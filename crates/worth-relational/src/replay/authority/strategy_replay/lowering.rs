@@ -103,6 +103,9 @@ pub(super) fn lower_strategy_replay(
                     RelationalRecoveryStop::Request(cause) => {
                         return Err(RelationalRecoveryStop::Request(cause))
                     }
+                    RelationalRecoveryStop::Content(cause) => {
+                        return Err(RelationalRecoveryStop::Content(cause));
+                    }
                     RelationalRecoveryStop::Allocation(error) => {
                         return Err(RelationalRecoveryStop::Allocation(error))
                     }

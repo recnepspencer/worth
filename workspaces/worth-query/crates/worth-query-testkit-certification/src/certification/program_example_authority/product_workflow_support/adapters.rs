@@ -5,7 +5,7 @@ use std::future::Future;
 use std::pin::pin;
 use std::sync::Arc;
 use std::task::{Context, Poll, Waker};
-use std::time::{Duration, Instant, SystemTime};
+use std::time::{Duration, SystemTime};
 
 use worth_query_host::facade::{admission, declaration, domain, primary_graph};
 
@@ -269,9 +269,8 @@ impl admission::authenticated_principal::WorthQueryAuthenticationAdapter for Ide
 pub fn request_scope() -> admission::authenticated_principal::WorthQueryRequestScope {
     let cancellation = admission::authenticated_principal::WorthQueryCancellationSource::new();
     admission::authenticated_principal::WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(60)),
-        cancellation.token(),
-    )
+        Some(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(60)),
+        cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system())
 }
 
 pub fn block_on<F: Future>(future: F) -> F::Output {

@@ -7,7 +7,7 @@ fn guarded_binding_cannot_install_without_a_program_owner() {
             DocumentRetentionSchema::declaration().expect("the fixture schema is valid"),
             ((),),
             ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-            host_limits(),
+            host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
             |_, _, _| Ok(()),
         );
     assert!(matches!(
@@ -24,7 +24,7 @@ fn a_workflow_control_binding_refuses_a_handler() {
         DocumentRetentionSchema::declaration().expect("the document-retention schema is valid"),
         ((),),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        host_limits(),
+        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         |phase, graph, installed| {
             seed_host(phase, graph, installed)?;
             let binding = installed

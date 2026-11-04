@@ -170,7 +170,7 @@ fn edit_assessment_uses_fresh_authority_and_the_original_action_runtime_and_bran
         ));
     }
     let cancellation = WorthQueryCancellationSource::new();
-    let stopped_scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let stopped_scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let stopped_principal =
         authenticate_operator(host.runtime().installed_schema(), &stopped_scope);
     cancellation.cancel();

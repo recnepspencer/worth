@@ -20,7 +20,7 @@ fn admitted_actor_survives_reconstruction_and_cannot_be_chosen_by_input() {
         schema,
         (program::Installation::Native,),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        host_limits(),
+        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         checkpoint,
     )
     .unwrap();

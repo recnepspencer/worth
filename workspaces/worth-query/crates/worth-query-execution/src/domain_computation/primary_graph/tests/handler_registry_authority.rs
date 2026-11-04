@@ -76,7 +76,7 @@ fn handler_sealing_consumes_the_retained_installed_catalog() {
         .prepare_primary_graph(&phase.bootstrap_for_test(),
             &runtime,
             &schema,
-            crate::domain_computation::execution_runtime::product_world::test_product_world_resources(),
+            crate::domain_computation::execution_runtime::product_world::test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()),
         )
         .unwrap();
 

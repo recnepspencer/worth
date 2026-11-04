@@ -79,7 +79,7 @@ pub(super) fn derive(
     source: &WorthQueryApplicationCommitReceipt,
     wire_key: &str,
 ) -> PreparedLabelCorrection {
-    let request = super::super::live_scope();
+    let request = super::request_scope(world);
     world.application.with_application_advancement(&request, |phase| {
         let principal = super::super::authenticate_external(
             world.application.installed_schema(), "alice", std::time::Duration::from_secs(120), &request,

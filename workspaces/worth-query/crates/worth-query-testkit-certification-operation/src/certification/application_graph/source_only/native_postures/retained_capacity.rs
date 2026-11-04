@@ -13,6 +13,5 @@ pub fn authentication_stop(
     stop.cancel();
     worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope::new(
         None,
-        stop.token(),
-    )
+        stop.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system())
 }

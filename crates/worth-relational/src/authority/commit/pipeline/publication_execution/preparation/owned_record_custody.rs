@@ -1,5 +1,5 @@
 //! Completed native publications alone discharge custody for record destruction.
-use crate::storage::overlay::{CurrentPartitionAccess, PartitionAccess};
+use crate::storage::overlay::CurrentPartitionAccess;
 use crate::{
     history::data::{CanonicalCommitEnvelope, CodecRetirementClosureStop as Stop},
     publication::{
@@ -59,7 +59,7 @@ pub(super) fn require(
                                 let root = &basis.inner.root;
                                 let live_entity =
                                     |id: crate::identity::data::EntityId| -> Result<bool, Stop> {
-                                        root.demand_full_partition(execution, id.partition_id)
+                                        root.demand_head_partition(execution, id.partition_id)
                                             .map_err(|cause| Stop::Request(cause.into()))?;
                                         Ok(root
                                             .get_current_partition(id.partition_id)
@@ -68,7 +68,7 @@ pub(super) fn require(
                                     };
                                 let live_edge =
                                     |id: crate::identity::data::RelationId| -> Result<bool, Stop> {
-                                        root.demand_full_partition(execution, id.partition_id)
+                                        root.demand_head_partition(execution, id.partition_id)
                                             .map_err(|cause| Stop::Request(cause.into()))?;
                                         Ok(root
                                             .get_current_partition(id.partition_id)
@@ -114,7 +114,12 @@ pub(super) fn require(
                         ),
                         candidate.commit.parents.first().copied(),
                         runtime.history.canonical_catalog_len(),
-                        |commit| runtime.history.canonical_envelope(commit),
+                        |commit| {
+                            runtime
+                                .history
+                                .demand_canonical_envelope(execution, commit)
+                                .map_err(|cause| Stop::Request(cause.into()))
+                        },
                         context,
                     )
                     .map_err(|failure| match failure.stop {

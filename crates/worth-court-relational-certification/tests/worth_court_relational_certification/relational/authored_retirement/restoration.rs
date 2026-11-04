@@ -55,7 +55,7 @@ pub(super) fn check(
     let plan = runtime
         .prepare_authored_source_restoration(
             execution,
-            &installed,
+            installed,
             &basis,
             retired.commit.commit_id,
             source,
@@ -76,9 +76,9 @@ pub(super) fn check(
     ));
     let batch = plan.extend_batch(execution, authored).unwrap();
     let restored = publish(
-        &runtime,
+        runtime,
         execution,
-        &installed,
+        installed,
         batch,
         RequiredOutputPublication::AuthoredCascadeRestoration {
             admission,
@@ -103,7 +103,7 @@ pub(super) fn check(
         .read_truth()
         .pin_read_capability(&restored.snapshot, &[], execution)
         .unwrap();
-    release_test_commit_snapshot(&runtime, &restored);
+    release_test_commit_snapshot(runtime, &restored);
     let (_, basis) = runtime
         .observe_branch(&runtime.main_branch_identity())
         .unwrap();

@@ -8,6 +8,7 @@ use super::{
 };
 use std::sync::Arc;
 use worth_query_decl::facade::{application_program::*, application_schema::*};
+use worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock;
 use worth_query_host::facade::{
     application_contribution::*, application_installation::*, primary_graph::*,
 };
@@ -32,6 +33,7 @@ pub(super) fn install_watch(prefix: Arc<prefix::Calls>, rules: Arc<rule::Calls>)
         DecisionRead::Declared,
         geometry::Configuration::default(),
         resources,
+        WorthQueryAdmissionClock::system(),
     )
 }
 pub(super) fn install_decision_read(
@@ -65,6 +67,7 @@ fn install_configured(
         decision_read,
         geometry,
         super::super::super::resources::application_limits(),
+        WorthQueryAdmissionClock::system(),
     )
 }
 
@@ -74,10 +77,18 @@ fn install_configured_with_limits(
     decision_read: DecisionRead,
     geometry: geometry::Configuration,
     limits: WorthQueryInMemoryApplicationLimits,
+    clock: WorthQueryAdmissionClock,
 ) -> Host {
-    let world = try_install_root(prefix, Arc::clone(&rules), decision_read, geometry, limits)
-        .expect("the genuine maintained catalog installs before public use");
-    authoring::populate(&world, &rules);
+    let world = try_install_root(
+        prefix,
+        Arc::clone(&rules),
+        decision_read,
+        geometry,
+        limits,
+        clock.clone(),
+    )
+    .expect("the genuine maintained catalog installs before public use");
+    authoring::populate(&world, &rules, clock);
     rules.records.lock().unwrap().clear();
     world
 }
@@ -86,6 +97,7 @@ pub(super) fn install_growth(
     prefix: Arc<prefix::Calls>,
     rules: Arc<rule::Calls>,
     geometry: geometry::Configuration,
+    clock: worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock,
 ) -> Host {
     let policy = worth_foundational::ExecutionRequestPolicy::new(
         worth_foundational::ExecutionPosture::Serial,
@@ -101,7 +113,8 @@ pub(super) fn install_growth(
         rules,
         DecisionRead::Declared,
         geometry,
-        super::super::super::resources::application_limits_with_policy(policy),
+        super::super::super::resources::application_limits_with_clock(policy, clock.clone()),
+        clock,
     )
 }
 
@@ -111,6 +124,7 @@ fn try_install_root(
     decision_read: DecisionRead,
     geometry: geometry::Configuration,
     limits: WorthQueryInMemoryApplicationLimits,
+    clock: WorthQueryAdmissionClock,
 ) -> Result<Host, WorthQueryInMemoryApplicationDenial> {
     try_install_root_with_sources(
         prefix,
@@ -119,6 +133,7 @@ fn try_install_root(
         geometry,
         source_authorization::Configuration::default(),
         limits,
+        clock,
     )
 }
 #[cfg(test)]
@@ -132,9 +147,10 @@ pub(super) fn install_source_authorization(sources: source_authorization::Config
         geometry::Configuration::default(),
         sources,
         super::super::super::resources::application_limits(),
+        WorthQueryAdmissionClock::system(),
     )
     .unwrap();
-    authoring::populate(&world, &rules);
+    authoring::populate(&world, &rules, WorthQueryAdmissionClock::system());
     rules.records.lock().unwrap().clear();
     world
 }
@@ -145,9 +161,10 @@ fn try_install_root_with_sources(
     geometry: geometry::Configuration,
     sources: source_authorization::Configuration,
     limits: WorthQueryInMemoryApplicationLimits,
+    clock: WorthQueryAdmissionClock,
 ) -> Result<Host, WorthQueryInMemoryApplicationDenial> {
     let declaration = Catalog::declaration().unwrap();
-    in_memory_program(
+    in_memory_program_with_authorization_time_source(
         ApplicationProgramAuthoring::<Catalog, Program>::begin()
             .with_schema(&declaration)
             .validated_program()
@@ -178,6 +195,7 @@ fn try_install_root_with_sources(
             protected::populate(graph)?;
             Ok(())
         },
+        super::super::super::resources::RuntimeTime(clock),
     )
 }
 
@@ -192,6 +210,7 @@ pub(super) fn try_install_unpopulated(
         DecisionRead::Declared,
         geometry::Configuration::default(),
         super::super::super::resources::application_limits(),
+        WorthQueryAdmissionClock::system(),
     )
 }
 

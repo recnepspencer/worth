@@ -1,7 +1,6 @@
 use super::PublishedApplicationGraph;
 use crate::domain_computation::authorization::WorthQueryInstalledAuthorizationRegistry;
 use crate::domain_computation::authorization::WorthQueryRuntimeClock;
-use crate::domain_computation::primary_graph::authentication_clock::WorthQueryAuthenticationClock;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenial;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind;
@@ -30,6 +29,15 @@ pub(super) fn assemble_application_runtime<Schema>(
 where
     Schema: worth_query_installation::facade::ApplicationSchema,
 {
+    if !graph
+        .product_world_resources
+        .admits_clock(&authorization_clock.admission_clock)
+    {
+        return Err(WorthQueryPrimaryGraphInstallationDenial::new(
+            WorthQueryPrimaryGraphInstallationDenialKind::AdmissionClockMismatch,
+            "Product World and admission require the same monotonic clock",
+        ));
+    }
     let product_runtime = crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime::install(
         graph.primary_provider.graph.prepare_product_source(&phase.execution_request(), &graph.relational_branch_identity)
             .map_err(|denial| WorthQueryPrimaryGraphInstallationDenial::new(
@@ -108,7 +116,6 @@ where
             checkpoint_restore_work: graph.checkpoint_restore_work,
             authorization: std::sync::Arc::new(authorization),
             authorization_clock,
-            authentication_clock: WorthQueryAuthenticationClock::system(),
             relational_branch_identity: graph.relational_branch_identity,
             bridge: graph.bridge,
             product_runtime,

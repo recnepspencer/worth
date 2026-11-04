@@ -29,7 +29,6 @@ use crate::domain_computation::{
     WorthQueryProviderSessionDenialKind as Kind,
 };
 use std::sync::Arc;
-use std::time::Instant;
 use worth_execution::CancellationSource;
 
 struct CompletingTransport;
@@ -87,13 +86,16 @@ fn inbound_publication_consumers_keep_real_execution_refusals_and_retry_posture(
                 let mut canceled = request();
                 canceled.cancellation = source.token();
                 let mut expired = request();
-                expired.deadline = Some(Instant::now());
+                expired.deadline = Some({
+                    let clock = worth_execution::MonotonicClock::system();
+                    clock.deadline_at(clock.now())
+                });
                 let refusals = [
                     (
                         work_refusal(execution),
                         Ok(Kind::ExecutionResource {
                             denial: Resource::WorkExhausted,
-                            partition_identity: Some(1),
+                            partition_identity: None,
                             policy_ancestor: None,
                         }),
                     ),

@@ -50,8 +50,7 @@ pub fn authenticate(
         schema,
         WorthQueryAuthenticationAdapterAdmission::new(
             WorthQueryAuthenticationAudience::new("host").unwrap(),
-            WorthQueryAuthenticationMethod::new("test").unwrap(),
-        ),
+            WorthQueryAuthenticationMethod::new("test").unwrap(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()),
         IdentityAdapter,
     )
     .unwrap();

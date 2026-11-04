@@ -3,14 +3,14 @@ use crate::tests::support::*;
 use worth_foundational::facade::{
     AspectContract, AspectContractRevision, AspectIdentity, AspectKey, AspectValue,
     CanonicalBigInt, CanonicalDate, CanonicalDecimal, CanonicalF32, CanonicalF64,
-    CanonicalRational, CanonicalTime, CanonicalTimestamp, CanonicalTimestampTz, ContentRefId,
+    CanonicalRational, CanonicalTime, CanonicalTimestamp, CanonicalTimestampTz,
     ContractValidatedAspectValueView, ContractValidationInput, EntityId as FoundationalEntityId,
     InternedString, PartitionId as FoundationalPartitionId, PortableAspectContractBasis,
     PortableAspectPatchOperation, PortableRecordAspectPatch,
 };
 
 #[test]
-fn ordinary_native_mutation_roundtrips_every_foundational_scalar_family() {
+fn ordinary_native_mutation_roundtrips_every_unbound_scalar_family() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -137,7 +137,6 @@ fn scalar_samples() -> Vec<AspectValue> {
             CanonicalRational::new(CanonicalBigInt::new("22"), CanonicalBigInt::new("7")).unwrap(),
         ),
         AspectValue::String(InternedString::Raw("alpha".to_string())),
-        AspectValue::Bytes(ContentRefId(41)),
         AspectValue::Uuid([7; 16]),
         AspectValue::Date(CanonicalDate {
             days_from_unix_epoch: 20_000,
@@ -155,7 +154,6 @@ fn scalar_samples() -> Vec<AspectValue> {
             10,
             11,
         )),
-        AspectValue::ContentRef(ContentRefId(42)),
         AspectValue::InlineBytes(
             worth_foundational::InlineBytes::try_new(vec![0, 128, 255]).unwrap(),
         ),

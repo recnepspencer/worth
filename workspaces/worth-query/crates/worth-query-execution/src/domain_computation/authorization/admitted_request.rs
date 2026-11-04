@@ -44,6 +44,6 @@ pub(super) fn request_lapse(
             }
         });
     }
-    (Instant::now() >= authentication_valid_until)
+    (request.clock().now() >= authentication_valid_until)
         .then_some(WorthQueryAdmissionLapse::AuthenticationExpired)
 }

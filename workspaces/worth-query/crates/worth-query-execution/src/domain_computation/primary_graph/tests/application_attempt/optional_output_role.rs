@@ -144,7 +144,10 @@ type Execution = Result<
 >;
 
 fn committed_outputs(plan: OptionalOutputPlan) -> WorthQueryApplicationOutputCorrespondence {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let (execution, idempotency) = execute(&world, plan);
     let Ok(HandlerResult::Completed(completed)) = execution else {
         panic!("the handler completes its candidate");
@@ -163,7 +166,7 @@ fn committed_outputs(plan: OptionalOutputPlan) -> WorthQueryApplicationOutputCor
 }
 
 fn executed(plan: OptionalOutputPlan) -> Execution {
-    execute(&installed_authorization_world(true), plan).0
+    execute(&installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()), plan).0
 }
 
 fn execute(

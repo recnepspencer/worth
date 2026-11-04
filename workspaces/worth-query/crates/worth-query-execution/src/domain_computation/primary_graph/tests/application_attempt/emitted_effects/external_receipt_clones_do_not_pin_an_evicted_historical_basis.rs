@@ -4,7 +4,7 @@ use super::*;
 #[test]
 fn external_receipt_clones_do_not_pin_an_evicted_historical_basis() {
     {
-        let world = installed_authorization_world(true);
+        let world = installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
 
         let selected = world
             .application

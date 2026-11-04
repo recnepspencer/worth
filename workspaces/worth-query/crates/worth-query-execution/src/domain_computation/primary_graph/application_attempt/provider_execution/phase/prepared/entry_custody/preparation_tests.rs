@@ -30,9 +30,16 @@ fn requested_program(
 fn entry_custody_preparation_refreshes_lapse_before_program_fact_work() {
     let _observation =
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let cancellation = WorthQueryCancellationSource::new();
-    let request = WorthQueryRequestScope::new(None, cancellation.token());
+    let request = WorthQueryRequestScope::new(
+        None,
+        cancellation.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let mut program = requested_program(&world, &request);
     // Inject another real result's routes: the facts cannot satisfy this binding.
     let donor = requested_program(&world, &request);

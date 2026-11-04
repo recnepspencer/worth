@@ -17,6 +17,19 @@ impl RelationalCanonicalCommitArtifactDigest {
         Self(Sha256::digest(payload).into())
     }
 
+    pub(super) fn of_payload_for_request(
+        payload: &[u8],
+        context: &mut worth_execution::MapKernelContext<'_, '_>,
+    ) -> Result<Self, crate::execution::RelationalExecutionDenialCause> {
+        let mut digest = Sha256::new();
+        for chunk in payload.chunks(4096) {
+            crate::execution::request_stage::checkpoint(context, chunk.len() as u64)
+                .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
+            digest.update(chunk);
+        }
+        Ok(Self(digest.finalize().into()))
+    }
+
     /// The value a frame header records; it is trusted only after it equals
     /// [`Self::of_payload`] for the payload it covers.
     pub(super) fn recorded(bytes: [u8; Self::LEN]) -> Self {

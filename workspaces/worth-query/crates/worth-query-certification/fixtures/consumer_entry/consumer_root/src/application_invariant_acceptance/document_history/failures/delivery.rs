@@ -39,7 +39,7 @@ fn lost_delivery_replays_the_original_completion_without_resetting_a_later_docum
         });
         let mut failure = None;
         for _ in 0..96 {
-            let scope = WorthQueryRequestScope::new(None, cancellation.token());
+            let scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
             match with_scope(app, &scope, |request| {
                 navigation::advance(&mut document, request, &command)
             }) {

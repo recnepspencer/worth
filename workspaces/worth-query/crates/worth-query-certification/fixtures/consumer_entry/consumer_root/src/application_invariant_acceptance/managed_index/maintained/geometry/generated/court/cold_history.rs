@@ -273,7 +273,7 @@ fn cancel_cold_build(
     source: WorthQueryObservedSource<source::Query>,
 ) {
     let cancellation = WorthQueryCancellationSource::new();
-    let scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let reached = Arc::new(AtomicBool::new(false));
     let observed = reached.clone();
     *calls.after_build_node_write.lock().unwrap() = Some(Box::new(move || {

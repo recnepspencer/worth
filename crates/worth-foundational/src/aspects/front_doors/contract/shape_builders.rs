@@ -53,10 +53,6 @@ impl AspectContractShapeStep {
         AspectContract::reference_entity(self.key, self.identity, self.revision)
     }
 
-    pub fn content_ref(self) -> AspectContract {
-        AspectContract::content_ref(self.key, self.identity, self.revision)
-    }
-
     pub fn opaque_token(self) -> AspectContract {
         AspectContract::opaque_token(self.key, self.identity, self.revision)
     }

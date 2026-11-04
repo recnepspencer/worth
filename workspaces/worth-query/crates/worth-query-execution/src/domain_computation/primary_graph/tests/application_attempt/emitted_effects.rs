@@ -9,7 +9,10 @@ use crate::domain_computation::primary_graph::{
 
 #[test]
 fn typed_emission_is_published_with_the_exact_provider_commit() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let selected = world
         .application
         .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
@@ -72,7 +75,10 @@ fn typed_emission_is_published_with_the_exact_provider_commit() {
 
 #[test]
 fn response_loss_recovers_emit_receipt_without_duplicate_publication() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application
@@ -159,7 +165,10 @@ mod external_receipt_clones_do_not_pin_an_evicted_historical_basis;
 
 #[test]
 fn in_window_receipt_admits_its_exact_historical_basis() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application

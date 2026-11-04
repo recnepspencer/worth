@@ -192,6 +192,11 @@ impl<S: Scenario> OperationHandler<S, Binding<S>> for Provider {
             )?;
             writer.initialize_field(&created, Id::reference(), id)?;
             writer.initialize_field(&created, Value::reference(), 39)?;
+            if S::MODE == 43 {
+                writer
+                    .initialize_content(&created, content::field(), &39)
+                    .expect("valid installed word content");
+            }
             writer.create_output::<Role<S>>(&created)?;
             if S::MODE == 5 {
                 writer.link(
@@ -234,6 +239,11 @@ impl<S: Scenario> OperationHandler<S, Binding<S>> for Provider {
                     &cell,
                     &created,
                 )?;
+            }
+            if S::MODE == 43 {
+                writer
+                    .initialize_content(&cell, content::field(), &39)
+                    .expect("valid installed word content");
             }
             writer.create_output::<Cell<S>>(&cell)
         })();

@@ -127,7 +127,8 @@ impl Drop for WorthQueryCancellationFuture<'_> {
 
 #[derive(Clone)]
 pub struct WorthQueryRequestScope {
-    deadline: Option<Instant>,
+    deadline: Option<worth_execution::MonotonicDeadline>,
+    clock: super::WorthQueryAdmissionClock,
     cancellation: WorthQueryCancellationToken,
 }
 
@@ -141,15 +142,24 @@ pub enum WorthQueryRequestTimeRemaining {
 
 impl WorthQueryRequestScope {
     /// A request may be cancellation-only; `None` supplies no wall-clock deadline.
-    pub fn new(deadline: Option<Instant>, cancellation: WorthQueryCancellationToken) -> Self {
+    pub fn new(
+        deadline: Option<Instant>,
+        cancellation: WorthQueryCancellationToken,
+        clock: super::WorthQueryAdmissionClock,
+    ) -> Self {
         Self {
-            deadline,
+            deadline: deadline.map(|instant| clock.deadline_at(instant)),
             cancellation,
+            clock,
         }
     }
 
-    pub fn deadline(&self) -> Option<Instant> {
-        self.deadline
+    pub fn clock(&self) -> &super::WorthQueryAdmissionClock {
+        &self.clock
+    }
+
+    pub fn deadline(&self) -> Option<worth_execution::MonotonicDeadline> {
+        self.deadline.clone()
     }
 
     pub fn cancellation(&self) -> &WorthQueryCancellationToken {
@@ -157,14 +167,12 @@ impl WorthQueryRequestScope {
     }
 
     pub fn remaining(&self) -> WorthQueryRequestTimeRemaining {
-        self.remaining_at(Instant::now())
-    }
-
-    fn remaining_at(&self, now: Instant) -> WorthQueryRequestTimeRemaining {
-        match self.deadline {
+        match self.deadline.as_ref() {
             None => WorthQueryRequestTimeRemaining::Unbounded,
-            Some(deadline) if deadline <= now => WorthQueryRequestTimeRemaining::Elapsed,
-            Some(deadline) => WorthQueryRequestTimeRemaining::Remaining(deadline - now),
+            Some(deadline) => match deadline.remaining() {
+                Duration::ZERO => WorthQueryRequestTimeRemaining::Elapsed,
+                remaining => WorthQueryRequestTimeRemaining::Remaining(remaining),
+            },
         }
     }
 
@@ -173,7 +181,8 @@ impl WorthQueryRequestScope {
             Some(WorthQueryRequestInterruption::Cancelled)
         } else if self
             .deadline
-            .is_some_and(|deadline| Instant::now() >= deadline)
+            .as_ref()
+            .is_some_and(worth_execution::MonotonicDeadline::is_elapsed)
         {
             Some(WorthQueryRequestInterruption::DeadlineExceeded)
         } else {
@@ -185,7 +194,8 @@ impl WorthQueryRequestScope {
     /// Clones remain equivalent because they retain the same cancellation
     /// source and exact deadline.
     pub fn same_request(&self, other: &Self) -> bool {
-        self.deadline == other.deadline
+        self.clock.same_clock(&other.clock)
+            && self.deadline == other.deadline
             && Arc::ptr_eq(&self.cancellation.state, &other.cancellation.state)
     }
 }

@@ -8,6 +8,7 @@ use super::ConflictClass;
 impl ConflictClass {
     pub fn code(&self) -> DiagnosticCode {
         match self {
+            Self::ContentAdmission { .. } => DiagnosticCode::PreparationFailure,
             Self::SymbolIdentityExhausted
             | Self::ExecutionAllocationDenied { .. }
             | Self::TransactionStagingCardinalityOverflow
@@ -64,6 +65,7 @@ impl ConflictClass {
 
     pub fn detail(&self) -> String {
         match self {
+            Self::ContentAdmission { denial } => denial.to_string(),
             Self::SymbolIdentityExhausted => "native symbol identity space exhausted".to_owned(),
             Self::ExecutionAllocationDenied { denial } => denial.to_string(),
             Self::TransactionStagingCardinalityOverflow => "native staging cardinality overflow".to_owned(),

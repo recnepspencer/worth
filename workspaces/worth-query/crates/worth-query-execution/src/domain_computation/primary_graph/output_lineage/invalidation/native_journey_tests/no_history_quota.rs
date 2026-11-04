@@ -9,7 +9,10 @@ use crate::domain_computation::primary_graph::output_lineage::invalidation::comm
 
 #[test]
 fn no_position_policy_preserves_funded_history_and_original_reader_currentness() {
-    let (_, clock, _, execution) = test_product_world_resources().into_parts();
+    let (_, clock, _, execution) = test_product_world_resources(
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    )
+    .into_parts();
     let resources = WorthQueryInvalidationResources::new();
     let configured = WorthQueryProductWorldResources::new(
         worth_runtime_world::facade::RuntimeWorldBudgets::without_policy_limits(),

@@ -47,7 +47,7 @@ fn awaiting(
         });
         let mut refusal = None;
         for _ in 0..96 {
-            let scope = WorthQueryRequestScope::new(None, cancellation.token());
+            let scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
             match with_scope(app, &scope, |request| {
                 navigation::advance(document, request, command)
             }) {

@@ -76,7 +76,7 @@ pub(in super::super) fn reopen<S: Scenario>(
         schema,
         ((),),
         ApplicationBuildIdentity::parse("919b0039-0000-0000-0000-000000000002").unwrap(),
-        host_limits(),
+        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         checkpoint,
     )
     .expect("both indexed digests are valid")

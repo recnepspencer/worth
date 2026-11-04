@@ -36,7 +36,31 @@ impl<S: Scenario> OperationHandler<S, Binding<S>> for Provider {
             if S::MODE == 9 && input.id == 11 {
                 next_cell = 102;
             }
-            let cell_value = if S::MODE == 7 && input.id == 10 {
+            let cell_value = if S::MODE == 43 {
+                let source_value = super::super::super::content::read(reader, &source)?;
+                assert_eq!(
+                    source_value,
+                    input.id * 100,
+                    "actual candidate source content"
+                );
+                for entity in [&body, &cell] {
+                    let word = super::super::super::content::read(reader, entity)?;
+                    assert_eq!(
+                        Some(word),
+                        reader.field(entity, Value::reference())?,
+                        "the immutable field's content must match its ordinary value"
+                    );
+                }
+                let cell_id = reader.field(&cell, Id::reference())?.unwrap();
+                if cell_id != input.id * 10 + 2 {
+                    assert_eq!(
+                        super::super::super::content::read(reader, &cell)?,
+                        source_value + cell_id,
+                        "read the prior writer's actual committed bytes"
+                    );
+                }
+                source_value + next_cell
+            } else if S::MODE == 7 && input.id == 10 {
                 let peer = reader.resolve_entity(Id::reference(), 111)?;
                 reader.field(&peer, Value::reference())?.unwrap_or(46)
             } else {
@@ -127,11 +151,29 @@ impl<S: Scenario> OperationHandler<S, Binding<S>> for Provider {
             }
             let selected_stage = reader
                 .resolve_optional_entity(Id::reference(), if S::MODE == 15 { 101 } else { 20 })?;
-            let selected_stage = if matches!(S::MODE, 30 | 40 | 41) && selected_stage.is_none() {
+            let selected_stage = if matches!(S::MODE, 30 | 40 | 41 | 43) && selected_stage.is_none()
+            {
                 reader.resolve_optional_entity(Id::reference(), 30)?
             } else {
                 selected_stage
             };
+            if S::MODE == 43 {
+                if let Some(stage) = &selected_stage {
+                    assert_eq!(
+                        super::super::super::content::read(reader, stage)?,
+                        reader.field(stage, Id::reference())?.unwrap() * 100,
+                        "a freshly restored stage supplies its actual candidate bytes"
+                    );
+                }
+                if input.id == 11 {
+                    let preceding_writer = reader.resolve_entity(Id::reference(), 101)?;
+                    assert_eq!(
+                        super::super::super::content::read(reader, &preceding_writer)?,
+                        u64::from(selected_stage.is_some()),
+                        "the second writer reads the first writer's unpublished content"
+                    );
+                }
+            }
             let stage = selected_stage
                 .map(|stage| reader.mutation_target(&stage))
                 .transpose()?;
@@ -200,6 +242,15 @@ impl<S: Scenario> OperationHandler<S, Binding<S>> for Provider {
                 Value::reference(),
                 if decision.stage.is_some() { 1 } else { 0 },
             )?;
+            if S::MODE == 43 {
+                writer
+                    .write_content(
+                        &body,
+                        super::super::super::content::field(),
+                        &(if decision.stage.is_some() { 1 } else { 0 }),
+                    )
+                    .expect("valid installed word content");
+            }
             writer.preserve_output::<Body<S>>(&body)?;
             let source = writer.projected_entity(&decision.source)?;
             let cell = writer.create_entity_in_context(
@@ -209,6 +260,15 @@ impl<S: Scenario> OperationHandler<S, Binding<S>> for Provider {
             )?;
             writer.initialize_field(&cell, Id::reference(), decision.next_cell)?;
             writer.initialize_field(&cell, Value::reference(), decision.cell_value)?;
+            if S::MODE == 43 {
+                writer
+                    .initialize_content(
+                        &cell,
+                        super::super::super::content::field(),
+                        &decision.cell_value,
+                    )
+                    .expect("valid installed word content");
+            }
             writer.create_output::<Cell<S>>(&cell)?;
             if matches!(S::MODE, 22 | 23 | 26 | 27 | 28 | 42) {
                 writer.link(OwnCell::reference(), "owned-cell-successor", &cell, &body)?;

@@ -4,9 +4,7 @@ use super::*;
 #[test]
 fn reserved_command_is_visible_across_branches_and_released_with_its_slot() {
     let product_incarnation = || {
-        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
-            true,
-        )
+        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system())
         .application
         .current_world()
         .occurrence()

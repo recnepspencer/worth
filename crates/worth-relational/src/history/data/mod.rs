@@ -212,6 +212,6 @@ pub struct MergeInspection {
     pub can_merge: bool,
 }
 
-pub(crate) use canonical_commit_envelope::CanonicalEnvelopeWire;
+pub(crate) use canonical_commit_envelope::{CanonicalEnvelopeWire, PositionedEnvelopeSeed};
 
 pub(crate) use canonical_commit_envelope::LiveManagedSourceHistory;

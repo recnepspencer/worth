@@ -16,7 +16,7 @@ pub(super) struct Context {
 }
 impl Context {
     pub fn new() -> Self {
-        let world = fixture::installed_authorization_world(true);
+        let world = fixture::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let mut receipt =
             recoverable_commit_support::commit_on_world_with_output_demand_observation(
                 &world,

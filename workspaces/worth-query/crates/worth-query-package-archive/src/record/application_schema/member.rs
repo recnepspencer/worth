@@ -157,7 +157,8 @@ pub(super) fn write(
             output.text(aspect)?;
             output.text(field)
         }
-        ApplicationSchemaMember::Entity { .. }
+        ApplicationSchemaMember::ContentFormat { .. }
+        | ApplicationSchemaMember::Entity { .. }
         | ApplicationSchemaMember::Aspect { .. }
         | ApplicationSchemaMember::Field { .. }
         | ApplicationSchemaMember::Relation { .. }
@@ -216,7 +217,7 @@ pub(super) fn decode(
             definition: super::super::operation_component_read::decode(input, budget)?,
         }),
         38 => component_set::decode(input, budget),
-        tag @ 1..=5 | tag @ 25..=26 => schema::decode(tag, input, budget),
+        tag @ 1..=5 | tag @ 25..=26 | tag @ 52..=54 => schema::decode(tag, input, budget),
         tag @ 6..=10 | tag @ 33 => capability::decode(tag, input, budget),
         tag @ 11..=14 | tag @ 16..=18 | tag @ (29 | 30 | 35) => {
             operation::decode(tag, input, budget)
@@ -235,6 +236,9 @@ pub(super) fn decode(
 
 pub(super) fn member_tag(member: &ApplicationSchemaMember) -> u16 {
     match member {
+        ApplicationSchemaMember::ContentFormat { .. } => 52,
+        ApplicationSchemaMember::Field { content_format: Some(_), frame: Some(_), .. } => 54,
+        ApplicationSchemaMember::Field { content_format: Some(_), .. } => 53,
         ApplicationSchemaMember::ApplicationHistory { .. } => 51,
         ApplicationSchemaMember::InvariantManagedIndexSource { .. } => 49,
         ApplicationSchemaMember::ScalarAspectField { .. } => 50,

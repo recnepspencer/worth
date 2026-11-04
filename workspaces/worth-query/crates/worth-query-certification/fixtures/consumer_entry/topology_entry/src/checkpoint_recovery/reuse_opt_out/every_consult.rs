@@ -32,7 +32,7 @@ mod serial {
             .unwrap();
         let run = |cancel_at: Option<usize>| {
             let cancellation = authentication::WorthQueryCancellationSource::new();
-            let scope = authentication::WorthQueryRequestScope::new(None, cancellation.token());
+            let scope = authentication::WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
             application
                 .with_application_advancement(&scope, |phase| {
                     with_request_consult_observer_for_test(

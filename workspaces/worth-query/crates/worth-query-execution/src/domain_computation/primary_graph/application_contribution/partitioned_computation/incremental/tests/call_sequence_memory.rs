@@ -4,7 +4,10 @@ use crate::domain_computation::primary_graph::application_contribution::request_
 #[test]
 fn measured_call_shape_view_keeps_its_own_grant_after_the_sequence_drops() {
     let _observation = QueryObservation::install_on_this_thread();
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let first = first_run(&world, &installed(StatusRead::Gather(1), sum));
     let sealed = first.sealed.unwrap().unwrap();
     let prior = sealed
@@ -39,7 +42,10 @@ fn measured_call_shape_view_keeps_its_own_grant_after_the_sequence_drops() {
 #[test]
 fn measured_call_sequence_refuses_before_copy_and_holds_its_view_until_final_drop() {
     let _observation = QueryObservation::install_on_this_thread();
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let first = first_run(&world, &installed(StatusRead::Gather(1), sum));
     let sealed = first.sealed.unwrap().unwrap();
     let prior = sealed
@@ -88,7 +94,10 @@ fn measured_call_sequence_refuses_before_copy_and_holds_its_view_until_final_dro
 #[test]
 fn measured_call_scope_index_requires_a_reaching_call_inside_the_carried_range() {
     let _observation = QueryObservation::install_on_this_thread();
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let first = first_run(&world, &installed(StatusRead::Gather(1), sum));
     let sealed = first.sealed.unwrap().unwrap();
     let prior = sealed

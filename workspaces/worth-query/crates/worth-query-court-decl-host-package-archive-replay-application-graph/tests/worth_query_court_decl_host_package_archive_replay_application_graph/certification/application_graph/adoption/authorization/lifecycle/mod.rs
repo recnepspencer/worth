@@ -2,14 +2,21 @@ pub(crate) use worth_query_testkit_certification_application_graph::facade::cert
 
 #[test]
 fn expired_authentication_retains_prepared_and_pending_owners_for_fresh_publication() {
-    let host = publish_on_first_program();
+    let time = worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionTimeController::new().unwrap();
+    time.hold();
+    let host = worth_query_testkit_document_retention::facade::document_retention_model::host::publish_on_first_program_with_trusted_time(
+        worth_query_testkit_document_retention::facade::document_retention_model::host::CertificationTrustedTime::new(time.clock()));
     let a = host.current_world();
     let b = super::branch_set::fork(&host);
     let target = *host
         .supported_program::<RetentionProgramP1>()
         .unwrap()
         .owned_revision();
-    let scope = request_scope();
+    let scope = WorthQueryRequestScope::new(
+        Some(time.clock().now() + std::time::Duration::from_secs(30)),
+        WorthQueryCancellationSource::new().token(),
+        time.clock(),
+    );
     let current = authenticate_operator(host.installed_schema(), &scope);
     let programs = host
         .runtime()
@@ -33,7 +40,7 @@ fn expired_authentication_retains_prepared_and_pending_owners_for_fresh_publicat
         .unwrap()
         .prepare(64)
         .unwrap();
-    let stale = expired_operator(&host, &scope);
+    let stale = expired_operator(&host, &scope, &time);
     let prepared = match prepared.publish(host.runtime(), &stale, &scope) {
         WorthQueryBranchAdoptionPublicationOutcome::AuthorizationDenied { cause, prepared } => {
             expired(cause);
@@ -50,7 +57,7 @@ fn expired_authentication_retains_prepared_and_pending_owners_for_fresh_publicat
         other => panic!("expiry must retain pending native custody: {other:?}"),
     }
     assert_eq!(host.current_world(), a);
-    assert_eq!(read_retention(host.runtime(), a), 7);
+    assert_eq!(host.runtime().request(&current, &scope).on_branch(a).query(worth_query_testkit_document_retention::facade::document_retention_model::retention_entry::DocumentRetentionRead { identity: worth_query_testkit_document_retention::facade::document_retention_model::retention_entry::DOCUMENT_IDENTITY.to_owned() }).execute().unwrap().rows()[0].retention_days, 7);
     assert!(matches!(
         prepared.publish(host.runtime(), &current, &scope),
         WorthQueryBranchAdoptionPublicationOutcome::Performed(_)

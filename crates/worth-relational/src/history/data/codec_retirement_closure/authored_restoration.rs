@@ -7,6 +7,8 @@ use crate::{
 };
 use worth_execution::{ExecutionRequest, ExecutionWorkCeiling};
 use worth_foundational::facade::*;
+mod creation_patch;
+pub(super) use creation_patch::creation_patch;
 
 fn failure(stop: Stop) -> TransactionCommitError {
     match stop {
@@ -168,6 +170,8 @@ impl RelationalRuntime {
                                 }
                             }
                             let mut inverse = Vec::new();
+                            let mut content =
+                                crate::content::RelationalContentAttachments::default();
                             let mut relations = Vec::new();
                             let mut aggregate_memberships = Vec::new();
                             for prior in &publications {
@@ -198,6 +202,13 @@ impl RelationalRuntime {
                                         basis.inner.root.schema_authority(),
                                     )
                                     .map_err(failure)?;
+                                    live.content
+                                        .retain_restoration_content(
+                                            execution,
+                                            payload.as_ref().and_then(|p| p.state.as_ref()),
+                                            &mut content,
+                                        )
+                                        .map_err(crate::content::commit_denial)?;
                                     charge(context, entities.len()).map_err(failure)?;
                                     let target = entities
                                         .iter()
@@ -242,6 +253,13 @@ impl RelationalRuntime {
                                         basis.inner.root.schema_authority(),
                                     )
                                     .map_err(failure)?;
+                                    live.content
+                                        .retain_restoration_content(
+                                            execution,
+                                            payload.as_ref().and_then(|p| p.state.as_ref()),
+                                            &mut content,
+                                        )
+                                        .map_err(crate::content::commit_denial)?;
                                     if basis
                                         .inner
                                         .root
@@ -313,6 +331,7 @@ impl RelationalRuntime {
                                 entities,
                                 relations,
                                 inverse,
+                                content,
                                 aggregate_memberships,
                             ))
                         },
@@ -321,7 +340,7 @@ impl RelationalRuntime {
                 execution
                     .consult()
                     .map_err(|cause| failure(super::request(cause)))?;
-                let (entities, relations, inverse, aggregate_memberships) = result
+                let (entities, relations, inverse, content, aggregate_memberships) = result
                     .map_err(|cause| failure(super::request(cause)))?
                     .map_err(|cause| failure(super::request(cause)))?
                     .0?;
@@ -333,54 +352,10 @@ impl RelationalRuntime {
                     relations,
                     publications,
                     inverse,
+                    content,
                     aggregate_memberships,
                 }))
             })
             .map_err(|cause| failure(super::request(cause)))?
     }
-}
-
-pub(super) fn creation_patch(
-    state: Option<&AuthoritativeRecordAspectState>,
-    plan: &crate::schema::data::LoweredAspectContractPlan,
-    context: &mut worth_execution::MapKernelContext<'_, '_>,
-) -> Result<PortableRecordAspectPatch, Stop> {
-    let Some(state) = state else {
-        return Ok(PortableRecordAspectPatch::new([]));
-    };
-    charge(
-        context,
-        state.owned_allocation_capacity_bytes().saturating_add(
-            state
-                .aspects()
-                .len()
-                .saturating_mul(plan.executable_bindings.len()),
-        ),
-    )?;
-    Ok(PortableRecordAspectPatch::new(
-        state
-            .aspects()
-            .entries()
-            .filter(|(key, _)| {
-                !plan.executable_bindings.iter().any(|binding| {
-                    binding.aspect_key() == *key
-                        && matches!(
-                            binding.target,
-                            crate::schema::data::AspectBinding::RelationSourceEndpoint
-                                | crate::schema::data::AspectBinding::RelationTargetEndpoint
-                        )
-                })
-            })
-            .map(|(_, value)| PortableAspectPatchOperation::SetWhole {
-                basis: PortableAspectContractBasis::from_contract(value.contract()),
-                value: match value.view() {
-                    ContractValidatedAspectValueView::Scalar(value) => {
-                        ContractValidationInput::Scalar(value.clone())
-                    }
-                    ContractValidatedAspectValueView::Struct(value) => {
-                        ContractValidationInput::Struct(value.clone())
-                    }
-                },
-            }),
-    ))
 }

@@ -176,7 +176,10 @@ fn canonical_basis_value_text(
             interned_string_text(denominator)
         ),
         CanonicalBasisValue::BytesRefId(value) => format!("binary-content-ref:{value}"),
-        CanonicalBasisValue::ContentRefId(value) => format!("content-ref:{value}"),
+        CanonicalBasisValue::ContentRefId(value) => format!(
+            "content-ref:{}",
+            worth_foundational::facade::ContentRefId(*value)
+        ),
         CanonicalBasisValue::EntityRef {
             partition_id,
             local_slot,

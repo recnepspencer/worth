@@ -27,7 +27,10 @@ fn isolated_brand_check_allocation_probe() {
     if std::env::var_os(PROBE).is_none() {
         return;
     }
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let (principal, account) = party(&world, &request);
     let admission = admit!(

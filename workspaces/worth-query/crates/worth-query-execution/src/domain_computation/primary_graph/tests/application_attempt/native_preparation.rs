@@ -5,18 +5,22 @@ use super::{
 };
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome;
 use crate::facade::runtime::ExecutionAllocationPolicy;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
 };
 
 #[test]
 fn native_preparation_cancellation_leaves_head_and_key_available_for_fresh_retry() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let source = WorthQueryCancellationSource::new();
     let request = WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(30)),
+        Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(30)),
         source.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     let principal = world
         .application

@@ -85,7 +85,7 @@ fn contract(
 #[test]
 fn foreign_installed_seal_is_stale_at_workflow_definition_before_work() {
     for forged in [false, true] {
-        let world = installed_authorization_world(true);
+        let world = installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let contract = contract(&world);
         let request = live_scope();
         let (principal, account) = party(&world, &request);

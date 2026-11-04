@@ -105,6 +105,7 @@ pub(super) fn limits(retained_steps: u64) -> WorthQueryInMemoryApplicationLimits
             retained_steps + 64,
             64 * 1024 * 1024,
             retained_steps * 2 + 128,
+            worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system(),
         ),
         WorthQueryApplicationQueryResourceProfile::new(std::num::NonZeroUsize::new(32).unwrap()),
         SignalConditionalEvaluationBudget::development(),

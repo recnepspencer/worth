@@ -128,7 +128,7 @@ mod serial {
         eprintln!("closed B ignored source edit: {edit:?}");
         let mut successor = open();
         let cancellation = authentication::WorthQueryCancellationSource::new();
-        let stopped_scope = authentication::WorthQueryRequestScope::new(None, cancellation.token());
+        let stopped_scope = authentication::WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
         let stopped = application.request(&principal, &stopped_scope);
         cancellation.cancel();
         let denial = successor
@@ -254,7 +254,7 @@ mod serial {
         eprintln!("closed consumer source edit: {source_edit:?}");
         let cancellation = authentication::WorthQueryCancellationSource::new();
         cancellation.cancel();
-        let stopped_scope = authentication::WorthQueryRequestScope::new(None, cancellation.token());
+        let stopped_scope = authentication::WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
         let stopped = application.request(&principal, &stopped_scope);
         let operation = match open().advance(&stopped) {
             WorthQueryProgramOutputOperationAdvance::Refused { operation, denial } => {

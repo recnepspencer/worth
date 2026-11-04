@@ -96,7 +96,7 @@ fn reopen(
         S::declaration().unwrap(),
         ((),),
         ApplicationBuildIdentity::parse("919b0039-0000-0000-0000-000000000002").unwrap(),
-        host_limits(),
+        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         checkpoint,
     )
     .expect("outer Query and Native indexed artifact digests are valid")

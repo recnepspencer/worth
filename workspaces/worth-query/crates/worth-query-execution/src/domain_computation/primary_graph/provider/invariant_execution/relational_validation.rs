@@ -7,6 +7,7 @@ impl WorthQueryPrimaryGraphProvider {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         batch: worth_relational::facade::transactions::WorkerIntentBatch,
+        content: &worth_relational::facade::content::RelationalContentAttachments,
         branch: &worth_relational::facade::history::BranchId,
         product: &crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
@@ -79,6 +80,14 @@ impl WorthQueryPrimaryGraphProvider {
                     )
                     .map_err(map_transaction_admission_failure)?;
                 transaction
+                    .attach_content(execution, content)
+                    .map_err(|cause| {
+                        WorthQueryInvariantExecutionFailure::content(
+                            cause,
+                            "Native candidate content attachment refused",
+                        )
+                    })?;
+                transaction
                     .push_batch(batch, allocation_control.policy())
                     .map_err(map_transaction_staging_failure)?;
                 #[cfg(test)]
@@ -118,6 +127,14 @@ impl WorthQueryPrimaryGraphProvider {
                             control.relational().clone(),
                         )
                         .map_err(map_transaction_admission_failure)?;
+                    transaction
+                        .attach_content(execution, content)
+                        .map_err(|cause| {
+                            WorthQueryInvariantExecutionFailure::content(
+                                cause,
+                                "Native candidate content attachment refused",
+                            )
+                        })?;
                     transaction
                         .push_batch(batch, allocation_control.policy())
                         .map_err(map_transaction_staging_failure)?;
@@ -238,8 +255,7 @@ mod tests {
         let request =
             worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope::new(
                 Some(std::time::Instant::now() + std::time::Duration::from_secs(60)),
-                source.token(),
-            );
+                source.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let control = super::super::validation_control::ValidationRequestControl::new(&request);
         source.cancel();
         assert_eq!(

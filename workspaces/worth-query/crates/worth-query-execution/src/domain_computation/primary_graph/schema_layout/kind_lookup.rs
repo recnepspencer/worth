@@ -1,6 +1,18 @@
 //! Exact application entity-kind lookup at the installed layout owner.
 use worth_relational::facade::identity::KindId;
 impl super::WorthQueryPrimaryGraphLayout {
+    pub(in crate::domain_computation::primary_graph) fn application_relation_kinds(
+        &self,
+    ) -> impl Iterator<Item = KindId> + '_ {
+        self.application_relation_kinds.iter().copied()
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn application_entity_kinds(
+        &self,
+    ) -> impl Iterator<Item = KindId> + '_ {
+        self.application_entity_kinds.iter().copied()
+    }
+
     pub(in crate::domain_computation) fn is_application_entity_kind(&self, kind: KindId) -> bool {
         self.application_entity_kinds.contains(&kind)
     }

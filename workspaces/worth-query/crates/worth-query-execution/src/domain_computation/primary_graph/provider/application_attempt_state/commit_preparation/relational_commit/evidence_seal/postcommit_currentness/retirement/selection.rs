@@ -10,7 +10,10 @@ use worth_relational::facade::transactions::RecordRef;
 
 #[test]
 fn checkpoint_retirement_requires_this_commits_changed_entity_and_deleted_snapshot() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let (owned, _, facts) = world
         .application
         .with_host_advancement(|phase| {

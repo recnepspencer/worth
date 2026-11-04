@@ -8,6 +8,57 @@ use crate::durability::artifact_payload_emission::{count_payload, emit_payload};
 use crate::history::data::PositionedCanonicalCommit;
 
 impl RelationalCanonicalCommitArtifact {
+    /// Hash the journal payload inside the caller's checkpoint stage, charging
+    /// one unit per hashed byte on that stage's meter. Opens no scope.
+    pub(crate) fn positioned_payload_digest_in_stage(
+        commit: &PositionedCanonicalCommit,
+        context: &mut worth_execution::MapKernelContext<'_, '_>,
+    ) -> Result<[u8; 32], RelationalCanonicalCommitArtifactEncodeDenial> {
+        use sha2::{Digest, Sha256};
+        use RelationalCanonicalCommitArtifactEncodeDenial as Denial;
+        struct StageHashWriter<'c, 'scope, 'lease> {
+            context: &'c mut worth_execution::MapKernelContext<'scope, 'lease>,
+            digest: Sha256,
+            stop: Option<Denial>,
+        }
+        impl std::io::Write for StageHashWriter<'_, '_, '_> {
+            fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+                if self.stop.is_some() {
+                    return Err(std::io::Error::other("original digest request stopped"));
+                }
+                for chunk in bytes.chunks(4096) {
+                    if let Err(cause) = crate::execution::request_stage::checkpoint(
+                        self.context,
+                        chunk.len() as u64,
+                    ) {
+                        self.stop = Some(Denial::Request(cause.into()));
+                        return Err(std::io::Error::other("original digest request stopped"));
+                    }
+                    self.digest.update(chunk);
+                }
+                Ok(bytes.len())
+            }
+            fn flush(&mut self) -> std::io::Result<()> {
+                Ok(())
+            }
+        }
+        let mut writer = StageHashWriter {
+            context,
+            digest: Sha256::new(),
+            stop: None,
+        };
+        let result = rmp_serde::encode::write_named(
+            &mut writer,
+            &ArtifactPayloadRef::new(commit.position(), commit.envelope()),
+        );
+        if let Some(stop) = writer.stop {
+            return Err(stop);
+        }
+        result.map_err(|error| Denial::PayloadEncoding {
+            detail: error.to_string(),
+        })?;
+        Ok(writer.digest.finalize().into())
+    }
     /// The manifest index uses the journal's exact payload grammar. Hashing
     /// borrows the admitted envelope and allocates no intermediate artifact.
     pub(crate) fn positioned_payload_digest(
@@ -64,6 +115,12 @@ impl RelationalCanonicalCommitArtifact {
         let frame_len = HEADER_LEN
             .checked_add(payload_len)
             .ok_or(RelationalCanonicalCommitArtifactEncodeDenial::FrameSizeOverflow)?;
+        if frame_len > super::MAXIMUM_ARTIFACT_BYTES {
+            return Err(RelationalCanonicalCommitArtifactEncodeDenial::SizeLimit {
+                observed: frame_len,
+                maximum: super::MAXIMUM_ARTIFACT_BYTES,
+            });
+        }
         let declared_len = u64::try_from(payload_len)
             .map_err(|_| RelationalCanonicalCommitArtifactEncodeDenial::FrameSizeOverflow)?;
         let unsealed = CanonicalCommitArtifactHeader {

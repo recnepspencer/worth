@@ -19,7 +19,14 @@ fn tree(row: WorthQueryApplicationProjectionNode) -> WorthQueryApplicationDisclo
 #[test]
 fn independent_projection_bodies_keep_full_generation_occurrence_path_and_completeness() {
     let original = tree(row());
-    let compare = |other| original.same_one_hop_content(&tree(other), &mut |_| Ok::<_, ()>(()));
+    let compare = |other| {
+        original.same_one_hop_content(
+            &tree(other),
+            &mut |_| Ok::<_, ()>(()),
+            &mut |_| (),
+            &mut |_, _| panic!("representation fixture has no Native frames"),
+        )
+    };
     assert_eq!(compare(row()), Ok(true));
     let mut different = row();
     different.entity_id = EntityId::new(PartitionId::main(), 7, 2);
@@ -38,7 +45,12 @@ fn independent_projection_bodies_keep_full_generation_occurrence_path_and_comple
     let mut right = row();
     right.incoming_relation = Some(RelationId::new(PartitionId::main(), 9, 2));
     assert_eq!(
-        tree(left).same_one_hop_content(&tree(right), &mut |_| Ok::<_, ()>(())),
+        tree(left).same_one_hop_content(
+            &tree(right),
+            &mut |_| Ok::<_, ()>(()),
+            &mut |_| (),
+            &mut |_, _| panic!("representation fixture has no Native frames"),
+        ),
         Ok(false)
     );
 }
@@ -76,19 +88,29 @@ fn comparison_preserves_first_and_final_owned_stop_and_separate_width_admission(
     let left = tree(row());
     let right = tree(row());
     let mut contacts = 0;
-    let outcome = left.same_one_hop_content(&right, &mut |_| {
-        contacts += 1;
-        Err(Stop("first"))
-    });
+    let outcome = left.same_one_hop_content(
+        &right,
+        &mut |_| {
+            contacts += 1;
+            Err(Stop("first"))
+        },
+        &mut |_| Stop("content"),
+        &mut |_, _| panic!("representation fixture has no Native frames"),
+    );
     assert_eq!(outcome, Err(Stop("first")));
     assert_eq!(contacts, 1);
-    let outcome = left.same_one_hop_content(&right, &mut |work| {
-        if work == 0 {
-            Err(Stop("final"))
-        } else {
-            Ok(())
-        }
-    });
+    let outcome = left.same_one_hop_content(
+        &right,
+        &mut |work| {
+            if work == 0 {
+                Err(Stop("final"))
+            } else {
+                Ok(())
+            }
+        },
+        &mut |_| Stop("content"),
+        &mut |_, _| panic!("representation fixture has no Native frames"),
+    );
     assert_eq!(outcome, Err(Stop("final")));
     let mut widths = Vec::new();
     assert_eq!(

@@ -30,21 +30,29 @@ pub(super) fn replay_envelope_effect(
             require_merge_execution_authority(envelope)?;
         }
         recovered_branch_basis(restored, &envelope.branch_context)?;
-        apply_authoritative_commit_artifacts(restored, positioned, false, false)?;
+        apply_authoritative_commit_artifacts(execution, restored, positioned, false, false)?;
         let branch_basis = recovered_branch_basis(restored, &envelope.branch_context)?;
         let published_partition_delta = restored.storage_authority().affirm_no_partition_changes();
+        let mut admitted_envelope = positioned.envelope().clone();
+        admitted_envelope.content = envelope
+            .content
+            .readmit_unchanged_root(execution, &branch_basis.inner.root)?;
         let prepared_recovery = restored
             .mvcc_publication_authority()
             .prepare_recovered_commit(
+                execution,
                 envelope.commit.commit_id,
                 envelope.commit.clone(),
                 &branch_basis,
                 published_partition_delta,
-                Arc::clone(positioned.canonical_arc()),
+                Arc::new(admitted_envelope),
             )
             .map_err(|denial| match denial {
                 crate::mvcc::PublicationPreparationDenial::StorageUnavailable(failure) => {
                     RelationalRecoveryStop::from(failure)
+                }
+                crate::mvcc::PublicationPreparationDenial::Execution(cause) => {
+                    RelationalRecoveryStop::Request(cause)
                 }
                 crate::mvcc::PublicationPreparationDenial::Invalid(detail) => {
                     DurabilityError::new(RecoveryFailureClass::ReplayFailure, detail).into()
@@ -78,15 +86,17 @@ pub(super) fn replay_envelope_effect(
 }
 
 pub(super) fn restore_authoritative_artifacts_when_required(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     restored: &mut RelationalRuntime,
     positioned: &crate::history::data::PositionedCanonicalCommit,
     restore_authoritative_envelope: bool,
     allow_reconstructed_replacement: bool,
-) -> Result<(), DurabilityError> {
+) -> Result<(), RelationalRecoveryStop> {
     let envelope = positioned.envelope();
     if restore_authoritative_envelope {
         validate_recovered_history_parity(restored, envelope)?;
         apply_authoritative_commit_artifacts(
+            execution,
             restored,
             positioned,
             allow_reconstructed_replacement,
@@ -119,6 +129,7 @@ pub(super) fn replay_ordinary_commit(
                 format!("failed to admit durable transaction basis: {error:?}"),
             )
         })?;
+    txn.content = envelope.content.records().clone();
     txn.push_batch(
         WorkerIntentBatch {
             name: format!("recovery-commit-{}", envelope.commit.commit_id.0),
@@ -208,8 +219,13 @@ pub(super) fn replay_merge_commit(
         restored,
         &envelope.merge_parent_branches,
     )?);
-    let context = AuthoritativeCommitContext::from_merge(schema_basis.apply(options), merge_plan)
-        .map_err(|_| {
+    let context = AuthoritativeCommitContext::from_merge(
+        schema_basis
+            .apply(options)
+            .with_recovered_content(envelope.content.records().clone()),
+        merge_plan,
+    )
+    .map_err(|_| {
         DurabilityError::new(
             RecoveryFailureClass::ReplayFailure,
             format!(

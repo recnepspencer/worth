@@ -40,6 +40,7 @@ fn members(extra_provenance: bool) -> Vec<Member> {
         )));
     let field = |name: &str, scalar_family, value_type: &str| Member::Field {
         canonical: None,
+        content_format: None,
         entity: "Evidence".into(),
         aspect: "Facts".into(),
         field: name.into(),
@@ -89,6 +90,7 @@ fn unsigned_alternative_creators_and_mutable_signed_fields_are_refused() {
     let mut mutable = members(false);
     let Member::Field {
         canonical: None,
+        content_format: None,
         writable,
         ..
     } = &mut mutable[0]
@@ -100,6 +102,7 @@ fn unsigned_alternative_creators_and_mutable_signed_fields_are_refused() {
     let mut missing = members(false);
     missing.push(Member::Field {
         canonical: None,
+        content_format: None,
         entity: "Evidence".into(),
         aspect: "Facts".into(),
         field: "MissingSnapshot".into(),
@@ -119,6 +122,7 @@ fn captured_members(binding: Identity, role: Option<Role>, signed: bool) -> Vec<
     let mut members = members(false);
     let Member::Field {
         canonical: None,
+        content_format: None,
         value_type,
         ..
     } = &mut members[1]
@@ -168,6 +172,7 @@ fn captured_members(binding: Identity, role: Option<Role>, signed: bool) -> Vec<
     );
     members.push(Member::Field {
         canonical: None,
+        content_format: None,
         entity: "Evidence".into(),
         aspect: "Facts".into(),
         field: "Text".into(),
@@ -183,7 +188,8 @@ fn captured_members(binding: Identity, role: Option<Role>, signed: bool) -> Vec<
     if !signed {
         members.retain(|member| {
             !matches!(member, Member::Field {
-            canonical: None, field, .. } if field == "Provenance")
+            canonical: None,
+            content_format: None, field, .. } if field == "Provenance")
         });
     }
     members

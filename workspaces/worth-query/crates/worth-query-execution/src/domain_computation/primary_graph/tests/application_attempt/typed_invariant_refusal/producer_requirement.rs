@@ -33,7 +33,11 @@ fn install() -> world::World {
 }
 
 fn scope() -> WorthQueryRequestScope {
-    WorthQueryRequestScope::new(None, WorthQueryCancellationSource::new().token())
+    WorthQueryRequestScope::new(
+        None,
+        WorthQueryCancellationSource::new().token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    )
 }
 
 fn commit<Operation, Input>(

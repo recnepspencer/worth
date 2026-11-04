@@ -1,6 +1,7 @@
 mod aspect_removal;
 mod body_external_emission;
 mod conditional_definition;
+mod content;
 mod effect_growth;
 mod emission;
 mod entity_creation;
@@ -105,6 +106,8 @@ impl<Schema, Operation, Input, Scope>
             conditional_definition: None,
             output_correspondence: Default::default(),
             creation_partition: None,
+            content_attachments: Default::default(),
+            content_denial: None,
         }
     }
 }
@@ -221,6 +224,12 @@ impl<Schema, Operation, Input, Scope>
         WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
         WorthQueryApplicationAttemptDenial,
     > {
+        if let Some(cause) = self.content_denial {
+            return Err(WorthQueryApplicationAttemptDenial::new(
+                WorthQueryApplicationAttemptDenialKind::ValueDecode(cause),
+                "content authoring",
+            ));
+        }
         self.read_set
             .admission
             .validate_current_authority()
@@ -230,6 +239,7 @@ impl<Schema, Operation, Input, Scope>
         Ok(WorthQueryApplicationEffectProgram {
             read_set: self.read_set,
             effects: self.effects,
+            content_attachments: self.content_attachments,
             conditional_definition: self.conditional_definition,
             effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Application,
             output_correspondence: self.output_correspondence,
@@ -297,6 +307,3 @@ impl<Schema, Operation, Input, Scope>
             })
     }
 }
-
-#[cfg(test)]
-mod authentication_expiry;

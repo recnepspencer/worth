@@ -9,7 +9,10 @@ use crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial
 
 #[test]
 fn structured_effect_validation_precedes_retention_and_external_projection() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application

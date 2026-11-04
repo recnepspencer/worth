@@ -23,7 +23,10 @@ mod selection_denies_invalid_work_and_overflow_budgets_without_retai;
 
 #[test]
 fn distinct_absent_predicates_survive_sealing_and_compare_only_their_own_matches() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let actor = world
         .application

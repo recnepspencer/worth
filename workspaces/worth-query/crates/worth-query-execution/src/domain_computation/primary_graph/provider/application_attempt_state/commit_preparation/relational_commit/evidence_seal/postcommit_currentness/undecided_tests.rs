@@ -17,7 +17,10 @@ use crate::domain_computation::primary_graph::tests::fixture::AccountIdentity;
 /// that cannot answer leaves the commit's own effect undecidable.
 #[test]
 fn only_a_comparison_that_cannot_answer_is_undecidable() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let (entity, locator) = world
         .application
         .with_host_advancement(|phase| account_note(&phase, &world, "account-1"))

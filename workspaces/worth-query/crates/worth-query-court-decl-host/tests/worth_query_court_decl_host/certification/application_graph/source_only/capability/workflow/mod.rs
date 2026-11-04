@@ -140,7 +140,7 @@ fn completed_workflow_owner_acceptance_requires_fresh_selected_capability() {
     let actor = host::authenticate(&host, 1, &authentication_scope);
     let cancellation = WorthQueryCancellationSource::new();
     cancellation.cancel();
-    let canceled = WorthQueryRequestScope::new(None, cancellation.token());
+    let canceled = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let (owner, canceled_denial) = match owner.advance(
         &runtime
             .request(&actor, &canceled)

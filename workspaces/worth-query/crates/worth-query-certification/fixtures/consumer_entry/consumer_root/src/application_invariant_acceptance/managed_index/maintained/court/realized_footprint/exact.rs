@@ -191,7 +191,7 @@ fn realized_footprint_target_refinement_keeps_domain_failure_and_original_cancel
         );
         calls.reject_refinement.store(false, Ordering::SeqCst);
         let cancellation = WorthQueryCancellationSource::new();
-        let stopped = WorthQueryRequestScope::new(None, cancellation.token());
+        let stopped = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
         let fired = Arc::new(std::sync::atomic::AtomicBool::new(false));
         let observed = fired.clone();
         *calls.after_refinement.lock().unwrap() = Some(Box::new(move || {

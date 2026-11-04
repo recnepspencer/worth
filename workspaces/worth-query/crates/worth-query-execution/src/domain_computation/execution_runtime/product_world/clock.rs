@@ -9,29 +9,42 @@ use worth_runtime_world::facade::{RuntimeWorldClockSource, RuntimeWorldInstant};
 #[derive(Clone)]
 pub struct WorthQueryProductWorldClock {
     origin: Instant,
+    pub(in crate::domain_computation) admission_clock:
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock,
 }
 
 impl WorthQueryProductWorldClock {
-    pub fn start() -> Self {
+    pub fn start(
+        admission_clock: worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock,
+    ) -> Self {
         Self {
-            origin: Instant::now(),
+            origin: admission_clock.now(),
+            admission_clock,
         }
     }
 
-    pub(crate) fn deadline(&self, deadline: Instant) -> RuntimeWorldInstant {
-        RuntimeWorldInstant::from_ticks(
+    pub(crate) fn deadline(
+        &self,
+        deadline: worth_execution::MonotonicDeadline,
+    ) -> Option<RuntimeWorldInstant> {
+        let deadline = deadline.instant_on(&self.admission_clock)?;
+        Some(RuntimeWorldInstant::from_ticks(
             deadline
                 .saturating_duration_since(self.origin)
                 .as_nanos()
                 .min(u128::from(u64::MAX)) as u64,
-        )
+        ))
     }
 }
 
 impl RuntimeWorldClockSource for WorthQueryProductWorldClock {
     fn now(&self) -> RuntimeWorldInstant {
         RuntimeWorldInstant::from_ticks(
-            self.origin.elapsed().as_nanos().min(u128::from(u64::MAX)) as u64
+            self.admission_clock
+                .now()
+                .saturating_duration_since(self.origin)
+                .as_nanos()
+                .min(u128::from(u64::MAX)) as u64,
         )
     }
 }

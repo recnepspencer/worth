@@ -8,6 +8,7 @@ impl WorkingState {
         // Retaining sparse posture prevents a later whole-arena replacement
         // from erasing untouched records in the original branch region.
         self.clone_mode = PartitionCloneMode::GraphSparseEntities;
+        self.content = next.content;
         for (id, mut overlay) in next.partitions {
             let mut journal = next.mutation_journal.get(&id).cloned().unwrap_or_default();
             if let Some(prior) = self.partitions.get_mut(&id) {

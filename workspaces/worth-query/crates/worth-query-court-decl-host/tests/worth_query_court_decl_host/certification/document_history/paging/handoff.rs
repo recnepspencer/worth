@@ -8,6 +8,10 @@ use worth_query_testkit_document_retention::facade::document_retention_model::{
 };
 
 #[test]
+#[expect(
+    clippy::disallowed_methods,
+    reason = "certification-harness thread-scope=1 scoped-thread-spawn=1: cancellation_after_assembly_preserves_the_cursor_for_a_fresh_read joins the bounded native owner and competing host or control actors to certify custody at the real handoff."
+)]
 fn cancellation_after_assembly_preserves_the_cursor_for_a_fresh_read() {
     let host = publish_on_first_program();
     let (mut document, expected) = chain(&host);
@@ -20,7 +24,7 @@ fn cancellation_after_assembly_preserves_the_cursor_for_a_fresh_read() {
         .continuation()
         .unwrap();
     let cancel = WorthQueryCancellationSource::new();
-    let stopped_scope = WorthQueryRequestScope::new(None, cancel.token());
+    let stopped_scope = WorthQueryRequestScope::new(None, cancel.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let stopped = host.runtime().request(&principal, &stopped_scope);
     let pause = document.pause_after_history_page_assembly_for_test();
     let (reached, result) = std::thread::scope(|threads| {
@@ -45,6 +49,10 @@ fn cancellation_after_assembly_preserves_the_cursor_for_a_fresh_read() {
 }
 
 #[test]
+#[expect(
+    clippy::disallowed_methods,
+    reason = "certification-harness thread-scope=1 scoped-thread-spawn=1: an_outside_head_move_after_assembly_refuses_the_staged_page joins the bounded native owner and competing host or control actors to certify custody at the real handoff."
+)]
 fn an_outside_head_move_after_assembly_refuses_the_staged_page() {
     let host = publish_on_first_program();
     let mut document = attach(&host, head(&host), DOCUMENT_IDENTITY);

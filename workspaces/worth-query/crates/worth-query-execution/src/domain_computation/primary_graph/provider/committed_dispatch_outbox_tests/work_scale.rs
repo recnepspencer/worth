@@ -6,7 +6,7 @@ fn exact_outbox_owner_read_work_stays_local_across_unrelated_dispatch_history() 
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     for population in [10_u64, 1_000] {
-        let world = installed_authorization_world(true);
+        let world = installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let provider = &world.application.runtime.primary_provider;
         let mut last = None;
         for identity in 1..=population {

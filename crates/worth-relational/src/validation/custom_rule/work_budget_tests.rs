@@ -96,10 +96,13 @@ fn pure_invariant_observers_preserve_original_serial_and_leased_interruption() {
     for leased in [false, true] {
         for expected in [Ok(()), Err(Stop::Cancelled), Err(Stop::DeadlineElapsed)] {
             let cancellation = CancellationSource::new();
-            let deadline = (expected == Err(Stop::DeadlineElapsed)).then(std::time::Instant::now);
+            let deadline = (expected == Err(Stop::DeadlineElapsed)).then(|| {
+                let clock = worth_execution::MonotonicClock::system();
+                clock.deadline_at(clock.now())
+            });
             let serial = crate::test_execution_policy::serial_request()
                 .with_cancellation(cancellation.token())
-                .with_deadline(deadline);
+                .with_deadline(deadline.clone());
             let lease = crate::tests::support::test_execution_authority()
                 .request_lease(LeaseRequest {
                     policy: ExecutionRequestPolicy::new(

@@ -100,6 +100,7 @@ pub(super) fn members(contract: ErasedContract) -> Vec<ApplicationSchemaMember> 
 
 pub(super) fn field_member(field: &str) -> ApplicationSchemaMember {
     ApplicationSchemaMember::Field {
+        content_format: None,
         entity: "Grant".to_string(),
         aspect: "Facts".to_string(),
         field: field.to_string(),
@@ -128,6 +129,7 @@ pub(super) fn unique_field_member(field: &str) -> ApplicationSchemaMember {
 
 pub(super) fn resource_field_member(field: &str) -> ApplicationSchemaMember {
     ApplicationSchemaMember::Field {
+        content_format: None,
         entity: "Resource".to_string(),
         aspect: "ResourceFacts".to_string(),
         field: field.to_string(),

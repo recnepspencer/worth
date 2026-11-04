@@ -234,9 +234,8 @@ pub fn run(cell: cases::Cell) -> Observed {
     let cancellation = worth_query_host::facade::admission::authenticated_principal::WorthQueryCancellationSource::new();
     let expired_scope =
         worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope::new(
-            Some(std::time::Instant::now()),
-            cancellation.token(),
-        );
+            Some(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system().now()),
+            cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let expired_request = app.request(&principal, &expired_scope);
     let outcome = caller.advance(if cell.fault == 10 {
         &expired_request

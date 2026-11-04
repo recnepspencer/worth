@@ -32,7 +32,7 @@ fn run_stopped_recovery(discard: bool) {
     drop(page);
 
     let cancellation = WorthQueryCancellationSource::new();
-    let scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let entered = Arc::new(AtomicUsize::new(0));
     let reached = Arc::clone(&entered);
     let adoption = app

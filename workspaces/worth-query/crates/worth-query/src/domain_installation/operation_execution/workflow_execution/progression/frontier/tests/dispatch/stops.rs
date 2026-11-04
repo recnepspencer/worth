@@ -344,8 +344,7 @@ fn already_elapsed_deadline_and_cancelled_entry_do_not_compute() {
                 Some(deadline.unwrap_or_else(|| {
                     std::time::Instant::now() + std::time::Duration::from_secs(60)
                 })),
-                source.token(),
-            );
+                source.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let mut workspace = Policy::width(0).workspace(request_execution, &probe);
         let run = start(&mut workspace);
         let (record, work, failed) =

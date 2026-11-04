@@ -82,7 +82,7 @@ pub(super) fn select_removed_owning_scopes(
         crate::history::data::OwnedScopeDependentSelection::RemovedSources(&anchors),
         candidate.commit.parents.first().copied(),
         runtime.history.canonical_catalog_len(),
-        |commit| runtime.history.canonical_envelope(commit),
+        |commit| Ok(runtime.history.canonical_envelope(commit)),
         context,
     )
     .map_err(|failure| super::relation_stop(failure.stop))?;

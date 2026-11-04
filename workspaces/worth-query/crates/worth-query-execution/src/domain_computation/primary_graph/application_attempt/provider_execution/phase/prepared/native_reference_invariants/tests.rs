@@ -33,7 +33,10 @@ fn endpoint_reference_selects_only_matching_entity_applicability() {
 
 #[test]
 fn native_output_reference_selects_endpoint_while_ordinary_relations_do_not() {
-    let world = installed_authorization_world(false);
+    let world = installed_authorization_world(
+        false,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let layout = &world.application.runtime.primary_provider.graph.layout;
     let transition = CreatedEntityRef {
         partition_id: PartitionId(1),
@@ -77,7 +80,10 @@ fn native_output_reference_selects_endpoint_while_ordinary_relations_do_not() {
 
 #[test]
 fn native_reference_without_matching_output_entry_is_refused() {
-    let world = installed_authorization_world(false);
+    let world = installed_authorization_world(
+        false,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let layout = &world.application.runtime.primary_provider.graph.layout;
     let entry = EntityReference::Created(CreatedEntityRef {
         partition_id: PartitionId(1),

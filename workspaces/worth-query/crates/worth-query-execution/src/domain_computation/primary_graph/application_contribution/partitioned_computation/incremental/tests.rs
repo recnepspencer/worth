@@ -364,7 +364,10 @@ mod unobservable;
 mod wide;
 
 pub(super) fn sealed_run_for_lineage_test() -> SealedComputationRun {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     first_run(&world, &installed(StatusRead::Gather(1), sum))
         .sealed
         .unwrap()

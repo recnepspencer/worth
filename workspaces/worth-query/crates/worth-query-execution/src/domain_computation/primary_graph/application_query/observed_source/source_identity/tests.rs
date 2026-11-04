@@ -148,9 +148,7 @@ fn reinterned_source_retains_checkpoint_identity_without_reusing_runtime_idempot
 #[test]
 fn sibling_product_occurrences_share_checkpoint_identity_not_runtime_idempotency() {
     let world =
-        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
-            true,
-        );
+        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     let source = world.application.current_world();
     world.application.with_host_advancement(|phase| {
 let host_custody = phase.test_host_request();
@@ -256,9 +254,7 @@ fn footprint(root: EntityId, complete: bool) -> WorthQueryObservedSourceFootprin
 
 fn product_selection() -> WorthQueryApplicationBasisSelectionIdentity {
     let world =
-        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
-            true,
-        );
+        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     let product = world
         .application
         .product_runtime()

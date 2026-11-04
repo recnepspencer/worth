@@ -106,8 +106,7 @@ fn attached_document_foreign_read_and_close_preserve_its_original_live_custody()
     let stopped_scope =
         worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope::new(
             None,
-            cancellation.token(),
-        );
+            cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let stopped_principal =
         authenticate_operator(host.runtime().installed_schema(), &stopped_scope);
     cancellation.cancel();

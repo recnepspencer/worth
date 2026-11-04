@@ -51,11 +51,12 @@ impl WorthQueryRetainedPreImageField {
 }
 
 /// Exact pre-image slice retained for a recorded inverse (R8.2).
-#[derive(Clone, Eq, PartialEq)]
+#[derive(Clone)]
 pub struct WorthQueryRetainedPreImage {
     fields: Vec<WorthQueryRetainedPreImageField>,
     relations: Option<std::sync::Arc<super::retained_relations::RetainedRelations>>,
     total_encoded_bytes: usize,
+    content: worth_relational::facade::content::RelationalContentAttachments,
     _private: (),
 }
 
@@ -99,6 +100,56 @@ impl WorthQueryRetainedPreImage {
         self.total_encoded_bytes = bytes;
         self
     }
+    pub(in crate::domain_computation) fn retain_content(
+        &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        basis: &worth_relational::facade::branch::AdmittedRelationalBranchBasis,
+        maximum: usize,
+    ) -> Result<(), WorthQueryPreImageRetentionDenial> {
+        use WorthQueryPreImageRetentionDenial as Denial;
+        let mut content =
+            worth_relational::facade::content::RelationalContentAttachments::default();
+        let mut total = self.total_encoded_bytes;
+        for field in &mut self.fields {
+            crate::domain_computation::primary_graph::retention_checkpoint(execution)
+                .map_err(Denial::Content)?;
+            let AspectValue::ContentRef(identity) = field.value() else {
+                continue;
+            };
+            let RecordRef::Entity(row) = field.target_record() else {
+                return Err(Denial::Content(worth_relational::facade::content::RelationalContentDenial::EncodingInconsistency));
+            };
+            let frame = basis
+                .retain_field_content(
+                    execution,
+                    *row,
+                    field.entity_kind(),
+                    field.locator(),
+                    *identity,
+                )
+                .map_err(Denial::Content)?;
+            field.encoded_bytes = field
+                .encoded_bytes
+                .checked_add(frame.bytes().len())
+                .ok_or(Denial::ExceedsByteBound)?;
+            total = total
+                .checked_add(frame.bytes().len())
+                .ok_or(Denial::ExceedsByteBound)?;
+            if total > maximum {
+                return Err(Denial::ExceedsByteBound);
+            }
+            content.attach(execution, &frame).map_err(Denial::Content)?;
+        }
+        self.content = content;
+        self.total_encoded_bytes = total;
+        Ok(())
+    }
+    pub(in crate::domain_computation) fn content(
+        &self,
+    ) -> &worth_relational::facade::content::RelationalContentAttachments {
+        &self.content
+    }
+
     pub fn fields(&self) -> &[WorthQueryRetainedPreImageField] {
         &self.fields
     }
@@ -161,6 +212,7 @@ impl WorthQueryRetainedPreImage {
             fields,
             relations: None,
             total_encoded_bytes,
+            content: Default::default(),
             _private: (),
         }
     }
@@ -168,6 +220,7 @@ impl WorthQueryRetainedPreImage {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryPreImageRetentionDenial {
+    Content(worth_relational::facade::content::RelationalContentDenial),
     MissingDemandedField,
     ExceedsByteBound,
     EmptyDemand,
@@ -191,3 +244,12 @@ pub fn demanded_field_slot(path: &CanonicalFieldPath) -> Option<&FieldKey> {
         _ => None,
     }
 }
+
+// Custody is not a second semantic value. Restoring it runs Native's controlled
+// admission; ordinary receipt equality must not traverse its retained bytes.
+impl PartialEq for WorthQueryRetainedPreImage {
+    fn eq(&self, other: &Self) -> bool {
+        self.fields == other.fields && self.total_encoded_bytes == other.total_encoded_bytes
+    }
+}
+impl Eq for WorthQueryRetainedPreImage {}

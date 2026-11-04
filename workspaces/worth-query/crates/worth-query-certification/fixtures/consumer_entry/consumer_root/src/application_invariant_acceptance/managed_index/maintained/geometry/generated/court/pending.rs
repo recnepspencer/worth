@@ -27,7 +27,7 @@ fn authenticate(
 fn stopped_scope() -> WorthQueryRequestScope {
     let cancellation = WorthQueryCancellationSource::new();
     cancellation.cancel();
-    WorthQueryRequestScope::new(None, cancellation.token())
+    WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system())
 }
 fn is_cancelled(cause: &WorthQueryAdvancementDenial) -> bool {
     matches!(

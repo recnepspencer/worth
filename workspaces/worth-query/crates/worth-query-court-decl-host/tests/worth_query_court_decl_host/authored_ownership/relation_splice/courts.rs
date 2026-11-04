@@ -278,7 +278,7 @@ fn relation_preimage_installation_requires_the_source_operations_relation_read()
         schema,
         ((),),
         ApplicationBuildIdentity::parse("919b0039-0000-0000-0000-000000000002").unwrap(),
-        host_limits(),
+        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         |_, graph, installed| {
             graph.bind_principal(
                 &installed.principal_binding(actor()).unwrap(),

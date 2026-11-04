@@ -280,7 +280,8 @@ pub(in crate::domain_computation::primary_graph) fn external_identity(
 pub(in crate::domain_computation::primary_graph) fn live_scope() -> WorthQueryRequestScope {
     let source = WorthQueryCancellationSource::new();
     WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(60)),
+        Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(60)),
         source.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     )
 }

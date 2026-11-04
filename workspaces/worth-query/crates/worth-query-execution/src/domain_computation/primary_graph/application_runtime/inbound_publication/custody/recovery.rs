@@ -131,7 +131,14 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let prepared = match publication.prepare_settled_relational_adoption(&unpublished, request)
         {
             Ok(prepared) => prepared,
-            Err(PublicationDenial::Stopped(stop)) => {
+            Err(PublicationDenial::ClockMismatch) => {
+                return RecoveryProgress::Pending(
+                    prior,
+                    None,
+                    Pending::ExecutionRequest(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock)),
+                )
+            },
+Err(PublicationDenial::Stopped(stop)) => {
                 return RecoveryProgress::Pending(
                     prior,
                     None,
@@ -171,7 +178,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     .err();
                 RecoveryProgress::Performed(terminal, release)
             }
-            Err(PublicationDenial::Stopped(stop)) => RecoveryProgress::Pending(
+            Err(PublicationDenial::ClockMismatch) => RecoveryProgress::Pending(
+                prior,
+                None,
+                Pending::ExecutionRequest(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock)),
+            ),
+Err(PublicationDenial::Stopped(stop)) => RecoveryProgress::Pending(
                 prior,
                 None,
                 Pending::ExecutionRequest(advancement_denial(stop)),

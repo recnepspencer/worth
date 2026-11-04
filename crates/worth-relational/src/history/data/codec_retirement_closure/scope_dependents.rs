@@ -23,7 +23,7 @@ pub(crate) fn select_owned_scope_dependent(
     selection: OwnedScopeDependentSelection<'_>,
     next: Option<CommitId>,
     bound: usize,
-    load: impl FnMut(CommitId) -> Option<Arc<CanonicalCommitEnvelope>>,
+    load: impl FnMut(CommitId) -> Result<Option<Arc<CanonicalCommitEnvelope>>, Stop>,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<Option<Arc<CanonicalRequiredOutputOrigin>>, Failure> {
     match selection {
@@ -42,7 +42,7 @@ pub(crate) fn select_owned_scope_dependent(
 fn select(
     next: Option<CommitId>,
     bound: usize,
-    mut load: impl FnMut(CommitId) -> Option<Arc<CanonicalCommitEnvelope>>,
+    mut load: impl FnMut(CommitId) -> Result<Option<Arc<CanonicalCommitEnvelope>>, Stop>,
     context: &mut MapKernelContext<'_, '_>,
     linear: bool,
     mut matches: impl FnMut(
@@ -66,7 +66,7 @@ fn select(
         }
         visited.push(commit);
         charge(context, bound.saturating_add(1))?;
-        let envelope = load(commit).ok_or("owned source retirement lost history")?;
+        let envelope = load(commit)?.ok_or("owned source retirement lost history")?;
         if linear {
             super::require_linear_history(&envelope)?;
         }

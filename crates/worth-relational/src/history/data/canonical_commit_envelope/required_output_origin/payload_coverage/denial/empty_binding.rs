@@ -25,7 +25,6 @@ enum ShapeForm {
     Struct,
     Opaque,
     Reference,
-    Content,
 }
 impl ShapeForm {
     fn label(self) -> &'static str {
@@ -34,7 +33,6 @@ impl ShapeForm {
             Self::Struct => "struct",
             Self::Opaque => "opaque",
             Self::Reference => "reference",
-            Self::Content => "content",
         }
     }
 }
@@ -56,7 +54,6 @@ impl EmptyBindingSummary {
                 AspectShape::Struct(_) => ShapeForm::Struct,
                 AspectShape::Opaque(_) => ShapeForm::Opaque,
                 AspectShape::Reference(_) => ShapeForm::Reference,
-                AspectShape::Content => ShapeForm::Content,
             },
             absence: binding.contract.absence(),
             declared: 0,

@@ -7,7 +7,10 @@ use super::*;
 fn unchanged_facts_carry_every_partition_to_the_same_outcome() {
     let _observation =
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let installed = installed(StatusRead::Gather(1), sum);
     let first = first_run(&world, &installed);
     let outcome = *first.outcome.as_ref().unwrap();
@@ -42,7 +45,7 @@ fn a_moved_gather_fact_gathers_only_its_partition_again() {
     for reducer in [sum as fn(&u64, &u64) -> u64, |left: &u64, right: &u64| {
         *left.max(right)
     }] {
-        let world = installed_authorization_world(true);
+        let world = installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let installed = installed(StatusRead::Gather(1), reducer);
         let first = first_run(&world, &installed);
         *installed.owner.bump.lock().unwrap() = 10;
@@ -67,7 +70,10 @@ fn a_moved_gather_fact_gathers_only_its_partition_again() {
 fn a_moved_key_fact_keys_its_items_again_and_carries_their_unmoved_partitions() {
     let _observation =
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let installed = installed(StatusRead::ItemKeys, sum);
     let first = first_run(&world, &installed);
     let outcome = *first.outcome.as_ref().unwrap();
@@ -86,7 +92,10 @@ fn a_moved_key_fact_keys_its_items_again_and_carries_their_unmoved_partitions() 
 fn another_input_or_edition_or_an_evicted_state_runs_in_full() {
     let _observation =
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let installed = installed(StatusRead::Gather(1), sum);
     let first = first_run(&world, &installed);
     let total = *first.outcome.as_ref().unwrap();
@@ -123,7 +132,7 @@ fn growing_past_the_ceiling_is_denied_as_a_full_run_is_denied() {
     // so the ceiling falls on it or, after it, on the carried one.
     let mut named = Vec::new();
     for status in [0, 1] {
-        let world = installed_authorization_world(true);
+        let world = installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let installed = installed(StatusRead::Gather(status), sum);
 
         *installed.owner.work.lock().unwrap() = [KERNEL_WORK, KERNEL_WORK];

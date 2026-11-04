@@ -40,6 +40,15 @@ impl WorthQueryPrimaryGraphProvider {
         material.batch = plan
             .extend_batch(execution, original)
             .map_err(map_validation_failure)?;
+        material
+            .content_attachments
+            .attach_retained(execution, plan.content())
+            .map_err(|cause| {
+                WorthQueryInvariantExecutionFailure::content(
+                    cause,
+                    "Native inverse content attachment refused",
+                )
+            })?;
         material.restoration_plan = Some(plan);
         Ok(material)
     }

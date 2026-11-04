@@ -19,6 +19,8 @@
 //! authoritative envelope projection. The position is inside the digested
 //! payload so a rewritten header position cannot pass readmission.
 
+pub(crate) const MAXIMUM_ARTIFACT_BYTES: usize = 256 * 1024 * 1024;
+
 mod encode_denial;
 mod encoding;
 mod frame;
@@ -27,6 +29,8 @@ mod payload_digest;
 mod payload_wire;
 mod readmission;
 mod readmission_refusal;
+mod request_encoding;
+pub(crate) use request_encoding::ControlledFrameCopyDenial;
 mod retained_export;
 
 pub use encode_denial::RelationalCanonicalCommitArtifactEncodeDenial;

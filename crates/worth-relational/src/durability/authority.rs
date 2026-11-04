@@ -6,6 +6,7 @@ mod checkpoint_lineage_basis;
 mod checkpoint_member_carry;
 mod checkpoint_memory_demand;
 mod checkpoint_native_capture;
+mod checkpoint_region_consistency;
 mod checkpoint_transition;
 mod checkpointing;
 mod diagnostics;

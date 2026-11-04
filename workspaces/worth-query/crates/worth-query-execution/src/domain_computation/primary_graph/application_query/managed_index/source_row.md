@@ -34,3 +34,38 @@ where S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>,
     row.with_text(selector, |text| text)
 }
 ```
+
+
+Content uses the same installed field selection and original controls:
+
+```rust
+# use worth_query_execution::facade::primary_graph::{WorthQueryManagedIndexSourceRow, WorthQueryManagedIndexContentReadDenial};
+# use worth_query_declaration::facade::{application_query::{ApplicationManagedIndexBinding, ApplicationQueryBinding, ApplicationQueryResultFieldRef}, application_schema::{ApplicationSchema,ApplicationContentBinding,ApplicationFieldUnit,ApplicationReadableScalarValueBinding,RequiredApplicationFieldValue,WritePosture}, portable_identity::WorthQueryPortableType};
+# use worth_foundational::facade::ContentRefId;
+# type Query<S,I> = <<I as ApplicationManagedIndexBinding<S>>::SourceBinding as ApplicationQueryBinding<S>>::Query;
+fn content_length<S,I,Slot,Entity,Aspect,Field,Write,Equality,Unit,C>(
+ row:&WorthQueryManagedIndexSourceRow<'_,S,I>,
+ selector:ApplicationQueryResultFieldRef<Query<S,I>,Slot,S,Entity,Aspect,Field,ContentRefId,Write,Equality,Unit>,format:C,
+)->Result<usize,WorthQueryManagedIndexContentReadDenial>
+where S:ApplicationSchema,I:ApplicationManagedIndexBinding<S>,C:ApplicationContentBinding,
+ Slot:WorthQueryPortableType,Field:RequiredApplicationFieldValue<Value=ContentRefId>,
+ Field::Binding:ApplicationReadableScalarValueBinding,Write:WritePosture,Unit:ApplicationFieldUnit,
+{row.with_content(selector,format,|payload|payload.len())}
+```
+
+A content borrow cannot escape its callback:
+
+```compile_fail
+# use worth_query_execution::facade::primary_graph::{WorthQueryManagedIndexSourceRow, WorthQueryManagedIndexContentReadDenial};
+# use worth_query_declaration::facade::{application_query::{ApplicationManagedIndexBinding, ApplicationQueryBinding, ApplicationQueryResultFieldRef}, application_schema::{ApplicationSchema,ApplicationContentBinding,ApplicationFieldUnit,ApplicationReadableScalarValueBinding,RequiredApplicationFieldValue,WritePosture}, portable_identity::WorthQueryPortableType};
+# use worth_foundational::facade::ContentRefId;
+# type Query<S,I> = <<I as ApplicationManagedIndexBinding<S>>::SourceBinding as ApplicationQueryBinding<S>>::Query;
+fn escape<'row,S,I,Slot,Entity,Aspect,Field,Write,Equality,Unit,C>(
+ row:&'row WorthQueryManagedIndexSourceRow<'_,S,I>,
+ selector:ApplicationQueryResultFieldRef<Query<S,I>,Slot,S,Entity,Aspect,Field,ContentRefId,Write,Equality,Unit>,format:C,
+)->Result<&'row [u8],WorthQueryManagedIndexContentReadDenial>
+where S:ApplicationSchema,I:ApplicationManagedIndexBinding<S>,C:ApplicationContentBinding,
+ Slot:WorthQueryPortableType,Field:RequiredApplicationFieldValue<Value=ContentRefId>,
+ Field::Binding:ApplicationReadableScalarValueBinding,Write:WritePosture,Unit:ApplicationFieldUnit,
+{row.with_content(selector,format,|payload|payload)}
+```

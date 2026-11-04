@@ -103,7 +103,7 @@ impl RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
                 let binding = symbols.binding();
                 let root = runtime
                     .history
-                    .capture_applied_candidate_root(&basis.inner.root, state, &binding)
+                    .capture_applied_candidate_root(execution, &basis.inner.root, state, &binding)
                     .map_err(|failure| {
                         crate::mvcc::origin_denial(format!(
                             "applied candidate root capture failed: {failure:?}"

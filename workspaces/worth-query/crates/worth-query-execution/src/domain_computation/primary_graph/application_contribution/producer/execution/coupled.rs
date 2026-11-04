@@ -18,6 +18,8 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
         RequiredOutputPublication,
     pub(in crate::domain_computation::primary_graph::application_contribution::producer) batch:
         WorkerIntentBatch,
+    pub(in crate::domain_computation::primary_graph::application_contribution::producer) content:
+        worth_relational::facade::content::RelationalContentAttachments,
 }
 
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) trait InstalledCoupledProducerExecutor<
@@ -179,7 +181,7 @@ where
                 .map_err(|outcome| {
                 coupled_preparation::preparation_denial(Binding::IDENTITY, outcome)
             })?;
-        let (writer, publication, batch) = inspect_coupled_application::<Schema, Binding>(
+        let (writer, publication, batch, content) = inspect_coupled_application::<Schema, Binding>(
             &execution,
             phase,
             runtime,
@@ -192,6 +194,7 @@ where
             writer,
             publication,
             batch,
+            content,
         })
     }
 }

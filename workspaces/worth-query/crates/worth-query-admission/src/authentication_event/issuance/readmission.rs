@@ -18,6 +18,9 @@ where
         scope: &WorthQueryRequestScope,
     ) -> Result<WorthQueryConsumedAuthenticationEvent<Schema>, WorthQueryAuthenticationEventDenial>
     {
+        if !principal.clock().same_clock(scope.clock()) {
+            return Err(WorthQueryAuthenticationEventDenial::ClockIdentityChanged);
+        }
         self.check_principal(principal)?;
         check_interruption(scope)?;
         if consumed.principal != *principal.identity() {
@@ -53,7 +56,7 @@ where
         if self.binding_identity != consumed.binding_identity {
             return Err(WorthQueryAuthenticationEventDenial::WrongSchemaBinding);
         }
-        if consumed.principal_valid_until <= Instant::now() {
+        if consumed.principal_valid_until <= consumed.principal_clock.now() {
             return Err(WorthQueryAuthenticationEventDenial::PrincipalExpired);
         }
         if consumed.revoked.load(Ordering::Acquire) {

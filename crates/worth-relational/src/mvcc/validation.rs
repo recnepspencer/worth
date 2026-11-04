@@ -45,6 +45,7 @@ use crate::schema::data::{ProposedSchemaTransition, SchemaReconciliationPolicy};
 #[derive(Debug)]
 pub(crate) struct RelationalTransactionValidationInput {
     coupled_proposal: Option<RelationalMutationProposalIdentity>,
+    content: crate::content::RelationalContentAttachments,
     basis: AdmittedRelationalBranchBasis,
     intent: crate::mvcc::RelationalTransactionIntent,
     merge_parent_bases: Vec<AdmittedRelationalBranchBasis>,
@@ -61,6 +62,7 @@ pub(crate) struct RelationalTransactionValidationInput {
 impl PartialEq for RelationalTransactionValidationInput {
     fn eq(&self, other: &Self) -> bool {
         self.coupled_proposal == other.coupled_proposal
+            && self.content.same_staging(&other.content)
             && self.basis == other.basis
             && self.intent == other.intent
             && self.merge_parent_bases == other.merge_parent_bases
@@ -86,6 +88,7 @@ impl RelationalTransactionValidationInput {
                     .as_ref()
                     .map(|candidate| candidate.identity.clone())
             }),
+            content: transaction.content.clone(),
             basis: transaction.basis.clone(),
             intent: transaction.intent.clone(),
             merge_parent_bases: transaction.merge_parent_bases.clone(),
@@ -103,6 +106,7 @@ impl RelationalTransactionValidationInput {
     pub(crate) fn for_owner_basis(basis: &AdmittedRelationalBranchBasis) -> Self {
         Self {
             coupled_proposal: None,
+            content: Default::default(),
             basis: basis.clone(),
             intent: crate::mvcc::RelationalTransactionIntent::ordinary(),
             merge_parent_bases: Vec::new(),
@@ -117,6 +121,17 @@ impl RelationalTransactionValidationInput {
 
     pub(crate) fn coupled_proposal(&self) -> Option<&RelationalMutationProposalIdentity> {
         self.coupled_proposal.as_ref()
+    }
+
+    pub(crate) fn with_recovered_content(
+        mut self,
+        content: crate::content::RelationalContentAttachments,
+    ) -> Self {
+        self.content = content;
+        self
+    }
+    pub(crate) fn content(&self) -> &crate::content::RelationalContentAttachments {
+        &self.content
     }
 
     pub(crate) fn basis(&self) -> &AdmittedRelationalBranchBasis {
@@ -219,6 +234,7 @@ impl RelationalTransactionValidationInput {
             transaction.intent,
             self.intent
         );
+        transaction.content = self.content;
         transaction.merge_parent_bases = self.merge_parent_bases;
         transaction.schema_authority_input = self.schema_authority_input;
         transaction.recovered_codec_publication_custody = self.recovered_codec_publication_custody;

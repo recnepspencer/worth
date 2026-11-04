@@ -2,6 +2,7 @@
 mod cell;
 mod content_capture;
 pub(crate) use content_capture::RegionContentFailure;
+mod kind_admission;
 mod kind_authority;
 mod kind_commitment;
 mod kind_projection;

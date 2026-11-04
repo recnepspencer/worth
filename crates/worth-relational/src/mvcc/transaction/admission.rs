@@ -155,6 +155,7 @@ impl crate::runtime::RelationalRuntime {
         Ok(super::BranchBoundRelationalTransaction {
             authored_coupling: None,
             prepared_coupled_commands: std::sync::Mutex::new(None),
+            content: Default::default(),
             symbols: self.services.symbols.clone(),
             read_leases: Default::default(),
             basis: basis.clone(),

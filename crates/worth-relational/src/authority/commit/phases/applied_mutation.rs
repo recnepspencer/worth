@@ -15,6 +15,7 @@ pub(crate) struct PendingMutationIdentities {
     pub(crate) symbols: PendingSymbolMeanings,
 }
 
+pub(crate) mod content;
 pub(crate) mod ordinary_apply;
 pub(crate) use ordinary_apply::AppliedMutationCore;
 
@@ -86,6 +87,7 @@ pub(crate) fn apply_mutation_draft(
     source_interpretation: std::sync::Arc<
         crate::validation::candidate_source::NativeManagedSourceInterpretation,
     >,
+    content: &crate::content::RelationalContentAttachments,
 ) -> Result<AppliedMutationDraft, MutationApplyDenial> {
     require_original_source_interpretation(identity, &source_interpretation)?;
     let materialization = source_interpretation.materialization_mode();
@@ -118,12 +120,34 @@ pub(crate) fn apply_mutation_draft(
         )?
     };
     let AppliedMutationCore {
-        state,
+        mut state,
         outcome,
         aggregate,
         identities: PendingMutationIdentities { records, symbols },
         coupled_publication: _,
     } = core;
+    state.content = content::prepare(
+        execution,
+        runtime,
+        selected_state.selected().state().root(),
+        schema,
+        content,
+        &state,
+        &outcome.effect.publication.changed_records,
+        version_id,
+        source_interpretation.restoration_content(),
+    )?;
+    source_interpretation
+        .bind_content(
+            execution,
+            state.content.directory().map_err(|_| {
+                crate::content::commit_denial(
+                    crate::content::RelationalContentDenial::EncodingInconsistency,
+                )
+            })?,
+            schema,
+        )
+        .map_err(crate::content::commit_denial)?;
     Ok(AppliedMutationDraft {
         source_interpretation,
         aggregate,
@@ -145,6 +169,7 @@ pub(crate) fn apply_retained_entity_selection_draft(
     source_interpretation: std::sync::Arc<
         crate::validation::candidate_source::NativeManagedSourceInterpretation,
     >,
+    content: &crate::content::RelationalContentAttachments,
 ) -> Result<AppliedMutationDraft, MutationApplyDenial> {
     require_original_source_interpretation(identity, &source_interpretation)?;
     crate::aggregate_identity::guard::retained_entity_selection(
@@ -171,6 +196,28 @@ pub(crate) fn apply_retained_entity_selection_draft(
         &mut records,
         runtime.commit_work_budget.clone(),
     )?;
+    state.content = content::prepare(
+        execution,
+        runtime,
+        selected_state.selected().state().root(),
+        schema,
+        content,
+        &state,
+        &outcome.effect.publication.changed_records,
+        identity.proposed_version_id(),
+        Some(retained._source.inner.root.retained_content()),
+    )?;
+    source_interpretation
+        .bind_content(
+            execution,
+            state.content.directory().map_err(|_| {
+                crate::content::commit_denial(
+                    crate::content::RelationalContentDenial::EncodingInconsistency,
+                )
+            })?,
+            schema,
+        )
+        .map_err(crate::content::commit_denial)?;
     let aggregate = crate::aggregate_identity::AggregateProposal::capture(
         schema,
         selected_state.selected(),

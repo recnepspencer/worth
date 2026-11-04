@@ -131,6 +131,7 @@ where
         )
         .map_err(|cause| cause.into_attempt_denial(&node_path))?;
         let program = WorthQueryApplicationEffectProgram {
+            content_attachments: Default::default(),
             read_set,
             effects,
             conditional_definition: None,

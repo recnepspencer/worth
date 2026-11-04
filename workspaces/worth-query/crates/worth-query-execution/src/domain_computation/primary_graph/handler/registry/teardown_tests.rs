@@ -63,7 +63,7 @@ fn provider_is_destroyed_before_the_installed_handler() {
     for panic_in_provider in [false, true] {
         type S = IdentityExecutionSchema;
         type B = ProgramRequiredMutationBinding;
-        let mut world = installed_authorization_world(true);
+        let mut world = installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let events = Arc::new(Mutex::new(Vec::new()));
         *world
             .application

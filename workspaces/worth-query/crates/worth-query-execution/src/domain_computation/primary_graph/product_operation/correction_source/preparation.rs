@@ -25,6 +25,7 @@ use worth_relational::facade::{
 /// mutation or recovery authority.
 pub struct WorthQueryPreparedCorrectionSource {
     coupled_capture: Option<fn(&WorthQueryPrimaryGraphCommittedApplication, &worth_execution::ExecutionRequest<'_, '_>) -> crate::domain_computation::primary_graph::application_attempt::coupled_outputs::DeclaredCoupledOutputDemands>,
+    content: worth_relational::facade::content::RelationalContentAttachments,
     authored_identity: Option<super::authored_identity::PreparedAuthoredIdentity>,
     workflow: Option<PreparedWorkflowCorrection>,
     ancestry: ProductBranchAncestorSelection,
@@ -103,12 +104,28 @@ impl WorthQueryPreparedCorrectionSource {
         } else {
             None
         };
+        let mut content = match source.occurrence().commit_evidence().retained_preimage() {
+            Some(preimage) => preimage.content().clone(),
+            None => Default::default(),
+        };
+        let outputs =
+            super::material::source_outputs::SourceOutputs::<Schema, C>::new(source, execution)
+                .retained_content()
+                .map_err(Denial::SourceOutput)?;
+        content
+            .attach_retained(&execution, &outputs)
+            .map_err(|cause| {
+                Denial::SourceOutput(
+                    super::material::WorthQueryCorrectionOutputProjectionDenial::Content(cause),
+                )
+            })?;
         let intent = WorthQueryCorrectionIntent::from_disclosed_source::<Schema, C>(
             target, source, key, &lineage,
         );
         Ok(Self {
             coupled_capture: (lineage.role() == WorthQueryAftermathCausalRole::RecordedReverse)
                 .then_some(super::material::capture_coupled::<Schema, C>),
+            content,
             authored_identity,
             workflow,
             ancestry,
@@ -135,6 +152,11 @@ impl WorthQueryPreparedCorrectionSource {
             .map(|capture| capture(&self.material, execution))
     }
 
+    pub(in crate::domain_computation::primary_graph) fn content(
+        &self,
+    ) -> &worth_relational::facade::content::RelationalContentAttachments {
+        &self.content
+    }
     /// The immutable descriptive command intent carried into ordinary idempotency admission.
     pub fn intent(&self) -> WorthQueryCorrectionIntent {
         self.intent

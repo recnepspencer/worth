@@ -14,6 +14,7 @@ use worth_query_declaration::facade::portable_identity::WorthQueryPortableTypeId
 pub struct WorthQueryInstalledApplicationValueBinding {
     schema: ApplicationSchemaBindingIdentity,
     recipe: ApplicationFieldBindingRecipe,
+    content: Option<super::content::InstalledContentField>,
 }
 
 impl WorthQueryInstalledApplicationValueBinding {
@@ -21,9 +22,49 @@ impl WorthQueryInstalledApplicationValueBinding {
         schema: ApplicationSchemaBindingIdentity,
         recipe: ApplicationFieldBindingRecipe,
     ) -> Self {
-        Self { schema, recipe }
+        Self {
+            schema,
+            recipe,
+            content: None,
+        }
     }
 
+    pub(super) fn with_content(
+        mut self,
+        content: Option<super::content::InstalledContentField>,
+    ) -> Self {
+        self.content = content;
+        self
+    }
+    pub fn content_format(
+        &self,
+    ) -> Option<&worth_query_declaration::facade::application_schema::ApplicationContentBindingRecipe>
+    {
+        self.content.as_ref().map(|content| content.format.as_ref())
+    }
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity certifies exact binding and value equality; canonical order uses the declared format identity"
+    )]
+    pub fn matches_content<
+        C: worth_query_declaration::facade::application_schema::ApplicationContentBinding,
+    >(
+        &self,
+    ) -> bool {
+        let Some(recipe) = self.content_format() else {
+            return false;
+        };
+        let declaration = recipe.declaration();
+        recipe.binding_type() == TypeId::of::<C>()
+            && recipe.value_type() == TypeId::of::<C::Value>()
+            && declaration.identity == *C::IDENTITY.bytes()
+            && declaration.name == C::NAME
+            && declaration.version == C::VERSION
+            && declaration.maximum_frame_bytes == C::MAXIMUM_FRAME_BYTES as u64
+    }
+    pub fn content_codec(&self) -> Option<worth_foundational::facade::CanonicalDigestId> {
+        self.content.as_ref().map(|content| content.codec)
+    }
     pub fn schema(&self) -> &ApplicationSchemaBindingIdentity {
         &self.schema
     }

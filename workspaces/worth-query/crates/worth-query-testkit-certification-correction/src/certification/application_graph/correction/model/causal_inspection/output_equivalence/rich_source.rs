@@ -124,7 +124,7 @@ pub fn source_only_rich_survives_receipt_drop_and_rechecks_diagnostics_cancellat
     assert!(!cancellation.token().is_cancelled());
     // A genuine diagnostic capability's own request cancellation cannot be borrowed past.
     let diagnostic_cancel = WorthQueryCancellationSource::new();
-    let diagnostic_scope = WorthQueryRequestScope::new(None, diagnostic_cancel.token());
+    let diagnostic_scope = WorthQueryRequestScope::new(None, diagnostic_cancel.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let diagnostic =
         distinct_subjects::access(&application, &principal, &diagnostic_scope, "numeric");
     diagnostic_cancel.cancel();
@@ -160,7 +160,7 @@ pub fn source_only_rich_survives_receipt_drop_and_rechecks_diagnostics_cancellat
         })
         .unwrap();
     let before = lease.charged_memory_bytes();
-    let cancelled = WorthQueryRequestScope::new(None, cancellation.token());
+    let cancelled = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let denial = application
         .runtime()
         .request(&principal, &cancelled)

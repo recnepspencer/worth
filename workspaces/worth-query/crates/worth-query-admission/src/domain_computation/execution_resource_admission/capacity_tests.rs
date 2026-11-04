@@ -63,6 +63,10 @@ fn workflow_release_disposes_each_exact_capacity_authority_once() {
 }
 
 #[test]
+#[expect(
+    clippy::disallowed_methods,
+    reason = "certification-harness thread-spawn=1: This capacity atomicity court joins eight bounded reservation contenders at two barriers; it does not place query computation."
+)]
 fn racing_reservations_never_exceed_the_physical_limit() {
     const THREADS: usize = 8;
     let capacity = Arc::new(ObservedCapacity::new("raced", 1));

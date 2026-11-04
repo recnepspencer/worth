@@ -110,7 +110,7 @@ impl RelationalRuntime {
                             ),
                             basis.inner.root.commit_id(),
                             self.history.catalog_len(),
-                            |commit| self.history.canonical_envelope(commit),
+                            |commit| Ok(self.history.canonical_envelope(commit)),
                             context,
                         )
                         .map_err(|failure| failure.stop)

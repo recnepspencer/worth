@@ -42,6 +42,11 @@ impl<S: Scenario> OperationHandler<S, CreateBinding<S>> for Handler {
             )?;
             writer.initialize_field(&created, Id::reference(), input.id)?;
             writer.initialize_field(&created, Value::reference(), input.id)?;
+            if S::MODE == 43 {
+                writer
+                    .initialize_content(&created, content::field(), &(input.id * 100))
+                    .expect("valid installed word content");
+            }
             writer.create_output::<Created<S>>(&created)?;
             let mut stage_records = Vec::new();
             for (index, &id) in input
@@ -56,6 +61,11 @@ impl<S: Scenario> OperationHandler<S, CreateBinding<S>> for Handler {
                     WorthQueryApplicationEntityKey::new(format!("authored-{id}")).unwrap(),
                 )?;
                 writer.initialize_field(&co, Id::reference(), id)?;
+                if S::MODE == 43 {
+                    writer
+                        .initialize_content(&co, content::field(), &(id * 100))
+                        .expect("valid installed stage content");
+                }
                 writer.initialize_field(
                     &co,
                     Value::reference(),
@@ -169,6 +179,17 @@ impl<S: Scenario> OperationHandler<S, RetireBinding<S>> for Handler {
                         edges.push((
                             reader.mutation_target(edge.from())?,
                             reader.mutation_target(&entity)?,
+                        ));
+                    }
+                }
+                if S::MODE == 43 && input.descendants.contains(id) {
+                    for edge in reader
+                        .relations_from(Peer::reference(), &entity)
+                        .map_err(HandlerExecutionDenial::new)?
+                    {
+                        edges.push((
+                            reader.mutation_target(edge.from())?,
+                            reader.mutation_target(edge.to())?,
                         ));
                     }
                 }

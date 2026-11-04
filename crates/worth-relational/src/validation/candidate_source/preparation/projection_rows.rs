@@ -222,6 +222,30 @@ impl ManagedIndexSourceRows<'_> {
         Ok(())
     }
 
+    /// The nested endpoint retains its actual route, parent lineage and field.
+    pub fn with_projected_field_content<T>(
+        &self,
+        read: &PreparedManagedIndexProjectionRead,
+        occurrence: &ManagedIndexSourceProjectionOccurrence,
+        column: usize,
+        project: impl FnOnce(
+            Option<&worth_foundational::facade::AspectValue>,
+            Option<crate::content::RelationalContentFrame>,
+        ) -> T,
+    ) -> Result<T, super::super::ManagedIndexSourcePreparationDenial> {
+        self.admit_projection_occurrence(read, occurrence)?;
+        let route = &self.projection.program.projection_routes()[read.route];
+        let field = route
+            .fields()
+            .get(column)
+            .ok_or(Definition::InvalidExpression)?;
+        self.projection.with_field_content_at(
+            occurrence.entity,
+            route.endpoint_kind(),
+            field,
+            project,
+        )
+    }
     pub fn with_projected_field<T>(
         &self,
         read: &PreparedManagedIndexProjectionRead,

@@ -19,6 +19,10 @@ impl RelationalDurablePreparationAdmission {
         }
     }
 
+    pub(crate) fn has_medium(&self) -> bool {
+        self.unresolved.is_some()
+    }
+
     pub(crate) fn require_open(&self) -> Result<(), RelationalDurabilityUnresolved> {
         match self.unresolved.as_ref().and_then(|fate| fate.get()) {
             Some(fate) => Err(fate.clone()),

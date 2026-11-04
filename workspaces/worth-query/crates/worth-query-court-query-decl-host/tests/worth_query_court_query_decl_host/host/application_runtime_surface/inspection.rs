@@ -75,8 +75,7 @@ fn ordinary_published_receipt_enters_fresh_host_inspection() {
     let cancellation = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(
         Some(std::time::Instant::now() + std::time::Duration::from_secs(60)),
-        cancellation.token(),
-    );
+        cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let external = authenticate(application.installed_schema(), &scope);
     let request = application.request(&external, &scope);
     let registry = application.application_query_basis_observer();
@@ -163,7 +162,7 @@ fn retained_public_projection_survives_result_and_sibling_close_through_two_faca
     };
     let application = super::installed_application();
     let cancellation = WorthQueryCancellationSource::new();
-    let scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let principal = authenticate(application.installed_schema(), &scope);
     let request = application.request(&principal, &scope);
     let readers = application.application_query_basis_observer();

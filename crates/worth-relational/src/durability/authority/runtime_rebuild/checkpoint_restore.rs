@@ -74,7 +74,14 @@ fn prepare_checkpoint_state(
         &restored.config.schema.registry,
     )?;
     let partitions = prepare_partitions(restored, checkpoint, &branch_root_images, work)?;
-    let history = prepare_history(restored, checkpoint, branch_root_images, &symbols, work)?;
+    let history = prepare_history(
+        execution,
+        restored,
+        checkpoint,
+        branch_root_images,
+        &symbols,
+        work,
+    )?;
     let lineage = prepare_lineage(restored, checkpoint);
     let indexes = prepare_indexes(checkpoint, &history, work)?;
     Ok(PreparedCheckpointState {

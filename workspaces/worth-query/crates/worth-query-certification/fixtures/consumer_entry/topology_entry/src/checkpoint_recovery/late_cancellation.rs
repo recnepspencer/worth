@@ -43,7 +43,7 @@ fn cancellation_during_final_product_guard_wait_refuses_stable_publication() {
         .execute()
         .unwrap();
     let cancellation = authentication::WorthQueryCancellationSource::new();
-    let cancelled_scope = authentication::WorthQueryRequestScope::new(None, cancellation.token());
+    let cancelled_scope = authentication::WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let cancellable_request = application.request(&principal, &cancelled_scope);
     let mut demand = cancellable_request
         .demand(PlanarOutputDemand::new("anchor-a"))

@@ -15,6 +15,8 @@ use worth_relational::facade::{
 pub(in crate::domain_computation::primary_graph) struct CoupledWriterCommands {
     pub(in crate::domain_computation::primary_graph) publication: RequiredOutputPublication,
     pub(in crate::domain_computation::primary_graph) batch: WorkerIntentBatch,
+    pub(in crate::domain_computation::primary_graph) content:
+        worth_relational::facade::content::RelationalContentAttachments,
 }
 impl WorthQueryPrimaryGraphProvider {
     pub(in crate::domain_computation::primary_graph) fn coupled_writer_commands(
@@ -81,6 +83,7 @@ impl WorthQueryPrimaryGraphProvider {
                 roles,
             },
             batch: staged.batch().clone(),
+            content: staged.content_attachments().clone(),
         })
     }
 }

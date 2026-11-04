@@ -28,6 +28,26 @@ impl ExecutionByteBuffer {
             building: BuildingFixedBacking::allocate(total, policy)?,
         })
     }
+    /// Allocate inside the caller's active stage of the genuine `request`.
+    /// The payload is admitted once on that stage's memory lineage, before
+    /// allocation; no scope opens for allocation, copying or sealing. The
+    /// stage's own checkpoints govern every write.
+    pub fn allocate_in_stage(
+        total: usize,
+        request: crate::ExecutionRequest<'_, '_>,
+        context: &crate::MapKernelContext<'_, '_>,
+    ) -> Result<Self, crate::ExecutionRequestArrayDenial> {
+        use crate::ExecutionRequestArrayDenial as RequestDenial;
+        let quote =
+            BuildingFixedBacking::<u8>::payload_quote(total).map_err(RequestDenial::Allocation)?;
+        let reservation = request
+            .reserve_retained_memory_in_stage(context, quote)
+            .map_err(RequestDenial::Request)?;
+        Ok(Self {
+            building: BuildingFixedBacking::allocate_reserved(total, reservation)
+                .map_err(RequestDenial::Allocation)?,
+        })
+    }
     pub fn check_live(&self) -> Result<(), Denial> {
         self.building.check_live()
     }

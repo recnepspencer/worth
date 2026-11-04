@@ -4,7 +4,10 @@ use crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalK
 
 #[test]
 fn selection_denies_invalid_work_and_overflow_budgets_without_retaining_partial_results() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let label = AccountLabel::reference();
     world

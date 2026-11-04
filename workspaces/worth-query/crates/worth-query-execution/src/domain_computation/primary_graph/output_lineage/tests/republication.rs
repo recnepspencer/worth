@@ -79,7 +79,10 @@ fn staged(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     test: impl FnOnce(Stage<'_>),
 ) {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     world.application.with_host_advancement(|phase| {
     let phase_custody = &phase;
     let output = world

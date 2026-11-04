@@ -1,16 +1,16 @@
 error[E0277]: the trait bound `CustomMaskMode: DigestPreparationMaskMode` is not satisfied
- --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/digest_preparation/custom_mask_mode_cannot_be_prepared_for_digest.rs
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/digest_preparation/custom_mask_mode_cannot_be_prepared_for_digest.rs:8:9
   |
-  |     worth_foundational::prepare_aspect_mask_for_digest(
+6 |     worth_foundational::prepare_aspect_mask_for_digest(
   |     -------------------------------------------------- required by a bound introduced by this call
-  |         worth_foundational::AspectKey::new("counter").unwrap(),
-  |         mask,
+7 |         worth_foundational::AspectKey::new("counter").unwrap(),
+8 |         mask,
   |         ^^^^ unsatisfied trait bound
   |
 help: the trait `DigestPreparationMaskMode` is not implemented for `CustomMaskMode`
- --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/digest_preparation/custom_mask_mode_cannot_be_prepared_for_digest.rs
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/digest_preparation/custom_mask_mode_cannot_be_prepared_for_digest.rs:1:1
   |
-  | struct CustomMaskMode;
+1 | struct CustomMaskMode;
   | ^^^^^^^^^^^^^^^^^^^^^
 help: the following other types implement trait `DigestPreparationMaskMode`
  --> $WORKSPACE/crates/worth-foundational/src/canonicalization/mask_preparation.rs

@@ -207,15 +207,28 @@ fn reversed_completion_still_applies_canonical_effects_and_receipts() {
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let probe = phased_workflow::fold_executor::ComputeProbe::new();
-    // c478117afa reduced Native preparation charges. The default finite 1024
-    // grant now completes this journey; work refusal has its own width court.
+    // Native content/root preparation spends on this same original request.
+    // Keep refusal courts at 1024 and fund this positive ordering journey.
+    let funded = |workers| Policy {
+        work: 2_048,
+        ..Policy::width(workers)
+    };
     probe.take_computes();
-    let expected = observe(request_execution, 29, None, Policy::width(0), &probe);
+    let (expected, report) = worth_execution::ExecutionWorkCeiling::new(None)
+        .run_serial(&host_request, || {
+            observe(request_execution, 29, None, funded(0), &probe)
+        })
+        .unwrap();
+    assert_eq!(
+        report.charged_work(),
+        1_992,
+        "complete original SDK invoice"
+    );
     // Reset observations between runs: any purity mutant must prove order
     // dependence, not simply a counter carried over from a previous run.
     probe.take_computes();
     assert_eq!(expected.0.outcome, None);
-    let repeated = observe(request_execution, 29, None, Policy::width(0), &probe);
+    let repeated = observe(request_execution, 29, None, funded(0), &probe);
     assert_eq!(repeated.0.outcome, None);
     assert_eq!(repeated, expected, "two reset serial runs agree");
     assert_eq!(
@@ -231,15 +244,15 @@ fn reversed_completion_still_applies_canonical_effects_and_receipts() {
     for workers in [1, 2] {
         probe.take_computes();
         assert_eq!(
-            observe(request_execution, 29, None, Policy::width(workers), &probe),
+            observe(request_execution, 29, None, funded(workers), &probe),
             expected,
-            "default finite grant at width {workers}"
+            "funded original grant at width {workers}"
         );
     }
 
     probe.take_computes();
     probe.reorder();
-    let actual = observe(request_execution, 29, None, Policy::width(4), &probe);
+    let actual = observe(request_execution, 29, None, funded(4), &probe);
     assert_eq!(actual.0.outcome, None);
     probe.assert_schedule_completed();
     assert_eq!(actual, expected);

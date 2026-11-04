@@ -34,12 +34,12 @@ fn cancelled_recording_and_acceptance_preserve_both_products_for_a_fresh_request
         .unwrap();
     let loaded = storage.load_frozen(&reviewer, &reference).unwrap();
     let record_cancellation = WorthQueryCancellationSource::new();
-    let record_scope = WorthQueryRequestScope::new(None, record_cancellation.token());
+    let record_scope = WorthQueryRequestScope::new(None, record_cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let stopped_author =
         authentication::authenticate(host.installed_schema(), Actor::Author, &record_scope)
             .unwrap();
     let accept_cancellation = WorthQueryCancellationSource::new();
-    let accept_scope = WorthQueryRequestScope::new(None, accept_cancellation.token());
+    let accept_scope = WorthQueryRequestScope::new(None, accept_cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let stopped_reviewer =
         authentication::authenticate(host.installed_schema(), Actor::Reviewer, &accept_scope)
             .unwrap();

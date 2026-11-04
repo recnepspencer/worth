@@ -8,7 +8,10 @@ use crate::domain_computation::primary_graph::{
 
 #[test]
 fn pending_correction_cutover_never_looks_unseen_on_another_branch() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let selected = world
         .application
         .with_host_advancement(|phase| world.selected_product(&phase.test_host_request()))

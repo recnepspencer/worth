@@ -5,9 +5,7 @@ use worth_runtime_world::facade::*;
 #[test]
 fn retirement_releases_in_branch_then_incarnation_order() {
     let world =
-        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
-            true,
-        );
+        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     let runtime = world.application.product_runtime();
     let host_request = crate::test_request_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);

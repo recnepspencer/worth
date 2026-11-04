@@ -1,7 +1,7 @@
 use std::future::Future;
 use std::pin::pin;
 use std::task::{Context, Poll, Waker};
-use std::time::{Duration, Instant, SystemTime};
+use std::time::{Duration, SystemTime};
 
 use worth_query_declaration::facade::application_schema::{
     ApplicationEntityMarkerIdentity, ApplicationEntityRef, ApplicationSchema,
@@ -113,6 +113,7 @@ fn only_admitted_adapter_output_mints_external_proof() {
         WorthQueryAuthenticationAdapterAdmission::new(
             WorthQueryAuthenticationAudience::new("bank").unwrap(),
             WorthQueryAuthenticationMethod::new("causal-test").unwrap(),
+            crate::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
         ),
         CausalAdapter,
     )
@@ -137,6 +138,7 @@ fn mismatched_expired_cancelled_and_timed_out_candidates_fail_closed() {
         WorthQueryAuthenticationAdapterAdmission::new(
             WorthQueryAuthenticationAudience::new("bank").unwrap(),
             WorthQueryAuthenticationMethod::new("causal-test").unwrap(),
+            crate::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
         ),
         CausalAdapter,
     )
@@ -158,8 +160,12 @@ fn mismatched_expired_cancelled_and_timed_out_candidates_fail_closed() {
     let cancelled = WorthQueryCancellationSource::new();
     cancelled.cancel();
     let cancelled_scope = WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(60)),
+        Some(
+            crate::authenticated_principal::WorthQueryAdmissionClock::system().now()
+                + Duration::from_secs(60),
+        ),
         cancelled.token(),
+        crate::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     assert_eq!(
         block_on(adapter.authenticate(TestCredential::Valid, &cancelled_scope))
@@ -170,8 +176,12 @@ fn mismatched_expired_cancelled_and_timed_out_candidates_fail_closed() {
 
     let source = WorthQueryCancellationSource::new();
     let expired_scope = WorthQueryRequestScope::new(
-        Some(Instant::now() - Duration::from_secs(1)),
+        Some(
+            crate::authenticated_principal::WorthQueryAdmissionClock::system().now()
+                - Duration::from_secs(1),
+        ),
         source.token(),
+        crate::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     assert_eq!(
         block_on(adapter.authenticate(TestCredential::Valid, &expired_scope))
@@ -201,6 +211,7 @@ fn proof_debug_discloses_no_external_identity_or_attribute_values() {
         WorthQueryAuthenticationAdapterAdmission::new(
             WorthQueryAuthenticationAudience::new("bank").unwrap(),
             WorthQueryAuthenticationMethod::new("causal-test").unwrap(),
+            crate::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
         ),
         CausalAdapter,
     )
@@ -221,6 +232,7 @@ fn adapter_identity_converges_and_separates_every_semantic_binding_axis() {
             WorthQueryAuthenticationAdapterAdmission::new(
                 WorthQueryAuthenticationAudience::new(audience).unwrap(),
                 WorthQueryAuthenticationMethod::new(method).unwrap(),
+                crate::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
             ),
             ConfiguredAdapter(configuration),
         )
@@ -275,8 +287,12 @@ fn installed_schema(
 fn live_scope() -> WorthQueryRequestScope {
     let source = WorthQueryCancellationSource::new();
     WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(60)),
+        Some(
+            crate::authenticated_principal::WorthQueryAdmissionClock::system().now()
+                + Duration::from_secs(60),
+        ),
         source.token(),
+        crate::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     )
 }
 
@@ -290,4 +306,72 @@ fn block_on<F: Future>(future: F) -> F::Output {
             Poll::Pending => std::thread::yield_now(),
         }
     }
+}
+
+#[test]
+fn owned_monotonic_clock_holds_and_advances_authentication_and_deadlines() {
+    let time = WorthQueryAdmissionTimeController::new().unwrap();
+    let held = time.hold();
+    let clock = time.clock();
+    let scope = WorthQueryRequestScope::new(
+        Some(held + Duration::from_secs(120)),
+        WorthQueryCancellationSource::new().token(),
+        clock.clone(),
+    );
+    let adapter = admit_authentication_adapter(
+        &installed_schema(),
+        WorthQueryAuthenticationAdapterAdmission::new(
+            WorthQueryAuthenticationAudience::new("bank").unwrap(),
+            WorthQueryAuthenticationMethod::new("causal-test").unwrap(),
+            clock.clone(),
+        ),
+        CausalAdapter,
+    )
+    .unwrap();
+    let proof = block_on(adapter.authenticate(TestCredential::Valid, &scope)).unwrap();
+    let copied = proof.clone();
+    assert_eq!(clock.now(), held);
+    assert_eq!(time.hold(), held);
+    assert!(!proof.is_expired());
+    assert_eq!(
+        scope.remaining(),
+        WorthQueryRequestTimeRemaining::Remaining(Duration::from_secs(120))
+    );
+    assert_eq!(
+        time.advance(Duration::from_secs(61)).unwrap(),
+        held + Duration::from_secs(61)
+    );
+    assert!(proof.is_expired());
+    assert!(
+        copied.is_expired(),
+        "a copied proof retains its original clock"
+    );
+    assert_eq!(scope.interruption(), None);
+    time.advance(Duration::from_secs(59)).unwrap();
+    assert_eq!(
+        scope.interruption(),
+        Some(WorthQueryRequestInterruption::DeadlineExceeded)
+    );
+}
+
+#[test]
+fn authentication_rejects_a_request_from_another_clock_before_adapter_work() {
+    let time = WorthQueryAdmissionTimeController::new().unwrap();
+    time.hold();
+    let adapter = admit_authentication_adapter(
+        &installed_schema(),
+        WorthQueryAuthenticationAdapterAdmission::new(
+            WorthQueryAuthenticationAudience::new("bank").unwrap(),
+            WorthQueryAuthenticationMethod::new("causal-test").unwrap(),
+            time.clock(),
+        ),
+        CausalAdapter,
+    )
+    .unwrap();
+    assert_eq!(
+        block_on(adapter.authenticate(TestCredential::WrongAudience, &live_scope()))
+            .unwrap_err()
+            .kind(),
+        WorthQueryAuthenticationDenialKind::ForeignClock
+    );
 }

@@ -24,7 +24,6 @@ pub(super) fn lower_json_scalar(
         ScalarAspectType::Null
         | ScalarAspectType::Bool
         | ScalarAspectType::String
-        | ScalarAspectType::Bytes
         | ScalarAspectType::ContentRef => {
             if value.is_array() || value.is_object() {
                 return Err(

@@ -92,7 +92,7 @@ where
 {
     let source = match checkpoint {
         Some(checkpoint) => InstallSource::Checkpoint(checkpoint),
-        None => InstallSource::Fresh,
+        None => InstallSource::Fresh(authentication::WorthQueryAdmissionClock::system()),
     };
     install_configured_source::<Program>(source, profile, limits, seed, configuration)
 }
@@ -126,8 +126,30 @@ where
     )
 }
 
+pub(in crate::checkpoint_recovery) fn install_on_clock(
+    clock: authentication::WorthQueryAdmissionClock,
+) -> Application {
+    let limits = limits_with_history_and_policy(
+        DEFAULT_RETAINED_COMMITS,
+        16,
+        64,
+        invalidation(),
+        524_288,
+        execution_policy::CHECKPOINT_EXECUTION_POLICY,
+        clock.clone(),
+    );
+    install_configured_source::<CheckpointProgram>(
+        InstallSource::Fresh(clock),
+        Default::default(),
+        limits,
+        seed_cycle,
+        configuration(Arc::new(AtomicBool::new(false)), None),
+    )
+    .expect("the checkpoint source installs on its owned clock")
+}
+
 enum InstallSource<'borrow, 'phase> {
-    Fresh,
+    Fresh(authentication::WorthQueryAdmissionClock),
     Checkpoint(application_installation::WorthQueryApplicationCheckpoint),
     Bootstrap(&'borrow worth_query_host::facade::application_contribution::WorthQueryBootstrapAdvancementPhase<'phase>),
 }
@@ -184,14 +206,17 @@ where
                 initial_state,
             )
         }
-        InstallSource::Fresh => application_installation::in_memory_program(
-            program,
-            declaration,
-            configuration,
-            ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-            limits.with_output_demand_resources(profile),
-            initial_state,
-        ),
+        InstallSource::Fresh(clock) => {
+            application_installation::in_memory_program_with_authorization_time_source(
+                program,
+                declaration,
+                configuration,
+                ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
+                limits.with_output_demand_resources(profile),
+                initial_state,
+                super::admission_time::FixtureAdmissionTime(clock),
+            )
+        }
     }
     .map_err(Box::new)
 }

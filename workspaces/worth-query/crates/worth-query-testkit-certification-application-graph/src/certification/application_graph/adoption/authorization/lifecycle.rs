@@ -41,6 +41,7 @@ impl WorthQueryAuthenticationAdapter for ExpiringOperator {
 pub fn expired_operator(
     host: &DocumentRetentionRuntime<RetentionProgramP0>,
     scope: &WorthQueryRequestScope,
+    time: &worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionTimeController,
 ) -> WorthQueryAuthenticatedExternalPrincipal<
     worth_query_testkit_document_retention::facade::document_retention_model::schema::DocumentRetentionSchema,
 >{
@@ -49,6 +50,7 @@ pub fn expired_operator(
         WorthQueryAuthenticationAdapterAdmission::new(
             WorthQueryAuthenticationAudience::new("document-retention-host").unwrap(),
             WorthQueryAuthenticationMethod::new("certification").unwrap(),
+            time.clock(),
         ),
         ExpiringOperator,
     )
@@ -58,12 +60,7 @@ pub fn expired_operator(
             adapter.authenticate(Duration::from_millis(50), scope),
         )
         .unwrap();
-    std::thread::sleep(
-        principal
-            .valid_until()
-            .saturating_duration_since(std::time::Instant::now())
-            + Duration::from_millis(1),
-    );
+    time.advance(Duration::from_secs(1)).unwrap();
     assert!(principal.is_expired());
     principal
 }

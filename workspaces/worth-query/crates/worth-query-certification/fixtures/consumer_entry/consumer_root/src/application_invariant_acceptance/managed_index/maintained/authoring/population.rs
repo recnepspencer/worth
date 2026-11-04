@@ -4,13 +4,18 @@ use super::super::{host, rule};
 use super::*;
 use worth_query_host::facade::{application_entry::*, runtime::ExecutionAllocationPolicy};
 
-pub fn populate(world: &host::Host, rules: &rule::Calls) {
-    let scope = authentication::request_scope();
+pub fn populate(
+    world: &host::Host,
+    rules: &rule::Calls,
+    clock: worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock,
+) {
+    let scope = authentication::request_scope_with_clock(clock);
     let principal = authentication::block_on(
-        authentication::admit(world.installed_schema()).authenticate(
-            authentication::LocalCredential::issued_for_model_owner(),
-            &scope,
-        ),
+        authentication::admit_with_clock(world.installed_schema(), scope.clock().clone())
+            .authenticate(
+                authentication::LocalCredential::issued_for_model_owner(),
+                &scope,
+            ),
     )
     .unwrap();
     let request = world

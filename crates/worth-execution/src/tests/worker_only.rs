@@ -207,7 +207,10 @@ fn worker_only_cancellation_and_deadline_refuse_before_callback() {
         let mut declared = workers(1);
         declared.cancellation = source.token();
         if expired {
-            declared.deadline = Some(Instant::now() - Duration::from_secs(1));
+            declared.deadline = Some(
+                crate::MonotonicClock::system()
+                    .deadline_at(Instant::now() - Duration::from_secs(1)),
+            );
         } else {
             source.cancel();
         }

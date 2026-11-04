@@ -1,8 +1,8 @@
-error[E0599]: no function or associated item named `new` found for struct `FoundationalProjectionIdentity<Label, Kind>` in the current scope
- --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/identity_categories/projection_identity_raw_constructor_not_public.rs
+error[E0599]: no associated function or constant named `new` found for struct `FoundationalProjectionIdentity<Label, Kind>` in the current scope
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/identity_categories/projection_identity_raw_constructor_not_public.rs:8:76
   |
-  |         FoundationalProjectionIdentity::<String, QueryCommitIdentityKind>::new("42".to_string());
-  |                                                                            ^^^ function or associated item not found in `FoundationalProjectionIdentity<std::string::String, QueryCommitIdentityKind>`
+8 |         FoundationalProjectionIdentity::<String, QueryCommitIdentityKind>::new("42".to_string());
+  |                                                                            ^^^ associated function or constant not found in `FoundationalProjectionIdentity<std::string::String, QueryCommitIdentityKind>`
   |
 note: if you're trying to build a new `FoundationalProjectionIdentity<std::string::String, QueryCommitIdentityKind>`, consider using `FoundationalProjectionIdentity::<Label, Kind>::from_projection_evidence` which returns `FoundationalProjectionIdentity<_, _>`
  --> $WORKSPACE/crates/worth-foundational/src/identities/authority_identity/derived.rs

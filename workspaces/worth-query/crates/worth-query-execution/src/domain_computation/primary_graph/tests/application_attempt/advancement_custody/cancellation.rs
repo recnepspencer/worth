@@ -9,9 +9,9 @@ fn cancelled_commit_is_refused_before_any_advancement_is_funded() {
     let _observation =
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     for cancelled in [false, true] {
-        let world = installed_authorization_world(true);
+        let world = installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let cancellation = WorthQueryCancellationSource::new();
-        let request = WorthQueryRequestScope::new(None, cancellation.token());
+        let request = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let program = world
             .application
             .with_host_advancement(|phase| {
@@ -75,9 +75,16 @@ fn requested_program(
 fn entry_custody_refreshes_lapse_after_advancement_is_funded() {
     let _observation =
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let cancellation = WorthQueryCancellationSource::new();
-    let request = WorthQueryRequestScope::new(None, cancellation.token());
+    let request = WorthQueryRequestScope::new(
+        None,
+        cancellation.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let program = requested_program(&world, &request);
     let entry = world
         .application

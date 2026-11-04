@@ -44,7 +44,7 @@ fn journey(cancel: bool) {
     let baseline = memory.charged_memory_bytes();
     let charged = Arc::new(Mutex::new(None));
     let cancellation = WorthQueryCancellationSource::new();
-    let stopped = WorthQueryRequestScope::new(None, cancellation.token());
+    let stopped = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     provider.inspect_text.store(true, Ordering::SeqCst);
     if cancel {
         let seen = charged.clone();

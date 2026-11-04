@@ -64,20 +64,8 @@ pub(in crate::domain_computation::primary_graph::provider) fn commit_prepared_ap
     crate::domain_computation::WorthQueryProviderTerminalDescription,
     crate::domain_computation::WorthQueryProviderSessionCommitStop,
 > {
-    // Preserve the new checks' precise pre-effect causes through cleanup.
-    // Existing single-publication preparation refusals keep their established route.
     let prepared =
-        take_prepared_session(provider, session, allocation_policy).map_err(|failure| {
-            if failure.relation_preimage_failure().is_some()
-                || failure.candidate_support_failure().is_some()
-            {
-                crate::domain_computation::WorthQueryProviderSessionCommitStop::PreEffectDenied(
-                    failure,
-                )
-            } else {
-                crate::domain_computation::WorthQueryProviderSessionCommitStop::Denied(failure)
-            }
-        })?;
+        take_prepared_session(provider, session, allocation_policy).map_err(preparation_stop)?;
     if provider.take_rejected_commit_before_transaction() {
         return Err(
             crate::domain_computation::WorthQueryProviderSessionCommitStop::Denied(
@@ -161,3 +149,26 @@ fn commit_failure(detail: &'static str) -> WorthQueryProviderSessionFailure {
 pub(in crate::domain_computation::primary_graph) use relational_commit::{
     PreparedRebaseDenial, PreparedSourceFactRebase,
 };
+
+// Typed content/read stops precede the Native transaction. Preserve semantic
+// protocol failures through the existing abort-and-cleanup owner.
+fn preparation_stop(
+    failure: WorthQueryProviderSessionFailure,
+) -> crate::domain_computation::WorthQueryProviderSessionCommitStop {
+    use crate::domain_computation::{
+        WorthQueryProviderSessionCommitControlStopped as Control,
+        WorthQueryProviderSessionCommitStop as Stop,
+    };
+    match failure.checked_read_stop() {
+        Some(Err(kind)) => {
+            Stop::ControlStopped(Control::execution_preparation(kind, failure.detail()))
+        }
+        Some(Ok(_)) => Stop::PreEffectDenied(failure),
+        None if failure.relation_preimage_failure().is_some()
+            || failure.candidate_support_failure().is_some() =>
+        {
+            Stop::PreEffectDenied(failure)
+        }
+        None => Stop::from(failure),
+    }
+}

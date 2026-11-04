@@ -99,8 +99,16 @@ where
         retain_client_observation,
         producer_required_invariants,
         output_currentness_facts,
+        content_attachments,
     } = program;
 
+    if !content_attachments.is_empty() {
+        return Err(
+            WorthQueryProgramMigrationPreparationDenial::UnsupportedPosture(
+                "program migration cannot transfer staged content custody",
+            ),
+        );
+    }
     let contracts = read_set.admission.allowed_graph_contract();
     if contracts.external_effect().is_declared() {
         return Err(

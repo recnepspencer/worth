@@ -12,6 +12,8 @@ use worth_query_testkit_certification_operation::facade::certification::native_o
     advanced_commit::*, read_retention, DOCUMENT_IDENTITY,
 };
 
+mod expired;
+
 type Schema = DocumentRetentionSchema<8>;
 type Program =
     WorthQueryApplicationEffectProgram<Schema, SetRetention, SetRetentionInput, Document>;
@@ -19,12 +21,12 @@ type Program =
 fn candidate(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     projection: &WorthQueryApplicationInvariantProjectionAuthority<Schema>,
+    scope: &worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope,
 ) -> Program {
-    let scope = request_scope();
-    let external = authenticate_operator(runtime.installed_schema(), &scope);
+    let external = authenticate_operator(runtime.installed_schema(), scope);
     assert!(!external.is_expired());
     runtime
-        .with_application_advancement(&scope, |phase| {
+        .with_application_advancement(scope, |phase| {
             let selected = runtime
                 .on_branch(runtime.current_world())
                 .select(&phase)
@@ -38,7 +40,7 @@ fn candidate(
                     &phase,
                     &binding,
                     &external,
-                    &scope,
+                    scope,
                     WorthQueryPrincipalResolutionMode::Ordinary,
                 )
                 .unwrap();
@@ -47,7 +49,7 @@ fn candidate(
                     &phase,
                     DocumentIdentityField::reference(),
                     DOCUMENT_IDENTITY.to_owned(),
-                    &scope,
+                    scope,
                     WorthQueryPrincipalResolutionMode::Ordinary,
                 )
                 .unwrap();
@@ -62,7 +64,7 @@ fn candidate(
                     &document,
                     &operation,
                     Default::default(),
-                    &scope,
+                    scope,
                 )
                 .unwrap();
             admission
@@ -139,7 +141,7 @@ fn caller() -> worth_execution::SerialRequest {
 fn program_transaction_refuses_a_fresh_change_from_another_application() {
     let (source, projection) = install_with_projection::<8>();
     let (target, _) = install_with_projection::<8>();
-    let program = candidate(source.runtime(), &projection);
+    let program = candidate(source.runtime(), &projection, &request_scope());
     let caller = caller();
     let execution = worth_execution::ExecutionRequest::serial(&caller);
     assert_eq!(execution.consult(), Ok(()));
@@ -176,7 +178,7 @@ fn program_transaction_refuses_a_fresh_change_on_another_branch() {
                 .unwrap()
         })
         .unwrap();
-    let program = candidate(app.runtime(), &projection);
+    let program = candidate(app.runtime(), &projection, &request_scope());
     assert_ne!(app.current_world(), sibling);
     let caller = caller();
     let execution = worth_execution::ExecutionRequest::serial(&caller);

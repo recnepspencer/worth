@@ -19,6 +19,7 @@ use super::super::{
 use super::invariant::HandlerInterruption;
 
 mod aspect_removal;
+mod content;
 mod operation_body;
 mod relation_initialization;
 mod verbs;

@@ -17,6 +17,7 @@ pub struct RelationalAuthoredRestoration {
     pub(crate) relations: Vec<(RelationId, CreatedRelationRef)>,
     pub(crate) publications: Vec<RelationalRequiredOutputPublication>,
     pub(crate) inverse: Vec<MutationIntent>,
+    pub(crate) content: crate::content::RelationalContentAttachments,
     pub(crate) aggregate_memberships: Vec<crate::aggregate_identity::RestoredMembership>,
 }
 impl std::fmt::Debug for RelationalAuthoredRestoration {
@@ -28,6 +29,10 @@ impl std::fmt::Debug for RelationalAuthoredRestoration {
     }
 }
 impl RelationalAuthoredRestoration {
+    /// Exact retained content for the Native-owned inverse records.
+    pub fn content(&self) -> &crate::content::RelationalContentAttachments {
+        &self.content
+    }
     pub fn authorities(
         &self,
     ) -> impl Iterator<Item = &worth_proof::RequiredOutputPublicationAuthority> {

@@ -161,8 +161,14 @@ impl<Schema, Principal, PrincipalIdentity>
         self.external.valid_until()
     }
 
+    pub fn clock(
+        &self,
+    ) -> &worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock {
+        self.external.clock()
+    }
+
     pub fn is_expired(&self) -> bool {
-        Instant::now() >= self.external.valid_until()
+        self.external.clock().now() >= self.external.valid_until()
     }
 
     pub const fn examined_candidate_count(&self) -> usize {

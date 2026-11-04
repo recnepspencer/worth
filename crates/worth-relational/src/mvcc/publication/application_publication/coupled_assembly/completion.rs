@@ -87,6 +87,7 @@ pub(crate) fn prepare_coupled_candidate(
             &authored_commands,
             identity,
             owned_symbols,
+            &transaction.content,
         )?;
     let authored_records = mutation.outcome.effect.publication.changed_records.clone();
     writer_custody::require(execution, &binding.owners, None, &authored_commands)?;

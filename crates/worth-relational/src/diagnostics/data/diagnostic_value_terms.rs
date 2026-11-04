@@ -31,10 +31,6 @@ pub fn aspect_shape_diagnostic_value(
                 ),
             ])
         }
-        worth_foundational::AspectShape::Content => RelationalDiagnosticValue::object([(
-            "shape_kind",
-            RelationalDiagnosticValue::string("content"),
-        )]),
         worth_foundational::AspectShape::Opaque(opaque_type) => {
             RelationalDiagnosticValue::object([
                 ("shape_kind", RelationalDiagnosticValue::string("opaque")),

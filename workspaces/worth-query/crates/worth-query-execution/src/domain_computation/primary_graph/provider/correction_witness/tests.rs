@@ -9,7 +9,7 @@ use worth_foundational::{DeterminismContract, ExecutionPosture, ExecutionRequest
 
 #[test]
 fn performed_correction_capture_preserves_original_payer_and_preclone_refusal() {
-    let world = correction_source::install();
+    let world = correction_source::install(worth_execution::MonotonicClock::system());
     let source = correction_source::edit(&world, "funded-witness-source", "edited-label");
     let prepared = correction_source::prepare(&world, &source, "funded-witness-reverse");
     let reversed = correction_source::committed(correction_source::publish(&world, prepared));

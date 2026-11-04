@@ -88,6 +88,17 @@ impl RelationalPreparationHistory {
         self.canonical_routes.by_commit(commit)
     }
 
+    pub(crate) fn demand_canonical_envelope(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        commit: CommitId,
+    ) -> Result<
+        Option<Arc<CanonicalCommitEnvelope>>,
+        crate::storage::residency::RelationalResidencyDemandFailure,
+    > {
+        self.canonical_routes.demand_envelope(execution, commit)
+    }
+
     pub(crate) fn canonical_catalog_len(&self) -> usize {
         self.canonical_routes.catalog_len_bound()
     }
@@ -198,6 +209,7 @@ impl RelationalPreparationHistory {
 
     pub(crate) fn prepare_branch_root_capture<P: crate::storage::overlay::PartitionAccess>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         partitions: &P,
         published_delta: &crate::storage::RelationalPublishedPartitionDelta,
         previous: Option<&Arc<RelationalBranchRoot>>,
@@ -212,6 +224,7 @@ impl RelationalPreparationHistory {
             ));
         }
         RelationalBranchRoot::prepare_capture(
+            execution,
             &self.root_ids,
             partitions,
             published_delta,

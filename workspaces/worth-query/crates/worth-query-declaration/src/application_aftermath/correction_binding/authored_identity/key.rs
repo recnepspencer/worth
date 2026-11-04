@@ -33,6 +33,7 @@ impl<Schema, Entity: ApplicationEntityMarkerIdentity<Schema>>
                 scalar_family: recipe.scalar_family(),
                 value_type: recipe.binding_identity().as_str().to_owned(),
                 canonical: recipe.canonical_contract().cloned(),
+                content_format: None,
                 unit: field.unit().map(str::to_owned),
                 frame: recipe.frame().map(|frame| frame.as_str().to_owned()),
                 writable: false,

@@ -124,7 +124,8 @@ worth_query_mutation_binding!(
     identity "ownership.retire.v1", input RetireInput, operation RetireOp,
     result query::UnitBinding, idempotency String, identity "ownership.command.v1",
     decision RetirementTargets<S>, denial query::UnitBinding, handler identity "ownership.retire.handler.v1",
-    coupled_outputs |visitor| { if S::COUPLED && S::MODE != 10 { visitor.required::<program::Start>(); } if S::TWO_BODIES && S::MODE != 18 { visitor.required::<coupled::multi::SecondStart>(); } },
+    coupled_outputs |visitor| { if S::COUPLED && S::MODE != 10 { visitor.required::<program::Start>(); }
+        if S::TWO_BODIES && S::MODE != 18 { visitor.required::<coupled::multi::SecondStart>(); } },
     outputs RetiredOutputs, source NoApplicationMutationSource,
     principal binding actor(), binding_type Actor, mapping Mapping, principal_entity Node,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
@@ -136,7 +137,8 @@ worth_query_mutation_binding!(
     identity "ownership.restore.v1", input RestoreInput, operation RestoreOp,
     result query::UnitBinding, idempotency String, identity "ownership.command.v1",
     decision super::relation_splice::Restoration<S>, denial query::UnitBinding, handler identity "ownership.restore.handler.v1",
-    coupled_outputs |visitor| { if S::COUPLED { visitor.required::<program::Start>(); } if S::TWO_BODIES { visitor.required::<coupled::multi::SecondStart>(); } },
+    coupled_outputs |visitor| { if S::COUPLED { visitor.required::<program::Start>(); }
+        if S::TWO_BODIES { visitor.required::<coupled::multi::SecondStart>(); } },
     outputs CreatedOutputs, source NoApplicationMutationSource,
     principal binding actor(), binding_type Actor, mapping Mapping, principal_entity Node,
     principal_identity u64, identity_binding U64ApplicationValueBinding,

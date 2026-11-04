@@ -50,7 +50,6 @@ fn coupled_stage_retirement_reuses_native_writer_custody_after_checkpoint_reopen
             .unwrap()
         })
         .unwrap();
-    drop(request);
     drop(host);
     let host = super::super::coupled::history::reopen::<S>(checkpoint);
     let principal = authenticate_operator(host.installed_schema(), &scope);

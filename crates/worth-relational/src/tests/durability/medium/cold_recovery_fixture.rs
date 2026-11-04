@@ -88,7 +88,9 @@ pub(super) fn checkpoint_fixture(
             .members()
             .iter()
             .map(|member| match member {
-                RelationalCheckpointMember::New { locator, bytes } => (*locator, bytes.clone()),
+                RelationalCheckpointMember::New { locator, bytes } => {
+                    (*locator, std::sync::Arc::<[u8]>::from(bytes.bytes()))
+                }
                 RelationalCheckpointMember::Carried { .. } => {
                     panic!("first capture owns every member")
                 }

@@ -2,7 +2,7 @@ error[E0308]: mismatched types
   --> tests/worth_court_signal_wasm/sources/worth_signal_wasm/compile_fail/worth_proof_progression/lowered_recipe_is_not_execution_ready.rs:10:35
    |
 10 |     requires_execution_ready_plan(lowered_plan());
-   |     ----------------------------- ^^^^^^^^^^^^^^ expected `ExecutionReadyRecipe<&str, ...>`, found `Recipe<Lowered, &str>`
+   |     ----------------------------- ^^^^^^^^^^^^^^ expected `ExecutionReadyRecipe<&str, _>`, found `Recipe<Lowered, &str>`
    |     |
    |     arguments to this function are incorrect
    |

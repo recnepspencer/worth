@@ -31,7 +31,7 @@ pub fn removed_parent_rechecks_current_read_cancellation_and_expiry() {
     let readers = application.application_query_basis_observer();
     let baseline = readers.observe().active();
     let cancellation = WorthQueryCancellationSource::new();
-    let cancelled = WorthQueryRequestScope::new(None, cancellation.token());
+    let cancelled = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let [qm, qd, sm, sd] =
         std::array::from_fn(|_| journey::access(&application, &principal, &scope));
     cancellation.cancel();
@@ -53,8 +53,7 @@ pub fn removed_parent_rechecks_current_read_cancellation_and_expiry() {
     drop(denial);
     let expired = WorthQueryRequestScope::new(
         Some(std::time::Instant::now() - std::time::Duration::from_secs(1)),
-        WorthQueryCancellationSource::new().token(),
-    );
+        WorthQueryCancellationSource::new().token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let [qm, qd, sm, sd] =
         std::array::from_fn(|_| journey::access(&application, &principal, &scope));
     let denial = application

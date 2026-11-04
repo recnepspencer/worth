@@ -31,6 +31,11 @@ impl<S: Scenario> OperationHandler<S, RestoreBinding<S>> for Handler {
             )?;
             writer.initialize_field(&created, Id::reference(), input.id)?;
             writer.initialize_field(&created, Value::reference(), input.value)?;
+            if S::MODE == 43 {
+                writer
+                    .initialize_content(&created, content::field(), &(input.id * 100))
+                    .expect("valid installed word content");
+            }
             writer.create_output::<Created<S>>(&created)?;
             relation_splice::write_restoration(target.relations, &created, writer)?;
             for (index, &id) in input.co_anchors.iter().enumerate() {

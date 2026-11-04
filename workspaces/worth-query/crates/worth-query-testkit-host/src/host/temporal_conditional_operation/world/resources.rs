@@ -38,7 +38,7 @@ pub fn product_world_resources(retained_composite_commits: u64) -> WorthQueryPro
                 owner_created_component_custody_records: 256,
             },
         },
-        WorthQueryProductWorldClock::start(),
+        WorthQueryProductWorldClock::start(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         worth_query_execution::facade::runtime::WorthQueryInvalidationResources::new(),
         execution_policy,
     )

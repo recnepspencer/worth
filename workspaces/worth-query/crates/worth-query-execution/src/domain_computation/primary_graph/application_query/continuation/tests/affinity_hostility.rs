@@ -7,7 +7,10 @@ use crate::domain_computation::primary_graph::application_query::WorthQueryAppli
 
 #[test]
 fn changed_parameter_denies_before_basis_acquisition() {
-    let context = ContinuationTestContext::new(Duration::from_secs(60));
+    let context = ContinuationTestContext::new(
+        Duration::from_secs(60),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let continuation = context
         .world
         .application
@@ -38,7 +41,10 @@ fn changed_parameter_denies_before_basis_acquisition() {
 
 #[test]
 fn stale_installed_generation_denies_before_basis_reacquisition() {
-    let mut context = ContinuationTestContext::new(Duration::from_secs(60));
+    let mut context = ContinuationTestContext::new(
+        Duration::from_secs(60),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let continuation = context
         .world
         .application
@@ -72,7 +78,10 @@ fn stale_installed_generation_denies_before_basis_reacquisition() {
 
 #[test]
 fn wrong_provider_descriptor_denies_before_fresh_admission() {
-    let context = ContinuationTestContext::new(Duration::from_secs(60));
+    let context = ContinuationTestContext::new(
+        Duration::from_secs(60),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let mut continuation = context
         .world
         .application
@@ -104,7 +113,10 @@ fn wrong_provider_descriptor_denies_before_fresh_admission() {
 
 #[test]
 fn changed_continuation_contract_denies_as_stale_meaning() {
-    let context = ContinuationTestContext::new(Duration::from_secs(60));
+    let context = ContinuationTestContext::new(
+        Duration::from_secs(60),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let mut continuation = context
         .world
         .application
@@ -137,7 +149,10 @@ fn changed_continuation_contract_denies_as_stale_meaning() {
 
 #[test]
 fn retained_and_disposed_tokens_own_no_runtime_resource_types() {
-    let context = ContinuationTestContext::new(Duration::from_secs(60));
+    let context = ContinuationTestContext::new(
+        Duration::from_secs(60),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let continuation = context
         .world
         .application

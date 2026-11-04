@@ -15,7 +15,10 @@ use crate::domain_computation::primary_graph::{
 
 #[test]
 fn active_program_names_an_operation_missing_from_its_declared_routes() {
-    let mut world = installed_authorization_world(true);
+    let mut world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     world.application.program_support = Some(installed_program_support(
         &world.application.installed_schema,
     ));

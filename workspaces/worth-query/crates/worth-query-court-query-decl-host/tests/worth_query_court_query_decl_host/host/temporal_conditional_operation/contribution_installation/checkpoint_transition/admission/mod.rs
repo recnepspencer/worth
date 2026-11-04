@@ -26,50 +26,6 @@ fn checkpoint_transition_admission_refusal_retains_acknowledged_effects_for_expl
         )
     });
     let Some(CaptureDenial::Allocation(denied)) = pending.capture_denial() else {
-        panic!("exact native allocation cause must survive: {pending:?}");
-    };
-    assert_eq!(
-        denied.classify(),
-        ExecutionAllocationDenialClass::Request(WorkCeilingDenial::Admission(
-            LeaseDenial::MemoryExhausted(
-                worth_query_host::facade::runtime::MemoryLimitDenial::Capacity {
-                    requested: denied.requested_payload_bytes().unwrap(),
-                    admitted: 0,
-                    level: worth_query_host::facade::runtime::MemoryLimitLevel::Policy {
-                        ancestor: 0
-                    }
-                }
-            )
-        ))
-    );
-    let native_quote = denied
-        .requested_payload_bytes()
-        .expect("checked real native payload quote");
-    assert!(native_quote > 0);
-    assert_eq!(
-        calls, 1,
-        "capture refusal follows actual authoring and acknowledgment"
-    );
-    let zero = worth_query_testkit_host::facade::host::checkpoint_capture::lease(0);
-    let pending = pending
-        .repair_to_checkpoint_with_request(worth_execution::ExecutionRequest::leased(&zero))
-        .unwrap_err();
-    let Some(CaptureDenial::Execution(cause)) = pending.capture_denial() else {
-        panic!("zero request must preserve the bootstrap admission refusal: {pending:?}");
-    };
-    let primary_graph::WorthQueryPrimaryGraphInstallationDenialKind::ExecutionDenied {
-        kind: primary_graph::WorthQueryProviderSessionDenialKind::ExecutionResource {
-            denial: worth_query_host::facade::application_contribution::WorthQueryManagedComputationResourceDenial::MemoryLimit { requested: admission_bytes, admitted: 0, .. }, ..
-        }
-    } = cause.kind() else { panic!("typed original request memory refusal: {cause:?}"); };
-    assert!(admission_bytes > 0);
-    let native_only = worth_query_testkit_host::facade::host::checkpoint_capture::lease(
-        admission_bytes + native_quote,
-    );
-    let pending = pending
-        .repair_to_checkpoint_with_request(worth_execution::ExecutionRequest::leased(&native_only))
-        .expect_err("the final frame is admitted while native backing remains live");
-    let Some(CaptureDenial::Allocation(denied)) = pending.capture_denial() else {
         panic!("exact final-frame allocation cause must survive: {pending:?}");
     };
     assert_eq!(
@@ -89,13 +45,57 @@ fn checkpoint_transition_admission_refusal_retains_acknowledged_effects_for_expl
     let frame_quote = denied
         .requested_payload_bytes()
         .expect("checked real final-frame payload quote");
-    assert!(frame_quote > native_quote);
-    let released = native_only.reserve_memory(native_quote).unwrap();
-    drop(released);
-    drop(native_only);
-    let repair = worth_query_testkit_host::facade::host::checkpoint_capture::lease(
-        admission_bytes + native_quote.checked_add(frame_quote).unwrap(),
+    assert!(frame_quote > 0);
+    assert_eq!(
+        calls, 1,
+        "capture refusal follows actual authoring and acknowledgment"
     );
+    let zero = worth_query_testkit_host::facade::host::checkpoint_capture::lease(0);
+    let pending = pending
+        .repair_to_checkpoint_with_request(worth_execution::ExecutionRequest::leased(&zero))
+        .unwrap_err();
+    let Some(CaptureDenial::Execution(cause)) = pending.capture_denial() else {
+        panic!("zero request must preserve the bootstrap admission refusal: {pending:?}");
+    };
+    let primary_graph::WorthQueryPrimaryGraphInstallationDenialKind::ExecutionDenied {
+        kind: primary_graph::WorthQueryProviderSessionDenialKind::ExecutionResource {
+            denial: worth_query_host::facade::application_contribution::WorthQueryManagedComputationResourceDenial::MemoryLimit { requested: admission_bytes, admitted: 0, .. }, ..
+        }
+    } = cause.kind() else { panic!("typed original request memory refusal: {cause:?}"); };
+    assert!(admission_bytes > 0);
+    // Native preparation spends from the original request; the zero capture
+    // policy above narrowed only Query's final output backing. A grant for that
+    // frame alone now reaches the earlier Native preparation refusal.
+    let frame_only = worth_query_testkit_host::facade::host::checkpoint_capture::lease(
+        admission_bytes + frame_quote,
+    );
+    let pending = pending
+        .repair_to_checkpoint_with_request(worth_execution::ExecutionRequest::leased(&frame_only))
+        .expect_err("the original request must fund Native preparation before final framing");
+    let Some(CaptureDenial::Execution(cause)) = pending.capture_denial() else {
+        panic!("exact Native preparation cause must survive: {pending:?}");
+    };
+    assert_eq!(
+        cause.kind(),
+        primary_graph::WorthQueryPrimaryGraphInstallationDenialKind::ExecutionDenied {
+            kind: primary_graph::WorthQueryProviderSessionDenialKind::ExecutionResource {
+                denial: worth_query_host::facade::application_contribution::WorthQueryManagedComputationResourceDenial::MemoryLimit {
+                    requested: 224_540,
+                    admitted: 159_796,
+                    level: worth_query_host::facade::application_contribution::WorthQueryMemoryLimitLevel::Policy,
+                },
+                partition_identity: None,
+                policy_ancestor: Some(0),
+            },
+        }
+    );
+    let released = frame_only.reserve_memory(frame_quote).unwrap();
+    drop(released);
+    drop(frame_only);
+    // The same finite grant used by the original stopped fixture funds Native
+    // preparation and the final Query frame without re-running authoring.
+    let repair =
+        worth_query_testkit_host::facade::host::checkpoint_capture::lease(64 * 1024 * 1024);
     let checkpoint = pending
         .repair_to_checkpoint_with_request(worth_execution::ExecutionRequest::leased(&repair))
         .expect("a fresh funded request captures the same acknowledged successor");

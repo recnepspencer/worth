@@ -93,9 +93,16 @@ fn run(
 ) -> (usize, Option<Stop>) {
     let _observation =
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let source = WorthQueryCancellationSource::new();
-    let request = WorthQueryRequestScope::new(None, source.token());
+    let request = WorthQueryRequestScope::new(
+        None,
+        source.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let program = world
         .application
         .with_host_advancement(|phase| {

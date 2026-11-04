@@ -138,7 +138,7 @@ impl RelationalPreparationRuntime {
                         Some(retained) => apply_retained_entity_selection_draft(
                             execution, &runtime, &selected, &prepared.working_state, retained,
                             prepared.schema_authority.as_ref(), &identity, symbols,
-                            source_interpretation,
+                            source_interpretation, &validation_input.content,
                         ),
                         None => apply_mutation_draft(
                         execution,
@@ -150,6 +150,7 @@ impl RelationalPreparationRuntime {
                         &identity,
                         symbols,
                         source_interpretation,
+                        &validation_input.content,
                     ),
                     }?;
                     let runtime = round.with_candidate_symbols(mutation.candidate_symbols());

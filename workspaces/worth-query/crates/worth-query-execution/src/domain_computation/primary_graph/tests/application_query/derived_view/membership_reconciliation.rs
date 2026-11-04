@@ -7,7 +7,10 @@ mod collection_locators;
 
 #[test]
 fn certified_membership_changes_retain_clean_arcs_and_read_only_new_or_dirty_entries() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     world.application.with_host_advancement(|phase| {
         let host_custody = phase.test_host_request();
         let borrowed_execution = host_custody.borrowed_request_for_test();

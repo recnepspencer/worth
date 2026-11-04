@@ -1,5 +1,5 @@
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
@@ -17,8 +17,14 @@ use crate::domain_computation::primary_graph::{
 
 #[test]
 fn admission_from_an_equivalent_foreign_runtime_opens_no_application_door() {
-    let source_world = installed_authorization_world(true);
-    let target_world = installed_authorization_world(true);
+    let source_world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
+    let target_world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = source_world
         .application
@@ -132,11 +138,15 @@ fn admission_from_an_equivalent_foreign_runtime_opens_no_application_door() {
 
 #[test]
 fn cancellation_after_program_preparation_prevents_provider_commit() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let cancellation = WorthQueryCancellationSource::new();
     let request = WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(60)),
+        Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(60)),
         cancellation.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     let principal = world
         .application
@@ -184,11 +194,15 @@ fn cancellation_after_program_preparation_prevents_provider_commit() {
 
 #[test]
 fn cancelled_admission_cannot_inspect_provider_idempotency() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let cancellation = WorthQueryCancellationSource::new();
     let request = WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(60)),
+        Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(60)),
         cancellation.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     let principal = world
         .application

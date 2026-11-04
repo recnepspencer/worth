@@ -28,7 +28,11 @@ pub(super) fn restore(
     paged_symbols
         .install_cold_pages(&directory)
         .map_err(crate::runtime::ColdSymbolDirectoryDenial::into_recovery_stop)?;
-    let mut regions = ReadmittedRegionDirectory::new(directory.clone(), paged_symbols.clone())?;
+    let mut regions = ReadmittedRegionDirectory::new(
+        directory.clone(),
+        paged_symbols.clone(),
+        &runtime.config.schema.registry.content_formats,
+    )?;
     let heads = checkpoint
         .envelopes
         .iter()
@@ -106,10 +110,25 @@ pub(super) fn restore(
             .cloned()
             .ok_or_else(|| corrupt("root has no commit descriptor"))?;
         let leaves = regions.regions(image.schema_carrier_digest, &image.regions)?;
+        let content_records = crate::durability::checkpoints::content::read_records(
+            execution,
+            &image.content,
+            directory.source.as_ref(),
+        )?;
         let root = history
-            .readmit_branch_region_directory(leaves, envelope, descriptor, schema.clone())
-            .map_err(|denial| {
-                corrupt(format!("branch region directory readmission: {denial:?}"))
+            .readmit_branch_region_directory(
+                execution,
+                &content_records,
+                leaves,
+                envelope,
+                descriptor,
+                schema.clone(),
+            )
+            .map_err(|denial| match denial {
+                crate::branch::RelationalBranchRootCaptureDenial::Content(cause) => {
+                    RelationalRecoveryStop::from(cause)
+                }
+                other => corrupt(format!("branch region directory readmission: {other:?}")).into(),
             })?;
         roots.insert(image.commit_id, root);
         authorities.insert(image.commit_id, schema);

@@ -21,8 +21,14 @@ use worth_relational::facade::transactions::{
 
 #[test]
 fn scoped_indexed_comparison_preserves_pinned_absence_limits_and_foreign_affinity() {
-    let world = installed_authorization_world(true);
-    let foreign = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
+    let foreign = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let control = StorageControl::new(ExecutionAllocationPolicy::SystemAllocation, Some(&request));
     world
@@ -204,9 +210,16 @@ fn prepared_indexed_comparison_keeps_a_native_cancellation() {
     };
     let _observation =
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let source = WorthQueryCancellationSource::new();
-    let scope = WorthQueryRequestScope::new(None, source.token());
+    let scope = WorthQueryRequestScope::new(
+        None,
+        source.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     world.application.with_application_advancement(&scope, |phase| {
         let execution = phase.checked_execution_request_for(world.application.product_runtime()).unwrap();
         let selected = world.selected_product(&phase.test_host_request());

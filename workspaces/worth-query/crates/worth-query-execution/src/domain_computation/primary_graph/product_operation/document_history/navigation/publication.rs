@@ -21,7 +21,10 @@ pub(super) fn publication_denial(
     cause: PublicationDenial<worth_runtime_world::facade::NoEffectCompositePublication>,
 ) -> WorthQueryHistoryNavigationDenial {
     match cause {
-        PublicationDenial::Stopped(cause) => {
+        PublicationDenial::ClockMismatch => {
+            WorthQueryHistoryNavigationDenial::Stopped(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock))
+        },
+PublicationDenial::Stopped(cause) => {
             WorthQueryHistoryNavigationDenial::Stopped(advancement_denial(cause))
         }
         PublicationDenial::Refused(cause) => WorthQueryHistoryNavigationDenial::Publication(cause),
@@ -163,7 +166,8 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
                 .publication_binding()
                 .prepare_settled_relational_adoption(&inspected, request)
                 .map_err(|cause| match cause {
-                    PublicationDenial::Stopped(cause) => Denial::Stopped(advancement_denial(cause)),
+                    PublicationDenial::ClockMismatch => Denial::Stopped(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock)),
+PublicationDenial::Stopped(cause) => Denial::Stopped(advancement_denial(cause)),
                     PublicationDenial::Refused(cause) => Denial::RecoveryPreparation(cause),
                 })
         })();

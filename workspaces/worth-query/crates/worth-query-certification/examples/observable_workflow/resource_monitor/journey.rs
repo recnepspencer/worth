@@ -63,7 +63,11 @@ pub fn run() {
     let authority = super::authority::inspect(runtime, &handle, &actor, &scope, &original);
 
     let cancelled = WorthQueryCancellationSource::new();
-    let refused_scope = WorthQueryRequestScope::new(None, cancelled.token());
+    let refused_scope = WorthQueryRequestScope::new(
+        None,
+        cancelled.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     cancelled.cancel();
     let stop = runtime
         .request(&actor, &refused_scope)

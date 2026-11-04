@@ -7,15 +7,20 @@ use crate::domain_computation::primary_graph::tests::fixture::installed_authoriz
 
 #[test]
 fn activation_capacity_follows_reserved_and_retired_gate_allocations() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let product = world
         .application
         .product_runtime()
         .admit_product_branch(world.application.product_runtime().default_branch())
         .unwrap();
-    let limit = test_product_world_resources()
-        .budgets()
-        .live_product_branches();
+    let limit = test_product_world_resources(
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    )
+    .budgets()
+    .live_product_branches();
     let registry = WorthQueryProductActivationRegistry::new(limit).unwrap();
     registry.reserve().unwrap().commit(product.observation());
     let held_gate = registry.gate(product.branch_identity()).unwrap();
@@ -64,8 +69,14 @@ fn activation_capacity_follows_reserved_and_retired_gate_allocations() {
 
 #[test]
 fn foreign_product_is_denied_by_owner_affinity_before_local_coordination() {
-    let local = installed_authorization_world(true);
-    let foreign = installed_authorization_world(true);
+    let local = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
+    let foreign = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let selection = foreign
         .application
         .product_runtime()

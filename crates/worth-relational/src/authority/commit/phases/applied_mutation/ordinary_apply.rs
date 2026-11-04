@@ -94,6 +94,7 @@ pub(crate) fn apply_authored_prefix(
     commands: &MergedCommitPlan,
     identity: &crate::mvcc::RelationalMutationProposalIdentity,
     symbols: PendingSymbolMeanings,
+    content: &crate::content::RelationalContentAttachments,
 ) -> Result<AppliedMutationCore, MutationApplyDenial> {
     let plan = AuthoritativeApplyPlan {
         transaction_id: commands.transaction_id,
@@ -105,7 +106,7 @@ pub(crate) fn apply_authored_prefix(
         adjacency_policy: runtime.config.storage.adjacency_policy.clone(),
         cross_context_policy: runtime.config.storage.cross_context_policy,
     };
-    apply(
+    let mut applied = apply(
         execution,
         runtime,
         selected,
@@ -117,5 +118,20 @@ pub(crate) fn apply_authored_prefix(
         identity,
         symbols,
         None,
-    )
+    )?;
+    let source = identity
+        .source_interpretation()
+        .expect("owner-issued prefix identity");
+    applied.state.content = super::content::prepare(
+        execution,
+        runtime,
+        selected.selected().state().root(),
+        &prepared.schema_authority,
+        content,
+        &applied.state,
+        &applied.outcome.effect.publication.changed_records,
+        identity.proposed_version_id(),
+        source.restoration_content(),
+    )?;
+    Ok(applied)
 }

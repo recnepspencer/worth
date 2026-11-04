@@ -4,7 +4,7 @@ use crate::domain_computation::primary_graph::application_contribution::request_
 use std::{
     num::NonZeroUsize,
     sync::{Arc, Mutex},
-    time::{Duration, Instant},
+    time::Duration,
 };
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
@@ -59,7 +59,11 @@ fn run_handoff(
     Result<worth_foundational::ExecutionPhysicalReport, worth_execution::WorkCeilingDenial>,
 ) {
     let cancel = WorthQueryCancellationSource::new();
-    let scope = WorthQueryRequestScope::new(None, cancel.token());
+    let scope = WorthQueryRequestScope::new(
+        None,
+        cancel.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let policy = worker_policy(width.unwrap_or(1));
     let placement = width.map_or(RuntimeWorldExecutionPlacement::Serial(policy), |_| {
         RuntimeWorldExecutionPlacement::Leased {

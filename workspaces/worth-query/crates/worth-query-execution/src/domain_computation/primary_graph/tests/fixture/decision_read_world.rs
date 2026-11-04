@@ -91,7 +91,7 @@ pub(in crate::domain_computation) fn installed_decision_read_world() -> Decision
                 &phase.bootstrap_for_test(),
                 &runtime,
                 &schema,
-                crate::domain_computation::execution_runtime::product_world::test_product_world_resources(),
+                crate::domain_computation::execution_runtime::product_world::test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()),
             )
             .unwrap();
         bootstrap

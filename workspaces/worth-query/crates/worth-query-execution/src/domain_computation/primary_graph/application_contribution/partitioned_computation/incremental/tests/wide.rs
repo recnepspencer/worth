@@ -123,7 +123,10 @@ impl TestOwner<Wide> for WideOwner {
 fn ten_thousand_partitions_gather_and_compute_only_the_one_whose_fact_moved() {
     let _observation =
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let installed = WorthQueryInstalledPartitionedComputation::<_, _, Wide, _>::new(
         WideOwner::default(),
         ComputationRetention::ProducerOperation,

@@ -3,14 +3,17 @@ use super::*;
 
 impl RelationalBranchRoot {
     pub(crate) fn capture_applied_candidate(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         issuer: &RelationalBranchRootIdentityIssuer,
         previous: &Arc<Self>,
         delta: &RelationalPublishedPartitionDelta,
         symbols: &crate::runtime::RuntimeSymbolTable,
+        content: crate::content::ContentDirectory,
     ) -> Result<Arc<Self>, RelationalBranchRootCaptureDenial> {
         issuer.validate_capture_capacity(delta.len())?;
         let id = issuer.issue_root_id()?;
         let (regions, _) = capture::build_incremental_regions(
+            execution,
             issuer,
             id,
             delta,
@@ -32,6 +35,7 @@ impl RelationalBranchRoot {
             relation_slot_count,
             content_accumulator,
             committed: None,
+            content,
             ..previous.as_ref().clone()
         }))
     }

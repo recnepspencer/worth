@@ -236,6 +236,10 @@ fn retained_observation(
                 &mut |units| SourceFactsAllocation::work(execution, units),
                 &mut |bytes| execution.reserve_retained_memory(bytes).map_err(Into::into),
                 &mut |cause| cause.into_native(),
+                &mut |left, right| {
+                    left.same_content(execution, right)
+                        .map_err(|cause| cause.into_execution_cause())
+                },
             )
             .map_err(|cause| {
                 SelfDenial::relational_read_stopped(cause, "managed fact role merge")

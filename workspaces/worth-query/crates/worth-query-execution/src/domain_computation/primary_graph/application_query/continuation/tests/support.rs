@@ -53,9 +53,12 @@ pub(super) struct ContinuationTestContext {
 }
 
 impl ContinuationTestContext {
-    pub(super) fn new(authentication_lifetime: Duration) -> Self {
-        let world = installed_authorization_world(true);
-        let request = crate::domain_computation::primary_graph::tests::fixture::live_scope();
+    pub(super) fn new(
+        authentication_lifetime: Duration,
+        clock: worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock,
+    ) -> Self {
+        let world = installed_authorization_world(true, clock.clone());
+        let request = worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope::new(Some(clock.now() + Duration::from_secs(60)), worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource::new().token(), clock.clone());
         let external = world.authenticate("alice", authentication_lifetime, &request);
         let (principal, account, query) = world
             .application
@@ -116,7 +119,7 @@ impl ContinuationTestContext {
         &self,
         phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     ) -> TestContinuation {
-        let request = crate::domain_computation::primary_graph::tests::fixture::live_scope();
+        let request = worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope::new(Some(self.principal.clock().now() + Duration::from_secs(60)), worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource::new().token(), self.principal.clock().clone());
         let access = WorthQueryApplicationQueryAccessContext::new(&self.principal, &self.account);
         let plan = self
             .world
@@ -219,12 +222,6 @@ impl ContinuationTestContext {
             .application_query_basis_observer()
             .observe()
             .acquisitions()
-    }
-
-    pub(super) fn expire_authentication(&mut self) {
-        self.world
-            .application
-            .fix_authentication_time(self.principal.valid_until());
     }
 
     pub(super) fn assert_resource_baseline(&self) {

@@ -15,7 +15,11 @@ fn query_caller_cancel_interrupts_complete_native_closure_and_preserves_original
     let host = crate::test_request_policy::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let cancellation = WorthQueryCancellationSource::new();
-    let request = WorthQueryRequestScope::new(None, cancellation.token());
+    let request = WorthQueryRequestScope::new(
+        None,
+        cancellation.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let visited = Rc::new(Cell::new(0));
     let witness = Rc::clone(&visited);
     CHECKPOINT.with(|slot| {

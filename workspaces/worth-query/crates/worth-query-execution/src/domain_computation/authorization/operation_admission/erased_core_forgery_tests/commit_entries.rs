@@ -32,7 +32,10 @@ fn forged_program(
 
 #[test]
 fn foreign_installed_seal_is_stale_at_commit_validation_before_work() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let program = forged_program(&world);
     let _observation =
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
@@ -51,7 +54,10 @@ fn foreign_installed_seal_is_stale_at_commit_validation_before_work() {
 
 #[test]
 fn foreign_installed_seal_is_stale_at_migration_before_work() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let program = forged_program(&world);
     let _observation =
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
@@ -70,7 +76,10 @@ fn foreign_installed_seal_is_stale_at_migration_before_work() {
 
 #[test]
 fn foreign_installed_seal_is_stale_at_commit_validation_in_advancement_before_work() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let program = forged_program(&world);
     world
         .application

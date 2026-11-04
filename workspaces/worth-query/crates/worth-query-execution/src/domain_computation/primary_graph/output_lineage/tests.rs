@@ -20,9 +20,7 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
     let host_request = crate::test_request_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let world =
-        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
-            true,
-        );
+        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     let product = world
         .application
         .product_runtime()
@@ -189,9 +187,7 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
 #[test]
 fn recovered_prior_correspondence_is_not_currentness_evidence_until_exact_readmission() {
     let world =
-        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
-            true,
-        );
+        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     let product = world
         .application
         .product_runtime()

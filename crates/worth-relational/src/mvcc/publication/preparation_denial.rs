@@ -4,6 +4,7 @@ use crate::storage::data::RelationalStorageUnavailable;
 
 #[derive(Debug)]
 pub(crate) enum PublicationPreparationDenial {
+    Execution(crate::execution::RelationalExecutionDenialCause),
     Invalid(String),
     StorageUnavailable(RelationalStorageUnavailable),
 }
@@ -17,6 +18,7 @@ impl From<String> for PublicationPreparationDenial {
 impl From<RelationalBranchRootCaptureDenial> for PublicationPreparationDenial {
     fn from(denial: RelationalBranchRootCaptureDenial) -> Self {
         match denial {
+            RelationalBranchRootCaptureDenial::Execution(cause) => Self::Execution(cause),
             RelationalBranchRootCaptureDenial::StorageUnavailable(failure) => {
                 Self::StorageUnavailable(failure)
             }

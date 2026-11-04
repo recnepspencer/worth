@@ -11,6 +11,10 @@ use worth_query_testkit_document_retention::facade::document_retention_model::{
 };
 
 #[test]
+#[expect(
+    clippy::disallowed_methods,
+    reason = "certification-harness thread-scope=1 scoped-thread-spawn=1: a_competing_attempt_at_the_actual_selection_guard_cannot_replace_the_winner joins the bounded native owner and competing host or control actors to certify custody at the real handoff."
+)]
 fn a_competing_attempt_at_the_actual_selection_guard_cannot_replace_the_winner() {
     let host = publish_on_first_program();
     let document = attach(&host, head(&host), DOCUMENT_IDENTITY);
@@ -68,6 +72,10 @@ fn a_competing_attempt_at_the_actual_selection_guard_cannot_replace_the_winner()
 }
 
 #[test]
+#[expect(
+    clippy::disallowed_methods,
+    reason = "certification-harness thread-scope=1 scoped-thread-spawn=1: equal_value_candidate_aba_cannot_substitute_for_the_original_performed_endpoint joins the bounded native owner and competing host or control actors to certify custody at the real handoff."
+)]
 fn equal_value_candidate_aba_cannot_substitute_for_the_original_performed_endpoint() {
     let host = publish_on_first_program();
     let document = attach(&host, head(&host), DOCUMENT_IDENTITY);
@@ -135,6 +143,10 @@ fn equal_value_candidate_aba_cannot_substitute_for_the_original_performed_endpoi
 }
 
 #[test]
+#[expect(
+    clippy::disallowed_methods,
+    reason = "certification-harness thread-scope=1 scoped-thread-spawn=1: delivery_loss_keeps_selected_custody_and_old_key_retry_does_not_reset_later_navigation joins the bounded native owner and competing host or control actors to certify custody at the real handoff."
+)]
 fn delivery_loss_keeps_selected_custody_and_old_key_retry_does_not_reset_later_navigation() {
     let host = publish_on_first_program();
     let document = attach(&host, head(&host), DOCUMENT_IDENTITY);
@@ -160,7 +172,7 @@ fn delivery_loss_keeps_selected_custody_and_old_key_retry_does_not_reset_later_n
     );
     let pause = owner.pause_after_history_navigation_adoption_for_test();
     let cancellation = WorthQueryCancellationSource::new();
-    let stopped_scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let stopped_scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let principal = authenticate_operator(host.installed_schema(), &stopped_scope);
     let (reached, result) = std::thread::scope(|threads| {
         let worker = threads.spawn(|| owner.advance(&host.request(&principal, &stopped_scope)));

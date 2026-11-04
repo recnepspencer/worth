@@ -46,7 +46,7 @@ fn validate_current_request(
     query: &str,
 ) -> Result<(), WorthQueryApplicationQueryAdmissionDenial> {
     super::super::super::admission_preparation::validate_admission_request(request, query)?;
-    if std::time::Instant::now() >= valid_until {
+    if request.clock().now() >= valid_until {
         return Err(denial(WorthQueryApplicationQueryAdmissionDenialKind::Authorization(
             crate::domain_computation::authorization::WorthQueryAdmissionLapse::AuthenticationExpired.denial_kind(),
         ), query));

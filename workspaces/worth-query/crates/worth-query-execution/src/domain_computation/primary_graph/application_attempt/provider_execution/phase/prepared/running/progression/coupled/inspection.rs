@@ -37,6 +37,7 @@ pub(in crate::domain_computation::primary_graph) fn inspect_coupled_application<
         InspectedCoupledWriter<'run>,
         worth_relational::facade::mvcc::RequiredOutputPublication,
         worth_relational::facade::transactions::WorkerIntentBatch,
+        worth_relational::facade::content::RelationalContentAttachments,
     ),
     WorthQueryApplicationCommitOutcome,
 >
@@ -152,6 +153,7 @@ where
         },
         commands.publication,
         commands.batch,
+        commands.content,
     ))
 }
 

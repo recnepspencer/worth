@@ -101,6 +101,7 @@ fn prepare_symbol_round(
                 &identity,
                 symbols,
                 source_interpretation,
+                input.content(),
             )?;
             let candidate = round.with_candidate_symbols(mutation.candidate_symbols());
             mutation.prepare_managed_sources(

@@ -10,6 +10,7 @@ struct PreparationOverlayRound<'transaction> {
     transaction: &'transaction mut BranchBoundRelationalTransaction,
     accepted: bool,
     overlay: DetachedRelationalTransactionOverlay,
+    content: crate::content::RelationalContentAttachments,
     footprint: RelationalTransactionFootprint,
     cached_plan: Option<crate::transactions::data::MergedCommitPlan>,
 }
@@ -39,6 +40,7 @@ impl Drop for PreparationOverlayRound<'_> {
             .get_mut()
             .unwrap_or_else(|error| error.into_inner()) = None;
         std::mem::swap(&mut self.transaction.overlay, &mut self.overlay);
+        std::mem::swap(&mut self.transaction.content, &mut self.content);
         std::mem::swap(&mut self.transaction.footprint, &mut self.footprint);
         std::mem::swap(
             &mut self.transaction.last_merged_plan,
@@ -55,6 +57,7 @@ impl BranchBoundRelationalTransaction {
             .unwrap_or_else(|error| error.into_inner()) = None;
         let guard = PreparationOverlayRound {
             overlay: self.overlay.clone(),
+            content: self.content.clone(),
             footprint: self.footprint.clone(),
             cached_plan: self.last_merged_plan.clone(),
             transaction: self,
@@ -69,6 +72,7 @@ impl BranchBoundRelationalTransaction {
     ) -> Result<T, MutationApplyDenial> {
         let mut guard = PreparationOverlayRound {
             overlay: self.overlay.clone(),
+            content: self.content.clone(),
             footprint: self.footprint.clone(),
             cached_plan: self.last_merged_plan.clone(),
             transaction: self,

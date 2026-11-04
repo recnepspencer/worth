@@ -69,7 +69,7 @@ pub(super) fn run(depth: usize, width: usize) -> Sample {
     for offset in 0..depth {
         // Even depths start2, then3/7/.../3; odd depths start3/7/.../3.
         // Every source changes its value and must return an actual fresh record.
-        let days = if depth % 2 == 0 && offset == 0 {
+        let days = if depth.is_multiple_of(2) && offset == 0 {
             2
         } else if offset % 2 == depth % 2 {
             7
@@ -214,7 +214,6 @@ pub(super) fn run(depth: usize, width: usize) -> Sample {
     let closed_heads = (closed.closed_heads(), untouched_closed.closed_heads());
     assert!(app.branches().pending_cleanup().is_empty());
     drop(journal);
-    drop(request);
     drop(principal);
     let started = Instant::now();
     drop(app);

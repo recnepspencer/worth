@@ -50,7 +50,7 @@ fn no_source_tree_keeps_yielded_custody_across_refusals_and_fresh_completion() {
             _ => panic!("a foreign runtime must return the same yielded owner"),
         };
         let cancellation = WorthQueryCancellationSource::new();
-        let stopped = WorthQueryRequestScope::new(None, cancellation.token());
+        let stopped = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
         let stopped_principal = authentication::block_on(adapter.authenticate(
             authentication::LocalCredential::issued_for_model_owner(),
             &stopped,

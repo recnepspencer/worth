@@ -1,8 +1,8 @@
 error[E0271]: type mismatch resolving `<[AspectValue; 1] as IntoIterator>::Item == Artifact<ContractValidated, ContractValidatedAspectValue>`
- --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/authoritative_state/raw_value_cannot_enter_authoritative_state.rs
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/authoritative_state/raw_value_cannot_enter_authoritative_state.rs:4:53
   |
-  |     let _ = admit_authoritative_record_aspect_state([AspectValue::Int64(1)]);
-  |             --------------------------------------- ^^^^^^^^^^^^^^^^^^^^^^^ expected `Artifact<ContractValidated, ...>`, found `AspectValue`
+4 |     let _ = admit_authoritative_record_aspect_state([AspectValue::Int64(1)]);
+  |             --------------------------------------- ^^^^^^^^^^^^^^^^^^^^^^^ expected `Artifact<ContractValidated, _>`, found `AspectValue`
   |             |
   |             required by a bound introduced by this call
   |
