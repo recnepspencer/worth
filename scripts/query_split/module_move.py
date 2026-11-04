@@ -5,7 +5,8 @@ Usage:
     python scripts/query_split/module_move.py <lib.rs> <old::module::path> <new::parent::path> [--name NEW]
         [--report DIR] [--dry-run]
 
-The files move with `git mv`, keeping their relative layout. Then:
+The files move with `git mv`, keeping their relative layout (non-Rust files under the subtree's
+directory, such as `include_str!` documents, move with them). Then:
 - the old parent loses its `mod` declaration and the new parent gains one;
 - every path in the library, courts and testkits that leads into the moved subtree (directly,
   through an imported module, or through a re-export) is rewritten to the new path; inside the
@@ -116,6 +117,11 @@ class ModuleMove:
             if old_dir not in path.parents:
                 raise SystemExit(f'{path} lies outside {old_dir}; move it by hand first')
             mapping[path] = new_dir / path.relative_to(old_dir)
+        if old_dir.is_dir():
+            # Files the subtree's sources read (`include_str!` documents) travel with it.
+            for path in sorted(old_dir.rglob('*')):
+                if path.is_file() and path.suffix != '.rs':
+                    mapping[path] = new_dir / path.relative_to(old_dir)
         if any(target.exists() for target in mapping.values()):
             raise SystemExit('a destination file already exists')
         return mapping
