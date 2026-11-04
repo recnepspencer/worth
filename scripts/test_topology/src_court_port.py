@@ -7,11 +7,12 @@ BASE is the commit of the codemod's output on the original tree (its court and t
 are the merge base). THEIRS_ROOT/THEIRS_REV is a checkout holding the codemod's output for the
 later tree, placed with the base plan's placement (`SRC_PINS`), so a file's text differs from
 BASE only by the later tree's own changes. For every court or testkit file:
-- ours is where that BASE file lives at HEAD (git rename detection BASE -> HEAD, renames limited
-  to court and testkit crates); `git merge-file` merges BASE -> THEIRS into it, conflicts
-  marked and reported;
-- a file new in THEIRS goes to the HEAD crate its BASE crate became (the crate most of its files
-  moved to), its tests directory renamed to match;
+- ours is where that BASE file lives at HEAD: the same path in the crate its crate became
+  (crates are matched by identical file content, so a renamed crate is followed even where
+  another took its old name), else git's rename into that crate; `git merge-file` merges
+  BASE -> THEIRS into it, conflicts marked and reported;
+- a file new in THEIRS goes to the HEAD crate its BASE crate became, its tests directory
+  renamed to match;
 - a file THEIRS deleted is deleted when ours still equals BASE, and reported otherwise.
 """
 import argparse
@@ -38,25 +39,51 @@ def tree(rev, cwd=None):
     return {p for p in git('ls-tree', '-r', '--name-only', rev, '--', CRATES, cwd=cwd).split() if family(p)}
 
 
-def head_paths(base):
-    """{base path: head path} for every BASE court/testkit file that still exists at HEAD."""
+def blobs(rev, cwd=None):
+    out = git('ls-tree', '-r', rev, '--', CRATES, cwd=cwd)
+    result = {}
+    for line in out.splitlines():
+        meta, path = line.split('\t')
+        if family(path):
+            result[path] = meta.split()[2]
+    return result
+
+
+def crate_of(path):
+    return path[len(CRATES):].split('/')[0]
+
+
+def crate_map(base):
+    """{base crate dir: head crate dir}, voted by files whose content is identical at HEAD: a
+    crate keeps its identity through renames even where another crate took its old name."""
+    head = defaultdict(set)
+    for path, blob in blobs('HEAD').items():
+        head[blob].add(crate_of(path))
+    votes = defaultdict(Counter)
+    for path, blob in blobs(base).items():
+        for crate in head.get(blob, ()):
+            votes[crate_of(path)][crate] += 1
+    return {old: counts.most_common(1)[0][0] for old, counts in votes.items()}
+
+
+def head_paths(base, crates):
+    """{base path: head path} for every BASE court/testkit file that still exists at HEAD: the same
+    path inside the crate its crate became, else git's rename (BASE -> HEAD) into that crate."""
+    present = set(blobs('HEAD'))
     out = git('-c', 'diff.renameLimit=50000', 'diff', '--name-status', '-M50%', base, 'HEAD', '--', CRATES)
-    mapping = {p: p for p in tree(base)}
+    renamed = {}
     for line in out.splitlines():
         parts = line.split('\t')
         if parts[0].startswith('R') and family(parts[1]):
-            mapping[parts[1]] = parts[2]
-        elif parts[0] == 'D' and family(parts[1]):
-            mapping.pop(parts[1], None)
+            renamed[parts[1]] = parts[2]
+    mapping = {}
+    for path in tree(base):
+        same = relocated(path, crates)
+        if same in present:
+            mapping[path] = same
+        elif path in renamed and crate_of(renamed[path]) == crates.get(crate_of(path), crate_of(path)):
+            mapping[path] = renamed[path]
     return mapping
-
-
-def crate_map(mapping):
-    """{base crate dir: head crate dir} by majority of its files' moves."""
-    votes = defaultdict(Counter)
-    for old, new in mapping.items():
-        votes[old[len(CRATES):].split('/')[0]][new[len(CRATES):].split('/')[0]] += 1
-    return {old: counts.most_common(1)[0][0] for old, counts in votes.items()}
 
 
 def relocated(path, crates):
@@ -79,8 +106,8 @@ def merge3(ours, base, theirs):
 
 
 def port(root, base, theirs_root, theirs_rev):
-    mapping = head_paths(base)
-    crates = crate_map(mapping)
+    crates = crate_map(base)
+    mapping = head_paths(base, crates)
     base_files = tree(base)
     theirs_files = tree(theirs_rev, cwd=theirs_root)
     report = {'merged': [], 'conflicted': [], 'added': [], 'deleted': [], 'kept_changed_deletion': [],
