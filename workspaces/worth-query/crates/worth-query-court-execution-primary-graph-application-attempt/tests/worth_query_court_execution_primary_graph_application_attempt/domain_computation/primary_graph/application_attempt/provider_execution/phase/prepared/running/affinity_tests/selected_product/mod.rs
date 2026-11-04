@@ -144,8 +144,10 @@ fn foreign_installed_phase_refuses_provider_readmission_before_read_or_charge() 
         a.application
             .with_application_advancement(&scope, |phase| {
                 let before = reads();
-                let plan = brun
-                    .running
+                // Read before the running run is borrowed mutably.
+                let product = (*brun.lease_for_test()).product().retained_clone_for_test();
+                let plan = (*brun
+                    .running_mut_for_test())
                     .admit_provider_execution_plan(b.application.runtime.primary_graph_authority())
                     .unwrap()
                     .bind_application_product_for_test(product)

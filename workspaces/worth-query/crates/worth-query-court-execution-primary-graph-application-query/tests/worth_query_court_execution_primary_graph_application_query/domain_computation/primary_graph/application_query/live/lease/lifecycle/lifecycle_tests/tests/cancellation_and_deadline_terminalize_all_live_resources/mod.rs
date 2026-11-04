@@ -23,14 +23,17 @@ fn native_value_decode_refusal_cancels_live_custody_before_delivery_consumption(
         229,
         93,
     );
-    lease.queue.fill(
+    // The buffer capacity is read before the queue and basis are borrowed mutably.
+    let buffer_capacity = (*lease.controls_for_test()).buffer_capacity();
+    let (queue, basis) = lease.queue_basis_mut_for_test();
+    queue.fill_for_test(
         &context
             .world
             .application
             .runtime
             .primary_provider
             .live_delivery,
-        lease.basis.as_mut().expect("opening owns its native basis"),
+        basis.as_mut().expect("opening owns its native basis"),
         LiveAccountActivityCause::effect(),
         buffer_capacity,
         |_| true,
