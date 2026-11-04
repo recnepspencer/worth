@@ -3,17 +3,17 @@ mod custody;
 use super::*;
 use worth_runtime_world::facade::{CompositeCommitIdentity, ProductBranchObservation};
 
-pub(in crate::domain_computation::primary_graph) struct WorthQueryLivePredicatePreparation {
+pub struct WorthQueryLivePredicatePreparation {
     state: Arc<Mutex<WorthQueryLiveDeliverySourceState>>,
     key: WorthQueryLiveProductKey,
     _allocation: Arc<SourceFactsAllocation>,
 }
-pub(in crate::domain_computation::primary_graph) struct WorthQueryLivePredicateOpening {
+pub struct WorthQueryLivePredicateOpening {
     state: Arc<Mutex<WorthQueryLiveDeliverySourceState>>,
     key: WorthQueryLiveProductKey,
     _allocation: Arc<SourceFactsAllocation>,
 }
-pub(in crate::domain_computation::primary_graph) struct WorthQueryLivePredicateSubscription {
+pub struct WorthQueryLivePredicateSubscription {
     subscription: WorthQueryLiveSubscription,
     stamp: Stamp,
     allocation: Arc<SourceFactsAllocation>,

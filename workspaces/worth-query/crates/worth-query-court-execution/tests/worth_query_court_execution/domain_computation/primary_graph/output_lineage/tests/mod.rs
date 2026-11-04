@@ -93,18 +93,10 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
         None,
     );
 
-    let source = SemanticSource {
-        runtime_authority,
-        schema,
-        scope,
-        output_binding: OutputBindingIdentity::declared_for_test("RestoredOutputBinding"),
-    };
+    let source = SemanticSource::new_for_test(runtime_authority, schema, scope, OutputBindingIdentity::declared_for_test("RestoredOutputBinding"));
     let history = &(*lineage.by_source_for_test())[&source][&observation.lifecycle_incarnation()];
     let maximum_generation = observation.reference_generation().get();
-    let coordinate = ProductCoordinate {
-        occurrence: observation.lifecycle_incarnation(),
-        generation: maximum_generation,
-    };
+    let coordinate = ProductCoordinate::new_for_test(observation.lifecycle_incarnation(), maximum_generation);
     let selected_first = lineage
         .latest_output_in_partition_for_test(&source, coordinate, first_partition)
         .unwrap();
@@ -258,12 +250,7 @@ fn recovered_prior_correspondence_is_not_currentness_evidence_until_exact_readmi
         [0x41; 32],
         None,
     );
-    let semantic_source = SemanticSource {
-        runtime_authority,
-        schema: schema.clone(),
-        scope,
-        output_binding: OutputBindingIdentity::declared_for_test("RestoredOutputBinding"),
-    };
+    let semantic_source = SemanticSource::new_for_test(runtime_authority, schema.clone(), scope, OutputBindingIdentity::declared_for_test("RestoredOutputBinding"));
     assert_eq!(
         (*lineage.by_source_for_test())[&semantic_source][&observation.lifecycle_incarnation()].len(),
         1,

@@ -16,7 +16,7 @@ mod direct_yield_eligibility;
 mod direct_yield_recovery;
 mod direct_yield_transition;
 mod interruption_classification;
-mod lower_admission;
+pub(crate) mod lower_admission;
 mod managed_graph_execution;
 mod managed_graph_suspension;
 mod provider_execution_release;

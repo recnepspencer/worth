@@ -7,7 +7,7 @@ mod evaluation_affinity;
 mod evaluation_binding;
 mod evaluation_predecessor;
 pub(crate) mod installed_operation;
-mod operation_cell;
+pub(crate) mod operation_cell;
 mod operation_totals;
 mod pending_invalidations;
 pub(crate) mod registry;

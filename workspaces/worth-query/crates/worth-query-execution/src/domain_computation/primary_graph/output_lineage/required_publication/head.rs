@@ -7,7 +7,7 @@ pub struct SelectedRequiredPublicationHead {
     selected: Arc<OnceLock<RecordedOutput>>,
 }
 
-pub(in crate::domain_computation::primary_graph) struct RequiredPublicationPredecessor {
+pub struct RequiredPublicationPredecessor {
     pub(in crate::domain_computation::primary_graph) implementation:
         worth_relational::facade::mvcc::RequiredOutputProducingImplementation,
     pub(in crate::domain_computation::primary_graph) correspondence:

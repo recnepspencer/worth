@@ -11,7 +11,7 @@ use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
 
 /// Completed read proofs and the sealed computation move across a World recovery plan. The cancelled address
 /// and its retained capacity stay with the original slot's Drop path.
-pub(in crate::domain_computation::primary_graph) struct PreparedLineageRecoveryMetadata {
+pub struct PreparedLineageRecoveryMetadata {
     computation: SealedComputationRetention,
     prior_computation:
         Option<crate::domain_computation::primary_graph::output_lineage::PriorComputationRecord>,

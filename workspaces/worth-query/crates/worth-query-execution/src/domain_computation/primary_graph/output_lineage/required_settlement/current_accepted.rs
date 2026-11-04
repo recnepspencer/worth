@@ -82,7 +82,7 @@ impl<'basis> CurrentAcceptedOutput<'basis> {
 }
 
 #[derive(Debug)]
-pub(in crate::domain_computation::primary_graph) enum CurrentAcceptedStop {
+pub enum CurrentAcceptedStop {
     Closure(ConsumedOutputVerificationStop),
     Registration(SettlementRegistrationStop),
 }

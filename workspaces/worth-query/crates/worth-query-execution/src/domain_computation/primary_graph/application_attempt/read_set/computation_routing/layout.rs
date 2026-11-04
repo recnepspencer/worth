@@ -5,7 +5,7 @@ use worth_query_installation::facade::WorthQueryCompiledApplicationOperationCont
 use worth_relational::facade::identity::EntityId;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(super) enum SealedReadLayout {
+pub enum SealedReadLayout {
     Checked(Arc<CheckedReadLayout>),
     OwnerFixture,
 }

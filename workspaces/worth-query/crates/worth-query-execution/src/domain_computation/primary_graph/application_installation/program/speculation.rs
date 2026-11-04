@@ -22,7 +22,7 @@ pub struct WorthQueryApplicationPreviewRequest {
     identity: String,
 }
 
-mod discard_fault;
+pub(crate) mod discard_fault;
 
 impl WorthQueryApplicationPreviewRequest {
     pub fn new(identity: impl Into<String>) -> Self {

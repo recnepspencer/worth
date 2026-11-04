@@ -1,6 +1,6 @@
 mod observation_reader;
 
-mod retained_candidates;
+pub(crate) mod retained_candidates;
 
 use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence;
 use crate::equality_type_id::EqualityTypeId as TypeId;

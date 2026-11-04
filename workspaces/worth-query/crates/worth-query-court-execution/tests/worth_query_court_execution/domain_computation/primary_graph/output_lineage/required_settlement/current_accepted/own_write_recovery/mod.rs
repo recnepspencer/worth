@@ -24,12 +24,8 @@ fn accepted_current_cannot_bypass_original_own_write_evidence() {
     assert!(recorded.observed_source_facts_for_test().unwrap().for_comparison().is_none(),
         "accepted-current cannot obtain comparable postconditions of a stale computation");
     let selected = RetainedInputCutoffCandidate::from_exact_cell_for_test(cell);
-    let ready = ReadyCompletion::for_test(WorthQueryCompletedOutputDemand {
-        authority: WorthQueryAcceptedOutputAuthority::Committed(receipt),
-        readiness: WorthQueryOutputReadinessDeliveryEvidence::for_test_for_test(),
-
-    });
-    let candidate = AcceptedCurrentCandidate { selected, ready };
+    let ready = ReadyCompletion::for_test(WorthQueryCompletedOutputDemand::new_for_test(WorthQueryAcceptedOutputAuthority::Committed(receipt), WorthQueryOutputReadinessDeliveryEvidence::for_test_for_test()));
+    let candidate = AcceptedCurrentCandidate::new_for_test(selected, ready);
     let (_, product, _) = retained_product.into_parts_for_test();
     world.application.with_host_advancement(|phase| {   let borrowed_execution = phase.execution_request_for_for_test(&(*world.application.product_runtime_for_test())).expect("fixture borrows its runtime request"); let execution = &borrowed_execution; handle.with_runtime(execution, |runtime| {
         let snapshot = retained_snapshot;

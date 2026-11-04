@@ -250,14 +250,7 @@ fn parameter_partitions_are_distinct_source_occurrences() {
 }
 
 pub fn footprint(root: EntityId, complete: bool) -> WorthQueryObservedSourceFootprint {
-    WorthQueryObservedSourceFootprint {
-        root,
-        complete,
-        entities: vec![root],
-        aspects: Vec::new(),
-        adjacencies: Vec::new(),
-        root_selection: None,
-    }
+    WorthQueryObservedSourceFootprint::new_for_test(root, complete, vec![root], Vec::new(), Vec::new(), None)
 }
 
 pub fn product_selection() -> WorthQueryApplicationBasisSelectionIdentity {

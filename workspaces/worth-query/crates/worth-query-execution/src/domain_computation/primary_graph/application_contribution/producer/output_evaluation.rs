@@ -84,7 +84,7 @@ impl ProducerOutputEvaluation {
 }
 
 /// One installed comparison owns its exact field/role meaning and lowering.
-pub(in crate::domain_computation::primary_graph) struct InstalledOutputComparison {
+pub struct InstalledOutputComparison {
     lowering: Arc<BridgeInstalledConditionalLowering>,
     field: Arc<InstalledProducerOutputEquivalence>,
     role: Arc<str>,

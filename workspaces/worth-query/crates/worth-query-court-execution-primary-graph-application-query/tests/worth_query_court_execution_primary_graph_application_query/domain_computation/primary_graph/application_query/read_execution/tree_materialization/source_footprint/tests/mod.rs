@@ -17,27 +17,13 @@ use worth_query_execution::court_doors_for_test::domain_computation::primary_gra
 #[test]
 fn normalization_deduplicates_revisited_native_dependencies() {
     let entity = EntityId::new(PartitionId::main(), 7, 1);
-    let aspect = WorthQueryObservedFieldRevision {
-        entity,
-        entity_name: "Body".to_owned(),
-        aspect: AspectKey::new("body-facts").unwrap(),
-        field: FieldKey::new("body-facts").unwrap(),
-        contract_revision: AspectContractRevision(1),
-        native_revision: Some(RelationalFieldRevision::new(
+    let aspect = WorthQueryObservedFieldRevision::new_for_test(entity, "Body".to_owned(), AspectKey::new("body-facts").unwrap(), FieldKey::new("body-facts").unwrap(), AspectContractRevision(1), Some(RelationalFieldRevision::new(
             VersionId(11),
             RelationalFieldPresence::Present,
-        )),
-    };
+        )));
     let incoming = adjacency(entity, RelationalAdjacencyDirection::Incoming);
     let outgoing = adjacency(entity, RelationalAdjacencyDirection::Outgoing);
-    let mut footprint = WorthQueryObservedSourceFootprint {
-        root: entity,
-        complete: true,
-        entities: vec![entity, entity],
-        aspects: vec![aspect.clone(), aspect],
-        adjacencies: vec![incoming.clone(), outgoing.clone(), incoming, outgoing],
-        root_selection: None,
-    };
+    let mut footprint = WorthQueryObservedSourceFootprint::new_for_test(entity, true, vec![entity, entity], vec![aspect.clone(), aspect], vec![incoming.clone(), outgoing.clone(), incoming, outgoing], None);
 
     normalize_source_footprint(&mut footprint);
 
@@ -51,14 +37,7 @@ pub fn adjacency(
     anchor: EntityId,
     direction: RelationalAdjacencyDirection,
 ) -> WorthQueryObservedAdjacencyRevision {
-    WorthQueryObservedAdjacencyRevision {
-        anchor,
-        relation_kind: KindId::new(19),
-        direction,
-        native_revision: Some(VersionId(23)),
-        comparison_work_limit: 4,
-        endpoints: vec![EntityId::new(PartitionId::main(), 8, 1)],
-    }
+    WorthQueryObservedAdjacencyRevision::new_for_test(anchor, KindId::new(19), direction, Some(VersionId(23)), 4, vec![EntityId::new(PartitionId::main(), 8, 1)])
 }
 
 // Descriptive canonicalization data, not an observation or authority fixture.
@@ -100,24 +79,17 @@ pub fn managed_order_matches_legacy_for_stable_keys_and_full_equality(
     let mut b = a.clone();
     (*b.endpoints_mut_for_test()).push(EntityId::new(PartitionId::main(), 9, 2));
     for rotation in 0..5 {
-        let mut input = WorthQueryObservedSourceFootprint {
-            root: (*base.root_for_test()),
-            complete: true,
-            entities: vec![
+        let mut input = WorthQueryObservedSourceFootprint::new_for_test((*base.root_for_test()), true, vec![
                 EntityId::new(PartitionId::main(), 8, 1),
                 (*base.root_for_test()),
                 (*base.root_for_test()),
-            ],
-            aspects: vec![
+            ], vec![
                 other.clone(),
                 later.clone(),
                 earlier.clone(),
                 later.clone(),
                 earlier.clone(),
-            ],
-            adjacencies: vec![b.clone(), b.clone(), a.clone(), b.clone(), a.clone()],
-            root_selection: None,
-        };
+            ], vec![b.clone(), b.clone(), a.clone(), b.clone(), a.clone()], None);
         (*input.aspects_mut_for_test()).rotate_left(rotation);
         input.adjacencies.rotate_right(rotation);
         let mut expected = input.clone();
@@ -128,14 +100,7 @@ pub fn managed_order_matches_legacy_for_stable_keys_and_full_equality(
             "stable sort keys and full-value dedup differ at {rotation}"
         );
     }
-    let mut empty = WorthQueryObservedSourceFootprint {
-        root: (*base.root_for_test()),
-        complete: true,
-        entities: Vec::new(),
-        aspects: Vec::new(),
-        adjacencies: Vec::new(),
-        root_selection: None,
-    };
+    let mut empty = WorthQueryObservedSourceFootprint::new_for_test((*base.root_for_test()), true, Vec::new(), Vec::new(), Vec::new(), None);
     storage.normalize_for_test(&mut empty).unwrap();
     assert!((*empty.entities_for_test()).is_empty() && (*empty.aspects_for_test()).is_empty() && empty.adjacencies.is_empty());
 }

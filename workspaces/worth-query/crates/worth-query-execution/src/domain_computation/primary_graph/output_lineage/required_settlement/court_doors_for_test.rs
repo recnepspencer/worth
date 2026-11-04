@@ -15,3 +15,10 @@ impl WorthQueryApplicationOutputLineage {
         Self::resolve_required_settlement(self, runtime_authority, schema, completion)
     }
 }
+
+impl AcceptedCurrentCandidate {
+    #[doc(hidden)]
+    pub fn new_for_test(selected: RetainedInputCutoffCandidate, ready: ReadyCompletion) -> Self {
+        Self { selected, ready }
+    }
+}

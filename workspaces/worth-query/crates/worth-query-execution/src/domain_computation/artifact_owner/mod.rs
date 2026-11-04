@@ -4,7 +4,7 @@ mod borrow;
 mod counters;
 mod denial;
 mod disposition;
-mod frozen_workflow_authority;
+pub(crate) mod frozen_workflow_authority;
 mod handle;
 mod handle_core;
 pub(crate) mod installed_binding;
@@ -17,7 +17,7 @@ mod production;
 mod production_admission;
 pub(crate) mod production_authority;
 mod production_freeze;
-mod production_generation;
+pub(crate) mod production_generation;
 mod provider_release;
 mod provider_resource;
 #[cfg(test)]

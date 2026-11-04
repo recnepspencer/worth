@@ -1,6 +1,6 @@
 //! Required members and their actual unresolved consumed-output edges.
 use super::*;
-mod reinspection;
+pub(crate) mod reinspection;
 pub(crate) mod selection;
 pub(super) use selection::MemberInput;
 
@@ -41,7 +41,7 @@ impl MemberState {
     }
 }
 
-pub(super) enum RequiredUpstream {
+pub enum RequiredUpstream {
     Member(usize),
     HeldCaller,
 }

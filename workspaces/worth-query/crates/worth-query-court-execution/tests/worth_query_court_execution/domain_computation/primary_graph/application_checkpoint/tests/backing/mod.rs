@@ -41,9 +41,7 @@ fn query_clones_decode_into_the_same_native_payload_backing() {
     let bytes = Arc::new(checkpoint.bytes().to_vec().into_boxed_slice());
     let lifetime = Arc::downgrade(&bytes);
     drop(checkpoint);
-    let checkpoint = WorthQueryApplicationCheckpoint {
-        bytes: worth_execution::ExecutionImmutableBytes::from_external_bytes(bytes),
-    };
+    let checkpoint = WorthQueryApplicationCheckpoint::new_for_test(worth_execution::ExecutionImmutableBytes::from_external_bytes(bytes));
     assert_three_handoffs_share_backing(checkpoint, b"abc", 1);
     assert!(lifetime.upgrade().is_none());
 }

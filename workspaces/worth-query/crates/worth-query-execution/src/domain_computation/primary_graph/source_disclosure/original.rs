@@ -1,7 +1,7 @@
 //! Source disclosure associates the sole funded parameter capture with its source.
 use super::super::application_query::CapturedApplicationQueryParameters;
 
-pub(in crate::domain_computation) struct OriginalSourceDisclosure(
+pub struct OriginalSourceDisclosure(
     CapturedApplicationQueryParameters,
 );
 

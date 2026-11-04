@@ -28,7 +28,7 @@ type Partitions = BTreeMap<Option<[u8; 32]>, Generations>;
 type Occurrences = BTreeMap<ProductBranchIncarnation, Partitions>;
 
 #[derive(Default)]
-pub(super) struct OutputPartitionIndex {
+pub struct OutputPartitionIndex {
     slots: BTreeMap<SemanticSource, Occurrences>,
 }
 

@@ -22,7 +22,7 @@ pub(super) enum EqualOutputCurrentness {
 /// No history is nested inside a MarkState. Historical clearing therefore
 /// retains the earlier state without building recursive history ownership.
 #[derive(Clone, Debug)]
-pub(in crate::domain_computation::primary_graph) struct BranchMarkRoot {
+pub struct BranchMarkRoot {
     /// Shared only by replacements that retain this exact history map.
 
     /// What the oldest retained version shares with versions that have left.
@@ -32,7 +32,7 @@ pub(in crate::domain_computation::primary_graph) struct BranchMarkRoot {
 }
 
 #[derive(Clone, Debug)]
-pub(super) struct HistoricalMarkState {
+pub struct HistoricalMarkState {
     pub(super) root_id: u64,
     pub(super) commit_id: Option<CommitId>,
     pub(super) state: Arc<MarkState>,

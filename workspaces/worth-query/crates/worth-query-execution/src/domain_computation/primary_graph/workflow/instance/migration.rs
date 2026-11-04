@@ -31,7 +31,7 @@ use crate::domain_computation::primary_graph::application_attempt::{
 /// A receipted transition the successor must carry: the source's own, or one
 /// the source itself inherited. Either maps by the path of the node it ran.
 #[derive(Clone, Debug)]
-pub(in crate::domain_computation::primary_graph) struct WorkflowPerformedEffect {
+pub struct WorkflowPerformedEffect {
     pub(in crate::domain_computation::primary_graph) transition: EntityId,
     pub(in crate::domain_computation::primary_graph) path: String,
 }

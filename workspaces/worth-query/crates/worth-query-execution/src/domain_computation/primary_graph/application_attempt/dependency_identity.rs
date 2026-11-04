@@ -3,7 +3,7 @@ use super::WorthQueryApplicationEffectProgram;
 mod canonical_encoding;
 mod content_rule;
 pub(crate) mod content_tree;
-mod output_postcondition;
+pub(crate) mod output_postcondition;
 mod producing_implementation;
 
 use super::retained_decision_facts::StorageControl;

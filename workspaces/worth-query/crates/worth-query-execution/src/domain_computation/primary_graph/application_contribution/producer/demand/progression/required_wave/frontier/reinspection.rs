@@ -1,7 +1,7 @@
 //! The caller has no reinspection transition after a refused publication.
 use super::super::performed::ReinspectionCredit;
 use super::*;
-pub(in super::super) struct QueuedMember<'frontier, Ready> {
+pub struct QueuedMember<'frontier, Ready> {
     member: &'frontier mut RequiredMember<Ready>,
 }
 impl<Ready> RequiredFrontier<Ready> {

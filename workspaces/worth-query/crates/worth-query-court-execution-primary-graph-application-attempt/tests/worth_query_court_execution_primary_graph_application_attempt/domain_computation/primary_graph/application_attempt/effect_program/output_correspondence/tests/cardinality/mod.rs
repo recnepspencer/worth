@@ -135,12 +135,7 @@ fn checkpoint_readmission_keeps_absence_a_value() {
         TypeId::of_for_test::<Binding>(),
         TypeId::of_for_test::<OptionalOutputs>(),
         ["companion"].into_iter(),
-        &[WorthQueryCheckpointOutputRole {
-            role: "preserved".into(),
-            posture: WorthQueryApplicationOutputPosture::Preserve,
-            entity_name: "entity".into(),
-            entity,
-        }],
+        &[WorthQueryCheckpointOutputRole::new_for_test("preserved".into(), WorthQueryApplicationOutputPosture::Preserve, "entity".into(), entity)],
         |_| Some(TypeId::of_for_test::<Entity>()),
         &execution,
     )

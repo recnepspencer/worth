@@ -90,3 +90,20 @@ impl WorthQueryApplicationOutputCorrespondence {
         Self::active_entity_for_role(self, role)
     }
 }
+
+impl WorthQueryCheckpointOutputRole {
+    #[doc(hidden)]
+    pub fn new_for_test(
+        role: String,
+        posture: WorthQueryApplicationOutputPosture,
+        entity_name: String,
+        entity: EntityId,
+    ) -> Self {
+        Self {
+            role,
+            posture,
+            entity_name,
+            entity,
+        }
+    }
+}

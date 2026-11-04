@@ -2,7 +2,7 @@ use std::sync::{Arc, Mutex};
 
 use super::WorthQueryProductActivationDenial;
 
-pub(crate) struct WorthQueryProductActivationGate {
+pub struct WorthQueryProductActivationGate {
     active: Mutex<ProductActivationState>,
     _capacity: super::capacity::ActivationCapacityReservation,
 }

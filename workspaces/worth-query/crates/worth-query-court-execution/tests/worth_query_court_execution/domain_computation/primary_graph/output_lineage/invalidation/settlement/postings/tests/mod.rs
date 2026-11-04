@@ -26,21 +26,9 @@ fn equal_fingerprints_keep_distinct_exact_keys_and_merge_only_equal_keys() {
         1,
     )));
     let projected = vec![
-        ProjectedKey {
-            hash: 7,
-            key: Arc::clone(&first),
-            ordinal: 0,
-        },
-        ProjectedKey {
-            hash: 7,
-            key: Arc::clone(&second),
-            ordinal: 1,
-        },
-        ProjectedKey {
-            hash: 7,
-            key: Arc::clone(&first),
-            ordinal: 2,
-        },
+        ProjectedKey::new_for_test(7, Arc::clone(&first), 0),
+        ProjectedKey::new_for_test(7, Arc::clone(&second), 1),
+        ProjectedKey::new_for_test(7, Arc::clone(&first), 2),
     ];
 
     let groups = group_projected(projected).unwrap();

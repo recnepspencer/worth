@@ -9,7 +9,7 @@ use crate::domain_computation::authorization::WorkflowApprovalRequestEncodingDen
 /// Clones retain the same text allocation and its original payer. No owned
 /// String can be extracted; an independent field copy requires fresh admission.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) struct FundedActorText(ExecutionImmutableBytes);
+pub struct FundedActorText(ExecutionImmutableBytes);
 
 impl FundedActorText {
     pub(in crate::domain_computation) fn bytes(&self) -> &ExecutionImmutableBytes {

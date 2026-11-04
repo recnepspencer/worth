@@ -12,7 +12,7 @@ use super::super::WorthQueryManagedComputationResourceDenial;
 
 /// Why an item has no partition.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(super) enum ComputationPartitionRoutingDenial {
+pub enum ComputationPartitionRoutingDenial {
     /// The request's memory refused what the partitioner would retain.
     Resource(WorthQueryManagedComputationResourceDenial),
     /// A different key digest already owns this partition identity.

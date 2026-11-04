@@ -73,10 +73,7 @@ fn paired_prior_tracks_publication_not_old_binding_or_inherited_settlement() {
     ));
     let ancestor = court.coordinate;
     (*court.lineage.origins_mut_for_test()).insert(court.child, ancestor);
-    court.coordinate = ProductCoordinate {
-        occurrence: court.child,
-        generation: 2,
-    };
+    court.coordinate = ProductCoordinate::new_for_test(court.child, 2);
     let child = court.publish::<Initial>(
         1,
         Some(1),

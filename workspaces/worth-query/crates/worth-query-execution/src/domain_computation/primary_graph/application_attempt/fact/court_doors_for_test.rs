@@ -28,3 +28,14 @@ impl WorthQueryApplicationObservedFact {
         Self::locator_identity(self)
     }
 }
+
+impl WorthQueryApplicationObservedRelation {
+    #[doc(hidden)]
+    pub fn new_for_test(relation_id: RelationId, from: EntityId, to: EntityId) -> Self {
+        Self {
+            relation_id,
+            from,
+            to,
+        }
+    }
+}

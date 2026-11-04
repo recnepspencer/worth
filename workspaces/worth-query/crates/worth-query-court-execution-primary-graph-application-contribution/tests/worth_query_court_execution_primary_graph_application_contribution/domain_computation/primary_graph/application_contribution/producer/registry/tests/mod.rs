@@ -198,73 +198,25 @@ pub fn checkpoint(
         worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryCheckpointOutputRole,
     >,
 ) -> worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointIdentity{
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointIdentity {
-        implementation: worth_relational::facade::mvcc::RequiredOutputProducingImplementation::from_checkpoint([0x11; 16], [0x22; 32]).unwrap(),
-        producer: ("producer".to_owned()).into(),
-        posture: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointPosture::Performed,
-        source: [0; 32],
-        scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointIdentity::new_for_test(worth_relational::facade::mvcc::RequiredOutputProducingImplementation::from_checkpoint([0x11; 16], [0x22; 32]).unwrap(), ("producer".to_owned()).into(), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointPosture::Performed, [0; 32], worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(
             worth_relational::facade::identity::EntityId::new(
                 worth_relational::facade::identity::PartitionId(1), 1, 1,
             ),
-        ),
-        source_partition: [0; 32],
-        producer_dependency: None,
-        idempotency_key: [0; 32],
-
-        roles: roles.into(),
-            producer_facts: None,
-            producer_fact_wire_version: 0,
- metadata: None,
-}
+        ), [0; 32], None, [0; 32], roles.into(), None, 0, None)
 }
 
 pub fn role(
     name: &str,
 ) -> worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryCheckpointOutputRole{
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryCheckpointOutputRole {
-        role: name.into(),
-        posture:
-            WorthQueryApplicationOutputPosture::Preserve,
-        entity_name: "account".into(),
-        entity: worth_relational::facade::identity::EntityId::new(
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryCheckpointOutputRole::new_for_test(name.into(), WorthQueryApplicationOutputPosture::Preserve, "account".into(), worth_relational::facade::identity::EntityId::new(
             worth_relational::facade::identity::PartitionId(1),
             1,
             1,
-        ),
-    }
+        ))
 }
 
 pub fn declared(binding_type: TypeId) -> DeclaredProducerBinding {
-    DeclaredProducerBinding {
-        ownership: worth_foundational::facade::ProducerPublicationOwnership::Independent,
-        owned_scope_entity: None,
-        owner: "owner".into(),
-        identity: "producer".into(),
-        source_selector: "source".into(),
-        output_family: "family".into(),
-        output_family_type: TypeId::of_for_test::<()>(),
-        output_role_descriptors: Vec::new(),
-        output_role_families: Vec::new(),
-        output_role: "output".into(),
-        operation: "operation".into(),
-        handler_identity: "handler".into(),
-        provider_identity: "provider".into(),
-        applicability: Vec::new(),
-        supported: Vec::new(),
-        required_invariants: Vec::new(),
-
-        reuse_policy: "exact".into(),
-        input_reuse: None,
-        output_equivalence: None,
-        installed_output_equivalence: None,
-        binding_type,
-        source_type: TypeId::of_for_test::<()>(),
-        operation_binding_type: TypeId::of_for_test::<()>(),
-        operation_type: TypeId::of_for_test::<()>(),
-        provider_type: TypeId::of_for_test::<()>(),
-        output_contract_type: TypeId::of_for_test::<()>(),
-    }
+    DeclaredProducerBinding::new_for_test(worth_foundational::facade::ProducerPublicationOwnership::Independent, None, "owner".into(), "producer".into(), "source".into(), "family".into(), TypeId::of_for_test::<()>(), Vec::new(), Vec::new(), "output".into(), "operation".into(), "handler".into(), "provider".into(), Vec::new(), Vec::new(), Vec::new(), "exact".into(), None, None, None, binding_type, TypeId::of_for_test::<()>(), TypeId::of_for_test::<()>(), TypeId::of_for_test::<()>(), TypeId::of_for_test::<()>(), TypeId::of_for_test::<()>())
 }
 
 pub struct InstalledProducer;

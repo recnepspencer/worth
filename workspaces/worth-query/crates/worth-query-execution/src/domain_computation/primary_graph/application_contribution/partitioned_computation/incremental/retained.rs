@@ -114,7 +114,7 @@ impl Eq for ComputationInstallation {}
 /// the feature, computation and owner types, so a state is never another
 /// owner's, nor another installation's of the same owner type.
 #[derive(Clone, Debug)]
-pub(super) struct RetainedBasis {
+pub struct RetainedBasis {
     installation: ComputationInstallation,
     edition: InstalledProducerEdition,
     input_digest: [u8; 32],
@@ -176,7 +176,7 @@ impl RetainedBasis {
 /// One owner call's charge on the reader and the declared work spent after
 /// it on the call's behalf.
 #[derive(Clone)]
-pub(super) struct RetainedCall {
+pub struct RetainedCall {
     pub(super) charge: ComputationCallCharge,
     pub(super) declared_units: Option<u64>,
 }

@@ -1,9 +1,9 @@
 //! Only another member's actual publication pays for a queued inspection.
 use super::*;
 #[derive(Clone, Copy)]
-pub(in super::super) struct InspectionStamp(u64);
+pub struct InspectionStamp(u64);
 /// Move-only permission. No caller failure arm accepts this capability.
-pub(in super::super) struct ReinspectionCredit {
+pub struct ReinspectionCredit {
     _publication: InspectionStamp,
 }
 impl PerformedMembers {

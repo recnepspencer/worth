@@ -24,7 +24,7 @@ use super::super::{
 
 /// The rostered program one occurrence resolved to, together with the exact
 /// stored rendering the attempt observed.
-pub(in crate::domain_computation::primary_graph::application_attempt) struct WorthQueryOccurrenceProgram<
+pub struct WorthQueryOccurrenceProgram<
     'support,
 > {
     entry: &'support WorthQueryProgramSupportEntry,

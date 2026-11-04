@@ -31,17 +31,7 @@ fn checkpoint_one_buffer_matches_independent_v13_grammar_and_sections() {
     }])
     .unwrap();
     let rows = vec![
-        WorthQueryAcceptedOutputCheckpointIdentity {
-            implementation: worth_relational::facade::mvcc::RequiredOutputProducingImplementation::from_checkpoint([0x11; 16], [0x22; 32]).unwrap(),
-            producer: ("producer-a".to_owned()).into(),
-            posture: WorthQueryAcceptedOutputCheckpointPosture::Performed,
-            source: [1; 32],
-            scope,
-            source_partition: [2; 32],
-            producer_dependency: Some([3; 32]),
-            idempotency_key: [4; 32],
-
-            roles: (vec![
+        WorthQueryAcceptedOutputCheckpointIdentity::new_for_test(worth_relational::facade::mvcc::RequiredOutputProducingImplementation::from_checkpoint([0x11; 16], [0x22; 32]).unwrap(), ("producer-a".to_owned()).into(), WorthQueryAcceptedOutputCheckpointPosture::Performed, [1; 32], scope, [2; 32], Some([3; 32]), [4; 32], (vec![
                 role(
                     "a",
                     WorthQueryApplicationOutputPosture::Preserve,
@@ -51,26 +41,8 @@ fn checkpoint_one_buffer_matches_independent_v13_grammar_and_sections() {
                 role("b", WorthQueryApplicationOutputPosture::Create, "beta", 6),
                 role("c", WorthQueryApplicationOutputPosture::Retire, "gamma", 7),
             ])
-            .into(),
-            producer_facts: Some(std::sync::Arc::new(facts.clone())),
-            producer_fact_wire_version: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::WIRE_VERSION,
-            metadata: None,
-        },
-        WorthQueryAcceptedOutputCheckpointIdentity {
-            implementation: worth_relational::facade::mvcc::RequiredOutputProducingImplementation::from_checkpoint([0x11; 16], [0x22; 32]).unwrap(),
-            producer: ("producer-b".to_owned()).into(),
-            posture: WorthQueryAcceptedOutputCheckpointPosture::StableReused,
-            source: [11; 32],
-            scope,
-            source_partition: [12; 32],
-            producer_dependency: None,
-            idempotency_key: [14; 32],
-
-            roles: (Vec::new()).into(),
-            producer_facts: None,
-            producer_fact_wire_version: 0,
-            metadata: None,
-        },
+            .into(), Some(std::sync::Arc::new(facts.clone())), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::WIRE_VERSION, None),
+        WorthQueryAcceptedOutputCheckpointIdentity::new_for_test(worth_relational::facade::mvcc::RequiredOutputProducingImplementation::from_checkpoint([0x11; 16], [0x22; 32]).unwrap(), ("producer-b".to_owned()).into(), WorthQueryAcceptedOutputCheckpointPosture::StableReused, [11; 32], scope, [12; 32], None, [14; 32], (Vec::new()).into(), None, 0, None),
     ];
     let native = b"literal-native-formatter-payload";
     let mut scope_wire = Vec::new();
@@ -205,12 +177,7 @@ pub fn role(
     entity_name: &str,
     slot: u64,
 ) -> WorthQueryCheckpointOutputRole {
-    WorthQueryCheckpointOutputRole {
-        role: name.to_owned(),
-        posture,
-        entity_name: entity_name.to_owned(),
-        entity: entity(slot),
-    }
+    WorthQueryCheckpointOutputRole::new_for_test(name.to_owned(), posture, entity_name.to_owned(), entity(slot))
 }
 
 /// Independent current v13 grammar with literal fixture branch choices.

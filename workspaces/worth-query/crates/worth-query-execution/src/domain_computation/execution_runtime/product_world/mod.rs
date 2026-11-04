@@ -72,7 +72,7 @@ pub(crate) mod publication_denial;
 mod adoption_preparation;
 
 pub(crate) mod read_consult;
-mod read_lock_probe;
+pub(crate) mod read_lock_probe;
 pub(in crate::domain_computation) use read_lock_probe::ReadLockProbeForTest;
 
 pub(in crate::domain_computation) use resources::test_product_world_resources;

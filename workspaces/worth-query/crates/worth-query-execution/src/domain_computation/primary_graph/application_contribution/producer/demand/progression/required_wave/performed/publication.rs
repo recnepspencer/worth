@@ -18,7 +18,7 @@ impl PublishedMember<'_> {
 }
 
 /// The receipt and a read-only view of the record at its publication handoff.
-pub(in crate::domain_computation::primary_graph::application_contribution::producer) struct PublicationHandoff<
+pub struct PublicationHandoff<
     'record,
 > {
     receipt: ProducerCommitReceipt,

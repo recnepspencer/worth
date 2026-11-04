@@ -18,7 +18,7 @@ pub(super) use phase::{
     WorthQueryApprovedApplicationCandidate, WorthQueryRetiredApplicationAttemptPhase,
 };
 mod registered_reads;
-mod registration;
+pub(crate) mod registration;
 mod retained_basis;
 pub(in crate::domain_computation) use registered_reads::RegisteredPrimaryRead;
 mod staged;

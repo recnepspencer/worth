@@ -96,15 +96,7 @@ fn a_second_binding_of_an_at_most_one_role_is_refused() {
 
 #[test]
 fn an_optional_role_read_as_exactly_one_is_refused() {
-    let companion_as_required = OutputRoleUse {
-        name: "companion".to_owned(),
-        posture: ApplicationMutationOutputPosture::Preserve,
-        cardinality: ApplicationMutationOutputRoleCardinality::ExactlyOne,
-        entity_name:
-            <Account as ApplicationEntityMarkerIdentity<IdentityExecutionSchema>>::IDENTIFIER,
-        entity_type: TypeId::of_for_test::<Account>(),
-        contract_type: TypeId::of_for_test::<OptionalOutputs>(),
-    };
+    let companion_as_required = OutputRoleUse::new_for_test("companion".to_owned(), ApplicationMutationOutputPosture::Preserve, ApplicationMutationOutputRoleCardinality::ExactlyOne, <Account as ApplicationEntityMarkerIdentity<IdentityExecutionSchema>>::IDENTIFIER, TypeId::of_for_test::<Account>(), TypeId::of_for_test::<OptionalOutputs>());
     for plan in [
         OptionalOutputPlan::RequiredOnly,
         OptionalOutputPlan::RequiredAndOptional,

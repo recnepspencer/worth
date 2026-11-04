@@ -23,7 +23,7 @@ use super::source_alignment::EqualOutputCurrentness;
 use super::source_alignment::SnapshotAlignedMarkState;
 
 pub(crate) mod posting_bindings;
-mod posting_continuation;
+pub(crate) mod posting_continuation;
 pub(crate) mod posting_projection;
 pub(crate) mod posting_removal;
 pub(crate) mod postings;
@@ -279,3 +279,5 @@ where
     *counter = *counter - amount;
     Ok(())
 }
+
+mod court_doors_for_test;

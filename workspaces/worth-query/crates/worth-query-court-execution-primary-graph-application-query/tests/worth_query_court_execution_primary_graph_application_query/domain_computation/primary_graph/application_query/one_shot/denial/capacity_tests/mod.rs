@@ -21,19 +21,16 @@ fn boxed_authorization_and_spare_string_capacity_are_charged() {
         WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::PermissionDenied),
         authorization_subject,
     );
-    let denial = WorthQueryApplicationOneShotDenial {
-        kind: WorthQueryApplicationOneShotDenialKind::Authorization(
+    let denial = WorthQueryApplicationOneShotDenial::new_for_test(WorthQueryApplicationOneShotDenialKind::Authorization(
             WorthQueryOperationAuthorizationDenialKind::Refused(
                 AuthorizationRefusal::PermissionDenied,
             ),
-        ),
-        payload: std::sync::Arc::new(OneShotDenialPayload {
+        ), std::sync::Arc::new(OneShotDenialPayload {
             authorization_denial: Some(Box::new(authorization)),
             query,
             subject,
             custody: std::sync::OnceLock::new(),
-        }),
-    };
+        }));
     // One shared Arc payload, two reference counters, and the original owned allocations.
     let expected = std::mem::size_of::<OneShotDenialPayload>()
         + 2 * std::mem::size_of::<usize>()

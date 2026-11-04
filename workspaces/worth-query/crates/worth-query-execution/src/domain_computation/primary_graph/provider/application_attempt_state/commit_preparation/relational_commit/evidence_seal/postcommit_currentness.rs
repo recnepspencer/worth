@@ -88,7 +88,7 @@ pub struct FailedRebase {
     pub(in crate::domain_computation::primary_graph) own_effect: OwnEffectOnReads,
 }
 
-mod failure;
+pub(crate) mod failure;
 pub(in crate::domain_computation::primary_graph) use failure::RebaseVerificationFailure;
 
 mod full_preparation;

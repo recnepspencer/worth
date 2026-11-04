@@ -83,3 +83,17 @@ impl WorthQueryProviderPlanDeclaredClosure {
         &self.invariant
     }
 }
+
+impl WorthQueryProviderPlanDeclaredClosure {
+    #[doc(hidden)]
+    pub fn read_mut_for_test(&mut self) -> &mut Vec<String> {
+        &mut self.read
+    }
+}
+
+impl WorthQueryProviderPlanDeclaredClosure {
+    #[doc(hidden)]
+    pub fn touch_mut_for_test(&mut self) -> &mut Vec<String> {
+        &mut self.touch
+    }
+}

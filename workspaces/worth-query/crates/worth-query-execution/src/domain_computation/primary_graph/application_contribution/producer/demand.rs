@@ -30,7 +30,7 @@ pub(in crate::domain_computation::primary_graph) use progression::ReboundConsume
 pub(in crate::domain_computation::primary_graph) use progression::ResolvedRequiredPredecessors;
 mod readiness;
 pub(crate) mod required_continuations;
-mod required_provenance;
+pub(crate) mod required_provenance;
 pub(crate) mod scheduling_progression;
 mod selected_source;
 pub(crate) mod selection;
@@ -244,3 +244,5 @@ mod bridge_execution_denial;
 
 mod own_effect_assertions;
 mod own_effect_observation;
+
+mod court_doors_for_test;

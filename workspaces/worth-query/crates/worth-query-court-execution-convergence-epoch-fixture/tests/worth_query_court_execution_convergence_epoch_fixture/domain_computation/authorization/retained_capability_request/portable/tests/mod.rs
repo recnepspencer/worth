@@ -32,20 +32,15 @@ fn approval_request_round_trip_preserves_every_authorization_axis() {
     })
     .unwrap();
     let execution = worth_execution::ExecutionRequest::leased(&lease);
-    let mut request = WorthQueryRetainedCapabilityRequest {
-        recorded_actor: None,
-        capability_identity: [7; 32],
-        principal: EntityId::new(
+    let mut request = WorthQueryRetainedCapabilityRequest::new_for_test(None, [7; 32], EntityId::new(
             worth_relational::facade::identity::PartitionId::main(),
             1,
             0,
-        ),
-        resource: EntityId::new(
+        ), EntityId::new(
             worth_relational::facade::identity::PartitionId::main(),
             2,
             0,
-        ),
-        data: Arc::new(worth_query_execution::court_doors_for_test::domain_computation::authorization::retained_capability_request::RetainedCapabilityRequestData {
+        ), Arc::new(worth_query_execution::court_doors_for_test::domain_computation::authorization::retained_capability_request::RetainedCapabilityRequestData {
             _codec_funding: None,
             resource_entity: Arc::from("resource"),
             elevation: Some(EntityId::new(
@@ -73,8 +68,7 @@ fn approval_request_round_trip_preserves_every_authorization_axis() {
             context_name: Arc::from("context"),
             context_type: Arc::from("context-type"),
             context: worth_query_execution::court_doors_for_test::domain_computation::authorization::retained_capability_request::context::RetainedContext::Native(BTreeMap::new()),
-        }),
-    };
+        }));
     let context_key = serde_json::from_str::<WorthQueryCapabilityContextKey>(
             r#"{"context":"context","context_type":"context-type","slot":"peer","slot_type":"entity","entity":"subject"}"#,
         )

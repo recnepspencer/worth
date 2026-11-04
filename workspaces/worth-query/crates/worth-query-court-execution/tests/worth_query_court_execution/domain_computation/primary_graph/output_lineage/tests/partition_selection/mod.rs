@@ -42,12 +42,7 @@ pub fn unrelated_partition_selection(population: u64) {
             1,
         ),
     );
-    let source = SemanticSource {
-        runtime_authority,
-        schema: schema.clone(),
-        scope,
-        output_binding: OutputBindingIdentity::declared_for_test("RestoredOutputBinding"),
-    };
+    let source = SemanticSource::new_for_test(runtime_authority, schema.clone(), scope, OutputBindingIdentity::declared_for_test("RestoredOutputBinding"));
     let target = Arc::new(WorthQueryApplicationOutputCorrespondence::default());
     let sibling = Arc::new(WorthQueryApplicationOutputCorrespondence::default());
     let mut lineage = WorthQueryApplicationOutputLineage::default();
@@ -86,10 +81,7 @@ pub fn unrelated_partition_selection(population: u64) {
             None,
         );
     }
-    let coordinate = ProductCoordinate {
-        occurrence,
-        generation: population + 1,
-    };
+    let coordinate = ProductCoordinate::new_for_test(occurrence, population + 1);
 
     let selected = lineage.latest_output_in_partition_for_test(&source, coordinate, partition(0));
     assert!(Arc::ptr_eq(&(*selected.unwrap().correspondence_for_test()), &target));
@@ -121,32 +113,14 @@ pub fn unrelated_partition_selection(population: u64) {
         .entry(revised_generation)
         .or_default();
     let slot = records.len();
-    let recorded = RecordedOutput {
-            producing_implementation: None,
-            required_publication: None,
-            native_prior_checkpoint: None,
-        computation_source: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false),
-        performed_origin: None,
-        consumed_outputs: Arc::from([]),
-        completed_handler_facts: None,
-        completed_decision_reuse: None,
-        prepared_input_reuse_key: None,
-        native_output_witness: OnceLock::new(),
-        mutable: std::sync::Mutex::new(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::recorded_output::RecordedOutputMutable::new_for_test(None, None, worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::retained_computation::RecordedComputation::Absent(PriorAbsence::Restored))),
-        settlement_identity: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::settlement_identity::RecordedSettlementIdentity::retain_for_test(
+    let recorded = RecordedOutput::new_for_test(None, None, None, worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false), None, Arc::from([]), None, None, None, OnceLock::new(), std::sync::Mutex::new(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::recorded_output::RecordedOutputMutable::new_for_test(None, None, worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::retained_computation::RecordedComputation::Absent(PriorAbsence::Restored))), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::settlement_identity::RecordedSettlementIdentity::retain_for_test(
             &source,
             ProductCoordinate {
                 occurrence,
                 generation: revised_generation,
             },
             slot,
-        ),
-        correspondence: Arc::clone(&revised_target),
-        source_identity: Some(checkpoint_identity([0x31; 32])),
-        source_partition_identity: Some(partition(0)),
-        producer_dependency_identity: None,
-        idempotency_key_identity: [0x42; 32],
-    };
+        ), Arc::clone(&revised_target), Some(checkpoint_identity([0x31; 32])), Some(partition(0)), None, [0x42; 32]);
     let cell = Arc::new(std::sync::OnceLock::new());
     assert!(cell.set(recorded).is_ok());
     records.push(cell);
@@ -157,10 +131,7 @@ pub fn unrelated_partition_selection(population: u64) {
         Some(partition(0)),
         slot,
     );
-    let revised_coordinate = ProductCoordinate {
-        occurrence,
-        generation: revised_generation,
-    };
+    let revised_coordinate = ProductCoordinate::new_for_test(occurrence, revised_generation);
 
     let (prior, work) = lineage
         .matching_output_in_partition_budgeted_for_test(
@@ -266,12 +237,7 @@ fn fork_selection_uses_ancestor_partition_and_retirement_prunes_its_locator() {
             1,
         ),
     );
-    let source = SemanticSource {
-        runtime_authority,
-        schema: schema.clone(),
-        scope,
-        output_binding: OutputBindingIdentity::declared_for_test("RestoredOutputBinding"),
-    };
+    let source = SemanticSource::new_for_test(runtime_authority, schema.clone(), scope, OutputBindingIdentity::declared_for_test("RestoredOutputBinding"));
     let correspondence = Arc::new(WorthQueryApplicationOutputCorrespondence::default());
     let mut lineage = WorthQueryApplicationOutputLineage::default();
     lineage.fixture_binding(
@@ -316,10 +282,7 @@ fn fork_selection_uses_ancestor_partition_and_retirement_prunes_its_locator() {
             .partition_index_for_test())
             .latest_for_test(
                 &source,
-                ProductCoordinate {
-                    occurrence: parent.lifecycle_incarnation(),
-                    generation: parent.reference_generation().get(),
-                },
+                ProductCoordinate::new_for_test(parent.lifecycle_incarnation(), parent.reference_generation().get()),
                 partition(0),
             )
             .is_some(),
@@ -331,10 +294,7 @@ fn fork_selection_uses_ancestor_partition_and_retirement_prunes_its_locator() {
             .partition_index_for_test())
             .latest_for_test(
                 &source,
-                ProductCoordinate {
-                    occurrence: parent.lifecycle_incarnation(),
-                    generation: parent.reference_generation().get(),
-                },
+                ProductCoordinate::new_for_test(parent.lifecycle_incarnation(), parent.reference_generation().get()),
                 partition(0),
             )
             .is_none(),

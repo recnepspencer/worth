@@ -25,7 +25,7 @@ mod head_cell;
 pub(in crate::domain_computation) use head_cell::HeadCellRegistrationStop;
 
 mod equivalence_control;
-mod logical_marking;
+pub(crate) mod logical_marking;
 mod marking_observation;
 pub use logical_marking::WorthQueryNativeMarkingPrecision;
 pub use logical_marking::WorthQueryNativeMarkingWork;
@@ -35,7 +35,7 @@ pub use marking_observation::WorthQueryNativeMarkingForTest;
 pub(crate) mod mark_state;
 mod output_availability;
 pub(in crate::domain_computation::primary_graph) use output_availability::SourcePublicationReadFence;
-mod output_facts;
+pub(crate) mod output_facts;
 pub(in crate::domain_computation) use output_availability::ObservedSourcePublication;
 pub(in crate::domain_computation::primary_graph) use output_facts::RegisteredOutputFacts;
 
@@ -54,7 +54,7 @@ pub(crate) mod source_alignment;
 mod source_publication;
 mod touch_keys;
 pub(crate) mod verification;
-mod verified_current;
+pub(crate) mod verified_current;
 
 pub(in crate::domain_computation::primary_graph) use commit_touches::CommitTouchEntities;
 pub(in crate::domain_computation::primary_graph) use commit_touches::CommitTouchInterest;

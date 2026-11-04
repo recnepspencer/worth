@@ -69,15 +69,7 @@ pub fn capture(world: &World, key: u64, execution: &ExecutionRequest<'_, '_>) ->
                     StructuralWalkObservation::read_for_test(
                         &pin,
                         execution,
-                        StructuralWalkQuery {
-                            relation: "Next",
-                            roots: &[member],
-                            entity_kind: kind,
-                            relation_kind: relation,
-                            direction: worth_foundational::facade::RelationDirection::Forward,
-                            maximum_work: None,
-                            control: None,
-                        },
+                        StructuralWalkQuery::new_for_test("Next", &[member], kind, relation, worth_foundational::facade::RelationDirection::Forward, None, None),
                         context,
                     )
                     .unwrap()

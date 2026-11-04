@@ -9,14 +9,14 @@ use worth_query_admission::facade::graph_obligation::WorthQueryGraphWorkPlanIden
 
 /// A move-only operation on an exact admitted session's source. This excludes
 /// its Send-only capacity reservation and exposes no mutation capability.
-pub(in crate::domain_computation) struct WorthQueryPreparedSessionRead {
+pub struct WorthQueryPreparedSessionRead {
     pin: std::sync::Arc<WorthQueryPreparedQueryPin>,
     session: WorthQueryGraphWorkSessionIdentity,
     plan: WorthQueryGraphWorkPlanIdentity,
 }
 /// One immutable source pin per query side, shared with owner-held plans.
 /// Private fields prevent re-pairing its root, layout, binding or basis.
-pub(in crate::domain_computation) struct WorthQueryPreparedQueryPin {
+pub struct WorthQueryPreparedQueryPin {
     read: worth_relational::facade::runtime::RelationalPinnedRead,
     layout: std::sync::Arc<WorthQueryPrimaryGraphLayout>,
     basis: WorthQueryApplicationBasisIdentity,
@@ -134,7 +134,7 @@ impl WorthQueryPreparedSessionRead {
 
 /// Move-only evidence that the sealed capability executed its read. The owner
 /// supplies the retained basis when it seals this evidence, after the join.
-pub(in crate::domain_computation) struct WorthQueryPreparedReadCompletion {
+pub struct WorthQueryPreparedReadCompletion {
     session: WorthQueryGraphWorkSessionIdentity,
     plan: WorthQueryGraphWorkPlanIdentity,
 }

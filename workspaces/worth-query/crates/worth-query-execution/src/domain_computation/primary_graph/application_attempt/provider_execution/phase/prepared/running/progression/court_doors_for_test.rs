@@ -19,3 +19,62 @@ impl WorthQueryProviderProgressionCompletion {
         )
     }
 }
+
+impl<'a, 'provider, Schema, Operation, Input, Scope>
+    WorthQueryApplicationCommitProgressionAuthority<'a, 'provider, Schema, Operation, Input, Scope>
+{
+    #[doc(hidden)]
+    pub fn new_for_test(
+        application: &'a crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
+            Schema,
+        >,
+        provider: &'a std::sync::Arc<WorthQueryPrimaryGraphProvider>,
+        admission: &'a crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<
+        Schema,
+        Operation,
+        Input,
+        Scope,
+    >,
+        authorization: crate::domain_computation::authorization::WorthQueryRegisteredCommitAuthorization,
+        idempotency: WorthQueryApplicationIdempotencyBinding,
+        coordination: &'a WorthQueryApplicationBranchCommitCoordination<'provider>,
+        product: &'a crate::basis::WorthQueryProductBranchLease,
+        aftermath_causality: Option<
+            crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
+        >,
+        history: Option<HistoryProducerInvocation<'a>>,
+    ) -> Self {
+        Self {
+            application,
+            provider,
+            admission,
+            authorization,
+            idempotency,
+            coordination,
+            product,
+            aftermath_causality,
+            history,
+        }
+    }
+}
+
+impl WorthQueryProgressedApplicationCommit {
+    #[doc(hidden)]
+    pub fn new_for_test(
+        workflow_settlement_publication: Option<super::super::LocalWorkflowSettlementPublication>,
+        outcome: WorthQueryProviderProgressionOutcome,
+        lease: WorthQueryApplicationSnapshotLease,
+        running: crate::domain_computation::WorthQueryRunningDirectRun,
+        cleanup: WorthQueryApplicationMutationCleanupOwner,
+        request: worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+    ) -> Self {
+        Self {
+            workflow_settlement_publication,
+            outcome,
+            lease,
+            running,
+            cleanup,
+            request,
+        }
+    }
+}

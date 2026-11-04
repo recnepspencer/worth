@@ -29,7 +29,7 @@ fn portable_identity_ignores_runtime_occurrence_but_changes_with_source_meaning(
     let mut changed_selection = footprint(root, true);
     changed_selection.root_selection = Some(std::sync::Arc::new(
             worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::root_selection::WorthQueryObservedRootSelection::new(
-                worth_query_execution::court_doors_for_test::domain_computation::primary_graph::source_facts::SourceFacts { entities: vec![root], aspects: Vec::new(), adjacencies: Vec::new(), walks: None, derived: None, allocation: None }, None,
+                worth_query_execution::court_doors_for_test::domain_computation::primary_graph::source_facts::SourceFacts::new_for_test(vec![root], Vec::new(), Vec::new(), None, None, None), None,
             ),
         ));
     let changed = epoch(&registry, root, changed_selection, &first_selection);
@@ -50,14 +50,7 @@ pub fn epoch(
 }
 
 pub fn footprint(root: EntityId, complete: bool) -> WorthQueryObservedSourceFootprint {
-    WorthQueryObservedSourceFootprint {
-        root,
-        complete,
-        entities: vec![root],
-        aspects: Vec::new(),
-        adjacencies: Vec::new(),
-        root_selection: None,
-    }
+    WorthQueryObservedSourceFootprint::new_for_test(root, complete, vec![root], Vec::new(), Vec::new(), None)
 }
 
 pub fn product_selection() -> WorthQueryApplicationBasisSelectionIdentity {

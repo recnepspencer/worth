@@ -38,10 +38,7 @@ fn original_watch_backing_is_shared_and_successor_allocation_refuses_without_rel
         None,
     )
     .unwrap();
-    let original = WorthQueryConditionalCommitWatchSet {
-        entities: Some(entries),
-        whole_graph: false,
-    };
+    let original = WorthQueryConditionalCommitWatchSet::new_for_test(Some(entries), false);
     let held = lease.charged_memory_bytes();
     assert!(held > 0);
     let clone = original.clone();

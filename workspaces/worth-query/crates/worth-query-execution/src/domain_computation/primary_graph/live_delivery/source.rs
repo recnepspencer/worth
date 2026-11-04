@@ -2,9 +2,9 @@ use std::collections::{BTreeMap, VecDeque};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};
 
-mod custody;
+pub(crate) mod custody;
 mod partition;
-mod predicate;
+pub(crate) mod predicate;
 mod publication;
 mod reservation;
 pub(crate) mod subscription;
@@ -23,7 +23,7 @@ use worth_execution::ExecutionRequest;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
 
 #[derive(Debug)]
-pub(in crate::domain_computation::primary_graph) enum WorthQueryLiveAdmissionDenial {
+pub enum WorthQueryLiveAdmissionDenial {
     Execution(Cause),
     Unavailable(&'static str),
 }
@@ -72,14 +72,14 @@ pub struct WorthQueryLiveDeliverySource {
 }
 
 #[derive(Default)]
-struct WorthQueryLiveDeliverySourceState {
+pub struct WorthQueryLiveDeliverySourceState {
     partitions: BTreeMap<WorthQueryLiveProductKey, WorthQueryLiveProductPartition>,
     published_commit_count: usize,
     subscriber_count: usize,
     closed: bool,
 }
 
-struct WorthQueryLiveProductPartition {
+pub struct WorthQueryLiveProductPartition {
     batches: VecDeque<Arc<WorthQueryLiveCommitBatchCell>>,
     allocated_batch_capacity: usize,
     next_sequence: u64,

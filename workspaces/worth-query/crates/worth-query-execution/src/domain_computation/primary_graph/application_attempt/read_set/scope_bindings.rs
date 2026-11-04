@@ -8,7 +8,7 @@ use worth_query_installation::facade::{
 
 /// Descriptive position only. No source, permission or currentness grant.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum InstalledScopePosition {
+pub enum InstalledScopePosition {
     Physical {
         role: usize,
         scope: usize,

@@ -132,37 +132,9 @@ pub fn producer(
     source: &str,
     supported: &[WorthQueryProducerApplicability],
 ) -> DeclaredProducerBinding {
-    DeclaredProducerBinding {
-        ownership: worth_foundational::facade::ProducerPublicationOwnership::Independent,
-        owned_scope_entity: None,
-        owner: "owner".to_owned(),
-        identity: identity.to_owned(),
-        source_selector: source.to_owned(),
-        output_family: "family".to_owned(),
-        output_family_type: TypeId::of_for_test::<()>(),
-        output_role_descriptors: vec![
+    DeclaredProducerBinding::new_for_test(worth_foundational::facade::ProducerPublicationOwnership::Independent, None, "owner".to_owned(), identity.to_owned(), source.to_owned(), "family".to_owned(), TypeId::of_for_test::<()>(), vec![
             <Output as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR,
-        ],
-        output_role_families: Vec::new(),
-        output_role: "output".to_owned(),
-        operation: "operation".to_owned(),
-        handler_identity: "handler".to_owned(),
-        provider_identity: format!("{identity}-provider"),
-        applicability: supported.to_vec(),
-        supported: supported.to_vec(),
-        required_invariants: Vec::new(),
-
-        reuse_policy: "exact-source".to_owned(),
-        input_reuse: None,
-        output_equivalence: None,
-        installed_output_equivalence: None,
-        binding_type: TypeId::of_for_test::<()>(),
-        source_type: TypeId::of_for_test::<()>(),
-        provider_type: TypeId::of_for_test::<()>(),
-        operation_binding_type: TypeId::of_for_test::<()>(),
-        operation_type: TypeId::of_for_test::<()>(),
-        output_contract_type: TypeId::of_for_test::<()>(),
-    }
+        ], Vec::new(), "output".to_owned(), "operation".to_owned(), "handler".to_owned(), format!("{identity}-provider"), supported.to_vec(), supported.to_vec(), Vec::new(), "exact-source".to_owned(), None, None, None, TypeId::of_for_test::<()>(), TypeId::of_for_test::<()>(), TypeId::of_for_test::<()>(), TypeId::of_for_test::<()>(), TypeId::of_for_test::<()>(), TypeId::of_for_test::<()>())
 }
 
 pub struct Output;

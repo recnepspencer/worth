@@ -37,10 +37,7 @@ fn certified_alias_chain_discharge_is_exact_and_later_native_change_repends() {
         })
         .expect("installed host call opens");
     let (_, product, _) = selected.into_parts_for_test();
-    let coordinate = ProductCoordinate {
-        occurrence: product.observation_for_test().lifecycle_incarnation(),
-        generation: product.observation_for_test().reference_generation().get(),
-    };
+    let coordinate = ProductCoordinate::new_for_test(product.observation_for_test().lifecycle_incarnation(), product.observation_for_test().reference_generation().get());
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let handle = graph.integration_handle_for_test();
     let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
@@ -57,12 +54,7 @@ fn certified_alias_chain_discharge_is_exact_and_later_native_change_repends() {
         .unwrap()
         .clone();
     let source = |output_binding| {
-        SemanticSource {
-        runtime_authority: (*world.application.runtime_for_test()).authority_identity().as_u64(),
-        schema: (*world.application.installed_schema_for_test()).binding_identity().clone(),
-        scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity),
-        output_binding,
-    }
+        SemanticSource::new_for_test((*world.application.runtime_for_test()).authority_identity().as_u64(), (*world.application.installed_schema_for_test()).binding_identity().clone(), worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity), output_binding)
     };
     let a_source = source(OutputBindingIdentity::declared_for_test("StatusOutput"));
     let a0 = RecordedSettlementIdentity::retain_for_test(&a_source, coordinate, 0);
@@ -174,10 +166,7 @@ fn unchanged_own_evidence_waits_for_a_pending_equal_successor() {
         })
         .expect("installed host call opens");
     let (_, product, _) = selected.into_parts_for_test();
-    let coordinate = ProductCoordinate {
-        occurrence: product.observation_for_test().lifecycle_incarnation(),
-        generation: product.observation_for_test().reference_generation().get(),
-    };
+    let coordinate = ProductCoordinate::new_for_test(product.observation_for_test().lifecycle_incarnation(), product.observation_for_test().reference_generation().get());
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let handle = graph.integration_handle_for_test();
     let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
@@ -194,12 +183,7 @@ fn unchanged_own_evidence_waits_for_a_pending_equal_successor() {
         .unwrap()
         .clone();
     let source = |output_binding| {
-        SemanticSource {
-        runtime_authority: (*world.application.runtime_for_test()).authority_identity().as_u64(),
-        schema: (*world.application.installed_schema_for_test()).binding_identity().clone(),
-        scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity),
-        output_binding,
-    }
+        SemanticSource::new_for_test((*world.application.runtime_for_test()).authority_identity().as_u64(), (*world.application.installed_schema_for_test()).binding_identity().clone(), worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity), output_binding)
     };
     let a_source = source(OutputBindingIdentity::declared_for_test("StatusOutput"));
     let a0 = RecordedSettlementIdentity::retain_for_test(&a_source, coordinate, 0);
@@ -245,20 +229,10 @@ pub fn register_alias(
     );
     let prepared = owner
         .prepare_current_stable_settlement_for_test(
-            SettlementRegistration {
-                computation: None,
-                work_membership: None,
-                identity: Arc::clone(successor),
-                facts: RetainedSourceFacts::for_test_for_test(
+            SettlementRegistration::new_for_test(None, None, Arc::clone(successor), RetainedSourceFacts::for_test_for_test(
                     false,
                     Arc::from([field_fact(execution, runtime, handle, entity, locator)]),
-                ),
-                output_facts: None,
-                read_basis: selected.clone(),
-                stale_at_read_basis: OrdSet::new(),
-                requirement: None,
-                upstream: OrdSet::new(),
-            },
+                ), None, selected.clone(), OrdSet::new(), None, OrdSet::new()),
             selected,
             relation,
         )

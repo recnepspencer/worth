@@ -18,7 +18,7 @@ pub struct InstalledTransportCompletion {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum InstalledTransportCompletionDenial {
+pub enum InstalledTransportCompletionDenial {
     NotCompleted,
     CorrelationMismatch,
     CausalMismatch,
@@ -163,7 +163,7 @@ impl UnpublishedInstalledTransportCompletion {
 }
 
 #[derive(Debug)]
-pub(in crate::domain_computation::primary_graph) enum InstalledTransportPublicationDenial {
+pub enum InstalledTransportPublicationDenial {
     ExecutionDenied(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
     ForeignRelationalRuntime,
     ForeignProductWorld,

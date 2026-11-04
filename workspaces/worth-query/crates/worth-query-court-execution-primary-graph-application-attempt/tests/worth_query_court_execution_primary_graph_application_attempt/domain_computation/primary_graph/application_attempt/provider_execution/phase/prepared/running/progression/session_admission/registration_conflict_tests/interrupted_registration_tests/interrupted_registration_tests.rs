@@ -90,14 +90,7 @@ fn cancellation_at_registration_binding_is_cancelled_not_denied() {
                 &phase.borrowed_request_for_test(),
                 phase,
                 &world.application,
-                WorthQueryProgressedApplicationCommit {
-                    workflow_settlement_publication: None,
-                    outcome,
-                    lease,
-                    running,
-                    cleanup,
-                    request: admission.publication_request_for_test().clone(),
-                },
+                WorthQueryProgressedApplicationCommit::new_for_test(None, outcome, lease, running, cleanup, admission.publication_request_for_test().clone()),
             );
             assert!(matches!(
                 finished,

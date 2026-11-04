@@ -25,7 +25,7 @@ use worth_runtime_bridge::facade::{
 };
 
 mod connected;
-pub(super) mod rich;
+pub(crate) mod rich;
 pub(super) use connected::{materialize_connected, FundedConnectedReport};
 mod comparison;
 pub(super) use comparison::{

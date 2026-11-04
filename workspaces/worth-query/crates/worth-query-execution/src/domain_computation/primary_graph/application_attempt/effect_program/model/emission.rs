@@ -143,7 +143,7 @@ impl WorthQueryApplicationEmission {
     }
 }
 
-pub(in crate::domain_computation::primary_graph) struct WorthQueryAdmittedApplicationEmissionBatch {
+pub struct WorthQueryAdmittedApplicationEmissionBatch {
     emissions: Vec<WorthQueryApplicationEmission>,
 }
 

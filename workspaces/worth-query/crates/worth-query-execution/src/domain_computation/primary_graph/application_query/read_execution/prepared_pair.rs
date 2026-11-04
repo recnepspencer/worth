@@ -23,7 +23,7 @@ pub(in crate::domain_computation::primary_graph::application_query) struct Prepa
 }
 
 /// Construction remains with the owner-side admission stage.
-pub(in crate::domain_computation::primary_graph::application_query) struct PreparedPair<'a> {
+pub struct PreparedPair<'a> {
     pub(in crate::domain_computation::primary_graph::application_query) root: EntityId,
     pub(in crate::domain_computation::primary_graph::application_query) witness:
         Option<std::sync::Arc<super::dispatch_witness::DispatchWitness>>,
@@ -42,7 +42,7 @@ pub(in crate::domain_computation::primary_graph::application_query) struct ReadO
         Option<super::super::batch::PlannedBatchItem>,
 }
 
-pub(in crate::domain_computation::primary_graph::application_query) struct PairOutput {
+pub struct PairOutput {
     pub(in crate::domain_computation::primary_graph::application_query) first: ReadOutput,
     pub(in crate::domain_computation::primary_graph::application_query) second: ReadOutput,
 }

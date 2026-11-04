@@ -74,3 +74,24 @@ impl WorthQueryApplicationOutputLineage {
         )
     }
 }
+
+impl RetainedOutputCurrentnessRead {
+    #[doc(hidden)]
+    pub fn new_for_test(
+        identity: Arc<super::super::RecordedSettlementIdentity>,
+        facts: Option<super::super::ComparableSourceFacts>,
+        consumed_outputs: Arc<[ConsumedOutputEvidence]>,
+        native_output_witness: Option<Arc<OnceLock<super::super::SealedNativeOutputWitness>>>,
+        consumed_nothing: bool,
+        verification_requirement: Option<super::super::invalidation::FullVerificationReason>,
+    ) -> Self {
+        Self {
+            identity,
+            facts,
+            consumed_outputs,
+            native_output_witness,
+            consumed_nothing,
+            verification_requirement,
+        }
+    }
+}

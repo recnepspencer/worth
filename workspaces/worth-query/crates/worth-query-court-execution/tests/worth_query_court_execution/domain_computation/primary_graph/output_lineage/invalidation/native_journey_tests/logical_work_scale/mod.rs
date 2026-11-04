@@ -40,10 +40,7 @@ pub fn run_population(population: usize) -> WorthQueryNativeMarkingWork {
 
     let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
     let (_, product, _) = selected.into_parts_for_test();
-    let coordinate = ProductCoordinate {
-        occurrence: product.observation_for_test().lifecycle_incarnation(),
-        generation: product.observation_for_test().reference_generation().get(),
-    };
+    let coordinate = ProductCoordinate::new_for_test(product.observation_for_test().lifecycle_incarnation(), product.observation_for_test().reference_generation().get());
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let handle = graph.integration_handle_for_test();
     let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());

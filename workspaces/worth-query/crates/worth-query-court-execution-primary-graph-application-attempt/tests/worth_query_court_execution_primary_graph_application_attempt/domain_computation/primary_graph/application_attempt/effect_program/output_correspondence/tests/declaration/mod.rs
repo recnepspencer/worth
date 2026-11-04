@@ -139,12 +139,5 @@ pub fn stray<Contract: 'static, Target>(
 where
     Target: ApplicationEntityMarkerIdentity<Schema> + 'static,
 {
-    OutputRoleUse {
-        name: name.to_owned(),
-        posture,
-        cardinality,
-        entity_name: Target::IDENTIFIER,
-        entity_type: TypeId::of_for_test::<Target>(),
-        contract_type: TypeId::of_for_test::<Contract>(),
-    }
+    OutputRoleUse::new_for_test(name.to_owned(), posture, cardinality, Target::IDENTIFIER, TypeId::of_for_test::<Target>(), TypeId::of_for_test::<Contract>())
 }

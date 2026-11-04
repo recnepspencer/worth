@@ -50,7 +50,7 @@ impl ProducerExecutionStop {
     }
 }
 
-pub(in crate::domain_computation::primary_graph::application_contribution::producer) struct ProducerRequestAdmissionRejection
+pub struct ProducerRequestAdmissionRejection
 {
     denial: WorthQueryOutputDemandDenial,
 }

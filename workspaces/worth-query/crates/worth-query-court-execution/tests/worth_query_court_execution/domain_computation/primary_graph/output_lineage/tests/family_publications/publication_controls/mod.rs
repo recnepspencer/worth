@@ -156,10 +156,7 @@ fn selected_descendant_supersedes_ancestor_even_with_lower_generation() {
     // Local index coordinates are descriptive; the real native branch identities
     // above supply the ancestry distinction without granting currentness.
     (*court.lineage.origins_mut_for_test()).insert(court.child, ancestor);
-    court.coordinate = ProductCoordinate {
-        occurrence: court.child,
-        generation: 2,
-    };
+    court.coordinate = ProductCoordinate::new_for_test(court.child, 2);
     court.publish::<Preserve>(
         1,
         Some(1),

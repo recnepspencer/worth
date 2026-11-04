@@ -10,7 +10,7 @@ use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryApplicationAttemptAffinity, WorthQueryPrimaryGraphApplicationAttempt,
 };
 
-pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationAttemptReservationOwner<
+pub struct WorthQueryApplicationAttemptReservationOwner<
     'provider,
 > {
     provider: &'provider WorthQueryPrimaryGraphProvider,

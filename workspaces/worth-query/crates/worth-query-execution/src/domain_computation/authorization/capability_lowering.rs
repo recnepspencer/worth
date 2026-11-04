@@ -26,7 +26,7 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout;
 
 mod accumulator;
 mod elevation;
-mod installed_plan;
+pub(crate) mod installed_plan;
 mod resource_extent;
 
 use accumulator::WorthQueryCapabilityRuleLoweringAccumulator;

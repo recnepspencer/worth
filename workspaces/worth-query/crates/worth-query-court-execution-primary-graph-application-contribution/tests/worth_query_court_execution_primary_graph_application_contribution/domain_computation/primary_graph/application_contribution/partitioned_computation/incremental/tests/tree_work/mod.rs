@@ -101,17 +101,7 @@ pub fn retained(source: &SealedComputationRun, keys: &[Id]) -> Retained {
         execution.allocation_policy_for_test().unwrap(),
     )
     .unwrap();
-    Retained {
-        items: Arc::clone(&(*template.items_for_test())),
-        digests: (*template.digests_for_test()).clone(),
-        membership: (*template.membership_for_test()).clone(),
-        item_keys: Arc::clone(&(*template.item_keys_for_test())),
-        call_sequence: Arc::clone(&(*template.call_sequence_for_test())),
-        routing: Arc::clone(&(*template.routing_for_test())),
-        partitions,
-        native_run,
-        tree,
-    }
+    Retained::new_for_test(Arc::clone(&(*template.items_for_test())), (*template.digests_for_test()).clone(), (*template.membership_for_test()).clone(), Arc::clone(&(*template.item_keys_for_test())), Arc::clone(&(*template.call_sequence_for_test())), Arc::clone(&(*template.routing_for_test())), partitions, native_run, tree)
 }
 
 pub fn plan(keys: &[Id]) -> ReductionPlan {

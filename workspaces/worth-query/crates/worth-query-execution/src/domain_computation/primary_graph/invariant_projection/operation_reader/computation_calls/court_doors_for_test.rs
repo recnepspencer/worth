@@ -28,3 +28,16 @@ impl ComputationCallAccounting {
         &self.demand
     }
 }
+
+impl ComputationCallCharge {
+    #[doc(hidden)]
+    pub fn new_for_test(
+        accounting: Option<ComputationCallAccounting>,
+        reached: Arc<[EntityId]>,
+    ) -> Self {
+        Self {
+            accounting,
+            reached,
+        }
+    }
+}

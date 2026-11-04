@@ -10,7 +10,7 @@ use std::sync::{
 };
 use std::time::Duration;
 
-mod caller_pass;
+pub(crate) mod caller_pass;
 mod managed_source;
 pub use managed_source::WorthQueryManagedSourceRevalidationPauseForTest;
 mod source_publication;

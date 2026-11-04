@@ -26,7 +26,7 @@ use crate::domain_computation::authorization::capability_registry::{
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout;
 
-pub(in crate::domain_computation::authorization) struct WorthQueryInstalledCapabilityPlan {
+pub struct WorthQueryInstalledCapabilityPlan {
     correspondence: worth_runtime_bridge::facade::BridgeAuthorizationCorrespondenceIdentity,
     capability_authority_identity: Arc<str>,
     contract: ErasedApplicationCapabilityContract,

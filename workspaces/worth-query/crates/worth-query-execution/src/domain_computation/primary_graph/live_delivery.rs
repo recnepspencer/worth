@@ -1,4 +1,4 @@
-mod cause_queue;
+pub(crate) mod cause_queue;
 mod predicate_queue;
 pub(in crate::domain_computation::primary_graph) use predicate_queue::{
     WorthQueryLivePredicatePoll, WorthQueryLivePredicateQueue,

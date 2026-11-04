@@ -48,7 +48,7 @@ impl CommitTouchEntities<'_> {
     }
 }
 /// One relevant commit on the branch and the watched entities it touched.
-pub(in crate::domain_computation::primary_graph) struct TouchedCommit {
+pub struct TouchedCommit {
     pub(in crate::domain_computation::primary_graph) position: PatchStreamPosition,
     pub(in crate::domain_computation::primary_graph) commit: CommitId,
     /// `None` when exact touches were unavailable for the commit.
@@ -64,7 +64,7 @@ impl TouchedCommit {
     }
 }
 
-pub(in crate::domain_computation::primary_graph) struct TouchedCommits {
+pub struct TouchedCommits {
     pub(in crate::domain_computation::primary_graph) commits: Vec<TouchedCommit>,
     pub(in crate::domain_computation::primary_graph) next_cursor: Option<PatchStreamPosition>,
     pub(in crate::domain_computation::primary_graph) work_remaining: bool,

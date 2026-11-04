@@ -7,7 +7,7 @@ use super::*;
 
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
 
-pub(in crate::domain_computation::primary_graph) struct PreparedSelectedCheckpointFinish<'a> {
+pub struct PreparedSelectedCheckpointFinish<'a> {
     registry: &'a WorthQueryOutputDemandRegistry,
     interest: &'a WorthQueryOutputDemandInterest,
     member: Arc<RequiredWorkMembership>,

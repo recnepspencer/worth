@@ -15,7 +15,7 @@ pub enum WorthQueryTransportPublicationPermitDenial {
 
 /// One active transport World publication. Its drop releases the same
 /// operation counter charged by authenticated inbound publication.
-pub(in crate::domain_computation) struct WorthQueryTransportPublicationPermit {
+pub struct WorthQueryTransportPublicationPermit {
     custody: Arc<Mutex<WorthQueryInboundCustody>>,
     operation: String,
 }

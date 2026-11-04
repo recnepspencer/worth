@@ -149,29 +149,16 @@ fn a_clean_settlement_reuses_without_fact_reverification() {
                     TypeId::of_for_test::<()>(),
                     TypeId::of_for_test::<()>(),
                     std::iter::empty(),
-                    &[WorthQueryCheckpointOutputRole {
-                        role: "account".to_owned(),
-                        posture: WorthQueryApplicationOutputPosture::Preserve,
-                        entity_name: "Account".to_owned(),
-                        entity,
-                    }],
+                    &[WorthQueryCheckpointOutputRole::new_for_test("account".to_owned(), WorthQueryApplicationOutputPosture::Preserve, "Account".to_owned(), entity)],
                     |_| Some(TypeId::of_for_test::<()>()),
                     &execution,
                 )
                 .unwrap(),
             );
-            let source = SemanticSource {
-                runtime_authority: (*world.application.runtime_for_test()).authority_identity().as_u64(),
-                schema: (*world.application.installed_schema_for_test()).binding_identity(),
-                scope: WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity),
-                output_binding: OutputBindingIdentity::declared_for_test("ProbeOutput"),
-            };
+            let source = SemanticSource::new_for_test((*world.application.runtime_for_test()).authority_identity().as_u64(), (*world.application.installed_schema_for_test()).binding_identity(), WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity), OutputBindingIdentity::declared_for_test("ProbeOutput"));
             let identity = RecordedSettlementIdentity::retain_for_test(
                 &source,
-                ProductCoordinate {
-                    occurrence: observation.lifecycle_incarnation(),
-                    generation: observation.reference_generation().get(),
-                },
+                ProductCoordinate::new_for_test(observation.lifecycle_incarnation(), observation.reference_generation().get()),
                 0,
             );
             let selection = WorthQueryObservedSourceSelection::selecting_for_test(1);
@@ -227,17 +214,7 @@ fn a_clean_settlement_reuses_without_fact_reverification() {
                 .unwrap();
                 let evidence = ComputationSourceEvidence::for_test(false);
                 owner
-                    .register_settlement_for_test(SettlementRegistration {
-                        computation: None,
-                        work_membership: None,
-                        identity: Arc::clone(&identity),
-                        facts: evidence.retain_facts_for_test(Arc::clone(&facts)),
-                        output_facts: None,
-                        read_basis: selected.clone(),
-                        stale_at_read_basis: Default::default(),
-                        requirement: None,
-                        upstream: Default::default(),
-                    })
+                    .register_settlement_for_test(SettlementRegistration::new_for_test(None, None, Arc::clone(&identity), evidence.retain_facts_for_test(Arc::clone(&facts)), None, selected.clone(), Default::default(), None, Default::default()))
                     .unwrap();
                 assert!(
                     matches!(
@@ -258,29 +235,11 @@ fn a_clean_settlement_reuses_without_fact_reverification() {
                 let completed = boundary
                     .seal_decision_reuse_for_test(context(), DecisionContextUse::default())
                     .unwrap();
-                let row = RecordedOutput {
-                    producing_implementation: None,
-                    required_publication: None,
-                    computation_source: evidence,
-                    native_prior_checkpoint: None,
-                    performed_origin: None,
-                    consumed_outputs: Arc::from([]),
-                    completed_handler_facts: Some(boundary),
-                    completed_decision_reuse: Some(completed),
-                    prepared_input_reuse_key: Some(input_key()),
-                    native_output_witness: OnceLock::from(witness),
-                    settlement_identity: Arc::clone(&identity),
-                    correspondence: Arc::clone(&correspondence),
-                    source_identity: None,
-                    source_partition_identity: None,
-                    producer_dependency_identity: None,
-                    idempotency_key_identity: [0x41; 32],
-                    mutable: Mutex::new(RecordedOutputMutable::new_for_test(
+                let row = RecordedOutput::new_for_test(None, None, evidence, None, None, Arc::from([]), Some(boundary), Some(completed), Some(input_key()), OnceLock::from(witness), Arc::clone(&identity), Arc::clone(&correspondence), None, None, None, [0x41; 32], Mutex::new(RecordedOutputMutable::new_for_test(
                         None,
                         Some(evidence.retain_facts_for_test(facts)),
                         RecordedComputation::Absent(PriorAbsence::FirstRun),
-                    )),
-                };
+                    )));
                 let candidate = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::input_cutoff::RetainedInputCutoffCandidate::from_exact_cell_for_test(Arc::new(
                     OnceLock::from(row),
                 ));

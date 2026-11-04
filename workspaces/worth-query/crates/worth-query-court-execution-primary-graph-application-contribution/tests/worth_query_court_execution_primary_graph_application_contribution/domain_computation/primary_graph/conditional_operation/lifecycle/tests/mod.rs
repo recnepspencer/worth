@@ -140,13 +140,7 @@ impl WorthQueryInstalledConditionalOperation<TestSchema> for InstalledClock {
     fn lifecycle_resources(
         &self,
     ) -> worth_query_execution::court_doors_for_test::domain_computation::primary_graph::conditional_operation::lifecycle_inventory::WorthQueryConditionalOperationLiveness{
-        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::conditional_operation::lifecycle_inventory::WorthQueryConditionalOperationLiveness {
-            binding: Default::default(),
-            lease: Default::default(),
-            wakes: Vec::new(),
-            intents: Vec::new(),
-            attempts: Vec::new(),
-        }
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::conditional_operation::lifecycle_inventory::WorthQueryConditionalOperationLiveness::new_for_test(Default::default(), Default::default(), Vec::new(), Vec::new(), Vec::new())
     }
 }
 

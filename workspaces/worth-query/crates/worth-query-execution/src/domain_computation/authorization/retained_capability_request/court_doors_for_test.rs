@@ -55,3 +55,60 @@ impl RetainedCapabilityRequestData {
         &mut self.related
     }
 }
+
+impl RetainedCapabilityRequestData {
+    #[doc(hidden)]
+    pub fn new_for_test(
+        _codec_funding: Option<(
+            Arc<crate::domain_computation::primary_graph::workflow::actor::ActorCodecFunding>,
+            Arc<crate::domain_computation::primary_graph::workflow::actor::ActorCodecFunding>,
+        )>,
+        resource_entity: Arc<str>,
+        elevation: Option<worth_relational::facade::identity::EntityId>,
+        action: AspectValue,
+        purpose: AspectValue,
+        related_relation: Option<ApplicationCapabilityRelationBinding>,
+        related: Option<worth_relational::facade::identity::EntityId>,
+        field: Option<AspectValue>,
+        magnitude: Option<AspectValue>,
+        cardinality: u32,
+        context_name: Arc<str>,
+        context_type: Arc<str>,
+        context: RetainedContext,
+    ) -> Self {
+        Self {
+            _codec_funding,
+            resource_entity,
+            elevation,
+            action,
+            purpose,
+            related_relation,
+            related,
+            field,
+            magnitude,
+            cardinality,
+            context_name,
+            context_type,
+            context,
+        }
+    }
+}
+
+impl WorthQueryRetainedCapabilityRequest {
+    #[doc(hidden)]
+    pub fn new_for_test(
+        recorded_actor: Option<Arc<crate::domain_computation::primary_graph::application_attempt::workflow_transition_program::WorkflowRecordedActorObservation>>,
+        capability_identity: [u8; 32],
+        principal: worth_relational::facade::identity::EntityId,
+        resource: worth_relational::facade::identity::EntityId,
+        data: Arc<RetainedCapabilityRequestData>,
+    ) -> Self {
+        Self {
+            recorded_actor,
+            capability_identity,
+            principal,
+            resource,
+            data,
+        }
+    }
+}

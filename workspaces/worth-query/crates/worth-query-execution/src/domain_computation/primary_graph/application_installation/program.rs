@@ -22,7 +22,7 @@ mod program_runtime;
 mod roster_authoring;
 mod signing;
 mod specialized_action;
-mod speculation;
+pub(crate) mod speculation;
 pub use signing::WorthQuerySigningOwnerInstallationDenial;
 pub(crate) mod supported_program;
 pub use checkpoint::{

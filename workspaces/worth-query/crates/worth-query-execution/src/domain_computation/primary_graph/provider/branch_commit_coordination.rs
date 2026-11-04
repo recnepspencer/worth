@@ -15,12 +15,12 @@ pub struct WorthQueryApplicationBranchCommitCoordinator {
     contention: Arc<contention::ContentionControl>,
     lanes: Mutex<BTreeMap<ProductBranchIncarnation, Weak<WorthQueryApplicationBranchCommitLane>>>,
 }
-pub(crate) struct WorthQueryApplicationBranchCommitLane {
+pub struct WorthQueryApplicationBranchCommitLane {
     contention: Arc<contention::ContentionControl>,
     occurrence: ProductBranchIncarnation,
     transition: Mutex<()>,
 }
-pub(crate) struct WorthQueryApplicationBranchCommitCoordination<'lane> {
+pub struct WorthQueryApplicationBranchCommitCoordination<'lane> {
     occurrence: ProductBranchIncarnation,
     _guard: MutexGuard<'lane, ()>,
 }

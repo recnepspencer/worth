@@ -30,16 +30,8 @@ fn native_projection_continuation_keeps_exact_bindings_and_rejects_source_races(
         .expect("the fixture read owns its installed host call");
     let (_, product, _) = selected.into_parts_for_test();
     let observation = product.observation_for_test();
-    let coordinate = ProductCoordinate {
-        occurrence: observation.lifecycle_incarnation(),
-        generation: observation.reference_generation().get(),
-    };
-    let source = SemanticSource {
-        runtime_authority: (*world.application.runtime_for_test()).authority_identity().as_u64(),
-        schema: (*world.application.installed_schema_for_test()).binding_identity(),
-        scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity),
-        output_binding: OutputBindingIdentity::declared_for_test("StatusOutput"),
-    };
+    let coordinate = ProductCoordinate::new_for_test(observation.lifecycle_incarnation(), observation.reference_generation().get());
+    let source = SemanticSource::new_for_test((*world.application.runtime_for_test()).authority_identity().as_u64(), (*world.application.installed_schema_for_test()).binding_identity(), worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity), OutputBindingIdentity::declared_for_test("StatusOutput"));
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let handle = graph.integration_handle_for_test();
     let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
@@ -78,17 +70,7 @@ fn native_projection_continuation_keeps_exact_bindings_and_rejects_source_races(
 
     let first = RecordedSettlementIdentity::retain_for_test(&source, coordinate, 0);
     owner
-        .register_settlement_for_test(SettlementRegistration {
-            computation: Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::computation_changes::ComputationRegistration::retained_for_test()),
-            work_membership: None,
-            identity: first.clone(),
-            facts: RetainedSourceFacts::for_test_for_test(false, facts.clone()),
-            output_facts: None,
-            read_basis: before.clone(),
-            stale_at_read_basis: OrdSet::new(),
-            requirement: None,
-            upstream: OrdSet::new(),
-        })
+        .register_settlement_for_test(SettlementRegistration::new_for_test(Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::computation_changes::ComputationRegistration::retained_for_test()), None, first.clone(), RetainedSourceFacts::for_test_for_test(false, facts.clone()), None, before.clone(), OrdSet::new(), None, OrdSet::new()))
         .unwrap();
     let cell = owner.cell_for_read_for_test(&before).unwrap().unwrap();
     let historical = cell.read_image();

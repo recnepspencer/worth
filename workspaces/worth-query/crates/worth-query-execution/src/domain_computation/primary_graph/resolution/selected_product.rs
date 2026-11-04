@@ -3,7 +3,7 @@ use crate::domain_computation::primary_graph::resolution_denial::principal_index
 use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
 
 #[path = "selected_product/admitted.rs"]
-mod admitted;
+pub(crate) mod admitted;
 pub(in crate::domain_computation) use admitted::WorthQueryIssuedSelectedPrincipal;
 
 impl<Schema> super::super::WorthQuerySelectedProductOperation<'_, Schema>

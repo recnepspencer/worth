@@ -9,7 +9,7 @@ use super::{
     WorthQueryApplicationOutputCorrespondence, WorthQueryApplicationOutputLineage,
 };
 
-mod republication;
+pub(crate) mod republication;
 
 /// A recorded checkpoint output and the source facts its verification covers.
 pub struct RestoredRecord {

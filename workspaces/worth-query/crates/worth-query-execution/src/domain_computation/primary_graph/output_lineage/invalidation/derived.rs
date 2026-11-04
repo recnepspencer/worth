@@ -24,8 +24,8 @@ use super::source_alignment::BranchMarkRoot;
 use super::source_alignment::EqualOutputCurrentness;
 use super::source_alignment::SnapshotAlignedMarkState;
 
-mod current_registration;
-mod prepared;
+pub(crate) mod current_registration;
+pub(crate) mod prepared;
 pub(in crate::domain_computation::primary_graph) use current_registration::CurrentSettlementRegistrationCleanup;
 pub(in crate::domain_computation::primary_graph) use current_registration::PreparedCurrentSettlementRegistration;
 pub(in crate::domain_computation::primary_graph) use prepared::PreparedSettlementRegistration;

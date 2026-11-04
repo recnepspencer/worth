@@ -33,16 +33,8 @@ fn current_source_registration_rejects_native_movement_while_ordinary_replay_rem
         .expect("the fixture read owns its installed host call");
     let (_, product, _) = selected.into_parts_for_test();
     let observation = product.observation_for_test();
-    let coordinate = ProductCoordinate {
-        occurrence: observation.lifecycle_incarnation(),
-        generation: observation.reference_generation().get(),
-    };
-    let source = SemanticSource {
-        runtime_authority: (*world.application.runtime_for_test()).authority_identity().as_u64(),
-        schema: (*world.application.installed_schema_for_test()).binding_identity(),
-        scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity),
-        output_binding: OutputBindingIdentity::declared_for_test("StatusOutput"),
-    };
+    let coordinate = ProductCoordinate::new_for_test(observation.lifecycle_incarnation(), observation.reference_generation().get());
+    let source = SemanticSource::new_for_test((*world.application.runtime_for_test()).authority_identity().as_u64(), (*world.application.installed_schema_for_test()).binding_identity(), worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity), OutputBindingIdentity::declared_for_test("StatusOutput"));
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let handle = graph.integration_handle_for_test();
     let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
@@ -135,12 +127,7 @@ fn current_source_registration_rejects_native_movement_while_ordinary_replay_rem
     // is not clean at the post-effect basis: no later delivery marks it.
     let born_stale = RecordedSettlementIdentity::retain_for_test(&source, coordinate, 2);
     owner
-        .register_settlement_for_test(SettlementRegistration {
-            computation: None,
-            read_basis: after.clone(),
-            stale_at_read_basis: OrdSet::unit(0),
-            ..registration(Arc::clone(&born_stale))
-        })
+        .register_settlement_for_test({ let __computation = None; let __read_basis = after.clone(); let __stale_at_read_basis = OrdSet::unit(0); let mut __base = registration(Arc::clone(&born_stale)); *__base.computation_mut_for_test() = __computation; *__base.read_basis_mut_for_test() = __read_basis; *__base.stale_at_read_basis_mut_for_test() = __stale_at_read_basis; __base })
         .unwrap();
     match currentness(owner, &after, &born_stale) {
         SourceSettlementCurrentness::Dirty(ordinals) => assert_eq!(ordinals, OrdSet::unit(0)),

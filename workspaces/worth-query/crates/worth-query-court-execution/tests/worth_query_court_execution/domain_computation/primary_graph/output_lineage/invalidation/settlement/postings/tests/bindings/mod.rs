@@ -84,22 +84,10 @@ fn logical_delivery_orders_exact_settlements_and_duplicate_ordinals_not_projecti
     assert_eq!(
         observed,
         vec![
-            FactPosting {
-                settlement: first.clone(),
-                ordinal: 0
-            },
-            FactPosting {
-                settlement: first,
-                ordinal: 1
-            },
-            FactPosting {
-                settlement: second.clone(),
-                ordinal: 0
-            },
-            FactPosting {
-                settlement: second,
-                ordinal: 1
-            }
+            FactPosting::new_for_test(first.clone(), 0),
+            FactPosting::new_for_test(first, 1),
+            FactPosting::new_for_test(second.clone(), 0),
+            FactPosting::new_for_test(second, 1)
         ]
     );
     assert_eq!(

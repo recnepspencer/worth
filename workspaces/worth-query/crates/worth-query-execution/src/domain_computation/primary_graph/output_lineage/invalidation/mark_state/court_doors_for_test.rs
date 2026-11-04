@@ -67,3 +67,13 @@ impl SettlementMarks {
         &self.posting_projection
     }
 }
+
+impl FactPosting {
+    #[doc(hidden)]
+    pub fn new_for_test(settlement: Arc<RecordedSettlementIdentity>, ordinal: usize) -> Self {
+        Self {
+            settlement,
+            ordinal,
+        }
+    }
+}

@@ -64,16 +64,8 @@ fn nested_forks_select_the_captured_generation_and_stop_at_local_absence() {
         1,
         1,
     );
-    let source = SemanticSource {
-        runtime_authority: (*world.application.runtime_for_test()).authority_identity().as_u64(),
-        schema: (*world.application.installed_schema_for_test()).binding_identity().clone(),
-        scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity),
-        output_binding: OutputBindingIdentity::declared_for_test("()"),
-    };
-    let parent = ProductCoordinate {
-        occurrence: product.observation_for_test().lifecycle_incarnation(),
-        generation: product.observation_for_test().reference_generation().get(),
-    };
+    let source = SemanticSource::new_for_test((*world.application.runtime_for_test()).authority_identity().as_u64(), (*world.application.installed_schema_for_test()).binding_identity().clone(), worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity), OutputBindingIdentity::declared_for_test("()"));
+    let parent = ProductCoordinate::new_for_test(product.observation_for_test().lifecycle_incarnation(), product.observation_for_test().reference_generation().get());
     let partition = [0x71; 32];
     let restored =
         |lineage: &mut WorthQueryApplicationOutputLineage,
@@ -98,10 +90,7 @@ fn nested_forks_select_the_captured_generation_and_stop_at_local_absence() {
             lineage
                 .computation_cell_in_ancestry_for_test(
                     &source,
-                    ProductCoordinate {
-                        occurrence: observation.lifecycle_incarnation(),
-                        generation: observation.reference_generation().get(),
-                    },
+                    ProductCoordinate::new_for_test(observation.lifecycle_incarnation(), observation.reference_generation().get()),
                     partition,
                     execution,
                 )

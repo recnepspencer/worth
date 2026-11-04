@@ -33,3 +33,13 @@ impl WorthQueryConditionalCommitWatchSet {
         )
     }
 }
+
+impl WorthQueryConditionalCommitWatchSet {
+    #[doc(hidden)]
+    pub fn new_for_test(entities: Option<Arc<WatchEntries>>, whole_graph: bool) -> Self {
+        Self {
+            entities,
+            whole_graph,
+        }
+    }
+}

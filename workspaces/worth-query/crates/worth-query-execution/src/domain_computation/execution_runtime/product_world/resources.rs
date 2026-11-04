@@ -23,7 +23,7 @@ pub struct WorthQueryProductWorldResources {
 /// the required policy on the calling thread, or leased from the host's
 /// authority when installed beside it. The policy is required at construction.
 #[derive(Clone)]
-pub(crate) struct WorthQueryProductExecution {
+pub struct WorthQueryProductExecution {
     pub(crate) authority: Option<Arc<ExecutionAuthority>>,
     pub(crate) policy: ExecutionRequestPolicy,
 }

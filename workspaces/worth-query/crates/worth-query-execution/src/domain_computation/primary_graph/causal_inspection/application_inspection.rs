@@ -31,7 +31,7 @@ pub use rich::{
     WorthQueryProjectionMaterializationRefusal,
 };
 pub(crate) mod request;
-mod result;
+pub(crate) mod result;
 pub(crate) mod stop;
 pub use request::{
     WorthQueryApplicationInspectionRequest, WorthQueryChangedInspectionRequest,

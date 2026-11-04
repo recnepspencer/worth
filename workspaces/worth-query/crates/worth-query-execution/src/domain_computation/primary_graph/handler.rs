@@ -3,7 +3,7 @@ pub(crate) mod conditional_definition;
 pub(in crate::domain_computation::primary_graph) use conditional_definition::ConditionalDefinitionAdmission;
 mod decision_reads;
 mod invariant;
-mod registry;
+pub(crate) mod registry;
 
 pub use candidate::CandidateWriter;
 pub use invariant::{DecisionReader, HandlerInterruption};

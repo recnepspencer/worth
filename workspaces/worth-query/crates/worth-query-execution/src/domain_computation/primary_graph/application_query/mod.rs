@@ -12,7 +12,7 @@ mod authorization_observation;
 mod authorization_work;
 pub(crate) mod authorized_read;
 pub(crate) mod basis;
-mod batch;
+pub(crate) mod batch;
 pub(in crate::domain_computation::primary_graph) use basis::PreparedSelectedReadIndexes;
 pub(in crate::domain_computation::primary_graph) use basis::WorthQueryApplicationQueryBasisCustody;
 pub use batch::{

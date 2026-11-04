@@ -40,7 +40,7 @@ pub(super) struct WorkflowDefinitionPublicationBinding {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(super) enum WorkflowDefinitionPublicationBindingDenial {
+pub enum WorkflowDefinitionPublicationBindingDenial {
     MissingStartNode,
     UnknownConnectionEndpoint,
     BindingCardinalityMismatch,

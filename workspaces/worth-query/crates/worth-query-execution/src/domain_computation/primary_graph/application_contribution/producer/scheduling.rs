@@ -263,3 +263,5 @@ fn installation_denial(
         format!("producer `{identity}` Signal installation failed: {denial:?}"),
     )
 }
+
+mod court_doors_for_test;

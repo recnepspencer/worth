@@ -20,7 +20,7 @@ pub struct ProjectedKey {
     key: Arc<FactPostingKey>,
     ordinal: usize,
 }
-struct PostingGroup {
+pub struct PostingGroup {
     key: Arc<FactPostingKey>,
     ordinals: OrdSet<usize>,
 }

@@ -40,10 +40,7 @@ fn performed_completion_reaches_the_canonical_subscription_once_and_terminal_tur
         before,
         Some(CommitId(u64::MAX)),
         2,
-        CommitTouchInterest {
-            entities: (&unwatched).into(),
-            every_commit: true,
-        },
+        CommitTouchInterest::new_for_test((&unwatched).into(), true),
     );
     assert_eq!(
         (*batch.commits_for_test()).len(),

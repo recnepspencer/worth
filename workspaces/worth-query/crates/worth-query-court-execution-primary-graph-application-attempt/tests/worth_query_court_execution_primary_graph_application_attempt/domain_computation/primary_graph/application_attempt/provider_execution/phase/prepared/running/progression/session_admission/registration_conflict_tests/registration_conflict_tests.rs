@@ -167,14 +167,7 @@ pub fn reject_occupied_registration(
         &phase.borrowed_request_for_test(),
         phase,
         &world.application,
-        WorthQueryProgressedApplicationCommit {
-            workflow_settlement_publication: None,
-            outcome,
-            lease,
-            running,
-            cleanup,
-            request: admission.publication_request_for_test().clone(),
-        },
+        WorthQueryProgressedApplicationCommit::new_for_test(None, outcome, lease, running, cleanup, admission.publication_request_for_test().clone()),
     )
 }
 
@@ -251,17 +244,7 @@ pub fn while_peer_is_registered(
         .primary_provider_for_test())
         .application_branch_commit_lane_for_test(product.observation_for_test());
     let coordination = commit_lane.enter_for_test();
-    let authority = WorthQueryApplicationCommitProgressionAuthority {
-        application: &world.application,
-        provider: &(*world.application.primary_provider_for_test()),
-        admission: &admission,
-        authorization,
-        idempotency,
-        coordination: &coordination,
-        product: &product,
-        aftermath_causality,
-        history: None,
-    };
+    let authority = WorthQueryApplicationCommitProgressionAuthority::new_for_test(&world.application, &(*world.application.primary_provider_for_test()), &admission, authorization, idempotency, &coordination, &product, aftermath_causality, None);
     let peer = finish_application_commit(
         &phase.borrowed_request_for_test(),
         phase,

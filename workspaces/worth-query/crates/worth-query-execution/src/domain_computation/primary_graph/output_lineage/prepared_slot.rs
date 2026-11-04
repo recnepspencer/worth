@@ -8,7 +8,7 @@ pub(crate) mod computation;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use computation::PreparedComputationCustody;
 mod preparation;
-mod recovery;
+pub(crate) mod recovery;
 use crate::domain_computation::primary_graph::application_contribution::SealedComputationRetention;
 pub(super) use capacity::denial;
 

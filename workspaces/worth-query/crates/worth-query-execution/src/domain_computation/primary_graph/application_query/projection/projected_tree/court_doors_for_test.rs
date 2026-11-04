@@ -166,3 +166,41 @@ impl WorthQueryApplicationProjectionNode {
         &mut self.fields
     }
 }
+
+impl WorthQueryApplicationProjectedField {
+    #[doc(hidden)]
+    pub fn new_for_test(
+        result_path: Arc<str>,
+        slot_type: Arc<str>,
+        slot_key: Arc<ApplicationQueryResultSlotKey>,
+        value: AspectValue,
+    ) -> Self {
+        Self {
+            result_path,
+            slot_type,
+            slot_key,
+            value,
+        }
+    }
+}
+
+impl WorthQueryApplicationProjectedRelation {
+    #[doc(hidden)]
+    pub fn new_for_test(
+        result_path: Arc<str>,
+        slot_type: Arc<str>,
+        slot_key: Arc<ApplicationQueryResultSlotKey>,
+        cardinality: ApplicationQueryCardinality,
+        predicate_sources: Vec<EntityId>,
+        rows: Vec<WorthQueryApplicationProjectionNode>,
+    ) -> Self {
+        Self {
+            result_path,
+            slot_type,
+            slot_key,
+            cardinality,
+            predicate_sources,
+            rows,
+        }
+    }
+}

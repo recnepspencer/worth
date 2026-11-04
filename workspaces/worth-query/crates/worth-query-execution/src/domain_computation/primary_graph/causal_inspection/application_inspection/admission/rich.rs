@@ -20,7 +20,7 @@ pub(in super::super) struct RichReportScope {
     pub(in super::super) target: Arc<WorthQueryApplicationInspectionTarget>,
     pub(in super::super) request: WorthQueryApplicationMaterializationRequest,
 }
-pub(in super::super) struct PreparedRichMaterialization {
+pub struct PreparedRichMaterialization {
     pub(in super::super) scope: RichReportScope,
     pub(in super::super) artifact: WorthQueryApplicationRichMaterialization,
 }

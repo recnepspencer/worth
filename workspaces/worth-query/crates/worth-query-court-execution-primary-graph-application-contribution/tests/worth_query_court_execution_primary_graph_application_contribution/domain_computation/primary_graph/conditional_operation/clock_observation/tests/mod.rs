@@ -15,29 +15,7 @@ pub fn granular_installation(
 }
 
 pub fn receipt() -> ErasedClockObservationReceipt {
-    ErasedClockObservationReceipt {
-        sequence: 7,
-        observed_coordinate: 41,
-        due_wake_count: 2,
-        due_work_remaining: true,
-        authoritative_commit_count: 2,
-        authoritative_work_remaining: true,
-        retained_due_wake_count: 3,
-        retained_eligible_wake_count: 1,
-        retained_suppressed_wake_count: 1,
-        retained_deferred_wake_count: 0,
-        retained_failed_wake_count: 1,
-        committed_operation_count: 2,
-        already_committed_operation_count: 1,
-        failed_operation_count: 3,
-        indeterminate_operation_count: 1,
-        snapshot_capacity_backpressure: Some(17),
-        retention_capacity_backpressure: false,
-        execution_provenance: Vec::new(),
-        granular_invalidations: Vec::new(),
-        granular_invalidation_coverage:
-            worth_query_execution::facade::domain_computation::WorthQueryGranularInvalidationCoverage::Exact,
-    }
+    ErasedClockObservationReceipt::new_for_test(7, 41, 2, true, 2, true, 3, 1, 1, 0, 1, 2, 1, 3, 1, Some(17), false, Vec::new(), Vec::new(), worth_query_execution::facade::domain_computation::WorthQueryGranularInvalidationCoverage::Exact)
 }
 
 #[test]

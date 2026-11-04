@@ -55,10 +55,7 @@ fn native_reverification_clears_only_the_verified_live_image() {
         })
         .expect("the fixture read owns its installed host call");
     let (_, product, _) = selected.into_parts_for_test();
-    let coordinate = ProductCoordinate {
-        occurrence: product.observation_for_test().lifecycle_incarnation(),
-        generation: product.observation_for_test().reference_generation().get(),
-    };
+    let coordinate = ProductCoordinate::new_for_test(product.observation_for_test().lifecycle_incarnation(), product.observation_for_test().reference_generation().get());
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let handle = graph.integration_handle_for_test();
     let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
@@ -73,12 +70,7 @@ fn native_reverification_clears_only_the_verified_live_image() {
         .field_locator_for_test(label_ref.entity(), label_ref.aspect(), label_ref.field())
         .unwrap()
         .clone();
-    let identity = RecordedSettlementIdentity::retain_for_test(&SemanticSource {
-        runtime_authority: (*world.application.runtime_for_test()).authority_identity().as_u64(),
-        schema: (*world.application.installed_schema_for_test()).binding_identity().clone(),
-        scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(account),
-        output_binding: OutputBindingIdentity::declared_for_test("RelationAbsenceOutput"),
-    }, coordinate, 0);
+    let identity = RecordedSettlementIdentity::retain_for_test(&SemanticSource::new_for_test((*world.application.runtime_for_test()).authority_identity().as_u64(), (*world.application.installed_schema_for_test()).binding_identity().clone(), worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(account), OutputBindingIdentity::declared_for_test("RelationAbsenceOutput")), coordinate, 0);
     world
         .application
         .with_host_advancement(|phase| {
@@ -100,12 +92,7 @@ fn native_reverification_clears_only_the_verified_live_image() {
                     Arc::from([WorthQueryApplicationObservedFact::Relation {
                         relation_kind: kind, from: principal, to: account, matching_relations: Vec::new(),
                     }]));
-                owner.register_settlement_for_test(SettlementRegistration {
-                    computation: Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::computation_changes::ComputationRegistration::retained_for_test()),
-                    work_membership: None, identity: identity.clone(), facts: tracked_facts.clone(),
-                    output_facts: None, read_basis: basis.clone(), stale_at_read_basis: OrdSet::new(),
-                    requirement: None, upstream: OrdSet::new(),
-                }).unwrap();
+                owner.register_settlement_for_test(SettlementRegistration::new_for_test(Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::computation_changes::ComputationRegistration::retained_for_test()), None, identity.clone(), tracked_facts.clone(), None, basis.clone(), OrdSet::new(), None, OrdSet::new())).unwrap();
                 let created = CreatedRelationRef {
                     partition_id: PartitionId::main(),
                     kind_id: kind,

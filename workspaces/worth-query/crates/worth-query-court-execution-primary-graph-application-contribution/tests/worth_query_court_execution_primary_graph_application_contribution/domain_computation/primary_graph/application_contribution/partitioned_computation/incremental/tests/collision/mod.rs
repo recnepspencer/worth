@@ -120,10 +120,7 @@ fn replacing_a_sole_member_key_with_a_prefix_collision_matches_a_fresh_run() {
     assert_eq!(&a_digest[..8], &b_digest[..8]);
     assert_ne!(a_digest, b_digest);
     let partition = (*typed.partitions_for_test()).get_for_test(&identity).unwrap();
-    let replacement = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::retained::RetainedPartition {
-        key: Arc::new(Parity(42)),
-        gather: (*partition.gather_for_test()).clone(),
-    };
+    let replacement = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::retained::RetainedPartition::new_for_test(Arc::new(Parity(42)), (*partition.gather_for_test()).clone());
     let request = live_scope();
     let execution = QueryRequestExecution::open_for_test(
         RuntimeWorldExecutionPlacement::Serial(

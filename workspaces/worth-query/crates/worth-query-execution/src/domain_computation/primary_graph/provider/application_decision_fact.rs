@@ -1,4 +1,4 @@
-mod application_facts;
+pub(crate) mod application_facts;
 pub(crate) mod application_table;
 use super::super::WorthQueryApplicationAttemptDenial as SelfDenial;
 use crate::domain_computation::{

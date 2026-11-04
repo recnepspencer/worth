@@ -16,7 +16,7 @@ const ENTITY: &str = "worth-query-inbound-completion";
 const ASPECT: &str = "inbound-completion";
 
 #[derive(Clone, Debug)]
-pub(in crate::domain_computation::primary_graph) struct WorthQueryInboundCompletionLayout {
+pub struct WorthQueryInboundCompletionLayout {
     pub kind: KindId,
     pub correlation: AspectFieldLocator,
     pub family: AspectFieldLocator,

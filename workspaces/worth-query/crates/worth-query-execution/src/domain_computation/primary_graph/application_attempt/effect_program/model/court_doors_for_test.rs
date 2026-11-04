@@ -30,3 +30,22 @@ impl<Schema, Operation, Input, Scope>
         &mut self.effects
     }
 }
+
+impl<Schema, Entity> WorthQueryApplicationEffectEntity<Schema, Entity> {
+    #[doc(hidden)]
+    pub fn new_for_test(
+        reference: EntityReference,
+        entity: String,
+        created_effect: Option<usize>,
+        program: Arc<()>,
+        _marker: PhantomData<fn() -> (Schema, Entity)>,
+    ) -> Self {
+        Self {
+            reference,
+            entity,
+            created_effect,
+            program,
+            _marker,
+        }
+    }
+}

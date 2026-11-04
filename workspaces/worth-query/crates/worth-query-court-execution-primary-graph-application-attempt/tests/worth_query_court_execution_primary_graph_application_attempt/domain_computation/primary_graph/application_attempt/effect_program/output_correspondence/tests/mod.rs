@@ -326,13 +326,7 @@ pub fn existing_handle(
     entity_id: EntityId,
     program: &Arc<()>,
 ) -> WorthQueryApplicationEffectEntity<Schema, Entity> {
-    WorthQueryApplicationEffectEntity {
-        reference: EntityReference::Existing(entity_id),
-        entity: "entity".to_owned(),
-        created_effect: None,
-        program: Arc::clone(program),
-        _marker: PhantomData,
-    }
+    WorthQueryApplicationEffectEntity::new_for_test(EntityReference::Existing(entity_id), "entity".to_owned(), None, Arc::clone(program), PhantomData)
 }
 
 pub fn created_handle(
@@ -340,17 +334,11 @@ pub fn created_handle(
     kind: u32,
     program: &Arc<()>,
 ) -> WorthQueryApplicationEffectEntity<Schema, Entity> {
-    WorthQueryApplicationEffectEntity {
-        reference: EntityReference::Created(CreatedEntityRef {
+    WorthQueryApplicationEffectEntity::new_for_test(EntityReference::Created(CreatedEntityRef {
             partition_id: PartitionId::main(),
             kind_id: KindId::new(kind),
             client_key: ClientKey::raw(key),
-        }),
-        entity: "entity".to_owned(),
-        created_effect: Some(0),
-        program: Arc::clone(program),
-        _marker: PhantomData,
-    }
+        }), "entity".to_owned(), Some(0), Arc::clone(program), PhantomData)
 }
 
 pub fn create_effect(key: &'static str, kind: u32) -> WorthQueryApplicationRealizedEffect {

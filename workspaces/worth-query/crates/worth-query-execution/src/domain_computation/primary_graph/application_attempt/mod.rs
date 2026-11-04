@@ -47,7 +47,7 @@ pub(in crate::domain_computation::primary_graph) use observation::{
     observe_aspect_absence, observe_field, observe_field_value_borrowed,
     observe_field_value_borrowed_admitted, WorthQueryApplicationFieldObservation,
 };
-pub(in crate::domain_computation::primary_graph) mod precondition_binding;
+pub(crate) mod precondition_binding;
 pub(crate) mod provider_binding;
 pub(in crate::domain_computation::primary_graph) use provider_binding::WorthQueryExpectedEffectStepPreparationWork;
 pub(in crate::domain_computation::primary_graph) use provider_binding::WorthQueryPrimaryGraphApplicationAttempt;

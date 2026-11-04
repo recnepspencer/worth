@@ -32,10 +32,7 @@ fn pending_candidate_rejects_changed_own_evidence_without_certifying_upstream() 
         })
         .expect("the fixture read owns its installed host call");
     let (_, product, _) = selected.into_parts_for_test();
-    let coordinate = ProductCoordinate {
-        occurrence: product.observation_for_test().lifecycle_incarnation(),
-        generation: product.observation_for_test().reference_generation().get(),
-    };
+    let coordinate = ProductCoordinate::new_for_test(product.observation_for_test().lifecycle_incarnation(), product.observation_for_test().reference_generation().get());
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let layout = graph.layout_for_test();
     let handle = graph.integration_handle_for_test();
@@ -51,12 +48,7 @@ fn pending_candidate_rejects_changed_own_evidence_without_certifying_upstream() 
         .unwrap()
         .clone();
     let source = |output_binding| {
-        SemanticSource {
-        runtime_authority: (*world.application.runtime_for_test()).authority_identity().as_u64(),
-        schema: (*world.application.installed_schema_for_test()).binding_identity().clone(),
-        scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity),
-        output_binding,
-    }
+        SemanticSource::new_for_test((*world.application.runtime_for_test()).authority_identity().as_u64(), (*world.application.installed_schema_for_test()).binding_identity().clone(), worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity), output_binding)
     };
     let a = RecordedSettlementIdentity::retain_for_test(
         &source(OutputBindingIdentity::declared_for_test("StatusOutput")),
@@ -72,12 +64,7 @@ fn pending_candidate_rejects_changed_own_evidence_without_certifying_upstream() 
         TypeId::of_for_test::<()>(),
         TypeId::of_for_test::<()>(),
         std::iter::empty(),
-        &[WorthQueryCheckpointOutputRole {
-            role: "account".into(),
-            posture: WorthQueryApplicationOutputPosture::Preserve,
-            entity_name: "Account".into(),
-            entity,
-        }],
+        &[WorthQueryCheckpointOutputRole::new_for_test("account".into(), WorthQueryApplicationOutputPosture::Preserve, "Account".into(), entity)],
         |_| Some(TypeId::of_for_test::<()>()),
         &worth_execution::ExecutionRequest::serial(&worth_execution::SerialRequest::from_memory(
             worth_execution::SerialMemoryBudget::new(None),

@@ -12,10 +12,7 @@ fn unrelated_publications_keep_shared_upstream_and_consumer_without_hypothetical
             "open".into(), &live_scope(), WorthQueryPrincipalResolutionMode::Ordinary)
             .unwrap().entity_id_for_test();
         let (_, product, _) = selected.into_parts_for_test();
-        let coordinate = ProductCoordinate {
-            occurrence: product.observation_for_test().lifecycle_incarnation(),
-            generation: product.observation_for_test().reference_generation().get(),
-        };
+        let coordinate = ProductCoordinate::new_for_test(product.observation_for_test().lifecycle_incarnation(), product.observation_for_test().reference_generation().get());
         let source = |binding| SemanticSource {
             runtime_authority: (*world.application.runtime_for_test()).authority_identity().as_u64(),
             schema: (*world.application.installed_schema_for_test()).binding_identity(),

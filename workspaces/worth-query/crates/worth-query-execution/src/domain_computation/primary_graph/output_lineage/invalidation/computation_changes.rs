@@ -3,7 +3,7 @@ use super::super::RecordedSettlementIdentity;
 use super::super::RetainedSourceFacts;
 use super::source_alignment::SnapshotAlignedMarkState;
 use super::SourceInvalidationOwner;
-mod postcondition_carry;
+pub(crate) mod postcondition_carry;
 use im::OrdSet;
 pub(in crate::domain_computation::primary_graph) use postcondition_carry::PostconditionCarry;
 use std::sync::Arc;
@@ -20,7 +20,7 @@ impl ComputationRegistration {
     }
 }
 #[derive(Clone)]
-pub(in crate::domain_computation::primary_graph) struct ComputationChanges {
+pub struct ComputationChanges {
     pub(in crate::domain_computation::primary_graph::output_lineage) identity:
         Arc<RecordedSettlementIdentity>,
     selected: worth_relational::facade::runtime::PositionedRelationalSnapshot,

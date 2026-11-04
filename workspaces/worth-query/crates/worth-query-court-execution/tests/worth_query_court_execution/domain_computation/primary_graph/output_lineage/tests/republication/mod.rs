@@ -124,12 +124,7 @@ pub fn staged(
 TypeId::of_for_test::<()>(),
 TypeId::of_for_test::<()>(),
 std::iter::empty(),
-&[WorthQueryCheckpointOutputRole {
-                role: "account".to_owned(),
-                posture: WorthQueryApplicationOutputPosture::Preserve,
-                entity_name: "Account".to_owned(),
-                entity: output,
-            }],
+&[WorthQueryCheckpointOutputRole::new_for_test("account".to_owned(), WorthQueryApplicationOutputPosture::Preserve, "Account".to_owned(), output)],
 |_| Some(TypeId::of_for_test::<()>()),
 &phase_custody.borrowed_request_for_test(),
 )
@@ -171,12 +166,7 @@ let seal = || {
         runtime.snapshots().release_snapshot(&snapshot).unwrap();
         sealed
     });
-    let source = SemanticSource {
-        runtime_authority: (*world.application.runtime_for_test()).authority_identity().as_u64(),
-        schema: (*world.application.installed_schema_for_test()).binding_identity(),
-        scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity(1)),
-        output_binding: OutputBindingIdentity::declared_for_test("RestoredOutputBinding"),
-    };
+    let source = SemanticSource::new_for_test((*world.application.runtime_for_test()).authority_identity().as_u64(), (*world.application.installed_schema_for_test()).binding_identity(), worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity(1)), OutputBindingIdentity::declared_for_test("RestoredOutputBinding"));
     let mut lineage = WorthQueryApplicationOutputLineage::default();
     lineage.fixture_binding(
         TypeId::of_for_test::<RestoredOutputBinding>(),
@@ -221,32 +211,14 @@ impl Stage<'_> {
             .or_default();
         let slot = records.len();
         let cell = Arc::new(OnceLock::new());
-        let recorded = record(RecordedOutput {
-            producing_implementation: None,
-            required_publication: None,
-            native_prior_checkpoint: None,
-            performed_origin: None,
-            consumed_outputs: Arc::from([]),
-            completed_handler_facts: None,
-            completed_decision_reuse: None,
-            prepared_input_reuse_key: None,
-            native_output_witness: OnceLock::new(),
-            computation_source: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false),
-            mutable: Mutex::new(RecordedOutputMutable::new_for_test(None, (Some(Arc::clone(facts))).map(|facts| worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false).retain_facts_for_test(facts)), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::retained_computation::RecordedComputation::Absent(PriorAbsence::Restored))),
-            settlement_identity: RecordedSettlementIdentity::retain_for_test(
+        let recorded = record(RecordedOutput::new_for_test(None, None, None, None, Arc::from([]), None, None, None, OnceLock::new(), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false), Mutex::new(RecordedOutputMutable::new_for_test(None, (Some(Arc::clone(facts))).map(|facts| worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false).retain_facts_for_test(facts)), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::retained_computation::RecordedComputation::Absent(PriorAbsence::Restored))), RecordedSettlementIdentity::retain_for_test(
                 &self.source,
                 ProductCoordinate {
                     occurrence,
                     generation,
                 },
                 slot,
-            ),
-            correspondence: Arc::clone(&self.correspondence),
-            source_identity: Some(checkpoint_identity([0x31; 32])),
-            source_partition_identity: Some(PARTITION),
-            producer_dependency_identity: None,
-            idempotency_key_identity: IDEMPOTENCY_KEY,
-        });
+            ), Arc::clone(&self.correspondence), Some(checkpoint_identity([0x31; 32])), Some(PARTITION), None, IDEMPOTENCY_KEY));
         assert!(cell.set(recorded).is_ok());
         records.push(Arc::clone(&cell));
         (*self.lineage.partition_index_mut_for_test()).insert_for_test(

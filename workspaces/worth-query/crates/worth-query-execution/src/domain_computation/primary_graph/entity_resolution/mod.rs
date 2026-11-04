@@ -75,7 +75,7 @@ use super::{
 };
 
 #[derive(Clone)]
-pub(in crate::domain_computation) struct WorthQueryInstalledEntityResolutionContext {
+pub struct WorthQueryInstalledEntityResolutionContext {
     runtime_authority:
         crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
     relational_runtime_instance_id: u64,

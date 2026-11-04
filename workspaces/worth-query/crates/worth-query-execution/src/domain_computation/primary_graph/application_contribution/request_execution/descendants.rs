@@ -1,7 +1,7 @@
 //! The framework lends member execution only from an advancement's wave.
 use super::{Form, QueryRequestExecution};
 
-pub(in crate::domain_computation::primary_graph) struct WaveRequestExecution<'authority> {
+pub struct WaveRequestExecution<'authority> {
     execution: QueryRequestExecution<'authority>,
 }
 pub(in crate::domain_computation::primary_graph) struct MemberRequestExecution<'authority> {

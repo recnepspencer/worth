@@ -30,16 +30,8 @@ fn repeated_current_certification_preserves_image_and_retention_and_rejects_a_ra
         })
         .expect("the fixture read owns its installed host call");
     let (_, product, _) = selected.into_parts_for_test();
-    let coordinate = ProductCoordinate {
-        occurrence: product.observation_for_test().lifecycle_incarnation(),
-        generation: product.observation_for_test().reference_generation().get(),
-    };
-    let source = SemanticSource {
-        runtime_authority: (*world.application.runtime_for_test()).authority_identity().as_u64(),
-        schema: (*world.application.installed_schema_for_test()).binding_identity(),
-        scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity),
-        output_binding: OutputBindingIdentity::declared_for_test("StatusOutput"),
-    };
+    let coordinate = ProductCoordinate::new_for_test(product.observation_for_test().lifecycle_incarnation(), product.observation_for_test().reference_generation().get());
+    let source = SemanticSource::new_for_test((*world.application.runtime_for_test()).authority_identity().as_u64(), (*world.application.installed_schema_for_test()).binding_identity(), worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity), OutputBindingIdentity::declared_for_test("StatusOutput"));
     let prior = RecordedSettlementIdentity::retain_for_test(&source, coordinate, 0);
     let current = RecordedSettlementIdentity::retain_for_test(&source, coordinate, 1);
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
@@ -87,17 +79,7 @@ fn repeated_current_certification_preserves_image_and_retention_and_rejects_a_ra
                 );
 let alias = owner
             .prepare_current_stable_settlement_for_test(
-                SettlementRegistration {
-                    computation: None,
-                    work_membership: None,
-                    identity: Arc::clone(&current),
-                    facts: RetainedSourceFacts::for_test_for_test(false, Arc::clone(&facts)),
-                    output_facts: None,
-                    read_basis: basis.clone(),
-                    stale_at_read_basis: OrdSet::new(),
-                    requirement: None,
-                    upstream: OrdSet::new(),
-                },
+                SettlementRegistration::new_for_test(None, None, Arc::clone(&current), RetainedSourceFacts::for_test_for_test(false, Arc::clone(&facts)), None, basis.clone(), OrdSet::new(), None, OrdSet::new()),
                 &basis,
                 relation,
             )
@@ -118,10 +100,7 @@ let cell = owner
                 for with_downstream in [false, true] {
                     if with_downstream {
                         let downstream = RecordedSettlementIdentity::retain_for_test(
-                            &SemanticSource {
-                                output_binding: OutputBindingIdentity::declared_for_test("DownstreamOutput"),
-                                ..source.clone()
-                            },
+                            &{ let __output_binding = OutputBindingIdentity::declared_for_test("DownstreamOutput"); let mut __base = source.clone(); *__base.output_binding_mut_for_test() = __output_binding; __base },
                             coordinate,
                             0,
                         );

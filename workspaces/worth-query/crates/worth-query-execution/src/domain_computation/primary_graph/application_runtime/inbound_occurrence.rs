@@ -13,7 +13,7 @@ use crate::domain_computation::application_aftermath::WorthQueryInboundOccurrenc
 use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
 
 pub(crate) mod receive;
-mod transport_binding;
+pub(crate) mod transport_binding;
 mod transport_publication_permit;
 pub(in crate::domain_computation) use transport_binding::WorthQueryInstalledTransportCompletionBinding;
 mod cleanup;

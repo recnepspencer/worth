@@ -222,7 +222,7 @@ impl WorthQueryProductActivationRegistry {
 }
 
 /// Branch capacity admission precedes World branch creation.
-pub(crate) struct WorthQueryProductActivationReservation<'a> {
+pub struct WorthQueryProductActivationReservation<'a> {
     registry: &'a WorthQueryProductActivationRegistry,
     gate: Arc<WorthQueryProductActivationGate>,
     program: Option<ApplicationProgramRevision>,

@@ -9,10 +9,10 @@ pub(in crate::domain_computation::primary_graph) use claim::RequiredWorkClaim;
 mod current_record;
 mod discontinuity;
 mod interest_readmission;
-mod native_hints;
+pub(crate) mod native_hints;
 mod pending_readmission;
 pub(crate) mod queue;
-mod refresh_claim;
+pub(crate) mod refresh_claim;
 mod requested_claim;
 pub(crate) mod selection;
 mod subsumed;
@@ -98,7 +98,7 @@ pub enum SelectedRequiredWorkKind {
     UnresolvedInitial,
 }
 
-pub(in crate::domain_computation::primary_graph) struct ReplacedRequiredWorkHint {
+pub struct ReplacedRequiredWorkHint {
     _native: Option<Box<NativeHint>>,
     _settlement: Option<Arc<RecordedSettlementIdentity>>,
 }

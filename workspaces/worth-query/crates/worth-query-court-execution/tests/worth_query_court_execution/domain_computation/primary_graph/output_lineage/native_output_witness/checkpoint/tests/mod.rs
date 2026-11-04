@@ -67,12 +67,7 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         TypeId::of_for_test::<()>(),
         TypeId::of_for_test::<()>(),
         std::iter::empty(),
-        &[WorthQueryCheckpointOutputRole {
-            role: "account".to_owned(),
-            posture: WorthQueryApplicationOutputPosture::Preserve,
-            entity_name: "Account".to_owned(),
-            entity,
-        }],
+        &[WorthQueryCheckpointOutputRole::new_for_test("account".to_owned(), WorthQueryApplicationOutputPosture::Preserve, "Account".to_owned(), entity)],
         |_| Some(TypeId::of_for_test::<()>()),
         &worth_execution::ExecutionRequest::serial(&worth_execution::SerialRequest::from_memory(
             worth_execution::SerialMemoryBudget::new(None),

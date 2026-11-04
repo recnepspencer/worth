@@ -36,7 +36,7 @@ pub type Resource = WorthQueryManagedComputationResourceDenial;
 
 mod accounting;
 mod decision_stage;
-mod descendants;
+pub(crate) mod descendants;
 mod retained_dispatch;
 mod tree_charge;
 pub(in crate::domain_computation::primary_graph) use descendants::MemberRequestExecution;
@@ -213,7 +213,7 @@ enum DispatchForm<'d> {
 }
 
 /// One run's placement. Each pattern runs inside a work ceiling on it.
-pub(super) struct QueryDispatch<'d> {
+pub struct QueryDispatch<'d> {
     form: DispatchForm<'d>,
     certified_seed: Option<u64>,
 }

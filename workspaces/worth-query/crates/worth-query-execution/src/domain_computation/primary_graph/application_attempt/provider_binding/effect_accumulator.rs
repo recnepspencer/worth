@@ -38,7 +38,7 @@ pub(super) struct WorthQueryProviderEffectAccumulator<'facts, 'layout, Facts: Fa
     composed_aspects: BTreeSet<worth_relational::facade::identity::EntityId>,
 }
 
-pub(super) struct WorthQueryRegisteredProviderEffects {
+pub struct WorthQueryRegisteredProviderEffects {
     body_external_emission: Option<crate::domain_computation::primary_graph::operation_body::emission::BodyExternalEffectSelection>,
     expected_steps: WorthQueryExpectedEffectSteps,
     batch: WorkerIntentBatch,

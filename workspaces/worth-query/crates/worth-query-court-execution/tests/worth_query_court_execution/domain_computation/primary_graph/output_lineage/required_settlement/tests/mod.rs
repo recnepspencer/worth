@@ -16,10 +16,7 @@ pub fn committed() -> (u64, ApplicationSchemaBindingIdentity, ReadyCompletion) {
     let receipt = committed_recoverable_application();
     let runtime_authority = receipt.principal_scope().runtime_authority();
     let schema = receipt.principal_scope().binding_identity().clone();
-    let completion = ReadyCompletion::for_test(WorthQueryCompletedOutputDemand {
-        authority: WorthQueryAcceptedOutputAuthority::Committed(receipt),
-        readiness: WorthQueryOutputReadinessDeliveryEvidence::for_test_for_test(),
-    });
+    let completion = ReadyCompletion::for_test(WorthQueryCompletedOutputDemand::new_for_test(WorthQueryAcceptedOutputAuthority::Committed(receipt), WorthQueryOutputReadinessDeliveryEvidence::for_test_for_test()));
     (runtime_authority, schema, completion)
 }
 

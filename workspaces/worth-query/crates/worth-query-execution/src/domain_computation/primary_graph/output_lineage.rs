@@ -23,7 +23,7 @@ pub(crate) mod invalidation;
 pub(crate) mod native_output_witness;
 pub(crate) mod native_prior_checkpoint;
 
-mod partition_index;
+pub(crate) mod partition_index;
 pub(crate) mod prepared_slot;
 mod qualification;
 pub(crate) mod recorded_output;
@@ -107,7 +107,7 @@ pub struct WorthQueryApplicationOutputLineage {
 
 type RecordedGeneration = Vec<Arc<OnceLock<RecordedOutput>>>;
 
-pub(super) struct WorthQueryExactRecordedOutput {
+pub struct WorthQueryExactRecordedOutput {
     pub(super) producing_implementation:
         Option<worth_relational::facade::mvcc::RequiredOutputProducingImplementation>,
     pub(super) correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
@@ -144,7 +144,7 @@ pub struct WorthQueryPriorOutputBindingResolution {
     pub(super) correspondence: Option<Arc<WorthQueryApplicationOutputCorrespondence>>,
 }
 
-pub(super) struct WorthQueryCurrentOutputCandidate {
+pub struct WorthQueryCurrentOutputCandidate {
     pub(super) consumed_outputs: Arc<[super::invariant_projection::ConsumedOutputEvidence]>,
     pub(super) verification_requirement: Option<invalidation::FullVerificationReason>,
     pub(super) settlement_identity: Arc<RecordedSettlementIdentity>,

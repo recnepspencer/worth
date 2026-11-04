@@ -110,3 +110,36 @@ impl SettledWorkflowTransition {
         Self::occurrence(self)
     }
 }
+
+impl WorkflowInstanceProgress {
+    #[doc(hidden)]
+    pub fn new_for_test(
+        captured_inputs: Option<OrdMap<EntityId, captured_inputs::RetainedCapturedInputs>>,
+        head: EntityId,
+        next_occurrence: u64,
+        retry_counts: OrdMap<(EntityId, ApplicationWorkflowControlOutcome), usize>,
+        path_depth: u64,
+        path: OrdMap<u64, WorkflowPathFrame>,
+        back_blocked_by_operation: bool,
+        back_edge_iterations: OrdMap<(EntityId, EntityId), u64>,
+        latest_transitions: OrdMap<EntityId, WorkflowTransitionLocator>,
+        latest_transition_identities: OrdMap<EntityId, (u64, String)>,
+        latest_assessment_evidence: OrdMap<EntityId, WorkflowAssessmentEvidenceLocator>,
+        retained_evidence_bytes: u64,
+    ) -> Self {
+        Self {
+            captured_inputs,
+            head,
+            next_occurrence,
+            retry_counts,
+            path_depth,
+            path,
+            back_blocked_by_operation,
+            back_edge_iterations,
+            latest_transitions,
+            latest_transition_identities,
+            latest_assessment_evidence,
+            retained_evidence_bytes,
+        }
+    }
+}

@@ -17,7 +17,7 @@ pub struct RegisteredIndex {
     cleanup: Arc<dyn RegisteredManagedIndex>,
     _memory: Option<ExecutionMemoryReservation>,
 }
-pub(super) struct RetiredIndex {
+pub struct RetiredIndex {
     // Both real backings close before the last original registration grant.
     _empty_routes: Option<BTreeMap<Key, u64>>,
     _empty_owned: Option<BTreeMap<u64, RegisteredIndex>>,

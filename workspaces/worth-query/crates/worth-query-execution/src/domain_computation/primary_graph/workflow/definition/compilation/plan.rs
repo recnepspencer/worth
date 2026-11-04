@@ -132,7 +132,7 @@ pub struct CompiledWorkflowSemanticConnection {
 }
 
 #[derive(Debug, Eq, PartialEq)]
-pub(super) struct CompiledWorkflowSemanticPlan {
+pub struct CompiledWorkflowSemanticPlan {
     pub(super) start: usize,
     pub(super) nodes: Box<[Arc<CompiledWorkflowNodeMeaning>]>,
     pub(super) connections: Box<[CompiledWorkflowSemanticConnection]>,

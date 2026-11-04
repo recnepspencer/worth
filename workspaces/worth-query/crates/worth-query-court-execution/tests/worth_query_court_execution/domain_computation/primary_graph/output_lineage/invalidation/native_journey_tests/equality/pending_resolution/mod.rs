@@ -201,17 +201,7 @@ pub fn register_dependent_alias(
     );
     let prepared = owner
         .prepare_current_stable_settlement_for_test(
-            SettlementRegistration {
-                computation: None,
-                work_membership: None,
-                identity: Arc::clone(successor),
-                facts: RetainedSourceFacts::for_test_for_test(false, Arc::from([])),
-                output_facts: None,
-                read_basis: basis.clone(),
-                stale_at_read_basis: OrdSet::new(),
-                requirement: None,
-                upstream: OrdSet::unit(Arc::clone(upstream)),
-            },
+            SettlementRegistration::new_for_test(None, None, Arc::clone(successor), RetainedSourceFacts::for_test_for_test(false, Arc::from([])), None, basis.clone(), OrdSet::new(), None, OrdSet::unit(Arc::clone(upstream))),
             basis,
             relation,
         )
@@ -244,39 +234,20 @@ pub fn candidate(
     prefix: Arc<[WorthQueryApplicationObservedFact]>,
 ) -> RetainedInputCutoffCandidate {
     let boundary = CompletedHandlerFactBoundary::completed_for_test(prefix.len());
-    RetainedInputCutoffCandidate::from_exact_cell_for_test(Arc::new(OnceLock::from(RecordedOutput {
-        producing_implementation: None,
-        required_publication: None,
-        computation_source: ComputationSourceEvidence::for_test(false),
-        native_prior_checkpoint: None,
-
-        performed_origin: None,
-        consumed_outputs: Arc::from([]),
-        completed_decision_reuse: boundary
-            .seal_decision_reuse_for_test(context(), DecisionContextUse::default().key_for_test()),
-        completed_handler_facts: Some(boundary),
-        prepared_input_reuse_key: Some(PreparedInputReuseKey::new_for_test(
+    RetainedInputCutoffCandidate::from_exact_cell_for_test(Arc::new(OnceLock::from(RecordedOutput::new_for_test(None, None, ComputationSourceEvidence::for_test(false), None, None, Arc::from([]), boundary
+            .seal_decision_reuse_for_test(context(), DecisionContextUse::default().key_for_test()), Some(boundary), Some(PreparedInputReuseKey::new_for_test(
             WorthQueryObservedSourceSelection::selecting_for_test(
                 u64::try_from(prefix.len()).unwrap(),
             ),
             [11; 32],
             InstalledProducerEdition::for_test_for_test([12; 32]),
-        )),
-        native_output_witness: OnceLock::from(Arc::clone(
+        )), OnceLock::from(Arc::clone(
             performed.native_output_witness_cell_for_test().unwrap(),
-        )),
-        settlement_identity: identity,
-        correspondence: Arc::clone(&(*performed.correspondence_for_test())),
-        source_identity: (*performed.source_identity_for_test()),
-        source_partition_identity: (*performed.source_partition_identity_for_test()),
-        producer_dependency_identity: (*performed.producer_dependency_identity_for_test()),
-        idempotency_key_identity: (*performed.idempotency_key_identity_for_test()),
-        mutable: Mutex::new(RecordedOutputMutable::new_for_test(
+        )), identity, Arc::clone(&(*performed.correspondence_for_test())), (*performed.source_identity_for_test()), (*performed.source_partition_identity_for_test()), (*performed.producer_dependency_identity_for_test()), (*performed.idempotency_key_identity_for_test()), Mutex::new(RecordedOutputMutable::new_for_test(
             None,
             Some(RetainedSourceFacts::for_test_for_test(false, prefix)),
             RecordedComputation::Absent(PriorAbsence::Restored),
-        )),
-    })))
+        ))))))
 }
 
 #[test]

@@ -27,7 +27,7 @@ pub(crate) mod retirement;
 use retirement::RetirementMetadata;
 
 #[derive(Debug)]
-struct RoleProbe {
+pub struct RoleProbe {
     role: String,
     entity_name: String,
     kind: KindId,
@@ -66,7 +66,7 @@ pub struct SealedNativeOutputWitness {
 /// A checked projection of the sealed performed roles into ordinary observed
 /// facts. It borrows the witness so the installed aspect list remains the only
 /// source of this output dependency footprint.
-pub(in crate::domain_computation::primary_graph) struct PreparedNativeOutputFacts<'a> {
+pub struct PreparedNativeOutputFacts<'a> {
     witness: &'a SealedNativeOutputWitness,
     count: usize,
     retained_payload_bytes: u64,

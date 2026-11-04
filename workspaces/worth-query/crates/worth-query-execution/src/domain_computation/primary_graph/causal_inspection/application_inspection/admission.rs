@@ -15,7 +15,7 @@ mod currentness;
 mod governance_binding;
 mod materialization;
 
-pub(super) mod rich;
+pub(crate) mod rich;
 mod terminal;
 use super::target::InspectionTargetDenial;
 use super::WorthQueryApplicationInspectionTarget;

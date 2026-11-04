@@ -1,5 +1,5 @@
 pub(crate) mod branch_affinity;
-mod decision_read_set;
+pub(crate) mod decision_read_set;
 mod inspection_terminal;
 pub(crate) mod mutation_progression;
 pub(crate) mod owner_execution;
@@ -7,7 +7,7 @@ mod read_terminal;
 pub(in crate::domain_computation) use inspection_terminal::WorthQueryInspectionReadCompletion;
 mod resource_terminal;
 pub(in crate::domain_computation) use resource_terminal::WorthQueryResourceReadCompletion;
-mod session;
+pub(crate) mod session;
 pub use session::WorthQueryManagedGraphWorkSessionStartDenial;
 pub(in crate::domain_computation) use session::{
     WorthQueryManagedIndexReadSession, WorthQueryManagedIndexSelectionProof,

@@ -2,7 +2,7 @@ mod aftermath_resolution;
 pub(crate) mod application_attempt_affinity;
 mod capability_revocation;
 mod delegation_activation;
-mod elevation_currentness;
+pub(crate) mod elevation_currentness;
 mod elevation_lifecycle;
 mod elevation_refusal;
 mod entry;

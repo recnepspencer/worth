@@ -128,7 +128,7 @@ pub struct WorthQueryOutputDemandNotifications {
     wake: Arc<DemandWake>,
 }
 
-mod accepted_checkpoint;
+pub(crate) mod accepted_checkpoint;
 pub(crate) mod accepted_checkpoint_identity;
 pub(in crate::domain_computation::primary_graph) use accepted_checkpoint::AcceptedCheckpointFactSource;
 pub(in crate::domain_computation::primary_graph) use accepted_checkpoint_identity::CheckpointOutputSlot;
@@ -351,7 +351,7 @@ pub struct WorthQueryReadmittedAcceptedOutput {
     >,
 }
 
-pub(in crate::domain_computation::primary_graph) struct WorthQueryRequiredOutputSourcePreparation {
+pub struct WorthQueryRequiredOutputSourcePreparation {
     occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
     owner: WorthQueryOutputDemandRegistry,
 }

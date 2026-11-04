@@ -5,7 +5,7 @@ use worth_query_declaration::facade::application_program::ApplicationWorkflowCon
 use worth_relational::facade::identity::EntityId;
 
 mod accounting;
-mod captured_inputs;
+pub(crate) mod captured_inputs;
 mod collection;
 pub(crate) mod locator;
 mod navigation;
@@ -105,7 +105,7 @@ pub struct WorkflowInstanceProgress {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-struct WorkflowPathFrame {
+pub struct WorkflowPathFrame {
     source: EntityId,
 }
 

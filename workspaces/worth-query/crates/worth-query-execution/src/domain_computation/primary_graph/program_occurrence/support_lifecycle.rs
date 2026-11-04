@@ -175,7 +175,7 @@ enum SupportUse {
     Custody,
 }
 
-pub(in crate::domain_computation::primary_graph) struct WorthQueryProgramSupportInterpretation {
+pub struct WorthQueryProgramSupportInterpretation {
     lifecycle: WorthQueryProgramSupportLifecycle,
     revision: ApplicationProgramRevision,
 }
@@ -219,7 +219,7 @@ impl Drop for WorthQueryProgramSupportCustody {
     }
 }
 
-pub(in crate::domain_computation::primary_graph) struct WorthQueryProgramSupportRetirementAttempt {
+pub struct WorthQueryProgramSupportRetirementAttempt {
     lifecycle: WorthQueryProgramSupportLifecycle,
     revision: ApplicationProgramRevision,
     finished: bool,

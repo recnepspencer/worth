@@ -6,7 +6,7 @@ use std::sync::{
 };
 
 #[derive(Default)]
-pub(in crate::domain_computation::primary_graph) struct CallerPassControl {
+pub struct CallerPassControl {
     next_arm: AtomicU64,
     interleaving_owner: AtomicU64,
     interleaving: Mutex<Option<Box<dyn FnOnce() + Send>>>,

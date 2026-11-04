@@ -28,16 +28,8 @@ fn no_position_policy_preserves_funded_history_and_original_reader_currentness()
         let entity = selected.resolve_entity(&phase, AccountStatus::reference(),
             "open".into(), &live_scope(), WorthQueryPrincipalResolutionMode::Ordinary).unwrap().entity_id_for_test();
         let (_, product, _) = selected.into_parts_for_test();
-        let coordinate = ProductCoordinate {
-            occurrence: product.observation_for_test().lifecycle_incarnation(),
-            generation: product.observation_for_test().reference_generation().get(),
-        };
-        let source = SemanticSource {
-            runtime_authority: (*world.application.runtime_for_test()).authority_identity().as_u64(),
-            schema: (*world.application.installed_schema_for_test()).binding_identity(),
-            scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity),
-            output_binding: OutputBindingIdentity::declared_for_test("StatusOutput"),
-        };
+        let coordinate = ProductCoordinate::new_for_test(product.observation_for_test().lifecycle_incarnation(), product.observation_for_test().reference_generation().get());
+        let source = SemanticSource::new_for_test((*world.application.runtime_for_test()).authority_identity().as_u64(), (*world.application.installed_schema_for_test()).binding_identity(), worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity), OutputBindingIdentity::declared_for_test("StatusOutput"));
         let row = RecordedSettlementIdentity::retain_for_test(&source, coordinate, 0);
         let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
         let status_ref = AccountStatus::reference();
@@ -65,7 +57,7 @@ fn no_position_policy_preserves_funded_history_and_original_reader_currentness()
             assert!(matches!(currentness(owner, &after, &row), SourceSettlementCurrentness::Clean));
             assert_eq!(field_fact(&execution, runtime, &original_handle, entity, status.clone()), original_fact);
             let batch = owner.touched_commits_after_for_test(after.branch_id(), historical.position(), after.commit_id(), 300,
-                CommitTouchInterest { entities: CommitTouchEntities::Slice(&[]), every_commit: true });
+                CommitTouchInterest::new_for_test(CommitTouchEntities::Slice(&[]), true));
             assert_eq!((*batch.commits_for_test()).len(), 300);
             assert!((*batch.caught_up_to_latest_for_test()));
             write_field(&execution, runtime, entity, status, "closed");

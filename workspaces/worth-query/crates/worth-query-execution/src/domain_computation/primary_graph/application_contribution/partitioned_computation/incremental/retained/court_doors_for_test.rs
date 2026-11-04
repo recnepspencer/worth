@@ -277,3 +277,39 @@ impl<Key, Item, Reduced> RetainedPartitions<Key, Item, Reduced> {
         )
     }
 }
+
+impl<Key> RetainedPartition<Key> {
+    #[doc(hidden)]
+    pub fn new_for_test(key: Arc<Key>, gather: ComputationCallCharge) -> Self {
+        Self { key, gather }
+    }
+}
+
+impl<Key, Item, Reduced> RetainedPartitions<Key, Item, Reduced> {
+    #[doc(hidden)]
+    pub fn new_for_test(
+        items: Items<Item>,
+        digests: ItemDigests,
+        membership: RetainedCall,
+        item_keys: Arc<worth_execution::ExecutionOrderedMap<PartitionItemId, RetainedCall>>,
+        call_sequence: Arc<
+            crate::domain_computation::primary_graph::invariant_projection::ComputationCallSequence,
+        >,
+        routing: Arc<ComputationPartitionRouting>,
+        partitions: super::super::partition_metadata::PartitionMetadata<Key>,
+        native_run: worth_execution::ExecutionRetainedRun<Reduced>,
+        tree: NativeReductionTree<Reduced, fn(&Reduced, &Reduced) -> Reduced>,
+    ) -> Self {
+        Self {
+            items,
+            digests,
+            membership,
+            item_keys,
+            call_sequence,
+            routing,
+            partitions,
+            native_run,
+            tree,
+        }
+    }
+}

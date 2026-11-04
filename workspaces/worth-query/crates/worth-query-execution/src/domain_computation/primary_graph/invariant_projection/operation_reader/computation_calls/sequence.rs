@@ -29,13 +29,13 @@ impl From<worth_execution::ExecutionOrderedMapDenial> for CallSequenceDenial {
 }
 pub type Call = (ComputationCallCharge, Option<u64>);
 
-mod shape;
+pub(crate) mod shape;
 pub(in crate::domain_computation::primary_graph) use shape::{CallShape, CallShapeTransition};
 pub(crate) mod tree;
 use tree::{build, leaf, patch, summary, visit};
 mod editing;
 #[derive(Clone, Copy)]
-pub(in crate::domain_computation::primary_graph) struct CallSummary {
+pub struct CallSummary {
     pub(super) accounting: Option<ComputationCallAccounting>,
     pub(in crate::domain_computation::primary_graph) declared: Option<u64>,
 }

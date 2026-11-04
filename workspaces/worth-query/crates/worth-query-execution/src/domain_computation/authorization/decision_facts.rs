@@ -15,7 +15,7 @@ pub(in crate::domain_computation) use source_read_support::{
 pub(super) mod authorization;
 pub(crate) mod principal_currentness;
 mod provider_binding;
-mod provider_commit_authorization;
+pub(crate) mod provider_commit_authorization;
 pub(in crate::domain_computation) use authorization::WorthQueryAuthorizationDecisionFact;
 pub(in crate::domain_computation::authorization) use authorization::WorthQueryDelegationActivationDecisionFact;
 pub(in crate::domain_computation::authorization) use authorization::WorthQueryDelegationDecisionFact;

@@ -1,7 +1,7 @@
 //! Original source disclosure meaning; fresh use must independently authorize it.
 pub(crate) mod inspection;
 pub(crate) mod inspection_capture;
-mod original;
+pub(crate) mod original;
 mod parameter_capture;
 
 pub(in crate::domain_computation) use inspection::OriginalSourceInspectionDisclosure;

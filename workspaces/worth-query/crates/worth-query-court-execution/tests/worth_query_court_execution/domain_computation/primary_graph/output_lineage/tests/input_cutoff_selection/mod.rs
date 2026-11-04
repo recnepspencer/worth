@@ -72,12 +72,7 @@ fn cutoff_candidate_pins_the_selected_ancestor_partition() {
         scope_entity.local_slot_value(),
         scope_entity.generation_value(),
     );
-    let source = SemanticSource {
-        runtime_authority,
-        schema: schema.clone(),
-        scope: scope.scope(),
-        output_binding: OutputBindingIdentity::declared_for_test("RestoredOutputBinding"),
-    };
+    let source = SemanticSource::new_for_test(runtime_authority, schema.clone(), scope.scope(), OutputBindingIdentity::declared_for_test("RestoredOutputBinding"));
     let target_partition = [0x11; 32];
     let sibling_partition = [0x22; 32];
     let target = Arc::new(WorthQueryApplicationOutputCorrespondence::default());
@@ -145,10 +140,7 @@ fn cutoff_candidate_pins_the_selected_ancestor_partition() {
     let next_generation = parent.reference_generation().get() + 1;
     let _unpublished = (*lineage.partition_index_mut_for_test()).insert_vacancy_for_test(
         source.clone(),
-        ProductCoordinate {
-            occurrence: parent.lifecycle_incarnation(),
-            generation: next_generation,
-        },
+        ProductCoordinate::new_for_test(parent.lifecycle_incarnation(), next_generation),
         Some(target_partition),
     );
     let prior = (*lineage
@@ -156,10 +148,7 @@ fn cutoff_candidate_pins_the_selected_ancestor_partition() {
         .latest_admitted_for_test(
             execution,
             &source,
-            ProductCoordinate {
-                occurrence: parent.lifecycle_incarnation(),
-                generation: next_generation,
-            },
+            ProductCoordinate::new_for_test(parent.lifecycle_incarnation(), next_generation),
             target_partition,
         )
         .expect("the newer empty slot is a bounded lookup");

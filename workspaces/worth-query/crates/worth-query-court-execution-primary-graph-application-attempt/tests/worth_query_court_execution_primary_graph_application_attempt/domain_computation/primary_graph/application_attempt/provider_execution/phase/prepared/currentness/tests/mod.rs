@@ -60,12 +60,7 @@ fn current_commit_basis_reclaims_an_abandoned_performed_observation() {
     let kind = PreparedOutputRootKind::Required(TypeId::of_for_test::<()>());
     let commit = registry
         .retain_performed_source_for_test(
-            WorthQueryPerformedOutputDemandSource {
-                receipt,
-                change,
-                observation,
-                output_source_identity: None,
-            },
+            WorthQueryPerformedOutputDemandSource::new_for_test(receipt, change, observation, None),
             &preparation,
             kind.clone(),
             None,

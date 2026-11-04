@@ -36,14 +36,7 @@ fn a_demand_records_the_row_it_genuinely_verified() {
     world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request_for_test(); handle.with_runtime(request_execution, |runtime| {
         let snapshot = selected.application_basis_for_test().snapshot_handle();
         let positioned = runtime.read_truth().positioned_snapshot(snapshot).unwrap();
-        let mut read = RetainedOutputCurrentnessRead {
-            identity: Arc::clone(&identity),
-            facts: None,
-            consumed_outputs: Arc::from([]),
-            native_output_witness: Some(account_witness(&host_custody.borrowed_request_for_test(), &world, runtime, snapshot, entity)),
-            consumed_nothing: true,
-            verification_requirement: None,
-        };
+        let mut read = RetainedOutputCurrentnessRead::new_for_test(Arc::clone(&identity), None, Arc::from([]), Some(account_witness(&host_custody.borrowed_request_for_test(), &world, runtime, snapshot, entity)), true, None);
 let recorded = || {
             matches!(
                 owner.currentness_for_test(&positioned, &identity),
@@ -97,17 +90,7 @@ fn a_verification_records_the_row_it_compared() {
         let witness = account_witness(&host_custody.borrowed_request_for_test(), &world, runtime, snapshot, entity);
         let facts: Arc<[WorthQueryApplicationObservedFact]> = Arc::from([]);
         owner
-            .register_settlement_for_test(SettlementRegistration {
-                    computation: None,
-                    work_membership: None,
-                    identity: Arc::clone(&identity),
-                    facts: RetainedSourceFacts::for_test_for_test(false, Arc::clone(&facts)),
-                    output_facts: None,
-                    read_basis: positioned.clone(),
-                    stale_at_read_basis: OrdSet::new(),
-                    requirement: Some(FullVerificationReason::DeclaredChangeUnavailable),
-                    upstream: OrdSet::new(),
-                })
+            .register_settlement_for_test(SettlementRegistration::new_for_test(None, None, Arc::clone(&identity), RetainedSourceFacts::for_test_for_test(false, Arc::clone(&facts)), None, positioned.clone(), OrdSet::new(), Some(FullVerificationReason::DeclaredChangeUnavailable), OrdSet::new()))
             .expect("the row requires verification at the selected source");
         let verify = || {
             ConsumedOutputEvidence::verify_at_observation_for_test(&host_custody.borrowed_request_for_test(), &identity, &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts::for_test_for_test(false, Arc::clone(&facts)).for_comparison().unwrap(), &[], None, &witness, owner, runtime, snapshot, &positioned)
@@ -192,12 +175,7 @@ pub fn account_witness(
         TypeId::of_for_test::<()>(),
         TypeId::of_for_test::<()>(),
         std::iter::empty(),
-        &[WorthQueryCheckpointOutputRole {
-            role: "account".to_owned(),
-            posture: WorthQueryApplicationOutputPosture::Preserve,
-            entity_name: "Account".to_owned(),
-            entity,
-        }],
+        &[WorthQueryCheckpointOutputRole::new_for_test("account".to_owned(), WorthQueryApplicationOutputPosture::Preserve, "Account".to_owned(), entity)],
         |_| Some(TypeId::of_for_test::<()>()),
         execution,
     )
@@ -247,16 +225,8 @@ pub fn primed_output(
     let (_, product, _) = world
         .selected_product(&(phase_custody).test_host_request_for_test())
         .into_parts_for_test();
-    let coordinate = ProductCoordinate {
-        occurrence: product.observation_for_test().lifecycle_incarnation(),
-        generation: product.observation_for_test().reference_generation().get(),
-    };
-    let source = SemanticSource {
-        runtime_authority: (*world.application.runtime_for_test()).authority_identity().as_u64(),
-        schema: (*world.application.installed_schema_for_test()).binding_identity(),
-        scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity),
-        output_binding: OutputBindingIdentity::declared_for_test("LabelOutput"),
-    };
+    let coordinate = ProductCoordinate::new_for_test(product.observation_for_test().lifecycle_incarnation(), product.observation_for_test().reference_generation().get());
+    let source = SemanticSource::new_for_test((*world.application.runtime_for_test()).authority_identity().as_u64(), (*world.application.installed_schema_for_test()).binding_identity(), worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity), OutputBindingIdentity::declared_for_test("LabelOutput"));
     (
         entity,
         RecordedSettlementIdentity::retain_for_test(&source, coordinate, 0),

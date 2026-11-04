@@ -303,7 +303,7 @@ impl ComputationFactAttribution {
 
 /// A fact's exact position in the completed original payload, and its readers.
 #[derive(Clone, Debug, Eq, PartialEq)]
-struct SealedComputationFact {
+pub struct SealedComputationFact {
     ordinal: usize,
     readers: ComputationFactReaders,
 }
@@ -325,7 +325,7 @@ pub struct SealedComputationFacts {
 
 mod adjacency;
 mod charged;
-mod layout;
+pub(crate) mod layout;
 mod ranges;
 mod structural_reads;
 pub(in crate::domain_computation::primary_graph) use layout::CheckedCallShape;
@@ -334,8 +334,8 @@ mod reattribution;
 mod reuse;
 pub(in crate::domain_computation::primary_graph::application_attempt::read_set) use layout::CheckedReadLayout;
 pub(in crate::domain_computation::primary_graph) use reuse::NativeReadRefresh;
-mod index;
-mod sealed;
+pub(crate) mod index;
+pub(crate) mod sealed;
 mod test_mutation;
 
 pub(in crate::domain_computation::primary_graph) use index::ComputationFactIndex;

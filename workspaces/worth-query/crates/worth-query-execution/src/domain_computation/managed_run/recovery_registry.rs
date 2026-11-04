@@ -34,7 +34,7 @@ impl WorthQueryRecoveryMintClaim {
 
 /// The receipt's authoritative commit identity was already claimed.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(crate) struct WorthQueryRecoveryMintAlreadyClaimed;
+pub struct WorthQueryRecoveryMintAlreadyClaimed;
 
 /// Terminal fate recorded when a live recovery resource leaves the registry.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -71,7 +71,7 @@ impl worth_proof::TerminalState for WorthQueryRecoveryResourceTerminal {
 /// Opaque registry slot. Not a public recovery identity and not Clone on the
 /// handle path — only the registry retains membership.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
-pub(crate) struct WorthQueryRecoveryRegistrySlot(u64);
+pub struct WorthQueryRecoveryRegistrySlot(u64);
 
 impl WorthQueryRecoveryRegistrySlot {
     pub(crate) const fn as_u64(self) -> u64 {

@@ -59,7 +59,7 @@ mod admitted_lookup;
 #[path = "resolution/admitted_observations.rs"]
 mod admitted_observations;
 #[path = "resolution/selected_product.rs"]
-mod selected_product;
+pub(crate) mod selected_product;
 pub(in crate::domain_computation) use selected_product::WorthQueryIssuedSelectedPrincipal;
 
 fn principal_graph_binding<'a>(

@@ -23,7 +23,7 @@ use crate::domain_computation::primary_graph::workflow::{
 };
 
 mod actor_context;
-mod actor_selection;
+pub(crate) mod actor_selection;
 pub use actor_context::WorthQueryWorkflowActorContext;
 pub(in crate::domain_computation) use actor_selection::WorkflowRecordedActorObservation;
 mod advance;

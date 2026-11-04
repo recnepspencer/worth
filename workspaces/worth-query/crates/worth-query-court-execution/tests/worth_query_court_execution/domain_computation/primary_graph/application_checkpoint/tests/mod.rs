@@ -17,21 +17,7 @@ fn current_output_replaces_its_recovered_slot_without_checkpoint_growth() {
         .principal_scope()
         .scope();
     let checkpoint = |source, partition| {
-        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointIdentity {
-            implementation: worth_relational::facade::mvcc::RequiredOutputProducingImplementation::from_checkpoint([0x11; 16], [0x22; 32]).unwrap(),
-            producer: ("producer".to_owned()).into(),
-            posture: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointPosture::Performed,
-            source,
-            scope,
-            source_partition: partition,
-            producer_dependency: None,
-            idempotency_key: source,
-
-            roles: (Vec::new()).into(),
-            producer_facts: None,
-            producer_fact_wire_version: 0,
- metadata: None,
-}
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointIdentity::new_for_test(worth_relational::facade::mvcc::RequiredOutputProducingImplementation::from_checkpoint([0x11; 16], [0x22; 32]).unwrap(), ("producer".to_owned()).into(), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointPosture::Performed, source, scope, partition, None, source, (Vec::new()).into(), None, 0, None)
     };
     let stale = checkpoint([1; 32], [7; 32]);
     let sibling = checkpoint([2; 32], [8; 32]);

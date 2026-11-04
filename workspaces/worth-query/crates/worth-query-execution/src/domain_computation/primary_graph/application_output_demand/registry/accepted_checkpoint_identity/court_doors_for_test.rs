@@ -125,3 +125,37 @@ impl WorthQueryAcceptedOutputCheckpointIdentity {
         &self.producer_fact_wire_version
     }
 }
+
+impl WorthQueryAcceptedOutputCheckpointIdentity {
+    #[doc(hidden)]
+    pub fn new_for_test(
+        implementation: worth_relational::facade::mvcc::RequiredOutputProducingImplementation,
+        producer: std::sync::Arc<String>,
+        posture: WorthQueryAcceptedOutputCheckpointPosture,
+        source: [u8; 32],
+        scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+        source_partition: [u8; 32],
+        producer_dependency: Option<[u8; 32]>,
+        idempotency_key: [u8; 32],
+        roles: std::sync::Arc<Vec<crate::domain_computation::primary_graph::application_attempt::WorthQueryCheckpointOutputRole>>,
+        producer_facts: Option<std::sync::Arc<Vec<u8>>>,
+        producer_fact_wire_version: u16,
+        metadata: Option<std::sync::Arc<
+        crate::domain_computation::primary_graph::application_checkpoint::CheckpointMetadataFunding>>,
+    ) -> Self {
+        Self {
+            implementation,
+            producer,
+            posture,
+            source,
+            scope,
+            source_partition,
+            producer_dependency,
+            idempotency_key,
+            roles,
+            producer_facts,
+            producer_fact_wire_version,
+            metadata,
+        }
+    }
+}

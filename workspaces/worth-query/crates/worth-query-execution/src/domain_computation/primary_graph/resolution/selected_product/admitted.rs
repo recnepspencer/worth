@@ -1,6 +1,6 @@
 //! Fresh principal resolution at the already selected Product/native basis.
 #[path = "admitted/issued_principal.rs"]
-mod issued_principal;
+pub(crate) mod issued_principal;
 #[path = "admitted/native.rs"]
 mod native;
 use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;

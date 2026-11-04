@@ -182,3 +182,68 @@ impl DeclaredProducerBinding {
         self.installed_output_equivalence
     }
 }
+
+impl DeclaredProducerBinding {
+    #[doc(hidden)]
+    pub fn new_for_test(
+        ownership: worth_foundational::facade::ProducerPublicationOwnership,
+        owned_scope_entity: Option<String>,
+        owner: String,
+        identity: String,
+        source_selector: String,
+        output_family: String,
+        output_family_type: TypeId,
+        output_role_descriptors: Vec<worth_query_declaration::facade::application_operation::ApplicationMutationOutputRoleDescriptor>,
+        output_role_families: Vec<ApplicationMutationOutputRoleFamilyDescriptor>,
+        output_role: String,
+        operation: String,
+        handler_identity: String,
+        provider_identity: String,
+        applicability: Vec<WorthQueryProducerApplicability>,
+        supported: Vec<WorthQueryProducerApplicability>,
+        required_invariants: Vec<WorthQueryProducerInvariantRequirement>,
+        reuse_policy: String,
+        input_reuse: Option<super::super::WorthQueryProducerInputReuseContract>,
+        output_equivalence: Option<
+            super::super::super::native_field_contract::NativeFieldBindingExpectation,
+        >,
+        installed_output_equivalence: Option<
+            Arc<super::super::output_equivalence_contract::InstalledProducerOutputEquivalence>,
+        >,
+        binding_type: TypeId,
+        source_type: TypeId,
+        provider_type: TypeId,
+        operation_binding_type: TypeId,
+        operation_type: TypeId,
+        output_contract_type: TypeId,
+    ) -> Self {
+        Self {
+            ownership,
+            owned_scope_entity,
+            owner,
+            identity,
+            source_selector,
+            output_family,
+            output_family_type,
+            output_role_descriptors,
+            output_role_families,
+            output_role,
+            operation,
+            handler_identity,
+            provider_identity,
+            applicability,
+            supported,
+            required_invariants,
+            reuse_policy,
+            input_reuse,
+            output_equivalence,
+            installed_output_equivalence,
+            binding_type,
+            source_type,
+            provider_type,
+            operation_binding_type,
+            operation_type,
+            output_contract_type,
+        }
+    }
+}

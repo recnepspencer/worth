@@ -12,3 +12,26 @@ impl StructuralWalkObservation {
         Self::read(pin, execution, query, context)
     }
 }
+
+impl<'a> StructuralWalkQuery<'a> {
+    #[doc(hidden)]
+    pub fn new_for_test(
+        relation: &'a str,
+        roots: &'a [EntityId],
+        entity_kind: KindId,
+        relation_kind: KindId,
+        direction: RelationDirection,
+        maximum_work: Option<usize>,
+        control: Option<&'a dyn Fn() -> Result<(), Cause>>,
+    ) -> Self {
+        Self {
+            relation,
+            roots,
+            entity_kind,
+            relation_kind,
+            direction,
+            maximum_work,
+            control,
+        }
+    }
+}

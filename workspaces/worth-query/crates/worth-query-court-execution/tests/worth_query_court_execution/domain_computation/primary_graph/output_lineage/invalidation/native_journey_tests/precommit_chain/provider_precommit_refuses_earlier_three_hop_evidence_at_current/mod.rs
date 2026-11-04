@@ -23,10 +23,7 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
             (entity, product)
         })
         .expect("initial source selection borrows its installed phase");
-    let coordinate = ProductCoordinate {
-        occurrence: product.observation_for_test().lifecycle_incarnation(),
-        generation: product.observation_for_test().reference_generation().get(),
-    };
+    let coordinate = ProductCoordinate::new_for_test(product.observation_for_test().lifecycle_incarnation(), product.observation_for_test().reference_generation().get());
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let handle = graph.integration_handle_for_test();
     let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
@@ -43,12 +40,7 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
         .unwrap()
         .clone();
     let source = |output_binding| {
-        SemanticSource {
-        runtime_authority: (*world.application.runtime_for_test()).authority_identity().as_u64(),
-        schema: (*world.application.installed_schema_for_test()).binding_identity().clone(),
-        scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity),
-        output_binding,
-    }
+        SemanticSource::new_for_test((*world.application.runtime_for_test()).authority_identity().as_u64(), (*world.application.installed_schema_for_test()).binding_identity().clone(), worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity), output_binding)
     };
     let a = RecordedSettlementIdentity::retain_for_test(
         &source(OutputBindingIdentity::declared_for_test("StatusOutput")),
@@ -141,17 +133,7 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
     // A discontinuous B row has no direct facts. Its shared A evidence must
     // still catch the changed source fact after full verification is required.
     owner
-        .register_settlement_for_test(SettlementRegistration {
-            computation: None,
-            work_membership: None,
-            identity: Arc::clone(&b),
-            facts: RetainedSourceFacts::for_test_for_test(false, Arc::from([])),
-            output_facts: None,
-            read_basis: after.clone(),
-            stale_at_read_basis: OrdSet::new(),
-            requirement: Some(FullVerificationReason::DeclaredChangeUnavailable),
-            upstream: OrdSet::unit(Arc::clone(&a)),
-        })
+        .register_settlement_for_test(SettlementRegistration::new_for_test(None, None, Arc::clone(&b), RetainedSourceFacts::for_test_for_test(false, Arc::from([])), None, after.clone(), OrdSet::new(), Some(FullVerificationReason::DeclaredChangeUnavailable), OrdSet::unit(Arc::clone(&a))))
         .expect("discontinuous B row is retained at the selected source");
     assert!(matches!(
         owner.currentness_for_test(&after, &b),

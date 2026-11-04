@@ -52,3 +52,10 @@ impl DecodedApplicationCheckpoint {
         self.native
     }
 }
+
+impl WorthQueryApplicationCheckpoint {
+    #[doc(hidden)]
+    pub fn new_for_test(bytes: worth_execution::ExecutionImmutableBytes) -> Self {
+        Self { bytes }
+    }
+}

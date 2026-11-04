@@ -42,10 +42,7 @@ pub fn run(
     let (_, product, _) = world
         .selected_product(&(phase_custody).test_host_request_for_test())
         .into_parts_for_test();
-    let coordinate = ProductCoordinate {
-        occurrence: product.observation_for_test().lifecycle_incarnation(),
-        generation: product.observation_for_test().reference_generation().get(),
-    };
+    let coordinate = ProductCoordinate::new_for_test(product.observation_for_test().lifecycle_incarnation(), product.observation_for_test().reference_generation().get());
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let handle = graph.integration_handle_for_test();
     let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
@@ -89,25 +86,13 @@ pub fn run(
         let registries: Vec<_> = entities.iter().map(|_| WorthQueryOutputDemandRegistry::default()).collect();
         let members: Vec<_> = registries.iter().zip(&entities).map(|(registry, entity)|
             registry.fixture_scope_work_membership((*coordinate.occurrence_for_test()), *entity)).collect();
-        let outputs: Vec<_> = entities.iter().map(|entity| RecordedSettlementIdentity::retain_for_test(&SemanticSource {
-            runtime_authority: (*world.application.runtime_for_test()).authority_identity().as_u64(),
-            schema: (*world.application.installed_schema_for_test()).binding_identity().clone(),
-            scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(*entity),
-            output_binding: OutputBindingIdentity::declared_for_test("ScopeOutput"),
-        }, coordinate, 0)).collect();
+        let outputs: Vec<_> = entities.iter().map(|entity| RecordedSettlementIdentity::retain_for_test(&SemanticSource::new_for_test((*world.application.runtime_for_test()).authority_identity().as_u64(), (*world.application.installed_schema_for_test()).binding_identity().clone(), worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(*entity), OutputBindingIdentity::declared_for_test("ScopeOutput")), coordinate, 0)).collect();
         for n in 0..entities.len() {
             // Each distinct Native scope above the leaf consumes exactly its
             // child's output. Sibling paths have no consumed edge in common.
             let leaf = n % DEPTH == 0;
-            owner.register_settlement_for_test(SettlementRegistration {
-                computation: None,
-                work_membership: Some(Arc::clone(&members[n].1)),
-                identity: Arc::clone(&outputs[n]),
-                facts: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts::for_test_for_test(false,
-                    if leaf { Arc::from([field_fact(execution, runtime, &before_handle, entities[n], label.clone())]) } else { Arc::from([]) }),
-                output_facts: None, read_basis: before.clone(), stale_at_read_basis: OrdSet::new(), requirement: None,
-                upstream: if leaf { OrdSet::new() } else { OrdSet::unit(Arc::clone(&outputs[n - 1])) },
-            }).unwrap();
+            owner.register_settlement_for_test(SettlementRegistration::new_for_test(None, Some(Arc::clone(&members[n].1)), Arc::clone(&outputs[n]), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts::for_test_for_test(false,
+                    if leaf { Arc::from([field_fact(execution, runtime, &before_handle, entities[n], label.clone())]) } else { Arc::from([]) }), None, before.clone(), OrdSet::new(), None, if leaf { OrdSet::new() } else { OrdSet::unit(Arc::clone(&outputs[n - 1])) })).unwrap();
             // Admission queues initial disclosure; registration queues one
             // local settlement cue. Both precede the measured Native edit.
             for _ in 0..2 {

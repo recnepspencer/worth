@@ -36,26 +36,14 @@ pub fn slot(name: &'static str) -> Arc<ApplicationQueryResultSlotKey> {
 }
 pub fn shape(slot: &Arc<ApplicationQueryResultSlotKey>) -> WorthQueryApplicationProjectionNode {
     let mut root = row();
-    (*root.fields_mut_for_test()).push(WorthQueryApplicationProjectedField {
-        result_path: "root.name".into(),
-        slot_type: "name".into(),
-        slot_key: slot.clone(),
-        value: AspectValue::String("source-secret".into()),
-    });
+    (*root.fields_mut_for_test()).push(WorthQueryApplicationProjectedField::new_for_test("root.name".into(), "name".into(), slot.clone(), AspectValue::String("source-secret".into())));
     let mut first = row();
     (*first.entity_id_mut_for_test()) = EntityId::new(PartitionId::main(), 10, 1);
     (*first.incoming_relation_mut_for_test()) = Some(RelationId::new(PartitionId::main(), 20, 1));
     let mut second = row();
     (*second.entity_id_mut_for_test()) = EntityId::new(PartitionId::main(), 11, 1);
     (*second.incoming_relation_mut_for_test()) = Some(RelationId::new(PartitionId::main(), 21, 1));
-    (*root.relations_mut_for_test()).push(WorthQueryApplicationProjectedRelation {
-        result_path: "root.children".into(),
-        slot_type: "children".into(),
-        slot_key: slot.clone(),
-        cardinality: ApplicationQueryCardinality::Many,
-        predicate_sources: vec![(*first.entity_id_for_test()), (*second.entity_id_for_test())],
-        rows: vec![first, second],
-    });
+    (*root.relations_mut_for_test()).push(WorthQueryApplicationProjectedRelation::new_for_test("root.children".into(), "children".into(), slot.clone(), ApplicationQueryCardinality::Many, vec![(*first.entity_id_for_test()), (*second.entity_id_for_test())], vec![first, second]));
     root
 }
 #[test]

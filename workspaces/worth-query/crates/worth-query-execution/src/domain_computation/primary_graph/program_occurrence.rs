@@ -24,7 +24,7 @@ mod original_meaning;
 pub(crate) mod presented_program;
 pub(in crate::domain_computation) use original_meaning::OriginalProgramMeaning;
 pub(crate) mod revision_rendering;
-mod support_lifecycle;
+pub(crate) mod support_lifecycle;
 
 pub(in crate::domain_computation::primary_graph) use activation_cell::WorthQueryProgramActivationCell;
 pub(in crate::domain_computation::primary_graph) use presented_program::WorthQueryPresentedProgram;

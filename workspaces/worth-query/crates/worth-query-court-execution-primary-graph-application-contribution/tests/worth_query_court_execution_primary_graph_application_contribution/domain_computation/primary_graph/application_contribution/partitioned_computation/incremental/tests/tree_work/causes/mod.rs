@@ -68,16 +68,7 @@ fn edit_encoding_denial_rebuilds_and_matches_reuse_off() {
     let execution = QueryRequestExecution::open_for_test(serial_placement(), &request);
     let (items, digests, membership, item_keys, call_sequence, routing, partitions, _native_run, _tree) =
         prior.into_parts_for_test();
-    let retained = RetainedPartitions {
-        call_sequence: Arc::clone(&call_sequence),
-        items,
-        digests,
-        membership,
-        item_keys,
-        routing,
-        partitions,
-        native_run,
-        tree: ReductionTree::<Value, fn(&Value, &Value) -> Value>::try_from_declared_native(
+    let retained = RetainedPartitions::new_for_test(Arc::clone(&call_sequence), items, digests, membership, item_keys, routing, partitions, native_run, ReductionTree::<Value, fn(&Value, &Value) -> Value>::try_from_declared_native(
             plan(&keys),
             keys.iter().map(|id| (*id, value(1))).collect(),
             value(0),
@@ -86,8 +77,7 @@ fn edit_encoding_denial_rebuilds_and_matches_reuse_off() {
             || execution.checkpoint_for_test(),
         )
         .unwrap()
-        .0,
-    };
+        .0);
     let reducer = WorthQueryDeterministicReducer::canonical(|| value(0), combine);
     let cases = [(
         Value {

@@ -3,7 +3,7 @@ mod facade;
 pub use facade::*;
 mod aggregate_identity;
 pub(crate) mod aggregate_observation;
-mod aggregate_projection;
+pub(crate) mod aggregate_projection;
 pub(crate) mod application_attempt;
 pub(crate) mod application_branch;
 pub(crate) mod application_checkpoint;
@@ -63,7 +63,7 @@ pub(in crate::domain_computation) use source_facts::{
 };
 pub(crate) mod derived_source;
 mod source_read_equivalence;
-mod source_read_verification;
+pub(crate) mod source_read_verification;
 pub(crate) mod structural_walk;
 pub(crate) use managed_bridge::build_primary_graph_product_bridge;
 pub(crate) mod fact_verification_observation;
@@ -131,7 +131,7 @@ pub(in crate::domain_computation) use provider::PrimaryDecisionReadSetComparison
 pub(in crate::domain_computation) use provider::RegisteredPrimaryRead;
 pub(crate) mod component_selection;
 mod request_local;
-mod resolution;
+pub(crate) mod resolution;
 pub(crate) mod resolution_denial;
 pub(crate) mod root;
 mod root_path_selection;

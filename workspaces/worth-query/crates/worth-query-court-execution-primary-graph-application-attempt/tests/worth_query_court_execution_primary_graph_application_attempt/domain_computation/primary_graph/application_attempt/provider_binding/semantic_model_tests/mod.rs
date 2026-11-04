@@ -111,16 +111,8 @@ fn two_relation_deletes_from_one_adjacency_share_one_provisional_retirement() {
         direction: WorthQueryApplicationAdjacencyDirection::Outgoing,
         maximum_work_units: 2,
         relations: vec![
-            WorthQueryApplicationObservedRelation {
-                relation_id: first_relation,
-                from,
-                to: first_to,
-            },
-            WorthQueryApplicationObservedRelation {
-                relation_id: second_relation,
-                from,
-                to: second_to,
-            },
+            WorthQueryApplicationObservedRelation::new_for_test(first_relation, from, first_to),
+            WorthQueryApplicationObservedRelation::new_for_test(second_relation, from, second_to),
         ],
     }];
     let effects = vec![

@@ -18,7 +18,7 @@ pub struct WorthQueryPendingApplicationPublicationRegistry {
     corrections: BTreeMap<[u8; 32], ProductBranchIncarnation>,
 }
 
-pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationPublicationRecoveryReservation
+pub struct WorthQueryApplicationPublicationRecoveryReservation
 {
     registry: Arc<Mutex<WorthQueryPendingApplicationPublicationRegistry>>,
     occurrence: ProductBranchIncarnation,
@@ -26,7 +26,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationPub
     active: bool,
 }
 
-pub(super) struct WorthQueryApplicationPublicationRecoverySlot {
+pub struct WorthQueryApplicationPublicationRecoverySlot {
     binding: Option<WorthQueryApplicationIdempotencyBinding>,
     state: Mutex<WorthQueryApplicationPublicationRecoveryState>,
 }

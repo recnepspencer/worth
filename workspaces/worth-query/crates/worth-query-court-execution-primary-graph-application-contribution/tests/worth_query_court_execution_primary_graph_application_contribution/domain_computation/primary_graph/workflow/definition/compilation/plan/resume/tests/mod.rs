@@ -106,10 +106,7 @@ pub fn definition(definition_slot: u64) -> CompiledWorkflowDefinition {
         .enumerate()
         .map(|(ordinal, (path, kind))| CompiledWorkflowNode {
             entity: entity(node_slot + ordinal as u64),
-            meaning: Arc::new(CompiledWorkflowNodeMeaning {
-                path: path.to_owned(),
-                kind,
-            }),
+            meaning: Arc::new(CompiledWorkflowNodeMeaning::new_for_test(path.to_owned(), kind)),
         })
         .collect::<Vec<_>>();
     let semantic_connections = (0..2)
@@ -131,8 +128,7 @@ pub fn definition(definition_slot: u64) -> CompiledWorkflowDefinition {
             kind: Arc::clone(&(*semantic.kind_for_test())),
         })
         .collect::<Vec<_>>();
-    CompiledWorkflowDefinition {
-        publication: Arc::new(CompiledWorkflowPublicationPlan {
+    CompiledWorkflowDefinition::new_for_test(Arc::new(CompiledWorkflowPublicationPlan {
             lineage: entity(1),
             definition: entity(definition_slot),
             start: 0,
@@ -148,12 +144,8 @@ pub fn definition(definition_slot: u64) -> CompiledWorkflowDefinition {
             connections: connections.into_boxed_slice(),
             global_actions: Arc::from([]),
             dispatch: Arc::new(CompiledWorkflowDispatch::build_for_test(3, &semantic_connections)),
-        }),
-        content_identity: ApplicationWorkflowDefinitionContentIdentity::from_recorded(
+        }), ApplicationWorkflowDefinitionContentIdentity::from_recorded(
             &"00".repeat(32),
         )
-        .unwrap(),
-        program_revision: rostered_program_revision(),
-        resume: None,
-    }
+        .unwrap(), rostered_program_revision(), None)
 }

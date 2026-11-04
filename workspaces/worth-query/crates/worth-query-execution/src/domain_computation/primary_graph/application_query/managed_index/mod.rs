@@ -30,7 +30,7 @@ mod provider_failure;
 mod receiver;
 pub(crate) mod retention;
 pub(in crate::domain_computation::primary_graph::application_query) mod selection;
-mod source;
+pub(crate) mod source;
 pub(in crate::domain_computation::primary_graph::application_query) use source::failure::source_preparation_denial;
 pub(in crate::domain_computation::primary_graph::application_query) mod source_acquisition;
 mod source_completion;

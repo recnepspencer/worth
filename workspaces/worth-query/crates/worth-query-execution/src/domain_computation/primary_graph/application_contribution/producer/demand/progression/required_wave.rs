@@ -38,7 +38,7 @@ pub(crate) mod frontier;
 mod member_key;
 pub(crate) mod performed;
 pub(crate) mod queued;
-mod resolved;
+pub(crate) mod resolved;
 pub(crate) mod selection;
 pub(in crate::domain_computation::primary_graph) use resolved::MatchedRequiredPredecessors;
 pub(in crate::domain_computation::primary_graph) use resolved::ReboundConsumedOutput;

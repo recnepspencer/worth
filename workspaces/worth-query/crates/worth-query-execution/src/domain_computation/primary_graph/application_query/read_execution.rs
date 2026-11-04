@@ -11,7 +11,7 @@ mod kernel_capacity;
 mod kernel_outcome;
 pub(crate) mod live_target;
 mod pinning;
-pub(super) mod prepared_pair;
+pub(crate) mod prepared_pair;
 pub(crate) mod read_plan;
 use pinning::pin_runtime_read;
 mod root_selection;

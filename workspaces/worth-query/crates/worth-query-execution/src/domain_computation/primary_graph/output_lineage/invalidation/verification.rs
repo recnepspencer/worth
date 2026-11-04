@@ -58,7 +58,7 @@ pub enum DirtyReverification {
 
 /// Minted only after native comparisons at the exact selected source root.
 /// The non-clone image binds cell topology, source position, and derived row.
-pub(in crate::domain_computation::primary_graph) struct VerifiedDirtySettlement {
+pub struct VerifiedDirtySettlement {
     runtime_instance_id: u64,
     cell: CompanionBranchCell<BranchMarkRoot>,
     image: CompanionBranchImage<BranchMarkRoot>,

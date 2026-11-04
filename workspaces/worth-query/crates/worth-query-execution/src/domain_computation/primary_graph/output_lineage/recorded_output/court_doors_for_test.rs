@@ -294,3 +294,86 @@ impl RecordedOutput {
         &mut self.mutable
     }
 }
+
+impl RecordedOutput {
+    #[doc(hidden)]
+    pub fn computation_source_mut_for_test(
+        &mut self,
+    ) -> &mut super::super::ComputationSourceEvidence {
+        &mut self.computation_source
+    }
+}
+
+impl RecordedOutput {
+    #[doc(hidden)]
+    pub fn consumed_outputs_mut_for_test(&mut self) -> &mut Arc<[ConsumedOutputEvidence]> {
+        &mut self.consumed_outputs
+    }
+}
+
+impl RecordedOutput {
+    #[doc(hidden)]
+    pub fn native_output_witness_mut_for_test(
+        &mut self,
+    ) -> &mut OnceLock<Arc<OnceLock<super::super::SealedNativeOutputWitness>>> {
+        &mut self.native_output_witness
+    }
+}
+
+impl RecordedOutput {
+    #[doc(hidden)]
+    pub fn required_publication_mut_for_test(
+        &mut self,
+    ) -> &mut Option<worth_relational::facade::mvcc::RelationalRequiredOutputPublication> {
+        &mut self.required_publication
+    }
+}
+
+impl RecordedOutput {
+    #[doc(hidden)]
+    pub fn new_for_test(
+        producing_implementation: Option<
+            worth_relational::facade::mvcc::RequiredOutputProducingImplementation,
+        >,
+        required_publication: Option<
+            worth_relational::facade::mvcc::RelationalRequiredOutputPublication,
+        >,
+        computation_source: super::super::ComputationSourceEvidence,
+        native_prior_checkpoint: Option<
+            super::super::native_prior_checkpoint::NativePriorCheckpointLocator,
+        >,
+        performed_origin: Option<Arc<OnceLock<RecordedOutput>>>,
+        consumed_outputs: Arc<[ConsumedOutputEvidence]>,
+        completed_handler_facts: Option<CompletedHandlerFactBoundary>,
+        completed_decision_reuse: Option<super::super::CompletedDecisionReuseProof>,
+        prepared_input_reuse_key: Option<super::super::PreparedInputReuseKey>,
+        native_output_witness: OnceLock<Arc<OnceLock<super::super::SealedNativeOutputWitness>>>,
+        settlement_identity: Arc<RecordedSettlementIdentity>,
+        correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
+        source_identity: Option<RecordedSourceIdentity>,
+        source_partition_identity: Option<[u8; 32]>,
+        producer_dependency_identity: Option<[u8; 32]>,
+        idempotency_key_identity: [u8; 32],
+        mutable: Mutex<RecordedOutputMutable>,
+    ) -> Self {
+        Self {
+            producing_implementation,
+            required_publication,
+            computation_source,
+            native_prior_checkpoint,
+            performed_origin,
+            consumed_outputs,
+            completed_handler_facts,
+            completed_decision_reuse,
+            prepared_input_reuse_key,
+            native_output_witness,
+            settlement_identity,
+            correspondence,
+            source_identity,
+            source_partition_identity,
+            producer_dependency_identity,
+            idempotency_key_identity,
+            mutable,
+        }
+    }
+}

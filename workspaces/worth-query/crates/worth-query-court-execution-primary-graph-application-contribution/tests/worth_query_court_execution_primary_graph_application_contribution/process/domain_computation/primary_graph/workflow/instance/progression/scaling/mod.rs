@@ -12,20 +12,7 @@ pub fn entity(slot: u64) -> EntityId {
 }
 
 pub fn populated(count: u64) -> WorkflowInstanceProgress {
-    let mut progress = WorkflowInstanceProgress {
-        captured_inputs: None,
-        head: entity(count + 1),
-        next_occurrence: count,
-        retry_counts: OrdMap::new(),
-        path_depth: 0,
-        path: OrdMap::new(),
-        back_blocked_by_operation: false,
-        back_edge_iterations: OrdMap::new(),
-        latest_transitions: OrdMap::new(),
-        latest_transition_identities: OrdMap::new(),
-        latest_assessment_evidence: OrdMap::new(),
-        retained_evidence_bytes: 0,
-    };
+    let mut progress = WorkflowInstanceProgress::new_for_test(None, entity(count + 1), count, OrdMap::new(), 0, OrdMap::new(), false, OrdMap::new(), OrdMap::new(), OrdMap::new(), OrdMap::new(), 0);
     for occurrence in 0..count {
         let node = entity(occurrence);
         (*progress

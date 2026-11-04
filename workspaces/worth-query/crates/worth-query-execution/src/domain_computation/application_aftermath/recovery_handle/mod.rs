@@ -3,7 +3,7 @@
 mod binding;
 mod denial;
 mod handle;
-mod identity;
+pub(crate) mod identity;
 mod mint;
 
 pub use binding::WorthQueryRecoveryHandleBinding;

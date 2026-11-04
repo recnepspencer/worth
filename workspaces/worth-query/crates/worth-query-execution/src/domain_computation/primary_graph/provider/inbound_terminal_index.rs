@@ -27,7 +27,7 @@ use crate::domain_computation::application_aftermath::{
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) struct WorthQueryCanonicalInboundCompletion {
+pub struct WorthQueryCanonicalInboundCompletion {
     correlation: ExternalEffectCorrelationIdentity,
     operation: String,
     audience: String,

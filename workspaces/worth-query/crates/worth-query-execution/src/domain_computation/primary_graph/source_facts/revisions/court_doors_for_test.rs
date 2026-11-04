@@ -112,3 +112,24 @@ impl WorthQueryObservedAdjacencyRevision {
         &mut self.endpoints
     }
 }
+
+impl WorthQueryObservedFieldRevision {
+    #[doc(hidden)]
+    pub fn new_for_test(
+        entity: EntityId,
+        entity_name: String,
+        aspect: AspectKey,
+        field: FieldKey,
+        contract_revision: AspectContractRevision,
+        native_revision: Option<worth_relational::facade::runtime::RelationalFieldRevision>,
+    ) -> Self {
+        Self {
+            entity,
+            entity_name,
+            aspect,
+            field,
+            contract_revision,
+            native_revision,
+        }
+    }
+}

@@ -35,3 +35,24 @@ impl DeclaredConditionalBinding {
         &self.required_producers
     }
 }
+
+impl DeclaredConditionalBinding {
+    #[doc(hidden)]
+    pub fn new_for_test(
+        owner: String,
+        contract: WorthQueryApplicationConditionalPackageContract,
+        required_producers: Vec<String>,
+        binding_type: TypeId,
+        operation_type: TypeId,
+        installed_type: TypeId,
+    ) -> Self {
+        Self {
+            owner,
+            contract,
+            required_producers,
+            binding_type,
+            operation_type,
+            installed_type,
+        }
+    }
+}

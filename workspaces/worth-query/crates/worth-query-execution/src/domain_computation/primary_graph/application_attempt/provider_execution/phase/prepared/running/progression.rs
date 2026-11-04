@@ -16,7 +16,7 @@ mod authorized;
 mod commit_resolution;
 mod fresh;
 mod invariant;
-mod mutation_cleanup;
+pub(crate) mod mutation_cleanup;
 pub(crate) mod progressed;
 pub(crate) mod registered;
 pub(crate) mod session_admission;

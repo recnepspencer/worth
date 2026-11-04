@@ -24,27 +24,16 @@ fn world_recovery_metadata_carries_the_original_computation_and_absence() {
         .product_runtime()
         .admit_product_branch_for_test(world.application.product_runtime().default_branch_for_test())
         .unwrap();
-    let source = SemanticSource {
-            runtime_authority: (*world.application.runtime_for_test()).authority_identity().as_u64(),
-            schema: (*world.application.installed_schema_for_test()).binding_identity().clone(),
-            scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(
-                worth_relational::facade::identity::EntityId::new(worth_relational::facade::identity::PartitionId::main(), 1, 1)),
-            output_binding: OutputBindingIdentity::declared_for_test("()"),
-        };
-    let coordinate = ProductCoordinate {
-        occurrence: product.observation_for_test().lifecycle_incarnation(),
-        generation: product.observation_for_test().reference_generation().get() + 1,
-    };
+    let source = SemanticSource::new_for_test((*world.application.runtime_for_test()).authority_identity().as_u64(), (*world.application.installed_schema_for_test()).binding_identity().clone(), worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(
+                worth_relational::facade::identity::EntityId::new(worth_relational::facade::identity::PartitionId::main(), 1, 1)), OutputBindingIdentity::declared_for_test("()"));
+    let coordinate = ProductCoordinate::new_for_test(product.observation_for_test().lifecycle_incarnation(), product.observation_for_test().reference_generation().get() + 1);
     let owner = Arc::new(Mutex::new(WorthQueryApplicationOutputLineage::default()));
     // These are private vacant addresses, never publication authority.
     // Reserve their ledger custody before constructing their test slots.
     let generation = std::cell::Cell::new((*coordinate.generation_for_test()));
 
     let slot = || {
-        let coordinate = ProductCoordinate {
-            generation: generation.get(),
-            ..coordinate
-        };
+        let coordinate = { let __generation = generation.get(); let mut __base = coordinate; *__base.generation_mut_for_test() = __generation; __base };
         generation.set(generation.get() + 1);
         let mut lineage = owner.lock().unwrap();
         let identity = RecordedSettlementIdentity::retain_for_test(&source, coordinate, 0);
@@ -60,30 +49,11 @@ fn world_recovery_metadata_carries_the_original_computation_and_absence() {
             (*lineage
                 .partition_index_mut_for_test())
                 .insert_vacancy_for_test(source.clone(), coordinate, None);
-        PreparedOutputLineageSlot {
-                owner: Arc::clone(&owner),
-                output_binding_type: TypeId::of_for_test::<()>(),
-                source: source.clone(),
-                coordinate,
-                partition: None,
-                identity: Arc::clone(&identity),
-                record_cell,
-                partition_cell,
-                cancellation: Some(Box::new(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::prepared_slot::CancelledLineageSlot {
+        PreparedOutputLineageSlot::new_for_test(Arc::clone(&owner), TypeId::of_for_test::<()>(), source.clone(), coordinate, None, Arc::clone(&identity), record_cell, partition_cell, Some(Box::new(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::prepared_slot::CancelledLineageSlot {
                     identity,
                     partition: None,
                     next: None,
-                })),
-                completed_handler_facts: None,
-                completed_decision_reuse: None,
-                prepared_input_reuse_key: None,
-                native_output_witness: None,
-                required_publication: None,
-                native_prior_checkpoint: None,
-                prior_computation: None,
-                filled: false,
-                computation: PreparedComputationCustody::Unassigned,
-            }
+                })), None, None, None, None, None, None, None, false, PreparedComputationCustody::Unassigned)
     };
     for computation in [
         SealedComputationRetention::Produced(sealed_run_for_lineage_test()),

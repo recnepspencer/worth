@@ -1,6 +1,6 @@
 mod admission;
 mod admission_denial;
-mod execution_custody;
+pub(crate) mod execution_custody;
 pub(crate) mod historical_authority;
 mod index_currency_denial;
 mod product_admission;

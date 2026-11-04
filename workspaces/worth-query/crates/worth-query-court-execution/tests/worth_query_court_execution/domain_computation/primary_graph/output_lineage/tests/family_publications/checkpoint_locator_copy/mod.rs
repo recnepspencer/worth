@@ -59,18 +59,8 @@ pub fn court() -> Court {
 
 pub fn expected_roles() -> Vec<WorthQueryCheckpointOutputRole> {
     vec![
-        WorthQueryCheckpointOutputRole {
-            role: "auxiliary".into(),
-            posture: WorthQueryApplicationOutputPosture::Preserve,
-            entity_name: "auxiliary-entity".into(),
-            entity: entity(3),
-        },
-        WorthQueryCheckpointOutputRole {
-            role: "output".into(),
-            posture: WorthQueryApplicationOutputPosture::Create,
-            entity_name: "fixture".into(),
-            entity: entity(2),
-        },
+        WorthQueryCheckpointOutputRole::new_for_test("auxiliary".into(), WorthQueryApplicationOutputPosture::Preserve, "auxiliary-entity".into(), entity(3)),
+        WorthQueryCheckpointOutputRole::new_for_test("output".into(), WorthQueryApplicationOutputPosture::Create, "fixture".into(), entity(2)),
     ]
 }
 
@@ -79,21 +69,7 @@ pub fn original_implementation() -> Implementation {
 }
 
 pub fn expected(court: &Court) -> Identity {
-    Identity {
-        implementation: original_implementation(),
-        producer: "fixture-producer".to_owned().into(),
-        posture: Posture::Performed,
-        source: [11; 32],
-        scope: court.source.scope,
-        source_partition: [7; 32],
-        producer_dependency: None,
-        idempotency_key: [2; 32],
-
-        roles: expected_roles().into(),
-        producer_facts: None,
-        producer_fact_wire_version: 0,
-        metadata: None,
-    }
+    Identity::new_for_test(original_implementation(), "fixture-producer".to_owned().into(), Posture::Performed, [11; 32], court.source.scope, [7; 32], None, [2; 32], expected_roles().into(), None, 0, None)
 }
 
 pub fn select<'a>(

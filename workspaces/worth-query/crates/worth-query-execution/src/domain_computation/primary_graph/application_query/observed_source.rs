@@ -21,7 +21,7 @@ pub(in crate::domain_computation) use query_context_binding::ObservedQueryExpres
 mod realized_footprint;
 mod result_set;
 pub(crate) mod retained_dependencies;
-mod retained_parameters;
+pub(crate) mod retained_parameters;
 pub(crate) mod root_selection;
 mod scope_selector;
 mod workflow_capture;

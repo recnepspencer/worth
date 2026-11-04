@@ -1,7 +1,7 @@
 //! Receiver-owned evidence about every closure-scoped installed-owner acquisition.
 use super::WorthQueryRelationalSourceOwner;
 #[derive(Clone)]
-pub(in crate::domain_computation) struct ReadLockProbeForTest {
+pub struct ReadLockProbeForTest {
     owner: WorthQueryRelationalSourceOwner,
 }
 impl WorthQueryRelationalSourceOwner {

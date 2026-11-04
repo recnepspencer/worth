@@ -6,10 +6,10 @@ mod aggregates;
 mod aspect_presence;
 mod components;
 mod computation_inputs;
-mod expected_keys;
+pub(crate) mod expected_keys;
 mod managed_sources;
 mod source_publications;
-pub(super) mod structural_walks;
+pub(crate) mod structural_walks;
 pub(in crate::domain_computation::primary_graph) use computation_inputs::ObservedComputationInputs;
 pub(in crate::domain_computation::primary_graph) use expected_keys::ExpectedFactKeys;
 

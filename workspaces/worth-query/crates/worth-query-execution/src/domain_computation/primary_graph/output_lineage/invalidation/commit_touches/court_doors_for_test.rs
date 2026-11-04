@@ -49,3 +49,13 @@ impl TouchedCommit {
         &self.commit
     }
 }
+
+impl<'a> CommitTouchInterest<'a> {
+    #[doc(hidden)]
+    pub fn new_for_test(entities: CommitTouchEntities<'a>, every_commit: bool) -> Self {
+        Self {
+            entities,
+            every_commit,
+        }
+    }
+}

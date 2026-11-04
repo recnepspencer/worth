@@ -22,7 +22,7 @@ pub struct WorthQueryConditionalCommitWatchSet {
     whole_graph: bool,
 }
 
-struct WatchEntries {
+pub struct WatchEntries {
     entities: BTreeSet<EntityId>,
     _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }

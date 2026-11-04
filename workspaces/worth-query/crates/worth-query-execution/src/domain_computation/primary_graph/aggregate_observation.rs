@@ -8,7 +8,7 @@ use worth_relational::facade::{
     transactions::RelationalExecutionDenialCause as Cause,
 };
 mod currentness;
-mod key;
+pub(crate) mod key;
 mod member;
 pub(in crate::domain_computation::primary_graph) mod member_work;
 pub(crate) mod selection;

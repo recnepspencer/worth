@@ -45,3 +45,10 @@ impl PreparedPostingOrdinals {
         Self::prepare(facts, output_facts, verification_requirement)
     }
 }
+
+impl ProjectedKey {
+    #[doc(hidden)]
+    pub fn new_for_test(hash: u64, key: Arc<FactPostingKey>, ordinal: usize) -> Self {
+        Self { hash, key, ordinal }
+    }
+}

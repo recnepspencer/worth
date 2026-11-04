@@ -18,10 +18,7 @@ fn native_invalidation_marks_the_second_and_third_downstream_levels() {
         .unwrap()
         .entity_id_for_test();
     let (_, product, _) = selected.into_parts_for_test();
-    let coordinate = ProductCoordinate {
-        occurrence: product.observation_for_test().lifecycle_incarnation(),
-        generation: product.observation_for_test().reference_generation().get(),
-    };
+    let coordinate = ProductCoordinate::new_for_test(product.observation_for_test().lifecycle_incarnation(), product.observation_for_test().reference_generation().get());
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let handle = graph.integration_handle_for_test();
     let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
@@ -39,12 +36,7 @@ fn native_invalidation_marks_the_second_and_third_downstream_levels() {
     ]
     .map(|output_binding| {
         RecordedSettlementIdentity::retain_for_test(
-            &SemanticSource {
-                runtime_authority: (*world.application.runtime_for_test()).authority_identity().as_u64(),
-                schema: (*world.application.installed_schema_for_test()).binding_identity(),
-                scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity),
-                output_binding,
-            },
+            &SemanticSource::new_for_test((*world.application.runtime_for_test()).authority_identity().as_u64(), (*world.application.installed_schema_for_test()).binding_identity(), worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity), output_binding),
             coordinate,
             0,
         )

@@ -187,16 +187,7 @@ fn a_republished_stable_alias_holds_the_performed_sequence() {
         stage.retain(
             suspended_generation,
             |row| {
-                let mut row = RecordedOutput {
-                    producing_implementation: None,
-                    required_publication: None,
-                    native_prior_checkpoint: None,
-                    computation_source: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false),
-                    performed_origin: Some(Arc::clone(&origin)),
-                    consumed_outputs: Arc::clone(&consumed),
-                    prepared_input_reuse_key: Some(input_key(&selection, ALIAS_INPUT)),
-                    ..row
-                };
+                let mut row = { let __producing_implementation = None; let __required_publication = None; let __native_prior_checkpoint = None; let __computation_source = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false); let __performed_origin = Some(Arc::clone(&origin)); let __consumed_outputs = Arc::clone(&consumed); let __prepared_input_reuse_key = Some(input_key(&selection, ALIAS_INPUT)); let mut __base = row; *__base.producing_implementation_mut_for_test() = __producing_implementation; *__base.required_publication_mut_for_test() = __required_publication; *__base.native_prior_checkpoint_mut_for_test() = __native_prior_checkpoint; *__base.computation_source_mut_for_test() = __computation_source; *__base.performed_origin_mut_for_test() = __performed_origin; *__base.consumed_outputs_mut_for_test() = __consumed_outputs; *__base.prepared_input_reuse_key_mut_for_test() = __prepared_input_reuse_key; __base };
                 let spans = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::input_cutoff::stable_publication::fact_spans::StableFactSpans::new_for_test(
                     alias_facts.clone().into(), 1, alias_facts.len() - 2).unwrap();
                 let mutable = (*row.mutable_mut_for_test()).get_mut().unwrap();

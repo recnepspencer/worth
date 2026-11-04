@@ -26,14 +26,14 @@ struct PerformedMember {
 /// Only this owner can mint permission to enter the authoritative Fresh path.
 /// Private fields make constructing an unchecked permission outside this
 /// module impossible, including from NeedsDisclosure or a rejoined Ready.
-pub(in crate::domain_computation::primary_graph::application_contribution::producer) struct FreshReadiness
+pub struct FreshReadiness
 {
     member: usize,
 }
 
 /// Publication permission for an attached member key. Ordinary execution
 /// keeps its key; selected execution must attach the actual admitted successor.
-pub(in crate::domain_computation::primary_graph::application_contribution::producer) struct PublicationReadiness
+pub struct PublicationReadiness
 {
     member: usize,
 }
@@ -46,8 +46,8 @@ pub(in crate::domain_computation::primary_graph) use certification::CurrentProof
 mod member_keys;
 use captured_input::CapturedDecisionInput;
 pub(crate) mod ordinary;
-mod publication;
-mod reinspection;
+pub(crate) mod publication;
+pub(crate) mod reinspection;
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) use ordinary::DecisionInput;
 pub(super) use reinspection::InspectionStamp;
 pub(super) use reinspection::ReinspectionCredit;

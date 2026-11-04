@@ -28,10 +28,7 @@ fn a_canceled_prepared_publication_cannot_take_its_priors_custody() {
     let mut sealed = sealed_run_for_lineage_test();
     (*sealed.cloned_from_mut_for_test()) = Some(Arc::clone(state));
     (*(*captured.get().unwrap().mutable_for_test()).lock().unwrap().computation_mut_for_test()) = retained;
-    let coordinate = ProductCoordinate {
-        occurrence,
-        generation: generation + 1,
-    };
+    let coordinate = ProductCoordinate::new_for_test(occurrence, generation + 1);
 
     // A private vacancy grants no publication authority. It is prepaid and
     // exercises the production slot's assignment and cancellation lifecycle.
@@ -51,32 +48,11 @@ fn a_canceled_prepared_publication_cannot_take_its_priors_custody() {
 
     let output_binding_type = lineage.binding_type_for_test(&(*source.output_binding_for_test()));
     let owner = Arc::new(Mutex::new(lineage));
-    let mut prepared = PreparedOutputLineageSlot {
-        owner: Arc::clone(&owner),
-        output_binding_type,
-        source,
-        coordinate,
-        partition: None,
-        identity: Arc::clone(&identity),
-        record_cell,
-        partition_cell,
-
-        cancellation: Some(Box::new(CancelledLineageSlot {
+    let mut prepared = PreparedOutputLineageSlot::new_for_test(Arc::clone(&owner), output_binding_type, source, coordinate, None, Arc::clone(&identity), record_cell, partition_cell, Some(Box::new(CancelledLineageSlot {
             identity,
             partition: None,
             next: None,
-        })),
-        completed_handler_facts: None,
-        completed_decision_reuse: None,
-        prepared_input_reuse_key: None,
-        native_output_witness: None,
-        required_publication: None,
-        native_prior_checkpoint: None,
-
-        prior_computation: None,
-        filled: false,
-        computation: PreparedComputationCustody::Unassigned,
-    };
+        })), None, None, None, None, None, None, None, false, PreparedComputationCustody::Unassigned);
     prepared.retain_computation_for_test(
         SealedComputationRetention::Produced(sealed),
         Some(PriorComputationRecord::from_recorded_cell_for_test(

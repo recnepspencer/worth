@@ -1,5 +1,5 @@
 use crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload;
-mod effect_accumulator;
+pub(crate) mod effect_accumulator;
 pub(in crate::domain_computation::primary_graph) use effect_accumulator::WorthQueryExpectedEffectStepPreparationWork;
 mod effect_lowering;
 mod registration;

@@ -25,7 +25,7 @@ pub(in crate::domain_computation) use managed_index_read::{
     WorthQueryManagedIndexSessionDenial,
 };
 use mutation::MutationProductBasis;
-mod prepared_query_read;
+pub(crate) mod prepared_query_read;
 mod product_read;
 mod query_preparation;
 mod query_read;
@@ -87,7 +87,7 @@ pub enum WorthQueryManagedGraphWorkSessionStartDenial {
 }
 
 /// Live authority opened from exactly one sealed, capacity-reserved plan.
-pub(in crate::domain_computation) struct WorthQueryManagedGraphWorkSession {
+pub struct WorthQueryManagedGraphWorkSession {
     identity: WorthQueryGraphWorkSessionIdentity,
     managed_run: WorthQueryGraphWorkManagedRunIdentity,
     runtime: WorthQueryRuntimeAuthorityIdentity,

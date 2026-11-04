@@ -135,12 +135,7 @@ pub fn restored_role(
         TypeId::of_for_test::<CheckpointBinding>(),
         TypeId::of_for_test::<CheckpointOutputs>(),
         std::iter::empty(),
-        &[WorthQueryCheckpointOutputRole {
-            role: "output".into(),
-            posture,
-            entity_name: "Account".into(),
-            entity,
-        }],
+        &[WorthQueryCheckpointOutputRole::new_for_test("output".into(), posture, "Account".into(), entity)],
         |_| Some(TypeId::of_for_test::<Account>()),
         &worth_execution::ExecutionRequest::serial(&worth_execution::SerialRequest::from_memory(
             worth_execution::SerialMemoryBudget::new(None),

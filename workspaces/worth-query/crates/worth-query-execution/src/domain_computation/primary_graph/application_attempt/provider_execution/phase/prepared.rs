@@ -27,7 +27,7 @@ use crate::domain_computation::primary_graph::{
 
 pub(crate) mod currentness;
 mod domain_value_write;
-mod local_workflow_settlement;
+pub(crate) mod local_workflow_settlement;
 pub(crate) mod native_reference_invariants;
 use currentness::{
     readmit_current_basis, select_current_product, validate_elevation_currentness,
@@ -36,7 +36,7 @@ use currentness::{
 pub(crate) mod running;
 pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) use local_workflow_settlement::LocalWorkflowSettlementPublication;
 
-pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) struct WorthQueryPreparedApplicationCommit<
+pub struct WorthQueryPreparedApplicationCommit<
     Schema,
     Operation,
     Input,
