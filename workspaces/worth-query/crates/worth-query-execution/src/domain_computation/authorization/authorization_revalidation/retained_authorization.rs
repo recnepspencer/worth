@@ -119,6 +119,7 @@ where
                 Capability,
             >,
     {
+        access.refuse_stale_incarnation(self)?;
         let authority = access.runtime_authority_for(self.product_runtime.owner.owner_identity())
             .map_err(|cause| match cause {
                 worth_proof::HomeIncarnationDenial::ForeignHome => inconsistent_authorization(),
@@ -134,13 +135,12 @@ where
             return Err(inconsistent_authorization());
         }
         let product = access
-            .read_product()
+            .read_product(self)
             .ok_or_else(inconsistent_authorization)?;
-        let prepared = crate::domain_computation::primary_graph::selected_read_indexes::PreparedSelectedReadIndexes::for_capability(access)
-            .ok_or_else(inconsistent_authorization)?;
+        let prepared = crate::domain_computation::primary_graph::selected_read_indexes::PreparedSelectedReadIndexes::for_capability(access);
         let (installed, sample) = self.prepare_capability_read_validation(authorization)?;
         let security = self
-            .admit_capability_read_security_basis(execution, product, &prepared)
+            .admit_capability_read_security_basis(execution, &product, &prepared)
             .map_err(|cause| {
                 super::super::denial::product_security_basis_denial(cause, "workflow read security")
             })?;

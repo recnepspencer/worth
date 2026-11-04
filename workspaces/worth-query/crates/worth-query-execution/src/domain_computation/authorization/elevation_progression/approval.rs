@@ -109,6 +109,9 @@ where
         Input: ApplicationCapabilityRequest<Schema, Capability>,
         Input: 'static,
     {
+        if let Err(denial) = access.refuse_stale_incarnation(self) {
+            return Err(approval_denial(requested, denial));
+        }
         let execution = match phase.execution_request_for(&self.product_runtime) {
             Ok(execution) => execution,
             Err(_) => return Err(approval_denial(requested, crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody"))),
@@ -156,6 +159,9 @@ where
         Input: ApplicationCapabilityRequest<Schema, Capability>,
         Input: 'static,
     {
+        if let Err(denial) = access.refuse_stale_incarnation(self) {
+            return Err(approval_denial(requested, denial));
+        }
         let draft = match bind_approval(execution, self, &requested, &access, operation) {
             Ok(draft) => draft,
             Err(denial) => return Err(approval_denial(requested, denial)),
@@ -258,7 +264,7 @@ where
         requested.capability_identity(),
         installed,
         requested.elevation_identity(),
-    )
+    )?
     .ok_or_else(|| approval_rejected(installed.contract().name()))?;
     let review = resolve_review_identity(
         execution,
@@ -267,7 +273,7 @@ where
         requested.capability_identity(),
         installed,
         requested.review_identity(),
-    )
+    )?
     .ok_or_else(|| approval_rejected(installed.contract().name()))?;
     if resolved_elevation == elevation {
         Ok((elevation, review))

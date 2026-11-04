@@ -77,6 +77,7 @@ where
         Input: ApplicationCapabilityRequest<Schema, CommandCapability>
             + ApplicationCapabilityDelegationRequest<Schema, TargetCapability>,
     {
+        access.refuse_stale_incarnation(self)?;
         let execution = match phase.execution_request_for(&self.product_runtime) {
             Ok(execution) => execution,
             Err(_) => return Err(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody")),
@@ -135,6 +136,7 @@ where
         Input: ApplicationCapabilityRequest<Schema, CommandCapability>
             + ApplicationCapabilityDelegationRequest<Schema, TargetCapability>,
     {
+        access.refuse_stale_incarnation(self)?;
         let proposed = access
             .capability_input()
             .delegation_request()

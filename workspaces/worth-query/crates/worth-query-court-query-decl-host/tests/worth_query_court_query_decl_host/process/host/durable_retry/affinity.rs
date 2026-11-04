@@ -75,10 +75,13 @@ fn reopened_home_refuses_the_prior_open_branch_selector_before_effect() {
         contacts.clone(),
     );
     let home = with_bootstrap_advancement_from_request(execution, |phase| {
-        request.open_in_advancement(&phase)
+        Box::new(
+            request
+                .open_in_advancement(&phase)
+                .unwrap_or_else(|refused| opening_failed("stale-selector writer Home", &refused)),
+        )
     })
-    .unwrap()
-    .unwrap_or_else(|refused| opening_failed("stale-selector writer Home", &refused));
+    .unwrap();
     let stale = home.runtime().runtime().current_world();
     let (_, live) = scope();
     assert!(matches!(
@@ -93,10 +96,13 @@ fn reopened_home_refuses_the_prior_open_branch_selector_before_effect() {
             panic!("existing Home cannot initialize")
         });
     let home = with_bootstrap_advancement_from_request(execution, |phase| {
-        request.open_in_advancement(&phase)
+        Box::new(
+            request
+                .open_in_advancement(&phase)
+                .unwrap_or_else(|refused| opening_failed("stale-selector reader Home", &refused)),
+        )
     })
-    .unwrap()
-    .unwrap_or_else(|refused| opening_failed("stale-selector reader Home", &refused));
+    .unwrap();
     let principal = identity::inspection_authentication::authenticate(
         home.runtime().runtime().installed_schema(),
         &live,

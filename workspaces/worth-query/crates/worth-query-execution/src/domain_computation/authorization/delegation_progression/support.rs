@@ -127,7 +127,7 @@ where
     access
         .with_exact_observation(execution, runtime, |observation| {
             observation.authorize_delegation_support(execution, target_capability, proposed)
-        })
+        })?
         .ok_or_else(|| {
             WorthQueryOperationAuthorizationDenial::new(
                 WorthQueryOperationAuthorizationDenialKind::Refused(

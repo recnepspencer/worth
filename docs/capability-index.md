@@ -1404,9 +1404,12 @@ and primary-provider sessions compare that same
 owner-issued fence before effects and expose typed `StaleIncarnation` refusals.
 Durable occurrence descriptions remain data and require fresh owner readmission.
 Filesystem courts qualify prior-open selectors, recovered World handles and
-Host contention/death/reopen on the default stack. The retained Query capability
-holds the original mutation lease: its actual N+1 attempt stops at
-`MutationOwnerContended`. Actual N+1 session qualification remains absent.
+Host contention/death/reopen on the default stack. Retained Query capability
+access carries its issued grant and nonretaining identities; the receiver supplies
+live resources after checking incarnation. Its authentic N+1 disclosure attempt
+now refuses with `StaleIncarnation` on the default stack. Actual N+1 provider-session
+qualification remains absent; live protocol sessions still own provider cleanup
+and product resources.
 Changed-build authored/history
 qualification passes; the directory stale-output journey stops at
 `MissingApplicableProducer` before producing an output. Current evidence limits

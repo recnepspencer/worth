@@ -137,12 +137,12 @@ where
     Schema: ApplicationSchema,
     Input: ApplicationCapabilityRequest<Schema, Capability>,
 {
-    if access.graph_work.runtime_authority() != access.runtime_authority
-        || access.graph_work.binding() != &access.binding_identity
-        || access.graph_work.principal() != access.principal_entity_id
-        || access.graph_work.capability_access_context()
+    if !access
+        .authorization
+        .belongs_to_session(access.graph_work_session)
+        || access.graph_work_capability
             != Some(access.authorization.installed_capability_identity())
-        || access.authorization.exact_fact_count() != access.graph_work.retained_decision_facts()
+        || access.authorization.exact_fact_count() != access.graph_work_decision_facts
     {
         return Err(inconsistent(operation.operation()));
     }

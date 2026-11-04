@@ -99,6 +99,9 @@ where
         Input: ApplicationCapabilityRequest<Schema, Capability>,
         Input: 'static,
     {
+        if let Err(denial) = access.refuse_stale_incarnation(self) {
+            return Err(close_denial(approved, denial));
+        }
         let execution = match phase.execution_request_for(&self.product_runtime) {
             Ok(execution) => execution,
             Err(_) => return Err(close_denial(approved, crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody"))),
@@ -141,6 +144,9 @@ where
         Input: ApplicationCapabilityRequest<Schema, Capability>,
         Input: 'static,
     {
+        if let Err(denial) = access.refuse_stale_incarnation(self) {
+            return Err(close_denial(approved, denial));
+        }
         let draft = match bind_close(self, &approved, &access, operation) {
             Ok(draft) => draft,
             Err(denial) => return Err(close_denial(approved, denial)),

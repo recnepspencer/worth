@@ -33,6 +33,12 @@ where
         Operation: ApplicationOperationMarkerIdentity<Schema>,
         Input: ApplicationCapabilityRequest<Schema, Capability> + Clone + Send + Sync + 'static,
     {
+        if let Err(denial) = access.refuse_stale_incarnation(self) {
+            return Err((
+                Some(WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(denial)),
+                requested,
+            ));
+        }
         let execution = match phase.execution_request_for(&self.product_runtime) {
             Ok(execution) => execution,
             Err(_) => {
@@ -88,6 +94,12 @@ where
         Operation: ApplicationOperationMarkerIdentity<Schema>,
         Input: ApplicationCapabilityRequest<Schema, Capability> + Clone + Send + Sync + 'static,
     {
+        if let Err(denial) = access.refuse_stale_incarnation(self) {
+            return Err((
+                Some(WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(denial)),
+                requested,
+            ));
+        }
         let draft = match bind_approval(execution, self, &requested, &access, operation) {
             Ok(draft) => draft,
             Err(denial) => match denial.kind() {

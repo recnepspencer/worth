@@ -37,6 +37,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Operation: ApplicationOperationMarkerIdentity<Schema>,
         Input: ApplicationCapabilityRequest<Schema, Capability> + Clone + Send + Sync + 'static,
     {
+        access
+            .refuse_stale_incarnation(self)
+            .map_err(Denial::from_authorization)?;
         let authorize = |kind| {
             Denial::from_authorization(WorthQueryOperationAuthorizationDenial::new(
                 WorthQueryOperationAuthorizationDenialKind::Refused(kind),
