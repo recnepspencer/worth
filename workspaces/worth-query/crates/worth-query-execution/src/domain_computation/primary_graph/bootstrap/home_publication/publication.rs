@@ -1,4 +1,4 @@
-//! One additional ordinary Native commit, after all Directory seeds and indexes.
+//! One common completion commit, after every location's seeds and indexes.
 use super::super::super::bootstrap_publication::{
     map_bootstrap_basis_denial, map_bootstrap_commit_denial, map_bootstrap_staging_denial,
     map_bootstrap_transaction_admission_denial,
@@ -7,7 +7,6 @@ use super::super::{WorthQueryPrimaryGraphBootstrap, WorthQueryPrimaryGraphPublic
 use super::{
     denial, record::BootstrapPublicationRecord, WorthQueryPrimaryGraphInstallationDenial as Denial,
 };
-use worth_foundational::facade::ApplicationHomeBinding;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::{
     identity::PartitionId,
@@ -18,14 +17,23 @@ use worth_relational::facade::{
 pub(in crate::domain_computation::primary_graph) fn publish<Schema: ApplicationSchema>(
     bootstrap: &mut WorthQueryPrimaryGraphBootstrap<Schema>,
     phase: &super::super::super::WorthQueryBootstrapAdvancementPhase<'_>,
-    binding: impl FnOnce() -> Result<ApplicationHomeBinding, Denial>,
 ) -> Result<WorthQueryPrimaryGraphPublication, Denial> {
+    if bootstrap.seed_batch_failed {
+        return Err(denial("a previous installation seed batch failed"));
+    }
+    if let Some(publication) = &bootstrap.recovered_publication {
+        return Ok(publication.clone());
+    }
     let publication = bootstrap.publish_home_bootstrap_rows(phase)?;
     // This existing failure fact precedes every fallible completion operation.
     // Accepted seeds remain retained; neither no-effect nor uncertainty permits replay.
     bootstrap.seed_batch_failed = true;
     let execution = phase.execution_request();
-    let record = BootstrapPublicationRecord::prepare(&binding()?, &publication, &execution)?;
+    let record = BootstrapPublicationRecord::prepare(
+        bootstrap.graph.binding_identity(),
+        &publication,
+        &execution,
+    )?;
     let layout = &bootstrap.graph.layout.bootstrap_publication;
     bootstrap
         .graph
@@ -87,5 +95,7 @@ pub(in crate::domain_computation::primary_graph) fn publish<Schema: ApplicationS
             }
             Ok(())
         })?;
+    bootstrap.recovered_publication = Some(publication.clone());
+    bootstrap.seed_batch_failed = false;
     Ok(publication)
 }

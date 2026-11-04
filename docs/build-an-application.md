@@ -6759,10 +6759,13 @@ uses the same ordinary Home request and physical location. It admits the recorde
 portable schema/program meaning, completion and activation through the recovered
 World root without calling the initializer or replaying seed suppliers.
 
-Fresh Directory startup records completed bootstrap meaning after every seed
-batch and index build succeeds, before creating World genesis. A refused
-completion keeps the accepted seeds and original Home in opening custody; it
-does not rerun initialization. Memory startup adds no completion commit.
+Fresh Memory and Directory startup publish the same bootstrap completion commit
+after every seed batch and index build succeeds, before creating World genesis.
+The record describes installed package/schema meaning, the terminal seed receipt
+and counts; it grants no durable association to Memory. A refused Directory
+completion keeps the accepted seeds and original Home in opening custody without
+rerunning initialization. Development Homes with the retired completion format
+refuse with a typed Query recovery outcome; opening performs no migration.
 
 Ordinary reads after reopen use the selected published World basis, including
 when independent Native history is newer. Actual recovered index definitions

@@ -13,6 +13,8 @@ fn original_receipt_source_read_preserves_settled_effect_and_exposes_full_native
     let path = tempfile::tempdir().unwrap();
     let request = opening::serial();
     let execution = worth_execution::ExecutionRequest::serial(&request);
+    let mut native_meanings = Vec::new();
+    let mut graph_versions = Vec::new();
     for (name, location) in [
         ("memory", WorthQueryApplicationHomeLocation::MemoryOnly),
         (
@@ -61,7 +63,21 @@ fn original_receipt_source_read_preserves_settled_effect_and_exposes_full_native
             )
             .unwrap()
         );
+        native_meanings.push(serde_json::to_value(original.semantic_result().semantic()).unwrap());
+        graph_versions.push(
+            after
+                .entities
+                .iter()
+                .map(|e| e.created_at_version)
+                .collect::<Vec<_>>(),
+        );
     }
+    assert_eq!(native_meanings[0], native_meanings[1],
+        "identical initialization preserves complete original Native receipt and validation meaning");
+    assert_eq!(
+        graph_versions[0], graph_versions[1],
+        "graph lifetimes and validation bases share the same version correspondence"
+    );
 }
 
 #[test]

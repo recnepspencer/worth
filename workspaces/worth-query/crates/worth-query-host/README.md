@@ -37,10 +37,13 @@ alias refuses `Busy`; a supplier may explicitly refuse its own operational
 retirement. Retired handler payloads stay owned by the close result until its
 explicit unbudgeted `reclaim` (or ordinary abandonment).
 
-Fresh Directory bootstrap publishes its portable completion record after all
-seed batches and indexes succeed, before World genesis. Completion refusal
-retains accepted seeds and the same Home through the existing owning opening
-refusal; initialization is not replayed. Memory bootstrap adds no extra commit.
+Fresh Memory and Directory bootstrap publish the same completion commit after
+all seed batches and indexes succeed, before World genesis. Its record binds
+installed package/schema meaning, the terminal seed receipt and aggregate
+counts; it gives Memory no durable association. Completion refusal retains
+accepted seeds; Directory keeps the same Home through its owning opening
+refusal, without replaying initialization. Retired development completion
+formats refuse Query readmission with a typed recovery denial; no migration runs.
 Reopen the same Directory with the same admitted schema/program meaning and
 ordinary Home request. Existing artifacts readmit their completion and program
 activation at the recovered World root; the initializer and seed suppliers

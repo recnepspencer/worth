@@ -3,10 +3,10 @@ use super::super::{WorthQueryPrimaryGraphBootstrap, WorthQueryPrimaryGraphPublic
 use super::{
     codec, recovery_denial as denial, request, WorthQueryPrimaryGraphInstallationDenial as Denial,
 };
-use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
+use worth_execution::ExecutionRequest;
 use worth_foundational::facade::{
-    ApplicationHomeBinding, AspectFieldLocator, AspectValue, ContractValidatedAspectValueView,
-    InternedString, StructAspectValue,
+    AspectFieldLocator, AspectValue, ContractValidatedAspectValueView, InternedString,
+    StructAspectValue,
 };
 use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
 use worth_query_installation::facade::{
@@ -21,8 +21,7 @@ use worth_relational::facade::{
 use worth_runtime_world::facade::ProductBranchObservation;
 
 struct DecodedCompletion {
-    binding: ApplicationHomeBinding,
-    funding: Option<ExecutionMemoryReservation>,
+    binding: codec::BootstrapInstallationBinding,
     terminal: CommitId,
     created: VersionId,
     counts: [usize; 5],
@@ -50,7 +49,6 @@ pub(in crate::domain_computation::primary_graph) fn readmit<Schema: ApplicationS
                 })?;
             let DecodedCompletion {
                 binding,
-                funding,
                 terminal,
                 created,
                 counts,
@@ -66,7 +64,6 @@ pub(in crate::domain_computation::primary_graph) fn readmit<Schema: ApplicationS
             execution.consult().map_err(request)?;
             cell.publish(activation)
                 .map_err(|_| denial("Home activation was already published"))?;
-            drop(funding);
             Ok(publication)
         })
 }
@@ -96,7 +93,7 @@ fn decode_selected_row(
     let ContractValidatedAspectValueView::Struct(fields) = aspect.view() else {
         return Err(denial("Home completion aspect has foreign shape"));
     };
-    if numeric_field(fields, &layout.fields[0])? != 1 {
+    if numeric_field(fields, &layout.fields[0])? != 2 {
         return Err(denial("Home bootstrap completion format is unsupported"));
     }
     let AspectValue::String(InternedString::Raw(binding)) =
@@ -110,10 +107,9 @@ fn decode_selected_row(
     };
     let counts = [count(3)?, count(4)?, count(5)?, count(6)?, count(7)?];
     let terminal = CommitId(numeric_field(fields, &layout.fields[2])?);
-    let (binding, funding) = codec::decode(binding, execution)?;
+    let binding = codec::decode(binding, execution)?;
     Ok(DecodedCompletion {
         binding,
-        funding,
         terminal,
         created: row.created_at_version,
         counts,
@@ -144,13 +140,21 @@ fn admit_binding<Schema: ApplicationSchema>(
     installed: &WorthQueryInstalledApplicationSchema<Schema>,
     roster: &WorthQueryProgramSupportRoster<Schema>,
     selected: &ApplicationProgramRevision,
-    binding: ApplicationHomeBinding,
+    binding: codec::BootstrapInstallationBinding,
 ) -> Result<(), Denial> {
-    drop(
-        installed
-            .admit_home_binding(roster, selected, binding)
-            .map_err(|cause| denial(format!("Home completion binding is foreign: {cause:?}")))?,
-    );
+    if binding != codec::BootstrapInstallationBinding::from_installed(&installed.binding_identity())
+    {
+        return Err(denial(
+            "Home completion binding is foreign: installed package/schema mismatch",
+        ));
+    }
+    if !roster
+        .entries()
+        .iter()
+        .any(|entry| entry.revision() == selected)
+    {
+        return Err(denial("Home completion selected program is not rostered"));
+    }
     Ok(())
 }
 fn admit_receipts(
