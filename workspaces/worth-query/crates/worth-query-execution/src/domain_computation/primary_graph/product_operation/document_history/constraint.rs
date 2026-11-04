@@ -148,3 +148,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         confirm_document_head(self, phase, &restriction.source, ()).map_err(|(_, denial)| denial)
     }
 }
+#[cfg(test)]
+mod installed_entry_tests;
+#[cfg(test)]
+mod ownership_tests;
