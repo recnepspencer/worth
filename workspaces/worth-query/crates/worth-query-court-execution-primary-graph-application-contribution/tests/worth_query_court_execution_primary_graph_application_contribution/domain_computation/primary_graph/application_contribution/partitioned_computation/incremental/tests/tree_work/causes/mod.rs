@@ -66,14 +66,16 @@ fn edit_encoding_denial_rebuilds_and_matches_reuse_off() {
     };
     let request = live_scope();
     let execution = QueryRequestExecution::open_for_test(serial_placement(), &request);
+    let (items, digests, membership, item_keys, call_sequence, routing, partitions, _native_run, _tree) =
+        prior.into_parts_for_test();
     let retained = RetainedPartitions {
-        call_sequence: Arc::clone(&(*prior.call_sequence_for_test())),
-        items: prior.items_into_for_test(),
-        digests: prior.digests_into_for_test(),
-        membership: prior.membership_into_for_test(),
-        item_keys: prior.item_keys_into_for_test(),
-        routing: prior.routing_into_for_test(),
-        partitions: prior.partitions_into_for_test(),
+        call_sequence: Arc::clone(&call_sequence),
+        items,
+        digests,
+        membership,
+        item_keys,
+        routing,
+        partitions,
         native_run,
         tree: ReductionTree::<Value, fn(&Value, &Value) -> Value>::try_from_declared_native(
             plan(&keys),
