@@ -51,9 +51,20 @@ impl<Schema: ApplicationSchemaComposition, Program> PreparedHomeNativeMeaning<Sc
                 .map_err(|cause| {
                     existing_denial(format!("Home recovered schema authority denied: {cause}"))
                 })?;
-            super::super::super::root::index_installation::register_primary_graph_indexes(&mut self.schema.layout, native,
-                super::super::super::root::index_installation::IndexInstallationPosture::RequireRecovered)
-                .map_err(existing_denial)?;
+            // A checkpoint of a zero-write partial Home cannot require the
+            // Query catalog that its failed initializer never published.
+            let has_recovered_index_installation =
+                native.history().latest_catalog_commit_identity().is_some()
+                    || native
+                        .index_access()
+                        .definition_lookup_snapshot()
+                        .definition_count()
+                        != 0;
+            if has_recovered_index_installation {
+                super::super::super::root::index_installation::register_primary_graph_indexes(&mut self.schema.layout, native,
+                    super::super::super::root::index_installation::IndexInstallationPosture::RequireRecovered)
+                    .map_err(existing_denial)?;
+            }
             native_families::readmit(native, &self.schema.layout, &execution)
         })();
         match result {
