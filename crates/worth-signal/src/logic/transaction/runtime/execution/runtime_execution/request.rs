@@ -146,11 +146,14 @@ where
         F: for<'ctx> Fn(&mut EvaluationContext<'ctx, Ctx>) -> Result<O, SignalError> + Sync,
         O: IntoEvaluationOutput,
     {
-        // A clean target can still have unsettled upstream dependencies.
-        if !self.targets.is_empty() {
+        let pending = crate::logic::planner::plan_builder::targets_requiring_settlement(
+            &mut self.runtime.graph,
+            &self.targets,
+        )?;
+        if !pending.is_empty() {
             self.runtime.execute_evaluation(
                 ExecutionIntent::Targets {
-                    targets: &self.targets,
+                    targets: &pending,
                     request_mode: self.request_mode,
                 },
                 runtime_ctx,

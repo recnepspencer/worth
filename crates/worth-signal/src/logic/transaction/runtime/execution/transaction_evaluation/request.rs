@@ -122,11 +122,14 @@ where
         F: for<'ctx> Fn(&mut EvaluationContext<'ctx, Ctx>) -> Result<O, SignalError> + Sync,
         O: IntoEvaluationOutput,
     {
-        // Let the planner settle upstream work before returning target versions.
-        if !self.targets.is_empty() {
+        let pending = crate::logic::planner::plan_builder::targets_requiring_settlement(
+            self.tx.graph,
+            &self.targets,
+        )?;
+        if !pending.is_empty() {
             self.tx.execute_evaluation(
                 TransactionExecutionIntent::Targets {
-                    targets: &self.targets,
+                    targets: &pending,
                     request_mode: self.request_mode,
                     stage_task_candidates: false,
                 },
