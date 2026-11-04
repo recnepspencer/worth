@@ -286,12 +286,15 @@ impl Stage<'_> {
             ),
             republished,
         );
-        Some(record.map(|record| Continued {
-            identity: record.identity_into_for_test(),
-            predecessor: record.predecessor_into_for_test(),
-            facts: record.facts_into_for_test(),
-            consumed_outputs: record.consumed_outputs_into_for_test(),
-            witness: record.witness_into_for_test(),
+        Some(record.map(|record| {
+            let (identity, predecessor, facts, consumed_outputs, witness) = record.into_parts_for_test();
+            Continued {
+                identity,
+                predecessor,
+                facts,
+                consumed_outputs,
+                witness,
+            }
         }))
     }
 
