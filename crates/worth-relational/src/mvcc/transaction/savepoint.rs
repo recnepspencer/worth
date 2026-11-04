@@ -4,6 +4,7 @@ use crate::transactions::data::{
 
 #[derive(Clone, Debug)]
 pub(crate) struct RelationalTransactionSavepoint {
+    content: crate::content::RelationalContentAttachments,
     id: SavepointId,
     retained_batch_count: usize,
     footprint: super::RelationalTransactionFootprint,
@@ -13,6 +14,7 @@ pub(crate) struct RelationalTransactionSavepoint {
 
 impl RelationalTransactionSavepoint {
     pub(super) fn new(
+        content: crate::content::RelationalContentAttachments,
         id: SavepointId,
         retained_batch_count: usize,
         footprint: super::RelationalTransactionFootprint,
@@ -20,6 +22,7 @@ impl RelationalTransactionSavepoint {
         normalization_generation: u64,
     ) -> Self {
         Self {
+            content,
             id,
             retained_batch_count,
             footprint,
@@ -58,6 +61,7 @@ impl super::BranchBoundRelationalTransaction {
             .checked_add(1)
             .ok_or(super::RelationalTransactionStagingDenial::SavepointIdentityExhausted)?;
         self.savepoints.push(RelationalTransactionSavepoint::new(
+            self.content.clone(),
             savepoint_id,
             self.batches().len(),
             self.footprint.clone(),
@@ -96,6 +100,7 @@ impl super::BranchBoundRelationalTransaction {
                 .map_err(super::RelationalTransactionStagingDenial::into_conflict)?
         };
         let drained = self.overlay.truncate_batches(batch_len, restored_index);
+        self.content = self.savepoints[index].content.clone();
         self.footprint = restored_footprint;
         self.last_merged_plan = None;
         self.savepoints.truncate(index);

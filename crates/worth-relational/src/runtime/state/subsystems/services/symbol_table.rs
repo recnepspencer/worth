@@ -109,6 +109,9 @@ impl RuntimeSymbolTable {
         let raw = std::str::from_utf8(input.bytes()).map_err(|_| Denial::InvalidUtf8)?;
         self.demand_text(execution, raw)
             .map_err(|failure| match failure {
+                crate::storage::residency::RelationalResidencyDemandFailure::Content(cause) => {
+                    Denial::Request(cause.into_execution_cause())
+                }
                 crate::storage::residency::RelationalResidencyDemandFailure::StorageUnavailable(
                     failure,
                 ) => Denial::StorageUnavailable(failure),

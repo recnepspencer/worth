@@ -74,7 +74,7 @@ pub fn availability_keeps_sibling_custody_and_releases_final_funding() {
     // Actual request cancellation cannot expire the independently retained original.
     let admitted = access(&application, &principal, &scope);
     let cancellation = WorthQueryCancellationSource::new();
-    let cancelled = WorthQueryRequestScope::new(None, cancellation.token());
+    let cancelled = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     cancellation.cancel();
     let denied = application
         .runtime()

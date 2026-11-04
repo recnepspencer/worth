@@ -10,9 +10,11 @@ mod authored_restoration;
 mod installation;
 pub(crate) use authored_cascade::CanonicalAuthoredRetirement;
 pub(crate) use authored_restoration::CanonicalAuthoredRestoration;
+pub(crate) use installation::CanonicalProducerRetirement;
 mod group_selection;
 mod members;
 mod payload_coverage;
+mod producer_retirement_header;
 mod readmission;
 mod relations;
 mod restoration_candidate;
@@ -37,6 +39,9 @@ pub(crate) enum CanonicalOutputPublication {
         retirement: CommitId,
         predecessor: CommitId,
     },
+    ProducerRetirement {
+        predecessor: CommitId,
+    },
     AuthoredRetirement {
         predecessor: CommitId,
     },
@@ -48,6 +53,7 @@ impl CanonicalOutputPublication {
             Self::Birth | Self::BirthAfterCodecRetirement { .. } => None,
             Self::Preserve { predecessor }
             | Self::AuthoredRetirement { predecessor }
+            | Self::ProducerRetirement { predecessor }
             | Self::AuthoredRestoration { predecessor, .. } => Some(*predecessor),
         }
     }

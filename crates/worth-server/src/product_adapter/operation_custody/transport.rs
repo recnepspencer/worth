@@ -16,7 +16,7 @@ use std::{
         Arc, Mutex,
     },
     thread::JoinHandle,
-    time::{Duration, Instant},
+    time::Duration,
 };
 
 pub(super) enum Job {
@@ -168,7 +168,7 @@ fn execute<C: SourceWire>(
             custody_id,
             reason: ControlRefusal::TransportUnavailable,
         },
-        Ok(()) => match answer.recv_timeout(deadline.saturating_duration_since(Instant::now())) {
+        Ok(()) => match answer.recv_timeout(deadline.remaining()) {
             Ok(response) => return response,
             Err(_) => Reply::OutcomeUnknown { custody_id },
         },

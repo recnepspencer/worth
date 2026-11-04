@@ -142,3 +142,5 @@ pub(crate) mod related;
 
 pub(crate) mod producer_freshness;
 pub(crate) mod successor;
+
+mod source_authorization;

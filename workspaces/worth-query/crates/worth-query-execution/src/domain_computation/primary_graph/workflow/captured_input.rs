@@ -131,7 +131,7 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
     {
         let runtime = self.application();
         let execution = phase
-            .execution_request_for(&runtime.product_runtime)
+            .execution_request_for(&runtime.runtime.product_runtime)
             .map_err(|_| WorkflowCapturedInputDenial::ForeignSelection)?;
         if scope.runtime_authority() != runtime.runtime.authority_identity()
             || scope.binding_identity() != &runtime.installed_schema.binding_identity()

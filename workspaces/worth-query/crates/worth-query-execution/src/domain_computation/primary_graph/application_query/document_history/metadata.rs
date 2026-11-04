@@ -173,7 +173,7 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             return Err(Denial::InstalledBindingMismatch);
         }
         let execution = phase
-            .checked_execution_request_for(&runtime.product_runtime)
+            .checked_execution_request_for(&runtime.runtime.product_runtime)
             .map_err(Denial::Stopped)?;
         let contract =
             compile_document_history_disclosure_contract(self.history).map_err(|cause| {

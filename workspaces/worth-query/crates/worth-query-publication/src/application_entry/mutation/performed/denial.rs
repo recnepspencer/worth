@@ -35,6 +35,32 @@ pub enum WorthQueryRequiredOutputPreparationDenial {
 mod recovery_posture;
 pub use recovery_posture::WorthQueryRequiredOutputRecoveryPosture;
 
+impl From<worth_query_execution::facade::primary_graph::WorthQuerySourceExpectationDenial>
+    for WorthQueryRequiredOutputPreparationDenial
+{
+    fn from(
+        cause: worth_query_execution::facade::primary_graph::WorthQuerySourceExpectationDenial,
+    ) -> Self {
+        Self::Dependencies(
+            worth_query_execution::publication_boundary::discovery_currentness::WorthQueryRequiredSetCurrentnessDenial::Source(cause),
+        )
+    }
+}
+
+impl From<worth_query_execution::publication_boundary::discovery_currentness::WorthQueryRequiredSetCurrentnessDenial>
+    for WorthQueryRequiredOutputPreparationDenial
+{
+    fn from(cause: worth_query_execution::publication_boundary::discovery_currentness::WorthQueryRequiredSetCurrentnessDenial) -> Self {
+        use worth_query_execution::publication_boundary::discovery_currentness::WorthQueryRequiredSetCurrentnessDenial;
+        match cause {
+            WorthQueryRequiredSetCurrentnessDenial::Source(cause) => Self::from(cause),
+            WorthQueryRequiredSetCurrentnessDenial::Output(cause) => {
+                Self::Dependencies(WorthQueryRequiredSetCurrentnessDenial::Output(cause))
+            }
+        }
+    }
+}
+
 impl std::fmt::Display for WorthQueryPerformedMutationExecutionDenial {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(formatter, "performed mutation denied: {self:?}")

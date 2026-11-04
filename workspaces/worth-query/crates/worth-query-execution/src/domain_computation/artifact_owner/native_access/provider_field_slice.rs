@@ -24,7 +24,6 @@ pub enum WorthQueryArtifactProviderFieldSlice<'a> {
     BigInt(&'a [CanonicalBigInt]),
     Rational(&'a [CanonicalRational]),
     String(&'a [InternedString]),
-    Bytes(&'a [ContentRefId]),
     Uuid(&'a [[u8; 16]]),
     Date(&'a [CanonicalDate]),
     Time(&'a [CanonicalTime]),
@@ -54,7 +53,6 @@ impl<'a> WorthQueryArtifactProviderFieldSlice<'a> {
             Self::BigInt(values) => values.len(),
             Self::Rational(values) => values.len(),
             Self::String(values) => values.len(),
-            Self::Bytes(values) => values.len(),
             Self::Uuid(values) => values.len(),
             Self::Date(values) => values.len(),
             Self::Time(values) => values.len(),
@@ -97,7 +95,6 @@ impl<'a> WorthQueryArtifactProviderFieldSlice<'a> {
                 InternedString::Raw(value) => value.capacity(),
                 InternedString::Symbol(_) => 0,
             }),
-            Self::Bytes(values) => std::mem::size_of_val(values),
             Self::Uuid(values) => std::mem::size_of_val(values),
             Self::Date(values) => std::mem::size_of_val(values),
             Self::Time(values) => std::mem::size_of_val(values),
@@ -131,7 +128,6 @@ impl<'a> WorthQueryArtifactProviderFieldSlice<'a> {
                 WorthQueryArtifactProviderValueView::Rational(values.get(row)?)
             }
             Self::String(values) => WorthQueryArtifactProviderValueView::String(values.get(row)?),
-            Self::Bytes(values) => WorthQueryArtifactProviderValueView::Bytes(values.get(row)?),
             Self::Uuid(values) => WorthQueryArtifactProviderValueView::Uuid(values.get(row)?),
             Self::Date(values) => WorthQueryArtifactProviderValueView::Date(values.get(row)?),
             Self::Time(values) => WorthQueryArtifactProviderValueView::Time(values.get(row)?),
@@ -171,7 +167,6 @@ impl<'a> WorthQueryArtifactProviderFieldSlice<'a> {
                 | (Self::BigInt(_), ScalarAspectType::BigInt)
                 | (Self::Rational(_), ScalarAspectType::Rational)
                 | (Self::String(_), ScalarAspectType::String)
-                | (Self::Bytes(_), ScalarAspectType::Bytes)
                 | (Self::Uuid(_), ScalarAspectType::Uuid)
                 | (Self::Date(_), ScalarAspectType::Date)
                 | (Self::Time(_), ScalarAspectType::Time)

@@ -41,7 +41,7 @@ mod serial {
             let original = basis.selected_commit().clone();
             let cancelled = authentication::WorthQueryCancellationSource::new();
             cancelled.cancel();
-            let stopped = authentication::WorthQueryRequestScope::new(None, cancelled.token());
+            let stopped = authentication::WorthQueryRequestScope::new(None, cancelled.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
             let refusal = match application
                 .request(&principal, &stopped)
                 .at(&basis)
@@ -84,7 +84,7 @@ mod serial {
             take_all_decisions();
             let cancellation = authentication::WorthQueryCancellationSource::new();
             let stopped_scope =
-                authentication::WorthQueryRequestScope::new(None, cancellation.token());
+                authentication::WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
             binding::cancel_during_next_decision("anchor-b", cancellation);
             let stopped = application.request(&principal, &stopped_scope);
             let mut retained = None;
@@ -232,7 +232,7 @@ mod serial {
             let (scope, principal) = authenticate(&application);
             let cancellation = authentication::WorthQueryCancellationSource::new();
             cancellation.cancel();
-            let stopped = authentication::WorthQueryRequestScope::new(None, cancellation.token());
+            let stopped = authentication::WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
             let refused = match refused.retry_close(&application.request(&principal, &stopped)) {
                 Err(value) => value,
                 Ok(_) => panic!("cancelled close must retain actual terminal"),

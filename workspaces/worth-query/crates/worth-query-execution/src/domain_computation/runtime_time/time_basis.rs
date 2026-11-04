@@ -36,20 +36,21 @@ impl WorthQueryRuntimeTimeSample {
 }
 
 pub struct WorthQueryRuntimeClock {
+    pub(in crate::domain_computation) admission_clock:
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock,
     source: Box<dyn WorthQueryRuntimeTimeSource>,
 }
 
 impl WorthQueryRuntimeClock {
     pub(in crate::domain_computation) fn system() -> Self {
-        Self {
-            source: Box::new(WorthQuerySystemRuntimeTimeSource),
-        }
+        Self::from_source(WorthQuerySystemRuntimeTimeSource)
     }
 
     pub(in crate::domain_computation) fn from_source(
         source: impl WorthQueryRuntimeTimeSource,
     ) -> Self {
         Self {
+            admission_clock: source.admission_clock(),
             source: Box::new(source),
         }
     }
@@ -160,6 +161,13 @@ mod tests {
     }
 
     impl WorthQueryRuntimeTimeSource for SequenceTimeSource {
+        fn admission_clock(
+            &self,
+        ) -> worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock
+        {
+            worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(
+            )
+        }
         fn current_time(&self) -> Result<SystemTime, WorthQueryRuntimeTimeSourceDenial> {
             self.samples
                 .lock()

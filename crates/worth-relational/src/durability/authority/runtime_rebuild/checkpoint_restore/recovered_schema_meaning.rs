@@ -40,6 +40,26 @@ pub(super) fn check_current_schema_meaning(
                         }) else {
                             continue;
                         };
+                        let source_content = source.registry().content_formats.snapshot();
+                        let target_content = target.content_formats.snapshot();
+                        let bytes = source_content
+                            .owned_bytes()
+                            .checked_add(target_content.owned_bytes())
+                            .and_then(|bytes| usize::try_from(bytes).ok())
+                            .ok_or_else(|| {
+                                crate::durability::data::DurabilityError::new(
+                                    crate::durability::data::RecoveryFailureClass::SchemaMismatch,
+                                    "content meaning size overflow",
+                                )
+                            })?;
+                        charge(context, bytes)?;
+                        if source_content != target_content {
+                            return Err(crate::durability::data::DurabilityError::new(
+                                crate::durability::data::RecoveryFailureClass::SchemaMismatch,
+                                "current content format, version, ceiling or field binding changed",
+                            )
+                            .into());
+                        }
                         recovered_codec_meaning::compare_registries(
                             source.registry(),
                             target,

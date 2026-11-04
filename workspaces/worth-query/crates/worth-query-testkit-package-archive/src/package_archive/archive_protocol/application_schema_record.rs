@@ -86,3 +86,6 @@ pub fn decode_hex(encoded: &str) -> Vec<u8> {
         })
         .collect()
 }
+
+pub use worth_query_declaration::facade::application_schema::validate_portable_application_schema_freshly;
+pub use worth_query_installation::facade::WorthQueryPortablePackageReconstructionCandidate;

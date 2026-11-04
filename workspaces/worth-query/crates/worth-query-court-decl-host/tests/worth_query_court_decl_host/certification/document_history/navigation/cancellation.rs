@@ -29,7 +29,7 @@ fn cancellation_before_fork_leaves_no_candidate_and_permits_explicit_disposal() 
         0x9182_c600,
     );
     let cancellation = WorthQueryCancellationSource::new();
-    let stopped = WorthQueryRequestScope::new(None, cancellation.token());
+    let stopped = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let principal = authenticate_operator(host.installed_schema(), &stopped);
     cancellation.cancel();
     let Advance::Refused { owner, cause } = owner.advance(&host.request(&principal, &stopped))
@@ -68,6 +68,10 @@ fn cancellation_before_fork_leaves_no_candidate_and_permits_explicit_disposal() 
 }
 
 #[test]
+#[expect(
+    clippy::disallowed_methods,
+    reason = "certification-harness thread-scope=1 scoped-thread-spawn=1: cancellation_while_real_adoption_waits_preserves_the_performed_candidate_without_selecting_it joins the bounded native owner and competing host or control actors to certify custody at the real handoff."
+)]
 fn cancellation_while_real_adoption_waits_preserves_the_performed_candidate_without_selecting_it() {
     let host = publish_on_first_program();
     let document = attach(&host, head(&host), DOCUMENT_IDENTITY);
@@ -93,7 +97,7 @@ fn cancellation_while_real_adoption_waits_preserves_the_performed_candidate_with
     );
     let pause = owner.pause_before_history_navigation_selection_for_test();
     let cancellation = WorthQueryCancellationSource::new();
-    let stopped = WorthQueryRequestScope::new(None, cancellation.token());
+    let stopped = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let principal = authenticate_operator(host.installed_schema(), &stopped);
     let (reached, outcome) = std::thread::scope(|threads| {
         let worker = threads.spawn(|| owner.advance(&host.request(&principal, &stopped)));

@@ -88,13 +88,14 @@ pub(super) fn register_basis<Schema>(
 where
     Schema: ApplicationSchema,
 {
-    let graph = application.primary_provider.graph.clone();
+    let graph = application.runtime.primary_provider.graph.clone();
     graph
         .with_runtime_mut(execution, |runtime| {
             graph.ensure_primary_indexes_for_basis(execution, runtime, &basis)
         })
         .map_err(map_index_currency_denial)?;
     application
+        .runtime
         .basis_leases
         .register(execution, basis, graph)
         .map_err(map_registration_denial)

@@ -39,7 +39,7 @@ where
         PrincipalIdentity: 'static,
     {
         let execution = phase
-            .execution_request_for(&self.application().product_runtime)
+            .execution_request_for(&self.application().runtime.product_runtime)
             .map_err(|_| {
                 resolution_denial(
                     WorthQueryPrincipalResolutionDenialKind::Refused(
@@ -85,8 +85,14 @@ where
         PrincipalIdentityBinding: ApplicationIdentityScalarValueBinding<Value = PrincipalIdentity>,
         PrincipalIdentity: 'static,
     {
+        validate_principal_clock(
+            &self.application().runtime,
+            external.clock(),
+            scope,
+            installed_binding.binding(),
+        )?;
         admit_resolution_request(scope, installed_binding.binding(), external.is_expired())?;
-        let runtime = &self.application().runtime;
+        let runtime = self.application().runtime.execution();
         runtime
             .installed_packages()
             .validate_principal_binding(installed_binding)
@@ -139,6 +145,12 @@ where
                 installed_binding,
             )
         })?;
+        validate_principal_clock(
+            &self.application().runtime,
+            external.clock(),
+            scope,
+            installed_binding.binding(),
+        )?;
         admit_resolution_request(scope, installed_binding.binding(), external.is_expired())?;
         Ok(WorthQueryAuthenticatedPrincipal::mint(external, evidence))
     }
@@ -150,7 +162,7 @@ where
         scope: &WorthQueryRequestScope,
     ) -> Result<(), WorthQueryPrincipalResolutionDenial> {
         let execution = phase
-            .execution_request_for(&self.application().product_runtime)
+            .execution_request_for(&self.application().runtime.product_runtime)
             .map_err(|_| {
                 resolution_denial(
                     WorthQueryPrincipalResolutionDenialKind::Refused(
@@ -171,8 +183,14 @@ where
         principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
         scope: &WorthQueryRequestScope,
     ) -> Result<(), WorthQueryPrincipalResolutionDenial> {
+        validate_principal_clock(
+            &self.application().runtime,
+            principal.clock(),
+            scope,
+            principal.binding(),
+        )?;
         admit_resolution_request(scope, principal.binding(), principal.is_expired())?;
-        let runtime = &self.application().runtime;
+        let runtime = self.application().runtime.execution();
         if principal.runtime_authority() != runtime.authority_identity() {
             return Err(resolution_denial(
                 WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::ForeignRuntime),

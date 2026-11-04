@@ -174,7 +174,7 @@ where
             .interest
             .as_ref()
             .ok_or_else(|| denial(WorthQueryOutputDemandDenialKind::Closed, Family::IDENTITY))?;
-        demand.rejoin_refreshed_output(&self.output_demands)?;
+        demand.rejoin_refreshed_output(&self.runtime.output_demands)?;
 
         let installed_entry = std::sync::Arc::clone(&demand.installed_entry);
         let entry = installed_entry.as_ref();

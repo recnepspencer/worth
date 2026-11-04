@@ -24,6 +24,10 @@ use worth_query_host::facade::application_entry::{
 use worth_query_host::facade::primary_graph::WorthQueryCorrectionDerivationDenial;
 use worth_query_testkit_certification_correction::facade::certification::application_graph::correction::model as application_correction_support;
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "certification-harness thread-builder=1 thread-spawn=1: The example joins one actor with its declared bootstrap stack; native request computation retains its Execution authority."
+)]
 fn main() {
     let court = std::env::args().nth(1);
     let (done, completion) = std::sync::mpsc::channel();

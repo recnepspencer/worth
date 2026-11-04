@@ -70,7 +70,8 @@ impl<Schema>
         &self,
         action: impl FnOnce() + Send + 'static,
     ) {
-        self.primary_provider
+        self.runtime
+            .primary_provider
             .application_attempt_operation_control
             .caller_pass
             .arm_interleaving(action);

@@ -49,6 +49,7 @@ impl<Schema>
         root: worth_relational::facade::identity::EntityId,
     ) -> bool {
         let state = self
+            .runtime
             .output_demands
             .state
             .lock()

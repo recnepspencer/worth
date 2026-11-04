@@ -1,4 +1,5 @@
 use std::path::Path;
+mod hash_owners;
 
 const FORMER_SEMANTIC_IDENTITY_OWNERS: &[(&str, &str)] = &[
     (
@@ -201,6 +202,7 @@ fn warm_consumers_cannot_hide_hashing_behind_a_helper() {
         "../worth-query-execution/src/domain_computation/provider_session/decision_read_set/fact.rs",
         "../worth-query-execution/src/domain_computation/provider_session/provisional_attempt",
         "../../../../crates/worth-runtime-bridge/src/authorization",
+        "../../../../crates/worth-relational/src/content",
         "../../../worth-query-bank-world/crates/bank-server/src/application_query",
         "../../../worth-query-bank-world/crates/bank-server/src/estate_capability_admission",
         "../../../worth-query-bank-world/crates/bank-server/src/ordinary/mutation",
@@ -241,26 +243,7 @@ fn assert_warm_path_has_no_hashing(path: &Path) {
     if is_managed_source_capture {
         assert!(source.contains("worth-query:managed-source-dependencies:v1"));
     }
-    let is_projected_content_writer = path.ends_with(Path::new(
-        "application_query/projection/projected_tree/content.rs",
-    ));
-    if is_projected_content_writer {
-        // 10cdd5b0bb: complete-content rejection hashing is charged to its caller.
-        // Exact raw-content comparison remains the equality authority.
-        assert!(source.contains("struct ContentWriter<'a, E>"));
-        assert!(source.contains("(self.admit)(8)?"));
-        assert!(source.contains("(self.admit)(chunk.len() as u64)?"));
-        assert!(source.contains("write_aspect_value_identity_material(value, &mut scalar)?"));
-    }
-    let is_capability_use_material = path.ends_with(Path::new(
-        "authorization/retained_capability_request/material.rs",
-    ));
-    if is_capability_use_material {
-        // 6af8ebc1aa: metered Source influence, followed by exact request comparison.
-        assert!(source.contains("worth-query:capability-use:v1"));
-        assert!(source.contains("(self.admit)(8)?"));
-        assert!(source.contains("(self.admit)(chunk.len() as u64)?"));
-    }
+    let is_admitted_hash_owner = hash_owners::admits(path, &source);
     // Dependency evidence is captured only while explicitly rebuilding an
     // index. Ordinary selection must keep carrying the completed evidence.
     for (caller, call) in [
@@ -372,7 +355,7 @@ fn assert_warm_path_has_no_hashing(path: &Path) {
         ".render_support_hex()",
         ".render_hex()",
     ] {
-        if (is_managed_source_capture || is_projected_content_writer || is_capability_use_material)
+        if (is_managed_source_capture || is_admitted_hash_owner)
             && matches!(forbidden, "Sha256" | "sha2::")
         {
             continue;

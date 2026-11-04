@@ -1657,3 +1657,10 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-execution/tests/worth_query_court_execution/domain_computation/primary_graph/output_lineage/invalidation/native_journey_tests/equality/pending_resolution/live_image_registration/mod.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-execution/tests/worth_query_court_execution/domain_computation/primary_graph/output_lineage/tests/prior_correspondence/mod.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-attempt/src/domain_computation/managed_run/tests/causal_fixture/relational_source/mod.rs
+
+
+# Native duplicate identity comparison corruption on the actual installed receiver.
+crates/worth-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/content/identity_conflict.rs
+
+# Checkpoint stage courts observe setup counts and the original request's charge and refusal events.
+crates/worth-execution/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/cost/relational/checkpoint_stage.rs

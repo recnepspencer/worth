@@ -32,10 +32,11 @@ where
     let terminal = terminal_for(&outcome);
     let snapshot_release = lease.release_custody();
     application
+        .runtime
         .primary_provider
         .observe_managed_application_cleanup();
     let completion = match cleanup.finish(
-        &application.primary_provider,
+        &application.runtime.primary_provider,
         running,
         terminal,
         snapshot_release,
@@ -44,7 +45,7 @@ where
         Err(failure) => {
             let evidence = cleanup_failure::cleanup_failed_outcome(outcome);
             return WorthQueryApplicationCommitOutcome::CleanupRequired(Box::new(
-                crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCleanupRequired::new(evidence, failure, application.product_runtime.clone(), application.bridge.conditional_operations()),
+                crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCleanupRequired::new(evidence, failure, application.runtime.product_runtime.clone(), application.runtime.bridge.conditional_operations()),
             ));
         }
     };

@@ -201,9 +201,7 @@ fn validate_portable(
 fn portable_value(value: &AspectValue) -> bool {
     !matches!(
         value,
-        AspectValue::String(InternedString::Symbol(_))
-            | AspectValue::Bytes(_)
-            | AspectValue::ContentRef(_)
+        AspectValue::String(InternedString::Symbol(_)) | AspectValue::ContentRef(_)
     )
 }
 

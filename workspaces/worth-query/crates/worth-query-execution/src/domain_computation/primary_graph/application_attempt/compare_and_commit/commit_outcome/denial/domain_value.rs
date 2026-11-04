@@ -31,6 +31,15 @@ impl Denial {
             cause: Some(Box::new(Cause::DomainValueAdmission(cause))),
         }
     }
+    /// Exact Native content failure at the single pre-publication field seal.
+    pub fn content_denial(
+        &self,
+    ) -> Option<worth_relational::facade::content::RelationalContentDenial> {
+        match self.domain_value_admission_denial() {
+            Some(Admission::Content(cause)) => Some(cause),
+            _ => None,
+        }
+    }
     /// The domain owner's exact codec refusal, including its binding identity.
     pub fn domain_value_decode_denial(&self) -> Option<&ApplicationValueDecodeDenial> {
         match self.cause.as_deref() {

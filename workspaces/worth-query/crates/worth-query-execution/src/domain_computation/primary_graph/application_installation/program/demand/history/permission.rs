@@ -28,10 +28,11 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         if !authority.profile().matches_program(self) {
             return Err((value, Denial::ForeignDocument));
         }
-        let execution = match phase.checked_execution_request_for(&self.runtime().product_runtime) {
-            Ok(execution) => execution,
-            Err(stop) => return Err((value, Denial::Stopped(stop))),
-        };
+        let execution =
+            match phase.checked_execution_request_for(&self.runtime().runtime.product_runtime) {
+                Ok(execution) => execution,
+                Err(stop) => return Err((value, Denial::Stopped(stop))),
+            };
         authority
             .producer_invocation()
             .confirm_in_execution_preserving(&execution, self.runtime(), value)
@@ -85,7 +86,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
                 WorthQueryHistoryOutputAdvanceDenial::Demand(stop) => Denial::Demand(stop),
             })?;
         let runtime = self.runtime();
-        let execution = phase.checked_execution_request_for(&runtime.product_runtime)
+        let execution = phase.checked_execution_request_for(&runtime.runtime.product_runtime)
             .map_err(|cause| Denial::Authority(crate::domain_computation::primary_graph::WorthQueryHistoryNavigationDenial::Stopped(cause)))?;
         // No retained E lookup or currentness requirement. Recovery may still
         // own partial Native work whose original World settlement is unfinished.

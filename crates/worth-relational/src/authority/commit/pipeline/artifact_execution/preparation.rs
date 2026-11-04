@@ -1,6 +1,5 @@
-use crate::authority::commit::phases::publication::{
-    canonical_commit_envelope, canonicalize_changed_records,
-};
+mod authoritative_publication;
+use crate::authority::commit::phases::publication::canonicalize_changed_records;
 use crate::authority::commit::phases::schema_continuity::SchemaContinuityPlan;
 use crate::authority::commit::publication::diagnostics_summary_artifact;
 use crate::authority::commit::semantic_plan::RelationalSemanticPlan;
@@ -8,10 +7,12 @@ use crate::diagnostics::data::RelationalDiagnosticsEntry;
 use crate::diagnostics::data::{DiagnosticsArtifactKind, DiagnosticsScope};
 use crate::history::data::RelationalCommitReceipt;
 use crate::publication::patch::data::CanonicalAuthoritativePatch;
-use crate::publication::{bundle::PublicationStage, data::PublicationError};
 use crate::transactions::data::{
     AspectEvaluationTrace, CommitAspectSummary, CommitChangeSummary, CommitPublicationSummary,
     PublishedMergeExecutionAuthority, RecordRef, TransactionCommitError,
+};
+use authoritative_publication::{
+    prepare_authoritative_publication, PreparedPublicationAuthority, PublicationAuthorityInput,
 };
 mod summary;
 mod traces;
@@ -88,6 +89,26 @@ pub(super) fn prepare_publication_artifacts(
         diagnostics,
         adjacency,
     } = effect;
+    let content_schema = match &schema_continuity.target_schema_registry {
+        Some(registry) => registry.clone(),
+        None => selected_branch_state
+            .state()
+            .root()
+            .retained_schema_authority()
+            .registry_arc(),
+    };
+    working_state.content =
+        crate::content::run_commit_stage(execution, runtime.commit_work_budget.as_ref(), || {
+            working_state.content.prepare_final_fields(
+                execution,
+                selected_branch_state.state().root(),
+                &content_schema,
+                working_state,
+                &publication.changed_records,
+                version_id,
+            )
+        })
+        .map_err(crate::content::commit_denial)?;
     let descriptive_touches = super::descriptive_touches::prepare(
         runtime,
         selected_branch_state,
@@ -193,93 +214,6 @@ fn capture_publication_traces(
         aspect_evaluation_traces,
         aspect_emission_traces,
     }
-}
-
-struct PublicationAuthorityInput<'a> {
-    working_state: &'a mut crate::runtime::WorkingState,
-    patch: &'a CanonicalAuthoritativePatch,
-    commit_reference: &'a RelationalCommitReceipt,
-    branch_id: &'a crate::history::data::BranchId,
-    version_id: crate::identity::data::VersionId,
-    merge_parent_branches: &'a [crate::history::data::BranchId],
-    merge_base_commits: &'a [crate::history::data::CommitId],
-    merged_plan: RelationalSemanticPlan<'a>,
-    record_allocations: &'a [crate::history::data::CanonicalRecordAllocation],
-    strategy_artifacts: Option<crate::commit_strategies::data::StrategyCommitArtifactBundle>,
-    merge_execution_authority: Option<PublishedMergeExecutionAuthority>,
-    schema_continuity: &'a SchemaContinuityPlan,
-    changed_records: &'a [RecordRef],
-    diagnostics_summary: &'a crate::diagnostics::data::RelationalDiagnosticArtifact,
-    descriptive_touches: crate::history::data::RelationalDescriptiveTouchGraph,
-    authored_index_writes: crate::history::data::CanonicalAuthoredIndexWrites,
-}
-
-struct PreparedPublicationAuthority {
-    artifacts: crate::storage::overlay::PublicationArtifacts,
-    canonical_commit_envelope: crate::history::data::CanonicalCommitEnvelope,
-    lineage_event_count: usize,
-    lineage_nodes: Vec<crate::lineage::data::LineageNode>,
-}
-
-fn prepare_authoritative_publication(
-    runtime: &crate::runtime::RelationalPreparationRuntime,
-    input: PublicationAuthorityInput<'_>,
-) -> Result<PreparedPublicationAuthority, TransactionCommitError> {
-    let artifacts = runtime
-        .publication_preparation_authority()
-        .assemble_publication_bundle(
-            input.commit_reference.clone(),
-            input.version_id,
-            input.patch.clone(),
-            input.diagnostics_summary.clone(),
-            input.schema_continuity.target_schema_authority().clone(),
-        )
-        .map_err(TransactionCommitError::publication_failed)?;
-    let prepared_lineage = runtime
-        .lineage_preparation_authority()
-        .ensure_lineage_for_commit(
-            input.working_state,
-            input.commit_reference,
-            &input.merged_plan.commands().merged_intents,
-            input.changed_records,
-        )
-        .map_err(|detail| {
-            TransactionCommitError::publication(PublicationError::new(
-                PublicationStage::BundleAssembly,
-                detail,
-            ))
-        })?;
-    let lineage_event_count = prepared_lineage
-        .artifact()
-        .event_batch()
-        .counters()
-        .event_batch_width;
-    let (lineage_artifact, lineage_nodes) = prepared_lineage.into_parts();
-    let mut canonical_commit_envelope = canonical_commit_envelope(
-        runtime,
-        input.commit_reference,
-        input.branch_id,
-        input.merged_plan.canonical_authority_kind(),
-        input.strategy_artifacts,
-        input.merge_execution_authority,
-        input.merge_parent_branches,
-        input.merge_base_commits,
-        input.merged_plan.commands(),
-        input.patch.clone(),
-        input.descriptive_touches,
-        input.diagnostics_summary.clone(),
-        lineage_artifact,
-        crate::indexes::data::DerivedIndexArtifacts::default(),
-        input.schema_continuity,
-    )?;
-    canonical_commit_envelope.authored_index_writes = input.authored_index_writes;
-    canonical_commit_envelope.install_record_allocations(input.record_allocations.to_vec());
-    Ok(PreparedPublicationAuthority {
-        artifacts,
-        canonical_commit_envelope,
-        lineage_event_count,
-        lineage_nodes,
-    })
 }
 
 struct PublicationCompletionInput<'a> {

@@ -62,6 +62,12 @@ where
         >,
     Input: ApplicationCapabilityRequest<Schema, Capability> + 'static,
 {
+    crate::domain_computation::authorization::admission::validate_admission_clock(
+        &runtime.runtime,
+        principal.clock(),
+        request,
+        capability.contract().operation(),
+    )?;
     admit_request(request, capability.contract().operation())?;
     let prepared = prepare_capability_admission(
         execution,
@@ -107,6 +113,12 @@ where
     Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
     Input: ApplicationCapabilityRequest<Schema, Capability> + 'static,
 {
+    crate::domain_computation::authorization::admission::validate_admission_clock(
+        &runtime.runtime,
+        principal.clock(),
+        request,
+        capability.contract().operation(),
+    )?;
     admit_request(request, capability.contract().operation())?;
     let mut prepared = prepare_capability_admission(
         execution,

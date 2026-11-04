@@ -15,7 +15,8 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         receipt: &WorthQueryApplicationCommitReceipt,
         kind: crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
-        self.output_demands
+        self.runtime
+            .output_demands
             .validate_recovery_root_kind(receipt, kind)
     }
 
@@ -23,7 +24,9 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         &self,
         receipt: &WorthQueryApplicationCommitReceipt,
     ) {
-        self.output_demands.complete_prepared_source(receipt);
+        self.runtime
+            .output_demands
+            .complete_prepared_source(receipt);
     }
 
     pub(in crate::domain_computation::primary_graph) fn recover_prepared_output_source(
@@ -35,6 +38,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         WorthQueryPreparedRequiredOutputSource,
     )> {
         let observation = self
+            .runtime
             .output_demands
             .retained_prepared_source_observation(receipt, root_type)?;
         let retained = WorthQueryApplicationReadObservation::from_product(
@@ -50,7 +54,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                     .composite_commit()
                     .clone(),
                 product_occurrence: receipt.product_branch().occurrence(),
-                owner: self.output_demands.clone(),
+                owner: self.runtime.output_demands.clone(),
             },
         ))
     }
@@ -78,7 +82,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             prepared,
             observed,
         )?;
-        self.output_demands.ensure_prepared_output_source_bound(
+        self.runtime.output_demands.ensure_prepared_output_source_bound(
             &prepared.source_commit,
             crate::domain_computation::primary_graph::application_output_demand::BoundOutputSource {
                 scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(observed.source_root()),
@@ -124,21 +128,23 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                 "current recovery query belongs to another product occurrence",
             ));
         }
-        self.output_demands.validate_prepared_recovery_currentness(
-            &prepared.source_commit,
-            retained_observed.output_source_epoch().ok_or_else(|| {
-                WorthQueryOutputDemandDenial::new(
-                    WorthQueryOutputDemandDenialKind::ForeignSource,
-                    "retained source has no product epoch",
-                )
-            })?,
-            current_observed.output_source_epoch().ok_or_else(|| {
-                WorthQueryOutputDemandDenial::new(
-                    WorthQueryOutputDemandDenialKind::ForeignSource,
-                    "current source has no product epoch",
-                )
-            })?,
-        )
+        self.runtime
+            .output_demands
+            .validate_prepared_recovery_currentness(
+                &prepared.source_commit,
+                retained_observed.output_source_epoch().ok_or_else(|| {
+                    WorthQueryOutputDemandDenial::new(
+                        WorthQueryOutputDemandDenialKind::ForeignSource,
+                        "retained source has no product epoch",
+                    )
+                })?,
+                current_observed.output_source_epoch().ok_or_else(|| {
+                    WorthQueryOutputDemandDenial::new(
+                        WorthQueryOutputDemandDenialKind::ForeignSource,
+                        "current source has no product epoch",
+                    )
+                })?,
+            )
     }
 }
 

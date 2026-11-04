@@ -79,7 +79,7 @@ fn cancellation_between_completed_members_preserves_the_first_publication_and_re
     let one_effect = contacts.snapshot();
     assert_eq!(one_effect, (1, 1));
     let cancellation = WorthQueryCancellationSource::new();
-    let stopped = WorthQueryRequestScope::new(None, cancellation.token());
+    let stopped = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let interrupted_principal = authenticate_operator(host.installed_schema(), &stopped);
     cancellation.cancel();
     {
@@ -125,6 +125,10 @@ fn cancellation_between_completed_members_preserves_the_first_publication_and_re
 }
 
 #[test]
+#[expect(
+    clippy::disallowed_methods,
+    reason = "certification-harness thread-scope=1 scoped-thread-spawn=1: cancellation_after_endpoint_capture_preserves_the_ready_candidate_for_fresh_guarded_adoption joins the bounded native owner and competing host or control actors to certify custody at the real handoff."
+)]
 fn cancellation_after_endpoint_capture_preserves_the_ready_candidate_for_fresh_guarded_adoption() {
     let (host, contacts) =
         SetRetentionHandler::observe_installation_for_test(publish_on_first_program);
@@ -153,7 +157,7 @@ fn cancellation_after_endpoint_capture_preserves_the_ready_candidate_for_fresh_g
     assert_eq!(effects, (2, 2));
     let pause = group.pause_after_history_capture_for_test();
     let cancellation = WorthQueryCancellationSource::new();
-    let stopped = WorthQueryRequestScope::new(None, cancellation.token());
+    let stopped = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let interrupted_principal = authenticate_operator(host.installed_schema(), &stopped);
     let (reached, result) = std::thread::scope(|threads| {
         let (document, execution) = group.parts();

@@ -58,8 +58,7 @@ fn unavailable_fixed_output_closes_its_original_native_owner_before_candidate_di
     let stopped =
         worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope::new(
             None,
-            cancellation.token(),
-        );
+            cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let adapter = authentication::admit(application.installed_schema());
     let scope = authentication::request_scope();
     let principal = authentication::block_on(adapter.authenticate(

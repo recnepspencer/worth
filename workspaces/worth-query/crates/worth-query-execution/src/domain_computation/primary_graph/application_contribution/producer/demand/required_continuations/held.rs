@@ -119,7 +119,11 @@ where
         );
     }
 
-    let Some(held) = runtime.output_demands.take_published_held_successor(key)? else {
+    let Some(held) = runtime
+        .runtime
+        .output_demands
+        .take_published_held_successor(key)?
+    else {
         return Ok(HeldUpstream::Unfinished);
     };
     resume_registry_successor(
@@ -155,7 +159,11 @@ pub(super) fn resume_registry_successor<Schema: ApplicationSchema + 'static>(
     let ready = match result {
         Ok(Some(ready)) => ready,
         Err(stop)
-            if superseded(&stop) && runtime.output_demands.give_back_replaced_ready(key)? =>
+            if superseded(&stop)
+                && runtime
+                    .runtime
+                    .output_demands
+                    .give_back_replaced_ready(key)? =>
         {
             drop(stop);
             drop(held);
@@ -172,6 +180,7 @@ pub(super) fn resume_registry_successor<Schema: ApplicationSchema + 'static>(
             // the row has moved on meanwhile.
             drop(
                 runtime
+                    .runtime
                     .output_demands
                     .hold_required_successor(held, held_key::<Schema>),
             );
@@ -179,7 +188,7 @@ pub(super) fn resume_registry_successor<Schema: ApplicationSchema + 'static>(
         }
     };
     let HeldFrameSuccessor { progress, .. } = *held;
-    let slot = custody.prepare_slot(&runtime.output_demands)?;
+    let slot = custody.prepare_slot(&runtime.runtime.output_demands)?;
 
     slot.push(progress);
     Ok(HeldUpstream::Ready(ready))
@@ -211,7 +220,7 @@ where
         performed: &std::cell::RefCell<PerformedMembers>,
     ) -> Result<Option<SelectedReadyReadmission>, WorthQueryOutputDemandDenial> {
         self.authorize_current_source(phase, runtime, principal, request, invocation)?;
-        let registry = &runtime.output_demands;
+        let registry = &runtime.runtime.output_demands;
         if registry
             .interest_ready_readmission(self.interest())?
             .is_some()
@@ -252,7 +261,7 @@ impl<Schema: ApplicationSchema + 'static> RequiredFreshProgress<Schema> {
         invocation: &ProducerInvocationAuthority<'_>,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         let execution = phase
-            .execution_request_for(&runtime.product_runtime)
+            .execution_request_for(&runtime.runtime.product_runtime)
             .map_err(|cause| {
                 WorthQueryOutputDemandDenial::new(
                     super::super::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),

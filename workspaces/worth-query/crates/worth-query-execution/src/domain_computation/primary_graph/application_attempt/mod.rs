@@ -44,8 +44,9 @@ pub(in crate::domain_computation::primary_graph) use observation::observe_aspect
 pub(in crate::domain_computation::primary_graph) use observation::take_native_field_contacts;
 pub(in crate::domain_computation::primary_graph) use observation::ReadRendezvous;
 pub(in crate::domain_computation::primary_graph) use observation::{
-    observe_aspect_absence, observe_field, observe_field_value_borrowed,
-    observe_field_value_borrowed_admitted, WorthQueryApplicationFieldObservation,
+    observe_aspect_absence, observe_field, observe_field_observation_borrowed_admitted,
+    observe_field_value_borrowed, observe_field_value_borrowed_admitted,
+    WorthQueryApplicationFieldObservation,
 };
 pub(crate) mod precondition_binding;
 pub(crate) mod provider_binding;
@@ -235,3 +236,5 @@ pub(in crate::domain_computation::primary_graph) use fact::observe_indexed_entit
 pub(in crate::domain_computation::primary_graph) use read_set::CompletedReadScopes;
 
 pub(in crate::domain_computation::primary_graph) use compare_and_commit::MaterializedCommittedField;
+
+pub(in crate::domain_computation::primary_graph) use provider_execution::ReadmittedCommitProgram;

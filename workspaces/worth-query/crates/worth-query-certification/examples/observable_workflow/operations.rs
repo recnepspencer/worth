@@ -327,7 +327,11 @@ fn exercise_pending_custody(
     ));
     let cancellation = WorthQueryCancellationSource::new();
     cancellation.cancel();
-    let stopped = WorthQueryRequestScope::new(None, cancellation.token());
+    let stopped = WorthQueryRequestScope::new(
+        None,
+        cancellation.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let operation = match operation.advance(&runtime.request(&actor, &stopped).on_branch(branch)) {
         WorthQueryWorkflowOperationAdvance::Refused { operation, denial } => {
             assert!(

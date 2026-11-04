@@ -10,7 +10,7 @@ pub(super) fn reject(
     suspended: WorthQuerySuspendedGeneratedOutput,
 ) -> WorthQuerySuspendedGeneratedOutput {
     let cancellation = WorthQueryCancellationSource::new();
-    let request = WorthQueryRequestScope::new(None, cancellation.token());
+    let request = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let reached = Arc::new(AtomicBool::new(false));
     let observed = Arc::clone(&reached);
     rules.records.lock().unwrap().clear();

@@ -38,6 +38,16 @@ where
         Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
+        let application = self.application();
+        admission
+            .validate_installed_entry(
+                application.runtime.authority_identity(),
+                &application.installed_schema.binding_identity(),
+                &application.runtime.installed_operations,
+            )
+            .and_then(|()| admission.validate_current_authority())
+            .map_err(|denial| WorkflowDefinitionPreparationDenial::Projection(denial.into()))?;
+
         if installed.schema_binding() != &self.application().installed_schema().binding_identity() {
             return Err(WorkflowDefinitionPreparationDenial::Binding(
                 WorkflowDefinitionBindingDenial::ForeignSchema,
@@ -114,7 +124,7 @@ impl WorthQueryWorkflowDefinitionRetirementAdapter {
         Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
-        let phase_request = match phase.execution_request_for(&selected.application().product_runtime) {
+        let phase_request = match phase.execution_request_for(&selected.application().runtime.product_runtime) {
             Ok(request) => request,
             Err(_) => return Err(WorkflowDefinitionPreparationDenial::Attempt(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::ForeignPhase, "workflow-phase"))),
         };
@@ -140,7 +150,7 @@ impl WorthQueryWorkflowDefinitionRetirementAdapter {
         Input: Clone + Send + Sync + 'static,
     {
         let phase_request =
-            match phase.execution_request_for(&runtime.product_runtime) {
+            match phase.execution_request_for(&runtime.runtime.product_runtime) {
                 Ok(request) => request,
                 Err(cause) => return WorkflowDefinitionRetirementOutcome::Application(
                     crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(

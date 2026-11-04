@@ -193,14 +193,6 @@ where
     where
         Input: Clone + Send + Sync + 'static,
     {
-        if let Err(cause) = phase.execution_request_for(&self.product_runtime) {
-            return WorkflowDefinitionPublicationOutcome::Application(
-                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(cause)
-                    .into_commit_outcome()
-                    .landed()
-                    .expect_err("a foreign phase cannot commit"),
-            );
-        }
         let (
             program,
             program_revision,
@@ -208,6 +200,14 @@ where
             content_identity_locator,
             workflow_intent_identity,
         ) = prepared.into_parts();
+        let entry = match self.validate_commit_program_in_advancement(phase, program) {
+            Ok(entry) => entry,
+            Err(outcome) => {
+                return WorkflowDefinitionPublicationOutcome::Application(
+                    outcome.landed().expect_err("a refused entry cannot commit"),
+                )
+            }
+        };
         let presented = match self
             .installed_program_support()
             .ok_or_else(
@@ -222,11 +222,9 @@ where
                 );
             }
         };
-        let outcome = self.compare_and_commit_application_for_program_action(
+        let outcome = entry.compare_and_commit_application_for_program_action(
             execution,
-            phase,
             &presented,
-            program,
             idempotency.bind_workflow_definition(&workflow_intent_identity),
             crate::domain_computation::application_aftermath::ApplicationCommitCausality::Ordinary,
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,

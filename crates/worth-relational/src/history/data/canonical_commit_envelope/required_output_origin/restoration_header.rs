@@ -19,7 +19,8 @@ impl CanonicalCommitEnvelope {
             context,
             self.patch.authoritative_record_patches.len() + event.entities.len(),
         )?;
-        if self.required_output_origin.is_some()
+        if self.producer_cascade_retirement.is_some()
+            || self.required_output_origin.is_some()
             || self.authored_cascade_retirement.is_some()
             || event.publications.is_empty()
             || event.original_anchor == event.anchor

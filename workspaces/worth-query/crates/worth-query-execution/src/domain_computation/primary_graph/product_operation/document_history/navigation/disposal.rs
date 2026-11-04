@@ -132,7 +132,7 @@ impl<S: ApplicationSchema> NavigationCleanup<'_, S> {
     ) -> Result<usize, WorthQueryHistoryNavigationDenial> {
         use WorthQueryHistoryNavigationDenial as Denial;
         let _execution = phase
-            .checked_execution_request_for(&application.product_runtime)
+            .checked_execution_request_for(&application.runtime.product_runtime)
             .map_err(Denial::Stopped)?;
         if let Some(fork) = self.fork.take()
             && let Err(fork) = fork.release(phase)
@@ -249,7 +249,7 @@ impl<S: ApplicationSchema> WorthQueryDocumentHistoryNavigation<'_, S> {
         let key = {
             let progress = self.attempt.progress.try_lock().map_err(|_| Denial::Busy)?;
             phase
-                .checked_execution_request_for(&progress.application.product_runtime)
+                .checked_execution_request_for(&progress.application.runtime.product_runtime)
                 .map_err(Denial::Stopped)?;
             if matches!(progress.phase, NavigationPhase::Selected(_)) {
                 return Err(Denial::AlreadySelected);
@@ -275,7 +275,7 @@ impl<S: ApplicationSchema> WorthQueryDocumentHistoryNavigation<'_, S> {
             Err(std::sync::TryLockError::Poisoned(poison)) => poison.into_inner(),
         };
         let _execution = phase
-            .checked_execution_request_for(&progress.application.product_runtime)
+            .checked_execution_request_for(&progress.application.runtime.product_runtime)
             .map_err(WorthQueryHistoryNavigationDenial::Stopped)?;
         if matches!(progress.phase, NavigationPhase::Selected(_)) {
             return Err(WorthQueryHistoryNavigationDenial::AlreadySelected);

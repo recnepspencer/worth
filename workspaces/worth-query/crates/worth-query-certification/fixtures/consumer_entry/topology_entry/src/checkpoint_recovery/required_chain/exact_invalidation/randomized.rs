@@ -8,6 +8,19 @@ mod acknowledged_claim;
 mod sequence;
 use sequence::{Commit, Demands, Trace, Xorshift, COMMITS, DEMANDS, HELD_ORDERS};
 
+// All four seeds at both observation profiles peak at 24,009,727 original
+// checkpoint Work. Only this positive history journey receives the 25m grant.
+const HISTORY_EXECUTION_POLICY: worth_foundational::ExecutionRequestPolicy =
+    worth_foundational::ExecutionRequestPolicy::new(
+        worth_foundational::ExecutionPosture::Serial,
+        worth_foundational::DeterminismContract::CanonicalBitwise,
+        worth_foundational::ExecutionBudget::new(
+            std::num::NonZeroUsize::MIN,
+            None,
+            Some(25_000_000),
+        ),
+    );
+
 const SEEDS: [u64; 4] = [0x9176_3c01, 0x9176_3c02, 0x9176_3c03, 0x9170_4004];
 const STEPS: usize = 40;
 
@@ -68,7 +81,12 @@ fn run(seed: u64, observations: u64, steps: usize, driven: &mut Driven) {
         } else {
             "opening"
         };
-        let application = install_observing(checkpoint.take(), ring_world::seed::<3>, observations);
+        let application = install_observing_with_policy(
+            checkpoint.take(),
+            ring_world::seed::<3>,
+            observations,
+            HISTORY_EXECUTION_POLICY,
+        );
         let (scope, principal) = authenticate(&application);
         let request = application.request(&principal, &scope);
         let court = Court::new(&application, &request, idempotency);

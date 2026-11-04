@@ -147,7 +147,7 @@ where
         principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
         request: &WorthQueryRequestScope,
     ) -> WorthQueryApplicationLiveOutcome<Query, QueryResult> {
-        let phase_request = match phase.execution_request_for(&self.runtime.product_runtime) {
+        let phase_request = match phase.execution_request_for(&self.runtime.runtime.product_runtime) {
             Ok(request) => request,
             Err(_) => return WorthQueryApplicationLiveOutcome::AuthorizationDenied(Box::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody"))),
         };
@@ -166,7 +166,7 @@ where
             };
             let expected_scope = &self.scope_identity;
             self.queue.fill(
-                &self.runtime.primary_provider.live_delivery,
+                &self.runtime.runtime.primary_provider.live_delivery,
                 basis,
                 Binding::effect(),
                 self.controls.buffer_capacity(),

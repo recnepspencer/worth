@@ -75,6 +75,7 @@ pub struct WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity
     adapter_identity: WorthQueryAuthenticationAdapterIdentity,
     attributes: Vec<WorthQueryPrincipalAttribute>,
     valid_until: Instant,
+    clock: worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock,
     application_principal:
         WorthQueryApplicationPrincipalIdentity<Schema, Principal, PrincipalIdentity>,
     binding_identity: ApplicationSchemaBindingIdentity,
@@ -109,6 +110,7 @@ impl<Schema, Principal, PrincipalIdentity>
             adapter_identity: external.adapter_identity().clone(),
             attributes: external.attributes().to_vec(),
             valid_until: external.valid_until(),
+            clock: external.clock().clone(),
             application_principal: WorthQueryApplicationPrincipalIdentity {
                 entity_id: evidence.principal_entity_id,
                 runtime_authority: evidence.runtime_authority,
@@ -158,8 +160,14 @@ impl<Schema, Principal, PrincipalIdentity>
         self.valid_until
     }
 
+    pub fn clock(
+        &self,
+    ) -> &worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock {
+        &self.clock
+    }
+
     pub fn is_expired(&self) -> bool {
-        Instant::now() >= self.valid_until
+        self.clock.now() >= self.valid_until
     }
 
     pub const fn examined_candidate_count(&self) -> usize {

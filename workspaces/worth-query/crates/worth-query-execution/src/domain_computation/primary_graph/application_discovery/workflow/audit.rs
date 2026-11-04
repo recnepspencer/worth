@@ -143,7 +143,7 @@ where
         return Ok(WorthQueryWorkflowAudit::Withheld);
     };
     let execution = phase
-        .execution_request_for(&current.application().product_runtime)
+        .execution_request_for(&current.application().runtime.product_runtime)
         .map_err(WorkflowReadAdmissionDenial::Phase)?;
     let graph = current
         .application()

@@ -144,7 +144,7 @@ impl WorthQueryApplicationConditionalBinding<NumericSchema> for Conditional {
     ) -> Result<Self::Installed, WorthQueryConditionalRuntimeInstallationDenial> {
         let schema = installation.installed_schema();
         let principal = schema.principal_binding(ActorBinding::reference()).unwrap();
-        let authentication = authentication::admit_operator_adapter(schema);
+        let authentication = authentication::admit_operator_adapter(schema, worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
         let operation = schema.installed_operation(Tick::reference()).unwrap();
         let query = schema
             .installed_query_binding::<composite_definition_query::Binding>()

@@ -9,6 +9,7 @@ use super::{
 /// It contains no reference to `RelationalRuntime`.
 #[derive(Debug)]
 pub struct BranchBoundRelationalTransaction {
+    pub(crate) content: crate::content::RelationalContentAttachments,
     pub(crate) symbols: crate::runtime::RuntimeSymbolTable,
     pub(crate) read_leases: std::collections::BTreeMap<
         crate::identity::data::PartitionId,

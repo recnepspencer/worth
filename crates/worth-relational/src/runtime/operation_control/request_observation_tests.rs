@@ -21,7 +21,10 @@ fn request_observation_retains_both_control_stops_at_its_boundary() {
     let serial = SerialRequest::from_memory(
         SerialMemoryBudget::new(None),
         worth_execution::CancellationToken::new(),
-        Some(std::time::Instant::now()),
+        Some({
+            let clock = worth_execution::MonotonicClock::system();
+            clock.deadline_at(clock.now())
+        }),
     );
     let expired =
         RelationalInterruptionEvent::observe_request(&ExecutionRequest::serial(&serial), boundary)

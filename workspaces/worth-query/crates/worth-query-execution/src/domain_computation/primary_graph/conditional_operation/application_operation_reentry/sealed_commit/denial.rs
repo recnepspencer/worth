@@ -84,6 +84,7 @@ pub fn classify_denial(denial: &Denial) -> Outcome {
                             | Resource::WorkLimit
                             | Resource::NestedLeaseMisuse
                             | Resource::NestedAdvancementOpening
+                            | Resource::ForeignAdmissionClock
                             | Resource::ForeignAdvancementPhase
                             | Resource::NoActiveExecutionScope
                             | Resource::EquivalenceContractUnavailable,
@@ -91,6 +92,8 @@ pub fn classify_denial(denial: &Denial) -> Outcome {
                     }
                     | Session::ProjectionContract { .. }
                     | Session::HistoricalVisibility { .. }
+                    | Session::ContentInconsistency
+                    | Session::Content(_)
                     | Session::StorageUnavailable(_)
                     | Session::ForeignOperationAttempt
                     | Session::ForeignExecutionBasis
@@ -129,7 +132,9 @@ pub fn classify_denial(denial: &Denial) -> Outcome {
 
 pub fn classify_kind(kind: Kind) -> Outcome {
     match kind {
-        Kind::StorageUnavailable(_) => Outcome::TerminalFailure(Terminal::ApplicationCommit(kind)),
+        Kind::ContentInconsistency | Kind::Content(_) | Kind::StorageUnavailable(_) => {
+            Outcome::TerminalFailure(Terminal::ApplicationCommit(kind))
+        }
         Kind::ActiveSnapshotCapacityExhausted {
             maximum_active_snapshots,
         } => Outcome::SnapshotCapacityBackpressured {
@@ -163,7 +168,7 @@ pub fn classify_kind(kind: Kind) -> Outcome {
                 Outcome::TerminalFailure(Terminal::ApplicationCommit(kind))
             }
             // A phase from another installed runtime is a caller defect, never pressure.
-            Resource::ForeignAdvancementPhase => {
+            Resource::ForeignAdvancementPhase | Resource::ForeignAdmissionClock => {
                 Outcome::TerminalFailure(Terminal::ApplicationCommit(kind))
             }
             // Unreachable at HEAD: Relational's remaining-work child retains the

@@ -1,7 +1,7 @@
 error[E0277]: the trait bound `FoundationalBoundaryArtifactCategory: FoundationalBoundaryCategorySurface` is not satisfied
- --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/boundary_artifacts/categories/plain_label_cannot_satisfy_summary_surface_api.rs
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/boundary_artifacts/categories/plain_label_cannot_satisfy_summary_surface_api.rs:5:42
   |
-  |     let _ = boundary_summary_category_of(&label);
+5 |     let _ = boundary_summary_category_of(&label);
   |             ---------------------------- ^^^^^^ the trait `FoundationalBoundaryCategorySurface` is not implemented for `FoundationalBoundaryArtifactCategory`
   |             |
   |             required by a bound introduced by this call

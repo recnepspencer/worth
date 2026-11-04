@@ -26,6 +26,17 @@ impl<Schema, Operation, Input, Scope>
         }
     }
 
+    /// Corrupts tag and core together with another genuine installed seal.
+    pub(in crate::domain_computation) fn forge_installed_seal_for_test(
+        &mut self,
+        donor: worth_query_installation::facade::InstalledOperationView<'_>,
+    ) {
+        let seal = donor.authority_identity_bytes();
+        assert_ne!(seal, self.core.operation_authority_identity_bytes);
+        self.core.operation_authority_identity_bytes = seal;
+        self.tag.operation_authority_identity_bytes = seal;
+    }
+
     pub fn flip_core_seal_byte_for_test(&mut self) {
         self.core.operation_authority_identity_bytes[0] ^= 0x01;
     }

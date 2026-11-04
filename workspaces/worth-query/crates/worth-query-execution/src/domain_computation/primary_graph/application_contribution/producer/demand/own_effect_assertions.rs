@@ -69,13 +69,15 @@ where
             1
         );
         let interest = self.interest.as_ref().expect("original live Interest");
-        let OutputRowStage::Ready(completion) = runtime.output_demands.row_stage(interest) else {
+        let OutputRowStage::Ready(completion) = runtime.runtime.output_demands.row_stage(interest)
+        else {
             panic!("the original row must retain its actual Ready, not an inferred commit");
         };
         let WorthQueryAcceptedOutputAuthority::Committed(receipt) = &completion.authority else {
             panic!("performed original receipt, never stable alias or reconstruction");
         };
         let completed = runtime
+            .runtime
             .primary_provider
             .observe_completed_application(receipt.commit_reference())
             .unwrap();
@@ -149,7 +151,8 @@ where
             2
         );
         let interest = self.interest.as_ref().expect("actual P2 Interest");
-        let OutputRowStage::Ready(completion) = runtime.output_demands.row_stage(interest) else {
+        let OutputRowStage::Ready(completion) = runtime.runtime.output_demands.row_stage(interest)
+        else {
             panic!("P2 must retain its own completed publication");
         };
         let WorthQueryAcceptedOutputAuthority::Committed(receipt) = &completion.authority else {
@@ -160,6 +163,7 @@ where
             "P2's canonical output mutation must reset P1 before renewal"
         );
         let completed = runtime
+            .runtime
             .primary_provider
             .observe_completed_application(receipt.commit_reference())
             .unwrap();

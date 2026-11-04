@@ -81,16 +81,12 @@ impl<Schema, Operation, Input, Scope>
         })
     }
 
-    /// Ownership precedes lapse and every read; a brand whose core is not
-    /// the one it was minted for is refused in the same slot.
-    pub(in crate::domain_computation) fn validate_runtime_ownership(
+    /// Borrow only the existing proof metadata for concrete validation. No input or owned core escapes.
+    #[inline]
+    pub(in crate::domain_computation) fn reentry_parts(
         &self,
-        runtime_authority: WorthQueryRuntimeAuthorityIdentity,
-        binding_identity: &ApplicationSchemaBindingIdentity,
-    ) -> Result<(), Denial> {
-        self.core
-            .validate_runtime_ownership(runtime_authority, binding_identity)?;
-        self.tag.admits(&self.core)
+    ) -> (&WorthQueryAdmittedOperation, &BrandTag) {
+        (&self.core, &self.tag)
     }
 
     pub(in crate::domain_computation) fn belongs_to(
@@ -106,9 +102,14 @@ impl<Schema, Operation, Input, Scope>
         &self,
         runtime_authority: WorthQueryRuntimeAuthorityIdentity,
         binding_identity: &ApplicationSchemaBindingIdentity,
+        installed: &worth_query_installation::facade::InstalledOperationCatalog,
     ) -> Result<(), Denial> {
-        self.validate_runtime_ownership(runtime_authority, binding_identity)?;
-        self.core.validate_current_authority()
+        self.core.validate_projection_entry_with_tag(
+            &self.tag,
+            runtime_authority,
+            binding_identity,
+            installed,
+        )
     }
 
     pub(in crate::domain_computation) fn validate_installed_mutation_binding(

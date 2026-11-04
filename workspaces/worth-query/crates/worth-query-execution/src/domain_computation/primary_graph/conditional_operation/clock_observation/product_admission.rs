@@ -36,7 +36,7 @@ where
             super::super::signal_decision_reentry::WorthQueryConditionalTruthBasis::from_selected(
                 self,
             );
-        let bridge_root = runtime.bridge.conditional_operations();
+        let bridge_root = runtime.runtime.bridge.conditional_operations();
         let bridge = bridge_root
             .read()
             .unwrap_or_else(std::sync::PoisonError::into_inner);

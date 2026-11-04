@@ -20,6 +20,7 @@ impl RunLimits {
         prepared_activity: Option<Arc<PhysicalActivity>>,
         prepared_cell_charged: bool,
     ) -> Self {
+        crate::backend::setup_observation::limit_derivation();
         let parent = ACTIVE_METER.with(|active| active.borrow().last().cloned());
         let work_loan_affinity = parent
             .as_ref()
@@ -47,7 +48,7 @@ impl RunLimits {
             let parent = parent.borrow();
             tokens.extend(parent.limits.tokens.iter().cloned());
             (
-                parent.limits.deadline,
+                parent.limits.deadline.clone(),
                 parent
                     .limits
                     .ceiling
@@ -96,7 +97,7 @@ impl RunLimits {
         if let Some(lease) = lease {
             limits.tokens.extend(lease.cancellation_lineage());
             limits.deadline = match (limits.deadline, lease.deadline()) {
-                (Some(parent), Some(child)) => Some(parent.min(child)),
+                (Some(parent), Some(child)) => Some(parent.meet(child)),
                 (Some(parent), None) => Some(parent),
                 (None, child) => child,
             };
@@ -163,8 +164,8 @@ impl RunLimits {
         };
         self.accounted |= request.memory().is_some();
         self.tokens.push(request.cancellation.clone());
-        self.deadline = match (self.deadline, request.deadline) {
-            (Some(parent), Some(own)) => Some(parent.min(own)),
+        self.deadline = match (self.deadline, request.deadline.clone()) {
+            (Some(parent), Some(own)) => Some(parent.meet(own)),
             (parent, own) => parent.or(own),
         };
         if request

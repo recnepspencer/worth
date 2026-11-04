@@ -60,7 +60,7 @@ impl<S: ApplicationSchema + 'static, F: WorthQueryProducerOutputFamily<S>>
         branch: WorthQueryProductBranch,
     ) -> Result<(), WorthQueryOutputReadCloseDenial> {
         phase
-            .checked_execution_request_for(&runtime.product_runtime)
+            .checked_execution_request_for(&runtime.runtime.product_runtime)
             .map_err(WorthQueryOutputReadCloseDenial::Execution)?;
         if self.runtime_authority != runtime.runtime.authority_identity().as_u64()
             || self.schema_binding != runtime.installed_schema.binding_identity()

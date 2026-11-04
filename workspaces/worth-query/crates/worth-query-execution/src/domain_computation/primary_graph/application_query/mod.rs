@@ -50,7 +50,8 @@ mod live;
 pub(crate) mod managed_index;
 pub(in crate::domain_computation::primary_graph) use managed_index::WatchSlot;
 pub use managed_index::{
-    WorthQueryManagedIndex, WorthQueryManagedIndexCandidateWriter, WorthQueryManagedIndexControl,
+    WorthQueryManagedIndex, WorthQueryManagedIndexCandidateWriter,
+    WorthQueryManagedIndexContentReadDenial, WorthQueryManagedIndexControl,
     WorthQueryManagedIndexDenial, WorthQueryManagedIndexDenialCause,
     WorthQueryManagedIndexInvariantDenial, WorthQueryManagedIndexLifecycle,
     WorthQueryManagedIndexNodeId, WorthQueryManagedIndexNodeRegion,
@@ -194,3 +195,5 @@ pub use projection::retained_projection::{
     WorthQueryMaterializedQueryProjection, WorthQueryMaterializedQueryRelation,
     WorthQueryMaterializedQueryRow, WorthQueryProjectionMaterializationRefusal,
 };
+
+pub(in crate::domain_computation::primary_graph) use projection::ProjectionContentComparisonFault;

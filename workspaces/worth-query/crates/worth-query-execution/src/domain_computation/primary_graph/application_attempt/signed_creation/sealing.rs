@@ -62,7 +62,7 @@ pub(in crate::domain_computation::primary_graph) fn seal<
         return Err(Denial::CandidateMismatch);
     }
     let execution = phase
-        .execution_for(&application.product_runtime)
+        .execution_for(&application.runtime.product_runtime)
         .map_err(|cause| Denial::Execution(cause.into()))?;
     let candidate = super::super::signing_lifecycle::capture_signing(execution, candidate)?;
     let (mut candidate, dependencies_memory) = super::dependencies::capture(execution, candidate)?;
@@ -72,7 +72,7 @@ pub(in crate::domain_computation::primary_graph) fn seal<
         .as_ref()
         .ok_or(Denial::CandidateMismatch)?;
     let request = phase
-        .execution_request_for(&application.product_runtime)
+        .execution_request_for(&application.runtime.product_runtime)
         .map_err(|_| Denial::CandidateMismatch)?;
     candidate
         .read_set

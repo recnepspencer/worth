@@ -171,7 +171,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         WorthQueryGeneratedOutputSuspensionRecoveryFailure,
     > {
         let source_read = {
-            let _read = self.product_runtime.enter_named_read(crate::domain_computation::execution_runtime::product_world::read_consult::NamedRead::GeneratedRecoverySourceSelection);
+            let _read = self.runtime.product_runtime.enter_named_read(crate::domain_computation::execution_runtime::product_world::read_consult::NamedRead::GeneratedRecoverySourceSelection);
             execution
                 .consult()
                 .map_err(|cause| {
@@ -216,7 +216,15 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let binding = selected.product().publication_binding();
         let prepared = match binding.prepare_settled_relational_adoption(&unpublished, request) {
             Ok(prepared) => prepared,
-            Err(PublicationDenial::Stopped(stop)) => {
+            Err(PublicationDenial::ClockMismatch) => {
+                return Err(failure(
+                    WorthQueryGeneratedOutputSuspensionRecoveryStage::ExecutionDenied(
+                        crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock),
+                    ),
+                    RecoveryState::World { recovery, retry },
+                ))
+            },
+Err(PublicationDenial::Stopped(stop)) => {
                 return Err(failure(
                     WorthQueryGeneratedOutputSuspensionRecoveryStage::ExecutionDenied(
                         advancement_denial(stop),
@@ -254,7 +262,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     retirements,
                 )
             }
-            Err(PublicationDenial::Stopped(stop)) => Err(failure(
+            Err(PublicationDenial::ClockMismatch) => Err(failure(
+                WorthQueryGeneratedOutputSuspensionRecoveryStage::ExecutionDenied(
+                    crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock),
+                ),
+                RecoveryState::World { recovery, retry },
+            )),
+Err(PublicationDenial::Stopped(stop)) => Err(failure(
                 WorthQueryGeneratedOutputSuspensionRecoveryStage::ExecutionDenied(
                     advancement_denial(stop),
                 ),

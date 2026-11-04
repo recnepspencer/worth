@@ -2,7 +2,6 @@
 use super::fixed_backing::{BuildingFixedBacking, OwnedFixedBacking};
 use super::{CancellationToken, ExecutionMemoryReservation, ExecutionResourceLease, LeaseDenial};
 use crate::{ExecutionAllocationDenial, MapKernelStop, WorkCeilingDenial};
-use std::time::Instant;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ExecutionInterruptionViewDenial {
@@ -34,7 +33,7 @@ pub enum ExecutionInterruptionViewDenial {
 /// ```
 pub struct ExecutionInterruptionView {
     tokens: OwnedFixedBacking<CancellationToken>,
-    deadline: Option<Instant>,
+    deadline: Option<crate::MonotonicDeadline>,
 }
 
 impl ExecutionInterruptionView {
@@ -50,7 +49,8 @@ impl ExecutionInterruptionView {
             Err(MapKernelStop::Cancelled)
         } else if self
             .deadline
-            .is_some_and(|deadline| Instant::now() >= deadline)
+            .as_ref()
+            .is_some_and(|deadline| deadline.is_elapsed())
         {
             Err(MapKernelStop::DeadlineElapsed)
         } else {
@@ -92,7 +92,7 @@ pub(crate) fn unrelated() -> ExecutionInterruptionViewDenial {
 
 pub(crate) struct InterruptionViewBuilder {
     tokens: BuildingFixedBacking<CancellationToken>,
-    deadline: Option<Instant>,
+    deadline: Option<crate::MonotonicDeadline>,
 }
 
 impl InterruptionViewBuilder {
@@ -100,7 +100,7 @@ impl InterruptionViewBuilder {
         lease: Option<&ExecutionResourceLease<'_>>,
         accounted: bool,
         count: usize,
-        deadline: Option<Instant>,
+        deadline: Option<crate::MonotonicDeadline>,
     ) -> Result<Self, ExecutionInterruptionViewDenial> {
         use ExecutionInterruptionViewDenial as Denial;
         let bytes = BuildingFixedBacking::<CancellationToken>::payload_quote(count)

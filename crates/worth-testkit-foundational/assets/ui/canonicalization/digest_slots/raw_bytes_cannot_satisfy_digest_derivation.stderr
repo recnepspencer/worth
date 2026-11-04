@@ -1,8 +1,8 @@
 error[E0308]: mismatched types
- --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/canonicalization/digest_slots/raw_bytes_cannot_satisfy_digest_derivation.rs
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/canonicalization/digest_slots/raw_bytes_cannot_satisfy_digest_derivation.rs:4:37
   |
-  |     let _ = derive_canonical_digest([0_u8; 32]);
-  |             ----------------------- ^^^^^^^^^^ expected `Artifact<..., ..., ..., ...>`, found `[u8; 32]`
+4 |     let _ = derive_canonical_digest([0_u8; 32]);
+  |             ----------------------- ^^^^^^^^^^ expected `Artifact<_, _, _, _>`, found `[u8; 32]`
   |             |
   |             arguments to this function are incorrect
   |

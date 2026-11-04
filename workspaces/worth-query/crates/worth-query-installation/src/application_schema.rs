@@ -21,6 +21,8 @@ pub use inbound_occurrence::InstalledInboundOccurrenceContract;
 pub(crate) use inbound_occurrence::{
     install_inbound_occurrence, InboundOccurrenceInstallationDenial,
 };
+#[doc(hidden)]
+pub use installed::InstalledSchemaView;
 pub use installed::WorthQueryInstalledApplicationSchema;
 pub use invariant::{
     WorthQueryInstalledApplicationInvariant, WorthQueryInstalledApplicationInvariantCatalog,

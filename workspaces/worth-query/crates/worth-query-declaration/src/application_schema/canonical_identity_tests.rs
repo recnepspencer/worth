@@ -317,6 +317,7 @@ fn field(
 ) -> ApplicationSchemaMember {
     let (scalar_family, value_type, unit, writable, equality_queryable) = dimensions;
     ApplicationSchemaMember::Field {
+        content_format: None,
         entity: "Entity".to_string(),
         aspect: "Aspect".to_string(),
         field: "Field".to_string(),

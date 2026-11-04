@@ -18,6 +18,7 @@ use worth_relational::facade::identity::{EntityId, RelationId};
 pub(in crate::domain_computation::primary_graph::application_query::projection) mod comparison;
 pub(crate) mod content;
 pub(crate) mod content_comparison;
+pub(in crate::domain_computation::primary_graph) use content_comparison::ProjectionContentComparisonFault;
 pub(crate) mod disclosure_boundary;
 mod field;
 pub(crate) mod owned_rows;
@@ -35,6 +36,7 @@ pub struct WorthQueryApplicationProjectedField {
     slot_type: Arc<str>,
     slot_key: Arc<ApplicationQueryResultSlotKey>,
     value: AspectValue,
+    content: Option<worth_relational::facade::content::RelationalContentFrame>,
 }
 
 pub struct WorthQueryApplicationProjectedRelation {

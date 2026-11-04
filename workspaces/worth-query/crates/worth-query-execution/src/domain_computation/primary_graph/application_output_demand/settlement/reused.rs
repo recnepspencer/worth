@@ -13,6 +13,7 @@ impl WorthQueryOutputDemandSettlement {
         Schema: worth_query_installation::facade::ApplicationSchema,
     {
         let authority = runtime
+            .runtime
             .product_runtime
             .recovered_root_authority
             .as_ref()
@@ -24,6 +25,7 @@ impl WorthQueryOutputDemandSettlement {
                 )
             })?;
         let product = runtime
+            .runtime
             .product_runtime
             .lease_from_observation(authority.product_branch().clone())
             .map_err(|error| {

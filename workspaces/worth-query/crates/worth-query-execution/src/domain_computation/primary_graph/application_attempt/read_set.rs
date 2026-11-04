@@ -21,7 +21,6 @@ use crate::domain_computation::primary_graph::{
     WorthQueryInstalledEntityResolutionContext, WorthQueryPrimaryGraphApplicationRuntime,
     WorthQueryPrincipalResolutionMode,
 };
-
 mod fact_routes;
 pub(in crate::domain_computation::primary_graph) use fact_routes::FactRoutes;
 pub(crate) mod application_projection;
@@ -33,8 +32,11 @@ mod completed_facts;
 pub(in crate::domain_computation::primary_graph::application_attempt) use completed_facts::admit_completed_facts;
 mod authority_facts;
 mod binding_proof;
+mod complete_read_set_core;
 mod completion;
+mod completion_brand;
 pub(crate) mod computation_routing;
+mod mutation_read_attempt_core;
 mod native_completion;
 mod value_decode;
 pub(in crate::domain_computation::primary_graph) use computation_routing::ComputationFactReaders;
@@ -188,7 +190,8 @@ where
             ));
         }
         admission
-            .validate_current_authority()
+            .validate_installed_operation(&self.runtime.installed_operations)
+            .and_then(|()| admission.validate_current_authority())
             .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)?;
         let graph = self.runtime.primary_graph().ok_or_else(|| {
             denial(
@@ -274,7 +277,7 @@ where
         >,
         WorthQueryApplicationAttemptDenial,
     > {
-        let phase_request = match phase.execution_request_for(&self.product_runtime) {
+        let phase_request = match phase.execution_request_for(&self.runtime.product_runtime) {
             Ok(request) => request,
             Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::ForeignPhase, "application-read-phase")),
         };
@@ -320,6 +323,9 @@ where
                 admission.operation(),
             ));
         }
+        admission
+            .validate_installed_operation(&self.runtime.installed_operations)
+            .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)?;
         if !projection.belongs_to(
             self.runtime.authority_identity(),
             &self.installed_schema.binding_identity(),
@@ -381,7 +387,6 @@ where
         })
     }
 }
-
 mod entity_resolution;
 mod workflow_actor;
 

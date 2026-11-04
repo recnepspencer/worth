@@ -2,7 +2,7 @@
 use std::{
     cell::RefCell,
     sync::{Arc, Condvar, Mutex},
-    time::{Duration, Instant},
+    time::Duration,
 };
 use worth_relational::facade::identity::EntityId;
 pub(crate) mod native_rendezvous;
@@ -43,12 +43,14 @@ pub enum Interrupt {
     Deadline {
         root: EntityId,
         earlier: Vec<EntityId>,
-        deadline: Instant,
+        deadline: worth_execution::MonotonicDeadline,
+        time: worth_execution::MonotonicTimeController,
     },
     QueryDeadline {
         root: EntityId,
         earlier: Vec<EntityId>,
-        deadline: Instant,
+        deadline: worth_execution::MonotonicDeadline,
+        time: worth_execution::MonotonicTimeController,
     },
     QueryCancel {
         root: EntityId,
@@ -144,7 +146,7 @@ impl DispatchWitness {
             Interrupt::Cancel { source, .. } => !source.is_cancelled(),
             Interrupt::QueryCancel { source, .. } => !source.token().is_cancelled(),
             Interrupt::Deadline { deadline, .. } | Interrupt::QueryDeadline { deadline, .. } => {
-                Instant::now() < *deadline
+                !deadline.is_elapsed()
             }
         };
         state.point = Some(InterruptionPoint {
@@ -155,13 +157,15 @@ impl DispatchWitness {
         match interruption {
             Interrupt::Cancel { source, .. } => source.cancel(),
             Interrupt::QueryCancel { source, .. } => source.cancel(),
-            Interrupt::Deadline { deadline, .. } | Interrupt::QueryDeadline { deadline, .. } => {
-                // This is the deadline event, not a speed assertion. The next
-                // request checkpoint must see it elapsed on any machine.
-                while Instant::now() < deadline {
-                    let duration = deadline.saturating_duration_since(Instant::now());
-                    state = self.finished.wait_timeout(state, duration).unwrap().0;
-                }
+            Interrupt::Deadline { deadline, time, .. }
+            | Interrupt::QueryDeadline { deadline, time, .. } => {
+                let instant = deadline
+                    .instant_on(&time.clock())
+                    .expect("the event advances its deadline's clock");
+                let elapsed = instant
+                    .checked_duration_since(time.clock().now())
+                    .expect("the held deadline is fresh at the event");
+                time.advance(elapsed).unwrap();
             }
         }
     }

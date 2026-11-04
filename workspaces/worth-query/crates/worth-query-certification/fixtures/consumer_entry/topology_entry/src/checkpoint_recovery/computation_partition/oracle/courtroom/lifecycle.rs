@@ -81,9 +81,11 @@ mod serial {
             let mut rng = Lcg(seed);
             let mut model = Model::new(&mut rng);
             let mut history = Reference::new(&model);
-            let mut app = installation::install_variant::<false, TOTALS_WORK, 1, 2>(
+            let mut app = installation::install_variant_with_observations::<false, TOTALS_WORK, 1, 2>(
                 None,
                 Default::default(),
+                0,
+                super::super::differential::reference::model_history_policy(),
                 |g| model.seed(g),
             );
             let mut prior = None;
@@ -124,9 +126,11 @@ mod serial {
                 }
                 let checkpoint = app.with_host_advancement(|phase| app.capture_application_checkpoint(&phase, worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy::SystemAllocation).unwrap()).expect("installed host call opens");
                 drop(app);
-                app = installation::install_variant::<false, TOTALS_WORK, 1, 2>(
+                app = installation::install_variant_with_observations::<false, TOTALS_WORK, 1, 2>(
                     Some(checkpoint),
                     Default::default(),
+                    0,
+                    super::super::differential::reference::model_history_policy(),
                     |_| panic!("restore does not reseed"),
                 );
                 prior = None;

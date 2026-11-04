@@ -31,10 +31,12 @@ impl Serialize for AuthoritativeArtifactEnvelopeRef<'_> {
         S: serde::Serializer,
     {
         let CanonicalCommitEnvelope {
+            content,
             live_managed_source_history: _,
             authored_index_writes,
             required_output_codec_retirements,
             required_output_origin,
+            producer_cascade_retirement,
             authored_cascade_retirement,
             authored_cascade_restoration,
             required_output_materialization,
@@ -68,7 +70,9 @@ impl Serialize for AuthoritativeArtifactEnvelopeRef<'_> {
             determinism: diagnostics_summary.determinism,
             entries: Vec::new(),
         };
-        let field_count = 28 + usize::from(!authored_index_writes.is_unavailable());
+        let field_count = 29
+            + usize::from(producer_cascade_retirement.is_some())
+            + usize::from(!authored_index_writes.is_unavailable());
         let mut fields = serializer.serialize_struct("CanonicalCommitEnvelope", field_count)?;
         if !authored_index_writes.is_unavailable() {
             fields.serialize_field("authored_index_writes", authored_index_writes)?;
@@ -78,12 +82,16 @@ impl Serialize for AuthoritativeArtifactEnvelopeRef<'_> {
             required_output_codec_retirements,
         )?;
         fields.serialize_field("required_output_origin", required_output_origin)?;
+        if producer_cascade_retirement.is_some() {
+            fields.serialize_field("producer_cascade_retirement", producer_cascade_retirement)?;
+        }
         fields.serialize_field("authored_cascade_retirement", authored_cascade_retirement)?;
         fields.serialize_field("authored_cascade_restoration", authored_cascade_restoration)?;
         fields.serialize_field(
             "required_output_materialization",
             required_output_materialization,
         )?;
+        fields.serialize_field("content", content)?;
         fields.serialize_field("commit", commit)?;
         fields.serialize_field("branch_context", branch_context)?;
         fields.serialize_field("branch_cell_checkpoint", branch_cell_checkpoint)?;

@@ -30,9 +30,9 @@ mod release;
 mod source_observation;
 pub use application_publication::{
     AdmittedAuthoredOutputRetirement, AdmittedCheckpointProgramActivation,
-    AdmittedRequiredOutputPublication, AdmittedRequiredOutputSuccession,
-    InstalledApplicationPublicationAuthority, InstalledApplicationPublicationOwner,
-    RequiredOutputPublicationAuthority,
+    AdmittedProducerOutputRetirement, AdmittedRequiredOutputPublication,
+    AdmittedRequiredOutputSuccession, InstalledApplicationPublicationAuthority,
+    InstalledApplicationPublicationOwner, RequiredOutputPublicationAuthority,
 };
 pub use managed_source::{
     AdmittedManagedIndexSourceAudience, AdmittedManagedIndexSourceCorrespondence,

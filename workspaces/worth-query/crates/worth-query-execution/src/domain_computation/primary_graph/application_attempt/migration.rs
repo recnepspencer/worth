@@ -32,6 +32,17 @@ where
     ) {
         return Err(WorthQueryProgramMigrationPreparationDenial::ForeignCandidate);
     }
+    program
+        .validate_installed_entry(
+            &application.runtime,
+            &application.installed_schema.binding_identity(),
+        )
+        .and_then(|()| program.validate_current_authority())
+        .map_err(|denial| {
+            WorthQueryProgramMigrationPreparationDenial::Candidate(
+                super::WorthQueryApplicationAttemptDenial::request_authority_lost(denial),
+            )
+        })?;
     // Adoption lowers effects without ordinary signing publication. A signed
     // body must never lose its deferred slot/proof by entering that lane.
     if program.read_set.signed_creation.is_some() {
@@ -88,8 +99,16 @@ where
         retain_client_observation,
         producer_required_invariants,
         output_currentness_facts,
+        content_attachments,
     } = program;
 
+    if !content_attachments.is_empty() {
+        return Err(
+            WorthQueryProgramMigrationPreparationDenial::UnsupportedPosture(
+                "program migration cannot transfer staged content custody",
+            ),
+        );
+    }
     let contracts = read_set.admission.allowed_graph_contract();
     if contracts.external_effect().is_declared() {
         return Err(

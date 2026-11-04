@@ -105,15 +105,15 @@ receive the ownership refusal too. Anchorless retirement of a live owning scope
 also refuses, whether the source has ordinary or independent-publication birth;
 a mixed Create/Retire roster cannot hide that source deletion. The admission and
 publication checks share one catalog-bounded, charged Native scope lookup. A producer-created intermediate source fails
-the genuine-authored-birth check if offered as an anchor. Preserve succession may
-replace a leaf but refuses deletion of a member that scopes a live owned
-publication, using catalog-bounded ancestry and charged route/member comparisons.
+the genuine-authored-birth check if offered as an anchor. D1069 widens the trigger: Preserve succession deleting owning members now retires
+their exact opted-in closure atomically, reusing this same Native selector. See
+[producer succession](producer-succession-cascade.md). Leaf replacement is unchanged.
 The same source-severing check applies when an independent publication contains
 an opted-in child's source. Independence does not sweep that publication into
 the root's cascade and does not authorize leaving an owned child without its
 source. Its complete legacy retirement still admits before the child exists;
-after child publication, both retirement and replacement refuse with that child's
-publication and source as subjects. The four-row court leaves S, independent Sc,
+after child publication, independent retirement still refuses; succession must
+include that child's exact complete closure. The four-row court leaves S, independent Sc,
 and owned {R,C} live after both refused candidates.
 An owned publication also requires its source to remain live after a Birth or
 Preserve candidate; restoration without that owner refuses

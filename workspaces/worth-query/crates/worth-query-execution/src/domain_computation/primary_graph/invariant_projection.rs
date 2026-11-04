@@ -112,6 +112,7 @@ static NEXT_INVARIANT_PROJECTION_AUTHORITY: std::sync::atomic::AtomicU64 =
 /// move-only primary-graph bootstrap. Ordinary consumers cannot construct it
 /// from runtime identities or application admissions.
 pub struct WorthQueryApplicationInvariantProjectionAuthority<Schema> {
+    installed_operations: Arc<worth_query_installation::facade::InstalledOperationCatalog>,
     graph: WorthQueryPrimaryGraphIntegrationHandle,
     layout: Arc<WorthQueryPrimaryGraphLayout>,
     runtime_authority: WorthQueryRuntimeAuthorityIdentity,

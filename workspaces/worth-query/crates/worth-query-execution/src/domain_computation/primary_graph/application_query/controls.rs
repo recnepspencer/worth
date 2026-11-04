@@ -2,7 +2,6 @@ use super::super::application_output_demand::OriginalSettledProducerObservation;
 use std::marker::PhantomData;
 use std::num::NonZeroUsize;
 use std::sync::Arc;
-use std::time::Instant;
 
 use worth_query_admission::facade::{
     application_query::WorthQueryApplicationQueryLane,
@@ -64,7 +63,7 @@ pub struct WorthQueryAdmittedApplicationQueryControls<'a> {
     consistency: WorthQueryApplicationQueryConsistency,
     freshness: WorthQueryApplicationQueryFreshness,
     lane: WorthQueryApplicationQueryLane,
-    basis_deadline: Option<Instant>,
+    basis_deadline: Option<worth_execution::MonotonicDeadline>,
     maximum_result_count: NonZeroUsize,
 
     request_scope: &'a WorthQueryRequestScope,
@@ -350,13 +349,14 @@ impl WorthQueryAdmittedApplicationQueryControls<'_> {
         self.lane
     }
 
-    pub const fn basis_deadline(&self) -> Option<Instant> {
-        self.basis_deadline
+    pub fn basis_deadline(&self) -> Option<worth_execution::MonotonicDeadline> {
+        self.basis_deadline.clone()
     }
 
     pub fn basis_is_expired(&self) -> bool {
         self.basis_deadline
-            .is_some_and(|deadline| Instant::now() >= deadline)
+            .as_ref()
+            .is_some_and(worth_execution::MonotonicDeadline::is_elapsed)
     }
 
     pub const fn maximum_result_count(&self) -> NonZeroUsize {

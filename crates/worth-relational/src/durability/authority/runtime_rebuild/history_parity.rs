@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::durability::data::{DurabilityError, RecoveryFailureClass};
+use crate::durability::data::{DurabilityError, RecoveryFailureClass, RelationalRecoveryStop};
 use crate::history::data::CanonicalCommitEnvelope;
 use crate::history::data::{HistoryDriftClass, VersionNode};
 use crate::runtime::RelationalRuntime;
@@ -8,11 +8,12 @@ use crate::runtime::RelationalRuntime;
 use super::super::super::derived_index_artifacts::admit_envelope_derived_index_artifacts;
 
 pub(super) fn apply_authoritative_commit_artifacts(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut RelationalRuntime,
     positioned: &crate::history::data::PositionedCanonicalCommit,
     allow_reconstructed_replacement: bool,
     advance_branch_currentness: bool,
-) -> Result<(), DurabilityError> {
+) -> Result<(), RelationalRecoveryStop> {
     let envelope = positioned.envelope();
     let index_artifacts = admit_envelope_derived_index_artifacts(envelope)?;
     let history_before = runtime
@@ -36,7 +37,8 @@ pub(super) fn apply_authoritative_commit_artifacts(
                 "recovery commit envelope conflicts for commit {}",
                 envelope.commit.commit_id.0
             ),
-        ));
+        )
+        .into());
     }
     let catalog_matches = runtime
         .history
@@ -56,7 +58,8 @@ pub(super) fn apply_authoritative_commit_artifacts(
                 "recovery commit artifact conflicts for commit {}",
                 envelope.commit.commit_id.0
             ),
-        ));
+        )
+        .into());
     }
     runtime.history.insert_commit_graph_node(
         envelope.commit.commit_id,
@@ -89,12 +92,13 @@ pub(super) fn apply_authoritative_commit_artifacts(
     let result = runtime
         .history
         .record_recovered_commit(
+            execution,
             canonical.as_ref(),
             allow_reconstructed_replacement,
             advance_branch_currentness,
             &runtime.services.symbols.interner_snapshot(),
         )
-        .map_err(|detail| DurabilityError::new(RecoveryFailureClass::CorruptCheckpoint, detail));
+        .map_err(RelationalRecoveryStop::from);
     if let Err(error) = result {
         super::unshared_state(runtime)?
             .history

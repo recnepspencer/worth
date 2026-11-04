@@ -40,6 +40,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             }
             settlement.require_original_provenance(&execution)?;
             let lineage = runtime
+                .runtime
                 .primary_provider
                 .graph
                 .output_lineage

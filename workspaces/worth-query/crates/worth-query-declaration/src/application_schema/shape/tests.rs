@@ -42,6 +42,7 @@ struct RenamedField {
 
 fn field<Value: CanonicalValue>(bounds: ValueDecodeBounds) -> ApplicationSchemaMember {
     ApplicationSchemaMember::Field {
+        content_format: None,
         entity: "Document".into(),
         aspect: "Facts".into(),
         field: "Saved".into(),

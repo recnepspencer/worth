@@ -45,7 +45,7 @@ impl<'runtime, Schema: ApplicationSchema + 'static> RequiredWaveSelection<'runti
         runtime: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         _delivery: super::super::super::required_continuations::DeliveredAwaited,
     ) -> Result<Self, WorthQueryOutputDemandDenial> {
-        let head = runtime.output_demands.publication_head_selection(
+        let head = runtime.runtime.output_demands.publication_head_selection(
             self.shared
                 .selected()
                 .product()
@@ -92,6 +92,7 @@ where
     Schema: ApplicationSchema + 'static,
 {
     let Some(anchor_ready) = runtime
+        .runtime
         .output_demands
         .interest_ready_readmission(interest)?
     else {
@@ -139,7 +140,7 @@ where
     Schema: ApplicationSchema + 'static,
 {
     let (shared, positioned) = select_required_basis(execution, runtime, branch)?;
-    let head = runtime.output_demands.publication_head_selection(
+    let head = runtime.runtime.output_demands.publication_head_selection(
         shared
             .selected()
             .product()
@@ -173,6 +174,7 @@ where
 {
     // A Ready the wave answers is read at this selection.
     let _held_world_observations = runtime
+        .runtime
         .primary_provider
         .take_ready_read_snapshot_pressure()
         .then(|| runtime.hold_world_snapshot_pressure_for_test(branch));
@@ -188,21 +190,26 @@ where
     let product = selected.product().read_lease_ref();
     let snapshot = selected.application_basis().snapshot_handle();
     let positioned = runtime
+        .runtime
         .primary_provider
         .graph
         .with_runtime(execution, |native| {
             native.read_truth().positioned_snapshot(snapshot)
         })
         .map_err(position_denial)?;
-    runtime.output_demands.observe_selected_discontinuity(
-        product,
-        &positioned,
-        &runtime
-            .primary_provider
-            .graph
-            .source_owner
-            .invalidation_owner,
-    )?;
+    runtime
+        .runtime
+        .output_demands
+        .observe_selected_discontinuity(
+            product,
+            &positioned,
+            &runtime
+                .runtime
+                .primary_provider
+                .graph
+                .source_owner
+                .invalidation_owner,
+        )?;
     let shared = selected
         .prepare_shared_query_basis()
         .map_err(|(_, stop)| admission_denial(stop))?;

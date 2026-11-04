@@ -101,7 +101,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             intent_hash.finalize().into(),
         );
         let execution = phase
-            .checked_execution_request_for(&self.application().product_runtime)
+            .checked_execution_request_for(&self.application().runtime.product_runtime)
             .map_err(Denial::Stopped)?;
         let mut selected = self.selection.lock();
         match selected.journal.lookup(meaning) {

@@ -59,7 +59,7 @@ impl DeclaredNativeFactContract {
         let expected_shape = match basis.contract().shape() {
             AspectShape::Scalar(family) => AspectValuePosture::Scalar(*family),
             AspectShape::Struct(_) => AspectValuePosture::Struct,
-            AspectShape::Opaque(_) | AspectShape::Reference(_) | AspectShape::Content => {
+            AspectShape::Opaque(_) | AspectShape::Reference(_) => {
                 return Err(DeclaredNativeFactContractDenial::UnsupportedAspectShape)
             }
         };

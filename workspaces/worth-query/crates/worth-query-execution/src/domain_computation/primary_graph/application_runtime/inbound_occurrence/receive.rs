@@ -215,6 +215,7 @@ where
             Ok(posture) => {
                 let unpublished = posture == WorthQueryInboundReceiptPosture::AcceptedPending
                     && self
+                        .runtime
                         .inbound_custody
                         .lock()
                         .unwrap_or_else(|poisoned| poisoned.into_inner())
@@ -243,6 +244,7 @@ where
         denial: WorthQueryInboundAdmissionDenial,
     ) -> Result<WorthQueryInboundReceipt, WorthQueryInboundAdmissionDenial> {
         let retained = self
+            .runtime
             .inbound_custody
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())

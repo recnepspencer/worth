@@ -24,7 +24,6 @@ pub enum AspectValue {
     BigInt(CanonicalBigInt),
     Rational(CanonicalRational),
     String(InternedString),
-    Bytes(ContentRefId),
     Uuid([u8; 16]),
     Date(CanonicalDate),
     Time(CanonicalTime),
@@ -54,7 +53,6 @@ impl AspectValue {
             Self::BigInt(_) => ScalarAspectType::BigInt,
             Self::Rational(_) => ScalarAspectType::Rational,
             Self::String(_) => ScalarAspectType::String,
-            Self::Bytes(_) => ScalarAspectType::Bytes,
             Self::Uuid(_) => ScalarAspectType::Uuid,
             Self::Date(_) => ScalarAspectType::Date,
             Self::Time(_) => ScalarAspectType::Time,
@@ -91,9 +89,8 @@ impl AspectValue {
             | Self::UInt64(_)
             | Self::Float64(_)
             | Self::Time(_)
-            | Self::Timestamp(_)
-            | Self::Bytes(_)
-            | Self::ContentRef(_) => 9,
+            | Self::Timestamp(_) => 9,
+            Self::ContentRef(_) => 33,
             Self::Decimal(value) => 1_usize.saturating_add(value.as_str().len()),
             Self::BigInt(value) => 1_usize.saturating_add(value.as_str().len()),
             Self::Rational(value) => 1_usize

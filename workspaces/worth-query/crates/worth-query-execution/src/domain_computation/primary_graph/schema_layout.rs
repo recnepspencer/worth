@@ -12,6 +12,7 @@ use super::WorthQueryPrimaryGraphInstallationDenial;
 
 mod aggregate_identity;
 mod aspect_contract;
+mod content;
 pub(in crate::domain_computation::primary_graph) use aggregate_identity::ComponentSetLayout;
 mod application_layout_lowering;
 mod authorization_selectors;
@@ -135,10 +136,11 @@ impl WorthQueryPrimaryGraphLayout {
         schema: &ErasedApplicationSchemaDeclaration,
         native_contracts: &WorthQueryInstalledApplicationSchemaContractCatalog,
         existing_registry: &RelationalSchemaRegistry,
+        value_bindings: &worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
     ) -> Result<(Self, RelationalSchemaRegistry), WorthQueryPrimaryGraphInstallationDenial> {
         let (entity_kinds, relation_kinds) = lower_kind_ids(schema, existing_registry)?;
         let (schema_id, schema_version_id) = relational_schema_basis(schema, existing_registry)?;
-        let mut registry = RelationalSchemaRegistry::new();
+        let mut registry = content::lower(RelationalSchemaRegistry::new(), value_bindings)?;
         let mut aspect_contracts: BTreeMap<
             String,
             BTreeMap<AspectKey, DeclaredAspectContractBinding>,
@@ -294,19 +296,10 @@ impl WorthQueryPrimaryGraphLayout {
         ))
     }
 
-    pub(in crate::domain_computation::primary_graph) fn application_relation_kinds(
+    pub fn relation(
         &self,
-    ) -> impl Iterator<Item = KindId> + '_ {
-        self.application_relation_kinds.iter().copied()
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn application_entity_kinds(
-        &self,
-    ) -> impl Iterator<Item = KindId> + '_ {
-        self.application_entity_kinds.iter().copied()
-    }
-
-    pub fn relation(&self, relation: &str) -> Option<&WorthQueryPrimaryRelationLayout> {
+        relation: &str,
+    ) -> Option<&WorthQueryPrimaryRelationLayout> {
         self.relation_kinds.get(relation)
     }
 

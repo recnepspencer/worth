@@ -45,6 +45,7 @@ pub(super) fn install(nodes: usize) -> App {
             128 * 1024 * 1024,
             nodes * 4 + 256,
             capacity,
+            worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system(),
         ),
         runtime::WorthQueryApplicationQueryResourceProfile::new(NonZeroUsize::new(128).unwrap()),
         primary_graph::SignalConditionalEvaluationBudget::development(),

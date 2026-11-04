@@ -70,6 +70,7 @@ where
             .operation_slot()
             .ok_or(Denial::OutboxOperationUnbound)?;
         let installed = self
+            .runtime
             .inbound_verifiers
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());

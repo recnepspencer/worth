@@ -4,6 +4,7 @@ use worth_runtime_world::facade::{
 };
 #[derive(Debug)]
 pub enum WorthQueryProductPublicationDenial<Refusal> {
+    ClockMismatch,
     Stopped(worth_execution::WorkCeilingDenial),
     Refused(Refusal),
 }

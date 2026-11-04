@@ -12,6 +12,7 @@ use crate::package::{
 
 #[derive(Debug)]
 pub(super) struct WorthQueryInstalledApplicationSchemaRecord {
+    operation_catalog: Arc<crate::application_operation::InstalledOperationCatalog>,
     declaration: ErasedApplicationSchemaDeclaration,
     schema_identity: CanonicalDigestId,
     schema_work: WorthQueryCanonicalWorkEvidence,
@@ -30,6 +31,7 @@ impl WorthQueryInstalledApplicationSchemaRecord {
         operation_contracts: Arc<Vec<WorthQueryPortableApplicationOperationContractRecord>>,
     ) -> Self {
         Self {
+            operation_catalog: Default::default(),
             declaration,
             schema_identity,
             schema_work,
@@ -41,6 +43,12 @@ impl WorthQueryInstalledApplicationSchemaRecord {
 
     pub(super) fn declaration(&self) -> &ErasedApplicationSchemaDeclaration {
         &self.declaration
+    }
+
+    pub(super) fn operation_catalog(
+        &self,
+    ) -> Arc<crate::application_operation::InstalledOperationCatalog> {
+        Arc::clone(&self.operation_catalog)
     }
 
     pub(super) const fn schema_identity(&self) -> CanonicalDigestId {

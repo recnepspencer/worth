@@ -42,8 +42,9 @@ where
         phase: &super::super::WorthQueryAdvancementPhase<'_>,
     ) -> Result<WorthQueryApplicationCheckpoint, WorthQueryCheckpointCaptureDenial> {
         let policy = WorthQueryCheckpointCapturePolicy::SystemAllocation;
-        let execution = phase.execution_request_for(&self.product_runtime)?;
-        self.primary_provider
+        let execution = phase.execution_request_for(&self.runtime.product_runtime)?;
+        self.runtime
+            .primary_provider
             .graph
             .with_runtime(&execution, |runtime| {
                 runtime
@@ -85,19 +86,22 @@ where
         WorthQueryCheckpointCaptureDenial,
     > {
         policy.check_live()?;
-        let occurrence = self.product_runtime.default_occurrence;
+        let occurrence = self.runtime.product_runtime.default_occurrence;
         let lane = self
+            .runtime
             .primary_provider
             .application_branch_commit_lane_for_occurrence(occurrence);
         let _coordination = lane.enter();
         let lease = self
+            .runtime
             .product_runtime
             .admit_product_occurrence(occurrence)
             .map_err(|_| {
                 native_priors::capture_denial("checkpoint product occurrence cannot be admitted")
             })?;
-        let execution = phase.execution_request_for(&self.product_runtime)?;
-        self.primary_provider
+        let execution = phase.execution_request_for(&self.runtime.product_runtime)?;
+        self.runtime
+            .primary_provider
             .graph
             .with_runtime(&execution, |runtime| {
                 policy.check_live()?;
@@ -106,9 +110,10 @@ where
                     .native_checkpoint(&execution, policy)
                     .map_err(WorthQueryCheckpointCaptureDenial::from)
                     .and_then(|checkpoint| {
-                        let accepted = self.output_demands.accepted_checkpoint_records();
+                        let accepted = self.runtime.output_demands.accepted_checkpoint_records();
 
                         let lineage = self
+                            .runtime
                             .primary_provider
                             .graph
                             .output_lineage
@@ -129,7 +134,7 @@ where
                         let mut accepted = native_priors::merge(
                             &lineage,
                             accepted,
-                            self.recovered_outputs.iter().map(|accepted| {
+                            self.runtime.recovered_outputs.iter().map(|accepted| {
                                 (
                                     accepted.checkpoint.clone(),
                                     accepted.correspondence.binding_type(),

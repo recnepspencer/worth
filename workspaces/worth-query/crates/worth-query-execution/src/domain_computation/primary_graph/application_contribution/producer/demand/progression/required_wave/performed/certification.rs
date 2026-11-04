@@ -65,6 +65,7 @@ where
     Schema: ApplicationSchema + 'static,
 {
     let candidate = runtime
+        .runtime
         .primary_provider
         .graph
         .output_lineage
@@ -126,6 +127,7 @@ where
         }
         RequiredCueProgress::PendingExact(pending) => {
             let upstream = runtime
+                .runtime
                 .output_demands
                 .pending_exact_ready_readmission(&pending, &wave.positioned)?;
             Ok(match upstream {
@@ -160,6 +162,7 @@ pub(in super::super) fn certify_frozen_ready<'call, Schema: ApplicationSchema + 
     } = caller;
 
     let candidate = runtime
+        .runtime
         .primary_provider
         .graph
         .output_lineage
@@ -188,14 +191,14 @@ pub(in super::super) fn certify_frozen_ready<'call, Schema: ApplicationSchema + 
         crate::domain_computation::primary_graph::application_contribution::producer::execution::FrozenCurrentInspection::Current(value) =>
             FrozenCallerInspection::Current(performed.borrow().current(value, CurrentBasis::of(wave.shared.selected().product().observation()), selected.certify_current_record(CurrentBasis::of(wave.shared.selected().product().observation())))),
         crate::domain_computation::primary_graph::application_contribution::producer::execution::FrozenCurrentInspection::PendingExact(pending) => {
-            match super::super::super::super::required_continuations::RegistryDelivery::from_pending(&pending, &wave.positioned, &runtime.output_demands)? {
+            match super::super::super::super::required_continuations::RegistryDelivery::from_pending(&pending, &wave.positioned, &runtime.runtime.output_demands)? {
                 super::super::super::super::required_continuations::RequiredDelivery::Delivery(delivery) => FrozenCallerInspection::RegistryDelivery(delivery),
                 super::super::super::super::required_continuations::RequiredDelivery::Ready(ready) => FrozenCallerInspection::Upstream(ready),
                 super::super::super::super::required_continuations::RequiredDelivery::Unavailable => FrozenCallerInspection::NotCurrent,
             }
         }
         crate::domain_computation::primary_graph::application_contribution::producer::execution::FrozenCurrentInspection::NotCurrent => {
-            match super::super::super::super::required_continuations::RegistryDelivery::from_required_claim(selected, &runtime.output_demands)? {
+            match super::super::super::super::required_continuations::RegistryDelivery::from_required_claim(selected, &runtime.runtime.output_demands)? {
                 Some(delivery) => FrozenCallerInspection::RegistryDelivery(delivery),
                 None => FrozenCallerInspection::NotCurrent,
             }

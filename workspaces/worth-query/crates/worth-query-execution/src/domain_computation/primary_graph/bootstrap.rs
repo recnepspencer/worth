@@ -62,6 +62,7 @@ pub(super) struct WorthQueryPrincipalBootstrapRow {
 /// retained by the execution runtime.
 pub struct WorthQueryPrimaryGraphBootstrap<Schema> {
     pub(super) runtime_authority: WorthQueryRuntimeAuthorityIdentity,
+    pub(super) installed_operations: Arc<worth_query_installation::facade::InstalledOperationCatalog>,
     installed_packages: Arc<WorthQueryInstalledPackageIndex>,
     pub(super) value_bindings: worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
     pub(super) graph: WorthQueryPrimaryGraph,

@@ -24,7 +24,6 @@ pub(super) fn scalar_samples() -> Vec<AspectValue> {
             CanonicalRational::new(CanonicalBigInt::new("22"), CanonicalBigInt::new("7")).unwrap(),
         ),
         AspectValue::String(InternedString::Raw("alpha".into())),
-        AspectValue::Bytes(ContentRefId(41)),
         AspectValue::Uuid([7; 16]),
         AspectValue::Date(CanonicalDate {
             days_from_unix_epoch: 20_000,
@@ -42,7 +41,10 @@ pub(super) fn scalar_samples() -> Vec<AspectValue> {
             10,
             11,
         )),
-        AspectValue::ContentRef(ContentRefId(42)),
+        AspectValue::ContentRef(ContentRefId([
+            42, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0,
+        ])),
         AspectValue::String(InternedString::Symbol(Symbol(17))),
     ]
 }

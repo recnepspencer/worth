@@ -151,3 +151,5 @@ fn application_schema_unknown_member_and_trailing_payload_fail_closed() {
         WorthQueryPackageArchiveDecodeWork::default()
     );
 }
+
+mod content;

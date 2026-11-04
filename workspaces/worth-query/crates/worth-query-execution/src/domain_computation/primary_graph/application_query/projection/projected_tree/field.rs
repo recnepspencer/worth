@@ -10,7 +10,31 @@ impl WorthQueryApplicationProjectedField {
             slot_type: projection.slot_type_identity(),
             slot_key: projection.slot_key_identity(),
             value,
+            content: None,
         }
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_query) fn source(
+        projection: &WorthQueryInstalledGraphProjection,
+        value: AspectValue,
+        content: Option<worth_relational::facade::content::RelationalContentFrame>,
+    ) -> Result<Self, worth_relational::facade::content::RelationalContentDenial> {
+        use worth_relational::facade::content::RelationalContentDenial as Denial;
+        match (&value, &content) {
+            (AspectValue::ContentRef(identity), Some(frame)) if *identity == frame.identity() => {}
+            (AspectValue::ContentRef(_), Some(_)) => return Err(Denial::EncodingInconsistency),
+            (AspectValue::ContentRef(_), None) => return Err(Denial::MissingContent),
+            (_, Some(_)) => return Err(Denial::EncodingInconsistency),
+            (_, None) => {}
+        }
+        let mut field = Self::new(projection, value);
+        field.content = content;
+        Ok(field)
+    }
+    pub(in crate::domain_computation::primary_graph::application_query) fn content(
+        &self,
+    ) -> Option<&worth_relational::facade::content::RelationalContentFrame> {
+        self.content.as_ref()
     }
 
     pub(in crate::domain_computation::primary_graph::application_query) fn result_path(
@@ -35,6 +59,7 @@ impl WorthQueryApplicationProjectedField {
             slot_type: _slot_type,
             slot_key: _slot_key,
             value,
+            content: _,
         } = self;
         value.owned_allocation_capacity_bytes()
     }

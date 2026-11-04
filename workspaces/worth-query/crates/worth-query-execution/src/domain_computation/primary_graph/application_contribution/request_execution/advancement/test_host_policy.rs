@@ -49,7 +49,7 @@ impl<'scope> TestHostRequest<'scope> {
         &self,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     ) -> WorthQueryAdvancementPhase<'scope> {
-        self.phase_for_product(&runtime.product_runtime)
+        self.phase_for_product(&runtime.runtime.product_runtime)
     }
 
     pub(super) fn from_installed(phase: &WorthQueryAdvancementPhase<'scope>) -> Self {

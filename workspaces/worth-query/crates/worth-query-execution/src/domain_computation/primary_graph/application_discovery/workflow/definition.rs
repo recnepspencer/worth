@@ -69,7 +69,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
 
         let _access = admit(self, phase, &binding, principal, input, request)?;
         let execution = phase
-            .execution_request_for(&self.application().product_runtime)
+            .execution_request_for(&self.application().runtime.product_runtime)
             .map_err(Denial::Phase)?;
         let graph = self
             .application()

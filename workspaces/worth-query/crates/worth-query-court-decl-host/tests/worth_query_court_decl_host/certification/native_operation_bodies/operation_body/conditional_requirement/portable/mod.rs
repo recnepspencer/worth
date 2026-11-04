@@ -28,7 +28,7 @@ fn conditional_requirement_survives_checkpoint_and_fresh_schema_readmission() {
         schema,
         (program::Installation::Native,),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        super::super::host_limits(),
+        super::super::host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         checkpoint,
     )
     .unwrap();

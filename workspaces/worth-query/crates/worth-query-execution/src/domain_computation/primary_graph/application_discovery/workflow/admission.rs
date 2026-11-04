@@ -67,7 +67,7 @@ where
         return Err(Denial::PolicyMismatch);
     }
     let execution = phase
-        .execution_request_for(&selected.application().product_runtime)
+        .execution_request_for(&selected.application().runtime.product_runtime)
         .map_err(Denial::Phase)?;
     // The selected native principal owner prepares only its installed identity index.
     let principal = selected

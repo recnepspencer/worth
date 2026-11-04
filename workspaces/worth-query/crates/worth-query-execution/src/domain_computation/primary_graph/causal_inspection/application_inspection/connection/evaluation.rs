@@ -137,7 +137,7 @@ pub(super) fn evaluate<Schema: worth_query_installation::facade::ApplicationSche
 ) -> Result<WorthQueryApplicationProducerEvaluation, CaptureStop<ConnectionRefusal>> {
     evaluate_installed(
         InstalledEvaluationFields {
-            layout: &runtime.primary_provider.graph.layout,
+            layout: &runtime.runtime.primary_provider.graph.layout,
             contracts: runtime.installed_schema().native_contracts(),
         },
         execution,

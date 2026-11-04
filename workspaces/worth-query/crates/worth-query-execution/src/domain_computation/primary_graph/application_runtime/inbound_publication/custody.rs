@@ -167,7 +167,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         evidence: InstalledTransportCompletion,
         in_flight: OutstandingDispatchInFlightLease,
     ) -> Result<(), InstalledTransportCustodyDenial> {
-        self.transport_completion_custody
+        self.runtime
+            .transport_completion_custody
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .retain(evidence, in_flight)
@@ -178,7 +179,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         &self,
         correlation: &ExternalEffectCorrelationIdentity,
     ) -> bool {
-        self.transport_completion_custody
+        self.runtime
+            .transport_completion_custody
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .entries

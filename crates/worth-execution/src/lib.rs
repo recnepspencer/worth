@@ -8,6 +8,14 @@
 //! Only the composition root constructs an authority. Domain runtimes receive
 //! leases and use checked patterns; they do not control the physical backend.
 
+mod monotonic_clock;
+mod monotonic_deadline;
+pub use monotonic_clock::{
+    MonotonicClock, MonotonicTimeAdvanceDenial, MonotonicTimeConstructionDenial,
+    MonotonicTimeController,
+};
+pub use monotonic_deadline::MonotonicDeadline;
+
 mod authority;
 mod backend;
 mod oracle;
@@ -73,6 +81,8 @@ pub use authority::consult_observation::{
 };
 #[doc(hidden)]
 pub use backend::ExecutionCheckpointObservationForTest;
+#[doc(hidden)]
+pub use backend::{ExecutionScopeSetupCountsForTest, ExecutionScopeSetupObservationForTest};
 
 #[cfg(test)]
 pub(crate) use authority::ExecutionAllocationDenialKind;

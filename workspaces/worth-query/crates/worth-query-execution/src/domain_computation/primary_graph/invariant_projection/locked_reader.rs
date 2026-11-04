@@ -23,6 +23,8 @@ use crate::domain_computation::primary_graph::{
 };
 
 mod borrowed_snapshot;
+#[path = "locked_reader/content.rs"]
+mod content;
 #[path = "locked_reader/operation_body.rs"]
 mod operation_body;
 #[path = "locked_reader/predecode_admission.rs"]

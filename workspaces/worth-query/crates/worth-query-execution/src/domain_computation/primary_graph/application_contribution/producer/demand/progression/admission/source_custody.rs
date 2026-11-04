@@ -49,8 +49,10 @@ where
         WorthQueryOutputDemandDenial,
     > {
         let publication = receipt.committed_product_publication();
-        if !std::sync::Arc::ptr_eq(&change.root_identity, &self.product_runtime.root_identity())
-            || change.product_branch_identity() != publication.product_branch()
+        if !std::sync::Arc::ptr_eq(
+            &change.root_identity,
+            &self.runtime.product_runtime.root_identity(),
+        ) || change.product_branch_identity() != publication.product_branch()
             || change.product_commit() != publication.composite_commit()
             || observation.branch_identity() != change.product_branch_identity()
             || observation.selected_commit() != change.product_commit()
@@ -65,7 +67,7 @@ where
             crate::basis::WorthQueryProductObservationLease::new(observation.clone()),
         );
         let product_occurrence = observation.lifecycle_incarnation();
-        let source_commit = self.output_demands.retain_performed_source(
+        let source_commit = self.runtime.output_demands.retain_performed_source(
             crate::domain_computation::primary_graph::application_output_demand::WorthQueryPerformedOutputDemandSource {
                 receipt,
                 change,
@@ -81,7 +83,7 @@ where
                 runtime_authority: self.runtime.authority_identity().as_u64(),
                 source_commit,
                 product_occurrence,
-                owner: self.output_demands.clone(),
+                owner: self.runtime.output_demands.clone(),
             },
             retained,
         ))
@@ -107,6 +109,7 @@ where
         Discovery: Clone + Send + Sync + 'static,
     {
         let (discovery, observation) = self
+            .runtime
             .output_demands
             .recover_discovered_source::<Discovery>(receipt, root_type)?;
         let retained = crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation::from_product(
@@ -121,7 +124,7 @@ where
                     .composite_commit()
                     .clone(),
                 product_occurrence: receipt.product_branch().occurrence(),
-                owner: self.output_demands.clone(),
+                owner: self.runtime.output_demands.clone(),
             };
         Ok((discovery, retained, prepared))
     }
@@ -152,7 +155,7 @@ where
             prepared,
             observed,
         )?;
-        self.output_demands.bind_prepared_output_source(
+        self.runtime.output_demands.bind_prepared_output_source(
             &prepared.source_commit,
             crate::domain_computation::primary_graph::application_output_demand::BoundOutputSource {
                 scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(observed.source_root()),
@@ -206,7 +209,8 @@ where
                 })
             })
             .collect::<Result<Vec<_>, WorthQueryOutputDemandDenial>>()?;
-        self.output_demands
+        self.runtime
+            .output_demands
             .ensure_discovered_sources_bound(&prepared.source_commit, &identities)
     }
 
@@ -215,7 +219,8 @@ where
         prepared: crate::domain_computation::primary_graph::WorthQueryPreparedRequiredOutputSource,
     ) {
         if prepared.runtime_authority == self.runtime.authority_identity().as_u64() {
-            self.output_demands
+            self.runtime
+                .output_demands
                 .discard_prepared_source(&prepared.source_commit);
         }
     }

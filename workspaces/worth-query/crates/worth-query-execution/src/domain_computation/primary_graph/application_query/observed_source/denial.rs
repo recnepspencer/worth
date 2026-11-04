@@ -2,6 +2,8 @@
 /// expectation.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQuerySourceExpectationDenialKind {
+    /// The exact admission authority refusal before any source work.
+    AdmissionAuthorization,
     /// The operation declares a source expectation and none was bound.
     MissingExpectation,
     /// The source was observed by a different application runtime.
@@ -45,6 +47,7 @@ pub struct WorthQuerySourceExpectationDenial {
     kind: WorthQuerySourceExpectationDenialKind,
     subject: String,
     retention_denial: Option<crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial>,
+    authorization_denial: Option<Box<crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial>>,
 }
 
 impl WorthQuerySourceExpectationDenial {
@@ -64,6 +67,7 @@ impl WorthQuerySourceExpectationDenial {
             kind: WorthQuerySourceExpectationDenialKind::RetainedSourceStorageDenied,
             subject: subject.to_owned(),
             retention_denial: Some(denial),
+            authorization_denial: None,
         }
     }
     /// The original caller interruption while retaining this source's facts.
@@ -93,6 +97,26 @@ impl WorthQuerySourceExpectationDenial {
             Some(crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial::Allocation(denial)) => Some(denial), _ => None,
         }
     }
+
+    /// The original admission refusal, including its exact authorization cause.
+    pub fn authorization_denial(
+        &self,
+    ) -> Option<&crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial>
+    {
+        self.authorization_denial.as_deref()
+    }
+
+    pub(in crate::domain_computation) fn admission_authorization(
+        subject: &str,
+        denial: crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
+    ) -> Self {
+        Self {
+            kind: WorthQuerySourceExpectationDenialKind::AdmissionAuthorization,
+            subject: subject.to_owned(),
+            retention_denial: None,
+            authorization_denial: Some(Box::new(denial)),
+        }
+    }
     #[doc(hidden)]
     pub fn new_missing(subject: impl Into<String>) -> Self {
         Self::new(
@@ -105,10 +129,21 @@ impl WorthQuerySourceExpectationDenial {
         kind: WorthQuerySourceExpectationDenialKind,
         subject: impl Into<String>,
     ) -> Self {
+        Self::from_kind(kind, subject.into())
+    }
+
+    fn from_kind(kind: WorthQuerySourceExpectationDenialKind, subject: String) -> Self {
+        if kind == WorthQuerySourceExpectationDenialKind::AdmissionAuthorization {
+            return Self::admission_authorization(
+                &subject,
+                crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::inconsistent(&subject),
+            );
+        }
         Self {
             kind,
-            subject: subject.into(),
+            subject,
             retention_denial: None,
+            authorization_denial: None,
         }
     }
 }
@@ -119,11 +154,19 @@ impl std::fmt::Display for WorthQuerySourceExpectationDenial {
             formatter,
             "source expectation denied: {:?} ({})",
             self.kind, self.subject
-        )
+        )?;
+        if let Some(cause) = self.authorization_denial() {
+            write!(formatter, ": {cause}")?;
+        }
+        Ok(())
     }
 }
 
-impl std::error::Error for WorthQuerySourceExpectationDenial {}
+impl std::error::Error for WorthQuerySourceExpectationDenial {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        self.authorization_denial().map(|cause| cause as _)
+    }
+}
 
 impl worth_execution::ChargedBytes for WorthQuerySourceExpectationDenial {
     fn additional_charged_bytes(&self) -> u64 {
@@ -132,7 +175,13 @@ impl worth_execution::ChargedBytes for WorthQuerySourceExpectationDenial {
         if self.retention_denial.is_some() {
             u64::MAX
         } else {
-            self.subject.capacity() as u64
+            (self.subject.capacity() as u64).saturating_add(
+                self.authorization_denial.as_ref().map_or(0, |cause| {
+                    (std::mem::size_of_val(cause.as_ref()) as u64).saturating_add(
+                        worth_execution::ChargedBytes::additional_charged_bytes(cause.as_ref()),
+                    )
+                }),
+            )
         }
     }
 }

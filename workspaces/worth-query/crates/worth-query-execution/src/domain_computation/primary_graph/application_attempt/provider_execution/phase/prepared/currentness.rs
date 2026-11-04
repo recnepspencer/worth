@@ -9,6 +9,7 @@ pub fn select_current_product<Schema: ApplicationSchema>(
     application
         .admit_with_observation_room(|| {
             application
+                .runtime
                 .product_runtime
                 .admit_product_occurrence(retained.observation().lifecycle_incarnation())
         })
@@ -108,10 +109,9 @@ pub(super) fn validate_elevation_currentness<Schema>(
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     elevation_currentness: Option<WorthQueryElevationCommitCurrentness>,
 ) -> Result<(), WorthQueryApplicationCommitOutcome> {
-    if elevation_currentness
-        .as_ref()
-        .is_some_and(|currentness| !currentness.remains_current(&application.authorization_clock))
-    {
+    if elevation_currentness.as_ref().is_some_and(|currentness| {
+        !currentness.remains_current(&application.runtime.authorization_clock)
+    }) {
         Err(denied(DenialStage::DecisionReadSet))
     } else {
         Ok(())
@@ -126,7 +126,7 @@ pub(super) fn validate_workflow_deadline<Schema>(
 ) -> Result<(), WorthQueryApplicationCommitOutcome> {
     deadline.map_or(Ok(()), |deadline| {
         super::super::super::super::workflow_deadline::ensure_before(
-            &application.authorization_clock,
+            &application.runtime.authorization_clock,
             deadline,
         )
         .map_err(|denial| {

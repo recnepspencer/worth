@@ -29,7 +29,7 @@ fn with_scope<T>(
 }
 fn stopped_abort<'a>(app: &App, group: Group<'a>) -> Group<'a> {
     let cancellation = WorthQueryCancellationSource::new();
-    let scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let (group, cause) = with_scope(app, &scope, |request| {
         cancellation.cancel();
         group.abort(request)

@@ -57,7 +57,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         WorthQueryRecoveredProgramSourceDeliveryForTest<'_>,
         WorthQueryRecoveredProgramSourceDeliveryDenialForTest,
     > {
-        let registration = &self.recovered_program_source_delivery;
+        let registration = &self.runtime.recovered_program_source_delivery;
         let mut active = registration
             .active
             .lock()
@@ -79,6 +79,7 @@ pub(super) fn consume_first_if_armed<Schema: ApplicationSchema>(
     take: impl FnOnce() -> WorthQueryRecoveredProgramOutputSource,
 ) {
     let active = runtime
+        .runtime
         .recovered_program_source_delivery
         .active
         .lock()

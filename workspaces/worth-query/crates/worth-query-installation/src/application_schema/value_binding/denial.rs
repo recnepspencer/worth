@@ -4,6 +4,9 @@ pub(crate) enum WorthQueryApplicationValueBindingInstallationDenialKind {
     UnexpectedBinding,
     ContractMismatch,
     NativeContractMissing,
+    DuplicateContentFormat,
+    MissingContentBinding,
+    ContentFormatMismatch,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

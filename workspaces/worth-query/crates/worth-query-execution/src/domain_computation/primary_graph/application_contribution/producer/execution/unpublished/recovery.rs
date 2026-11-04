@@ -69,9 +69,10 @@ impl ContinuationState {
             }
         };
         let execution = phase
-            .checked_execution_request_for(&runtime.product_runtime)
+            .checked_execution_request_for(&runtime.runtime.product_runtime)
             .map_err(|stop| retryable(WorthQueryOutputDemandDenialKind::ExecutionRequest(stop)))?;
         let product = runtime
+            .runtime
             .product_runtime
             .admit_product_occurrence(branch.occurrence())
             .map_err(|stop| {

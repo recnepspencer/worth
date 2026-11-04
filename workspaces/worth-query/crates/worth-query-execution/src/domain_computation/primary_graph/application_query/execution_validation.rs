@@ -60,6 +60,17 @@ pub(super) fn validate_execution_lifetimes<Schema, Principal, PrincipalIdentity>
     controls: &WorthQueryAdmittedApplicationQueryControls<'_>,
     principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
 ) -> Result<(), WorthQueryApplicationQueryExecutionValidationDenial> {
+    if !application
+        .runtime
+        .authorization_clock
+        .admission_clock
+        .same_clock(principal.clock())
+        || !principal
+            .clock()
+            .same_clock(controls.request_scope().clock())
+    {
+        return Err(WorthQueryApplicationQueryExecutionValidationDenial::ForeignPlan);
+    }
     validate_request(controls.request_scope())?;
     if controls.basis_is_expired() {
         return Err(WorthQueryApplicationQueryExecutionValidationDenial::ExpiredBasis);

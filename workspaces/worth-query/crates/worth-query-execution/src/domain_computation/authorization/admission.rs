@@ -51,3 +51,5 @@ struct WorthQueryObservedConventionalOperation {
     principal_currentness: WorthQueryPrincipalCurrentnessDependency,
     decision_facts: Vec<WorthQueryAuthorizationDecisionFact>,
 }
+
+pub(in crate::domain_computation::authorization) use validation::validate_admission_clock;

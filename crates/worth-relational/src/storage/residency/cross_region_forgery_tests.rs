@@ -76,7 +76,9 @@ fn rehashed_cross_region_kind_forgery_is_refused_by_the_canonical_root() {
         .members()
         .iter()
         .map(|member| match member {
-            RelationalCheckpointMember::New { locator, bytes } => (*locator, bytes.clone()),
+            RelationalCheckpointMember::New { locator, bytes } => {
+                (*locator, std::sync::Arc::<[u8]>::from(bytes.bytes()))
+            }
             _ => panic!("first capture owns members"),
         })
         .collect::<BTreeMap<_, _>>();

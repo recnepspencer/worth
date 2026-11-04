@@ -15,7 +15,8 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         &self,
         attempts: std::num::NonZeroUsize,
     ) -> WorthQueryManagedSourceRevalidationPauseForTest {
-        self.primary_provider
+        self.runtime
+            .primary_provider
             .application_attempt_operation_control
             .pause_after_managed_source_revalidation(attempts)
     }
@@ -34,7 +35,8 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub fn observe_application_branch_commit_contention_for_test(
         &self,
     ) -> super::super::provider::WorthQueryApplicationBranchCommitContentionForTest {
-        self.primary_provider
+        self.runtime
+            .primary_provider
             .observe_branch_commit_contention_for_test()
     }
 
@@ -45,7 +47,8 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         &self,
         attempts: std::num::NonZeroUsize,
     ) -> WorthQueryApplicationCandidatePreparationPauseForTest {
-        self.primary_provider
+        self.runtime
+            .primary_provider
             .application_attempt_operation_control
             .pause_after_candidate_preparation(attempts)
     }
@@ -56,7 +59,8 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         &self,
         attempts: std::num::NonZeroUsize,
     ) -> WorthQueryApplicationAttemptRegistrationPauseForTest {
-        self.primary_provider
+        self.runtime
+            .primary_provider
             .application_attempt_operation_control
             .pause_after_registration(attempts)
     }
@@ -69,7 +73,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub fn world_operation_control_for_test(
         &self,
     ) -> worth_runtime_world::facade::RuntimeWorldOperationControlForTest {
-        self.product_runtime.operation_control_for_test()
+        self.runtime.product_runtime.operation_control_for_test()
     }
 
     /// Delegates certification faults to the installed Bridge's original
@@ -81,7 +85,8 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         worth_signal::facade::branch::SignalOwnerOperationControlForTest,
         worth_signal::facade::branch::SignalOwnerUnavailable,
     > {
-        self.bridge
+        self.runtime
+            .bridge
             .conditional()
             .signal_operation_control_for_test()
     }
@@ -91,9 +96,10 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub fn pause_product_currentness_for_test(
         &self,
     ) -> worth_runtime_world::facade::RuntimeWorldProductCurrentnessPauseForTest {
-        self.product_runtime
+        self.runtime
+            .product_runtime
             .operation_control_for_test()
-            .pause_product_currentness_for_test(self.product_runtime.default_occurrence)
+            .pause_product_currentness_for_test(self.runtime.product_runtime.default_occurrence)
     }
 
     /// Arms the existing World currentness latch for one opaque Query selector.
@@ -103,7 +109,8 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         &self,
         branch: crate::basis::WorthQueryProductBranch,
     ) -> worth_runtime_world::facade::RuntimeWorldProductCurrentnessPauseForTest {
-        self.product_runtime
+        self.runtime
+            .product_runtime
             .operation_control_for_test()
             .pause_product_currentness_for_test(branch.occurrence())
     }
@@ -120,14 +127,17 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     /// attempts waiting for the provider's product-publication turn.
     #[doc(hidden)]
     pub fn active_application_attempts_for_test(&self) -> usize {
-        self.primary_provider
+        self.runtime
+            .primary_provider
             .active_application_attempt_count_for_test()
     }
 
     /// Returns the number of subscriptions held by real open live consumers.
     #[doc(hidden)]
     pub fn active_live_consumers_for_test(&self) -> usize {
-        self.primary_provider.active_live_consumer_count_for_test()
+        self.runtime
+            .primary_provider
+            .active_live_consumer_count_for_test()
     }
 
     /// Samples the installed World's real retention owner in certification builds.
@@ -135,7 +145,8 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub fn world_retention_snapshot_for_test(
         &self,
     ) -> worth_runtime_world::facade::RuntimeWorldRetentionSnapshot {
-        self.product_runtime
+        self.runtime
+            .product_runtime
             .owner
             .inspection_port()
             .retention_snapshot()
@@ -147,7 +158,8 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub fn world_history_snapshot_for_test(
         &self,
     ) -> worth_runtime_world::facade::RuntimeWorldHistorySnapshot {
-        self.product_runtime
+        self.runtime
+            .product_runtime
             .owner
             .inspection_port()
             .history_snapshot()
@@ -161,6 +173,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         work: impl FnOnce() -> Output,
     ) -> Output {
         let available = self
+            .runtime
             .product_runtime
             .owner_cleanup
             .available_capacity_for_test()
@@ -168,13 +181,15 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         let mut held = Vec::with_capacity(available);
         for _ in 0..available {
             held.push(
-                self.product_runtime
+                self.runtime
+                    .product_runtime
                     .reserve_owner_cleanup_for_application()
                     .expect("reported cleanup capacity must remain reservable"),
             );
         }
         assert!(
-            self.product_runtime
+            self.runtime
+                .product_runtime
                 .reserve_owner_cleanup_for_application()
                 .is_err(),
             "the bounded cleanup owner must be exhausted before certification work"
@@ -187,7 +202,8 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     /// Counts branches installed in Query's bounded activation index.
     #[doc(hidden)]
     pub fn indexed_product_branch_count_for_test(&self) -> usize {
-        self.product_runtime
+        self.runtime
+            .product_runtime
             .activations
             .installed_branch_count_for_test()
     }
@@ -201,6 +217,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         work: impl FnOnce() -> Output,
     ) -> Output {
         let barrier = self
+            .runtime
             .product_runtime
             .activations
             .begin_program_retirement(revision)
@@ -220,6 +237,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         work: impl FnOnce() -> Output,
     ) -> Output {
         let reservation = self
+            .runtime
             .product_runtime
             .activations
             .reserve_for_source_program(Some(revision))
@@ -232,7 +250,8 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     /// Counts definitions retained by the sealed Bridge owner.
     #[doc(hidden)]
     pub fn installed_conditional_definition_count_for_test(&self) -> usize {
-        self.bridge
+        self.runtime
+            .bridge
             .conditional()
             .installed_conditional_definition_count()
     }
@@ -240,7 +259,8 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     /// Counts Bridge target references retained by installed definitions.
     #[doc(hidden)]
     pub fn installed_conditional_target_reference_count_for_test(&self) -> usize {
-        self.bridge
+        self.runtime
+            .bridge
             .conditional()
             .installed_conditional_target_reference_count()
     }
@@ -248,7 +268,8 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     /// Counts active Signal nodes observed through the sealed Bridge owner.
     #[doc(hidden)]
     pub fn owned_signal_active_node_count_for_test(&self) -> usize {
-        self.bridge
+        self.runtime
+            .bridge
             .conditional()
             .owned_signal_active_node_count()
             .expect("the installed Signal owner remains inspectable")
@@ -265,7 +286,8 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         &self,
         attempts: std::num::NonZeroUsize,
     ) -> WorthQuerySourcePublicationValidationPauseForTest {
-        self.primary_provider
+        self.runtime
+            .primary_provider
             .application_attempt_operation_control
             .pause_after_source_publication_validation(attempts)
     }
@@ -275,7 +297,8 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         &self,
         attempts: std::num::NonZeroUsize,
     ) -> WorthQuerySourceFactComparisonPauseForTest {
-        self.primary_provider
+        self.runtime
+            .primary_provider
             .application_attempt_operation_control
             .pause_before_source_fact_comparison(attempts)
     }

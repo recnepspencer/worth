@@ -4,7 +4,10 @@ use super::diagnostics::checkpoint_created;
 use super::DurabilityAuthority;
 use crate::capabilities::RuntimeConfigSource;
 use crate::diagnostics::data::{DiagnosticsArtifactKind, DiagnosticsScope};
-use crate::durability::data::{DurabilityError, DurableCheckpoint};
+use crate::durability::data::{
+    DurabilityError, DurableCheckpoint, RelationalNativeCheckpointCaptureDenial as CaptureDenial,
+};
+use crate::execution::RelationalExecutionDenialCause as Cause;
 
 impl<'runtime> DurabilityAuthority<'runtime> {
     pub fn native_checkpoint(
@@ -34,31 +37,61 @@ impl<'runtime> DurabilityAuthority<'runtime> {
         policy.check_live()?;
         crate::execution::check_request(execution)
             .map_err(crate::durability::data::RelationalNativeCheckpointCaptureDenial::Request)?;
-        let captured = self.capture_checkpoint_basis()?.build_native_capture(
-            execution,
-            policy,
-            self.runtime.durability.cold_source(),
-            &artifact_policy,
-        )?;
-        let manifest_publication = if !artifact_policy.is_embedded() {
-            artifact_policy.publication_source().map(|source| {
-                self.runtime.durability.checkpoint_selection().prepare(
-                    captured.manifest.clone(),
-                    source,
-                    captured.history_members.clone(),
-                )
-            })
-        } else {
-            None
-        };
-        let coverage = captured.manifest.covered_position;
-        let transitions = captured.manifest.coverage.up_to_branch_transition;
-        let (bytes, sections, members, publications) =
-            crate::durability::log::native_checkpoint_codec::encode_captured(
-                captured,
-                policy,
-                &artifact_policy,
-            )?;
+        let basis = self.capture_checkpoint_basis()?;
+        // One capture is one stage: every write, hash and copy charges its meter
+        // cumulatively, so the request's work ceiling bounds the whole capture.
+        let mut answer = None;
+        let handoff = execution.run_native_with_checkpoint(|stage| {
+            let mut control =
+                crate::durability::log::native_checkpoint_codec::CheckpointEncodingControl::Original {
+                    execution: *execution,
+                    stage,
+                };
+            answer = Some((|| -> Result<_, CaptureDenial> {
+                let captured = basis.build_native_capture(
+                    execution,
+                    policy,
+                    self.runtime.durability.cold_source(),
+                    &artifact_policy,
+                    &mut control,
+                )?;
+                let manifest_publication = if !artifact_policy.is_embedded() {
+                    artifact_policy.publication_source().map(|source| {
+                        self.runtime.durability.checkpoint_selection().prepare(
+                            captured.manifest.clone(),
+                            source,
+                            captured.history_members.clone(),
+                        )
+                    })
+                } else {
+                    None
+                };
+                let coverage = captured.manifest.covered_position;
+                let transitions = captured.manifest.coverage.up_to_branch_transition;
+                let encoded = crate::durability::log::native_checkpoint_codec::encode_captured(
+                    captured,
+                    policy,
+                    &artifact_policy,
+                    &mut control,
+                )?;
+                Ok((manifest_publication, coverage, transitions, encoded))
+            })());
+        });
+        let (manifest_publication, coverage, transitions, (bytes, sections, members, publications)) =
+            match (handoff, answer) {
+                (Ok(_), Some(answer)) => answer,
+                (Ok(_), None) => unreachable!("a completed checkpoint stage ran its capture"),
+                (Err(stop), answer) => {
+                    let cause = Cause::from(stop);
+                    // A concrete inner refusal outranks the generic nested-stop handoff.
+                    match answer {
+                        Some(Err(inner)) if cause == Cause::NestedStopped => Err(inner),
+                        _ => Err(CaptureDenial::Request(cause)),
+                    }
+                }
+            }?;
+        crate::execution::check_request(execution)
+            .map_err(crate::durability::data::RelationalNativeCheckpointCaptureDenial::Request)?;
         if self.runtime.durability.medium().is_some() {
             self.runtime
                 .history
@@ -91,7 +124,7 @@ impl<'runtime> DurabilityAuthority<'runtime> {
         let captured = self
             .capture_checkpoint_basis()?
             .demand_memory_image(self.runtime, execution)?;
-        self.finalize_captured_checkpoint(captured)
+        self.finalize_captured_checkpoint(captured, execution)
     }
 
     pub(super) fn capture_checkpoint_basis(
@@ -111,8 +144,9 @@ impl<'runtime> DurabilityAuthority<'runtime> {
     pub(super) fn finalize_captured_checkpoint(
         &self,
         captured: super::checkpoint_capture::CapturedCheckpointBasis,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<DurableCheckpoint, crate::durability::data::RelationalRecoveryStop> {
-        let checkpoint = captured.build_checkpoint_image()?;
+        let checkpoint = captured.build_checkpoint_image(execution)?;
         self.runtime
             .publication_authority()
             .push_bounded_diagnostic(

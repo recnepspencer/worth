@@ -47,8 +47,7 @@ fn fixed_initial_close_preserves_refused_owner_without_executing_source() {
     let stopped =
         worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope::new(
             None,
-            stop.token(),
-        );
+            stop.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let (operation, denial) = operation
         .close(&world.application.request(&principal, &stopped))
         .err()

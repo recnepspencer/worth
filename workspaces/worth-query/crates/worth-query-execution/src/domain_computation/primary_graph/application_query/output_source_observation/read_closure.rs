@@ -33,12 +33,13 @@ impl SourceQueryReadClosure {
         let support = SourceReadSupport::retain(
             execution,
             authorization,
-            &application.authorization,
+            &application.runtime.authorization,
             &allocation,
         )?;
         let facts = crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload::from(Arc::<[crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact]>::from(facts));
         Ok(Arc::new(Self {
             control: application
+                .runtime
                 .primary_provider
                 .application_attempt_operation_control
                 .clone(),

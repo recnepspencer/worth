@@ -32,7 +32,7 @@ where
     };
     // A packet is scheduling evidence for exactly the native basis that issued it.
     let (shared, positioned) = selection::select_required_basis(execution, runtime, branch)?;
-    let upstream = runtime.output_demands.requested_ready_readmission(
+    let upstream = runtime.runtime.output_demands.requested_ready_readmission(
         &requested,
         &positioned,
         &mut demand.required_continuations.requested,
@@ -68,7 +68,7 @@ where
             return Ok(None);
         }
     };
-    let head = runtime.output_demands.publication_head_selection(
+    let head = runtime.runtime.output_demands.publication_head_selection(
         shared
             .selected()
             .product()
@@ -100,6 +100,6 @@ where
         &mut frame_custody,
         performed,
     );
-    frame_custody.hold_unfinished(&runtime.output_demands);
+    frame_custody.hold_unfinished(&runtime.runtime.output_demands);
     result
 }

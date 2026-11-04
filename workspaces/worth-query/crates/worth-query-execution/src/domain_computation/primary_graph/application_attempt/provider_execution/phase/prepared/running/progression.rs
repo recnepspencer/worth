@@ -195,8 +195,8 @@ where
         WorthQueryProviderProgression {
             application,
             running: &mut running,
-            graph: &application.primary_graph_authority,
-            provider: &application.primary_provider,
+            graph: application.runtime.primary_graph_authority(),
+            provider: &application.runtime.primary_provider,
             admission: &admission,
             prepared: provider_attempt,
             outcome_identity,
@@ -278,10 +278,12 @@ where
     };
     provider.after_application_attempt_registration_for_test();
     let command_lane = application
+        .runtime
         .primary_provider
         .correction_commit_lane(&idempotency);
     let _command = command_lane.as_ref().map(|lane| lane.enter());
     let commit_lane = application
+        .runtime
         .primary_provider
         .application_branch_commit_lane(product.observation());
 

@@ -105,6 +105,14 @@ impl WorthQueryApplicationAttemptDenial {
 pub(super) fn relational_read_kind(
     cause: worth_relational::facade::transactions::RelationalExecutionDenialCause,
 ) -> WorthQueryApplicationAttemptDenialKind {
+    if matches!(
+        cause,
+        worth_relational::facade::transactions::RelationalExecutionDenialCause::Content(
+            worth_relational::facade::content::RelationalContentRejection::ContentIdentityConflict
+        )
+    ) {
+        return WorthQueryApplicationAttemptDenialKind::ContentInconsistency;
+    }
     use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
     match crate::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_kind(cause, None) {
         Ok(kind) => WorthQueryApplicationAttemptDenialKind::ExecutionRequest(kind),

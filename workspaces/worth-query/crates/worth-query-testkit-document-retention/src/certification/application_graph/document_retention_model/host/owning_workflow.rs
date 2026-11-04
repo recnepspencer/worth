@@ -20,18 +20,21 @@ pub fn publish_owner_workflow_with_projection() -> (
         >::begin()
         .validated_program()
         .unwrap();
+    let roster = super::auxiliary_programs::include(
+        WorthQueryApplicationProgramRoster::new().support(validated_second_program()),
+        program.identity(),
+        program.revision(),
+    );
     let mut projection = None;
     let application = in_memory_rostered_program(
         program,
         // The contribution installs both V1 and V2 rule contracts. Keep V2
         // honestly declared in the existing roster; this branch still runs owner V1.
-        WorthQueryApplicationProgramRoster::new()
-            .support(validated_second_program())
-            .support(super::super::actor_generation::validated_actor_program()),
+        roster,
         DocumentRetentionSchema::declaration().unwrap(),
         ((),),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        host_limits(),
+        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         |phase, graph, schema| {
             projection = Some(graph.retain_invariant_projection_authority());
             seed_host(phase, graph, schema)

@@ -84,9 +84,6 @@ where
     where
         Input: Clone + Send + Sync + 'static,
     {
-        if !binding.matches_guarded_workflow_effect(transition_identity) {
-            return Err(WorthQueryApplicationIdempotencyResolutionDenial::foreign_admission());
-        }
         if !admission.belongs_to(
             self.runtime.authority_identity(),
             &self.installed_schema.binding_identity(),
@@ -94,8 +91,15 @@ where
             return Err(WorthQueryApplicationIdempotencyResolutionDenial::foreign_admission());
         }
         admission
-            .validate_current_authority()
+            .validate_projection_authority(
+                self.runtime.authority_identity(),
+                &self.installed_schema.binding_identity(),
+                &self.runtime.installed_operations,
+            )
             .map_err(WorthQueryApplicationIdempotencyResolutionDenial::from_authorization)?;
+        if !binding.matches_guarded_workflow_effect(transition_identity) {
+            return Err(WorthQueryApplicationIdempotencyResolutionDenial::foreign_admission());
+        }
         let scope = admission.operation_scope_binding();
         let original_scope = if let Some(receipt) = completed {
             let original = receipt.principal_scope();
@@ -138,9 +142,10 @@ where
             .mutation_product()
             .ok_or_else(WorthQueryApplicationIdempotencyResolutionDenial::foreign_admission)?
             .publication_binding();
-        let command_lane = self.primary_provider.correction_commit_lane(&bound);
+        let command_lane = self.runtime.primary_provider.correction_commit_lane(&bound);
         let _command = command_lane.as_ref().map(|lane| lane.enter());
         let commit_lane = self
+            .runtime
             .primary_provider
             .application_branch_commit_lane(product.observation());
         let coordination = commit_lane.enter();
@@ -149,7 +154,8 @@ where
             .map_err(WorthQueryApplicationIdempotencyResolutionDenial::from_authorization)?;
         let custody = proof
             .govern((), |()| {
-                self.primary_provider
+                self.runtime
+                    .primary_provider
                     .resolve_guarded_workflow_operation_custody(execution, bound, &product)
             })
             .map_err(|(_, denial)| {
@@ -230,7 +236,7 @@ where
     where
         Input: Clone + Send + Sync + 'static,
     {
-        let execution = phase.execution_request_for(&self.product_runtime).map_err(|_| {
+        let execution = phase.execution_request_for(&self.runtime.product_runtime).map_err(|_| {
             WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(
                 crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(
                     crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase),
@@ -285,7 +291,11 @@ where
             return Err(WorthQueryApplicationIdempotencyResolutionDenial::foreign_admission());
         }
         admission
-            .validate_current_authority()
+            .validate_projection_authority(
+                self.runtime.authority_identity(),
+                &self.installed_schema.binding_identity(),
+                &self.runtime.installed_operations,
+            )
             .map_err(WorthQueryApplicationIdempotencyResolutionDenial::from_authorization)?;
         let bindings = bindings
             .into_iter()
@@ -295,6 +305,7 @@ where
             })
             .collect::<Vec<_>>();
         let command_lanes = self
+            .runtime
             .primary_provider
             .correction_commit_lanes(bindings.iter().map(|(_, binding)| *binding));
         let _commands = command_lanes
@@ -307,6 +318,7 @@ where
             .ok_or_else(WorthQueryApplicationIdempotencyResolutionDenial::foreign_admission)?
             .publication_binding();
         let commit_lane = self
+            .runtime
             .primary_provider
             .application_branch_commit_lane(product.observation());
         let coordination = commit_lane.enter();
@@ -318,7 +330,8 @@ where
                 bindings
                     .iter()
                     .map(|(_, binding)| {
-                        self.primary_provider
+                        self.runtime
+                            .primary_provider
                             .resolve_idempotency_binding_at_product(execution, *binding, &product)
                     })
                     .collect::<Vec<_>>()

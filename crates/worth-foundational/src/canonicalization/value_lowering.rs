@@ -85,7 +85,6 @@ pub fn canonical_basis_value_for_aspect_value(value: &AspectValue) -> CanonicalB
             denominator: value.denominator.as_str().into(),
         },
         AspectValue::String(value) => CanonicalBasisValue::ExactText(value.clone()),
-        AspectValue::Bytes(value) => CanonicalBasisValue::BytesRefId(value.0),
         AspectValue::Uuid(value) => CanonicalBasisValue::UuidBytes(*value),
         AspectValue::Date(value) => CanonicalBasisValue::DateDays(value.days_from_unix_epoch),
         AspectValue::Time(value) => CanonicalBasisValue::TimeNanos(value.nanos_since_midnight),

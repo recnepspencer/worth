@@ -27,6 +27,7 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
                 .as_ref()
                 .expect("new historical work retains its original source");
             self.application
+                .runtime
                 .product_runtime
                 .require_live_product_occurrence(
                     source.source.product_observation().lifecycle_incarnation(),
@@ -131,7 +132,7 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
     ) -> Result<crate::domain_computation::execution_runtime::product_world::WorthQueryPreparedProductPublication, WorthQueryHistoryNavigationDenial>{
         use WorthQueryHistoryNavigationDenial as Denial;
         let execution = phase
-            .checked_execution_request_for(&self.application.product_runtime)
+            .checked_execution_request_for(&self.application.runtime.product_runtime)
             .map_err(Denial::Stopped)?;
         let current = self
             .application
@@ -146,7 +147,7 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
             .application
             .select_application_read_observation(phase, &source.source)
             .map_err(Denial::ProductAdmission)?;
-        let graph = &self.application.primary_provider.graph;
+        let graph = &self.application.runtime.primary_provider.graph;
         let mut prepared = graph.with_runtime(&execution, |native| {
             let transaction = native
                 .begin_branch_transaction(

@@ -1,3 +1,6 @@
+mod runtime_time;
+pub(super) use runtime_time::RuntimeTime;
+use worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock;
 use worth_query_host::facade::runtime::RuntimeWorldBranchBudgetInstallation;
 use worth_query_host::facade::runtime::RuntimeWorldBudgetInstallation;
 use worth_query_host::facade::runtime::RuntimeWorldCustodyBudgetInstallation;
@@ -25,13 +28,19 @@ pub(super) const EXECUTION_POLICY: worth_foundational::ExecutionRequestPolicy =
     );
 
 pub(super) fn world_resources() -> WorthQueryProductWorldResources {
-    world_resources_for(EXECUTION_POLICY, ACTIVE_WORLD_OBSERVATIONS, 8)
+    world_resources_for(
+        EXECUTION_POLICY,
+        ACTIVE_WORLD_OBSERVATIONS,
+        8,
+        WorthQueryAdmissionClock::system(),
+    )
 }
 
 fn world_resources_for(
     policy: worth_foundational::ExecutionRequestPolicy,
     active_observations: u64,
     branch_capacity: u64,
+    clock: WorthQueryAdmissionClock,
 ) -> WorthQueryProductWorldResources {
     WorthQueryProductWorldResources::install(
         RuntimeWorldBudgetInstallation {
@@ -60,7 +69,7 @@ fn world_resources_for(
                 owner_created_component_custody_records: 32,
             },
         },
-        WorthQueryProductWorldClock::start(),
+        WorthQueryProductWorldClock::start(clock),
         WorthQueryInvalidationResources::new(),
         policy,
     )
@@ -79,6 +88,7 @@ pub(super) fn application_limits_with_branches(
         EXECUTION_POLICY,
         ACTIVE_WORLD_OBSERVATIONS,
         branch_capacity,
+        WorthQueryAdmissionClock::system(),
     ))
 }
 
@@ -88,11 +98,28 @@ pub(super) fn application_limits_with_policy(
     application_limits_with_observations(policy, ACTIVE_WORLD_OBSERVATIONS)
 }
 
+pub(super) fn application_limits_with_clock(
+    policy: worth_foundational::ExecutionRequestPolicy,
+    clock: WorthQueryAdmissionClock,
+) -> worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationLimits {
+    application_limits_for_world(world_resources_for(
+        policy,
+        ACTIVE_WORLD_OBSERVATIONS,
+        8,
+        clock,
+    ))
+}
+
 pub(super) fn application_limits_with_observations(
     policy: worth_foundational::ExecutionRequestPolicy,
     active_observations: u64,
 ) -> worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationLimits {
-    application_limits_for_world(world_resources_for(policy, active_observations, 8))
+    application_limits_for_world(world_resources_for(
+        policy,
+        active_observations,
+        8,
+        WorthQueryAdmissionClock::system(),
+    ))
 }
 
 fn application_limits_for_world(

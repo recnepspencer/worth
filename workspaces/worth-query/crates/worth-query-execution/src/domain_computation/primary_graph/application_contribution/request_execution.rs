@@ -51,7 +51,7 @@ pub use advancement::{
 /// holds for the request's duration.
 pub struct QueryRequestExecution<'a> {
     cancellation: worth_execution::CancellationToken,
-    deadline: Option<std::time::Instant>,
+    deadline: Option<worth_execution::MonotonicDeadline>,
     declared_work: Option<u64>,
     certified_seed: Option<u64>,
     form: Form<'a>,
@@ -98,7 +98,7 @@ impl<'a> QueryRequestExecution<'a> {
     fn open_control(
         placement: RuntimeWorldExecutionPlacement<'a>,
         cancellation: worth_execution::CancellationToken,
-        deadline: Option<std::time::Instant>,
+        deadline: Option<worth_execution::MonotonicDeadline>,
     ) -> Self {
         let placement = test_placement::placed(placement);
         let declared_work = match placement {
@@ -107,12 +107,12 @@ impl<'a> QueryRequestExecution<'a> {
         };
         let form = match placement {
             RuntimeWorldExecutionPlacement::Serial(policy) => {
-                serial_placement::form(policy, cancellation.clone(), deadline)
+                serial_placement::form(policy, cancellation.clone(), deadline.clone())
             }
             RuntimeWorldExecutionPlacement::Leased { authority, policy } => Form::Leased {
                 lease: authority.request_lease(LeaseRequest {
                     policy,
-                    deadline,
+                    deadline: deadline.clone(),
                     cancellation: cancellation.clone(),
                 }),
                 policy,
@@ -120,7 +120,7 @@ impl<'a> QueryRequestExecution<'a> {
         };
         Self {
             cancellation,
-            deadline,
+            deadline: deadline.clone(),
             declared_work,
             certified_seed: test_placement::certifying(),
             form,

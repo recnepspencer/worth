@@ -12,17 +12,18 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         observation: &ProductBranchObservation,
     ) -> Result<WorthQueryApplicationBasisLease, WorthQueryProductBranchAdmissionDenial> {
-        if observation.owner_identity() != self.product_runtime.owner.owner_identity() {
+        if observation.owner_identity() != self.runtime.product_runtime.owner.owner_identity() {
             return Err(WorthQueryProductBranchAdmissionDenial::Refused(
                 AdmissionRefusal::ForeignOwner,
             ));
         }
         let mut lease = self
+            .runtime
             .basis_leases
             .register(
                 execution,
                 observation.basis().relational_basis().clone(),
-                self.primary_provider.graph.clone(),
+                self.runtime.primary_provider.graph.clone(),
             )
             .map_err(map_registration_denial)?;
         lease.bind_product_observation(observation);

@@ -55,7 +55,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Link: Eq,
     {
         let request = phase
-            .execution_request_for(&self.product_runtime)
+            .execution_request_for(&self.runtime.product_runtime)
             .map_err(|_| Denial::ForeignApplication)?;
         request
             .run(ExecutionWorkCeiling::new(request.work_ceiling()), |lease| {

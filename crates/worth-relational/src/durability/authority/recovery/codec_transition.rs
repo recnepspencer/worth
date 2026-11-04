@@ -61,6 +61,7 @@ impl DurabilityRecoveryAuthority<'_> {
         let source_registry = source_schema::readmit_current_source_schema(
             &checkpoint,
             self.runtime.main_branch_identity().branch_id(),
+            &target_registry.content_formats,
         )?;
         let changes =
             crate::runtime::codec_field_changes(execution, &source_registry, &target_registry)

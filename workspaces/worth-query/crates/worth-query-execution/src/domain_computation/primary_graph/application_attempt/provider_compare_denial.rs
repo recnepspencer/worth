@@ -89,6 +89,8 @@ pub fn provider_session_denied(
         }
         Kind::ProjectionContract { .. }
         | Kind::HistoricalVisibility { .. }
+        | Kind::ContentInconsistency
+        | Kind::Content(_)
         | Kind::StorageUnavailable(_)
         | Kind::ExecutionResource { .. }
         | Kind::ExecutionNestedPatternStopped { .. }

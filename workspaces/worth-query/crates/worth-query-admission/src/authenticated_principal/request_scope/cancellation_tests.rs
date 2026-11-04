@@ -56,7 +56,11 @@ fn cancelling_the_request_cancels_the_execution_token_it_hands_out() {
 #[test]
 fn a_request_without_a_deadline_still_honors_cancellation() {
     let source = WorthQueryCancellationSource::new();
-    let request = WorthQueryRequestScope::new(None, source.token());
+    let request = WorthQueryRequestScope::new(
+        None,
+        source.token(),
+        crate::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     assert_eq!(request.deadline(), None);
     assert_eq!(request.interruption(), None);
     assert!(request.same_request(&request.clone()));
@@ -70,21 +74,30 @@ fn a_request_without_a_deadline_still_honors_cancellation() {
 #[test]
 fn absent_and_elapsed_deadlines_have_distinct_remaining_values() {
     let source = WorthQueryCancellationSource::new();
-    let now = Instant::now();
-    let unbounded = WorthQueryRequestScope::new(None, source.token());
-    let elapsed = WorthQueryRequestScope::new(Some(now - Duration::from_secs(1)), source.token());
-    let bounded = WorthQueryRequestScope::new(Some(now + Duration::from_secs(60)), source.token());
+    let time = crate::authenticated_principal::WorthQueryAdmissionTimeController::new().unwrap();
+    let now = time.hold();
+    let unbounded = WorthQueryRequestScope::new(None, source.token(), time.clock());
+    let elapsed = WorthQueryRequestScope::new(
+        Some(now - Duration::from_secs(1)),
+        source.token(),
+        time.clock(),
+    );
+    let bounded = WorthQueryRequestScope::new(
+        Some(now + Duration::from_secs(60)),
+        source.token(),
+        time.clock(),
+    );
     assert_eq!(
         unbounded.remaining(),
         WorthQueryRequestTimeRemaining::Unbounded
     );
     assert_eq!(elapsed.remaining(), WorthQueryRequestTimeRemaining::Elapsed);
     assert_eq!(
-        bounded.remaining_at(now),
+        bounded.remaining(),
         WorthQueryRequestTimeRemaining::Remaining(Duration::from_secs(60))
     );
     assert_eq!(
-        WorthQueryRequestScope::new(Some(now), source.token()).remaining_at(now),
+        WorthQueryRequestScope::new(Some(now), source.token(), time.clock()).remaining(),
         WorthQueryRequestTimeRemaining::Elapsed
     );
     assert_ne!(unbounded.remaining(), elapsed.remaining());

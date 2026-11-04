@@ -38,9 +38,10 @@ where
     let reading = installed.clock.observe().map_err(ResourceCause::Clock)?;
     execution.consult().map_err(ResourceCause::Request)?;
     let clock = runtime
+        .runtime
         .product_runtime
         .advance_owned_async_source_clock(
-            &runtime.bridge.conditional(),
+            &runtime.runtime.bridge.conditional(),
             &slot.declaration,
             &row.occurrence().business_product,
             reading.nanoseconds,
@@ -49,9 +50,10 @@ where
     row.occurrence_mut().lifecycle = ResourceLifecycle::Reserved { clock: Some(clock) };
     execution.consult().map_err(ResourceCause::Request)?;
     let owner = runtime
+        .runtime
         .product_runtime
         .admit_managed_owned_async_request(
-            &runtime.bridge.conditional(),
+            &runtime.runtime.bridge.conditional(),
             &slot.declaration,
             &row.occurrence().business_product,
         )

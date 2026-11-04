@@ -3,6 +3,7 @@ use crate::branch::{AdmittedRelationalBranchBasis, RelationalMaterializationReco
 use crate::identity::data::VersionId;
 use crate::mvcc::RelationalMaterializationTransactionMode;
 use std::sync::{Arc, Weak};
+mod content;
 mod restoration;
 pub(crate) use restoration::NativeSourceRestorationOrigin;
 
@@ -38,6 +39,7 @@ impl NativeMaterializationSource {
 /// an installed read audience, a resumption correspondence or World authority.
 #[derive(Debug)]
 pub(crate) struct NativeManagedSourceInterpretation {
+    content: std::sync::OnceLock<content::ContentViews>,
     publication: crate::runtime::RelationalRuntimePublicationBinding,
     physical_basis: AdmittedRelationalBranchBasis,
     proposed_version: VersionId,
@@ -57,6 +59,7 @@ impl NativeManagedSourceInterpretation {
         publication: crate::runtime::RelationalRuntimePublicationBinding,
     ) -> Arc<Self> {
         Arc::new(Self {
+            content: std::sync::OnceLock::new(),
             publication,
             physical_basis: input.basis().clone(),
             proposed_version,

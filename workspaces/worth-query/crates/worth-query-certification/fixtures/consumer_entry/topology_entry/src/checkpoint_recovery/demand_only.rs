@@ -133,9 +133,8 @@ mod serial {
             .unwrap();
         let cancellation = authentication::WorthQueryCancellationSource::new();
         let cancelled_scope = authentication::WorthQueryRequestScope::new(
-            Some(std::time::Instant::now() + std::time::Duration::from_secs(120)),
-            cancellation.token(),
-        );
+            Some(authentication::WorthQueryAdmissionClock::system().now() + std::time::Duration::from_secs(120)),
+            cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
         cancellation.cancel();
         let cancelled_request = restored.request(&principal, &cancelled_scope);
         let before = request.retain_current_read().unwrap();

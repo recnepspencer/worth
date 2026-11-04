@@ -1,5 +1,11 @@
 //! Current native canonical envelope input: managed text remains borrowed until admission.
+#[path = "text_wire/positioned_seed.rs"]
+mod positioned_seed;
+#[path = "text_wire/seed.rs"]
+mod seed;
 use super::{CanonicalCommitAuthorityKind, RelationalDescriptiveTouchGraph};
+pub(crate) use positioned_seed::PositionedEnvelopeSeed;
+pub(crate) use seed::CanonicalEnvelopeSeed;
 use serde::Deserialize;
 
 use crate::diagnostics::data::RelationalDiagnosticArtifact;
@@ -15,10 +21,13 @@ use crate::transactions::data::{MergedCommitPlan, PublishedMergeExecutionAuthori
 
 #[derive(Deserialize)]
 pub(crate) struct CanonicalEnvelopeWire<'a> {
+    content: crate::content::ContentPublication,
     required_output_codec_retirements:
         Vec<std::sync::Arc<super::CanonicalRequiredOutputCodecRetirement>>,
     #[serde(default)]
     required_output_origin: Option<std::sync::Arc<super::CanonicalRequiredOutputOrigin>>,
+    #[serde(default)]
+    producer_cascade_retirement: Option<std::sync::Arc<super::CanonicalProducerRetirement>>,
     authored_cascade_retirement: Option<std::sync::Arc<super::CanonicalAuthoredRetirement>>,
     authored_cascade_restoration: Option<std::sync::Arc<super::CanonicalAuthoredRestoration>>,
     #[serde(default)]
@@ -90,9 +99,11 @@ impl CanonicalEnvelopeWire<'_> {
         }
         let symbol_texts = self.symbol_texts.readmit(execution)?;
         let envelope = super::CanonicalCommitEnvelope {
+            content: self.content,
             live_managed_source_history: super::LiveManagedSourceHistory::default(),
             required_output_codec_retirements: self.required_output_codec_retirements,
             required_output_origin: self.required_output_origin,
+            producer_cascade_retirement: self.producer_cascade_retirement,
             authored_cascade_retirement: self.authored_cascade_retirement,
             authored_cascade_restoration: self.authored_cascade_restoration,
             required_output_materialization: self.required_output_materialization,

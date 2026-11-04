@@ -17,11 +17,11 @@ pub struct CompletedOriginalRead {
     graph_work: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
 }
 impl CompletedOriginalRead {
-    pub(super) fn from_native_completion<S, O, I, R>(
+    pub(super) fn from_native_completion(
         body: FactPayload,
         projection: Arc<CompletedFactProjection>,
         lease: WorthQueryApplicationSnapshotLease,
-        admission: &crate::domain_computation::authorization::WorthQueryAdmittedApplicationOperation<S, O, I, R>,
+        admission: &crate::domain_computation::authorization::WorthQueryAdmittedOperation,
         control: StorageControl<'_, '_>,
     ) -> Result<(WorthQueryApplicationSnapshotLease, Option<Arc<Self>>), StoreDenial> {
         if !projection.physical() {

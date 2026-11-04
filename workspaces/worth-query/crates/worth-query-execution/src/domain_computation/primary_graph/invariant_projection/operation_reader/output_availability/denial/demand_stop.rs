@@ -112,9 +112,27 @@ fn query_stop(stop: &QueryStop) -> WorthQueryOutputDemandDenial {
                 Source::PreparationMemoryExceeded | Source::RetainedSourceStorageDenied => {
                     Kind::RetentionBudgetExceeded
                 }
-                _ => Kind::ForeignSource,
+                Source::AdmissionAuthorization => Kind::of_request_authorization(
+                    stop.authorization_denial()
+                        .expect("the source denial owner retains its authorization cause")
+                        .kind(),
+                ),
+                Source::MissingExpectation
+                | Source::ForeignApplication
+                | Source::ForeignInstallation
+                | Source::ForeignSchema
+                | Source::ForeignModel
+                | Source::ForeignBranch
+                | Source::ForeignOperation
+                | Source::SourceChanged
+                | Source::IncompleteFootprint
+                | Source::SourceContractMismatch
+                | Source::SourceParametersMismatch => Kind::ForeignSource,
             }
         }
     };
     WorthQueryOutputDemandDenial::new(kind, format!("source query observation: {stop:?}"))
 }
+
+#[cfg(test)]
+mod authorization_cause_tests;

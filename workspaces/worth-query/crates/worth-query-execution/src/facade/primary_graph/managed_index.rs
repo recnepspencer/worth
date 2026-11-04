@@ -1,6 +1,7 @@
 //! Managed index contracts exposed through the primary-graph audience.
 pub use crate::domain_computation::primary_graph::{
-    WorthQueryManagedIndex, WorthQueryManagedIndexCandidateWriter, WorthQueryManagedIndexControl,
+    WorthQueryManagedIndex, WorthQueryManagedIndexCandidateWriter,
+    WorthQueryManagedIndexContentReadDenial, WorthQueryManagedIndexControl,
     WorthQueryManagedIndexDenial, WorthQueryManagedIndexDenialCause,
     WorthQueryManagedIndexInvariantDenial, WorthQueryManagedIndexLifecycle,
     WorthQueryManagedIndexNodeId, WorthQueryManagedIndexNodeRegion,

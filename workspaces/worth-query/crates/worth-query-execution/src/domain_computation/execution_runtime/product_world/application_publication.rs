@@ -123,7 +123,7 @@ impl WorthQueryProductPublicationBinding {
         current_read: Option<&worth_runtime_world::facade::ProductBranchObservation>,
     ) -> Result<WorthQueryPreparedCombinedProductPublication, Denial<NoEffectCompositePublication>>
     {
-        let control = self.request_control(request);
+        let control = self.request_control(request).ok_or(Denial::ClockMismatch)?;
         let mut intent = CompositePublicationIntent::with_signal(Some(
             worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
         ))

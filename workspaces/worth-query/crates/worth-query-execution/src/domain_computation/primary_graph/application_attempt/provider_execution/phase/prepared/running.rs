@@ -87,7 +87,7 @@ where
     )
     .map_err(|_| denied(DenialStage::ManagedRunAdmission))?;
     let execution = phase
-        .execution_request_for(&application.product_runtime)
+        .execution_request_for(&application.runtime.product_runtime)
         .map_err(|foreign| {
             crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(foreign)
                 .into_commit_outcome()
@@ -106,16 +106,22 @@ where
         .ok_or_else(|| denied(DenialStage::ResourceAdmission))?;
     let attempt = application
         .runtime
+        .execution()
         .start_reserved_direct_resource_attempt(&operation, reserved)
         .map_err(|_| denied(DenialStage::ResourceAdmission))?;
     let read_request = WorthQueryManagedTruthReadRequest::for_product(
         lease.product(),
         SnapshotReadPacket::new(Vec::new()),
     );
-    let request_bridge = application.bridge.ordinary().fork_managed_request_lane();
+    let request_bridge = application
+        .runtime
+        .bridge
+        .ordinary()
+        .fork_managed_request_lane();
     let run_admission = application
         .runtime
-        .managed_run_admission(&request_bridge, &application.product_runtime.source);
+        .execution()
+        .managed_run_admission(&request_bridge, &application.runtime.product_runtime.source);
     let running = run_admission
         .admit_direct(&operation, attempt, read_request, execution)
         .map_err(|failure| {
@@ -162,6 +168,7 @@ where
 {
     let snapshot = lease.snapshot();
     application
+        .runtime
         .primary_provider
         .observe_managed_application_bridge_plan();
     let branch = admission.graph_work().branch().truth().clone();
@@ -171,6 +178,7 @@ where
         .snapshot_identity()
         .clone();
     application
+        .runtime
         .bridge
         .ordinary()
         .plan_truth_view_packet(
@@ -199,15 +207,18 @@ where
         .map_err(|_| denied(DenialStage::BasisAdmission))?;
     WorthQueryExecutionBoundOperationAuthority::bind_application(
         WorthQueryApplicationOperationBindingInput {
-            runtime: &application.runtime,
+            runtime: application.runtime.execution(),
             owner: application.installed_schema.owner(),
             installed_operation_fingerprint: admission.retain_installed_operation_fingerprint(),
             operation_slot: admission.operation().into(),
             resource_binding_identity: admission.retain_resource_binding_identity(),
             basis: &basis,
             contracts: admission.allowed_graph_contract(),
-            graph: &application.primary_graph_authority,
-            support: application.primary_provider.application_resource_support(),
+            graph: application.runtime.primary_graph_authority(),
+            support: application
+                .runtime
+                .primary_provider
+                .application_resource_support(),
             graph_work_session: admission.graph_work_session_identity(),
             graph_work_managed_run: admission.graph_work_managed_run_identity(),
             operation_attempt: admission.admission_identity(),

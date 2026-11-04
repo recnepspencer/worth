@@ -50,8 +50,8 @@ impl WorthQueryAdmittedApplicationConditionalDefinition {
             identity,
             predecessor,
             request,
-            bridge: application.bridge.conditional_operations(),
-            activations: Arc::clone(&application.product_runtime.activations),
+            bridge: application.runtime.bridge.conditional_operations(),
+            activations: Arc::clone(&application.runtime.product_runtime.activations),
         }
     }
 

@@ -45,8 +45,7 @@ fn installed_result_capacity_refuses_the_whole_list_and_returns_the_document_for
             0x9182_5a00,
             [(input(3), 0x9182_5a01), (input(5), 0x9182_5a02)],
         )
-        .err()
-        .expect("member bound4 admits2, result bound1 must refuse");
+        .expect_err("member bound4 admits2, result bound1 must refuse");
     assert!(
         matches!(
             cause,
@@ -114,6 +113,7 @@ fn candidate_capacity_refusal_preserves_the_reserved_group_and_one_freed_slot_se
                 live_product_branches: 3,
                 ..WorldLifecycleCapacity::DEFAULT
             },
+            worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system(),
         ),
         WorthQueryApplicationQueryResourceProfile::new(NonZeroUsize::new(128).unwrap()),
         SignalConditionalEvaluationBudget::development(),

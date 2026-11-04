@@ -15,6 +15,11 @@ pub enum WorthQueryValueDecodeDenial {
     AccountingOverflow,
     BindingContractMismatch,
     CodecRejected,
+    Content(worth_relational::facade::content::RelationalContentDenial),
+    RequiredContentFieldAbsent,
+    ContentBasisUnavailable,
+    ContentProjectionWorkExceeded,
+    ContentProjectionWorkOverflow,
 }
 
 impl WorthQueryValueDecodeDenial {
@@ -27,7 +32,17 @@ impl WorthQueryValueDecodeDenial {
             Self::Scope(cause) => Some(cause),
             Self::Memory(memory) => Some(Request::Admission(LeaseDenial::MemoryExhausted(memory))),
             Self::Reservation(lease) => Some(Request::Admission(lease)),
-            Self::AccountingOverflow | Self::BindingContractMismatch | Self::CodecRejected => None,
+            Self::Content(
+                worth_relational::facade::content::RelationalContentDenial::Execution(cause),
+            ) => cause.as_kernel_stop().map(Request::Stopped),
+            Self::Content(_)
+            | Self::RequiredContentFieldAbsent
+            | Self::ContentBasisUnavailable
+            | Self::ContentProjectionWorkExceeded
+            | Self::ContentProjectionWorkOverflow
+            | Self::AccountingOverflow
+            | Self::BindingContractMismatch
+            | Self::CodecRejected => None,
         }
     }
 }

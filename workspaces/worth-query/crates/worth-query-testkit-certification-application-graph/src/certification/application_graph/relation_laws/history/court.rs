@@ -8,6 +8,7 @@ pub use super::super::{
     read,
 };
 pub use super::access::*;
+pub use worth_query_host::facade::primary_graph::WorthQueryApplicationHistoryDenial;
 pub use worth_query_testkit_document_retention::facade::document_retention_model::operator_identity::{
     authenticate_operator, request_scope,
 };

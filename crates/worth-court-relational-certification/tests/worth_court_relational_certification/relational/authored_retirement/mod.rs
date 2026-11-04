@@ -1,4 +1,5 @@
 //! Atomic source/realization retirement through the public Native boundary.
+mod corruption_subjects;
 mod independent_source;
 mod live_members;
 mod owned_routes;

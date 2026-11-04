@@ -109,7 +109,7 @@ fn append_scalar_material<S: CanonicalMaterialSink>(
         }
         CanonicalScalarView::ContentRefId(value) => {
             append_token(material, "value.kind", "content-ref")?;
-            append_u64(material, "value.content-ref", value)?;
+            append_bytes(material, "value.content-ref", &value)?;
         }
         CanonicalScalarView::EntityRef {
             partition_id,

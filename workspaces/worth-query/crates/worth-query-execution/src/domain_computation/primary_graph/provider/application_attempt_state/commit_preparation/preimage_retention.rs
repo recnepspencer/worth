@@ -42,6 +42,7 @@ impl WorthQueryPreparedPreImageRetention {
 pub(super) fn retain_attempt_preimage(
     attempt: &WorthQueryPrimaryGraphApplicationAttempt,
     candidate: &worth_relational::facade::mvcc::ValidatedRelationalProposal,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> Result<WorthQueryPreparedPreImageRetention, WorthQueryProviderSessionFailure> {
     let Some(demand) = attempt.preimage_demand() else {
@@ -63,10 +64,22 @@ pub(super) fn retain_attempt_preimage(
                 "preimage projection capacity exhausted"),
         })?;
     let examined = candidates.examined();
-    let (retained, candidates_materialized) =
+    let (mut retained, candidates_materialized) =
         selection::retain_from_attempt(demand, candidates.iter(), &footprint)
             .map_err(retention_failure)?
             .into_parts();
+    retained
+        .retain_content(
+            execution,
+            attempt
+                .affinity()
+                .product_publication()
+                .observation()
+                .basis()
+                .relational_basis(),
+            demand.maximum_encoded_bytes(),
+        )
+        .map_err(retention_failure)?;
     Ok(WorthQueryPreparedPreImageRetention {
         retained: Some(retained),
         work: WorthQueryPreImageRetentionWork {
@@ -114,24 +127,36 @@ impl WorthQueryPreImageRetentionWork {
 fn retention_failure(
     denial: WorthQueryPreImageRetentionDenial,
 ) -> WorthQueryProviderSessionFailure {
-    provider_failure(
-        WorthQueryProviderSessionProtocolStage::Commit,
-        match denial {
-            WorthQueryPreImageRetentionDenial::MissingDemandedField => {
-                "recorded inverse demands an unobserved exact mutated field"
-            }
-            WorthQueryPreImageRetentionDenial::ExceedsByteBound => {
-                "retained pre-image exceeds the installed demand byte bound"
-            }
-            WorthQueryPreImageRetentionDenial::EmptyDemand => {
-                "installed recorded inverse declares an empty pre-image demand"
-            }
-            WorthQueryPreImageRetentionDenial::AmbiguousDemandedField => {
-                "recorded inverse has several admitted observations for one exact mutated field"
-            }
-            WorthQueryPreImageRetentionDenial::NoMutatedRecord => {
-                "recorded inverse has no existing mutated field to retain"
-            }
-        },
-    )
+    let semantic =
+        |detail| provider_failure(WorthQueryProviderSessionProtocolStage::Commit, detail);
+    let failure = match denial {
+        WorthQueryPreImageRetentionDenial::Content(cause) => {
+            let stop = crate::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_kind(
+                cause.into_execution_cause(), None);
+            WorthQueryProviderSessionFailure::checked_read_stopped(
+                stop,
+                WorthQueryProviderSessionProtocolStage::Commit,
+                "preimage content admission stopped before the Native transaction",
+            )
+        }
+        WorthQueryPreImageRetentionDenial::MissingDemandedField => {
+            semantic("recorded inverse demands an unobserved exact mutated field")
+        }
+        WorthQueryPreImageRetentionDenial::ExceedsByteBound => {
+            semantic("retained pre-image exceeds the installed demand byte bound")
+        }
+        WorthQueryPreImageRetentionDenial::EmptyDemand => {
+            semantic("installed recorded inverse declares an empty pre-image demand")
+        }
+        WorthQueryPreImageRetentionDenial::AmbiguousDemandedField => semantic(
+            "recorded inverse has several admitted observations for one exact mutated field",
+        ),
+        WorthQueryPreImageRetentionDenial::NoMutatedRecord => {
+            semantic("recorded inverse has no existing mutated field to retain")
+        }
+    };
+    failure.with_preimage_retention_denial(denial)
 }
+
+#[cfg(test)]
+mod tests;

@@ -105,6 +105,7 @@ impl<Schema, Operation, Input, Scope>
             .source_partition_identity()
             .ok_or(WorthQueryProducerIdentityDenial::MissingSourcePartition)?;
         let lineage = runtime
+            .runtime
             .primary_provider
             .graph
             .output_lineage
@@ -146,6 +147,7 @@ impl<Schema, Operation, Input, Scope>
                 && head.dependency_identity == Some(dependency);
             let unposted = (head.claims_upstream || !replays)
                 && !runtime
+                    .runtime
                     .output_demands
                     .posts_settlement(&head.settlement)
                     .map_err(|_| WorthQueryProducerIdentityDenial::LineageLookupBudgetExceeded)?;

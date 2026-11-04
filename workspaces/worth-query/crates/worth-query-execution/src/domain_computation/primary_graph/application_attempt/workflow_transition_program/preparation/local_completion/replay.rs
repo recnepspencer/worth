@@ -24,6 +24,7 @@ where
         .try_into()
         .expect("one native settlement key");
     let locator = runtime
+        .runtime
         .primary_provider
         .graph
         .layout
@@ -43,6 +44,7 @@ where
     };
     Ok(receipt.map(|receipt| {
         runtime
+            .runtime
             .primary_provider
             .graph
             .with_runtime(execution, |relational| {

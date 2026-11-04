@@ -65,6 +65,7 @@ fn journey(local: u32, remote: u32, invalid_batches: bool) -> (u64, u64) {
         provider.clone(),
         rules.clone(),
         geometry::Configuration::default(),
+        worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     let scope = authentication::request_scope();
     let principal = authenticate(&world, &scope);

@@ -134,9 +134,5 @@ fn digest_basis_for_contract_shape(
                 reference: *reference,
             },
         ],
-        AspectShape::Content => vec![CanonicalDigestPreparationEntry::ContractShape {
-            key: contract.key().clone(),
-            shape: CanonicalDigestAspectShapeKind::Content,
-        }],
     }
 }

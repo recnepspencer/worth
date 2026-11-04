@@ -188,8 +188,7 @@ fn terminal_court(interference: Interference) {
     let stopped =
         worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope::new(
             None,
-            stop.token(),
-        );
+            stop.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let (terminal, cause) = terminal
         .close(&world.application.request(&principal, &stopped))
         .err()

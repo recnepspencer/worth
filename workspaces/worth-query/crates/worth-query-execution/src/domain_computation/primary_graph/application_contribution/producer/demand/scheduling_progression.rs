@@ -38,6 +38,7 @@ where
         >,
     ) -> Result<WorthQueryOutputSchedulingResult, WorthQueryOutputDemandDenial> {
         let route = self
+            .runtime
             .output_producer_routes
             .get(&selected.identity)
             .ok_or_else(|| {
@@ -133,6 +134,7 @@ where
             ));
         }
         let route = self
+            .runtime
             .output_producer_routes
             .get(&selected.identity)
             .ok_or_else(|| {
@@ -208,7 +210,7 @@ where
             |source| source.change.signal_basis(),
         );
         let attempt = {
-            let update_counter = &self.next_output_producer_attempt;
+            let update_counter = &self.runtime.next_output_producer_attempt;
             let mut current = update_counter.load(std::sync::atomic::Ordering::Relaxed);
             loop {
                 let Some(updated_value) = current.checked_add(1) else {
@@ -240,7 +242,7 @@ where
         let mut identity_bytes = [0_u8; 8];
         identity_bytes.copy_from_slice(&identity[..8]);
         let query_identity = u64::from_le_bytes(identity_bytes);
-        let bridge = self.bridge.conditional();
+        let bridge = self.runtime.bridge.conditional();
         let decision = match execute_signal(&bridge, route, signal_basis, query_identity, attempt) {
             Ok(decision) => decision,
             Err(error) => {

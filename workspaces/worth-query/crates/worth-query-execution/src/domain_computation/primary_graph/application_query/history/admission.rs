@@ -206,7 +206,7 @@ impl HistoryMetadataAdmission {
                     execution,
                     runtime,
                     security,
-                    application.authorization.bridge(),
+                    application.runtime.authorization.bridge(),
                 )
                 .map_err(|cause| {
                     MetadataValidationDenial::Authorization(

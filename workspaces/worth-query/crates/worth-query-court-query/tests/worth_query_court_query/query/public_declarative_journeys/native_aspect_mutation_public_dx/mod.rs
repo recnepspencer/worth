@@ -195,7 +195,7 @@ fn invalid_native_values_deny_before_lower_runtime_execution_without_residue() {
         ),
         (
             touch(entity_ref.key().as_str(), None),
-            AspectValue::ContentRef(ContentRefId(902)),
+            AspectValue::UInt64(7),
         ),
         (
             touch(profile.key().as_str(), Some("undeclared")),

@@ -58,6 +58,7 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
     }
     let application = current.application();
     if application
+        .runtime
         .primary_provider
         .graph
         .layout
@@ -66,6 +67,7 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
         return Err(correction(Eligibility::LiveControlDomain));
     }
     application
+        .runtime
         .product_runtime
         .require_live_product_occurrence(
             source.source.product_observation().lifecycle_incarnation(),
@@ -144,11 +146,12 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
         }
     }
     let execution = phase
-        .checked_execution_request_for(&application.product_runtime)
+        .checked_execution_request_for(&application.runtime.product_runtime)
         .map_err(Denial::Stopped)?;
     // This real admission on C catches medium/schema/source eligibility before
     // fork. Actual preparation later repeats admission on the new C-derived target.
     application
+        .runtime
         .primary_provider
         .graph
         .with_runtime(&execution, |native| {

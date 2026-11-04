@@ -172,7 +172,7 @@ where
         WorthQuerySelectedProductOperation<'_, Schema>,
         WorthQueryProductBranchAdmissionDenial,
     > {
-        let execution = match phase.execution_request_for(&self.product_runtime) {
+        let execution = match phase.execution_request_for(&self.runtime.product_runtime) {
             Ok(execution) => execution,
             Err(_) => {
                 return Err(WorthQueryProductBranchAdmissionDenial::Refused(
@@ -199,6 +199,7 @@ where
             ));
         }
         let product = self
+            .runtime
             .product_runtime
             .lease_from_observation(observation.product.observation().clone())?;
         self.on_product(execution, product)

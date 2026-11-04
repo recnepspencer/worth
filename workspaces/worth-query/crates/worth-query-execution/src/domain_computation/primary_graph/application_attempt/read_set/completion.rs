@@ -1,56 +1,20 @@
-use crate::domain_computation::primary_graph::application_attempt::check_request_live;
-use std::marker::PhantomData;
-use worth_execution::ExecutionAllocationPolicy;
-
+//! Full read completion over the original borrowed admission and read state.
+use super::complete_read_set_core::{
+    CompleteReadSetCore, CompletedReadFacts, PreparedReadCompletion,
+};
+use super::mutation_read_attempt_core::MutationReadAttemptCore;
 use super::{
     denial, observation_admission, CompletedHandlerFactBoundary, SealedComputationFacts,
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
-    WorthQueryApplicationReadAttempt, WorthQueryCompleteApplicationReadSet,
+    WorthQueryCompleteApplicationReadSet,
 };
+use worth_execution::ExecutionAllocationPolicy;
 
-impl<Schema, Operation, Input, Scope, Phase>
-    WorthQueryApplicationReadAttempt<'_, '_, Schema, Operation, Input, Scope, Phase>
-{
-    pub fn complete(
+impl MutationReadAttemptCore<'_, '_, '_> {
+    pub(super) fn complete_full(
         mut self,
         allocation_policy: ExecutionAllocationPolicy<'_, '_>,
-    ) -> Result<
-        WorthQueryCompleteApplicationReadSet<Schema, Operation, Input, Scope, Phase>,
-        WorthQueryApplicationAttemptDenial,
-    > {
-        self.check_completion_live()?;
-        if let Some(refresh) = self.native_completion.take() {
-            return self.complete_native(refresh, allocation_policy);
-        }
-        self.complete_full(allocation_policy)
-    }
-
-    pub(super) fn check_completion_live(&self) -> Result<(), WorthQueryApplicationAttemptDenial> {
-        // No ignored ordinary decode refusal can seal/attribute facts, retain
-        // completed input, or advance to an effect/candidate owner.
-        self.check_value_decode()?;
-        self.execution.consult().map_err(|cause| {
-            denial(
-                WorthQueryApplicationAttemptDenialKind::ValueDecode(
-                    super::super::super::value_decode::WorthQueryValueDecodeDenial::Scope(cause),
-                ),
-                self.admission.operation(),
-            )
-        })?;
-        check_request_live(
-            self.admission.publication_request(),
-            self.admission.operation(),
-        )?;
-        Ok(())
-    }
-
-    fn complete_full(
-        mut self,
-        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
-    ) -> Result<
-        WorthQueryCompleteApplicationReadSet<Schema, Operation, Input, Scope, Phase>,
-        WorthQueryApplicationAttemptDenial,
-    > {
+    ) -> Result<PreparedReadCompletion, WorthQueryApplicationAttemptDenial> {
         if self
             .expected_facts
             .as_ref()
@@ -212,7 +176,7 @@ impl<Schema, Operation, Input, Scope, Phase>
         }
         self.admission
             .mutation_preconditions()
-            .validate_observations(&self.facts)
+            .validate_observations(self.facts)
             .map_err(|()| {
                 denial(
                     WorthQueryApplicationAttemptDenialKind::MutationPreconditionMismatch,
@@ -225,8 +189,8 @@ impl<Schema, Operation, Input, Scope, Phase>
         // The expected-key view and attribution shared the projection's maps.
         // Close the view before ownership moves into retained metadata.
         drop(self.expected_facts.take());
-        let (reads, mut completed) = self.computation_reads;
-        let computation_fact_ordinals: std::sync::Arc<[usize]> = reads.ordinals(&self.facts).into();
+        let (reads, mut completed) = self.take_computation_reads();
+        let computation_fact_ordinals: std::sync::Arc<[usize]> = reads.ordinals(self.facts).into();
         let attribution = reads.into_attribution();
         let _temporary_index_memory = completed.reserve_fact_index(|| attribution.as_ref().map(|reads| {
             reads.index_bytes().ok_or(
@@ -263,16 +227,17 @@ impl<Schema, Operation, Input, Scope, Phase>
         };
         let installed_read_scopes = super::admit_array(
             self.installed_read_scopes.len(),
-            self.installed_read_scopes.into_values(),
+            std::mem::take(self.installed_read_scopes).into_values(),
             allocation_policy,
             operation,
             check_authority,
         )?;
         let facts = super::admit_completed_facts(
             fact_count,
-            self.facts
-                .into_values()
-                .chain(self.source_facts.into_values()),
+            std::mem::take(self.facts).into_values().chain(
+                std::mem::replace(self.source_facts, super::SourceFacts::Admitted(Vec::new()))
+                    .into_values(),
+            ),
             allocation_policy,
             self.admission.publication_request(),
             operation,
@@ -338,30 +303,20 @@ impl<Schema, Operation, Input, Scope, Phase>
             )
             .map_err(|cause| cause.into_attempt_denial(self.admission.operation()))?,
         };
-        Ok(WorthQueryCompleteApplicationReadSet {
-            postcondition_carry: None,
-            admission: self.admission,
-            lease: self.lease,
-            application_projection: Some(application_projection),
-            original_read: None,
-            installed_read_scopes,
-            facts,
-            content,
+        Ok(PreparedReadCompletion::Full(CompleteReadSetCore {
             effect_routes,
-            consumed_outputs: self.consumed_outputs,
-            computation_facts,
-            computation_fact_ordinals,
-            workflow_authority_binding: None,
-            workflow_birth_binding: None,
-            workflow_succession_binding: None,
-            mutation_handler_binding: None,
-            local_action_settlement: None,
-            body_external_emission: None,
-            signed_creation: None,
-            workflow_deadline: None,
-            new_commit_refusal: None,
-            _phase: PhantomData,
-        })
+            read: CompletedReadFacts {
+                postcondition_carry: None,
+                application_projection: Some(application_projection),
+                original_read: None,
+                installed_read_scopes,
+                facts,
+                content,
+                #[cfg(test)]
+                computation_facts,
+                computation_fact_ordinals,
+            },
+        }))
     }
 }
 

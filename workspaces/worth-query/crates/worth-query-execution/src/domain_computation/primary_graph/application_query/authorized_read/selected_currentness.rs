@@ -77,7 +77,7 @@ where
             execution,
             runtime,
             security,
-            application.authorization.bridge(),
+            application.runtime.authorization.bridge(),
         )
         .map_err(|stop| match stop {
             crate::domain_computation::authorization::AuthorizationCurrentnessStop::Admission(

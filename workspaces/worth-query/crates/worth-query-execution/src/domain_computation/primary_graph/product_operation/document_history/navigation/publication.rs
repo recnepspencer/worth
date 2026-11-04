@@ -21,7 +21,10 @@ pub(super) fn publication_denial(
     cause: PublicationDenial<worth_runtime_world::facade::NoEffectCompositePublication>,
 ) -> WorthQueryHistoryNavigationDenial {
     match cause {
-        PublicationDenial::Stopped(cause) => {
+        PublicationDenial::ClockMismatch => {
+            WorthQueryHistoryNavigationDenial::Stopped(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock))
+        },
+PublicationDenial::Stopped(cause) => {
             WorthQueryHistoryNavigationDenial::Stopped(advancement_denial(cause))
         }
         PublicationDenial::Refused(cause) => WorthQueryHistoryNavigationDenial::Publication(cause),
@@ -35,17 +38,17 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
         candidate: WorthQueryExpectedProductBranch<'runtime, S>,
         publication: WorthQueryPreparedProductPublication,
     ) -> Result<(), WorthQueryHistoryNavigationDenial> {
-        let execution = match phase.checked_execution_request_for(&self.application.product_runtime)
-        {
-            Ok(execution) => execution,
-            Err(cause) => {
-                self.phase = NavigationPhase::Publication {
-                    candidate,
-                    publication,
-                };
-                return Err(WorthQueryHistoryNavigationDenial::Stopped(cause));
-            }
-        };
+        let execution =
+            match phase.checked_execution_request_for(&self.application.runtime.product_runtime) {
+                Ok(execution) => execution,
+                Err(cause) => {
+                    self.phase = NavigationPhase::Publication {
+                        candidate,
+                        publication,
+                    };
+                    return Err(WorthQueryHistoryNavigationDenial::Stopped(cause));
+                }
+            };
         match publication.execute(execution) {
             Ok(Outcome::Performed(performed)) => {
                 self.performed(candidate, performed);
@@ -109,8 +112,13 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
     ) -> WorthQueryProductUnpublishedRecovery {
         WorthQueryProductUnpublishedApplication::new(
             effects,
-            self.application.product_runtime.owner.recovery_port(),
             self.application
+                .runtime
+                .product_runtime
+                .owner
+                .recovery_port(),
+            self.application
+                .runtime
                 .primary_provider
                 .unpublished_idempotency_disposition(),
         )
@@ -127,10 +135,11 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
         use WorthQueryHistoryNavigationDenial as Denial;
         let prepared = (|| {
             let execution = phase
-                .checked_execution_request_for(&self.application.product_runtime)
+                .checked_execution_request_for(&self.application.runtime.product_runtime)
                 .map_err(Denial::Stopped)?;
             let product = self
                 .application
+                .runtime
                 .product_runtime
                 .admit_product_occurrence(candidate.branch().occurrence())
                 .map_err(Denial::ProductAdmission)?;
@@ -157,7 +166,8 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
                 .publication_binding()
                 .prepare_settled_relational_adoption(&inspected, request)
                 .map_err(|cause| match cause {
-                    PublicationDenial::Stopped(cause) => Denial::Stopped(advancement_denial(cause)),
+                    PublicationDenial::ClockMismatch => Denial::Stopped(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock)),
+PublicationDenial::Stopped(cause) => Denial::Stopped(advancement_denial(cause)),
                     PublicationDenial::Refused(cause) => Denial::RecoveryPreparation(cause),
                 })
         })();
@@ -171,18 +181,18 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
                 return Err(cause);
             }
         };
-        let execution = match phase.checked_execution_request_for(&self.application.product_runtime)
-        {
-            Ok(execution) => execution,
-            Err(cause) => {
-                drop(publication);
-                self.phase = NavigationPhase::Unpublished {
-                    candidate,
-                    recovery,
-                };
-                return Err(Denial::Stopped(cause));
-            }
-        };
+        let execution =
+            match phase.checked_execution_request_for(&self.application.runtime.product_runtime) {
+                Ok(execution) => execution,
+                Err(cause) => {
+                    drop(publication);
+                    self.phase = NavigationPhase::Unpublished {
+                        candidate,
+                        recovery,
+                    };
+                    return Err(Denial::Stopped(cause));
+                }
+            };
         match publication.execute(execution) {
             Ok(Outcome::Performed(performed)) => {
                 self.performed(candidate, performed);

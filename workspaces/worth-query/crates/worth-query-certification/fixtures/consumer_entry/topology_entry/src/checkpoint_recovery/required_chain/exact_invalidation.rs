@@ -47,6 +47,20 @@ fn install_observing(
     seed: Seed,
     observations: u64,
 ) -> Runtime {
+    install_observing_with_policy(
+        checkpoint,
+        seed,
+        observations,
+        support::observation::CHECKPOINT_EXECUTION_POLICY,
+    )
+}
+
+fn install_observing_with_policy(
+    checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
+    seed: Seed,
+    observations: u64,
+    policy: worth_foundational::ExecutionRequestPolicy,
+) -> Runtime {
     let profile =
         worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile::standard();
 
@@ -57,12 +71,14 @@ fn install_observing(
         // publication metadata measured 1967 bytes per reservation; give the
         // fixture 2 KiB per retained entry. The small default's 512 KiB cannot
         // hold the hundred-ring population and its retained output history.
-        support::limits_with_history_room(
+        support::limits_with_history_and_policy(
             4_096,
             observations,
             512,
             support::invalidation(),
             4_096 * 2_048,
+            policy,
+            authentication::WorthQueryAdmissionClock::system(),
         ),
         seed,
     )

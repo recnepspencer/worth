@@ -58,7 +58,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         retirements: &mut OwnerCleanupRetirements,
     ) -> RecoveryProgress {
         use InstalledTransportPendingReason as Pending;
-        let publication_execution = match phase.execution_request_for(&self.product_runtime) {
+        let publication_execution = match phase.execution_request_for(&self.runtime.product_runtime)
+        {
             Ok(execution) => execution,
             Err(cause) => {
                 return RecoveryProgress::Pending(
@@ -71,6 +72,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let owner = evidence.committed();
         let incarnation = owner.committed_product_publication().product_incarnation();
         let lane = self
+            .runtime
             .primary_provider
             .application_branch_commit_lane_for_occurrence(incarnation);
 
@@ -102,7 +104,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 return RecoveryProgress::Pending(prior, None, Pending::ProductRecoveryRequired)
             }
         };
-        let lease = match self.product_runtime.admit_product_occurrence(incarnation) {
+        let lease = match self
+            .runtime
+            .product_runtime
+            .admit_product_occurrence(incarnation)
+        {
             Ok(lease) => lease,
             Err(_) => {
                 return RecoveryProgress::Pending(prior, None, Pending::ProductRecoveryRequired)
@@ -125,7 +131,14 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let prepared = match publication.prepare_settled_relational_adoption(&unpublished, request)
         {
             Ok(prepared) => prepared,
-            Err(PublicationDenial::Stopped(stop)) => {
+            Err(PublicationDenial::ClockMismatch) => {
+                return RecoveryProgress::Pending(
+                    prior,
+                    None,
+                    Pending::ExecutionRequest(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock)),
+                )
+            },
+Err(PublicationDenial::Stopped(stop)) => {
                 return RecoveryProgress::Pending(
                     prior,
                     None,
@@ -165,7 +178,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     .err();
                 RecoveryProgress::Performed(terminal, release)
             }
-            Err(PublicationDenial::Stopped(stop)) => RecoveryProgress::Pending(
+            Err(PublicationDenial::ClockMismatch) => RecoveryProgress::Pending(
+                prior,
+                None,
+                Pending::ExecutionRequest(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock)),
+            ),
+Err(PublicationDenial::Stopped(stop)) => RecoveryProgress::Pending(
                 prior,
                 None,
                 Pending::ExecutionRequest(advancement_denial(stop)),
@@ -177,7 +195,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 let next = WorthQueryProductUnpublishedApplication::new(
                     effects,
                     world_recovery,
-                    self.primary_provider.unpublished_idempotency_disposition(),
+                    self.runtime
+                        .primary_provider
+                        .unpublished_idempotency_disposition(),
                 )
                 .into_recovery();
                 let release = self

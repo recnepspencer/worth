@@ -138,7 +138,7 @@ fn mix_canonical_value(revision: &mut RevisionHasher, value: &CanonicalBasisValu
         }
         CanonicalBasisValue::ContentRefId(value) => {
             revision.mix_u8(11);
-            revision.mix_u64(*value);
+            revision.mix_bytes(value);
         }
         CanonicalBasisValue::EntityRef {
             partition_id,

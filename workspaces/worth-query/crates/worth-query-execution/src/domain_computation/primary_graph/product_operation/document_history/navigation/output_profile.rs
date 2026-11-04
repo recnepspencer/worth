@@ -123,7 +123,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
             ));
         }
         phase
-            .check_live_for(&application.product_runtime)
+            .check_live_for(&application.runtime.product_runtime)
             .map_err(Denial::Stopped)?;
         if crate::equality_type_id::EqualityTypeId::of::<<<Source<S,R> as ApplicationQueryBinding<S>>::ScopeBinding as ApplicationQueryScopeBinding<S>>::Scope>().into_external()
             != crate::equality_type_id::EqualityTypeId::of::<ApplicationHistoryModel<S,H>>().into_external()

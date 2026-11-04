@@ -24,19 +24,13 @@ pub(super) fn lower_primitive_scalar(
                 source: source.clone(),
                 expected: "string",
             }),
-        ScalarAspectType::Bytes => value
-            .as_u64()
-            .map(|value| AspectValue::Bytes(ContentRefId(value)))
-            .ok_or_else(|| JsonCompatibilityLoweringDenial::JsonShapeNotAdmitted {
-                source: source.clone(),
-                expected: "bytes reference id",
-            }),
         ScalarAspectType::ContentRef => value
-            .as_u64()
-            .map(|value| AspectValue::ContentRef(ContentRefId(value)))
+            .as_str()
+            .and_then(ContentRefId::from_hex)
+            .map(AspectValue::ContentRef)
             .ok_or_else(|| JsonCompatibilityLoweringDenial::JsonShapeNotAdmitted {
                 source: source.clone(),
-                expected: "content reference id",
+                expected: "lowercase 32-byte content digest",
             }),
         _ => Err(JsonCompatibilityLoweringDenial::UnsupportedScalarFamily {
             source: source.clone(),

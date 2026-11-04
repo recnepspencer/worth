@@ -55,6 +55,7 @@ pub(super) fn select_input<Schema: ApplicationSchema, C: ApplicationCorrectionBi
     )?;
     let observed = target
         .application()
+        .runtime
         .primary_provider
         .observe_correction_key(target.product().observation(), &key.identity());
     let lineage = match &observed {
@@ -103,6 +104,7 @@ pub(super) fn select_reapplication_input<
     target.select_alternative_ancestry(phase, &alternative.selected, maximum_history)?;
     let observed = target
         .application()
+        .runtime
         .primary_provider
         .observe_correction_key(target.product().observation(), &key.identity());
     let lineage = match &observed {

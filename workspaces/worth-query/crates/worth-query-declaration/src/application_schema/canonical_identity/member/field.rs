@@ -17,6 +17,7 @@ pub(super) fn append_schema_field(
         scalar_family,
         value_type,
         canonical,
+        content_format,
         unit,
         frame,
         writable,
@@ -45,6 +46,12 @@ pub(super) fn append_schema_field(
             unique: *unique,
         },
     );
+    if let Some(identity) = content_format {
+        basis.text(
+            format!("{prefix}.content-format"),
+            &worth_foundational::facade::CanonicalDigestId::new(*identity).render_hex(),
+        );
+    }
 }
 
 pub(super) struct FieldContract<'a> {

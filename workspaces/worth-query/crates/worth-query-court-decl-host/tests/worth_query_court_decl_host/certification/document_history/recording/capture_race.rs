@@ -13,6 +13,10 @@ use worth_query_testkit_document_retention::facade::document_retention_model::{
 };
 
 #[test]
+#[expect(
+    clippy::disallowed_methods,
+    reason = "certification-harness thread-scope=1 scoped-thread-spawn=1: equal_value_candidate_aba_after_capture_cannot_replace_the_receipt_endpoint joins the bounded native owner and competing host or control actors to certify custody at the real handoff."
+)]
 fn equal_value_candidate_aba_after_capture_cannot_replace_the_receipt_endpoint() {
     let host = publish_on_first_program();
     let document = attach(&host, head(&host), DOCUMENT_IDENTITY);

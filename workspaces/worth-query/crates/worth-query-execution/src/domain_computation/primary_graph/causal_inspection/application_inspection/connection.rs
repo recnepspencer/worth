@@ -173,7 +173,7 @@ pub(super) fn connect<Schema: worth_query_installation::facade::ApplicationSchem
         let observed = overlap::ObservationConnection {
             original,
             diagnostic,
-            layout: &runtime.primary_provider.graph.layout,
+            layout: &runtime.runtime.primary_provider.graph.layout,
             contracts: runtime.installed_schema().native_contracts(),
         };
         source::require_input(

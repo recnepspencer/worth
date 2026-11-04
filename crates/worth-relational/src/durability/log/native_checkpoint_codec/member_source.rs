@@ -1,5 +1,5 @@
 use std::collections::BTreeMap;
-use std::sync::Arc;
+use worth_execution::ExecutionImmutableBytes;
 
 use crate::durability::medium::{RelationalDurableColdSource, RelationalDurableMemberLocator};
 use crate::publication::patch::data::PatchStreamPosition;
@@ -9,8 +9,7 @@ use crate::storage::data::RelationalStorageUnavailableCause as Cause;
 /// member verification and loading path independent of artifact placement.
 #[derive(Debug)]
 pub(super) struct InlineCheckpointSource {
-    pub(super) members: BTreeMap<RelationalDurableMemberLocator, Arc<[u8]>>,
-    pub(super) envelopes: BTreeMap<PatchStreamPosition, Arc<[u8]>>,
+    pub(super) members: BTreeMap<RelationalDurableMemberLocator, ExecutionImmutableBytes>,
 }
 
 impl RelationalDurableColdSource for InlineCheckpointSource {
@@ -29,12 +28,12 @@ impl RelationalDurableColdSource for InlineCheckpointSource {
         bounded(self.members.get(&locator), limit)
     }
 
-    fn read_commit(&self, position: PatchStreamPosition, limit: u64) -> Result<Vec<u8>, Cause> {
-        bounded(self.envelopes.get(&position), limit)
+    fn read_commit(&self, _position: PatchStreamPosition, _limit: u64) -> Result<Vec<u8>, Cause> {
+        Err(Cause::SourceUnavailable)
     }
 }
 
-fn bounded(bytes: Option<&Arc<[u8]>>, limit: u64) -> Result<Vec<u8>, Cause> {
+fn bounded(bytes: Option<&ExecutionImmutableBytes>, limit: u64) -> Result<Vec<u8>, Cause> {
     let bytes = bytes.ok_or(Cause::SourceUnavailable)?;
     if bytes.len() as u64 > limit {
         return Err(Cause::LimitExceeded {

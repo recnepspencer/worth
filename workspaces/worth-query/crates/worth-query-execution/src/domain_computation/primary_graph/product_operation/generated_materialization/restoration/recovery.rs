@@ -187,7 +187,15 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .prepare_settled_relational_adoption(&unpublished, request)
         {
             Ok(prepared) => prepared,
-            Err(PublicationDenial::Stopped(stop)) => {
+            Err(PublicationDenial::ClockMismatch) => {
+                return Err(failure(
+                    WorthQueryGeneratedOutputRestorationRecoveryStage::ExecutionDenied(
+                        crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock),
+                    ),
+                    RecoveryState::World { recovery, retry },
+                ))
+            },
+Err(PublicationDenial::Stopped(stop)) => {
                 return Err(failure(
                     WorthQueryGeneratedOutputRestorationRecoveryStage::ExecutionDenied(
                         advancement_denial(stop),
@@ -226,7 +234,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     retirements,
                 )
             }
-            Err(PublicationDenial::Stopped(stop)) => Err(failure(
+            Err(PublicationDenial::ClockMismatch) => Err(failure(
+                WorthQueryGeneratedOutputRestorationRecoveryStage::ExecutionDenied(
+                    crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock),
+                ),
+                RecoveryState::World { recovery, retry },
+            )),
+Err(PublicationDenial::Stopped(stop)) => Err(failure(
                 WorthQueryGeneratedOutputRestorationRecoveryStage::ExecutionDenied(
                     advancement_denial(stop),
                 ),

@@ -44,7 +44,7 @@ pub fn limits(work: u64) -> WorthQueryInMemoryApplicationLimits {
                 owner_created_component_custody_records: 32,
             },
         },
-        WorthQueryProductWorldClock::start(),
+        WorthQueryProductWorldClock::start(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         WorthQueryInvalidationResources::new(),
         policy,
     )

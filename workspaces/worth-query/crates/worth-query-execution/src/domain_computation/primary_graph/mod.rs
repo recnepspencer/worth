@@ -1,3 +1,9 @@
+mod content;
+pub(in crate::domain_computation) use content::retention_checkpoint;
+pub use content::{
+    AdmittedContent, ContentReadDenial, ContentWriteDenial, RelationalContentDenial,
+    RelationalContentRejection,
+};
 mod access_strategy;
 mod facade;
 pub use facade::*;
@@ -29,8 +35,8 @@ mod application_program;
 pub(crate) mod application_query;
 pub(crate) mod application_resource;
 pub(crate) mod application_runtime;
+pub(in crate::domain_computation) use application_runtime::WorthQueryApplicationRuntimeCore;
 pub(crate) mod authenticated_principal;
-mod authentication_clock;
 mod bootstrap;
 pub(crate) mod bootstrap_publication;
 pub(crate) mod conditional_operation;

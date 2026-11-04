@@ -30,7 +30,7 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
                 aspect: field.aspect().to_owned(),
                 field: field.field().to_owned(),
             });
-        self.push_field(entity, field, false)
+        self.push_field(entity, field, false, None)
     }
     pub fn field<Entity, Aspect, Field, Value, Write, Equality, Unit>(
         self,
@@ -45,7 +45,7 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
         Equality: EqualityPosture,
         Unit: ApplicationFieldUnit,
     {
-        self.push_field(entity, field, false)
+        self.push_field(entity, field, false, None)
     }
 
     /// Declares a field no two live entities of its kind may share a value
@@ -65,14 +65,15 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
         Equality: EqualityCapable,
         Unit: ApplicationFieldUnit,
     {
-        self.push_field(entity, field, true)
+        self.push_field(entity, field, true, None)
     }
 
-    fn push_field<Entity, Aspect, Field, Value, Write, Equality, Unit>(
+    pub(super) fn push_field<Entity, Aspect, Field, Value, Write, Equality, Unit>(
         mut self,
         entity: ApplicationEntityRef<Schema, Entity>,
         field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
         unique: bool,
+        content_format: Option<[u8; 32]>,
     ) -> Self
     where
         Entity: super::super::ApplicationEntityMarkerIdentity<Schema>,
@@ -93,6 +94,7 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
             scalar_family: field.scalar_family(),
             value_type: field.value_type_name().to_string(),
             canonical: recipe.canonical_contract().cloned(),
+            content_format,
             unit: field.unit().map(str::to_string),
             frame: recipe.frame().map(|frame| frame.as_str().to_owned()),
             writable: Write::WRITABLE,

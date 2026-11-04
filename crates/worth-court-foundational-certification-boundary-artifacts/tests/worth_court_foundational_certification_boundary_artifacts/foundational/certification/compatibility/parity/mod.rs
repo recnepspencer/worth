@@ -92,49 +92,25 @@ fn json_lowering_admits_unambiguous_scalar_wrapper_shapes() {
 }
 
 #[test]
-fn json_lowering_keeps_bytes_and_content_ref_scalar_families_distinct() {
-    let bytes_contract = worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::scalar_contract(
-        "blob.bytes",
-        1,
-        worth_foundational::ScalarAspectType::Bytes,
+fn json_lowering_accepts_one_full_content_digest_spelling() {
+    let contract = worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::scalar_contract(
+        "blob.content_ref", 1, worth_foundational::ScalarAspectType::ContentRef,
     );
-    let content_contract = worth_testkit_foundational::certification::ordinary_context::foundational_vocabulary::scalar_contract(
-        "blob.content_ref",
-        1,
-        worth_foundational::ScalarAspectType::ContentRef,
-    );
-
-    let worth_proof::TransitionOutcome::Success(bytes_artifact) = compatibility()
-        .json()
-        .lower_value(&bytes_contract, source_for("blob.bytes"), &json!(9))
-    else {
-        panic!("expected bytes compatibility lowering");
+    let identity = worth_foundational::ContentRefId([9; 32]);
+    let worth_proof::TransitionOutcome::Success(artifact) = compatibility().json().lower_value(
+        &contract,
+        source_for("blob.content_ref"),
+        &json!(identity.to_string()),
+    ) else {
+        panic!("expected full content digest lowering");
     };
-    let worth_proof::TransitionOutcome::Success(content_artifact) = compatibility()
-        .json()
-        .lower_value(&content_contract, source_for("blob.content_ref"), &json!(9))
+    let worth_foundational::ContractValidatedAspectValueView::Scalar(value) =
+        artifact.payload().view()
     else {
-        panic!("expected content reference compatibility lowering");
+        panic!("content contract produced non-scalar artifact");
     };
-
-    let worth_foundational::ContractValidatedAspectValueView::Scalar(bytes_value) =
-        bytes_artifact.payload().view()
-    else {
-        panic!("bytes contract produced non-scalar artifact");
-    };
-    let worth_foundational::ContractValidatedAspectValueView::Scalar(content_value) =
-        content_artifact.payload().view()
-    else {
-        panic!("content reference contract produced non-scalar artifact");
-    };
-
     assert_eq!(
-        bytes_value.value_family(),
-        worth_foundational::ScalarAspectType::Bytes
+        value,
+        &worth_foundational::AspectValue::ContentRef(identity)
     );
-    assert_eq!(
-        content_value.value_family(),
-        worth_foundational::ScalarAspectType::ContentRef
-    );
-    assert_ne!(bytes_value, content_value);
 }

@@ -88,6 +88,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .verifier_input_bytes
             .fetch_add(envelope_len, Ordering::Relaxed);
         let sample = self
+            .runtime
             .authorization_clock
             .sample(ApplicationCapabilityValidityTimeline::UnixEpochSeconds)
             .map_err(|_| Denial::TimeUnavailable)?;
@@ -147,7 +148,7 @@ impl<'a, Schema: ApplicationSchema> WorthQueryAuthenticatedInboundOccurrence<'a,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     ) -> Result<WorthQueryCorrelatedInboundOccurrence<'a, Schema>, Denial> {
         let execution = phase
-            .execution_request_for(&self.runtime.product_runtime)
+            .execution_request_for(&self.runtime.runtime.product_runtime)
             .map_err(|cause| Denial::advancement(cause.into()))?;
         self.runtime
             .correlate_authenticated_inbound(&execution, self)
@@ -200,7 +201,7 @@ impl<Schema: ApplicationSchema> WorthQueryAdmittedInboundOccurrence<'_, Schema> 
         request: &WorthQueryRequestScope,
     ) -> Result<WorthQueryInboundReceipt, Denial> {
         let execution = phase
-            .execution_request_for(&self.runtime.product_runtime)
+            .execution_request_for(&self.runtime.runtime.product_runtime)
             .map_err(|cause| Denial::advancement(cause.into()))?;
         // Progression owns settlement of this claim. Disarm Drop before it can
         // become retryable and another caller can claim the same custody slot.
@@ -237,6 +238,7 @@ impl<Schema: ApplicationSchema> Drop for WorthQueryAdmittedInboundOccurrence<'_,
             _ => return,
         };
         self.runtime
+            .runtime
             .inbound_custody
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())

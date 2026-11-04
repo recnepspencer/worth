@@ -301,7 +301,7 @@ impl WorkflowOperationAuthority {
     where
         Schema: worth_query_installation::facade::ApplicationSchema,
     {
-        let phase_request = match phase.execution_request_for(&runtime.product_runtime) {
+        let phase_request = match phase.execution_request_for(&runtime.runtime.product_runtime) {
             Ok(request) => request,
             Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::ForeignPhase, "application-read-phase")),
         };
@@ -341,7 +341,7 @@ impl WorkflowOperationAuthority {
         }
         let lease = WorthQueryApplicationSnapshotLease::acquire(
             &phase
-                .execution_request_for(&runtime.product_runtime)
+                .execution_request_for(&runtime.runtime.product_runtime)
                 .map_err(|_| {
                     WorthQueryApplicationAttemptDenial::new(
                         WorthQueryApplicationAttemptDenialKind::ForeignPhase,

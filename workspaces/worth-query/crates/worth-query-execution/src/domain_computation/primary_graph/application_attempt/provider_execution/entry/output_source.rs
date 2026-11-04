@@ -1,5 +1,4 @@
 use super::*;
-use crate::equality_type_id::EqualityTypeId as TypeId;
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub fn compare_and_commit_application_for_required_output_source<Operation, Input, Scope>(
@@ -16,28 +15,15 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     where
         Input: Clone + Send + Sync + 'static,
     {
-        if let Err(outcome) =
-            self.require_occurrence_owns_output_source(execution, presented, &program)
-        {
-            return outcome;
-        }
-        let Some(support) = self.program_support.as_ref() else {
-            return WorthQueryApplicationCommitOutcome::Denied(
-                WorthQueryApplicationCommitDenial::application_program_required(),
-            );
+        let entry = match self.validate_commit_program_in_advancement(phase, program) {
+            Ok(entry) => entry,
+            Err(outcome) => return outcome,
         };
-        let program = match program.retain_original_program(support, presented.revision()) {
-            Ok(program) => program,
-            Err(denial) => return WorthQueryApplicationCommitOutcome::Denied(denial),
-        };
-        self.compare_and_commit_application_with_causality(
+        entry.compare_and_commit_application_for_required_output_source(
             execution,
-            phase,
-            program,
+            presented,
             idempotency,
-            true,
             causality,
-            None,
             allocation_policy,
         )
     }
@@ -59,28 +45,15 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
-        if !self
-            .installed_conditionals
-            .contains_operation::<Operation>()
-        {
-            return WorthQueryApplicationCommitOutcome::Denied(
-                WorthQueryApplicationCommitDenial::conditional_operation_not_installed::<Operation>(
-                ),
-            );
-        }
-        if let Err(outcome) =
-            self.require_occurrence_program_commit_binding(execution, &program, selected_program)
-        {
-            return outcome;
-        }
-        self.compare_and_commit_application_with_output_observation(
+        let entry = match self.validate_commit_program_in_advancement(phase, program) {
+            Ok(entry) => entry,
+            Err(outcome) => return outcome,
+        };
+        entry.compare_and_commit_application_for_program_output_producer(
             execution,
-            phase,
-            program,
             idempotency,
-            true,
+            selected_program,
             history,
-            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
     }
 
@@ -99,46 +72,15 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
-        if self
-            .installed_conditionals
-            .contains_operation::<Operation>()
-            || !presented.acts_through_operation(TypeId::of::<Operation>())
-        {
-            return WorthQueryApplicationCommitOutcome::Denied(
-                WorthQueryApplicationCommitDenial::application_program_required(),
-            );
-        }
-        let Some(support) = self.program_support.as_ref() else {
-            return WorthQueryApplicationCommitOutcome::Denied(
-                WorthQueryApplicationCommitDenial::application_program_required(),
-            );
+        let entry = match self.validate_commit_program_in_advancement(phase, program) {
+            Ok(entry) => entry,
+            Err(outcome) => return outcome,
         };
-        let occurrence = match resolve_occurrence_program(execution, support, &program) {
-            Ok(occurrence) => occurrence,
-            Err(denial) => return WorthQueryApplicationCommitOutcome::Denied(denial),
-        };
-        if occurrence.rendering() != presented.rendering() {
-            return WorthQueryApplicationCommitOutcome::Denied(
-                WorthQueryApplicationCommitDenial::program_not_active_on_occurrence(
-                    presented.identity(),
-                    occurrence.entry().identity(),
-                    occurrence.entry().revision(),
-                ),
-            );
-        }
-        let program = match program.retain_original_program(support, occurrence.entry().revision())
-        {
-            Ok(program) => program,
-            Err(denial) => return WorthQueryApplicationCommitOutcome::Denied(denial),
-        };
-        self.compare_and_commit_application_with_causality(
+        entry.compare_and_commit_application_for_program_action(
             execution,
-            phase,
-            program,
+            presented,
             idempotency,
-            false,
             causality,
-            None,
             allocation_policy,
         )
     }

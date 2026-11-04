@@ -26,6 +26,7 @@ impl<S: ApplicationSchema> ParentContext<'_, S> {
     ) -> Result<(), ReceiverCause> {
         let current = application.admit_with_observation_room(|| {
             application
+                .runtime
                 .product_runtime
                 .admit_product_occurrence(self.selected.product().product_branch().occurrence())
         })?;

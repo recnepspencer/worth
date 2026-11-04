@@ -218,7 +218,8 @@ mod observation {
     {
         #[doc(hidden)]
         pub fn registry_row_count_for_test(&self) -> usize {
-            self.output_demands
+            self.runtime
+                .output_demands
                 .state
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner)

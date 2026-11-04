@@ -86,6 +86,7 @@ pub(super) fn open_read_denial(
             use super::super::super::read_execution::WorthQueryApplicationReadExecutionDenialKind as Read;
             use super::super::super::WorthQueryApplicationQueryAdmissionDenialKind as Admission;
             let kind = match read.kind() {
+                Read::Content(cause) => WorthQueryApplicationLiveOpenDenialKind::Content(cause),
                 Read::Cancelled => {
                     WorthQueryApplicationLiveOpenDenialKind::Admission(Admission::Cancelled)
                 }

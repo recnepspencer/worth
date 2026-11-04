@@ -94,7 +94,7 @@ where
         crate::basis::WorthQueryProductBranchAdmissionDenial,
     > {
         let phase_request = phase
-            .execution_request_for(&self.runtime.product_runtime)
+            .execution_request_for(&self.runtime.runtime.product_runtime)
             .map_err(|_| {
                 crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(
                     AdmissionRefusal::ForeignPhase,

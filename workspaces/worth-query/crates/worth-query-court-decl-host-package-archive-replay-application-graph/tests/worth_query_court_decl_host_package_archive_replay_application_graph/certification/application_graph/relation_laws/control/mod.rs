@@ -5,7 +5,7 @@ fn cancelled_request_preserves_truth_and_a_fresh_request_can_complete() {
     let world = install::<Acyclic>(3, &[(0, 1)]);
     let before = read::committed(&world);
     let cancellation = WorthQueryCancellationSource::new();
-    let stopped = WorthQueryRequestScope::new(None, cancellation.token());
+    let stopped = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     cancellation.cancel();
     assert!(matches!(
         world.edit_in_scope(1, &[(1, 2)], &stopped),
