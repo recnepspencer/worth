@@ -7,6 +7,7 @@ import { runRuntimeSmoke } from "./verify-worth-signals-wasm-runtime-smoke.mjs";
 import { buildTypeSmokeSource } from "./verify-worth-signals-wasm-type-smoke-source.mjs";
 import {
   assertDocsStayOnCurrentPackageStory,
+  consumerTypeScriptPackages,
   execFileAsync,
   installSmokeDependencies,
   normalizeTarEntries,
@@ -57,7 +58,6 @@ async function runEmptyRootSmoke(tempDir, packageName) {
 
 async function runTypeSmoke(tempDir, packageName) {
   const smokeTypePath = path.join(tempDir, "smoke.ts");
-  const tscJsPath = path.join(tempDir, "node_modules", "typescript", "bin", "tsc");
   const source = buildTypeSmokeSource(packageName);
   await writeFile(smokeTypePath, source, "utf8");
   const observationTypePath = path.join(tempDir, "observation-target-smoke.ts");
@@ -68,7 +68,6 @@ async function runTypeSmoke(tempDir, packageName) {
   await writeFile(observationTypePath,
     observationSource.replace('from "./index.js"', `from "${packageName}"`), "utf8");
   const args = [
-    tscJsPath,
     "--noEmit",
     "--strict",
     "--target", "ES2022",
@@ -80,7 +79,10 @@ async function runTypeSmoke(tempDir, packageName) {
     smokeTypePath,
     observationTypePath,
   ];
-  await execFileAsync(process.execPath, args, { cwd: tempDir });
+  for (const { packageDir } of consumerTypeScriptPackages) {
+    const tscPath = path.join(tempDir, "node_modules", packageDir, "bin", "tsc");
+    await execFileAsync(process.execPath, [tscPath, ...args], { cwd: tempDir });
+  }
 }
 
 async function main() {

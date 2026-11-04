@@ -45,9 +45,16 @@ version and decoder boundary rather than treating that string as patch status.
 See the [Node security release](https://nodejs.org/en/blog/release/v24.22.1).
 Updating a standalone npm package named `brotli` does not patch Node's decoder.
 
+Package tooling compiles with the native TypeScript 7 compiler and bundles with
+esbuild. Both are platform-native and pinned in the crate's `package-lock.json`,
+so run `npm ci` in `crates/worth-signal-wasm` before building or running the
+package tests; the build installs them on demand when they are missing.
+
 Package contract note:
 
 - the published package is ESM-first
+- published declarations are type-checked for consumers on TypeScript 7.0 and
+  TypeScript 5.9
 - `import` and bundler resolution are the supported consumer paths
 - CommonJS callers should use dynamic `import(...)` instead of `require(...)`
 - **1.5.0 breaking:** default `awaitSettlement()` is tip-status only — see
