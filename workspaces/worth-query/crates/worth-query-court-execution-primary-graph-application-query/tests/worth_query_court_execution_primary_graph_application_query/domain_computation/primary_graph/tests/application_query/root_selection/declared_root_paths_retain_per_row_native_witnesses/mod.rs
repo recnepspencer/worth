@@ -13,55 +13,8 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     let request = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
-    let external = world.authenticate("alice", Duration::from_secs(60), &request);
-    let principal = world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request_for_test();
-            world
-                .application
-                .select_product_branch_for_test(
-                    &host_custody.borrowed_request_for_test(),
-                    world
-                        .application
-                        .product_runtime()
-                        .default_branch_for_test(),
-                )
-                .expect("the selected product branch remains admitted")
-                .resolve_authenticated_principal(
-                    &phase,
-                    &world.binding,
-                    &external,
-                    &request,
-                    WorthQueryPrincipalResolutionMode::Ordinary,
-                )
-                .unwrap()
-        })
-        .expect("the fixture read owns its installed host call");
-    let account = world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request_for_test();
-            world
-                .application
-                .select_product_branch_for_test(
-                    &host_custody.borrowed_request_for_test(),
-                    world
-                        .application
-                        .product_runtime()
-                        .default_branch_for_test(),
-                )
-                .expect("the selected product branch remains admitted")
-                .resolve_entity(
-                    &phase,
-                    AccountStatus::reference(),
-                    "open".to_string(),
-                    &request,
-                    WorthQueryPrincipalResolutionMode::Ordinary,
-                )
-                .unwrap()
-        })
-        .expect("the fixture read owns its installed host call");
+    let (principal, account) =
+        crate::domain_computation::primary_graph::tests::application_query::root_selection::declared_root_paths_retain_per_row_native_witnesses::party::alice_and_open_account(&world, &request);
     let query = world
         .application
         .installed_schema()
@@ -403,3 +356,5 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
 }
 #[path = "join_interruption/mod.rs"]
 pub mod join_interruption;
+#[path = "party/mod.rs"]
+pub mod party;

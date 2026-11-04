@@ -3,6 +3,7 @@ pub use worth_query_testkit_execution_primary_graph_application_contribution::do
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::PublicAccountMembershipQuery;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::PublicScopedAccountSummaryQuery;
 pub use worth_foundational::facade::AspectFieldLocator;
+use crate::domain_computation::primary_graph::tests::application_query::derived_view::membership_reconciliation::membership_rows::members;
 
 #[test]
 fn certified_membership_changes_retain_clean_arcs_and_read_only_new_or_dirty_entries() {
@@ -122,11 +123,6 @@ fn certified_membership_changes_retain_clean_arcs_and_read_only_new_or_dirty_ent
                 )
                 .map_err(|_| WorthQueryManagedDerivedViewDenial::QueryExecutionDenied)
         };
-        let members = |row: &worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::application_queries::public_membership::PublicAccountMembershipResult| {
-        row.members.iter().map(|root| (
-            *root, row.tag.split('-').next().unwrap().to_string(),
-        )).collect::<Vec<_>>()
-    };
         let membership = read_membership();
         let pair_principal = selected
             .resolve_authenticated_principal(
@@ -400,3 +396,5 @@ fn certified_membership_changes_retain_clean_arcs_and_read_only_new_or_dirty_ent
 
 #[path = "collection_locators/mod.rs"]
 pub mod collection_locators;
+#[path = "membership_rows/mod.rs"]
+pub mod membership_rows;
