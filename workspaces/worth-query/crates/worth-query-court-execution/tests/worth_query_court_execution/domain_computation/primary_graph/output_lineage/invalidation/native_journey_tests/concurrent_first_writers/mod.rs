@@ -105,7 +105,7 @@ fn two_first_candidates_cannot_orphan_the_performed_publications_cell() {
         })
         .expect("the fixture read owns its installed host call");
     let graph = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap();
     let handle = graph.integration_handle_for_test();
     let owner = Arc::clone(&(*(*handle.source_owner_for_test()).invalidation_owner_for_test()));

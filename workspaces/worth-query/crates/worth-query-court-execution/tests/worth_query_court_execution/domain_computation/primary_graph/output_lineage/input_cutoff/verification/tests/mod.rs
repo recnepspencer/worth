@@ -34,7 +34,7 @@ fn a_marked_fact_is_reverified_at_the_real_native_snapshot() {
                 .unwrap()
                 .entity_id_for_test();
             let graph = (*world.application.runtime_for_test())
-                .primary_graph()
+                .primary_graph_for_test()
                 .unwrap();
             let status_ref = AccountStatus::reference();
             let status = graph
@@ -52,11 +52,11 @@ fn a_marked_fact_is_reverified_at_the_real_native_snapshot() {
                 status.field_path().clone(),
             );
 
-            world
+            (*(*(*world
                 .application
-                .runtime
-                .primary_provider
-                .graph
+                .runtime_for_test())
+                .primary_provider_for_test())
+                .graph_for_test())
                 .with_runtime(&execution, |runtime| {
                     let basis = runtime
                         .admit_branch_basis(&runtime.main_branch_identity())
@@ -145,7 +145,7 @@ fn a_clean_settlement_reuses_without_fact_reverification() {
                 .entity_id_for_test();
             let (_, product, _) = selected_product.into_parts_for_test();
             let observation = product.observation_for_test();
-            let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+            let graph = (*world.application.runtime_for_test()).primary_graph_for_test().unwrap();
             let handle = graph.integration_handle_for_test();
             let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
             let status_ref = AccountStatus::reference();
@@ -169,7 +169,7 @@ fn a_clean_settlement_reuses_without_fact_reverification() {
                 )
                 .unwrap(),
             );
-            let source = SemanticSource::new_for_test((*world.application.runtime_for_test()).authority_identity().as_u64(), (*world.application.installed_schema_for_test()).binding_identity(), WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity), OutputBindingIdentity::declared_for_test("ProbeOutput"));
+            let source = SemanticSource::new_for_test((*world.application.runtime_for_test()).authority_identity_for_test().as_u64(), (*world.application.installed_schema_for_test()).binding_identity(), WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity), OutputBindingIdentity::declared_for_test("ProbeOutput"));
             let identity = RecordedSettlementIdentity::retain_for_test(
                 &source,
                 ProductCoordinate::new_for_test(observation.lifecycle_incarnation(), observation.reference_generation().get()),

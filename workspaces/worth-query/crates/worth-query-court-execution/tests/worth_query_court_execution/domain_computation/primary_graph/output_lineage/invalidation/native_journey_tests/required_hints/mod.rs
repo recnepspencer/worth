@@ -135,7 +135,7 @@ fn two_branch_cells_preserve_prepared_fences_and_selected_branch_identity() {
                 .with_host_advancement(|phase| {
                     let host_custody = phase.test_host_request_for_test();
                     let execution = &host_custody.borrowed_request_for_test();
-                    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+                    let graph = (*world.application.runtime_for_test()).primary_graph_for_test().unwrap();
                     let handle = graph.integration_handle_for_test();
                     let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
                     let status_ref = AccountStatus::reference();

@@ -58,20 +58,14 @@ impl OwnershipTestsWorthQueryDocumentHistoryOperationConstraintForTest
                         )
                         .unwrap();
                     let binding = idempotency(190, 191);
-                    let restriction = Self {
-                        model: HistoryModelIdentity::from_resolved_for_test(&other),
-                        source: world
+                    let restriction = Self::new_for_test(HistoryModelIdentity::from_resolved_for_test(&other), world
                             .application
                             .product_runtime()
                             .admit_product_occurrence_for_test(
                                 world.application.current_world().occurrence_for_test(),
                             )
                             .unwrap()
-                            .read_lease_for_test(),
-                        candidate: world.application.current_world(),
-                        meaning: binding.bind_admission_for_test(&admission),
-                        candidate_predecessor: None,
-                    };
+                            .read_lease_for_test(), world.application.current_world(), binding.bind_admission_for_test(&admission), None);
                     admission
                         .validate_current_authority()
                         .expect("the genuine admission starts fresh");

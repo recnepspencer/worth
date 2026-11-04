@@ -1,7 +1,7 @@
 //! State owned once by an application runtime, independent of its application types.
 use super::*;
 
-pub(in crate::domain_computation) struct WorthQueryApplicationRuntimeCore {
+pub struct WorthQueryApplicationRuntimeCore {
     pub(super) execution: Option<WorthQueryExecutionRuntime>,
     pub(in crate::domain_computation::primary_graph) application_readiness_schema_token: String,
     pub(super) publication: WorthQueryPrimaryGraphPublication,

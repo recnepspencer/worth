@@ -41,7 +41,7 @@ pub fn run_population(population: usize) -> WorthQueryNativeMarkingWork {
     let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
     let (_, product, _) = selected.into_parts_for_test();
     let coordinate = ProductCoordinate::new_for_test(product.observation_for_test().lifecycle_incarnation(), product.observation_for_test().reference_generation().get());
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test()).primary_graph_for_test().unwrap();
     let handle = graph.integration_handle_for_test();
     let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
     let kind = graph
@@ -93,7 +93,7 @@ pub fn run_population(population: usize) -> WorthQueryNativeMarkingWork {
             committed.created_entity(reference).expect("actual Native create correspondence")).collect();
         release_test_commit_snapshot(runtime, &committed);
         let (before_handle, before) = snapshot(runtime);
-        let source = |entity, binding| SemanticSource::new_for_test((*world.application.runtime_for_test()).authority_identity().as_u64(), (*world.application.installed_schema_for_test()).binding_identity().clone(), worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity), binding);
+        let source = |entity, binding| SemanticSource::new_for_test((*world.application.runtime_for_test()).authority_identity_for_test().as_u64(), (*world.application.installed_schema_for_test()).binding_identity().clone(), worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity), binding);
         let identities: Vec<_> = entities.iter().map(|entity|
             RecordedSettlementIdentity::retain_for_test(&source(*entity, OutputBindingIdentity::declared_for_test("LabelOutput")), coordinate, 0)).collect();
         // This oracle reads Native revisions directly; it does not call the

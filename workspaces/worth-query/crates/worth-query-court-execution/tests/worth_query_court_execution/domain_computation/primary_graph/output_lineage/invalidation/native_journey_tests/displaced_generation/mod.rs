@@ -36,7 +36,7 @@ pub fn with_unmanaged_publications(
         })
         .expect("the principal fixture opens its host call");
     let graph = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap();
     let handle = graph.integration_handle_for_test();
     let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());

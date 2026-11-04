@@ -60,3 +60,12 @@ impl WorthQueryPrimaryGraphProvider {
         Self::application_branch_commit_lane(self, observation)
     }
 }
+
+impl WorthQueryPrimaryGraphProvider {
+    #[doc(hidden)]
+    pub fn teardown_sentinel_for_test(
+        &self,
+    ) -> &Mutex<Option<Box<dyn std::any::Any + Send + Sync>>> {
+        &self.teardown_sentinel
+    }
+}

@@ -58,7 +58,7 @@ fn cutoff_candidate_pins_the_selected_ancestor_partition() {
     };
 
     let runtime_authority = (*world.application.runtime_for_test())
-        .authority_identity()
+        .authority_identity_for_test()
         .as_u64();
     let schema = (*world.application.installed_schema_for_test()).binding_identity();
     let scope_entity = worth_relational::facade::identity::EntityId::new(

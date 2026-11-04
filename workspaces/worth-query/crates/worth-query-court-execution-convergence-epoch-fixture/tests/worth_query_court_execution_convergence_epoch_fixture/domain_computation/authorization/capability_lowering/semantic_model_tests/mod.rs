@@ -19,11 +19,11 @@ fn full_compiler_preserves_every_named_composition_rule_and_path() {
             ComposedCapabilityTouchOperation::reference(),
         )
         .expect("composed capability is installed");
-    let plan = world
+    let plan = (*(*world
         .application
-        .runtime
-        .authorization
-        .capability_plan(&capability)
+        .runtime_for_test())
+        .authorization_for_test())
+        .capability_plan_for_test(&capability)
         .expect("the compiler retained the typed capability plan");
 
     // Derived independently from the declaration semantics: one grant path,

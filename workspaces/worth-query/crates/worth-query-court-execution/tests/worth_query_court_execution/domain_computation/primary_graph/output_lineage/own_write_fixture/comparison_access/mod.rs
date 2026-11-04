@@ -23,7 +23,7 @@ fn own_write_dirty_marks_cannot_be_cleared_by_postcondition_comparison() {
 
     with_committed_own_write(|world, _, cell, _| {
         let handle = (*world.application.runtime_for_test())
-            .primary_graph()
+            .primary_graph_for_test()
             .unwrap()
             .integration_handle_for_test();
         let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());

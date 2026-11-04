@@ -77,7 +77,7 @@ pub fn with_cleanup(
                 .unwrap()
         })
         .unwrap();
-    let mut runtime = world.application.runtime.product_runtime.clone();
+    let mut runtime = (*(*world.application.runtime_for_test()).product_runtime_for_test()).clone();
     // Isolate this protocol observer from the real provider's follower. The World
     // reference, Native/Signal components and deletion ports are the real owners.
     (*runtime.owner_cleanup_mut_for_test()) =

@@ -91,7 +91,7 @@ pub fn staged(
         )
         .unwrap()
         .entity_id_for_test();
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test()).primary_graph_for_test().unwrap();
     let layout = graph.layout_for_test();
     // Two World publications put the restoration two product generations
     // after the occurrence's first, so earlier records have an address.
@@ -169,7 +169,7 @@ let seal = || {
         runtime.snapshots().release_snapshot(&snapshot).unwrap();
         sealed
     });
-    let source = SemanticSource::new_for_test((*world.application.runtime_for_test()).authority_identity().as_u64(), (*world.application.installed_schema_for_test()).binding_identity(), worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity(1)), OutputBindingIdentity::declared_for_test("RestoredOutputBinding"));
+    let source = SemanticSource::new_for_test((*world.application.runtime_for_test()).authority_identity_for_test().as_u64(), (*world.application.installed_schema_for_test()).binding_identity(), worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity(1)), OutputBindingIdentity::declared_for_test("RestoredOutputBinding"));
     let mut lineage = WorthQueryApplicationOutputLineage::default();
     lineage.fixture_binding(
         TypeId::of_for_test::<RestoredOutputBinding>(),

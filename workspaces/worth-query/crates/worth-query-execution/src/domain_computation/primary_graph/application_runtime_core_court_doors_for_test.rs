@@ -33,3 +33,10 @@ impl WorthQueryApplicationRuntimeCore {
         Self::primary_graph(self)
     }
 }
+
+impl WorthQueryApplicationRuntimeCore {
+    #[doc(hidden)]
+    pub fn authorization_for_test(&self) -> &Arc<WorthQueryInstalledAuthorizationRegistry> {
+        &self.authorization
+    }
+}

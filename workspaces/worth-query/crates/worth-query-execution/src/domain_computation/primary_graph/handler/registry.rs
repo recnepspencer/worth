@@ -28,7 +28,7 @@ use super::super::{
 };
 
 #[derive(Clone)]
-struct PendingMutationHandler {
+pub struct PendingMutationHandler {
     origin: HandlerOrigin,
     identity: String,
     handler_identity: String,

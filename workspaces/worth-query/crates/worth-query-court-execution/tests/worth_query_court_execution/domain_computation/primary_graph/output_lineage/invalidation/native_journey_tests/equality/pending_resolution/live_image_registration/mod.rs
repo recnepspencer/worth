@@ -8,7 +8,7 @@ fn retained_registration_consumes_the_equal_successor_at_the_live_image() {
 
     with_generated_own_write(|world, _, performed, _| {
         let graph = (*world.application.runtime_for_test())
-            .primary_graph()
+            .primary_graph_for_test()
             .unwrap();
         let handle = graph.integration_handle_for_test();
         let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());

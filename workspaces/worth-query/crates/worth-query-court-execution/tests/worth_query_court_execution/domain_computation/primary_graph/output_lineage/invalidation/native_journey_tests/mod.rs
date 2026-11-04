@@ -185,7 +185,7 @@ fn ordinary_native_writer_marks_only_matched_fields_and_actual_downstream_edges(
         product.observation_for_test().reference_generation().get(),
     );
     let graph = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap();
     let handle = graph.integration_handle_for_test();
     let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
@@ -202,7 +202,7 @@ fn ordinary_native_writer_marks_only_matched_fields_and_actual_downstream_edges(
         .unwrap()
         .clone();
     let source = |output_binding| {
-        SemanticSource::new_for_test((*world.application.runtime_for_test()).authority_identity().as_u64(), (*world.application.installed_schema_for_test()).binding_identity().clone(), worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity), output_binding)
+        SemanticSource::new_for_test((*world.application.runtime_for_test()).authority_identity_for_test().as_u64(), (*world.application.installed_schema_for_test()).binding_identity().clone(), worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity), output_binding)
     };
     let a = RecordedSettlementIdentity::retain_for_test(
         &source(OutputBindingIdentity::declared_for_test("StatusOutput")),

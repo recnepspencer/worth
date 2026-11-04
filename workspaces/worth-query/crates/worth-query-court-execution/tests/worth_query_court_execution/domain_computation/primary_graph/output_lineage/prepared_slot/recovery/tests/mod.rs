@@ -32,7 +32,7 @@ fn world_recovery_metadata_carries_the_original_computation_and_absence() {
                 .default_branch_for_test(),
         )
         .unwrap();
-    let source = SemanticSource::new_for_test((*world.application.runtime_for_test()).authority_identity().as_u64(), (*world.application.installed_schema_for_test()).binding_identity().clone(), worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(
+    let source = SemanticSource::new_for_test((*world.application.runtime_for_test()).authority_identity_for_test().as_u64(), (*world.application.installed_schema_for_test()).binding_identity().clone(), worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(
                 worth_relational::facade::identity::EntityId::new(worth_relational::facade::identity::PartitionId::main(), 1, 1)), OutputBindingIdentity::declared_for_test("()"));
     let coordinate = ProductCoordinate::new_for_test(
         product.observation_for_test().lifecycle_incarnation(),

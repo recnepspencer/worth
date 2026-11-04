@@ -13,11 +13,11 @@ pub fn selected() -> std::sync::Arc<PositionedRelationalSnapshot> {
         .application
         .with_host_advancement(|phase| {
             (*world.application.runtime_for_test())
-                .primary_graph()
+                .primary_graph_for_test()
                 .unwrap()
                 .with_runtime_for_test(
                     &phase
-                        .execution_request_for(&world.application.runtime.product_runtime)
+                        .execution_request_for_for_test(&(*(*world.application.runtime_for_test()).product_runtime_for_test()))
                         .unwrap(),
                     |runtime| {
                         let basis = runtime

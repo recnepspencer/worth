@@ -19,7 +19,7 @@ fn shared_original_facts_survive_restored_prerequisite_custody() {
             .entity_id_for_test();
         let (_, product, _) = world.selected_product(&custody.test_host_request_for_test()).into_parts_for_test();
         let coordinate = ProductCoordinate::new_for_test(product.observation_for_test().lifecycle_incarnation(), product.observation_for_test().reference_generation().get());
-        let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+        let graph = (*world.application.runtime_for_test()).primary_graph_for_test().unwrap();
         let handle = graph.integration_handle_for_test();
         let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
         let status = AccountStatus::reference();
@@ -28,7 +28,7 @@ fn shared_original_facts_survive_restored_prerequisite_custody() {
         let (snapshot_handle, basis, identity, _facts, first, second) = handle.with_runtime_mut_for_test(&execution, |runtime| {
             let (snapshot_handle, basis) = snapshot(runtime);
             let basis = Arc::new(basis);
-            let identity = RecordedSettlementIdentity::retain_for_test(&SemanticSource::new_for_test((*world.application.runtime_for_test()).authority_identity().as_u64(), (*world.application.installed_schema_for_test()).binding_identity(), worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity), OutputBindingIdentity::declared_for_test("StatusOutput")), coordinate, 0);
+            let identity = RecordedSettlementIdentity::retain_for_test(&SemanticSource::new_for_test((*world.application.runtime_for_test()).authority_identity_for_test().as_u64(), (*world.application.installed_schema_for_test()).binding_identity(), worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity), OutputBindingIdentity::declared_for_test("StatusOutput")), coordinate, 0);
             let facts = RetainedSourceFacts::for_test_for_test(false, Arc::from([
                 field_fact(&execution, runtime, &snapshot_handle, entity, status),
             ])).for_comparison().unwrap();

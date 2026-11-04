@@ -67,7 +67,7 @@ fn nested_forks_select_the_captured_generation_and_stop_at_local_absence() {
         1,
         1,
     );
-    let source = SemanticSource::new_for_test((*world.application.runtime_for_test()).authority_identity().as_u64(), (*world.application.installed_schema_for_test()).binding_identity().clone(), worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity), OutputBindingIdentity::declared_for_test("()"));
+    let source = SemanticSource::new_for_test((*world.application.runtime_for_test()).authority_identity_for_test().as_u64(), (*world.application.installed_schema_for_test()).binding_identity().clone(), worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity), OutputBindingIdentity::declared_for_test("()"));
     let parent = ProductCoordinate::new_for_test(
         product.observation_for_test().lifecycle_incarnation(),
         product.observation_for_test().reference_generation().get(),

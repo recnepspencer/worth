@@ -43,7 +43,7 @@ pub fn run(
         .selected_product(&(phase_custody).test_host_request_for_test())
         .into_parts_for_test();
     let coordinate = ProductCoordinate::new_for_test(product.observation_for_test().lifecycle_incarnation(), product.observation_for_test().reference_generation().get());
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test()).primary_graph_for_test().unwrap();
     let handle = graph.integration_handle_for_test();
     let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
     let kind = graph
@@ -86,7 +86,7 @@ pub fn run(
         let registries: Vec<_> = entities.iter().map(|_| WorthQueryOutputDemandRegistry::default()).collect();
         let members: Vec<_> = registries.iter().zip(&entities).map(|(registry, entity)|
             registry.fixture_scope_work_membership((*coordinate.occurrence_for_test()), *entity)).collect();
-        let outputs: Vec<_> = entities.iter().map(|entity| RecordedSettlementIdentity::retain_for_test(&SemanticSource::new_for_test((*world.application.runtime_for_test()).authority_identity().as_u64(), (*world.application.installed_schema_for_test()).binding_identity().clone(), worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(*entity), OutputBindingIdentity::declared_for_test("ScopeOutput")), coordinate, 0)).collect();
+        let outputs: Vec<_> = entities.iter().map(|entity| RecordedSettlementIdentity::retain_for_test(&SemanticSource::new_for_test((*world.application.runtime_for_test()).authority_identity_for_test().as_u64(), (*world.application.installed_schema_for_test()).binding_identity().clone(), worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(*entity), OutputBindingIdentity::declared_for_test("ScopeOutput")), coordinate, 0)).collect();
         for n in 0..entities.len() {
             // Each distinct Native scope above the leaf consumes exactly its
             // child's output. Sibling paths have no consumed edge in common.

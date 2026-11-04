@@ -43,7 +43,7 @@ fn local_full_verification_requirement_overrides_a_clean_actor_row() {
     let (_, product, _) = selected.into_parts_for_test();
     let observation = product.observation_for_test();
     let graph = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap();
     let handle = graph.integration_handle_for_test();
     let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
@@ -80,7 +80,7 @@ fn local_full_verification_requirement_overrides_a_clean_actor_row() {
         vec![(TypeId::of_for_test::<StatusOutput>(), "output".to_owned())],
     )]));
     let runtime_authority = (*world.application.runtime_for_test())
-        .authority_identity()
+        .authority_identity_for_test()
         .as_u64();
     let schema = (*world.application.installed_schema_for_test()).binding_identity();
     let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity);

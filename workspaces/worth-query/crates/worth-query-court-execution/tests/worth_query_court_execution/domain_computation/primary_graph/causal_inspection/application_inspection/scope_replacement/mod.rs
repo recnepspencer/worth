@@ -31,7 +31,7 @@ use worth_relational::facade::transactions::WorkerIntentBatch;
 
 pub fn account_fields(world: &AuthorizationWorld) -> AspectFieldPatch {
     let layout = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap()
         .layout_for_test();
     let locator = |field: (&str, &str, &str)| {
@@ -108,7 +108,7 @@ fn same_scope_reused_slot_cannot_inherit_original_observation_generation() {
                 .checked_execution_request_for(world.application.product_runtime())
                 .unwrap();
             (*world.application.runtime_for_test())
-                .primary_graph()
+                .primary_graph_for_test()
                 .unwrap()
                 .integration_handle_for_test()
                 .with_runtime(&execution, |native| {
@@ -123,7 +123,7 @@ fn same_scope_reused_slot_cannot_inherit_original_observation_generation() {
         "an actual reclaim must precede any reuse claim"
     );
     let layout = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap()
         .layout_for_test();
     publish(

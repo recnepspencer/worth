@@ -44,7 +44,7 @@ impl MergeWorld {
     pub fn new() -> Self {
         let world = installed_world(&[("merge-unique", WorthQueryPrincipalMappingStatus::Enabled)]);
         let handle = (*world.application.runtime_for_test())
-            .primary_graph()
+            .primary_graph_for_test()
             .expect("the fixture publishes its graph")
             .integration_handle_for_test();
         let field = |aspect: &str, name: &str| {

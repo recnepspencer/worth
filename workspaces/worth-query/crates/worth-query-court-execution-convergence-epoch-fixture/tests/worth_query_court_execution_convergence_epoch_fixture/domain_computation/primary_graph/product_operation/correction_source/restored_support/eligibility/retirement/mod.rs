@@ -50,7 +50,7 @@ fn paired_retirement_support_checks_original_and_target_exact_metadata() {
         );
         publish_relational_mutation(&execution, &world, delete(entity));
         let original = world.selected_product(&host);
-        let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+        let graph = (*world.application.runtime_for_test()).primary_graph_for_test().unwrap();
         let fact = graph.integration_handle_for_test().with_runtime(&execution, |runtime| {
             let view = runtime.read_truth().project_snapshot(original.application_basis_for_test().snapshot_handle()).unwrap();
             let retired = view.read_entity_retirement(&execution, entity).unwrap().unwrap();

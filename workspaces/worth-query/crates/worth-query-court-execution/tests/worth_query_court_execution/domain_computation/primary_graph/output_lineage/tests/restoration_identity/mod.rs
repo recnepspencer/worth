@@ -23,7 +23,7 @@ fn restoration_rejects_conflicting_identity_for_the_same_partition() {
         .expect("the fixture's default product occurrence is live");
     let observation = product.observation_for_test();
     let runtime_authority = (*world.application.runtime_for_test())
-        .authority_identity()
+        .authority_identity_for_test()
         .as_u64();
     let schema = (*world.application.installed_schema_for_test()).binding_identity();
     let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(

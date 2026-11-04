@@ -17,7 +17,7 @@ pub use crate::domain_computation::application_aftermath::WorthQueryInboundClean
 use crate::domain_computation::authorization::WorthQueryInstalledAuthorizationRegistry;
 
 #[path = "application_runtime_core.rs"]
-mod runtime_core;
+pub(crate) mod runtime_core;
 pub(in crate::domain_computation) use runtime_core::WorthQueryApplicationRuntimeCore;
 
 mod certification_controls;

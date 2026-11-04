@@ -69,3 +69,12 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         &self.runtime
     }
 }
+
+impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    #[doc(hidden)]
+    pub fn mutation_handlers_mut_for_test(
+        &mut self,
+    ) -> &mut super::super::handler::InstalledMutationHandlerRegistry<Schema> {
+        &mut self.mutation_handlers
+    }
+}

@@ -38,7 +38,7 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
     let live = resolve("account-1");
     let retired = resolve("account-2");
     let graph = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap();
     let layout = graph.layout_for_test();
     let handle = graph.integration_handle_for_test();

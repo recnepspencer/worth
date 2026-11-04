@@ -94,7 +94,7 @@ impl Court {
         Self {
             request: worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request(),
             lineage,
-            source: SemanticSource::new_for_test((*world.application.runtime_for_test()).authority_identity().as_u64(), (*world.application.installed_schema_for_test()).binding_identity().clone(), worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity(1)), OutputBindingIdentity::declared_for_test("Initial")),
+            source: SemanticSource::new_for_test((*world.application.runtime_for_test()).authority_identity_for_test().as_u64(), (*world.application.installed_schema_for_test()).binding_identity().clone(), worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity(1)), OutputBindingIdentity::declared_for_test("Initial")),
             coordinate: ProductCoordinate::new_for_test(observation.lifecycle_incarnation(), 10),
             child: child.lifecycle_incarnation(),
         }

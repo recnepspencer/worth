@@ -56,7 +56,7 @@ fn retained_query_rejects_security_from_a_sibling_branch() {
     let denied = application
         .with_host_advancement(|phase| {
             let execution = phase
-                .execution_request_for(&application.runtime.product_runtime)
+                .execution_request_for_for_test(&(*(*application.runtime_for_test()).product_runtime_for_test()))
                 .unwrap();
             security.retained_query_controls_for_test(&execution, retained, "sibling", controls)
         })

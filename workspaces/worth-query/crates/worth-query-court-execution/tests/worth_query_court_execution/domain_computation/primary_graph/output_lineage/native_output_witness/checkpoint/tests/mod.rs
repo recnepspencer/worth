@@ -66,7 +66,7 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         })
         .expect("the fixture read owns its installed host call");
     let graph = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap();
     let layout = graph.layout_for_test();
     let handle = graph.integration_handle_for_test();

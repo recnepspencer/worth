@@ -9,12 +9,12 @@ fn receipt_lineage_preserves_original_cancellation_and_deadline() {
         let selected = world.application.with_host_advancement(|phase| {
             world.selected_product(&phase.test_host_request_for_test())
         }).unwrap();
-        let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+        let graph = (*world.application.runtime_for_test()).primary_graph_for_test().unwrap();
         let handle = graph.integration_handle_for_test();
         let lineage = handle.output_lineage.lock().unwrap();
 
         let check = |execution: &ExecutionRequest<'_, '_>| lineage.current_output_matches_receipt_for_test(
-            (*world.application.runtime_for_test()).authority_identity().as_u64(),
+            (*world.application.runtime_for_test()).authority_identity_for_test().as_u64(),
             &(*world.application.installed_schema_for_test()).binding_identity(),
             selected.product().observation_for_test(), &receipt, execution);
         let live = worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request();

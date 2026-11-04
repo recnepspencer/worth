@@ -49,7 +49,7 @@ fn retained_source_must_include_every_registered_upstream_edge() {
         product.observation_for_test().reference_generation().get(),
     );
     let source = |output_binding| {
-        SemanticSource::new_for_test((*world.application.runtime_for_test()).authority_identity().as_u64(), (*world.application.installed_schema_for_test()).binding_identity(), worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity), output_binding)
+        SemanticSource::new_for_test((*world.application.runtime_for_test()).authority_identity_for_test().as_u64(), (*world.application.installed_schema_for_test()).binding_identity(), worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity), output_binding)
     };
     let upstream = RecordedSettlementIdentity::retain_for_test(
         &source(OutputBindingIdentity::declared_for_test("UpstreamOutput")),
@@ -62,7 +62,7 @@ fn retained_source_must_include_every_registered_upstream_edge() {
         0,
     );
     let graph = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap();
     let handle = graph.integration_handle_for_test();
     let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
