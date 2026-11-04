@@ -1,5 +1,7 @@
 //! Canonical descriptive program/roster bytes. They grant no installation authority.
 use worth_foundational::facade::ApplicationHomeBinding;
+mod readmission;
+pub(super) use readmission::{allocation_bytes, decode};
 
 pub(super) fn size(binding: &ApplicationHomeBinding) -> Option<usize> {
     binding.roster().iter().try_fold(

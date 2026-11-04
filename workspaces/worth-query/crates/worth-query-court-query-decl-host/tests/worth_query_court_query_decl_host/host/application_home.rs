@@ -333,3 +333,4 @@ mod handler_retirement;
 mod fresh_source;
 
 mod fresh_close;
+mod transition_required;

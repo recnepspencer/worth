@@ -35,6 +35,9 @@ pub use fresh_source::{FreshRelationalSourceAdmission, RelationalFreshSourceAdmi
 pub use recorded_component_readmission::{
     RefusedRelationalRecordedComponent, RelationalRecordedComponentAdmissionCause,
 };
+pub use recovery::{
+    RelationalHomeProgramTransitionSource, RelationalHomeProgramTransitionSourceRefusal,
+};
 mod runtime_rebuild;
 pub(crate) use runtime_rebuild::replay_commit_stop;
 pub(crate) use runtime_rebuild::RecoveredIndexCatalog;

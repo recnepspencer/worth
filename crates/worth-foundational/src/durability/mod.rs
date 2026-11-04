@@ -7,8 +7,13 @@ pub use native_checkpoint_reference::{
     NativeCheckpointBranchTarget,
 };
 mod home_binding;
+mod home_program_transition;
 pub use checkpoint_admission::{
     CheckpointAdmissionCut, CheckpointAdmissionScope, CheckpointProductBindingIdentity,
+};
+pub use home_program_transition::{
+    HomeProgramTransitionIdentity, HomeProgramTransitionPlanDigest,
+    HomeProgramTransitionStepAssociation,
 };
 mod world_identity;
 mod world_journal;

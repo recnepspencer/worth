@@ -368,5 +368,5 @@ pub use crate::application_home::{
     WorthQueryApplicationHomeClosed, WorthQueryApplicationHomeDiscardDenial,
     WorthQueryApplicationHomeLocation, WorthQueryApplicationHomeOpenRefused,
     WorthQueryApplicationHomeOpeningCloseRefused, WorthQueryApplicationHomeOpeningClosed,
-    WorthQueryApplicationHomeRequest,
+    WorthQueryApplicationHomeRequest, WorthQueryApplicationHomeTransitionRequired,
 };

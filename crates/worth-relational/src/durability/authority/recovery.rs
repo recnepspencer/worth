@@ -5,6 +5,10 @@ pub(crate) use codec_transition::{
 pub(super) mod admission;
 pub(super) mod codec_transition;
 mod declared_schema;
+mod home_program_transition;
+pub use home_program_transition::{
+    RelationalHomeProgramTransitionSource, RelationalHomeProgramTransitionSourceRefusal,
+};
 
 use crate::diagnostics::data::{DiagnosticsArtifactKind, DiagnosticsScope};
 use crate::durability::data::{DurabilityError, RecoveryCoverage, RecoveryPlan};
@@ -46,20 +50,7 @@ impl<'runtime> DurabilityRecoveryAuthority<'runtime> {
         self.runtime
             .durability
             .install_source_root_inventory(recovered_roots.clone());
-        let recovered_branch_images = self
-            .runtime
-            .history()
-            .branch_cells_snapshot()
-            .into_iter()
-            .map(|cell| (cell.branch_id, (cell.observation, cell.truth_version)))
-            .collect();
-        Ok(RecoveredRelationalRuntimeAuthority {
-            runtime_instance_id: self.runtime.runtime_instance_id(),
-            recovered_branch_images,
-            recovered_roots,
-            codec_transition: None,
-            performed_codec_retirement: None,
-        })
+        Ok(recovered_authority(self.runtime, recovered_roots))
     }
 
     pub fn restore_native_checkpoint(
@@ -126,6 +117,25 @@ impl<'runtime> DurabilityRecoveryAuthority<'runtime> {
             outcome,
             self.restored_runtime_authority(recovered_roots, execution)?,
         ))
+    }
+}
+
+fn recovered_authority(
+    runtime: &RelationalRuntime,
+    recovered_roots: std::sync::Arc<super::runtime_rebuild::RecoveredRootInventory>,
+) -> RecoveredRelationalRuntimeAuthority {
+    let recovered_branch_images = runtime
+        .history()
+        .branch_cells_snapshot()
+        .into_iter()
+        .map(|cell| (cell.branch_id, (cell.observation, cell.truth_version)))
+        .collect();
+    RecoveredRelationalRuntimeAuthority {
+        runtime_instance_id: runtime.runtime_instance_id(),
+        recovered_branch_images,
+        recovered_roots,
+        codec_transition: None,
+        performed_codec_retirement: None,
     }
 }
 

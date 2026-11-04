@@ -1,5 +1,6 @@
 mod binding;
 mod codec;
+mod transition_required;
 
 use worth_execution::{ExecutionRequest, WorkCeilingDenial};
 use worth_foundational::facade::{
@@ -34,12 +35,21 @@ pub enum ApplicationHomeDescriptorDenial {
     Deadline(crate::ApplicationHomeDeadlineDenial),
     Malformed,
     SizeLimit,
-    UnsupportedVersion { observed: u16 },
-    UnsupportedBinding { tag: u16 },
+    UnsupportedVersion {
+        observed: u16,
+    },
+    UnsupportedBinding {
+        tag: u16,
+    },
     IdentityMismatch,
     ApplicationBindingMissing,
     BuildBindingMissing,
     BindingMismatch,
+    TransitionRequired {
+        recorded: Box<ApplicationHomeBinding>,
+        requested: Box<ApplicationHomeBinding>,
+        _funding: Option<worth_execution::ExecutionMemoryReservation>,
+    },
     IncompleteInitialization,
     IncarnationExhausted,
 }
@@ -152,13 +162,19 @@ fn prepare(
         .map_err(Denial::Read)?;
     let (generation, incarnation) = match previous.as_ref() {
         Some(record) => {
-            let incarnation = codec::admit_record(
+            let admission = codec::admit_record(
                 record.bytes(),
                 identity.bytes(),
                 runtime,
                 &profile,
                 &binding_bytes.bytes,
             )?;
+            let incarnation = match admission {
+                codec::DescriptorBindingAdmission::Exact(incarnation) => incarnation,
+                codec::DescriptorBindingAdmission::TransitionRequired { recorded } => {
+                    return Err(transition_required::refuse(recorded, binding, execution));
+                }
+            };
             (
                 record.version().generation(),
                 incarnation
