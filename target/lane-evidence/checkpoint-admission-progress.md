@@ -1,4 +1,4 @@
-FUNDING IN PROGRESS - not landed; exact Native owner handoffs pending.
+FUNDING IN PROGRESS - Host partial bf5e74e0c3 committed; whole funding not landed.
 
 2026-11-04 Host funding implementation is in the worktree: default 1Gi work,
 256MiB shared memory and 60s child deadline; separately admitted joined Host
@@ -25,7 +25,8 @@ Host/explicit caller control PASS1/0/0. Caller-stop automatic selection + unchan
 bounded<=40 filesystem court PASS2/0/0 under ordinary8M fixture/default upkeep.
 The rebuilt executed artifact is free of diagnostic markers. First code review
 REJECT2 agreed findings (thread sanction and caller-stop test); both corrected.
-Fresh Host-partial review APPROVE, no new material findings; source commit follows.
+Fresh Host-partial review APPROVE, no new material findings; verified against
+committed bf5e74e0c3 (11 source blobs plus required deletion).
 Clippy red at producer execution_preparation.rs:51; exact one-line handoff pending.
 Boundary red at the3 queued BC9002 sites. ContextPASS and capsPASS11files.
 Native history cost and close-trigger funding remain incomplete. Exact Native
