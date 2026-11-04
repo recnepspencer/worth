@@ -1,0 +1,38 @@
+Command: ["cargo", "nextest", "run", "--cargo-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\query\\parking-maintenance-recheckpoint-after-reopen\\build\\cargo-metadata.json", "--binaries-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\query\\parking-maintenance-recheckpoint-after-reopen\\build\\binaries.json", "--profile", "ci", "--config-file", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\query\\parking-maintenance-recheckpoint-after-reopen\\nextest.toml", "--success-output", "immediate", "--ignore-default-filter", "--no-fail-fast", "--no-tests=fail", "--message-format", "libtest-json", "-E", "test(selected_complete_home_reopens_and_selects_another_complete_checkpoint)"]
+Working directory: C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-query
+HEAD: 29f8c2eaf085097189fa514ad19346b0f1352356
+Git status --short empty: False
+Start: 2026-11-04T21:58:27.875400+00:00
+
+{"type": "cargo-invocation", "command": ["cargo", "nextest", "run", "--cargo-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\query\\parking-maintenance-recheckpoint-after-reopen\\build\\cargo-metadata.json", "--binaries-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\query\\parking-maintenance-recheckpoint-after-reopen\\build\\binaries.json", "--profile", "ci", "--config-file", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\query\\parking-maintenance-recheckpoint-after-reopen\\nextest.toml", "--success-output", "immediate", "--ignore-default-filter", "--no-fail-fast", "--no-tests=fail", "--message-format", "libtest-json", "-E", "test(selected_complete_home_reopens_and_selects_another_complete_checkpoint)"], "cwd": "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\workspaces\\worth-query", "capture": "ordered", "mode": "build", "target_dir": "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\workspaces\\worth-query\\target", "cargo_profile": "test"}
+info: experimental features enabled: wrapper-scripts
+────────────
+ Nextest run ID 02e1b1b6-801e-4a71-88d8-6c6fb93ff4e1 with nextest profile: ci
+    Starting 1 test across 1 binary (370 tests skipped)
+{"type":"suite","event":"started","test_count":3}
+{"type":"test","event":"started","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$cost::certification::runtime_world_branching::cumulative::scheduled_public_read_timings_report_cold_and_warm_distributions"}
+{"type":"suite","event":"ok","passed":0,"failed":0,"ignored":2,"measured":0,"filtered_out":368,"exec_time":0}
+{"type":"suite","event":"started","test_count":3}
+{"type":"test","event":"started","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$cost::certification::runtime_world_branching::cumulative::scheduled_seeded_model_broadens_public_action_roster"}
+{"type":"suite","event":"ok","passed":0,"failed":0,"ignored":2,"measured":0,"filtered_out":368,"exec_time":0}
+        PASS [   3.681s] (1/1) worth-query-court-query-decl-host::worth_query_court_query_decl_host host::application_home::reopening::checkpoint_restart::selected_complete_home_reopens_and_selects_another_complete_checkpoint
+  output ───
+
+    running 1 test
+    test host::application_home::reopening::checkpoint_restart::selected_complete_home_reopens_and_selects_another_complete_checkpoint ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 370 filtered out; finished in 2.95s
+
+
+{"type":"suite","event":"started","test_count":3}
+{"type":"test","event":"started","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::reopening::checkpoint_restart::selected_complete_home_reopens_and_selects_another_complete_checkpoint"}
+{"type":"test","event":"ok","name":"worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::reopening::checkpoint_restart::selected_complete_home_reopens_and_selects_another_complete_checkpoint","exec_time":3.6814299}
+{"type":"suite","event":"ok","passed":1,"failed":0,"ignored":2,"measured":0,"filtered_out":368,"exec_time":3.6814299}
+────────────
+     Summary [   3.683s] 1 test run: 1 passed, 370 skipped
+
+
+{"type": "cargo-result", "exit_code": 0}
+
+End: 2026-11-04T21:58:31.910133+00:00
+Exit code: 0

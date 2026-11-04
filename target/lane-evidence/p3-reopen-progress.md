@@ -1,31 +1,25 @@
-FUNDING IN PROGRESS: actual native backing funding requires an exact owner handoff.
+PARKED C2: state-bounded checkpoint capture and materialization funding resume after happy landing.
 
-Base HEAD146a4f5e13. Accepted prior partial-Home fix03cd58269c remains unchanged.
-Native test-target check is green (no tests executed); final source snapshot and
-all six current logs are indexed in cold-materialization-current-lanes.md.
+Integration source: ea739387f6a20e134462c6811fe08c3a361d5165 on codex/m3-p3-reopen.
+Parked WIP: a5fd44a3131a20c5c68e996a5e44ba6bf503dcac on codex/m3-p3-reopen-wip.
+Current handoff: turn-end-state.md. The 16-Native-owner/four-leaf expansion is
+not granted now. The design, reviews and five open C2 findings remain valid.
 
-The source correction restores the original serving guard and uses the existing
-Full-demand fallback for DATA capture; adds raw InlineBytes quote coverage;
-includes actual peer historical incidences and prefix projection storage; and
-restores the unchanged refusal court's funded collection length observation.
-These corrections are not yet runtime qualified.
+The retained source has the original full-history fold and the accepted D12
+admission data/consumer. Shared maintenance moved into HomeCheckpointOwner;
+Host advancement and coupled close share that allowance; explicit capture is
+caller-funded. Accepted partial-Home fix03cd58269c is unchanged.
 
-Open owner defects: Head dependency roster/provider retention is unfunded;
-current-image inventory traversal precedes its charge; the native ticket is
-attached to ResidentRegion but extracted/shared backing can outlive it; Full
-scalar-column funding assumes equal lengths not fully checked by the converter.
-The approved aggregate design is insufficient for that actual-owner lifetime.
-Exact repair and additional file list: cold-materialization-owner-handoff.md.
-No additional owner file has been edited without a ruling.
+Fresh focused results: parking-maintenance-happy-controls.log PASS2/0/0;
+parking-maintenance-recheckpoint-after-reopen.log PASS1/0/0. The latter proves
+selection of a later checkpoint after reopening a real selected Home.
+Fresh narrow source review: parking-maintenance-integration-independent-review.md,
+APPROVE with no blocking findings. Full phase/cost/fault qualification is not
+claimed. No ignored tests or exhaustive lanes ran.
 
-Native3/Host2/Store cold, zero-covered-read filesystem, CDC/recovery selections,
-Root/Store Clippy and phase gates remain unrun for the current source. Earlier
-red cold evidence remains red, not declared repaired by compilation. Decoder
-overflow, D13, named digests and BC9002 queue are untouched. Queue file unchanged.
-The integration bootstrap-completion record remains the accepted future merge
-seam for the partial-Home predicate; no bootstrap work is added on this branch.
-
-Fresh independent current-slice verdict: REJECT, findings1/2/3/5 P1 and4 P2.
-All findings accepted; resolutions and exact pending owner repair are recorded
-in cold-funding-current-review-response.md and cold-materialization-owner-handoff.md.
-No FUNDING landing, full qualification or new runtime attribution is claimed.
+All uncommitted replay removal, selected base/capture, cold materialization,
+cost/court/testkit/runner work is in the single wip commit. Preservation check
+covers all163 starting dirty paths/deletions. No task work was discarded.
+No existing commit was reverted, no branch was merged and nothing was pushed.
+The remaining HAPPY/CLEANUP queue and integration bootstrap seam are itemized
+in turn-end-state.md. Work is stopped at the coordinator-requested handoff.
