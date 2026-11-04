@@ -111,3 +111,41 @@ def update_callers(root):
     new = updated(root, lines)
     path.write_text('\n'.join(new) + '\n', encoding='utf-8', newline='\n')
     return len(new) - len(lines)
+
+
+CERTIFICATION = 'tools/boundary-check/config/certification-construction-callers.txt'
+FACTORIES = {'installation': {'certification_query'}}
+
+
+def relocated_caller(root, files, kind, stale):
+    """The one moved file a stale closed-list caller became: same module path, or, failing that,
+    the one with the same trailing path that still names the class's factory."""
+    stem = re.sub(r'(\.rs|/mod\.rs)$', '', module_key(stale) or '')
+    names = FACTORIES.get(kind, set())
+
+    def reads(rel):
+        return bool(names & {t.value for t in tokens((root / rel).read_text(encoding='utf-8'))})
+    same = [f for f in files if re.sub(r'(\.rs|/mod\.rs)$', '', module_key(f) or '') == stem]
+    if len(same) > 1:
+        same = [f for f in same if reads(f)]
+    if len(same) == 1:
+        return same[0]
+    tail = '/'.join(stem.split('/')[-2:])
+    near = [f for f in files if re.sub(r'(\.rs|/mod\.rs)$', '', f).endswith('/' + tail) and reads(f)]
+    return near[0] if len(near) == 1 else None
+
+
+def relocate_certification_callers(root):
+    """Move closed certification-construction callers the move relocated; returns the count."""
+    path = root / CERTIFICATION
+    files = [str(f.relative_to(root)) for f in moved_files(root)]
+    out, moved = [], 0
+    for line in path.read_text(encoding='utf-8').splitlines():
+        parts = line.split()
+        if len(parts) == 2 and not line.startswith('#') and not (root / parts[1]).exists() and in_family(parts[1]):
+            target = relocated_caller(root, files, parts[0], parts[1])
+            if target is not None:
+                line, moved = f'{parts[0]} {target}', moved + 1
+        out.append(line)
+    path.write_text('\n'.join(out) + '\n', encoding='utf-8', newline='\n')
+    return moved

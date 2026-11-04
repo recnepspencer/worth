@@ -96,6 +96,25 @@ class CourtDoorTests(unittest.TestCase):
                          'use a::X;\nuse b::Y;\n#[cfg(test)]\nuse b::Y;\nmod m {\n    use a::X;\n}\npub(crate) use c::Z;\n'
                          'use d::*;\nuse d::*;\n')
 
+    def test_relocated_certification_callers_follow_their_moved_file(self):
+        import tempfile
+        from pathlib import Path
+        from src_door_callers import CRATES, OWNER, relocated_caller
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            base = f'{CRATES}/worth-query-court-execution/tests/c/domain_computation/'
+            for rel, text in [('a/b/tests/mod.rs', 'fn t() { certification_query(); }'),
+                              ('x/lifecycle/lease_tests/tests/mod.rs', 'fn t() { certification_query(); }'),
+                              ('x/other/lease_tests/tests/mod.rs', 'fn t() {}')]:
+                (root / base / rel).parent.mkdir(parents=True, exist_ok=True)
+                (root / base / rel).write_text(text)
+            files = [base + r for r in ('a/b/tests/mod.rs', 'x/lifecycle/lease_tests/tests/mod.rs',
+                                        'x/other/lease_tests/tests/mod.rs')]
+            src = f'{OWNER}src/domain_computation/'
+            self.assertEqual(relocated_caller(root, files, 'installation', src + 'a/b/tests.rs'), files[0])
+            self.assertEqual(relocated_caller(root, files, 'installation', src + 'x/lease_tests/tests.rs'), files[1])
+            self.assertIsNone(relocated_caller(root, files, 'installation', src + 'gone.rs'))
+
 
 if __name__ == '__main__':
     unittest.main()
