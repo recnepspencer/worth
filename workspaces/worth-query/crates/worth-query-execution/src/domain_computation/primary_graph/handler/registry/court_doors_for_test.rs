@@ -49,3 +49,14 @@ impl<Schema> InstalledMutationHandlerRegistry<Schema> {
         &mut self.entries
     }
 }
+
+impl<Schema, Binding> TypedHandlerSlot<Schema, Binding>
+where
+    Schema: ApplicationSchema,
+    Binding: ApplicationMutationBinding<Schema>,
+{
+    #[doc(hidden)]
+    pub fn new_for_test(handler: Arc<dyn OperationHandler<Schema, Binding>>) -> Self {
+        Self { handler }
+    }
+}

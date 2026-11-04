@@ -80,12 +80,10 @@ fn provider_is_destroyed_before_the_installed_handler() {
         let original = registry
             .get_for_test::<B>()
             .expect("a real installed handler is present");
-        (*(*registry.entries_mut_for_test()).get_mut(B::IDENTITY).unwrap().value_mut_for_test()) = Arc::new(TypedHandlerSlot::<S, B> {
-            handler: Arc::new(RecordedHandler {
-                inner: original,
-                events: Arc::clone(&events),
-            }),
-        });
+        (*(*registry.entries_mut_for_test()).get_mut(B::IDENTITY).unwrap().value_mut_for_test()) = Arc::new(TypedHandlerSlot::<S, B>::new_for_test(Arc::new(RecordedHandler {
+            inner: original,
+            events: Arc::clone(&events),
+        })));
         assert!(
             registry.get_for_test::<B>().is_some(),
             "the typed installed handler remains callable"
