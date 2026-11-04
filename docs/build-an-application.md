@@ -535,7 +535,7 @@ Retain the generated contract during installation and use
 declared delivery field. It selects the genuine canonical ordinal and refuses
 eligibility-only fields or a different node. Consume it with
 `into_package_contract(binding.portable().clone())`. The
-[typed readiness examples](../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/conditional/output_readiness_contract/typed/tests.rs)
+[typed readiness examples](../workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-contribution/tests/worth_query_court_execution_primary_graph_application_contribution/domain_computation/primary_graph/application_contribution/conditional/output_readiness_contract/typed/tests/mod.rs)
 exercise full optional aspects, nested wire changes, concrete binding mismatch
 and reordered delivery/eligibility inputs.
 
@@ -4750,7 +4750,7 @@ keys; recovery persists the selected retained truth.
 
 The [temporal integrity rule](../workspaces/worth-query/crates/worth-query-testkit-certification/src/certification/program_example_authority/product_workflow_support/integrity.rs)
 returns `TemporalIntegrityRefusal::InvalidState` with the candidate revision and
-lifecycle. The [installed refusal courts](../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/typed_invariant_refusal.rs)
+lifecycle. The [installed refusal courts](../workspaces/worth-query/crates/worth-query-court-execution-package-archive-primary-graph-application-attempt/tests/worth_query_court_execution_package_archive_primary_graph_application_attempt/domain_computation/primary_graph/tests/application_attempt/typed_invariant_refusal/mod.rs)
 exercise original-caller decoding, unchanged native checkpoints, cancellation,
 installed order, size refusal, decode mismatch, and reproducible payload bytes.
 

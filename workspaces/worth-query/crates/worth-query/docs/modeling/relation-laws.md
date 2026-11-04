@@ -136,7 +136,7 @@ owners from the selected snapshot. `members()`, `member(index)`, `relations()`,
 Operation readers require `OperationReads` for the relation and admit every
 returned member through the original projection's realized scope. These are
 inspection reads; they do not record publication decision dependencies. The
-compiled [projection examples](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/projection.rs)
+compiled [projection examples](../../../worth-query-court-execution-package-archive-primary-graph-application-attempt/tests/worth_query_court_execution_package_archive_primary_graph_application_attempt/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/projection/mod.rs)
 exercise ordinary and operation readers, including a retained basis after an edit.
 Handler `DecisionReader::orbit` / `orbit_of` and computation readers record two
 original Native facts: persistent identity with complete canonical membership,
@@ -146,8 +146,8 @@ bound to their original admission, installed contracts and realized scope; a
 selector alone cannot reconstruct them at sealing. Fresh comparison detects
 identity changes even when membership is restored by later edits. Incidental
 stored lineage is outside orbit-answer equality. The compiled
-[handler](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/decision/handler.rs)
-and [currentness court](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/decision/currentness.rs)
+[handler](../../../worth-query-testkit-execution-primary-graph-application-attempt-2/src/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/decision/handler/mod.rs)
+and [currentness court](../../../worth-query-court-execution-package-archive-primary-graph-application-attempt/tests/worth_query_court_execution_package_archive_primary_graph_application_attempt/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/decision/currentness/mod.rs)
 exercise this path. Aggregate inputs currently require full verification and a
 fresh computation; live fact bodies cannot be reconstructed from checkpoints.
 
@@ -158,7 +158,7 @@ in successor order from the Native anchor. `result.orbit(loop_slot())` returns
 the exact declared slot's `identity()`, `len()` and borrowed `members()`; the
 getter performs no graph read and survives conversion into a disclosed result
 or output-demand source. The selector has schema, query, slot, relation and
-entity marker types; see the compiled [query declaration and result court](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/declared_queries.rs).
+entity marker types; see the compiled [query declaration and result court](../../../worth-query-court-execution-package-archive-primary-graph-application-attempt/tests/worth_query_court_execution_package_archive_primary_graph_application_attempt/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/declared_queries/mod.rs).
 
 Whole-orbit metadata is one disclosure slot. A governed contract must provide
 `orbit_by(slot, disclosure_value, influence)` for identity, length, membership
@@ -177,7 +177,7 @@ snapshot authorize the read; the name is only a selector. This performs a Native
 schema/occupied-slot scan followed by incident-lineage visits along merge hops.
 An admitted handler can use `reader.reader().lineage(..)` through that same
 operation inspection reader; the compiled
-[handler](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/decision/handler.rs)
+[handler](../../../worth-query-testkit-execution-primary-graph-application-attempt-2/src/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/decision/handler/mod.rs)
 does so alongside its tracked orbit reads. The raw reader marks opaque context
 and therefore cannot qualify the handler for completed decision reuse.
 
@@ -188,7 +188,7 @@ borrows the ordered merge path. Each exposes the original commit `occurrence()`,
 a split keeper remains current, and a retired terminal without a successor
 returns `None`. An identity absent from the selected snapshot instead refuses
 with `AggregateIdentityUnavailable`. `version()` describes the selected source
-and cannot rebind the retained body. See the compiled [lineage inspection court](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/lineage.rs).
+and cannot rebind the retained body. See the compiled [lineage inspection court](../../../worth-query-court-execution-package-archive-primary-graph-application-attempt/tests/worth_query_court_execution_package_archive_primary_graph_application_attempt/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/lineage/mod.rs).
 
 These inspection reads grant no governed history disclosure and record no
 publication decision dependencies. A typed name can be retained across edits
@@ -292,10 +292,10 @@ Preparation admits every actual member and physical coupling edge. Evaluation
 cannot widen those frozen admissions. Entity creation/deletion and coupling edits
 schedule fresh rule preparation through the declared applicability, including after
 an empty census. Counts may decide an ordinary invariant verdict; they add no new
-relation law. The [installed component rule courts](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/component_invariants/census.rs)
+relation law. The [installed component rule courts](../../../worth-query-court-execution-package-archive-primary-graph-application-attempt/tests/worth_query_court_execution_package_archive_primary_graph_application_attempt/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/component_invariants/census/mod.rs)
 exercise proposed/committed merges and splits, an untouched isolated component,
 genuine count-based commit refusal and prepared-scope widening. The
-[empty-set CRUD court](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/component_invariants/lifecycle.rs)
+[empty-set CRUD court](../../../worth-query-court-execution-package-archive-primary-graph-application-attempt/tests/worth_query_court_execution_package_archive_primary_graph_application_attempt/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/component_invariants/lifecycle/mod.rs)
 creates and deletes a real member through an ordinary admitted operation.
 
 ### Public Topology Island Consumer
@@ -376,7 +376,7 @@ identities, inconsistent membership and original request stops return typed
 traversal refusals. This broad installation inspection issues no publication
 decision facts and is not forwarded to ordinary operation readers.
 
-The compiled [component inspection courts](../../../worth-query-execution/src/domain_computation/primary_graph/invariant_projection/component/tests.rs)
+The compiled [component inspection courts](../../../worth-query-court-execution-primary-graph-application-attempt/tests/worth_query_court_execution_primary_graph_application_attempt/domain_computation/primary_graph/invariant_projection/component/tests/mod.rs)
 exercise the actual installed bootstrap and reader. Their independently issued
 same-product snapshot court checks definition-qualified reselection. A real
 World publication retires a coupled member, then checks ordinary coupling
@@ -460,7 +460,7 @@ actual visibility/coupling revisions and Native aggregate/walk observations thro
 the existing selected-snapshot owners. Native aggregate identity keeps its explicit
 full-verification fallback; no record-local invalidation cost is promised.
 
-The [scoped component courts](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/decision/components.rs)
+The [scoped component courts](../../../worth-query-court-execution-package-archive-primary-graph-application-attempt/tests/worth_query_court_execution_package_archive_primary_graph_application_attempt/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/decision/components/mod.rs)
 use an installed mutation binding, real admission and both projection seals.
 They cover complete/partial/foreign cohorts and negative census evidence across
 ordinary World publications. Ordinary invariant consumption and the public
@@ -498,7 +498,7 @@ order; flattened rows preserve those boundaries. The same inspection is availabl
 on the admitted disclosed result and its output-demand source. Inspection reads
 already disclosed rows and grants no graph authority.
 
-The [installed component courts](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/declared_queries/components.rs)
+The [installed component courts](../../../worth-query-court-execution-package-archive-primary-graph-application-attempt/tests/worth_query_court_execution_package_archive_primary_graph_application_attempt/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/declared_queries/components/mod.rs)
 use real schemas, ordinary query admission and independent Native inspection.
 Rows share their original cohort body; a Census result also retains the full
 negative universe. Empty census evidence includes guard failures. Reuse compares
