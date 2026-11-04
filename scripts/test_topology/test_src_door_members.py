@@ -145,6 +145,12 @@ class DoorBodyTests(unittest.TestCase):
             match = MISSING.search(message)
             self.assertEqual(match.groups() if match else None, expected)
 
+    def test_missing_doors_read_as_fields_only_behind_the_field_wrapper(self):
+        from src_door_missing import field_site
+        source = Source('let a = (*reader.work_for_test()).reads(); let b = reader.work_for_test();')
+        sites = [tok.start for tok in source.stream if tok.value == 'work_for_test']
+        self.assertEqual([field_site(source, (s, s + 13)) for s in sites], [True, False])
+
     def test_only_generated_door_rewrites_are_reversed(self):
         from src_door_bodies import without_doors
         renames = {'get_for_test': ('get', 'method'), 'f_for_test': ('f', 'field')}

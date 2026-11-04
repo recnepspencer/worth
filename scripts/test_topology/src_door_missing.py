@@ -2,10 +2,10 @@
 
 `no method named `<m>_for_test` found for T` (or `no function or associated item named ..`)
 at a court or testkit site means the site was rewritten but its door was never written. The
-door is placed as E0624/E0616 would place it: a delegating method door in the module of the
-one inherent `impl T` that defines `fn m`; otherwise a field door when T's struct has field
-`m` (`m_mut` for a mutable door, `m_into` for a by-value door). The site is left as it is. A
-name with no single owner stays unplaced.
+door is placed as E0624/E0616 would place it. A field-read site (`(*expr.m_for_test())`), or a
+`m_mut` / `m_into` name, gets a field door when T's struct has that field; any other site gets
+a delegating method door from the one inherent `impl T` that defines `fn m`. The site is left as
+it is. A name with no single owner stays unplaced.
 """
 from collections import defaultdict
 import re
@@ -48,6 +48,11 @@ def missing(plan, root, diagnostic, site, source, span):
     if match is None:
         return False
     name, type_name = match.groups()
+    reads_field = field_site(source, span)
+    if (reads_field or name.endswith(('_mut', '_into'))) and field_door_for(plan, name, type_name):
+        return True
+    if reads_field:
+        return False
     found = [(node, header, text) for node, header in inherent_impls(plan.index, type_name)
              for text in [method_door(header, name)] if text is not None]
     if len(found) == 1:
@@ -56,8 +61,19 @@ def missing(plan, root, diagnostic, site, source, span):
         if AUTHORITY.search(header[2] + ' ' + name):
             plan.authority.add('::'.join(node.names) + f'::{header[2]}::{name}')
         return True
-    if found:
+    return False
+
+
+def field_site(source, span):
+    """Whether the door at `span` is read as `(*expr.door())`, the field-read wrapper."""
+    door = source.index(span[0])
+    if door is None or source.value(door + 1) != '(' or source.value(door + 2) != ')' or source.value(door + 3) != ')':
         return False
+    opened = source.open.get(door + 3)
+    return opened is not None and source.value(opened + 1) == '*'
+
+
+def field_door_for(plan, name, type_name):
     declared = struct_declaration(plan.index, type_name)
     shape = struct_shape(declared[1]) if declared else None
     if shape is None:
