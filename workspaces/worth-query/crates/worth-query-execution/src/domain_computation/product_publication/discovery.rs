@@ -175,6 +175,17 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             }
             Err(denial) => return Err(recovery_failure(recovery, denial.into())),
         };
+        // The actual World durable-open custody selects reopening before any
+        // Memory-only Native observation or binding allocation is attempted.
+        if effects
+            .next_actions()
+            .contains(&worth_runtime_world::facade::ProductUnpublishedNextAction::ReopenRequired)
+        {
+            return Err(recovery_failure(
+                recovery,
+                RuntimeWorldRecoveryDenial::ReopenRequired.into(),
+            ));
+        }
         let (native, original_binding) =
             match self.primary_provider.prepare_memory_released_binding(
                 execution,
