@@ -13,7 +13,10 @@ pub mod interruption_control {
     thread_local! { pub static PENDING: RefCell<Option<Pending>> = const { RefCell::new(None) }; }
     pub enum Action {
         Cancel(WorthQueryCancellationSource),
-        Deadline(std::time::Instant),
+        Deadline {
+            time: worth_execution::MonotonicTimeController,
+            deadline: std::time::Instant,
+        },
     }
     pub struct Pending {
         pub action: Action,
@@ -34,11 +37,11 @@ pub mod interruption_control {
             pending.triggered.set(true);
             match pending.action {
                 Action::Cancel(source) => source.cancel(),
-                Action::Deadline(deadline) => {
-                    // Reach the caller's actual deadline; no elapsed-time assertion.
-                    std::thread::sleep(
-                        deadline.saturating_duration_since(std::time::Instant::now()),
-                    );
+                Action::Deadline { time, deadline } => {
+                    let elapsed = deadline
+                        .checked_duration_since(time.clock().now())
+                        .expect("the held request is fresh before lookup");
+                    time.advance(elapsed).unwrap();
                 }
             }
         }
