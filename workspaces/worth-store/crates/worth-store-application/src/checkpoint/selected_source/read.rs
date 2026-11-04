@@ -91,19 +91,20 @@ pub(super) fn journal_payload(
     serving: &ServingPhysicalRuntime,
     name: OrderedJournalName,
     position: u64,
+    limit: u64,
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<(OrderedJournalEntry, ExecutionImmutableBytes), Denial> {
     let journal = serving
         .ordered_journal(name)
         .map_err(Denial::JournalUnavailable)?;
     let mut stream = if let Some(selected) = &cut.selected {
-        journal.open_payload_from_read(&selected.membership, request, position, 64 << 10)
+        journal.open_payload_from_read(&selected.membership, request, position, limit)
     } else {
         journal.open_payload_from(
             cut.reader.as_ref().ok_or(Denial::ReadSourceBusy)?,
             request,
             position,
-            64 << 10,
+            limit,
         )
     }
     .map_err(journal_denial)?;
@@ -127,13 +128,13 @@ pub(super) fn journal_payload(
         .into_immutable_bytes();
     Ok((entry, bytes))
 }
-fn anchor_denial(cause: AnchoredRecordReadFailure) -> Denial {
+pub(super) fn anchor_denial(cause: AnchoredRecordReadFailure) -> Denial {
     match cause {
         AnchoredRecordReadFailure::Execution(cause) => Denial::Execution(cause),
         cause => Denial::Read(cause),
     }
 }
-fn journal_denial(cause: OrderedJournalReadFailure) -> Denial {
+pub(super) fn journal_denial(cause: OrderedJournalReadFailure) -> Denial {
     match cause {
         OrderedJournalReadFailure::Execution(cause) => Denial::Execution(cause),
         cause => Denial::JournalRead(cause),

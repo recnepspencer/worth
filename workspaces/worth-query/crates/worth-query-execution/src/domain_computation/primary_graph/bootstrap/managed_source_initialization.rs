@@ -40,7 +40,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphBootstrap<S> {
         let execution = phase.execution_request();
         let program = self.graph.layout.managed_source(I::NAME)
             .filter(|program| self.graph.integration_handle().managed_derived_views()
-                .admits_initialization_binding(program, std::any::TypeId::of::<(S, I)>()))
+                .admits_initialization_binding(program, crate::equality_type_id::EqualityTypeId::of::<(S, I)>().into_external()))
             .ok_or_else(|| primary_graph_denial(WorthQueryPrimaryGraphInstallationDenialKind::ManagedIndexProviderMeaningMismatch, I::NAME))?
             .clone();
         let next = SelectedSources::with_program(

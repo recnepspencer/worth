@@ -1,44 +1,17 @@
-use crate::orchestration::ResidentSourceSelection;
-use worth_store::physical_runtime::StoreRecoveryBindingFreshnessSample;
-use worth_store_recovery_physics::RecoveryPlanningCounters;
-
 use crate::entry::{
     AdmittedPlatformAuthority, PhysicalRecoveryBlock, PhysicalRecoveryBlockEvidence,
-    PhysicalRecoveryBlockKind, PhysicalRecoveryOutcome, PhysicalRecoverySourceDenial,
-    PhysicalRecoveryStagingCounters, PhysicalRecoveryStagingDenial,
-    PhysicalRecoveryStagingSettlementLedger,
+    PhysicalRecoveryBlockKind, PhysicalRecoveryOutcome, PhysicalRecoveryStagingCounters,
+    PhysicalRecoveryStagingDenial, PhysicalRecoveryStagingSettlementLedger,
 };
-use crate::handoff::RecoveryOperationFateSet;
-use crate::progression::{
-    PhysicalRecoveryDiscoveryCounters, RecoveryIntegrityEvidence, RecoveryPublicationPlan,
-    RecoveryQuiescencePlan, RecoveryStagingLayoutPlan, StagedPhysicalRecovery,
-};
-
-use super::RecoveryCoordination;
+use crate::progression::{StagedPhysicalRecovery, StagedRecoveryState};
 
 mod command;
 mod execution;
 
-pub(crate) struct RecoveryStagingInput {
-    pub(crate) authority: AdmittedPlatformAuthority,
-    pub(crate) coordination: RecoveryCoordination,
-    pub(crate) selection: ResidentSourceSelection,
-    pub(crate) custody: crate::progression::PlanningCustody,
-    pub(crate) verified_selected_tier_custody:
-        Option<worth_store_recovery_physics::VerifiedSelectedTierEpochCustody>,
-    pub(crate) discovery_counters: PhysicalRecoveryDiscoveryCounters,
-    pub(crate) root_protocol_denials: Vec<PhysicalRecoverySourceDenial>,
-    pub(crate) integrity: RecoveryIntegrityEvidence,
-    pub(crate) freshness: StoreRecoveryBindingFreshnessSample,
-    pub(crate) fates: RecoveryOperationFateSet,
-    pub(crate) planning_counters: RecoveryPlanningCounters,
-    pub(crate) root_protocol_counters: crate::entry::PhysicalRecoveryRootProtocolCounters,
-    pub(crate) staging: RecoveryStagingLayoutPlan,
-    pub(crate) publication: RecoveryPublicationPlan,
-    pub(crate) quiescence: RecoveryQuiescencePlan,
-    pub(crate) cancellation: RecoveryStagingCancellation,
-    pub(crate) integrity_trace: crate::integrity_ingress::RecoveryIntegrityIngressTrace,
-}
+mod input_storage;
+pub(crate) use input_storage::{
+    RecoveryStagingInput, RecoveryStagingInputBacking, RecoveryStagingInputState,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum RecoveryStagingCancellation {
@@ -61,6 +34,7 @@ fn complete(
     execution: execution::StagingExecution,
 ) -> Result<StagedPhysicalRecovery, PhysicalRecoveryOutcome> {
     if input
+        .state()
         .coordination
         .pause_at(
             worth_store::physical_runtime::PhysicalRecoveryYieldpointStage::StagingMaterialization,
@@ -70,6 +44,7 @@ fn complete(
         return Err(block(input, execution));
     }
     if input
+        .state()
         .coordination
         .pause_at(
             worth_store::physical_runtime::PhysicalRecoveryYieldpointStage::StagingSynchronization,
@@ -78,34 +53,39 @@ fn complete(
     {
         return Err(block(input, execution));
     }
+    let input = input.into_state();
     let base = input.staging.into_base_image();
-    Ok(StagedPhysicalRecovery::new(
-        input.authority,
-        input.coordination,
-        input.selection,
-        input.custody,
-        input.verified_selected_tier_custody,
-        input.discovery_counters,
-        input.root_protocol_denials,
-        input.integrity,
-        input.freshness,
-        input.fates,
-        input.planning_counters,
-        input.root_protocol_counters,
+    Ok(input.staged_backing.finish(StagedRecoveryState {
+        reopened_backing: input.reopened_backing,
+        publication_backing: input.publication_backing,
+        namespace_backing: input.namespace_backing,
+        authority: input.authority,
+        coordination: input.coordination,
+        selection: input.selection,
+        custody: input.custody,
+        verified_selected_tier_custody: input.verified_selected_tier_custody,
+        discovery_counters: input.discovery_counters,
+        root_protocol_denials: input.root_protocol_denials,
+        integrity: input.integrity,
+        freshness: input.freshness,
+        fates: input.fates,
+        planning_counters: input.planning_counters,
+        root_protocol_counters: input.root_protocol_counters,
         base,
-        input.publication,
-        input.quiescence,
-        execution.closed.expect("successful execution is closed"),
-        execution.counters,
-        execution.settlements,
-        input.integrity_trace,
-    ))
+        publication: input.publication,
+        quiescence: input.quiescence,
+        closed: execution.closed.expect("successful execution is closed"),
+        staging_counters: execution.counters,
+        staging_settlements: execution.settlements,
+        integrity_trace: input.integrity_trace,
+    }))
 }
 
 fn block(
     input: RecoveryStagingInput,
     execution: execution::StagingExecution,
 ) -> PhysicalRecoveryOutcome {
+    let input = input.into_state();
     let store = input.authority.media.store_identity();
     let session_identity = input.authority.session.identity();
     let recovery_effects = input.authority.media.recovery_effect_count();

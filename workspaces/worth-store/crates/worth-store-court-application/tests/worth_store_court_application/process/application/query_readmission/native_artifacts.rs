@@ -19,6 +19,7 @@ use worth_query_testkit_host::facade::host::{
 };
 use worth_store_application::*;
 mod administration;
+mod home_close;
 mod idempotency;
 mod operations;
 mod selected;
@@ -96,12 +97,19 @@ fn unshared(
     let home = admit_home(recover_home(request, &execution).unwrap(), &execution).unwrap();
     let mut home =
         attach_relational(home, &execution).unwrap_or_else(|_| panic!("actual Native attaches"));
-    let query = query
-        .install_home_native_schema(phase, home.native_for_schema_installation())
-        .unwrap_or_else(|refused| panic!("actual existing schema: {:?}", refused.reason()));
+    let preparation = home.prepare_native_schema_for_home(&execution).unwrap();
+    let query = match preparation {
+        ApplicationHomeNativeSchemaPreparation::Existing { native } => {
+            query.prepare_home_native_receiver_schema(phase, native)
+        }
+        ApplicationHomeNativeSchemaPreparation::Fresh { .. } => {
+            panic!("existing Directory fixture selected fresh initialization")
+        }
+    }
+    .unwrap_or_else(|refused| panic!("actual existing schema: {:?}", refused.reason()));
     let home = home
         .readmit(query.home_initial_schema_receipt(), &execution)
-        .unwrap_or_else(|_| panic!("actual Native recovery"))
+        .unwrap_or_else(|refused| panic!("actual Native recovery: {refused:?}"))
         .consume(|home| home);
     (query, home)
 }

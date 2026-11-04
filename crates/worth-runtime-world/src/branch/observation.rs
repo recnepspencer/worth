@@ -211,6 +211,24 @@ pub enum RuntimeWorldBranchAdmissionDenial {
 }
 
 impl ProductBranchObservation {
+    pub(crate) fn begin_close_basis_retirement(
+        &mut self,
+    ) -> Result<crate::history::CompositeCommitRetirement, ()> {
+        let snapshot = Arc::get_mut(&mut self.snapshot).ok_or(())?;
+        Ok(snapshot.begin_home_retirement())
+    }
+
+    /// Disarm only this exclusive original observation. Inert allocation
+    /// ownership stays here; independently cloned observations retain their veto.
+    pub(crate) fn try_retire_for_close(&mut self) -> Result<(), ()> {
+        let obligation = Arc::get_mut(&mut self.obligation).ok_or(())?;
+        obligation._components.try_retire_shared_for_close()?;
+        if let Some(history) = obligation.history.get_mut() {
+            history.try_retire_for_close()?;
+        }
+        Ok(())
+    }
+
     pub(crate) fn prepare_successor(
         snapshot: ProductBranchReferenceSnapshot,
         components: ObservationRetentionObligation,
@@ -259,6 +277,17 @@ impl ProductBranchObservation {
                 components, history,
             )),
         })
+    }
+
+    pub(crate) fn fork_checkpoint_history(
+        &self,
+    ) -> Result<
+        crate::retention::HistoryRetentionObligation,
+        crate::retention::RetentionTransferDenial,
+    > {
+        self.obligation
+            ._components
+            .fork_history(self.snapshot.commit())
     }
 
     pub fn owner_identity(&self) -> RuntimeWorldOwnerIdentity {

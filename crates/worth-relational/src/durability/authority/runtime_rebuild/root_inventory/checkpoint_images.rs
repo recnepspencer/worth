@@ -79,10 +79,7 @@ impl RecoveredRootInventory {
                     .schemas
                     .get(&header.schema_carrier_digest)
                     .ok_or_else(|| corrupt("recorded Empty schema unavailable"))?;
-                RelationalBranchRoot::empty_with_schema(
-                    schema.registry(),
-                    schema.descriptor_semantics_version(),
-                )
+                RelationalBranchRoot::empty_with_schema_authority(schema.clone())
             }
             Target::Canonical(target) => {
                 let header = directory

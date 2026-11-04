@@ -36,6 +36,7 @@ impl TransitionDenial {
 
 fn normalize<D>(stop: Stop<D>, denial: fn(D) -> TransitionDenial) -> Stop<TransitionDenial> {
     match stop {
+        Stop::OriginalInputsStopped(cause) => Stop::OriginalInputsStopped(cause),
         Stop::Denied(reason) => Stop::Denied(denial(reason)),
         Stop::RequestStopped(stop) => Stop::RequestStopped(stop),
         Stop::DurabilityUnresolved(fate) => Stop::DurabilityUnresolved(fate),

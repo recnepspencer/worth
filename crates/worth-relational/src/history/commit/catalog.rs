@@ -106,7 +106,7 @@ impl RelationalCommitCatalog {
                 return Ok(());
             }
         }
-        let mut artifact = match self.entries.get(&commit_id) {
+        let artifact = match self.entries.get(&commit_id) {
             Some(existing) => match existing.envelope_residency().source_placement() {
                 Some((entry, source)) => {
                     let directory = existing.envelope_residency().selected_directory();
@@ -134,9 +134,10 @@ impl RelationalCommitCatalog {
             },
             None => RelationalCommitArtifact::from_envelope(envelope)?,
         };
-        if let Some(previous) = self.entries.get(&commit_id) {
-            artifact.preserve_original_inputs(previous)?;
-        }
+        // This is the admitted source replacing provisional replay DATA, not
+        // a same-cell publication replacement. Home recovery binds original
+        // inputs from its source graph after journal routes are finalized.
+        // Never transfer replay-produced input custody across envelope cells.
         self.materializations.fetch_add(1, Ordering::Relaxed);
         self.entries.insert(commit_id, Arc::new(artifact));
         Ok(())

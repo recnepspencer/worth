@@ -11,6 +11,7 @@ use super::product_unpublished::{
 mod active;
 mod slots;
 use slots::{RecoveryEntry, RecoveryRecordSlots};
+mod close;
 mod incarnation;
 mod initialization;
 mod page;
@@ -321,11 +322,6 @@ impl ProductUnpublishedRecoveryCatalog {
     #[cfg(test)]
     pub(crate) fn reserved_slots(&self) -> usize {
         self.locked_state().reserved_slots
-    }
-
-    pub(crate) fn try_has_close_custody(&self) -> Result<bool, ()> {
-        let state = self.state.try_lock().map_err(|_| ())?;
-        Ok(state.reserved_slots != 0 || state.slots.occupied_len() != 0)
     }
 
     #[cfg(test)]

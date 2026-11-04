@@ -111,6 +111,9 @@ fn resident_preflight(rooted: bool, count: u64) -> u64 {
         }
 }
 
+const SERVING_BACKING_BYTES: u64 =
+    crate::physical_runtime::record_serving::PreparedRecoveredCustodyBacking::required_bytes();
+
 #[test]
 fn rooted_head_precharges_combined_retention_before_first_read() {
     let (_directory, _media, coordination) = fixture::coordination();

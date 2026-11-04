@@ -58,21 +58,26 @@ fn ordinary_run_after_back_reuses_advanced_evidence_without_a_new_effect() {
             .prepare_workflow_navigate_back(&application, instance)
             .expect("Back request receives fresh admission")
             .execute()
-            .expect("Back publishes its transition")
     };
-    let advanced_back = navigate(advanced.clone(), 919_230);
-    let ordinary_back = navigate(ordinary.clone(), 919_231);
+    let advanced_back =
+        navigate(advanced.clone(), 919_230).expect("fresh Back publishes its transition");
+    let ordinary_back =
+        navigate(ordinary.clone(), 919_231).expect("fresh Back publishes its transition");
     assert_eq!(advanced_back.node_path(), "checks/second");
     assert_eq!(ordinary_back.node_path(), advanced_back.node_path());
     assert!(!advanced_back.replayed());
     assert!(!ordinary_back.replayed());
     for (instance, key, first) in [
-        (advanced.clone(), 919_230, advanced_back.transition()),
-        (ordinary.clone(), 919_231, ordinary_back.transition()),
+        (advanced.clone(), 919_230, &advanced_back),
+        (ordinary.clone(), 919_231, &ordinary_back),
     ] {
-        let duplicate = navigate(instance, key);
-        assert!(duplicate.replayed());
-        assert_eq!(duplicate.transition(), first);
+        let Err(WorkflowProgressOutcome::RecoveredCommitted(duplicate)) = navigate(instance, key)
+        else {
+            panic!("duplicate Back returns original recorded data");
+        };
+        worth_query_testkit_certification_canonical::facade::recorded_receipt_comparison::assert_transition(
+            &duplicate, first,
+        );
     }
     runtime.release_workflow_instance_progress_for_test();
     let WorkflowProgressOutcome::Completed(advanced_reused) =

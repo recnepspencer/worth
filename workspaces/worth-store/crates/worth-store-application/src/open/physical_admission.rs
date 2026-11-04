@@ -3,7 +3,9 @@
 //! admitted, and never initializes over existing data.
 
 mod media_admission;
+mod preparation;
 mod profile;
+mod recovered_serving;
 mod recovery_refusal;
 
 pub(crate) use profile::placement;
@@ -15,9 +17,8 @@ use std::path::Path;
 use worth_proof::TransitionOutcome;
 use worth_store::physical_runtime::{
     FilesystemAccessPosture, FilesystemMediaAdmission, MediaOwnedPhysicalRuntime,
-    PhysicalRecordInitialization, PhysicalRecordOpen, PhysicalRecoveryProcessYieldpoint,
-    PhysicalRuntimeAdmission, PhysicalStore, RecoveredPhysicalServingHandoff,
-    ServingPhysicalRuntime,
+    PhysicalRecordInitialization, PhysicalRecoveryProcessYieldpoint, PhysicalRuntimeAdmission,
+    PhysicalStore, ServingPhysicalRuntime,
 };
 use worth_store_recovery_runtime::{
     PhysicalRecoveryLimits, PhysicalRecoveryOpenRequest, PhysicalRecoveryOutcome,
@@ -153,58 +154,24 @@ fn initialize_owned(media: MediaOwnedPhysicalRuntime) -> Result<ServingPhysicalR
     }
 }
 
-/// Recover the Store at `root` through the production recovery entry and
-/// open it for serving under the custody recovery established.
-fn recover(
-    root: &Path,
-    opening: PhysicalOpening,
-    held: worth_store::physical_runtime::QualifiedRecoveryFilesystemMedia,
-) -> Result<ServingPhysicalRuntime, Refusal> {
-    let handoff = recover_custody(root, opening.recovery_yieldpoint.clone(), held)?;
-    if let Some(yieldpoint) = &opening.recovery_yieldpoint
-        && yieldpoint
-            .pause_after(
-                worth_store::physical_runtime::PhysicalRecoveryYieldpointStage::ServingHandoff,
-            )
-            .is_interrupted()
-    {
-        return Err(Refusal::new(Stage::Recovery, "serving handoff interrupted"));
-    }
-    let admission = PhysicalRuntimeAdmission::new(root)
-        .map_err(|error| Refusal::new(Stage::RuntimeAdmission, format!("{error:?}")))?;
-    let runtime = PhysicalStore::admit(admission)
-        .map_err(|error| Refusal::new(Stage::RuntimeAdmission, format!("{error:?}")))?;
-    let media = match handoff.admit_serving(runtime, opening.media).into_raw() {
-        TransitionOutcome::Success(media) => media,
-        other => {
-            return Err(Refusal::new(
-                Stage::MediaAdmission,
-                unfinished_outcome(&other),
-            ))
+#[inline(never)]
+fn recover_physical(
+    request: PhysicalRecoveryOpenRequest,
+    yieldpoint: Option<PhysicalRecoveryProcessYieldpoint>,
+) -> PhysicalRecoveryOutcome {
+    match yieldpoint {
+        None => WorthStoreRecovery::recover(request),
+        Some(yieldpoint) => {
+            WorthStoreRecovery::recover_with_process_yieldpoint(request, yieldpoint)
         }
-    };
-    let durability = admit_durability(media.physical_durability_admission_basis())?;
-    let open = PhysicalRecordOpen::new(profile::record_format(), profile::access(), durability)
-        .with_journal_registry(crate::registry::registry());
-    match media.open_record_store(open).into_raw() {
-        TransitionOutcome::Success(serving) => Ok(serving),
-        TransitionOutcome::Denied(denial) => {
-            let reason = format!("{:?}", denial.reason());
-            denial.into_runtime().close();
-            Err(Refusal::new(Stage::ServingOpen, reason))
-        }
-        _ => Err(Refusal::new(
-            Stage::ServingOpen,
-            "serving open after recovery did not complete",
-        )),
     }
 }
 
-fn recover_custody(
+#[inline(never)]
+fn prepare_recovery_request(
     root: &Path,
-    yieldpoint: Option<PhysicalRecoveryProcessYieldpoint>,
     media: worth_store::physical_runtime::QualifiedRecoveryFilesystemMedia,
-) -> Result<RecoveredPhysicalServingHandoff, Refusal> {
+) -> Result<PhysicalRecoveryOpenRequest, Refusal> {
     let limits = PhysicalRecoveryLimits::admit(profile::recovery_limits())
         .map_err(|denial| Refusal::new(Stage::RecoveryAdmission, format!("{denial:?}")))?;
     let configuration = profile::recovery_configuration();
@@ -216,26 +183,13 @@ fn recover_custody(
     )
     .map_err(recovery_admission_refusal)?;
     let backend = authority.qualified_backend_profile().clone();
-    let request = PhysicalRecoveryOpenRequest::declare(
+    Ok(PhysicalRecoveryOpenRequest::declare(
         root.to_owned(),
         configuration,
         backend,
         limits,
         authority,
-    );
-    let outcome = match yieldpoint {
-        None => WorthStoreRecovery::recover(request),
-        Some(yieldpoint) => {
-            WorthStoreRecovery::recover_with_process_yieldpoint(request, yieldpoint)
-        }
-    };
-    match outcome {
-        PhysicalRecoveryOutcome::Recovered(handoff) => handoff
-            .into_core()
-            .into_serving_handoff()
-            .ok_or_else(|| Refusal::new(Stage::Recovery, "selected custody missing")),
-        other => Err(recovery_refusal::classify(other)),
-    }
+    ))
 }
 
 /// The name of a transition outcome that did not succeed, for refusal
@@ -287,23 +241,17 @@ pub(crate) struct OpenedPhysicalHome {
 }
 
 pub(crate) fn open(root: &Path, opening: PhysicalOpening) -> Result<OpenedPhysicalHome, Refusal> {
-    require_no_discard(root)?;
-    std::fs::create_dir_all(root)
-        .map_err(|error| Refusal::new(Stage::RuntimeAdmission, error.to_string()))?;
-    let held = opening.media.qualify_home(root).map_err(|error| {
-        if let Err(refusal) = require_no_discard(root) {
-            return refusal;
-        }
-        recovery_admission_refusal(
-            PhysicalRecoveryPlatformAdmissionError::BackendQualification(error),
-        )
-    })?;
-    require_no_discard(root)?;
-    match held
-        .store_presence()
-        .map_err(|error| Refusal::new(Stage::RecoveryAdmission, format!("{error:?}")))?
-    {
-        worth_store::physical_runtime::RecoveryStorePresence::ProvenAbsent => {
+    let prepared = preparation::prepare(root, opening)?;
+    finish(root, prepared)
+}
+
+#[inline(never)]
+fn finish(
+    root: &Path,
+    prepared: preparation::PreparedPhysicalHome,
+) -> Result<OpenedPhysicalHome, Refusal> {
+    match prepared {
+        preparation::PreparedPhysicalHome::Fresh { held, opening } => {
             let serving = initialize_owned(media_admission::admit_for_initialization(
                 root,
                 held,
@@ -314,9 +262,10 @@ pub(crate) fn open(root: &Path, opening: PhysicalOpening) -> Result<OpenedPhysic
                 origin: worth_store::physical_runtime::RecoveryStorePresence::ProvenAbsent,
             })
         }
-        worth_store::physical_runtime::RecoveryStorePresence::ExistingArtifacts => {
+        preparation::PreparedPhysicalHome::Recovered { outcome, opening } => {
+            let handoff = recovered_serving::handoff_from_recovery_outcome(outcome)?;
             Ok(OpenedPhysicalHome {
-                serving: recover(root, opening, held)?,
+                serving: recovered_serving::open(root, opening, handoff)?,
                 origin: worth_store::physical_runtime::RecoveryStorePresence::ExistingArtifacts,
             })
         }

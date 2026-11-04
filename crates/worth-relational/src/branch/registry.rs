@@ -1,3 +1,5 @@
+mod source_retirement;
+pub(crate) use source_retirement::RelationalSourceRootSlot;
 mod component_capture;
 use indexmap::IndexMap;
 use std::collections::{BTreeMap, HashMap, HashSet};
@@ -54,7 +56,7 @@ impl RelationalBranchReferenceRegistry {
 
     /// After actual lifecycle quiescence the dense cells cannot reorder. Keep
     /// the original cells/root data while retiring one genuine head token.
-    pub(crate) fn try_retire_memory_head(&self, index: usize) -> Result<Option<bool>, ()> {
+    pub(crate) fn try_retire_stopped_head(&self, index: usize) -> Result<Option<bool>, ()> {
         let state = match self.state.try_read() {
             Ok(value) => value,
             Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
@@ -66,7 +68,7 @@ impl RelationalBranchReferenceRegistry {
         if !cell.basis_registry.try_memory_empty()? {
             return Ok(None);
         }
-        cell.head_retention().try_retire_memory_head()?;
+        cell.head_retention().try_retire_stopped_head()?;
         Ok(Some(false))
     }
     pub(crate) fn owns_reservation(&self, reservation: &RelationalForkTargetReservation) -> bool {

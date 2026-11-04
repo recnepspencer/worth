@@ -1,3 +1,4 @@
+use crate::estate_progression::delegation::command_courts::CommandCourtOutcome;
 use std::time::Duration;
 
 use bank_domain::{
@@ -24,7 +25,7 @@ use super::{
 use crate::{
     queries, BankApplicationQueryDenial, BankAuthenticatedPrincipal,
     BankEstateElevationCloseOutcome, BankEstateMandatoryReviewOutcome, BankEstateProgressionDenial,
-    BankMutationCommitOutcome, BankReadControls,
+    BankReadControls,
 };
 
 type GovernanceResult =
@@ -231,7 +232,7 @@ fn revoke_exact_support(
     )
     .expect("the independent capability-revocation command should execute");
     assert!(
-        matches!(outcome, BankMutationCommitOutcome::Committed(_)),
+        matches!(outcome, CommandCourtOutcome::Committed(_)),
         "the exact support revocation must commit once: {outcome:?}"
     );
 }

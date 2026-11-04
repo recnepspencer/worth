@@ -1,3 +1,4 @@
+use crate::estate_progression::delegation::command_courts::CommandCourtOutcome;
 use bank_domain::{
     estate::{
         CapabilityValidity, DelegationLimit, EstateAction, EstateCapabilityDelegationRequest,
@@ -12,7 +13,7 @@ use crate::estate_capability_admission::fixture::{
     delegation_world, delegation_world_with_parent_spec, request_scope, GrantSpec, ACCOUNT,
     APPROVER, BRANCH, ESTATE, GRANT, INSTITUTION, UNRELATED_GOVERNANCE_GRANT,
 };
-use crate::{BankCommitDenialKind, BankCommitDenialStage, BankMutationCommitOutcome};
+use crate::{BankCommitDenialKind, BankCommitDenialStage};
 
 #[test]
 fn delegation_retry_rejects_each_changed_optional_scope_and_validity_field() {
@@ -31,7 +32,7 @@ fn delegation_retry_rejects_each_changed_optional_scope_and_validity_field() {
         &request_scope(),
     )
     .expect("the first exact delegation should execute");
-    assert!(matches!(first, BankMutationCommitOutcome::Committed(_)));
+    assert!(matches!(first, CommandCourtOutcome::Committed(_)));
 
     for (axis, retry) in [
         ("amount ceiling", delegation_action(30_000, 0, u64::MAX - 1)),
@@ -67,7 +68,7 @@ fn revocation_retry_rejects_a_different_grant_target() {
         &request_scope(),
     )
     .expect("the first exact revocation should execute");
-    assert!(matches!(first, BankMutationCommitOutcome::Committed(_)));
+    assert!(matches!(first, CommandCourtOutcome::Committed(_)));
 
     let drift = crate::estate_progression::delegation::command_courts::complete_revocation(
         &fixture.runtime,
@@ -83,13 +84,13 @@ fn revocation_retry_rejects_a_different_grant_target() {
 }
 
 fn assert_intent_drift(
-    outcome: Result<BankMutationCommitOutcome, crate::BankEstateProgressionDenial>,
+    outcome: Result<CommandCourtOutcome, crate::BankEstateProgressionDenial>,
     axis: &str,
 ) {
     assert!(
         matches!(
             &outcome,
-            Ok(BankMutationCommitOutcome::Denied {
+            Ok(CommandCourtOutcome::Denied {
                 kind: BankCommitDenialKind::IdempotencyIntentDrift,
                 stage: BankCommitDenialStage::Idempotency,
             })

@@ -5,16 +5,18 @@ use crate::domain_computation::primary_graph::tests::fixture::{
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
 #[test]
 fn durable_idempotency_door_preserves_stops_at_every_consult() {
+    // The selected original and source bytes are immutable. Reuse that truth,
+    // but open a fresh real parent for EACH read rather than billing the whole
+    // sweep to one ancestor or rebuilding installation for every cancellation.
     let world = installed_authorization_world(true);
+    let provider = &world.application.primary_provider;
+    let layout = provider.graph.layout.provider_idempotency().clone();
+    let binding = WorthQueryApplicationIdempotencyBinding::new([9; 32], [7; 32]);
     world
         .application
         .with_host_advancement(|phase| {
-            let execution = phase.borrowed_request_for_test();
-            let provider = &world.application.primary_provider;
-            let layout = provider.graph.layout.provider_idempotency().clone();
-            let binding = WorthQueryApplicationIdempotencyBinding::new([9; 32], [7; 32]);
             publish_relational_mutation(
-                &execution,
+                &phase.borrowed_request_for_test(),
                 &world,
                 worth_relational::facade::transactions::WorkerIntentBatch::new(
                     "paid-idempotency-proof",
@@ -25,35 +27,45 @@ fn durable_idempotency_door_preserves_stops_at_every_consult() {
                     WorthQueryApplicationCommitOutcomeIdentity::restore(1).unwrap(),
                     0,
                     worth_relational::facade::identity::PartitionId(1),
+                    None,
+                    false,
                 )),
             );
-            let selected = world.selected_product(&phase.test_host_request());
-            let snapshot = selected.application_basis().snapshot_handle();
-            let affinity = WorthQueryProductIdempotencyAffinity::from_observation(
-                selected.product().observation(),
-            );
-            provider.graph.with_runtime(&execution, |runtime| {
-                crate::test_read_stops::every_consult_under(
-                    &execution,
-                    |request| {
-                        resolve_at_snapshot(
-                            request, provider, runtime, snapshot, &layout, &affinity, binding,
-                        )
-                        .map(|answer| {
-                            matches!(answer, WorthQueryProviderIdempotencyResolution::Absent)
-                        })
-                        .or_else(|denial| {
-                            if matches!(denial, WorthQueryProviderIdempotencyResolutionDenial::CommittedReceiptNotRetained { .. }) {
-                                Ok(false)
-                            } else {
-                                Err(denial)
-                            }
-                        })
-                    },
-                    idempotency_read_stop(Cause::Cancelled),
-                    idempotency_read_stop(Cause::WorkExhausted),
-                );
-            });
         })
         .unwrap();
+    crate::test_read_stops::every_consult_in_fresh_scope(
+        16 << 20,
+        |counted| {
+            world
+                .application
+                .with_host_advancement(|phase| {
+                    let execution = phase.borrowed_request_for_test();
+                    let selected = world.selected_product(&phase.test_host_request());
+                    let snapshot = selected.application_basis().snapshot_handle();
+                    let product = selected.product().publication_binding();
+                    provider.graph.with_runtime(&execution, |runtime| {
+                        counted(Some(&execution), &|request| {
+                            resolve_at_snapshot(
+                                request, provider, runtime, snapshot, &layout, &product, binding,
+                            )
+                            .map(|answer| {
+                                matches!(answer, WorthQueryProviderIdempotencyResolution::Absent)
+                            })
+                            .or_else(|denial| {
+                                if denial
+                                    == WorthQueryProviderIdempotencyResolutionDenial::Unavailable
+                                {
+                                    Ok(false)
+                                } else {
+                                    Err(denial)
+                                }
+                            })
+                        })
+                    })
+                })
+                .unwrap()
+        },
+        idempotency_read_stop(Cause::Cancelled),
+        idempotency_read_stop(Cause::WorkExhausted),
+    );
 }

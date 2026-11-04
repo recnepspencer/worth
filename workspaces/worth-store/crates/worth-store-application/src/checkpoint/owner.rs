@@ -363,11 +363,11 @@ impl RelationalCheckpointSelectionSource for HomeCheckpointSelectionSource {
         if !attempt.subject.as_ref()?.same_capture(subject) {
             return None;
         }
-        let receipt = attempt
+
+        attempt
             .receipt
             .lock()
             .unwrap_or_else(|error| error.into_inner())
-            .clone();
-        receipt
+            .clone()
     }
 }

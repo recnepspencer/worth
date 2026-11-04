@@ -134,8 +134,8 @@ where
         bridge: graph.bridge,
         product_runtime,
         granular_invalidation,
-        primary_provider: graph.primary_provider,
-        primary_graph_authority: graph.primary_graph_authority,
+        primary_provider: super::super::super::provider::PrimaryProviderCustody::new(graph.primary_provider),
+        primary_graph_authority: super::super::home_retirement::PrimaryGraphParticipationCustody::new(graph.primary_graph_authority),
 
         source_meanings: crate::domain_computation::primary_graph::application_query::observed_source::source_identity::WorthQueryObservedSourceMeaningRegistry::new(
             runtime_authority,

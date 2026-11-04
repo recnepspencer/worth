@@ -112,7 +112,7 @@ pub(super) fn read_after_boundary_pressure(
 #[test]
 fn tiny_original_ceiling_denies_provider_before_entries_then_adequate_owner_reads() {
     // Funds the directory path but not the actual path's iterator storage.
-    let maximum = 1 << 10;
+    let maximum = SERVING_BACKING_BYTES + (1 << 10);
     let (directory, media, mut coordination) = world_with_capacity(maximum, None);
     let wal = directory.path().join("store/families/wal");
     std::fs::create_dir_all(&wal).unwrap();
@@ -143,7 +143,7 @@ fn tiny_original_ceiling_denies_provider_before_entries_then_adequate_owner_read
             .snapshot()
             .for_dimension(Dimension::OperationScope(Scope::Recovery))
             .active_units(),
-        0
+        SERVING_BACKING_BYTES
     );
     assert_eq!(std::fs::read(wal.join(FIRST)).unwrap(), [17; PAYLOAD]);
     drop(failure);

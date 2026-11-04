@@ -25,18 +25,13 @@ pub struct RecoveredPhysicalHome {
 impl AuthorityMarker for RecoveredPhysicalHome {}
 
 pub struct AdmittedApplicationHome {
+    pub(crate) native_source: RelationalHomeOpeningInput,
     pub(crate) context: HomeContext,
     pub(crate) definition: RelationalRuntimeDefinition,
-    #[cfg(feature = "certification-test-authority")]
-    pub(crate) read_observer: Option<
-        Box<
-            dyn Fn(
-                    worth_relational::facade::publication::PatchStreamPosition,
-                    worth_store_relational::RelationalStoreColdReadCounters,
-                ) + Send
-                + Sync,
-        >,
-    >,
+}
+pub(crate) enum RelationalHomeOpeningInput {
+    Fresh(worth_store_relational::PreparedFreshRelationalHomeSource),
+    Existing(worth_store_relational::PreparedRelationalHomeSource),
 }
 impl AuthorityMarker for AdmittedApplicationHome {}
 
@@ -75,6 +70,10 @@ pub(crate) struct HomeContext {
     pub(crate) selected_home_source: Option<crate::checkpoint::SelectedHomeSource>,
     pub(crate) initialization: crate::relational_preparation::HomeInitializationOrigin,
     pub(crate) world_publications: Arc<crate::world_section::WorldPublications>,
+    pub(crate) world_origin_retirement:
+        Option<worth_runtime_world::facade::WorldCheckpointOriginRetirement>,
+    pub(crate) world_owner_retirement:
+        Option<worth_runtime_world::facade::RuntimeWorldHomeRetirement>,
     pub(crate) world_close_report: Option<worth_runtime_world::facade::RuntimeWorldCloseReport>,
     // The cached failure may own a Send-only original physical write source.
     // Exclusive close accesses use get_mut; no gate is held across callbacks.

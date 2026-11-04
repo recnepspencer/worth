@@ -56,7 +56,7 @@ impl FrozenOriginalInputs {
             .history
             .commit_artifacts_for_request(execution)
             .map_err(array_stop)?;
-        let mut journal_source = None;
+        let mut journal_source = runtime.durability.cold_source();
         for artifact in catalog.iter() {
             if artifact.original_inputs().is_none() {
                 return Err(Denial::OriginalAuthorityUnavailable);
@@ -131,6 +131,9 @@ impl FrozenOriginalInputs {
             .map_err(|cause| {
                 capture_stop(crate::durability::checkpoint_history::capture::owned_stop(
                     cause,
+                    crate::storage::data::RelationalStorageSubject::Envelope(
+                        crate::publication::patch::data::PatchStreamPosition(0),
+                    ),
                 ))
             })?;
             for artifact in self.artifacts.iter() {
@@ -138,6 +141,38 @@ impl FrozenOriginalInputs {
                     artifact.envelope_residency().journal_placement()
                     && (!Arc::ptr_eq(&actual_source, &source)
                         || entry.position > protection.bounds().canonical)
+                {
+                    return Err(Denial::OriginalAuthorityUnavailable);
+                }
+            }
+            if let Some(accepted) = &self.branches.accepted_initial_inputs {
+                let expected = accepted
+                    .artifact
+                    .as_ref()
+                    .ok_or(Denial::OriginalAuthorityUnavailable)?;
+                let actual = protection
+                    .read_initial_inputs_owned(&source, execution, 1 << 30)
+                    .map_err(|cause| {
+                        capture_stop(crate::durability::checkpoint_history::capture::owned_stop(
+                            cause,
+                            crate::storage::data::RelationalStorageSubject::Envelope(
+                                crate::publication::patch::data::PatchStreamPosition(0),
+                            ),
+                        ))
+                    })?
+                    .ok_or(Denial::OriginalAuthorityUnavailable)?;
+                let actual = crate::durability::source_initial_inputs::RelationalSourceInitialInputsArtifact::from_owned(actual, execution)
+                    .and_then(|frame| frame.readmit(execution)).map_err(initial_inputs_stop)?;
+                if actual.entries.get(..accepted.entries.len()) != Some(&accepted.entries[..])
+                    || actual.main != accepted.main
+                    || (actual
+                        .artifact
+                        .as_ref()
+                        .is_none_or(|frame| frame.as_bytes() != expected.as_bytes())
+                        && !(accepted.revision == 1
+                            && accepted.entries.len() == 1
+                            && actual.revision == 2
+                            && actual.predecessor == Some(expected.payload_digest())))
                 {
                     return Err(Denial::OriginalAuthorityUnavailable);
                 }
@@ -198,7 +233,7 @@ impl FrozenOriginalInputs {
             if positioned.position().0 != offset as u64 + 1
                 || envelope.commit.commit_id != artifact.commit_id()
                 || !match artifact.resident_envelope() {
-                    // The original v4 frame intentionally omits live diagnostics
+                    // The original v5 frame intentionally omits live diagnostics
                     // and derived caches. Compare its full positioned authority,
                     // including the sealed semantic result, against the SAME
                     // retained original envelope; never regenerate frame bytes.
@@ -242,4 +277,27 @@ use crate::durability::checkpoint_history::capture::{
 };
 fn map_stop(cause: worth_execution::ExecutionOrderedMapDenial) -> Denial {
     capture_stop(read_map_stop(cause))
+}
+
+// Readmission can stop inside the schema payload, below its outer framing.
+// Request and allocation refusals must remain request outcomes at capture.
+fn initial_inputs_stop(
+    cause: crate::durability::source_initial_inputs::RelationalInitialInputsRefusal,
+) -> Denial {
+    use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal as Payload;
+    use crate::durability::source_initial_inputs::RelationalInitialInputsRefusal as Refusal;
+    match cause {
+        Refusal::Request(cause) | Refusal::Payload(Payload::Request(cause)) => {
+            Denial::Request(cause)
+        }
+        Refusal::Native(cause) => capture_stop(cause),
+        Refusal::Payload(Payload::FieldText(cause)) => {
+            capture_stop(crate::symbols::data::field_text_recovery_stop(cause))
+        }
+        Refusal::Malformed
+        | Refusal::Missing
+        | Refusal::UnsupportedVersion(_)
+        | Refusal::Source(_)
+        | Refusal::Payload(_) => Denial::OriginalAuthorityUnavailable,
+    }
 }

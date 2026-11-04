@@ -145,7 +145,7 @@ impl RelationalMemoryClose {
             return O::Stopped(cause);
         }
         if !self.sealed {
-            return match self.runtime.try_prepare_memory_close() {
+            return match self.runtime.try_prepare_stopped_close() {
                 Err(()) => O::Busy,
                 Ok(Some(reason)) => O::Refused(reason),
                 Ok(None) => {
@@ -180,7 +180,7 @@ impl RelationalMemoryClose {
         match self
             .runtime
             .history
-            .try_retire_memory_head(self.head_cursor)
+            .try_retire_stopped_head(self.head_cursor)
         {
             Err(()) => return O::Busy,
             Ok(None) => return O::Refused(RelationalRuntimeCloseDenial::ReadCustodyRetained),
@@ -190,7 +190,7 @@ impl RelationalMemoryClose {
             }
             Ok(Some(true)) => {}
         }
-        match self.runtime.complete_memory_close_business() {
+        match self.runtime.complete_stopped_close_business() {
             Err(()) => O::Busy,
             Ok(Some(reason)) => O::Refused(reason),
             Ok(None) => {

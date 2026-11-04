@@ -51,7 +51,30 @@ impl RelationalCanonicalCommitArtifact {
         // The original admissions precede every deserialized allocation.
         let (memory, _transient) =
             super::decoded_quote::admit_canonical(quote, canonical, execution, input, 0)?;
+        let original_raw = super::decoded_quote::field(
+            super::borrowed_payload::BorrowedPayload(payload),
+            "original_inputs",
+            execution,
+        )?;
+        let original_image = if original_raw.is_none() {
+            None
+        } else {
+            let image = super::decoded_quote::field(original_raw, "result_image", execution)?;
+            if image.is_none() {
+                None
+            } else {
+                Some(super::prepare_schema_image_decode(image, execution)?)
+            }
+        };
         let mut wire = decode_payload(payload)?;
+        if let Some(admission) = original_image {
+            let image = wire
+                .original_inputs
+                .as_mut()
+                .and_then(|inputs| inputs.result_image.as_mut())
+                .ok_or_else(super::borrowed_payload::malformed)?;
+            admission.attach(image)?;
+        }
         wire.canonical.retain_readmission_memory(memory);
         wire.canonical
             .attach_shared_readmission_memory()
@@ -63,6 +86,29 @@ impl RelationalCanonicalCommitArtifact {
             .canonical
             .readmit(execution)
             .map_err(Refusal::FieldText)?;
+        if let Some(original) = wire.original_inputs {
+            if (original.prestate_schema != original.result_schema)
+                != original.result_image.is_some()
+            {
+                return Err(Refusal::NonCanonicalPayload);
+            }
+            if let Some(image) = &original.result_image {
+                let (registry, _) = image
+                    .readmit_registry()
+                    .map_err(|detail| Refusal::PayloadDecode { detail })?;
+                if image.carrier_digest() != original.result_schema
+                    || registry.authority_snapshot() != envelope.schema_authority
+                    || image.descriptor_semantics_version() != envelope.descriptor_semantics_version
+                {
+                    return Err(Refusal::NonCanonicalPayload);
+                }
+            }
+            envelope
+                .retain_recorded_original_inputs(original)
+                .map_err(|detail| Refusal::PayloadDecode {
+                    detail: detail.into(),
+                })?;
+        }
         let readmitted = ReadmittedCanonicalCommit::readmit_current(header.position, envelope)
             .map_err(Refusal::PositionAdmission)?;
         let canonical = ArtifactPayloadRef::new(readmitted.position(), readmitted.envelope());

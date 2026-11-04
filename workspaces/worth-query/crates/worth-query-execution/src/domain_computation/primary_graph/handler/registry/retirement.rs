@@ -5,7 +5,7 @@ use crate::domain_computation::primary_graph::application_entry::mutation::{
     WorthQueryOperationHomeRetirementProgress as Progress,
 };
 use crate::domain_computation::primary_graph::WorthQueryHomeRetirementDenial as Failure;
-use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
+use worth_execution::ExecutionRequest;
 #[cfg(test)]
 mod tests;
 
@@ -22,14 +22,10 @@ pub(super) type PreflightHandlerRetirement =
 pub(super) type AdvanceHandlerRetirement =
     fn(&mut Arc<dyn Any + Send + Sync>, &ExecutionRequest<'_, '_>) -> Result<Progress, Denial>;
 
-/// The last completed actual entry, retained with its original request grant.
+/// The original static binding of the last completed actual entry.
 #[derive(Default)]
 pub(in crate::domain_computation::primary_graph) struct HandlerRetirementCursor {
-    completed: Option<RetiredHandlerIdentity>,
-}
-struct RetiredHandlerIdentity {
-    identity: String,
-    _funding: Option<ExecutionMemoryReservation>,
+    completed: Option<&'static str>,
 }
 
 fn original_handler<Schema, Binding>(
@@ -67,7 +63,22 @@ where
     Binding: ApplicationMutationBinding<Schema>,
 {
     request.consult().map_err(Denial::Execution)?;
-    original_handler::<Schema, Binding>(value)?.advance_home_retirement(request)
+    let original = original_handler::<Schema, Binding>(value)?;
+    std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        original.advance_home_retirement(request)
+    }))
+    .unwrap_or_else(|payload| {
+        // Match Execution's existing panic boundary: payload destruction can
+        // panic too. It must not unwind the retained original Query owner.
+        if let Err(secondary) =
+            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| drop(payload)))
+        {
+            std::mem::forget(secondary);
+        }
+        Err(Denial::Execution(
+            worth_execution::WorkCeilingDenial::Panicked,
+        ))
+    })
 }
 
 impl<Schema: ApplicationSchema> InstalledMutationHandlerRegistry<Schema> {
@@ -78,12 +89,6 @@ impl<Schema: ApplicationSchema> InstalledMutationHandlerRegistry<Schema> {
         for entry in self.entries.values_mut() {
             let binding = entry.identity;
             admit_entry_work(request, 1).map_err(|cause| Failure::Handler { binding, cause })?;
-            if entry.origin != HandlerOrigin::CompiledBody {
-                return Err(Failure::Handler {
-                    binding,
-                    cause: Denial::Unsupported,
-                });
-            }
             (entry.preflight_home_retirement)(&mut entry.value, request)
                 .map_err(|cause| Failure::Handler { binding, cause })?;
         }
@@ -97,10 +102,7 @@ impl<Schema: ApplicationSchema> InstalledMutationHandlerRegistry<Schema> {
     ) -> Result<Progress, Failure> {
         use std::ops::Bound::{Excluded, Unbounded};
         request.consult().map_err(Failure::Execution)?;
-        let after = cursor
-            .completed
-            .as_ref()
-            .map(|entry| entry.identity.as_str());
+        let after = cursor.completed;
         let next = match after {
             Some(after) => self
                 .entries
@@ -108,35 +110,18 @@ impl<Schema: ApplicationSchema> InstalledMutationHandlerRegistry<Schema> {
                 .next(),
             None => self.entries.iter_mut().next(),
         };
-        let Some((identity, entry)) = next else {
+        let Some((_, entry)) = next else {
             return Ok(Progress::Complete);
         };
         let binding = entry.identity;
-        if entry.origin != HandlerOrigin::CompiledBody {
-            return Err(Failure::Handler {
-                binding,
-                cause: Denial::Unsupported,
-            });
-        }
-        admit_entry_work(request, 1 + identity.len() as u64)
-            .map_err(|cause| Failure::Handler { binding, cause })?;
-        // Fund the next cursor before calling a potentially advancing owner.
-        let funding = request
-            .reserve_retained_memory(identity.len() as u64)
-            .map_err(|cause| Failure::Handler {
-                binding,
-                cause: Denial::Execution(cause),
-            })?;
-        let completed = RetiredHandlerIdentity {
-            identity: identity.clone(),
-            _funding: funding,
-        };
+        // The registry already owns this static binding; advancing retirement
+        // requires no fresh payload allocation after the close checkpoint.
         match (entry.advance_home_retirement)(&mut entry.value, request)
             .map_err(|cause| Failure::Handler { binding, cause })?
         {
             Progress::Advanced => Ok(Progress::Advanced),
             Progress::Complete => {
-                cursor.completed = Some(completed);
+                cursor.completed = Some(binding);
                 Ok(Progress::Advanced)
             }
         }

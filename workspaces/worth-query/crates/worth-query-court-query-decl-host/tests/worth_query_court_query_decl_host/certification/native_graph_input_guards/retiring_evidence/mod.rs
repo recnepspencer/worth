@@ -33,8 +33,8 @@ fn explicit_retirement_deletes_only_the_predecessor_while_ordinary_replacement_r
         Outcome::Committed { .. }
     ));
     match retire(&app, original, 303) {
-        Outcome::AlreadyCommitted(replay) => {
-            assert_eq!(replay.outcome_identity(), receipt.outcome_identity())
+        Outcome::RecoveredCommitted(replay) => {
+            assert_eq!(Some(replay.outcome_identity()), receipt.outcome_identity())
         }
         other => panic!("original performed replay: {other:?}"),
     }

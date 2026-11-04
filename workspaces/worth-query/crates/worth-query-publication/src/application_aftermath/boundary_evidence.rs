@@ -9,7 +9,6 @@ use crate::domain_computation::WorthQueryPublishedApplicationCommitAttemptReleas
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryPublishedApplicationCommitKind {
     Executed,
-    Recovered,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -161,9 +160,6 @@ impl WorthQueryPublishedApplicationCommitBoundaryEvidence {
             WorthQueryApplicationCommitTerminalKind::Executed => {
                 WorthQueryPublishedApplicationCommitKind::Executed
             }
-            WorthQueryApplicationCommitTerminalKind::Recovered => {
-                WorthQueryPublishedApplicationCommitKind::Recovered
-            }
         };
         let attempt_release = publish_attempt_release(receipt);
         Self {
@@ -186,9 +182,6 @@ impl WorthQueryPublishedApplicationCommitBoundaryEvidence {
         let kind = match source.terminal_kind() {
             WorthQueryApplicationCommitTerminalKind::Executed => {
                 WorthQueryPublishedApplicationCommitKind::Executed
-            }
-            WorthQueryApplicationCommitTerminalKind::Recovered => {
-                WorthQueryPublishedApplicationCommitKind::Recovered
             }
         };
         Self {

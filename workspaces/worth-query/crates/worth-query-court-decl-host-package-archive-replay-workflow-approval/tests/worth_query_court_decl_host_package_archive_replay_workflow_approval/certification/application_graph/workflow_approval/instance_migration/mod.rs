@@ -42,20 +42,25 @@ fn a_waiting_instance_continues_on_the_new_definition_and_its_source_ends() {
         "propose",
         87_013,
     ));
-    assert!(!successor.replayed());
+    let original_receipt = successor.receipt().clone();
     let successor = successor.instance().clone();
     assert_ne!(successor.entity_id(), instance.entity_id());
     assert_eq!(successor.definition_entity_id(), target.entity_id());
     assert_eq!(successor.start_node_path(), "propose");
-    let replay = started(migrate_instance(
+    let replay = crate::recorded_receipt::started(migrate_instance(
         &application,
         instance.clone(),
         target,
         "propose",
         87_013,
     ));
-    assert!(replay.replayed());
-    assert_eq!(replay.instance(), &successor);
+    crate::recorded_receipt::assert_agrees(&replay, &original_receipt);
+    assert!(replay
+        .semantic_result()
+        .semantic()
+        .created_entities()
+        .iter()
+        .any(|entry| entry.assigned == successor.entity_id()));
 
     match advance_instance(&application, instance.clone(), 87_014) {
         Err(WorthQueryWorkflowAdvancePreparationDenial::TransitionPreparation(

@@ -88,10 +88,10 @@ pub(super) fn capture(runtime: &RelationalRuntime) -> Result<CapturedComponents,
                 if root.commit_id() != Some(commit) || root.descriptor() != Some(target.roots()) {
                     return Err(corrupt("component root disagrees with actual observation"));
                 }
-                if let Some(prior) = roots.insert(commit, root.clone()) {
-                    if !Arc::ptr_eq(&prior, &root) {
-                        return Err(corrupt("competing component roots"));
-                    }
+                if let Some(prior) = roots.insert(commit, root.clone())
+                    && !Arc::ptr_eq(&prior, &root)
+                {
+                    return Err(corrupt("competing component roots"));
                 }
                 canonical.entry(commit).or_default().push(descriptor);
             }
@@ -121,10 +121,10 @@ fn insert(
         .in_canonical_frame()
         .map_err(|cause| corrupt(format!("component frame: {cause:?}")))?;
     let key = rmp_serde::to_vec_named(&descriptor).map_err(|cause| corrupt(cause.to_string()))?;
-    if let Some((_, prior)) = observations.insert(key, (descriptor, root.clone())) {
-        if !Arc::ptr_eq(&prior, &root) {
-            return Err(corrupt("one component selects competing roots"));
-        }
+    if let Some((_, prior)) = observations.insert(key, (descriptor, root.clone()))
+        && !Arc::ptr_eq(&prior, &root)
+    {
+        return Err(corrupt("one component selects competing roots"));
     }
     Ok(())
 }

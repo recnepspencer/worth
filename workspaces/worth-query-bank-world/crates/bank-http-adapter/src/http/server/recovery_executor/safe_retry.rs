@@ -1,3 +1,7 @@
+#![allow(
+    clippy::result_large_err,
+    reason = "Typed refusals return original recovery, cleanup and permit custody without allocating on failure"
+)]
 use worth_query_host::facade::admission::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
 };

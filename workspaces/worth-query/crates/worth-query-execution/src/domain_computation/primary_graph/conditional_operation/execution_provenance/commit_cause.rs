@@ -28,8 +28,8 @@ pub(super) fn application_commit_cause(
         | Kind::CandidateIdentityExhausted
         | Kind::IndexMaintenanceBudgetExceeded
         | Kind::IndexGenerationIdentityExhausted
+        | Kind::IdempotencyForeignAffinity
         | Kind::IdempotencyIntentDrift
-        | Kind::IdempotencyReceiptNotRetained { .. }
         | Kind::IdempotencyIntentUnverifiable
         | Kind::MutationBindingMismatch
         | Kind::MutationInputMismatch

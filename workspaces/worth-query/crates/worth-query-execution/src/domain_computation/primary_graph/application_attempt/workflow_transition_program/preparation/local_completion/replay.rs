@@ -32,7 +32,7 @@ where
         .identity
         .clone();
     let receipt = match resolution.into_resolution() {
-        WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(receipt) => Some(receipt),
+        WorthQueryApplicationIdempotencyResolution::RecoveredCommitted(receipt) => return Ok(Some(WorkflowProgressOutcome::RecoveredCommitted(receipt))),
         WorthQueryApplicationIdempotencyResolution::ProductPreparationPending(owner) => return Ok(Some(WorkflowProgressOutcome::Application(WorthQueryApplicationUncommitted::ProductPreparationPending(owner)))),
         WorthQueryApplicationIdempotencyResolution::IntentDrift => return Ok(Some(
             WorkflowProgressOutcome::Application(WorthQueryApplicationUncommitted::Denied(

@@ -22,6 +22,10 @@ pub struct RelationalDurabilityUnresolved {
 /// What an unresolved publication would have made durable.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RelationalDurabilityUnresolvedSubject {
+    InitialInputs {
+        revision: u64,
+        digest: [u8; 32],
+    },
     /// A canonical commit at its patch-stream position.
     CanonicalCommit {
         position: PatchStreamPosition,
@@ -56,6 +60,9 @@ impl RelationalDurabilityUnresolved {
 impl std::fmt::Display for RelationalDurabilityUnresolvedSubject {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::InitialInputs { revision, .. } => {
+                write!(formatter, "source initial inputs at revision {revision}")
+            }
             Self::CanonicalCommit {
                 position,
                 commit_id,

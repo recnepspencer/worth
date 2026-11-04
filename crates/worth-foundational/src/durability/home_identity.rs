@@ -2,8 +2,18 @@
 ///
 /// Reading or describing this value does not prove publication, own a lease,
 /// or permit opening a home. Those operations require owner admission.
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, serde::Serialize)]
+#[serde(transparent)]
 pub struct HomeIdentity([u8; 16]);
+
+impl<'de> serde::Deserialize<'de> for HomeIdentity {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let bytes = <[u8; 16] as serde::Deserialize>::deserialize(deserializer)?;
+        Self::from_observed_bytes(bytes).map_err(|HomeIdentityDenial::Zero| {
+            serde::de::Error::custom("a recorded Home identity cannot be zero")
+        })
+    }
+}
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum HomeIdentityDenial {

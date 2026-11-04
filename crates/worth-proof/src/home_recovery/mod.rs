@@ -59,7 +59,9 @@
 //! assert_eq!(owner::finish(owner::admit(owner::recover())), "same custody");
 //! ```
 
+mod fresh_native_initialization;
 mod home_admitted;
+pub use fresh_native_initialization::FreshNativeInitialization;
 mod world_reconciled;
 pub use world_reconciled::WorldReconciled;
 mod relational_readmitted;

@@ -22,7 +22,7 @@ fn a_cached_head_guard_refuses_after_full_demand_proves_region_damage() {
         history: cold.history,
         corrupt: AtomicBool::new(false),
     });
-    cold.source = source.clone();
+    cold.source = Some(source.clone());
     let cell = RelationalRegionResidency::cold(cold).unwrap();
     let retained = RelationalRegionRetention::new(cell, None);
     retained.demand_head_cached(execution, 1 << 24).unwrap();
@@ -56,9 +56,22 @@ fn head_prefixes_rebuild_owned_history_after_endpoint_edits_and_generation_reuse
     let fixture = region_with_history();
     let request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
-    let head = region_load::load_head(&fixture.cold, execution, 1 << 24).unwrap();
+    let head = region_load::load_head(
+        &fixture.cold,
+        fixture.cold.source.as_ref().unwrap(),
+        execution,
+        1 << 24,
+    )
+    .unwrap();
     assert_eq!(fixture.source.history_reads.load(Ordering::SeqCst), 0);
-    let full = region_load::load_full(&fixture.cold, &head, execution, 1 << 24).unwrap();
+    let full = region_load::load_full(
+        &fixture.cold,
+        fixture.cold.source.as_ref().unwrap(),
+        &head,
+        execution,
+        1 << 24,
+    )
+    .unwrap();
     let mut partial = head.partition.clone();
     let mut oracle = full.partition.clone();
     assert_owned_history(&mut partial, &mut oracle);
@@ -124,8 +137,21 @@ fn adopting_a_different_head_carries_its_owned_historical_projection_with_the_re
     let fixture = region_with_history();
     let request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
-    let head = region_load::load_head(&fixture.cold, execution, 1 << 24).unwrap();
-    let full = region_load::load_full(&fixture.cold, &head, execution, 1 << 24).unwrap();
+    let head = region_load::load_head(
+        &fixture.cold,
+        fixture.cold.source.as_ref().unwrap(),
+        execution,
+        1 << 24,
+    )
+    .unwrap();
+    let full = region_load::load_full(
+        &fixture.cold,
+        fixture.cold.source.as_ref().unwrap(),
+        &head,
+        execution,
+        1 << 24,
+    )
+    .unwrap();
     let mut later = full.partition.clone();
     update_target(
         &mut later,
@@ -134,7 +160,8 @@ fn adopting_a_different_head_carries_its_owned_historical_projection_with_the_re
         VersionId(1_000),
     );
     let (cold, source) = recapture(&fixture.cold, &later);
-    let selected = region_load::load_head(&cold, execution, 1 << 24).unwrap();
+    let selected =
+        region_load::load_head(&cold, cold.source.as_ref().unwrap(), execution, 1 << 24).unwrap();
     let mut partial = head.partition.clone();
     let mut oracle = full.partition.clone();
     let slots = BTreeSet::from([fixture.relation.slot_index()]);

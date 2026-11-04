@@ -11,6 +11,7 @@ pub use signal::CompositeSignalOwnerResult;
 
 #[path = "owner_results/relational.rs"]
 mod relational;
+mod retirement;
 
 /// Exact result of the Relational leg. The retained variant is evidence that
 /// no Relational owner movement was requested, not an absent or guessed result.
@@ -24,17 +25,17 @@ enum CompositeRelationalOwnerResultKind {
     RetainedExact,
     Published {
         commit_identity: RelationalCommitIdentity,
-        successor_basis: AdmittedRelationalBranchBasis,
+        successor_basis: Option<AdmittedRelationalBranchBasis>,
         settlement: Option<worth_relational::facade::history::RelationalCommitReceipt>,
         result: Option<std::sync::Arc<CommitResult>>,
     },
     Forked {
         fork: RelationalForkOutcome,
-        successor_basis: AdmittedRelationalBranchBasis,
+        successor_basis: Option<AdmittedRelationalBranchBasis>,
     },
     SettlementRequired {
         commit_identity: RelationalCommitIdentity,
-        successor_basis: AdmittedRelationalBranchBasis,
+        successor_basis: Option<AdmittedRelationalBranchBasis>,
     },
     /// The owner's durable publication fate is unknown. Nothing was installed
     /// live, so there is no commit identity or successor basis to name.
@@ -68,10 +69,17 @@ impl CompositeOwnerExecutionResults {
                 ..
             } => Some((
                 commit_identity.clone(),
-                successor_basis.clone(),
+                successor_basis
+                    .as_ref()
+                    .expect("serving result retains its Native basis")
+                    .clone(),
                 std::sync::Arc::clone(result),
             )),
-            _ => None,
+            CompositeRelationalOwnerResultKind::RetainedExact
+            | CompositeRelationalOwnerResultKind::Published { result: None, .. }
+            | CompositeRelationalOwnerResultKind::Forked { .. }
+            | CompositeRelationalOwnerResultKind::SettlementRequired { .. }
+            | CompositeRelationalOwnerResultKind::DurabilityUnresolved { .. } => None,
         }
     }
     /// Share immutable owner-issued evidence without duplicating a phase or
@@ -189,7 +197,12 @@ impl CompositeOwnerExecutionResults {
             }
             | CompositeRelationalOwnerResultKind::Forked {
                 successor_basis, ..
-            } => Some(successor_basis.admission_identity()),
+            } => Some(
+                successor_basis
+                    .as_ref()
+                    .expect("serving result retains its Native basis")
+                    .admission_identity(),
+            ),
         }
     }
 

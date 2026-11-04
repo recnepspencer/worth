@@ -10,9 +10,13 @@ use worth_store::physical_runtime::{
 pub(super) struct WalSelectionAllocation {
     backing: Option<PhysicalRecoveryWalInventoryBacking>,
     poison: Option<Denial>,
+    peak_bytes: u64,
 }
 
 impl WalSelectionAllocation {
+    pub(super) const fn peak_bytes(&self) -> u64 {
+        self.peak_bytes
+    }
     pub(super) fn charged_bytes(&self) -> u64 {
         self.backing
             .as_ref()
@@ -24,16 +28,18 @@ impl WalSelectionAllocation {
         &mut self,
         owner: &PhysicalRecoveryCoordination,
         count: usize,
+        construction_bytes: u64,
     ) -> Result<Vec<T>, Denial> {
         if let Some(cause) = &self.poison {
             return Err(cause.clone());
         }
-        if count == 0 {
+        if count == 0 && construction_bytes == 0 {
             return Ok(Vec::new());
         }
         let before = self.charged_bytes();
         let required = before
             .checked_add(vector_bytes::<T>(count)?)
+            .and_then(|bytes| bytes.checked_add(construction_bytes))
             .ok_or(Denial::SizeOverflow)?;
         match &mut self.backing {
             Some(backing) => backing.grow_total(required)?,
@@ -43,6 +49,7 @@ impl WalSelectionAllocation {
                 )?)
             }
         }
+        self.peak_bytes = self.peak_bytes.max(required);
         let mut values = Vec::new();
         if let Err(cause) = values.try_reserve_exact(count) {
             drop(values);
@@ -59,6 +66,7 @@ impl WalSelectionAllocation {
             let actual = vector_bytes::<T>(values.capacity())
                 .ok()
                 .and_then(|bytes| before.checked_add(bytes))
+                .and_then(|bytes| bytes.checked_add(construction_bytes))
                 .unwrap_or(u64::MAX);
             drop(values);
             let cause = Denial::AllocatorExceededReservation {

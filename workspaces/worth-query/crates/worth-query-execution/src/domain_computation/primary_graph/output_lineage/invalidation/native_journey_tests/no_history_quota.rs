@@ -10,12 +10,23 @@ use crate::domain_computation::primary_graph::output_lineage::invalidation::comm
 #[test]
 fn no_position_policy_preserves_funded_history_and_original_reader_currentness() {
     let (_, clock, _, execution) = test_product_world_resources().into_parts();
+    // This history court funds all 301 real publications in one request.
+    // It has no work-ceiling claim; keep accounting and the other policy axes.
+    let policy = worth_foundational::ExecutionRequestPolicy::new(
+        execution.policy.posture(),
+        execution.policy.determinism(),
+        worth_foundational::ExecutionBudget::new(
+            execution.policy.max_workers(),
+            execution.policy.charged_memory_bytes(),
+            None,
+        ),
+    );
     let resources = WorthQueryInvalidationResources::new();
     let configured = WorthQueryProductWorldResources::new(
         worth_runtime_world::facade::RuntimeWorldBudgets::without_policy_limits(),
         clock,
         resources,
-        execution.policy,
+        policy,
     );
     let configured = match execution.authority {
         Some(authority) => configured.with_execution_authority(authority),

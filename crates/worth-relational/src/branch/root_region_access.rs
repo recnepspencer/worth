@@ -297,3 +297,11 @@ impl RelationalBranchRoot {
         Ok(())
     }
 }
+
+impl super::RelationalBranchRoot {
+    pub(crate) fn source_retirement_regions(
+        &self,
+    ) -> super::super::root_regions::RelationalRegionSourceWalk {
+        super::super::root_regions::RelationalRegionSourceWalk::new(self.regions.clone())
+    }
+}

@@ -35,9 +35,11 @@ impl ProductHeadRetentionObligation {
             assert!(self.relational.claim.is_none() && self.signal.claim.is_none());
             return Ok(());
         };
-        relational
-            .control
-            .try_retire_shared_pair(relational, signal)?;
+        relational.control.try_retire_shared_pair(
+            ComponentBasisDependencyClass::ProductBranchHead,
+            relational,
+            signal,
+        )?;
         // Claims contain only metadata and a control handle; the actual owner
         // leases remain in the same registry and the populated history slot.
         self.relational.claim = None;

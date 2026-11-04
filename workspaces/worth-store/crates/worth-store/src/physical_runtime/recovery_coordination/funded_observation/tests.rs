@@ -16,6 +16,9 @@ use crate::physical_runtime::{
 
 mod payload_pressure;
 
+const SERVING_BACKING_BYTES: u64 =
+    crate::physical_runtime::record_serving::PreparedRecoveredCustodyBacking::required_bytes();
+
 #[test]
 fn actual_read_grants_outlive_the_exclusive_window_and_release_with_bytes() {
     let (directory, media, mut coordination) = world();
@@ -49,7 +52,7 @@ fn actual_read_grants_outlive_the_exclusive_window_and_release_with_bytes() {
     assert_eq!(root.charged_bytes(), 48);
     assert_eq!(
         ports.counters().active_operation_bytes_for(Scope::Recovery),
-        119
+        SERVING_BACKING_BYTES + 119
     );
     drop(window);
     drop(coordination);
@@ -77,7 +80,10 @@ fn native_path_pressure_denies_before_backend_payload_read_without_refund_admiss
     let ports = coordination.residency.ports().clone();
     let limit = coordination.residency.admitted_policy().operation_bytes();
     let held = ports
-        .begin_operation(Scope::Maintenance, NonZeroU64::new(limit - 1).unwrap())
+        .begin_operation(
+            Scope::Maintenance,
+            NonZeroU64::new(limit - SERVING_BACKING_BYTES - 1).unwrap(),
+        )
         .unwrap();
     let mut discovery = media.bounded_discovery(2, 4096).unwrap();
     let before = ports.allocation_events().snapshot();
@@ -134,7 +140,7 @@ fn native_path_pressure_denies_before_backend_payload_read_without_refund_admiss
     drop(observation);
     assert_eq!(
         ports.counters().active_operation_bytes_for(Scope::Recovery),
-        0
+        SERVING_BACKING_BYTES
     );
 }
 
@@ -147,7 +153,10 @@ fn absent_and_present_empty_release_transient_paths_but_only_absence_can_escape(
         .unwrap()
         .byte_limit();
     let held = ports
-        .begin_operation(Scope::Recovery, NonZeroU64::new(original).unwrap())
+        .begin_operation(
+            Scope::Recovery,
+            NonZeroU64::new(original - SERVING_BACKING_BYTES).unwrap(),
+        )
         .unwrap();
     let mut discovery = media.bounded_discovery(2, 4096).unwrap();
     let mut window = coordination.begin_source_read_allocation().unwrap();
@@ -183,7 +192,7 @@ fn absent_and_present_empty_release_transient_paths_but_only_absence_can_escape(
     assert_eq!(still_owned.observed().bytes(), Some(&[][..]));
     assert_eq!(
         ports.counters().active_operation_bytes_for(Scope::Recovery),
-        0
+        SERVING_BACKING_BYTES
     );
     drop(still_owned);
 }
@@ -266,7 +275,7 @@ fn world_with_schedule(
     );
     let capacity = PhysicalRecoveryCoordinationCapacity::admit(2, 4096, 2, 4096)
         .unwrap()
-        .with_recovery_allocation_bytes(16 << 10)
+        .with_recovery_allocation_bytes(SERVING_BACKING_BYTES + (16 << 10))
         .unwrap();
     let coordination = freshness
         .register_session()

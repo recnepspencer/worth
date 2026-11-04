@@ -66,6 +66,7 @@ pub use runtime::WorthQueryProductRuntime;
 #[doc(hidden)]
 pub use shared_root::WorthQueryProductSharedRoot;
 pub use source_installation::WorthQueryProductRelationalInstallation;
+pub(in crate::domain_computation) use source_owner::RetiringRelationalSource;
 pub use source_owner::{
     WorthQueryRelationalSourceInstallationDenial, WorthQueryRelationalSourceOwner,
 };

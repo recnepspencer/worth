@@ -15,7 +15,7 @@
 //! | 58..66 | payload length (`u64`)                       |
 //! | 66..   | payload: MessagePack named map               |
 //!
-//! The payload is `{sequence, follows, transition}`. Both header fields are
+//! Version 2 carries `{sequence, follows, schema_carrier, transition}`. Both header fields are
 //! inside the digested payload, so a rewritten header cannot pass
 //! readmission.
 
@@ -54,6 +54,17 @@ pub struct RelationalBranchTransitionArtifact {
 }
 
 impl RelationalBranchTransitionArtifact {
+    /// Bounded version eligibility only, never frame or payload admission.
+    pub fn preflight_frame_version(
+        prefix: &[u8],
+    ) -> Result<(), RelationalBranchTransitionArtifactFrameRefusal> {
+        frame::validate_frame_version(prefix)
+    }
+
+    pub const PROTOCOL: worth_foundational::facade::BoundaryProtocolIdentity =
+        worth_foundational::facade::BoundaryProtocolIdentity::new(
+            "worth.relational.branch-transition",
+        );
     /// The artifact format version this build writes and readmits. Bytes
     /// carrying any other version are refused, never reinterpreted.
     pub const FORMAT_VERSION: u16 = frame::FORMAT_VERSION;

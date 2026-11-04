@@ -97,7 +97,7 @@ impl RecoveredRelationalRuntimeAuthority {
                 }
                 let admitted = artifact
                     .envelope_residency()
-                    .demand_positioned(execution, 1 << 30)
+                    .readmit_original_positioned(execution)
                     .map_err(|cause| refused(Cause::Source(cause)))?;
                 if !crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::matches_positioned_payload(
                     &admitted, envelope,

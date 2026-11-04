@@ -36,7 +36,7 @@ fn retry_after(cause: Cause) {
         failure: std::sync::Mutex::new(Some(cause)),
     });
     let mut cold = fixture.cold;
-    cold.source = source.clone();
+    cold.source = Some(source.clone());
     let cell = RelationalRegionResidency::cold(cold).unwrap();
     assert_eq!(head_demand(&cell, 1 << 24).unwrap_err().cause, cause);
     *source.failure.lock().unwrap() = None;
@@ -98,11 +98,11 @@ fn cancellation_during_readmission_preserves_the_request_and_does_not_damage_the
     let request =
         crate::test_execution_policy::serial_request().with_cancellation(cancellation.token());
     let mut cold = fixture.cold;
-    cold.source = Arc::new(CancelAfterRead {
+    cold.source = Some(Arc::new(CancelAfterRead {
         source: fixture.source.clone(),
         cancellation,
         first: AtomicBool::new(true),
-    });
+    }));
     let cell = RelationalRegionResidency::cold(cold).unwrap();
     let failure = cell
         .demand_head(&ExecutionRequest::serial(&request), 1 << 24, None)

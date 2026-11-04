@@ -1,14 +1,14 @@
 //! Live planning backing at the source-custody admission boundary.
 //! This is not accumulated I/O or a ledger of earlier transient windows.
 
-use super::super::super::super::{context::PlanningContext, resolved_basis::ResolvedPlanningBasis};
+use super::super::super::super::{context::PlanningContext, resolved_basis::ResolvedPlanningState};
 use crate::orchestration::planning::selected_source_inventory::ResidentAllowance;
 use crate::orchestration::recovery_budget::RecoveryAllowance;
 use crate::progression::PlanningCustody;
 
 pub(super) fn seed(
     context: &PlanningContext,
-    basis: &ResolvedPlanningBasis,
+    basis: &ResolvedPlanningState,
 ) -> Result<ResidentAllowance, Option<crate::entry::PhysicalRecoveryLimitFailure>> {
     // Final custody assembly cannot be used as the source of a second admission.
     if !matches!(

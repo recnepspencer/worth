@@ -30,11 +30,11 @@ pub(super) fn compile_committed_observations(
     alpha: &AspectFieldLocator,
     beta: &AspectFieldLocator,
 ) -> CommittedObservationWorld {
-    let mut runtime = schema::fixture_runtime();
-    let entities = commit_entities(execution, &mut runtime, alpha, beta);
+    let runtime = schema::fixture_runtime();
+    let entities = commit_entities(execution, &runtime, alpha, beta);
     let decoy_relation = commit_relation(
         execution,
-        &mut runtime,
+        &runtime,
         RelationSeed {
             batch: "provider-effect-decoy-relation",
             key: "decoy-edge",
@@ -44,7 +44,7 @@ pub(super) fn compile_committed_observations(
     );
     let relation_commit = commit_relation(
         execution,
-        &mut runtime,
+        &runtime,
         RelationSeed {
             batch: "provider-effect-observed-relation",
             key: "observed-edge",
@@ -73,14 +73,8 @@ pub(super) fn compile_committed_observations(
         axes,
         locators,
     );
-    crate::relational_snapshot_release::release_query_snapshot(
-        &mut runtime,
-        &relation_commit.snapshot,
-    );
-    crate::relational_snapshot_release::release_query_snapshot(
-        &mut runtime,
-        &decoy_relation.snapshot,
-    );
+    crate::relational_snapshot_release::release_query_snapshot(&runtime, &relation_commit.snapshot);
+    crate::relational_snapshot_release::release_query_snapshot(&runtime, &decoy_relation.snapshot);
     CommittedObservationWorld {
         update_entity: entities.update,
         deleted_entity: entities.deleted,

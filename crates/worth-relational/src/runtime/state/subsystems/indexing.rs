@@ -1,5 +1,5 @@
 mod checkpoint_inputs;
-pub(crate) use checkpoint_inputs::OriginalCheckpointIndexes;
+pub(crate) use checkpoint_inputs::{FrozenCheckpointIndexes, OriginalCheckpointIndexes};
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 

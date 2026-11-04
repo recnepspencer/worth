@@ -55,7 +55,11 @@ where
         .expect("recovered merge envelope");
     let recovered_truth_bundle = capture_aspect_truth_bundle(execution, &recovered, &[], &[], &[]);
 
-    let recovery_envelope_matches = envelope == recovered_envelope;
+    let recovery_envelope_matches = crate::tests::support::durable_commit_meaning_matches(
+        execution,
+        &envelope,
+        &recovered_envelope,
+    );
     let recovery_truth_matches = truth_bundle.visible_truth == recovered_truth_bundle.visible_truth;
     assert!(recovery_envelope_matches);
     assert!(recovery_truth_matches);

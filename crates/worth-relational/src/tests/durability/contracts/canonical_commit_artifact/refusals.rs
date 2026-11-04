@@ -48,8 +48,66 @@ fn write_u64(bytes: &mut [u8], field: std::ops::Range<usize>, value: u64) {
 fn reseal(bytes: &mut [u8]) {
     let payload_len = (bytes.len() - PAYLOAD_START) as u64;
     write_u64(bytes, LENGTH, payload_len);
-    let digest = Sha256::digest(&bytes[PAYLOAD_START..]);
-    bytes[DIGEST].copy_from_slice(&digest);
+    let mut leaves = [[0; 32]; 3];
+    crate::durability::canonical_commit_artifact::borrowed_payload::BorrowedPayload(
+        &bytes[PAYLOAD_START..],
+    )
+    .frame_fields(|name, raw| {
+        let index = match name {
+            "position" => 0,
+            "canonical" => 1,
+            "original_inputs" => 2,
+            _ => panic!("fixture emits only the three v5 commitment fields"),
+        };
+        leaves[index] = <[u8; 32]>::from(Sha256::digest(raw.0));
+        Ok(())
+    })
+    .unwrap();
+    let mut digest = Sha256::new();
+    digest.update(b"worth.relational.canonical.v5\0");
+    digest.update(&bytes[POSITION]);
+    digest.update(&bytes[COMMIT]);
+    for leaf in leaves {
+        digest.update(leaf);
+    }
+    bytes[DIGEST].copy_from_slice(&digest.finalize());
+}
+
+fn rewrite_payload(frame: &[u8], fields: &[&str], nil_canonical: bool) -> Vec<u8> {
+    let mut original = [None; 3];
+    crate::durability::canonical_commit_artifact::borrowed_payload::BorrowedPayload(
+        &frame[PAYLOAD_START..],
+    )
+    .frame_fields(|name, raw| {
+        let index = match name {
+            "position" => 0,
+            "canonical" => 1,
+            "original_inputs" => 2,
+            _ => panic!("fixture requires the v5 source map"),
+        };
+        original[index] = Some(raw.0);
+        Ok(())
+    })
+    .unwrap();
+    let mut output = frame[..PAYLOAD_START].to_vec();
+    output.push(0x83);
+    for name in fields {
+        let index = match *name {
+            "position" => 0,
+            "canonical" => 1,
+            "original_inputs" => 2,
+            _ => panic!("fixture only rewrites known fields"),
+        };
+        output.push(0xa0 | name.len() as u8);
+        output.extend_from_slice(name.as_bytes());
+        output.extend_from_slice(if index == 1 && nil_canonical {
+            &[0xc0]
+        } else {
+            original[index].unwrap()
+        });
+    }
+    reseal(&mut output);
+    output
 }
 
 fn refusal(bytes: &[u8], execution: &ExecutionRequest<'_, '_>) -> Refusal {
@@ -81,13 +139,13 @@ fn frame_defects_refuse_before_decoding_each_with_its_own_refusal() {
         Refusal::Frame(FrameRefusal::UnrecognizedMagic)
     ));
 
-    for old_version in [1_u16, 2] {
+    for old_version in [1_u16, 2, 3, 4] {
         let mut old = frame.bytes.clone();
         old[VERSION].copy_from_slice(&old_version.to_le_bytes());
         assert!(matches!(
             refusal(&old, execution),
-            Refusal::Frame(FrameRefusal::UnsupportedVersion { found, supported: 3 })
-                if found == old_version
+            Refusal::Frame(FrameRefusal::UnsupportedVersion(reason))
+                if reason.produced().get() == u32::from(old_version)
         ));
     }
 
@@ -100,6 +158,17 @@ fn frame_defects_refuse_before_decoding_each_with_its_own_refusal() {
     assert!(matches!(
         refusal(&frame.bytes[..COMMIT.end], execution),
         Refusal::Frame(FrameRefusal::TruncatedHeader { available }) if available == COMMIT.end
+    ));
+
+    // A MessagePack value inside the declared payload is a different defect
+    // from extra bytes outside the frame. The three original value commitments
+    // stay intact; the v5 grammar refuses the fourth value before decoding.
+    let mut payload_tail = frame.bytes.clone();
+    payload_tail.push(0xc0);
+    write_u64(&mut payload_tail, LENGTH, payload_len + 1);
+    assert!(matches!(
+        refusal(&payload_tail, execution),
+        Refusal::Frame(FrameRefusal::InvalidPayloadShape)
     ));
 
     let mut trailing = frame.bytes.clone();
@@ -141,17 +210,23 @@ fn intact_frames_with_foreign_payloads_refuse_at_decode_or_canonical_form() {
     let execution = &ExecutionRequest::serial(&host_request);
     let frame = exported_frame(execution);
 
-    let mut undecodable = frame.bytes[..PAYLOAD_START].to_vec();
-    undecodable.push(0xc0); // MessagePack nil: not an artifact payload map.
-    reseal(&mut undecodable);
+    // The v5 commitment map remains valid, but its canonical owner is nil.
+    let undecodable = rewrite_payload(
+        &frame.bytes,
+        &["position", "canonical", "original_inputs"],
+        true,
+    );
     assert!(matches!(
         refusal(&undecodable, execution),
         Refusal::PayloadDecode { .. }
     ));
 
-    let mut padded = frame.bytes.clone();
-    padded.push(0xc0); // A trailing value inside the digested payload.
-    reseal(&mut padded);
+    // Equal leaves do not authorize a different canonical map order.
+    let padded = rewrite_payload(
+        &frame.bytes,
+        &["canonical", "position", "original_inputs"],
+        false,
+    );
     assert!(matches!(
         refusal(&padded, execution),
         Refusal::NonCanonicalPayload

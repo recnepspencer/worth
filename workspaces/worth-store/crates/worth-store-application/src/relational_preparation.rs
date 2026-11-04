@@ -16,5 +16,5 @@ pub use refusal::{
     RelationalAttachmentFailedHome, RelationalAttachmentRefused, RelationalHomeOpenRefused,
     RelationalHomeReadmissionRefused,
 };
-pub use unrecovered::UnrecoveredApplicationHome;
+pub use unrecovered::{ApplicationHomeNativeSchemaPreparation, UnrecoveredApplicationHome};
 pub use unshared::UnsharedReadmittedApplicationHome;

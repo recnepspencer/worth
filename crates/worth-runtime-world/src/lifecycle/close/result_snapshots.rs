@@ -82,6 +82,13 @@ impl RuntimeWorldResultSnapshotCleanup {
         }
     }
 
+    pub(in crate::lifecycle) fn completed_for(
+        &self,
+        owner: crate::identity::RuntimeWorldOwnerIdentity,
+    ) -> bool {
+        self.terminal && self.frontier.belongs_to(owner)
+    }
+
     /// One row visit or authenticated Native step. Home retains this task and
     /// both actual owners across every return. No owner calls occur under a
     /// World lock. A lost observer rejoins only the SAME original result cell.

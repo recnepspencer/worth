@@ -4,7 +4,7 @@ mod unavailable;
 use super::*;
 use unavailable::TerminalOutputCompletion;
 use worth_query_execution::facade::primary_graph::{
-    WorthQueryApplicationUncommitted, WorthQueryManagedApplicationRecoveryPerformed,
+    WorthQueryApplicationCommitOutcome, WorthQueryManagedApplicationRecoveryPerformed,
 };
 
 /// Terminal custody preserves native observations but cannot advance.
@@ -93,7 +93,7 @@ where
     }
 
     /// Original output-producer evidence is not replaced by its cleanup receipt.
-    pub fn producer_native_outcome(&self) -> Option<&WorthQueryApplicationUncommitted> {
+    pub fn producer_native_outcome(&self) -> Option<&WorthQueryApplicationCommitOutcome> {
         self.operation.cleanup.producer_native_outcome()
     }
     /// Exact managed-run cleanup custody retained independently of business evidence.

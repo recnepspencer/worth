@@ -14,6 +14,8 @@ pub struct OpaqueCapturedCheckpointSubject {
 
 #[derive(Debug)]
 struct CapturedMembers {
+    initial_inputs:
+        Option<crate::durability::source_initial_inputs::RelationalSourceInitialInputsArtifact>,
     required: worth_execution::ExecutionArray<RelationalDurableMemberLocator>,
     _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
@@ -22,6 +24,9 @@ impl OpaqueCapturedCheckpointSubject {
         bytes: ExecutionImmutableBytes,
         region: std::ops::Range<usize>,
         members: &[crate::durability::data::RelationalCheckpointMember],
+        initial_inputs: Option<
+            crate::durability::source_initial_inputs::RelationalSourceInitialInputsArtifact,
+        >,
         request: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Self, crate::durability::data::RelationalNativeCheckpointCaptureDenial> {
         use crate::durability::data::RelationalNativeCheckpointCaptureDenial as Denial;
@@ -50,11 +55,19 @@ impl OpaqueCapturedCheckpointSubject {
         Ok(Self {
             identity: Arc::new(CapturedMembers {
                 required,
+                initial_inputs,
                 _memory: memory,
             }),
             bytes,
             region,
         })
+    }
+    /// Descriptive original input coordinate retained by this exact capture.
+    pub fn initial_inputs_coordinate(&self) -> Option<(u64, [u8; 32])> {
+        self.identity
+            .initial_inputs
+            .as_ref()
+            .map(|image| (image.revision(), image.payload_digest()))
     }
     pub fn same_capture(&self, other: &Self) -> bool {
         Arc::ptr_eq(&self.identity, &other.identity)

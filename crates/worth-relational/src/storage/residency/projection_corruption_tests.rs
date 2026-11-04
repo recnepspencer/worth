@@ -93,7 +93,7 @@ fn historical_projection_is_reconstructed_from_owned_record_history() {
         history: cold.history,
         corrupt: AtomicBool::new(false),
     });
-    cold.source = source.clone();
+    cold.source = Some(source.clone());
     let cell = RelationalRegionResidency::cold(cold).unwrap();
     head_demand(&cell, 1 << 24).unwrap();
     assert_eq!(source.history_reads.load(Ordering::SeqCst), 0);
@@ -113,13 +113,13 @@ fn replaced_member(
     }
     let mut members = fixture.source.members.clone();
     members.insert(member.0, member.1);
-    cold.source = Arc::new(CountedSource {
+    cold.source = Some(Arc::new(CountedSource {
         members,
         reads: AtomicUsize::new(0),
         history_reads: AtomicUsize::new(0),
         history: cold.history,
         corrupt: AtomicBool::new(false),
-    });
+    }));
     RelationalRegionResidency::cold(cold).unwrap()
 }
 

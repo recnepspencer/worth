@@ -10,6 +10,10 @@ mod sealed {
 /// These two coordinate classes bound every difference by u64::MAX in magnitude.
 /// Sealing prevents a wider integer class from invalidating that arithmetic proof.
 pub trait PlanarInteger: sealed::Coordinate + Copy + Into<i128> {
+    #[allow(
+        dead_code,
+        reason = "Other owners mounting this value-only source use the literal bound"
+    )]
     const MIN: Self;
 }
 impl PlanarInteger for i64 {

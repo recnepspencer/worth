@@ -1,5 +1,4 @@
 use crate::domain_computation::primary_graph as graph;
-use crate::domain_computation::provider_session as session;
 use crate::domain_computation::{
     WorthQueryDecisionReadSetFreshnessOutcome, WorthQueryFreshDecisionReadSet,
     WorthQuerySessionBoundReadsAndEffects,
@@ -11,35 +10,14 @@ use graph::application_attempt::provider_execution::outcome::{
     progression_denied, WorthQueryProviderProgressionOutcome as Progression,
 };
 use graph::application_attempt::{
-    provider_recomparison::recover_equivalent_commit_evidence,
-    WorthQueryApplicationCommitAuthorityBinding, WorthQueryApplicationCommitDenial,
-    WorthQueryApplicationCommitReceipt, WorthQueryApplicationStaleAttempt,
-    WorthQueryCommittedReceiptProjection,
+    WorthQueryApplicationCommitDenial, WorthQueryApplicationStaleAttempt,
 };
 use graph::provider::WorthQueryProviderIdempotencyResolutionDenial as IdempotencyDenial;
 use graph::provider::{WorthQueryPrimaryGraphProvider, WorthQueryProviderIdempotencyResolution};
 use graph::WorthQueryApplicationCommitDenialStage as ExecutionDenialStage;
-use session::WorthQueryProviderSessionTerminalBinding as TerminalBinding;
 use worth_query_installation::facade::ApplicationSchema;
 
 use graph::application_attempt::WorthQueryApplicationCommitDenialStage as DenialStage;
-
-pub(in crate::domain_computation::primary_graph::application_attempt) struct WorthQueryRegisteredEquivalentCommitReceiptPermit
-{
-    provider_session: TerminalBinding,
-}
-
-impl WorthQueryRegisteredEquivalentCommitReceiptPermit {
-    fn mint(provider_session: TerminalBinding) -> Self {
-        Self { provider_session }
-    }
-
-    pub(in crate::domain_computation::primary_graph::application_attempt) fn into_provider_session(
-        self,
-    ) -> TerminalBinding {
-        self.provider_session
-    }
-}
 
 pub(super) enum WorthQueryProviderReadSetProgression<'run> {
     Fresh(WorthQueryFreshProviderAttempt<'run>),
@@ -202,6 +180,9 @@ where
             .resolve_application_idempotency(execution, &provider_session)
     });
     match resolution {
+        Ok(Ok(WorthQueryProviderIdempotencyResolution::Readmitted(receipt))) => Some(if graph::application_attempt::provider_execution::aftermath_resolution::recovered_answers_aftermath(authority.aftermath_causality(), &receipt) {
+            Progression::RecoveredCommitted(receipt)
+        } else { Progression::Denied(WorthQueryApplicationCommitDenial::idempotency_intent_drift()) }),
         Err(((), denial)) => Some(
             graph::application_attempt::provider_execution::outcome::
                 progression_from_authorization_denial(
@@ -209,26 +190,6 @@ where
                 DenialStage::DecisionReadSet,
             ),
         ),
-        Ok(Ok(WorthQueryProviderIdempotencyResolution::Equivalent(receipt))) => {
-            Some(match WorthQueryCommittedReceiptProjection::resolve(receipt) {
-                Ok(projection) => {
-                    let receipt = WorthQueryApplicationCommitReceipt::from_registered_equivalent(
-                        WorthQueryRegisteredEquivalentCommitReceiptPermit::mint(provider_session),
-                        projection,
-                        recover_equivalent_commit_evidence(
-                            authority.admission().mutation_preconditions(),
-                        ),
-                        authority.admission().canonical_work(),
-                        WorthQueryApplicationCommitAuthorityBinding::from_admission(
-                            authority.admission(),
-                            authority.idempotency(),
-                        ),
-                    );
-                    Progression::AlreadyCommitted(receipt)
-                }
-                Err(_) => progression_denied(DenialStage::Idempotency),
-            })
-        }
         Ok(Ok(WorthQueryProviderIdempotencyResolution::Drift)) => {
             Some(Progression::Denied(
                 WorthQueryApplicationCommitDenial::idempotency_intent_drift(),
@@ -260,9 +221,9 @@ where
         Ok(Err(IdempotencyDenial::Unavailable)) => {
             Some(progression_denied(DenialStage::Idempotency))
         }
-        Ok(Err(IdempotencyDenial::CommittedReceiptNotRetained { commit })) => {
+        Ok(Err(IdempotencyDenial::ForeignAffinity)) => {
             Some(Progression::Denied(
-                WorthQueryApplicationCommitDenial::idempotency_receipt_not_retained(commit),
+                WorthQueryApplicationCommitDenial::idempotency_foreign_affinity(),
             ))
         }
         Ok(Err(IdempotencyDenial::RecordedIntentUnverifiable)) => {

@@ -15,6 +15,13 @@ pub struct RelationalBranchBasisPort {
 }
 
 impl RelationalBranchBasisPort {
+    pub(super) fn matches_home_retirement_owner(
+        &self,
+        owner: &crate::runtime::RelationalRuntime,
+    ) -> bool {
+        self.owner.matches_owner(owner)
+    }
+
     /// Begin cleanup without observing another runtime or granting close authority.
     pub fn begin_commit_result_snapshot_cleanup(
         &self,
@@ -34,6 +41,31 @@ impl RelationalBranchBasisPort {
             .admitted_runtime()
             .map_err(super::RelationalCommitResultSnapshotReleaseDenial::Owner)?;
         super::result_snapshot_release::release(&runtime, result)
+    }
+
+    pub fn observe_memory_component(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        basis: &AdmittedRelationalBranchBasis,
+    ) -> Result<
+        crate::branch::ObservedRelationalMemoryComponent,
+        crate::branch::RelationalRecordedComponentRefusal,
+    > {
+        self.admitted_runtime()
+            .map_err(crate::branch::RelationalRecordedComponentRefusal::Basis)?
+            .observe_memory_component(execution, basis)
+    }
+    pub fn export_memory_component(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        component: &crate::branch::ObservedRelationalMemoryComponent,
+    ) -> Result<
+        crate::branch::RecordedRelationalComponentReference,
+        crate::branch::RelationalRecordedComponentRefusal,
+    > {
+        self.admitted_runtime()
+            .map_err(crate::branch::RelationalRecordedComponentRefusal::Basis)?
+            .export_memory_component(execution, component)
     }
 
     /// Describe the original owner-admitted pinned subject independently of

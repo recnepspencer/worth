@@ -11,15 +11,45 @@ pub struct UnrecoveredApplicationHome {
     pub(super) relational: worth_store_relational::UnrecoveredRelationalSection,
     pub(super) context: crate::home_context::HomeContext,
 }
+
+/// Source-origin routing precedes schema effects. Existing receivers receive
+/// configuration preparation only; they cannot obtain initialization permission.
+pub enum ApplicationHomeNativeSchemaPreparation<'runtime> {
+    Fresh {
+        native: &'runtime mut RelationalRuntime,
+        initialization: worth_proof::FreshNativeInitialization<
+            worth_relational::facade::durability::RelationalFreshInitialization,
+        >,
+    },
+    Existing {
+        native: &'runtime mut RelationalRuntime,
+    },
+}
 impl UnrecoveredApplicationHome {
+    pub fn prepare_native_schema_for_home(
+        &mut self,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<
+        ApplicationHomeNativeSchemaPreparation<'_>,
+        worth_relational::facade::runtime::RelationalInitialSchemaInstallationDenial,
+    > {
+        use super::initialization::HomeInitializationOrigin;
+        use worth_store::physical_runtime::RecoveryStorePresence;
+        match &self.context.initialization {
+            HomeInitializationOrigin::Available(RecoveryStorePresence::ProvenAbsent) => {
+                let initialization = self.relational.home_fresh_schema_initialization(request)?;
+                Ok(ApplicationHomeNativeSchemaPreparation::Fresh { native: self.relational.home_schema_installation_runtime(), initialization })
+            },
+            HomeInitializationOrigin::Available(RecoveryStorePresence::ExistingArtifacts) => Ok(ApplicationHomeNativeSchemaPreparation::Existing { native: self.relational.home_schema_installation_runtime() }),
+            HomeInitializationOrigin::ConsumedNewHome => Err(worth_relational::facade::runtime::RelationalInitialSchemaInstallationDenial::from_initial_inputs(
+                worth_relational::facade::durability::RelationalInitialInputsRefusal::Malformed)),
+        }
+    }
     pub fn home_identity(&self) -> worth_foundational::facade::HomeIdentity {
         self.context.descriptor.identity
     }
     pub fn incarnation(&self) -> worth_foundational::facade::HomeIncarnation {
         self.context.descriptor.incarnation
-    }
-    pub fn native_for_schema_installation(&mut self) -> &mut RelationalRuntime {
-        self.relational.home_schema_installation_runtime()
     }
     pub fn readmit(
         mut self,
@@ -100,7 +130,7 @@ impl UnrecoveredApplicationHome {
         let admitted = match &context.initialization {
             HomeInitializationOrigin::Available(RecoveryStorePresence::ProvenAbsent) => {
                 if manifest.is_some() {
-                    Err((relational, ReadmissionDenial::CompleteNativeRequired))
+                    Err((relational, ReadmissionDenial::MalformedSection))
                 } else {
                     relational
                         .admit_fresh_home_from_source(request)
@@ -108,10 +138,7 @@ impl UnrecoveredApplicationHome {
                 }
             }
             HomeInitializationOrigin::Available(RecoveryStorePresence::ExistingArtifacts) => {
-                relational.readmit_home_from_read_without_schema(
-                    manifest.as_ref().map(|manifest| manifest.relational_read()),
-                    request,
-                )
+                relational.readmit_prepared_home(request)
             }
             HomeInitializationOrigin::ConsumedNewHome => {
                 Err((relational, ReadmissionDenial::MalformedSection))

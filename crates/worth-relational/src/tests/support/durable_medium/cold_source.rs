@@ -3,6 +3,40 @@ use crate::publication::patch::data::PatchStreamPosition;
 use crate::storage::data::RelationalStorageUnavailableCause as Cause;
 
 impl RelationalDurableColdSource for super::TestDurableMedium {
+    fn read_member_prefix_owned(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        original: &(dyn std::any::Any + Send + Sync),
+        member: RelationalDurableMemberLocator,
+        prefix: usize,
+    ) -> Result<
+        worth_execution::ExecutionImmutableBytes,
+        crate::durability::medium::RelationalDurableOwnedReadRefusal,
+    > {
+        original
+            .downcast_ref::<worth_testkit_relational::durable_medium::OwnedNativeReadSnapshot>()
+            .ok_or(crate::durability::medium::RelationalDurableOwnedReadRefusal::ForeignProtection)?
+            .member_prefix(request, member.sha256, member.length, prefix)
+            .map_err(owned_failure)
+    }
+    fn read_initial_inputs_owned(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        original: &(dyn std::any::Any + Send + Sync),
+        limit: u64,
+    ) -> Result<
+        Option<worth_execution::ExecutionImmutableBytes>,
+        crate::durability::medium::RelationalDurableOwnedReadRefusal,
+    > {
+        let snapshot = original
+            .downcast_ref::<worth_testkit_relational::durable_medium::OwnedNativeReadSnapshot>()
+            .ok_or(
+                crate::durability::medium::RelationalDurableOwnedReadRefusal::ForeignProtection,
+            )?;
+        snapshot
+            .initial_inputs(request, limit)
+            .map_err(owned_failure)
+    }
     fn checkpoint_read_protection(
         &self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
@@ -28,11 +62,16 @@ impl RelationalDurableColdSource for super::TestDurableMedium {
                 .iter()
                 .map(|(id, bytes)| (*id, bytes.as_ref())),
             &journal.checkpoint_members,
+            journal
+                .initial_inputs
+                .as_ref()
+                .map(|artifact| artifact.as_bytes()),
         )
         .map_err(owned_failure)?;
         let [canonical, transitions] = snapshot.bounds();
         Ok((
             crate::durability::medium::RelationalDurableReadBounds {
+                selected_checkpoint: journal.checkpoint.is_some(),
                 canonical: PatchStreamPosition(canonical),
                 transitions: crate::branch::RelationalBranchTransitionSequence(transitions),
             },
@@ -52,6 +91,10 @@ impl RelationalDurableColdSource for super::TestDurableMedium {
             std::iter::empty(),
             std::iter::empty(),
             &journal.checkpoint_members,
+            journal
+                .initial_inputs
+                .as_ref()
+                .map(|artifact| artifact.as_bytes()),
         )
         .map(|original| original as crate::durability::medium::RelationalDurableReadPayload)
         .map_err(owned_failure)

@@ -54,3 +54,29 @@ impl ProductBranchRegistry {
         }))
     }
 }
+
+impl ProductBranchRegistry {
+    pub(crate) fn try_begin_root_home_retirement(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        Option<crate::history::CompositeCommitRetirement>,
+        crate::lifecycle::RuntimeWorldCloseDenial,
+    > {
+        let state = self
+            .state
+            .try_lock()
+            .map_err(|_| crate::lifecycle::RuntimeWorldCloseDenial::Busy)?;
+        let cell = state
+            .root
+            .as_ref()
+            .and_then(|root| state.entries.get(root))
+            .map(|entry| entry.cell.clone());
+        drop(state);
+        let Some(cell) = cell else {
+            return Ok(None);
+        };
+        cell.try_retire_for_close(request)?;
+        cell.try_begin_home_basis_retirement().map(Some)
+    }
+}

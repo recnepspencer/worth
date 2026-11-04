@@ -7,14 +7,14 @@ fn first_stage_owner_work(
 ) -> u64 {
     // An independent native application control quotes the same insert and
     // installed read. No frontier, per-task ceiling or worker width supplies it.
-    let mut workspace = Policy::width(0).workspace(request_execution, probe);
+    let mut workspace = Policy::width(0).workspace_with_work(request_execution, probe, None);
     let authority = probe.authority();
     let lease = authority
         .request_lease(worth_execution::LeaseRequest {
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Serial,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(NonZeroUsize::MIN, None, Some(1024)),
+                ExecutionBudget::new(NonZeroUsize::MIN, None, None),
             ),
             cancellation: worth_execution::CancellationToken::new(),
             deadline: None,
@@ -22,24 +22,21 @@ fn first_stage_owner_work(
         .unwrap();
     let execution = worth_execution::ExecutionRequest::leased(&lease);
     let ((), report) = execution
-        .run(
-            worth_execution::ExecutionWorkCeiling::new(Some(1024)),
-            |_| {
-                let command = crate::runtime::WorthQueryAspectMutationBuilder::new()
-                    .aspect("identity.id", "left:50")
-                    .build_insert("Vertex")
-                    .unwrap();
-                workspace
-                    .execute_ordinary_authoritative_mutation(&execution, command, false)
-                    .unwrap();
-                phased_workflow::world::installed_read_declaration()
-                    .clone_for_installed_execution()
-                    .using(crate::ordinary::read::current())
-                    .run(&execution, &mut workspace)
-                    .into_result()
-                    .unwrap();
-            },
-        )
+        .run(worth_execution::ExecutionWorkCeiling::new(None), |_| {
+            let command = crate::runtime::WorthQueryAspectMutationBuilder::new()
+                .aspect("identity.id", "left:50")
+                .build_insert("Vertex")
+                .unwrap();
+            workspace
+                .execute_ordinary_authoritative_mutation(&execution, command, false)
+                .unwrap();
+            phased_workflow::world::installed_read_declaration()
+                .clone_for_installed_execution()
+                .using(crate::ordinary::read::current())
+                .run(&execution, &mut workspace)
+                .into_result()
+                .unwrap();
+        })
         .unwrap();
     report.charged_work()
 }
@@ -52,7 +49,7 @@ fn caller_work_ceiling_keeps_the_same_typed_boundary_at_all_widths() {
     let owner_work = first_stage_owner_work(&execution, &probe);
     for workers in [1, 2, 4] {
         let mut workspace = Policy {
-            work: COSTS[0] + owner_work,
+            work: Some(COSTS[0] + owner_work),
             ..Policy::width(workers)
         }
         .workspace(&execution, &probe);
@@ -88,7 +85,7 @@ fn unfunded_native_effect_is_a_typed_caller_work_stop_at_all_widths() {
     let probe = phased_workflow::fold_executor::ComputeProbe::new();
     for workers in [1, 2, 4] {
         let mut workspace = Policy {
-            work: COSTS[0],
+            work: Some(COSTS[0]),
             ..Policy::width(workers)
         }
         .workspace(&execution, &probe);

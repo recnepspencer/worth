@@ -120,11 +120,19 @@ pub(crate) fn journey(partitions: u32, slots: usize, dependencies: Dependencies)
         partitions,
         slots,
     );
+    // This court asserts preimage/COW boundaries, not the generic fixture's
+    // one-million-unit work policy. Native's original envelope and input
+    // capture also belong to this request (milestone-3 D17). Fund the repeated
+    // validation/commit journey from its actual finite fixture population.
+    let work = 1_000_000 + (source.entities.len() as u64 + 3) * 32 * 1024;
     let lease = authority()
-        .request_lease(lease_request(
-            32 * 1024 * 1024,
-            worth_execution::CancellationToken::new(),
-        ))
+        .request_lease(
+            crate::leased_preparation::ordinary_context::lease_request_with_work(
+                32 * 1024 * 1024,
+                worth_execution::CancellationToken::new(),
+                work,
+            ),
+        )
         .unwrap();
     let execution = worth_execution::ExecutionRequest::leased(&lease);
     check_snapshot(

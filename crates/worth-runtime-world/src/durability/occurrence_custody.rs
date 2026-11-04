@@ -6,6 +6,7 @@ use super::{
 
 #[derive(Debug)]
 pub(crate) struct WorldOccurrenceCustody {
+    origin: Option<super::PreparedCheckpointOccurrence>,
     open: WorldOpenAttemptRecord,
     backing: Option<worth_execution::ExecutionByteBuffer>,
     pub(crate) subject: Option<WorldDurableArtifact>,
@@ -26,11 +27,35 @@ impl WorldOccurrenceCustody {
         let backing =
             worth_execution::ExecutionByteBuffer::allocate(total, execution.allocation_policy())
                 .map_err(WorldDurableMediumDenial::Allocation)?;
+        let origin = super::PreparedCheckpointOccurrence::prepare(execution)?;
         Ok(Self {
+            origin: Some(origin),
             open: open.clone(),
             backing: Some(backing),
             subject: None,
         })
+    }
+
+    pub(crate) fn origin_needs_binding(&self) -> bool {
+        self.origin
+            .as_ref()
+            .expect("attempt retains original slot")
+            .needs_binding()
+    }
+    pub(crate) fn bind_origin(
+        &mut self,
+        basis: &crate::basis::AdmittedCompositeRuntimeWorldBasis,
+        pins: crate::retention::HistoryRetentionObligation,
+    ) {
+        self.origin
+            .as_mut()
+            .expect("prepared origin before journal submission")
+            .bind(basis, pins);
+    }
+    pub(crate) fn take_origin(&mut self) -> super::PreparedCheckpointOccurrence {
+        self.origin
+            .take()
+            .expect("the same occurrence transfers its origin exactly once")
     }
 
     pub(crate) fn finalize(

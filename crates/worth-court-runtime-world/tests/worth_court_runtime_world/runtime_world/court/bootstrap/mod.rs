@@ -239,3 +239,6 @@ fn weak_close_rejects_a_foreign_owner_without_closing_either_world() {
     court.finish();
     other.finish();
 }
+
+#[path = "origin_retirement.rs"]
+mod origin_retirement;

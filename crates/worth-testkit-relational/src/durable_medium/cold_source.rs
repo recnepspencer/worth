@@ -11,6 +11,40 @@ fn bounded(bytes: Option<&[u8]>, limit: u64) -> Result<Vec<u8>, Cause> {
     Ok(bytes.to_vec())
 }
 impl RelationalDurableColdSource for TestDurableMedium {
+    fn observe_canonical_member_read(&self, _: RelationalDurableMemberLocator) {
+        self.canonical_member_reads
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    }
+    fn read_member_prefix_owned(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        original: &(dyn std::any::Any + Send + Sync),
+        member: RelationalDurableMemberLocator,
+        length: usize,
+    ) -> Result<
+        worth_execution::ExecutionImmutableBytes,
+        worth_relational::facade::durability::RelationalDurableOwnedReadRefusal,
+    > {
+        let snapshot = original.downcast_ref::<super::OwnedNativeReadSnapshot>()
+            .ok_or(worth_relational::facade::durability::RelationalDurableOwnedReadRefusal::ForeignProtection)?;
+        snapshot
+            .member_prefix(request, member.sha256, member.length, length)
+            .map_err(owned_failure)
+    }
+    fn read_initial_inputs_owned(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        original: &(dyn std::any::Any + Send + Sync),
+        limit: u64,
+    ) -> Result<
+        Option<worth_execution::ExecutionImmutableBytes>,
+        worth_relational::facade::durability::RelationalDurableOwnedReadRefusal,
+    > {
+        let snapshot = original.downcast_ref::<super::OwnedNativeReadSnapshot>().ok_or(worth_relational::facade::durability::RelationalDurableOwnedReadRefusal::ForeignProtection)?;
+        snapshot
+            .initial_inputs(request, limit)
+            .map_err(owned_failure)
+    }
     fn checkpoint_read_protection(
         &self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
@@ -35,11 +69,16 @@ impl RelationalDurableColdSource for TestDurableMedium {
                 .iter()
                 .map(|(id, bytes)| (*id, bytes.as_ref())),
             &contents.members,
+            contents
+                .initial_inputs
+                .as_ref()
+                .map(|artifact| artifact.as_bytes()),
         )
         .map_err(owned_failure)?;
         let [canonical, transitions] = snapshot.bounds();
         Ok((
             worth_relational::facade::durability::RelationalDurableReadBounds {
+                selected_checkpoint: contents.checkpoint.is_some(),
                 canonical: PatchStreamPosition(canonical),
                 transitions: worth_relational::facade::branch::RelationalBranchTransitionSequence(
                     transitions,
@@ -61,6 +100,10 @@ impl RelationalDurableColdSource for TestDurableMedium {
             std::iter::empty(),
             std::iter::empty(),
             &contents.members,
+            contents
+                .initial_inputs
+                .as_ref()
+                .map(|artifact| artifact.as_bytes()),
         )
         .map(|original| {
             original as worth_relational::facade::durability::RelationalDurableReadPayload
@@ -77,6 +120,8 @@ impl RelationalDurableColdSource for TestDurableMedium {
         worth_execution::ExecutionImmutableBytes,
         worth_relational::facade::durability::RelationalDurableOwnedReadRefusal,
     > {
+        self.canonical_journal_reads
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         let snapshot=original.downcast_ref::<super::OwnedNativeReadSnapshot>().ok_or(worth_relational::facade::durability::RelationalDurableOwnedReadRefusal::ForeignProtection)?;
         snapshot
             .canonical(request, position.0, limit)
@@ -107,10 +152,11 @@ impl RelationalDurableColdSource for TestDurableMedium {
         worth_execution::ExecutionImmutableBytes,
         worth_relational::facade::durability::RelationalDurableOwnedReadRefusal,
     > {
+        if let Some(cancellation) = self.member_cancellation.lock().unwrap().take() {
+            cancellation.cancel();
+        }
         let snapshot=original.downcast_ref::<super::OwnedNativeReadSnapshot>().ok_or(worth_relational::facade::durability::RelationalDurableOwnedReadRefusal::ForeignProtection)?;
-        snapshot
-            .member(request, locator.sha256, locator.length, limit)
-            .map_err(owned_failure)
+        self.read_original_member(request, snapshot, locator, limit)
     }
     fn validate_member_custody_retirement(
         &self,
@@ -156,12 +202,17 @@ impl RelationalDurableColdSource for TestDurableMedium {
         locator: RelationalDurableMemberLocator,
         limit: u64,
     ) -> Result<Vec<u8>, Cause> {
+        if let Some(cancellation) = self.member_cancellation.lock().unwrap().take() {
+            cancellation.cancel();
+        }
         bounded(
             self.lock().members.get(locator.sha256, locator.length),
             limit,
         )
     }
     fn read_commit(&self, position: PatchStreamPosition, limit: u64) -> Result<Vec<u8>, Cause> {
+        self.canonical_journal_reads
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         bounded(
             self.lock()
                 .commits
@@ -173,7 +224,7 @@ impl RelationalDurableColdSource for TestDurableMedium {
     }
 }
 
-fn owned_failure(
+pub(super) fn owned_failure(
     cause: super::OwnedSnapshotDenial,
 ) -> worth_relational::facade::durability::RelationalDurableOwnedReadRefusal {
     use super::OwnedSnapshotDenial as Failure;

@@ -10,6 +10,8 @@ use crate::publication::patch::data::PatchStreamPosition;
 
 #[derive(Debug, Default)]
 pub(super) struct TestDurableJournal {
+    pub(super) initial_inputs:
+        Option<crate::durability::source_initial_inputs::RelationalSourceInitialInputsArtifact>,
     pub(super) selected_capture: Option<crate::durability::medium::OpaqueCapturedCheckpointSubject>,
     pub(super) artifacts: ByteJournal,
     pub(super) checkpoint_members: worth_testkit_relational::durable_medium::bytes::MemberBytes,

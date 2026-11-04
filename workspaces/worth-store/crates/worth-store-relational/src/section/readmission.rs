@@ -1,4 +1,5 @@
 pub(super) mod fresh_source;
+pub(super) mod prepared_source;
 pub(super) mod source;
 
 use super::RelationalStoreSection;
@@ -24,13 +25,18 @@ pub enum RelationalSectionReadmissionDenial {
     RecoveredSourceAdmissionRequired,
     RuntimeSharedBeforeReadmission,
     MalformedSection,
-    CompleteNativeRequired,
+    PreparedHomeSourceRequired,
+    UnsupportedCompleteSectionVersion(
+        worth_foundational::facade::BoundaryProtocolUnsupportedVersion,
+    ),
+    InitialInputs(worth_relational::facade::durability::RelationalInitialInputsRefusal),
     MemberSelection(crate::RelationalStoreMemberSelectionDenial),
     Execution(worth_execution::WorkCeilingDenial),
     Payload(worth_execution::ExecutionRequestArrayDenial),
     Journal(crate::RelationalStoreJournalRefusal),
     Transitions(crate::RelationalStoreTransitionJournalRefusal),
     Native(RelationalRecoveryStop),
+    FreshSource(worth_relational::facade::durability::RelationalFreshSourceAdmissionStop),
     OwnedSource(worth_relational::facade::durability::RelationalDurableOwnedReadRefusal),
 }
 
@@ -57,34 +63,6 @@ impl RelationalStoreSection {
             outcome: admitted.outcome,
         });
         Ok(())
-    }
-
-    /// The closed Home recipe supplies its one verified selected read. The
-    /// returned coverage is descriptive and exists only after Native admission.
-    pub fn readmit_home_from_read(
-        &mut self,
-        selected: Option<(
-            worth_execution::ExecutionImmutableBytes,
-            std::ops::Range<usize>,
-            &AnchoredRecordReadMembership,
-        )>,
-        execution: &ExecutionRequest<'_, '_>,
-    ) -> Result<Option<[u64; 2]>, RelationalSectionReadmissionDenial> {
-        let runtime = std::sync::Arc::get_mut(&mut self.runtime)
-            .ok_or(RelationalSectionReadmissionDenial::RuntimeSharedBeforeReadmission)?;
-        let checkpoint = prepare_home_source(&self.cold_source, selected, execution)?;
-        let admitted = recover_runtime(
-            runtime,
-            &self.cold_source,
-            &self.serving,
-            checkpoint,
-            execution,
-        )?;
-        self.source = Some(source::ReadmittedRelationalSource::Recovered {
-            authority: admitted.authority,
-            outcome: admitted.outcome,
-        });
-        Ok(admitted.selected_coverage)
     }
 }
 
@@ -120,14 +98,12 @@ pub(super) fn prepare_home_source(
     execution: &ExecutionRequest<'_, '_>,
 ) -> Result<Option<RelationalDurableCheckpointSource>, RelationalSectionReadmissionDenial> {
     selected
-        .map(|(_backing, _region, membership)| {
+        .map(|(backing, region, membership)| {
+            let checkpoint = super::complete_codec::decode(backing, region, execution)?;
             cold_source
                 .select_initial_members_from_read(membership, execution)
                 .map_err(RelationalSectionReadmissionDenial::MemberSelection)?;
-            // The qualified owner currently admits ordinary CHK17 only. A
-            // coupled Home requires the real Complete source-admission door;
-            // a description or format marker cannot stand in for that proof.
-            Err(RelationalSectionReadmissionDenial::CompleteNativeRequired)
+            Ok(checkpoint)
         })
         .transpose()
 }

@@ -26,10 +26,13 @@ pub(crate) use manifest_facts::{ManifestFactsDiscovery, ManifestFactsState};
 pub(crate) use planning::{
     plan_recovery, ExceededManifestEntries, ValidatedManifestResidueCleanup,
 };
-pub(crate) use publication::publish_recovery;
+pub(crate) use publication::{publish_recovery, PublicationPayload, PublicationStateBacking};
 pub(crate) use recovery::recover;
-pub(crate) use reopen::reopen_recovery;
-pub(crate) use staging::{stage_recovery, RecoveryStagingCancellation, RecoveryStagingInput};
+pub(crate) use reopen::{prepare_selected_custody_rebind, reopen_recovery};
+pub(crate) use staging::{
+    stage_recovery, RecoveryStagingCancellation, RecoveryStagingInput, RecoveryStagingInputBacking,
+    RecoveryStagingInputState,
+};
 pub(crate) use wal_residency::NativeWalRoster;
 pub(crate) use wal_selection::ResidentSourceSelection;
 pub(crate) mod source_copy;

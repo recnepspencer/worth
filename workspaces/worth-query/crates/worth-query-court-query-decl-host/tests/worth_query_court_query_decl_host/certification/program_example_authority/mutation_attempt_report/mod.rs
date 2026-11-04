@@ -76,10 +76,10 @@ fn mutation_attempt_report_distinguishes_preflight_domain_success_and_early_repl
         WorthQueryMutationHandlerWork::NotStarted
     );
     let replay = replay.into_outcome().unwrap();
-    assert!(matches!(replay, Outcome::AlreadyCommitted(_)));
+    assert!(matches!(replay, Outcome::RecoveredCommitted(_)));
     assert!(replay.result().is_none());
     assert_eq!(
-        replay.receipt().unwrap().commit_reference(),
+        replay.recovered_receipt().unwrap().commit_reference(),
         receipt.commit_reference()
     );
     assert_eq!(read_input(&app, branch, &principal, &scope), after);
@@ -136,10 +136,10 @@ fn mutation_attempt_report_keeps_preparation_capture_on_late_duplicate() {
         )
         .into_parts();
     assert_eq!(duplicate_work, second_work);
-    assert!(matches!(duplicate, Outcome::AlreadyCommitted(_)));
+    assert!(matches!(duplicate, Outcome::RecoveredCommitted(_)));
     assert!(duplicate.result().is_none());
     assert_eq!(
-        duplicate.receipt().unwrap().commit_reference(),
+        duplicate.recovered_receipt().unwrap().commit_reference(),
         fresh.receipt().unwrap().commit_reference()
     );
     app.runtime.close_conditional_runtime().unwrap();

@@ -111,7 +111,7 @@ fn decode(
         input,
         additional_envelope_bytes,
     )?;
-    let mut wire: CanonicalEnvelopeWire<'_> =
+    let mut wire: CanonicalEnvelopeWire<crate::symbols::data::SymbolSnapshotWire<'_>> =
         rmp_serde::from_slice(bytes).map_err(|error| Refusal::PayloadDecode {
             detail: error.to_string(),
         })?;
@@ -168,6 +168,13 @@ impl CanonicalCommitEnvelope {
         // Preserve only the original owner's existing exact-payload private
         // index proof. Parsed data never creates that live verification.
         copied.body_mut_for_test().authored_index_writes = self.authored_index_writes.clone();
+        if let Some(original) = self.recorded_original_inputs() {
+            copied
+                .retain_recorded_original_inputs(original.clone())
+                .map_err(|detail| Refusal::PayloadDecode {
+                    detail: detail.into(),
+                })?;
+        }
         Ok(copied)
     }
 }

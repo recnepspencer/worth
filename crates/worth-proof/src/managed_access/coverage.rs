@@ -81,10 +81,10 @@ impl ManagedIndexCoverageIssuer {
         if !(frontier.checkpoint)() {
             return Err(D::Interrupted);
         }
-        if let Some(root) = frontier.root {
-            if (frontier.disposition)(root).is_none() {
-                return Err(D::MissingRoot);
-            }
+        if let Some(root) = frontier.root
+            && (frontier.disposition)(root).is_none()
+        {
+            return Err(D::MissingRoot);
         }
         let mut previous = None;
         let mut matched = 0usize;

@@ -1,5 +1,6 @@
 mod clock;
 mod close;
+pub(crate) use close::{checkpoint_close_step, RecoveredCloseReceipt};
 pub mod owner;
 mod owner_inputs;
 mod ports;
@@ -52,4 +53,9 @@ pub(crate) use ports::RuntimeWorldProductPublicationService;
 mod read_observation;
 pub use read_observation::{
     world_branch_reads_on_this_thread_for_test, RuntimeWorldReadObservation,
+};
+
+pub use close::{
+    RetiredRuntimeWorldHome, RuntimeWorldHomeRetirement, RuntimeWorldHomeRetirementDenial,
+    RuntimeWorldHomeRetirementProgress,
 };

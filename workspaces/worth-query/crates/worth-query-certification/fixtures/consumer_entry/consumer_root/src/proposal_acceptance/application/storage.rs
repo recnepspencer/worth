@@ -101,7 +101,7 @@ impl<'host> Storage<'host> {
             &outcome,
             WorthQueryApplicationMutationOutcome::Committed { .. }
                 | WorthQueryApplicationMutationOutcome::AlreadyCommitted(_)
-                | WorthQueryApplicationMutationOutcome::PreviouslyCommitted(_)
+                | WorthQueryApplicationMutationOutcome::RecoveredCommitted(_)
         );
         if !committed {
             return Err(Failure::Recording(outcome).into());

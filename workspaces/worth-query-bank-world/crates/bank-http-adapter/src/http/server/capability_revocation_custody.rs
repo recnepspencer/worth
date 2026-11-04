@@ -21,6 +21,8 @@ pub(super) enum CapabilityRevocationCustody {
     Terminal(
         WorthQueryTerminalCapabilityCommand<'static, BankSchema, BankApplication, NativeDenial>,
     ),
+    Closed(bank_server::BankClosedCapabilityCommand),
+    ClosedWithoutCompletion(WorthQueryClosedOperation),
 }
 
 impl CapabilityRevocationCustody {
@@ -50,20 +52,23 @@ impl CapabilityRevocationCustody {
     pub(super) fn close(
         self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, BankSchema>,
-    ) -> Result<(), (Self, BankHttpDenial)> {
+    ) -> Result<Self, (Self, BankHttpDenial)> {
         match self {
             Self::Active(command) => command
                 .close(request)
-                .map(|_| ())
+                .map(Self::ClosedWithoutCompletion)
                 .map_err(|(owner, cause)| (Self::Active(owner), denial::command_denial(cause))),
             Self::Completed(command) => command
-                .close(request)
-                .map(|_| ())
+                .close_with_evidence(request)
+                .map(|closed| {
+                    Self::Closed(bank_server::BankClosedCapabilityCommand::from_query(closed))
+                })
                 .map_err(|(owner, cause)| (Self::Completed(owner), denial::command_denial(cause))),
             Self::Terminal(command) => command
                 .close(request)
-                .map(|_| ())
+                .map(Self::ClosedWithoutCompletion)
                 .map_err(|(owner, cause)| (Self::Terminal(owner), denial::command_denial(cause))),
+            closed @ (Self::Closed(_) | Self::ClosedWithoutCompletion(_)) => Ok(closed),
         }
     }
 
@@ -75,10 +80,28 @@ impl CapabilityRevocationCustody {
             Self::Active(command) => command.release_cleanup(request),
             Self::Completed(command) => command.release_cleanup(request),
             Self::Terminal(command) => command.release_cleanup(request),
+            Self::Closed(_) | Self::ClosedWithoutCompletion(_) => {
+                return Err(super::mutation_refusal::denial(
+                    super::super::protocol::BankHttpDenialKind::Stale,
+                ))
+            }
         }
         .map_err(denial::command_denial)
     }
 
+    pub(super) fn take_closed(
+        self,
+    ) -> Result<super::closed_source_evidence::ClosedCapabilityEvidence, Self> {
+        match self {
+            Self::Closed(owner) => {
+                Ok(super::closed_source_evidence::ClosedCapabilityEvidence::Completion(owner))
+            }
+            Self::ClosedWithoutCompletion(owner) => Ok(
+                super::closed_source_evidence::ClosedCapabilityEvidence::WithoutCompletion(owner),
+            ),
+            owner @ (Self::Active(_) | Self::Completed(_) | Self::Terminal(_)) => Err(owner),
+        }
+    }
     pub(super) fn observation(&self) -> Option<&WorthQueryApplicationReadObservation> {
         None
     }
@@ -92,9 +115,18 @@ impl CapabilityRevocationCustody {
                     .map(super::cleanup_description::failure),
             ),
             Self::Terminal(_) => CustodyDescription::Terminal,
+            Self::Closed(_) | Self::ClosedWithoutCompletion(_) => CustodyDescription::Closed,
             Self::Completed(command) => {
                 let evidence = command.evidence();
-                let receipt = evidence.receipt();
+                let Some(receipt) = evidence.receipt() else {
+                    return CustodyDescription::Recorded(
+                        super::mutation_custody::describe_recorded(
+                            evidence
+                                .recovered_receipt()
+                                .expect("completion owns live or recorded receipt"),
+                        ),
+                    );
+                };
                 CustodyDescription::Completed {
                     recovered: matches!(
                         evidence,

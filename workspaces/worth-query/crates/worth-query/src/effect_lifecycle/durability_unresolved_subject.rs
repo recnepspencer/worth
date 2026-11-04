@@ -1,7 +1,6 @@
-//! How Query names an unresolved durable Relational publication: a commit by
-//! its identity and position, a branch transition by its sequence and the
-//! commit position it follows. A commit can stop on either, because one
-//! unresolved publication of either kind blocks every later one.
+//! Query preserves the subject of every unresolved Native publication.
+//! Initialization, canonical commits and branch transitions share the same
+//! owner barrier; only the canonical subject has a commit identity.
 
 use worth_relational::facade::durability::{
     RelationalDurabilityUnresolved, RelationalDurabilityUnresolvedSubject as Subject,
@@ -17,6 +16,15 @@ pub(crate) fn field_unresolved_subject(
     unresolved: &RelationalDurabilityUnresolved,
 ) -> WorthQueryEvidenceIdentityEncoder {
     match unresolved.subject() {
+        Subject::InitialInputs { revision, digest } => encoder
+            .field_value(
+                WorthQueryEvidenceTag::new("initial_inputs_revision"),
+                revision.to_string(),
+            )
+            .field_digest(
+                WorthQueryEvidenceTag::new("initial_inputs_digest"),
+                &worth_foundational::facade::CanonicalDigestId::new(digest),
+            ),
         Subject::CanonicalCommit {
             position,
             commit_id,
@@ -39,12 +47,12 @@ pub(crate) fn field_unresolved_subject(
 }
 
 /// The unresolved commit's identity, or `None` when the unresolved
-/// publication is a branch transition.
+/// publication is initialization or a branch transition.
 pub(crate) fn unresolved_commit_id(
     unresolved: &RelationalDurabilityUnresolved,
 ) -> Option<CommitId> {
     match unresolved.subject() {
         Subject::CanonicalCommit { commit_id, .. } => Some(commit_id),
-        Subject::BranchTransition { .. } => None,
+        Subject::InitialInputs { .. } | Subject::BranchTransition { .. } => None,
     }
 }

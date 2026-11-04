@@ -20,6 +20,26 @@ use tokio::sync::{mpsc, oneshot, Mutex, Semaphore};
 use worth_query_host::facade::admission::authenticated_principal::WorthQueryCancellationSource;
 
 pub(super) enum WorkerCommand {
+    ConfirmClosedHandoff {
+        id: String,
+    },
+    ReturnClosedHandoff {
+        id: String,
+        record: super::closed_mutation_custody::ClosedMutationRecord,
+    },
+    ClosedHandoff {
+        return_sender: mpsc::Sender<WorkerCommand>,
+        command: AdmittedMutationCommand,
+        queued_slot: tokio::sync::OwnedSemaphorePermit,
+        cancellation: WorthQueryCancellationSource,
+        response: oneshot::Sender<
+            Result<
+                super::closed_mutation_delivery::BankHttpClosedMutationDelivery,
+                BankHttpMutationOutcome,
+            >,
+        >,
+    },
+
     Execute {
         command: AdmittedMutationCommand,
         queued_slot: tokio::sync::OwnedSemaphorePermit,

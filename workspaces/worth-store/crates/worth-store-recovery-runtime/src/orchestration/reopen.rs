@@ -10,69 +10,34 @@ use crate::progression::{NamespaceDurablePhysicalRecovery, ReopenedPhysicalRecov
 
 #[path = "reopen/custody_rebind.rs"]
 mod custody_rebind;
+pub(crate) use custody_rebind::prepare_selected_custody_rebind;
 
 pub(crate) fn reopen_recovery(
     durable: NamespaceDurablePhysicalRecovery,
 ) -> Result<ReopenedPhysicalRecovery, PhysicalRecoveryOutcome> {
-    let NamespaceDurablePhysicalRecovery {
-        state,
-        mut expectation,
-        publication_counters,
-        publication_settlement,
-    } = durable;
-    let format = state.selection.root().selected().selector().format();
+    let data = durable.payload();
+    let format = data.state.selection.root().selected().selector().format();
     let command = PhysicalRecoveryFreshReopenCommand::new(
-        expectation.plan_identity(),
-        expectation.recovered_root().clone(),
-        expectation.current_selector(),
+        data.expectation.plan_identity(),
+        data.expectation.recovered_root().clone(),
+        data.expectation.current_selector(),
         format,
     )
     .expect("a sealed publication expectation has a nonzero recovered root");
-    match state
+    match data
+        .state
         .coordination
         .owner()
-        .execute_fresh_reopen(&state.authority.media, command)
+        .execute_fresh_reopen(&data.state.authority.media, command)
     {
         PhysicalRecoveryFreshReopenOutcome::Completed(completed) => {
-            let counters = completed_counters(&completed);
-            let rebound_state = custody_rebind::rebind_selected_custody(
-                state,
-                &mut expectation,
-                &publication_settlement,
-                &publication_counters,
-                &completed,
-            );
-            let state = match rebound_state {
-                Ok(state) => state,
-                Err(state) => {
-                    return Err(custody_indeterminate(
-                        state,
-                        publication_counters,
-                        publication_settlement,
-                    ))
-                }
-            };
-            Ok(ReopenedPhysicalRecovery::new(
-                state,
-                expectation,
-                publication_counters,
-                publication_settlement,
-                completed,
-                counters,
-            ))
+            outcome::completed(durable, completed)
         }
-        PhysicalRecoveryFreshReopenOutcome::Denied(denial) => {
-            let counters = denial_counters(&denial);
-            let failure = PhysicalRecoveryReopenFailure::new(counters, denial);
-            Err(indeterminate(
-                state,
-                publication_counters,
-                publication_settlement,
-                failure,
-            ))
-        }
+        PhysicalRecoveryFreshReopenOutcome::Denied(denial) => outcome::denied(durable, denial),
     }
 }
+
+mod outcome;
 
 fn custody_indeterminate(
     state: crate::progression::NamespaceDurableState,

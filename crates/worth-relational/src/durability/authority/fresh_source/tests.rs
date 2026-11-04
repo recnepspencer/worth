@@ -55,13 +55,17 @@ fn fresh_source_keeps_actual_runtime_root_and_installed_schema_for_complete() {
         vec![],
     );
     let expected_constraint = unused.relation_integrity.clone();
+    let initialization = runtime.begin_fresh_home_initialization(&execution).unwrap();
     let installation = runtime
-        .prepare_initial_schema_installation()
+        .prepare_fresh_home_schema_installation(&execution, initialization)
         .unwrap()
-        .install(
+        .install_with_managed_sources(
+            &execution,
             crate::schema::data::RelationalSchemaRegistry::new()
                 .register_relation_kind(unused)
                 .unwrap(),
+            vec![],
+            vec![],
         )
         .unwrap();
     drop(original_root);
@@ -223,7 +227,9 @@ fn fresh_receipt_refuses_actual_movement_and_preserves_original_cancellation() {
         runtime
             .durability_recovery()
             .admit_fresh_home_source(&stopped_execution, plan),
-        Err(Stop::Request(_))
+        Err(RelationalFreshSourceAdmissionStop::Recovery(Stop::Request(
+            _
+        )))
     ));
     let written = create_entity_outcome(&execution, &runtime, "advanced-genesis");
     release_test_commit_snapshot(&runtime, &written);

@@ -20,6 +20,18 @@ pub struct AnchoredRecordPayloadStream<'request, 'authority> {
     shared_memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 impl AnchoredRecords<'_> {
+    /// Open another anchor under this verified Home read's ORIGINAL reader.
+    /// No latest-root acquisition or raw reader extraction occurs.
+    pub fn open_payload_from_read<'request, 'authority>(
+        &self,
+        read: &super::AnchoredRecordReadMembership,
+        request: &ExecutionRequest<'request, 'authority>,
+        name: AnchoredRecordName,
+        maximum_payload_bytes: u64,
+    ) -> Result<Option<AnchoredRecordPayloadStream<'request, 'authority>>, Failure> {
+        self.validate_read_membership(read)?;
+        self.open_payload_from(read.original_reader(), request, name, maximum_payload_bytes)
+    }
     /// Open the exact anchor selected by this caller's reader. Header lengths
     /// agree with the physical record before any table/payload allocation.
     /// Perform this I/O outside logical reservations. Payload copying must use

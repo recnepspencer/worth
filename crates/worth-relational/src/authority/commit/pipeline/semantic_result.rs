@@ -56,7 +56,7 @@ pub(super) fn prepare_semantic_result(
         changed_records: input.changed.to_vec(),
         structural: RelationalCommitStructuralMeaning {
             invariant_groups: input.structural.invariant_groups,
-            commit_topology: input.structural.commit_topology.clone(),
+            commit_topology: input.structural.commit_topology,
             touched_partitions: input.structural.touched_partitions.clone(),
             descriptor_semantics_version: input.structural.descriptor_semantics_version,
         },

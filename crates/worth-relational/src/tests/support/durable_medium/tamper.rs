@@ -9,12 +9,19 @@ use crate::durability::data::RelationalNativeCheckpoint;
 use crate::history::data::{CanonicalCommitEnvelopeBody, PositionedCanonicalCommit};
 use crate::publication::patch::data::PatchStreamPosition;
 
-/// Offset of the artifact header's commit-id field. The payload digest does
-/// not cover the header, so damage here passes the frame check and must be
-/// refused by readmission.
-pub(crate) const ARTIFACT_HEADER_COMMIT_ID_OFFSET: usize = 18;
-
 impl TestDurableMedium {
+    /// Keep v5's position/commit-bound frame intact while contradicting its body.
+    pub(crate) fn corrupt_artifact_commit_header_with_intact_frame(
+        &self,
+        position: PatchStreamPosition,
+    ) {
+        let mut journal = self.journal();
+        let bytes = journal
+            .bytes_at_mut(position)
+            .expect("medium holds the original frame");
+        bytes[18] ^= 0xff;
+        crate::tests::support::reseal_canonical_commit_frame(bytes);
+    }
     /// Flip every bit of one byte of the artifact held at `position`.
     pub(crate) fn flip_artifact_byte(&self, position: PatchStreamPosition, offset: usize) {
         let mut journal = self.journal();

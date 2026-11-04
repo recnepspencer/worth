@@ -117,6 +117,7 @@ impl ResidentHistoryReadmission {
         Ok(Arc::new(ResidentRegion {
             partition,
             commitment: Some(commitment),
+            _history_custody: None,
             _memory: None,
         }))
     }
@@ -139,8 +140,19 @@ fn restore_rows<K: RecordKind + HistoryRowKind>(
                 row_index: prefix.row_index as u64,
                 kind_commitment: prefix.history_opening.kind_commitment,
             };
-            let mut earlier =
-                folder.fold_row::<K>(prefix.source.as_ref(), &prefix.history_members, reference)?;
+            let mut earlier = folder.fold_row::<K>(
+                prefix
+                    .source()
+                    .map_err(|cause| {
+                        Failure::StorageUnavailable(RelationalStorageUnavailable {
+                            subject: RelationalStorageSubject::Region(prefix.partition_id),
+                            cause,
+                        })
+                    })?
+                    .as_ref(),
+                &prefix.history_members,
+                reference,
+            )?;
             earlier.append(suffix);
             *suffix = earlier;
         }

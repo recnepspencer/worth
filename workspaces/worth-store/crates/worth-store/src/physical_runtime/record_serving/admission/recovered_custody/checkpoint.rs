@@ -11,29 +11,15 @@ impl RecoveredCheckpointCustodyEvidence {
     ) -> Result<(), crate::physical_runtime::record_serving::RecordBootstrapDenial> {
         use crate::physical_runtime::record_serving::RecordBootstrapDenial as Denial;
         const MAX_CHECKPOINT_BYTES: u64 = 256 << 20;
-        if let Some(RecoveredNoReleaseCustody::GenerationZero(_)) = &self.no_release {
+        if let RecoveredReleaseCustody::NoRelease(RecoveredNoReleaseCustody::GenerationZero(_)) =
+            &self.payload().release
+        {
             return self.verify_funded_absent_checkpoint(media, window);
         }
         let selected = self
-            .head_v2
-            .as_ref()
-            .map(|claim| claim.checkpoint())
-            .or_else(|| {
-                self.no_release
-                    .as_ref()
-                    .and_then(RecoveredNoReleaseCustody::selected)
-                    .map(|claim| claim.checkpoint())
-            })
-            .or_else(|| {
-                self.pending_wal_release
-                    .as_ref()
-                    .map(|claim| claim.checkpoint())
-            })
-            .or_else(|| {
-                self.historical_release
-                    .as_ref()
-                    .map(|claim| claim.checkpoint())
-            })
+            .payload()
+            .release
+            .selected_checkpoint()
             .ok_or(Denial::RecoveredCheckpointCustodyMismatch)?;
         self.checkpoint_stream(selected)
             .map_err(|_| Denial::RecoveredCheckpointCustodyMismatch)?;
@@ -84,6 +70,7 @@ impl RecoveredCheckpointCustodyEvidence {
     pub(super) fn verify_ordered_historical_release(
         &self,
         verified: &VerifiedOrderedHistoricalReleaseCustody,
+        effective: &VerifiedEffectiveReleaseHeadRosterV14,
         store: StableStoreIdentity,
         root: &DurablePhysicalRootManifest,
         actual_sha256: [u8; 32],
@@ -98,12 +85,10 @@ impl RecoveredCheckpointCustodyEvidence {
         {
             return Err(RecoveredCheckpointCustodyDenial::SelectedCheckpointMismatch);
         }
-        let effective = self
-            .effective_release_heads
-            .as_ref()
-            .ok_or(RecoveredCheckpointCustodyDenial::SelectedCheckpointMismatch)?;
         match (verified.marker(), verified.selected_head_v2()) {
-            (Some(marker), None) => self.verify_historical_no_release(verified, marker)?,
+            (Some(marker), None) => {
+                self.verify_historical_no_release(verified, effective, marker)?
+            }
             // The completed history continues from the base's checkpoint-
             // source roster, which stays the effective roster's origin.
             (None, Some(base)) => {
@@ -147,6 +132,7 @@ impl RecoveredCheckpointCustodyEvidence {
     fn verify_historical_no_release(
         &self,
         verified: &VerifiedOrderedHistoricalReleaseCustody,
+        effective: &VerifiedEffectiveReleaseHeadRosterV14,
         marker: worth_store_physical_format::ReleaseCheckpointNoReleaseV1,
     ) -> Result<(), RecoveredCheckpointCustodyDenial> {
         let source = verified.checkpoint().source();
@@ -177,10 +163,6 @@ impl RecoveredCheckpointCustodyEvidence {
         if observed != marker || payload != marker.encode() {
             return Err(RecoveredCheckpointCustodyDenial::SelectedCheckpointMismatch);
         }
-        let effective = self
-            .effective_release_heads
-            .as_ref()
-            .ok_or(RecoveredCheckpointCustodyDenial::SelectedCheckpointMismatch)?;
         if !effective.checkpoint_source_heads().is_empty()
             || effective.checkpoint_source_root().is_some()
             || effective.checkpoint_source_next_block() != 1

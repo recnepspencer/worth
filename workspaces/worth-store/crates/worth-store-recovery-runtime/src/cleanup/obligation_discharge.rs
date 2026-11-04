@@ -70,8 +70,8 @@ pub(super) fn discharge(
     reopened: &ReopenedPhysicalRecovery,
     checkpoint: SettledCheckpointResidue,
 ) -> Result<(), DischargeFailure> {
-    let owner = reopened.state.coordination.owner();
-    let media = &reopened.state.authority.media;
+    let owner = reopened.payload().state.coordination.owner();
+    let media = &reopened.payload().state.authority.media;
     let obligations = owner
         .prior_physical_work_obligations(media, MAXIMUM_PRIOR_OBLIGATIONS)
         .map_err(|_| DischargeFailure::Damaged)?;
@@ -116,20 +116,22 @@ impl AdjudicationBasis {
     ) -> Self {
         Self {
             published: matches!(
-                reopened.publication_settlement.settlement(),
+                reopened.payload().publication_settlement.settlement(),
                 PhysicalRecoveryPublicationSettlement::Completed(_)
             ),
             created: reopened
+                .payload()
                 .expectation
                 .created_artifacts()
                 .iter()
                 .copied()
                 .collect(),
             reached: reopened
+                .payload()
                 .expectation
                 .referenced_artifacts()
                 .iter()
-                .chain(reopened.state.base.source_artifacts())
+                .chain(reopened.payload().state.base.source_artifacts())
                 .copied()
                 .collect(),
             checkpoint,
@@ -161,10 +163,13 @@ impl AdjudicationBasis {
 fn make_selected_checkpoint_publication_durable(
     reopened: &ReopenedPhysicalRecovery,
 ) -> Result<(), DischargeFailure> {
-    let owner = reopened.state.coordination.owner();
+    let owner = reopened.payload().state.coordination.owner();
     let selected = owner.checkpoint().ok_or(DischargeFailure::Damaged)?;
     owner
-        .synchronize_selected_checkpoint_publication(&reopened.state.authority.media, selected)
+        .synchronize_selected_checkpoint_publication(
+            &reopened.payload().state.authority.media,
+            selected,
+        )
         .map_err(|denial| match denial {
             SelectedCheckpointPublicationDenial::CheckpointMismatch
             | SelectedCheckpointPublicationDenial::Observation(_) => DischargeFailure::Damaged,

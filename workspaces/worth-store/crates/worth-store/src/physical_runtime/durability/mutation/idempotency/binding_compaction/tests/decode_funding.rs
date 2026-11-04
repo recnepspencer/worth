@@ -107,7 +107,8 @@ fn native_checkpoint_binding_decode_denies_pressure_and_releases_successful_work
     let format = AdmittedPhysicalRecordFormat::admit(
         PhysicalRecordFormatDeclaration::builder().admit().unwrap(),
     );
-    let original = 16 * 1024;
+    let serving = PhysicalRecoveryCoordinationCapacity::serving_evidence_backing_bytes();
+    let original = serving + 16 * 1024;
     let prior = 64;
     let mut coordination = freshness
         .register_session()
@@ -127,10 +128,10 @@ fn native_checkpoint_binding_decode_denies_pressure_and_releases_successful_work
     for (payload, expected_fate, actual_peak) in cases {
         let workspace = checkpoint_binding_decode_peak(payload.len())
             .expect("closed codec declares a finite temporary peak for its exact payload");
-        assert!(workspace > 0 && workspace + prior < original);
+        assert!(workspace > 0 && workspace + prior < original - serving);
         assert!(workspace >= actual_peak,
         "declared peak must cover the actual nested bytes, records, conversion overlap and padded Arc");
-        let held_bytes = original - prior - workspace + 1;
+        let held_bytes = original - serving - prior - workspace + 1;
         let held = coordination
             .certification_begin_recovery_allocation(NonZeroU64::new(held_bytes).unwrap())
             .expect("actual native competing reservation leaves workspace one byte short");
@@ -151,7 +152,7 @@ fn native_checkpoint_binding_decode_denies_pressure_and_releases_successful_work
         let after = allocations.snapshot().for_dimension(dimension);
         assert_eq!(after.admissions(), before.admissions());
         assert_eq!(after.admitted_units(), before.admitted_units());
-        assert_eq!(after.active_units(), held_bytes + prior);
+        assert_eq!(after.active_units(), serving + held_bytes + prior);
         assert_eq!(after.denials(), before.denials() + 1);
         assert_eq!(window.charged_bytes(), prior);
         drop(held);
@@ -183,7 +184,7 @@ fn native_checkpoint_binding_decode_denies_pressure_and_releases_successful_work
             after_retry.released_units() - before_retry.released_units(),
             workspace
         );
-        assert_eq!(after_retry.active_units(), prior);
+        assert_eq!(after_retry.active_units(), serving + prior);
         assert_eq!(window.charged_bytes(), prior);
         drop(window);
         assert_eq!(
@@ -191,7 +192,7 @@ fn native_checkpoint_binding_decode_denies_pressure_and_releases_successful_work
                 .snapshot()
                 .for_dimension(dimension)
                 .active_units(),
-            0
+            serving
         );
     }
     drop(coordination);

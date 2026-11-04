@@ -24,7 +24,9 @@ mod authored_index_writes;
 mod index_catalog;
 pub(crate) use authored_index_writes::{CanonicalAuthoredIndexWrite, CanonicalAuthoredIndexWrites};
 pub(crate) use index_catalog::CanonicalIndexDefinitionDelta;
+mod descriptive_decode;
 mod live_managed_source_history;
+mod original_inputs;
 pub(crate) use live_managed_source_history::LiveManagedSourceHistory;
 mod authoritative_artifact_encoding;
 mod authoritative_payload;
@@ -85,20 +87,26 @@ pub(crate) use wire_projection::EnvelopeProjection;
 ///     let _ = rmp_serde::to_vec_named(&**envelope);
 /// }
 /// ```
-#[derive(Debug, Deserialize)]
+#[derive(Debug)]
 pub struct CanonicalCommitEnvelope {
-    #[serde(skip)]
+    original_inputs: std::sync::OnceLock<
+        Option<crate::durability::source_initial_inputs::recorded::RecordedCanonicalInputs>,
+    >,
     pub(crate) live_managed_source_history: LiveManagedSourceHistory,
-    #[serde(flatten)]
     body: CanonicalCommitEnvelopeBody,
     semantic_result: std::sync::Arc<crate::transactions::data::RelationalCommitSemanticResult>,
     // Intrinsic input and body admission outlive every decoded body field.
-    #[serde(skip)]
+    #[allow(
+        dead_code,
+        reason = "Original diagnostic, proof and funding custody remains owned through retirement"
+    )]
     pub(crate) decoded_bytes: Option<worth_execution::ExecutionImmutableBytes>,
-    #[serde(skip)]
+    #[allow(
+        dead_code,
+        reason = "Original diagnostic, proof and funding custody remains owned through retirement"
+    )]
     pub(crate) decoded_memory: Option<worth_execution::ExecutionMemoryReservation>,
     // LAST: real weak-position observers share only this fixed allocation bill.
-    #[serde(skip)]
     pub(crate) control_allocation: Option<std::sync::Arc<CanonicalEnvelopeControlAllocation>>,
 }
 

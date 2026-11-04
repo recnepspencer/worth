@@ -131,7 +131,7 @@ fn idempotent_recovery_reuses_the_original_world_terminal() {
     else {
         panic!("first application must commit")
     };
-    let WorthQueryApplicationCommitOutcome::AlreadyCommitted(recovered) =
+    let WorthQueryApplicationCommitOutcome::RecoveredCommitted(recovered) =
         world.application.compare_and_commit_application(
             retry,
             binding,
@@ -141,12 +141,9 @@ fn idempotent_recovery_reuses_the_original_world_terminal() {
         panic!("retry must recover the committed terminal")
     };
 
-    assert_eq!(
-        recovered.committed_product_publication(),
-        committed.committed_product_publication()
+    crate::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_original(
+        &recovered, &committed,
     );
-    assert_eq!(recovered.dispatch_outbox(), committed.dispatch_outbox());
-    assert!(recovered.is_same_authoritative_commit(&committed));
 }
 
 #[test]

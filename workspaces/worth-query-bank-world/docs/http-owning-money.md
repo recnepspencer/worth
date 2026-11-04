@@ -252,6 +252,25 @@ Listener-independent `inspect_recovery` and `retry_recovery` delegate to the
 existing estate recovery registry under fresh credentials. The continuation keeps this registry and installation
 alive across listener loss; a queued rail retry can also return `outcome_unknown`.
 
+A collection-release reply describes the release; the continuation retains its
+actual native receipt alongside the remaining operation. Close the operation
+with a fresh sequence. A closed operation with outstanding original dispatch or
+recovery custody remains owned by the worker. Use the local
+`prepare_closed_mutation_handoff(fresh_close_command)` handoff with the next sequence to
+receive a `BankHttpClosedMutationDelivery`. Explicit `receive()` accepts the
+move-only `BankHttpClosedMutation`; dropping an unaccepted delivery restores it. A failed or abandoned reply returns the exact
+carrier and its capacity to the worker. Confirmed receipt releases transport
+capacity. Native closes with no remaining declared obligation release their
+transport record directly.
+
+`BankHttpClosedMutation::into_parts()` returns the original runtime keepalive and
+move-only `BankHttpClosedMutationEvidence`. Borrow its actual `closed_mut()` or
+`released_collection_mut()` receipt for the Bank runtime's
+`resume_original_cleanup_dispatch` and `open_cleanup_commit_recovery` entrances.
+Keep the entire evidence owner; a wire description or recorded retry result
+cannot replace it. A second collection release is refused while its existing
+receipt awaits close and transfer.
+
 ## How it relates to other features
 
 Payment continuation tracks a business payment; estate recovery owns external

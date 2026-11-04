@@ -37,7 +37,12 @@ pub(super) fn stopped(
         (None, Kind::StorageUnavailable(failure)) => {
             commit_execution_stopped(identity, detail, Ok(Native::StorageUnavailable(failure)))
         }
-        (None, Kind::IdempotencyPreparationBusy | Kind::IdempotencyIntentDrift) => denial(
+        (
+            None,
+            Kind::IdempotencyPreparationBusy
+            | Kind::IdempotencyForeignAffinity
+            | Kind::IdempotencyIntentDrift,
+        ) => denial(
             WorthQueryOutputDemandDenialKind::ProducerUnavailable,
             format!("{identity}: {detail:?}"),
         ),
@@ -61,7 +66,6 @@ pub(super) fn stopped(
             | Kind::CandidateIdentityExhausted
             | Kind::IndexMaintenanceBudgetExceeded
             | Kind::IndexGenerationIdentityExhausted
-            | Kind::IdempotencyReceiptNotRetained { .. }
             | Kind::IdempotencyIntentUnverifiable
             | Kind::OperationBodyExecutionRequired
             | Kind::SignedCreationAuthentication { .. }

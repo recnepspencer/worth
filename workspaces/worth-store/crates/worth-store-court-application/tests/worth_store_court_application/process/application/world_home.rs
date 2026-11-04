@@ -64,10 +64,10 @@ fn closed_world_releases_its_bridge_and_retains_the_same_native_home_until_exter
         home.world().lifecycle_observation(),
         RuntimeWorldOwnerLifecycleObservation::Open
     );
-    assert!(matches!(
-        home.checkpoint(&execution),
-        Err(ApplicationHomeCheckpointDenial::WorldSectionRequired)
-    ));
+    let checkpoint = home
+        .checkpoint(&execution)
+        .unwrap_or_else(|cause| panic!("actual coupled World checkpoint: {cause:?}"));
+    assert!(checkpoint.covered().0 > 0);
     let (_, external_read) = home
         .relational()
         .runtime()
@@ -83,6 +83,14 @@ fn closed_world_releases_its_bridge_and_retains_the_same_native_home_until_exter
     assert_eq!(sealed.home_identity(), identity);
     assert_eq!(sealed.incarnation(), incarnation);
     let _actual_world_report = sealed.world_close_report();
+    let origin = sealed
+        .checkpoint_origin_retirement()
+        .expect("closed World explicitly retired its installed origin");
+    assert_eq!(
+        origin.retention_keys().count(),
+        4,
+        "the initial basis and original occurrence image pair both retire"
+    );
     match crate::durable_run::open(directory.path(), &execution) {
         Err(OpenRefusal::BeforeReadmission(
             worth_store_application::ApplicationHomeOpenRefusal::Physical(refused),
@@ -108,10 +116,10 @@ fn closed_world_releases_its_bridge_and_retains_the_same_native_home_until_exter
     assert_eq!(recovery.native_active_snapshot_count(), Some(0),
         "actual World-owned result snapshots were released; the independent external basis still blocks close");
     assert!(recovery.world_close_report().is_some());
-    assert!(matches!(
-        recovery.checkpoint_result(),
-        Err(ApplicationHomeCheckpointDenial::WorldSectionRequired)
-    ));
+    assert!(
+        recovery.checkpoint_result().is_ok(),
+        "the actual coupled checkpoint settled"
+    );
     assert_eq!(recovery.location(), directory.path());
     match crate::durable_run::open(directory.path(), &execution) {
         Err(OpenRefusal::BeforeReadmission(
@@ -129,13 +137,17 @@ fn closed_world_releases_its_bridge_and_retains_the_same_native_home_until_exter
     drop(external_read);
     match recovery.try_release(&execution) {
         ApplicationHomeCloseOutcome::Closed {
-            checkpoint: Err(ApplicationHomeCheckpointDenial::WorldSectionRequired),
-            ..
+            checkpoint: Ok(_), ..
         } => {}
         ApplicationHomeCloseOutcome::CloseRefused { reason, .. } => {
             panic!("same Native/Home close remains refused after external read release: {reason:?}")
         }
-        _ => panic!("same Home close must report its World checkpoint refusal"),
+        ApplicationHomeCloseOutcome::Closed {
+            checkpoint: Err(cause),
+            ..
+        } => {
+            panic!("same Home must retain its successful World checkpoint: {cause:?}")
+        }
     }
     drop(inert_ports);
     let reopened = crate::durable_run::open(directory.path(), &execution).unwrap();
@@ -220,13 +232,17 @@ fn abandoned_world_delivery_refuses_before_close_and_can_be_delivered_then_close
     drop(recovered.consume());
     match home.close(&execution) {
         Ok(ApplicationHomeCloseOutcome::Closed {
-            checkpoint: Err(ApplicationHomeCheckpointDenial::WorldSectionRequired),
-            ..
+            checkpoint: Ok(_), ..
         }) => {}
         Err(refused) => panic!("delivered World close refused: {:?}", refused.reason()),
         Ok(ApplicationHomeCloseOutcome::CloseRefused { reason, .. }) => {
             panic!("Native close refused: {reason:?}")
         }
-        _ => panic!("close must retain the explicit unsupported World checkpoint report"),
+        Ok(ApplicationHomeCloseOutcome::Closed {
+            checkpoint: Err(cause),
+            ..
+        }) => {
+            panic!("close must retain the successful coupled World checkpoint report: {cause:?}")
+        }
     }
 }

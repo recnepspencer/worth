@@ -11,7 +11,8 @@ mod recovered_custody;
 pub use recovered_custody::RecoveredPhysicalCheckpointCustody;
 pub(in crate::physical_runtime) use recovered_custody::VerifiedRecoveredCheckpointCustody;
 pub(in crate::physical_runtime) use recovered_custody::{
-    GenerationZeroNoReleaseCustody, RecoveredNoReleaseCustody,
+    GenerationZeroNoReleaseCustody, PreparedRecoveredCustodyBacking, RecoveredNoReleaseCustody,
+    RecoveredReleaseCustody,
 };
 mod publication_charge;
 pub(in crate::physical_runtime) use publication_charge::ReconstructedPublicationMetadata;

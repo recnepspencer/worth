@@ -31,7 +31,7 @@ fn snapshot_reuse_does_not_suppress_parent_audit_and_replay_does_not_duplicate_i
     );
     assert!(journal(&app, "parent-b").is_empty());
     assert!(
-        matches!(select(&app,request,1001),Outcome::AlreadyCommitted(replay) if replay.outcome_identity()==receipt.outcome_identity())
+        matches!(select(&app,request,1001),Outcome::RecoveredCommitted(replay) if Some(replay.outcome_identity())==receipt.outcome_identity())
     );
     assert_eq!(journal(&app, "parent-a"), audits);
     assert!(matches!(

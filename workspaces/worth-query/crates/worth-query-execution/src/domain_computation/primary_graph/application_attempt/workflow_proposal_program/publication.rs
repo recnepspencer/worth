@@ -37,13 +37,12 @@ pub use reference::PublishedWorkflowProposalRef;
 mod read_only;
 pub(in crate::domain_computation::primary_graph) use read_only::observe as observe_read_only_proposal;
 /// A workflow proposal that landed: the proposal, the transition it opened, its commit
-/// receipt, and whether the idempotency key replayed an already-landed commit.
+/// receipt from this actual publication.
 #[derive(Debug)]
 pub struct PerformedWorkflowProposal {
     proposal: PublishedWorkflowProposalRef,
     transition: EntityId,
     receipt: super::super::WorthQueryApplicationCommitReceipt,
-    replayed: bool,
 }
 
 impl PerformedWorkflowProposal {
@@ -59,17 +58,15 @@ impl PerformedWorkflowProposal {
     pub const fn receipt(&self) -> &super::super::WorthQueryApplicationCommitReceipt {
         &self.receipt
     }
-    pub const fn replayed(&self) -> bool {
-        self.replayed
-    }
 }
 
 /// What executing a workflow proposal produced. `ProjectionDenied` means the commit landed
 /// but its receipt did not record this proposal on the instance's branch.
 #[derive(Debug)]
 pub enum WorkflowProposalOutcome {
+    RecoveredCommitted(crate::domain_computation::primary_graph::provider::WorthQueryRecoveredApplicationCommitReceipt),
     Published(PerformedWorkflowProposal),
-    /// The commit did not land. A landed commit, first or replayed, is the
+    /// The commit did not land. A fresh landed commit is the
     /// performed variant.
     Application(WorthQueryApplicationUncommitted),
     ProjectionDenied(super::super::WorthQueryApplicationCommitReceipt),
@@ -90,10 +87,6 @@ where
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
         instance: PublishedWorkflowInstanceRef,
-        operation: String,
-        input_type: String,
-        input_identity: [u8; 32],
-        source_identity: Option<[u8; 32]>,
     ) -> Result<Option<WorkflowProposalOutcome>, WorthQueryApplicationIdempotencyResolutionDenial>
     where
         Input: Clone + Send + Sync + 'static,
@@ -107,6 +100,9 @@ where
             )?
             .into_resolution();
         let outcome = match resolution {
+            WorthQueryApplicationIdempotencyResolution::RecoveredCommitted(receipt) => {
+                WorkflowProposalOutcome::RecoveredCommitted(receipt)
+            }
             WorthQueryApplicationIdempotencyResolution::Unseen => return Ok(None),
             WorthQueryApplicationIdempotencyResolution::ProductPreparationPending(owner) => {
                 WorkflowProposalOutcome::Application(
@@ -117,28 +113,6 @@ where
                 WorkflowProposalOutcome::Application(WorthQueryApplicationUncommitted::Denied(
                     super::super::WorthQueryApplicationCommitDenial::idempotency_intent_drift(),
                 ))
-            }
-            WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(receipt) => {
-                let layout = self
-                    .runtime
-                    .primary_graph()
-                    .expect("application runtime requires primary graph")
-                    .layout()
-                    .workflow();
-                project(
-                    receipt,
-                    ProjectionContext {
-                        transition_identity_locator: layout.transition.identity.clone(),
-                        proposal_identity_locator: layout.proposal.identity.clone(),
-                        proposal_node_path_locator: layout.proposal.node_path.clone(),
-                        instance,
-                        operation,
-                        input_type,
-                        input_identity,
-                        source_identity,
-                    },
-                    true,
-                )
             }
         };
         Ok(Some(outcome))
@@ -218,7 +192,8 @@ where
             source_identity,
         };
         let projected = match outcome.landed() {
-            Ok((receipt, replayed)) => project(receipt, context, replayed),
+            Ok(crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationLandedCommit::Live { receipt }) => project(receipt, context),
+            Ok(crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationLandedCommit::Recovered(receipt)) => return WorkflowProposalOutcome::RecoveredCommitted(receipt),
             Err(uncommitted) => WorkflowProposalOutcome::Application(uncommitted),
         };
         if let (Some(progress_update), WorkflowProposalOutcome::Published(performed)) =
@@ -256,7 +231,6 @@ struct ProjectionContext {
 fn project(
     receipt: super::super::WorthQueryApplicationCommitReceipt,
     context: ProjectionContext,
-    replayed: bool,
 ) -> WorkflowProposalOutcome {
     if receipt.product_branch() != context.instance.branch() {
         return WorkflowProposalOutcome::ProjectionDenied(receipt);
@@ -287,7 +261,6 @@ fn project(
         proposal: published,
         transition,
         receipt,
-        replayed,
     })
 }
 

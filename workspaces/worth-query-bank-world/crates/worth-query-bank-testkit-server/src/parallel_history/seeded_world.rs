@@ -28,7 +28,7 @@ impl World {
             inputs.unsigned("seed", seed);
         });
         let identities = (1..=4)
-            .map(|actor| DynamicIdentity::new(&format!("history-{seed}-{actor}")))
+            .map(|actor| DynamicIdentity::from_recipe(&format!("history-{seed}-{actor}")))
             .collect::<Vec<_>>();
         let institution = InstitutionId::new(1).unwrap();
         let cash = AccountId::new(100).unwrap();

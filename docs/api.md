@@ -461,7 +461,7 @@ remains with the mutation owner and the linked application guide.
 | --- | --- |
 | `Committed` | named { receipt: WorthQueryApplicationCommitReceipt, result: Result } |
 | `AlreadyCommitted` | tuple (WorthQueryApplicationCommitReceipt) |
-| `PreviouslyCommitted` | tuple (WorthQueryHistoricalApplicationCommit) |
+| `RecoveredCommitted` | tuple (WorthQueryRecoveredApplicationCommitReceipt) |
 | `IdempotencyIntentDrift` | unit |
 | `DomainDenied` | tuple (Denial) |
 | `Cancelled` | unit |

@@ -27,7 +27,7 @@ fn fresh_recovery_applies_a_wal_durable_segment_rewrite() {
         &world.writer.root,
         &report_path,
         &temporary,
-        "c8-phase2-admission-v1",
+        "c8-phase2-admission-v2",
     );
     assert_child_succeeded("rewrite-after-wal", &output);
     let report = worth_store_recovery_runtime::RecoveryReportEnvelope::decode(

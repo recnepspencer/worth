@@ -35,8 +35,9 @@ pub use super::application_attempt::{
     WorthQueryApplicationEffectProgram, WorthQueryApplicationEffectProgramBuilder,
     WorthQueryApplicationIdempotencyBinding, WorthQueryApplicationIdempotencyResolution,
     WorthQueryApplicationIdempotencyResolutionDenial,
-    WorthQueryApplicationIdempotencyResolutionDenialKind, WorthQueryApplicationManagedCleanup,
-    WorthQueryApplicationManagedCleanupFailure, WorthQueryApplicationNoEffect,
+    WorthQueryApplicationIdempotencyResolutionDenialKind, WorthQueryApplicationLandedCommit,
+    WorthQueryApplicationManagedCleanup, WorthQueryApplicationManagedCleanupFailure,
+    WorthQueryApplicationManagedCleanupReceipt, WorthQueryApplicationNoEffect,
     WorthQueryApplicationNoEffectCause, WorthQueryApplicationOutputEntity,
     WorthQueryApplicationOutputFamilyEntry, WorthQueryApplicationOutputPosture,
     WorthQueryApplicationOutputProjectionDenial, WorthQueryApplicationReadAttempt,
@@ -44,15 +45,16 @@ pub use super::application_attempt::{
     WorthQueryApplicationStaleAttempt, WorthQueryApplicationTypedOutputCorrespondence,
     WorthQueryApplicationUncommitted, WorthQueryApplicationUnobservedWrite,
     WorthQueryApplicationUnresolvedCommitEvidence, WorthQueryApprovedElevation,
-    WorthQueryCapabilityRevocationProgram, WorthQueryCommittedProductPublication,
+    WorthQueryCapabilityRevocationProgram, WorthQueryCleanupDispatchDenial,
+    WorthQueryCleanupDispatchPosture, WorthQueryCommittedProductPublication,
     WorthQueryCompleteApplicationReadSet, WorthQueryDelegationActivationProgram,
     WorthQueryElevationApprovalOutcome, WorthQueryElevationApprovalProgram,
     WorthQueryElevationCloseOutcome, WorthQueryElevationCloseProgram,
     WorthQueryElevationClosureKind, WorthQueryElevationRequestOutcome,
     WorthQueryElevationRequestProgram, WorthQueryExternalDispatchAttemptDenial,
     WorthQueryExternalDispatchPreparationDenial, WorthQueryExternalRedispatchDenial,
-    WorthQueryExternalTransportInstallationDenial, WorthQueryHistoricalApplicationCommit,
-    WorthQueryMandatoryReview, WorthQueryMandatoryReviewOutcome, WorthQueryMandatoryReviewProgram,
+    WorthQueryExternalTransportInstallationDenial, WorthQueryMandatoryReview,
+    WorthQueryMandatoryReviewOutcome, WorthQueryMandatoryReviewProgram,
     WorthQueryMutationPreconditionComparisonEvidence, WorthQueryObservedApplicationRelation,
     WorthQueryOrdinaryApplicationRead, WorthQueryProjectedApplicationMutation,
     WorthQueryRequestedElevation, WorthQueryReviewedElevation, WorthQueryWorkflowAdvanceAdapter,
@@ -270,6 +272,10 @@ pub use super::index_refresh::{
 };
 pub use super::invariant_installation::{
     WorthQueryApplicationInvariantFactories, WorthQueryApplicationInvariantSchemaResolver,
+};
+pub use super::provider::{
+    WorthQueryRecoveredAftermathCausality, WorthQueryRecoveredApplicationCommitReceipt,
+    WorthQueryRecoveredDispatchOutbox,
 };
 mod decision_read;
 pub use super::merge_unique_values::{

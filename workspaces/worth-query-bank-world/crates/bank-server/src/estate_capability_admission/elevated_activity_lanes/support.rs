@@ -1,3 +1,4 @@
+use crate::estate_progression::delegation::command_courts::CommandCourtOutcome;
 use std::time::Duration;
 
 use bank_domain::{
@@ -24,8 +25,8 @@ use super::super::{
     },
 };
 use crate::{
-    queries, BankApprovedEstateElevation, BankAuthenticatedPrincipal, BankMutationCommitOutcome,
-    BankReadControls, BankRequestedEstateElevation,
+    queries, BankApprovedEstateElevation, BankAuthenticatedPrincipal, BankReadControls,
+    BankRequestedEstateElevation,
 };
 
 pub(super) const FIRST_ACCESS: u64 = 601;
@@ -138,7 +139,7 @@ pub(super) fn revoke_exact_support(world: &ActivityWorld, seed: u8) {
                         &request_scope(),
                     )
                     .expect("the exact activity support revocation should commit");
-                assert!(matches!(outcome, BankMutationCommitOutcome::Committed(_)));
+                assert!(matches!(outcome, CommandCourtOutcome::Committed(_)));
             })
             .join()
             .expect("the concurrent revocation caller completes");

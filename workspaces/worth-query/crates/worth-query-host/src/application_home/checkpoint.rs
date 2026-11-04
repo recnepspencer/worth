@@ -34,6 +34,21 @@ impl<Schema, Program> WorthQueryApplicationHome<Schema, Program> {
             .map_err(WorthQueryApplicationHomeCheckpointDenial::Directory)
     }
 
+    /// Receiver-owned observation of the actual selected attempt before Native ACK.
+    pub fn checkpoint_with_native_ack_observer_for_test(
+        &self,
+        request: &ExecutionRequest<'_, '_>,
+        observer: Box<dyn Fn() + Send + Sync>,
+    ) -> Result<ApplicationHomeCheckpoint, WorthQueryApplicationHomeCheckpointDenial> {
+        self.directory
+            .as_ref()
+            .ok_or(WorthQueryApplicationHomeCheckpointDenial::MemoryLifecycleRequired)?
+            .checkpoint_operation(self.checkpoint_limits)
+            .map_err(WorthQueryApplicationHomeCheckpointDenial::Directory)?
+            .checkpoint_with_native_ack_observer_for_test(request, observer)
+            .map_err(WorthQueryApplicationHomeCheckpointDenial::Directory)
+    }
+
     pub fn inspect_checkpoint(
         &self,
         request: &ExecutionRequest<'_, '_>,

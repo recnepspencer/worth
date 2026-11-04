@@ -221,7 +221,7 @@ fn active_custody_identity_repair_settles_only_the_recorded_relational_commit() 
     let mut custody = register_attempt(attempt);
     let performed = match owner
         .state
-        .relational
+        .relational_services()
         .publication_port()
         .compare_and_publish(execution, candidate)
     {

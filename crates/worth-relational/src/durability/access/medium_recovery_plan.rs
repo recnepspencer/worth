@@ -31,6 +31,11 @@ pub(super) fn medium_recovery_plan(
     verification_mode: RecoveryVerificationMode,
 ) -> Result<RecoveryPlan, RelationalRecoveryStop> {
     let parts = source.into_parts();
+    let complete = parts
+        .checkpoint
+        .as_ref()
+        .and_then(|source| source.complete_artifact())
+        .cloned();
     let checkpoint = parts
         .checkpoint
         .map(|source| readmit_covered_checkpoint(execution, source, parts.cold_source.clone()))
@@ -39,6 +44,18 @@ pub(super) fn medium_recovery_plan(
         .as_ref()
         .map_or(PatchStreamPosition(0), |(_, covered)| *covered);
     let checkpoint = checkpoint.map(|(checkpoint, _)| checkpoint);
+    let original_source = match parts.readmitted_originals {
+        Some(original) => Some(original),
+        None => parts.initial_inputs.map(|initial| {
+        crate::durability::source_initial_inputs::source_admission::readmit(initial, complete.as_ref(),
+            checkpoint.as_ref(), execution).map(std::sync::Arc::new).map_err(|cause| match cause {
+                crate::durability::source_initial_inputs::RelationalInitialInputsRefusal::Request(cause) => RelationalRecoveryStop::Request(cause),
+                crate::durability::source_initial_inputs::RelationalInitialInputsRefusal::Native(cause) => cause,
+                cause => DurabilityError::new(RecoveryFailureClass::CorruptCheckpoint,
+                    format!("original source inputs refused: {cause:?}")).into(),
+            })
+        }).transpose()?,
+    };
     let tail = readmit_contiguous_tail(execution, covered, &parts.tail)?
         .into_iter()
         .map(|commit| commit.bind_journal_source(parts.cold_source.clone()))
@@ -74,7 +91,7 @@ pub(super) fn medium_recovery_plan(
         .iter()
         .map(|entry| entry.envelope().commit.commit_id)
         .collect();
-    Ok(RecoveryPlan::new(
+    let mut plan = RecoveryPlan::new(
         runtime.runtime_config().clone(),
         checkpoint,
         tail,
@@ -85,7 +102,9 @@ pub(super) fn medium_recovery_plan(
         restore_authoritative_envelope_commit_ids,
         Some(parts.cold_source),
     )
-    .with_commit_strategy_executors(runtime.commit_strategy_executor_registry().clone()))
+    .with_commit_strategy_executors(runtime.commit_strategy_executor_registry().clone());
+    plan.original_source = original_source;
+    Ok(plan)
 }
 
 /// Decode the checkpoint and require its own coverage to be the position and

@@ -2,6 +2,10 @@ pub(crate) use worth_query_bank_testkit_courtroom::facade::transport_process_cou
 
 pub(crate) mod reapplication;
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "This process court owns the Tokio executor for its real transport and shutdown boundary."
+)]
 #[tokio::test(flavor = "multi_thread")]
 #[ignore = "requires the real Docker identity provider and cold Bank/user-node processes"]
 async fn closed_money_correction_survives_response_loss_and_exact_replay() {

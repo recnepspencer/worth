@@ -80,6 +80,7 @@ fn close_refuses_busy_admission_then_excludes_bootstrap() {
         .bootstrap_root(fixture.bootstrap_intent())
         .is_err());
 }
+
 #[test]
 fn cancellation_and_owner_loss_during_pin_acquisition_never_expose_a_root() {
     use std::time::Duration;

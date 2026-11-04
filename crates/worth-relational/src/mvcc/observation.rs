@@ -21,6 +21,9 @@ pub struct RelationalBranchObservation {
 }
 
 impl AdmittedRelationalBranchBasis {
+    pub(crate) fn into_observation(self) -> RelationalBranchObservation {
+        RelationalBranchObservation { inner: self.inner }
+    }
     pub fn observation(&self) -> RelationalBranchObservation {
         RelationalBranchObservation {
             inner: Arc::clone(&self.inner),

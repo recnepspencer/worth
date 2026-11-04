@@ -102,6 +102,7 @@ fn replay_stop<D: Debug>(
     failure: BranchTransitionRecordError<D, ReplayedBranchTransitionDivergence>,
 ) -> RelationalRecoveryStop {
     match failure {
+        BranchTransitionRecordError::OriginalInputsStopped(stop) => stop,
         BranchTransitionRecordError::ReservationWaitStopped(stop) => {
             RelationalRecoveryStop::Request(crate::execution::RelationalExecutionDenialCause::from(
                 stop,

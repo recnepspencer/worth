@@ -1,5 +1,9 @@
 pub(crate) use worth_query_bank_testkit_courtroom::facade::transport_process_courtroom::payment::cancellation::*;
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "This process court owns the Tokio executor for its real transport and shutdown boundary."
+)]
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 #[ignore = "needs Docker: cargo test --manifest-path workspaces/worth-query-bank-world/Cargo.toml -p worth-query-bank-court-user-node --test worth_query_bank_court_user_node process::http_workflows::courtroom::transport_process_courtroom::payment::cancellation::callback_settled_cancellation_survives_late_exact_duplicate -- --ignored --exact"]
 async fn callback_settled_cancellation_survives_late_exact_duplicate() {
@@ -18,13 +22,13 @@ async fn callback_settled_cancellation_survives_late_exact_duplicate() {
             court.destination_account,
         )
     });
-    let (instance, operation) = tokio::task::block_in_place(|| {
+    let (_definition, instance, operation) = tokio::task::block_in_place(|| {
         let workflow = court
             .runtime
             .approved_business_payment(&court.approver, &scope);
         journey::prepare_approved_payment_operation(&workflow, &authority)
     });
-    tokio::task::block_in_place(|| {
+    let performed = tokio::task::block_in_place(|| {
         court
             .runtime
             .approved_business_payment(&court.approver, &scope)
@@ -37,7 +41,7 @@ async fn callback_settled_cancellation_survives_late_exact_duplicate() {
             )
             .expect("the real payment operation commits")
             .into_performed()
-            .expect("the rail owns the committed payment effect");
+            .expect("the rail owns the committed payment effect")
     });
 
     let signed = tokio::time::timeout(Duration::from_secs(20), court.proxy.await_first_capture())
@@ -81,6 +85,7 @@ async fn callback_settled_cancellation_survives_late_exact_duplicate() {
                 workflow.advanced().accept_native_effect(
                     instance.clone(),
                     &operation,
+                    &performed,
                     authority.clone(),
                     authority.clone(),
                     &key("approved-payment:cancel-court:perform"),

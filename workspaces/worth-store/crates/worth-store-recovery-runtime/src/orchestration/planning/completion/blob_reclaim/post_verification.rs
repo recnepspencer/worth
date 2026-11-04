@@ -5,12 +5,12 @@ use sha2::{Digest, Sha256};
 
 use crate::entry::PhysicalRecoveryOutcome;
 use crate::orchestration::planning::{
-    context::PlanningContext, resolved_basis::ResolvedPlanningBasis,
+    context::PlanningContext, resolved_basis::ResolvedPlanningState,
 };
 
 pub(super) fn admit(
     context: PlanningContext,
-    basis: &mut ResolvedPlanningBasis,
+    basis: &mut ResolvedPlanningState,
 ) -> Result<PlanningContext, PhysicalRecoveryOutcome> {
     let selected = context.selection.root().selected();
     let selected_root_identity: [u8; 32] =

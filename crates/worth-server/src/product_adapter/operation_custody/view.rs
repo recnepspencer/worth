@@ -59,7 +59,7 @@ pub enum SourcePosture {
 pub enum Conclusion {
     Committed,
     AlreadyCommitted,
-    PreviouslyCommitted,
+    RecoveredCommitted,
     IdempotencyIntentDrift,
     DomainDenied {
         diagnostic: WorthServerSourceDiagnostic,
@@ -70,13 +70,15 @@ pub enum Conclusion {
 }
 #[derive(Serialize, schemars::JsonSchema)]
 pub enum KeyedResolution {
+    RecoveredCommitted,
     ProductPreparationPending,
     Unseen,
-    AlreadyCommitted,
     IntentDrift,
 }
 #[derive(Serialize, schemars::JsonSchema)]
 pub enum CommitPosture {
+    Committed,
+    RecoveredCommitted,
     ProductPreparationPending,
     ProductPreparationRefused,
     CleanupRequired(Box<Self>),
@@ -107,23 +109,25 @@ pub(super) fn describe<C: SourceCommand>(
             close_refusal: close.map(diagnostic::cleanup),
         },
         Custody::Completed(done) => {
-            let (recovered, receipt) = match done.evidence() {
-                WorthQuerySourceCompletion::Fresh { receipt, .. } => (false, receipt),
-                WorthQuerySourceCompletion::Recovered { receipt, .. } => (true, receipt),
+            let (recovered, committed_basis, outcome_identity) = match done.evidence() {
+                WorthQuerySourceCompletion::Fresh { receipt, .. } => (false,
+                    application.program().runtime().application_commit_basis_token(receipt).ok(),
+                    receipt.outcome_identity().map(worth_query_host::facade::primary_graph::WorthQueryApplicationCommitOutcomeIdentity::get)),
+                WorthQuerySourceCompletion::Recovered { receipt, .. } => (true,
+                    application.program().runtime().application_commit_basis_token(receipt).ok(),
+                    receipt.outcome_identity().map(worth_query_host::facade::primary_graph::WorthQueryApplicationCommitOutcomeIdentity::get)),
+                WorthQuerySourceCompletion::Recorded { receipt, .. } =>
+                    (true, None, Some(receipt.outcome_identity().get())),
             };
-            View::Completed {
-                recovered,
-                committed_basis: application.program().runtime().application_commit_basis_token(receipt).ok(),
-                outcome_identity: receipt.outcome_identity().map(worth_query_host::facade::primary_graph::WorthQueryApplicationCommitOutcomeIdentity::get),
-                close_refusal: close.map(diagnostic::cleanup),
-            }
+            View::Completed { recovered, committed_basis, outcome_identity,
+                close_refusal: close.map(diagnostic::cleanup), }
         }
         Custody::Terminal(done) => View::Terminal {
             outcome: done.native_outcome().map(conclusion::<C>),
             keyed:done.native_keyed_resolution().map(|keyed|match keyed {
                 worth_query_host::facade::primary_graph::WorthQueryApplicationIdempotencyResolution::ProductPreparationPending(_)=>KeyedResolution::ProductPreparationPending,
                 worth_query_host::facade::primary_graph::WorthQueryApplicationIdempotencyResolution::Unseen=>KeyedResolution::Unseen,
-                worth_query_host::facade::primary_graph::WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(_)=>KeyedResolution::AlreadyCommitted,
+                worth_query_host::facade::primary_graph::WorthQueryApplicationIdempotencyResolution::RecoveredCommitted(_)=>KeyedResolution::RecoveredCommitted,
                 worth_query_host::facade::primary_graph::WorthQueryApplicationIdempotencyResolution::IntentDrift=>KeyedResolution::IntentDrift,
             }),
             admission_refusal: done.native_admission_denial().map(diagnostic::mutation),
@@ -141,7 +145,7 @@ fn conclusion<C: SourceCommand>(
     match outcome {
         Outcome::Committed { .. } => Conclusion::Committed,
         Outcome::AlreadyCommitted(_) => Conclusion::AlreadyCommitted,
-        Outcome::PreviouslyCommitted(_) => Conclusion::PreviouslyCommitted,
+        Outcome::RecoveredCommitted(_) => Conclusion::RecoveredCommitted,
         Outcome::IdempotencyIntentDrift => Conclusion::IdempotencyIntentDrift,
         Outcome::DomainDenied(cause) => Conclusion::DomainDenied {
             diagnostic: C::domain_diagnostic(cause),
@@ -168,7 +172,7 @@ fn commit(posture: &Commit) -> CommitPosture {
         Commit::ProductPreparationPending(_) => CommitPosture::ProductPreparationPending,
         Commit::ProductPreparationRefused(_) => CommitPosture::ProductPreparationRefused,
         Commit::CleanupRequired(cause) => {
-            CommitPosture::CleanupRequired(Box::new(commit(cause.outcome())))
+            CommitPosture::CleanupRequired(Box::new(full_commit(cause.outcome())))
         }
         Commit::ProductStale(_) => CommitPosture::ProductStale,
         Commit::ProductUnpublished(_) => CommitPosture::ProductUnpublished,
@@ -180,5 +184,30 @@ fn commit(posture: &Commit) -> CommitPosture {
         Commit::Aborted => CommitPosture::Aborted,
         Commit::Deferred(_) => CommitPosture::Deferred,
         Commit::Indeterminate(_) => CommitPosture::Indeterminate,
+    }
+}
+
+fn full_commit(
+    posture: &worth_query_host::facade::primary_graph::WorthQueryApplicationCommitOutcome,
+) -> CommitPosture {
+    use worth_query_host::facade::primary_graph::WorthQueryApplicationCommitOutcome as Full;
+    match posture {
+        Full::Committed(_) => CommitPosture::Committed,
+        Full::RecoveredCommitted(_) => CommitPosture::RecoveredCommitted,
+        Full::CleanupRequired(cause) => {
+            CommitPosture::CleanupRequired(Box::new(full_commit(cause.outcome())))
+        }
+        Full::ProductPreparationPending(_) => CommitPosture::ProductPreparationPending,
+        Full::ProductPreparationRefused(_) => CommitPosture::ProductPreparationRefused,
+        Full::ProductStale(_) => CommitPosture::ProductStale,
+        Full::ProductUnpublished(_) => CommitPosture::ProductUnpublished,
+        Full::NoEffect(_) => CommitPosture::NoEffect,
+        Full::Stale(_) => CommitPosture::Stale,
+        Full::Cancelled => CommitPosture::Cancelled,
+        Full::TimedOut => CommitPosture::TimedOut,
+        Full::Denied(_) => CommitPosture::Denied,
+        Full::Aborted => CommitPosture::Aborted,
+        Full::Deferred(_) => CommitPosture::Deferred,
+        Full::Indeterminate(_) => CommitPosture::Indeterminate,
     }
 }

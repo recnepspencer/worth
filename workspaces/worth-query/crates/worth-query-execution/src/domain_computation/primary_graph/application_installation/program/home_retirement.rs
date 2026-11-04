@@ -13,14 +13,20 @@ use worth_query_installation::facade::ApplicationSchema;
 /// No Clone or live accessor can introduce an alias after original preflight.
 pub struct WorthQueryPreparedHomeQuery<Schema, Program> {
     query: WorthQueryProgramApplicationRuntime<Schema, Program>,
+    state: Box<HomeQueryRetirementState<Schema, Program>>,
     funding: Option<ExecutionMemoryReservation>,
 }
 
 /// Actual stopped owner; neither a refusal nor retry recreates Query service.
 pub struct WorthQueryRetiringHomeQuery<Schema, Program> {
-    runtime: RetiringPrimaryGraphRuntime<Schema>,
-    _backing: Arc<WorthQueryProgramRuntimeBacking<Schema, Program>>,
+    state: Box<HomeQueryRetirementState<Schema, Program>>,
     _funding: Option<ExecutionMemoryReservation>,
+}
+
+struct HomeQueryRetirementState<Schema, Program> {
+    runtime: Option<RetiringPrimaryGraphRuntime<Schema>>,
+    _backing: Option<Arc<WorthQueryProgramRuntimeBacking<Schema, Program>>>,
+    retired_home_maintenance: Option<Arc<dyn std::any::Any + Send + Sync>>,
 }
 
 pub enum WorthQueryHomeRetirementAdvance<Schema, Program> {
@@ -32,6 +38,7 @@ pub enum WorthQueryHomeRetirementAdvance<Schema, Program> {
 /// Its destruction belongs to explicit unbudgeted reclaim or abandonment.
 pub struct WorthQueryRetiredHomeQuery {
     _payload: Box<dyn std::any::Any + Send + Sync>,
+    _funding: Option<ExecutionMemoryReservation>,
 }
 
 impl WorthQueryRetiredHomeQuery {
@@ -54,7 +61,7 @@ impl<Schema: ApplicationSchema, Program> WorthQueryProgramApplicationRuntime<Sch
                 // The exact future erased allocation is funded before any hook or seal.
                 let funding = request
                     .reserve_retained_memory(std::mem::size_of::<
-                        WorthQueryRetiringHomeQuery<Schema, Program>,
+                        HomeQueryRetirementState<Schema, Program>,
                     >() as u64)
                     .map_err(Denial::Execution)?;
                 backing.runtime_mut().preflight_home_retirement(request)?;
@@ -65,6 +72,11 @@ impl<Schema: ApplicationSchema, Program> WorthQueryProgramApplicationRuntime<Sch
         match admitted {
             Ok(funding) => Ok(WorthQueryPreparedHomeQuery {
                 query: self,
+                state: Box::new(HomeQueryRetirementState {
+                    runtime: None,
+                    _backing: None,
+                    retired_home_maintenance: None,
+                }),
                 funding,
             }),
             Err(cause) => Err((self, cause)),
@@ -86,28 +98,66 @@ impl<Schema: ApplicationSchema, Program> WorthQueryPreparedHomeQuery<Schema, Pro
             .runtime
             .take()
             .expect("only this consuming phase extracts the original runtime");
+        self.state.runtime = Some(runtime.into_home_retirement());
+        self.state._backing = Some(self.query.backing);
         WorthQueryRetiringHomeQuery {
-            runtime: runtime.into_home_retirement(),
-            _backing: self.query.backing,
+            state: self.state,
             _funding: self.funding,
         }
     }
 }
 
 impl<Schema: ApplicationSchema, Program: 'static> WorthQueryRetiringHomeQuery<Schema, Program> {
+    /// Closed Host handoff of its original maintenance capability after seal.
+    #[doc(hidden)]
+    pub fn retire_home_maintenance<Cause>(
+        &mut self,
+        retire: impl FnOnce(&mut dyn crate::domain_computation::execution_runtime::product_world::WorthQueryHomeMaintenance) -> Result<(), Cause>,
+    ) -> Result<Result<(), Cause>, Denial> {
+        let Some(original) = self
+            .state
+            .runtime
+            .as_mut()
+            .expect("sealed original runtime")
+            .home_maintenance_mut()
+        else {
+            return Ok(Ok(()));
+        };
+        let original = Arc::get_mut(original).ok_or(Denial::Busy(Owner::HomeMaintenance))?;
+        let result = retire(original);
+        if result.is_ok() {
+            self.state.retired_home_maintenance = self
+                .state
+                .runtime
+                .as_mut()
+                .expect("sealed original runtime")
+                .take_home_maintenance()
+                .map(|original| original as Arc<dyn std::any::Any + Send + Sync>);
+        }
+        Ok(result)
+    }
     pub fn advance(
         mut self,
         request: &ExecutionRequest<'_, '_>,
+        native: &worth_relational::facade::runtime::RelationalRuntime,
+        bridge_owner: &std::sync::Arc<
+            std::sync::RwLock<worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly>,
+        >,
     ) -> Result<WorthQueryHomeRetirementAdvance<Schema, Program>, (Self, Denial)> {
-        let advanced = request
-            .run_native_completion(|_| self.runtime.advance(request))
-            .map(|(advanced, _)| advanced)
-            .unwrap_or_else(|cause| Err(Denial::Execution(cause)));
+        // Every original owner consults this same request. Retirement opens no
+        // fresh execution scope after the close checkpoint exhausts memory.
+        let advanced = self
+            .state
+            .runtime
+            .as_mut()
+            .expect("sealed original runtime")
+            .advance(request, native, bridge_owner);
         match advanced {
             Ok(Progress::Advanced) => Ok(WorthQueryHomeRetirementAdvance::Advanced(self)),
             Ok(Progress::Complete) => Ok(WorthQueryHomeRetirementAdvance::Complete(
                 WorthQueryRetiredHomeQuery {
-                    _payload: Box::new(self),
+                    _payload: self.state,
+                    _funding: self._funding,
                 },
             )),
             Err(cause) => Err((self, cause)),

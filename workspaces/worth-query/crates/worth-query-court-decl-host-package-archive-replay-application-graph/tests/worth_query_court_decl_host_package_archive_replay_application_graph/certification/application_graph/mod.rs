@@ -79,3 +79,5 @@ pub(crate) mod workflow_retry;
 pub(crate) mod workflow_start_intent;
 
 pub(crate) mod workflow_vocabulary;
+
+mod recorded_workflow_receipt;

@@ -147,6 +147,12 @@ impl WorthQueryExecutionRuntime {
         self.primary_graph.as_ref()
     }
 
+    pub(in crate::domain_computation) fn primary_graph_mut(
+        &mut self,
+    ) -> Option<&mut WorthQueryPrimaryGraph> {
+        self.primary_graph.as_mut()
+    }
+
     pub const fn application_query_resource_profile(
         &self,
     ) -> WorthQueryApplicationQueryResourceProfile {

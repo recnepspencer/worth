@@ -123,27 +123,23 @@ fn storage(cause: &RetainedStorageDenial) -> Option<Refusal<'_>> {
 fn report(cause: &InspectionReportDenial) -> Option<Refusal<'_>> {
     match cause {
         InspectionReportDenial::Storage(cause) => storage(cause),
-        InspectionReportDenial::Identity(cause) => match cause {
+        InspectionReportDenial::Identity(
             InspectionIdentityStop::Resource(cause)
             | InspectionIdentityStop::Basis(CanonicalBasisPreparationStop::Resource {
+                cause, ..
+            })
+            | InspectionIdentityStop::Digest(CanonicalDigestAdmissionStop::Resource(cause)),
+        ) => kernel(cause, storage),
+        InspectionReportDenial::Bridge(
+            BridgeQueryObservationReportingStop::Resource(cause)
+            | BridgeQueryObservationReportingStop::Basis(CanonicalBasisPreparationStop::Resource {
                 cause,
                 ..
             })
-            | InspectionIdentityStop::Digest(CanonicalDigestAdmissionStop::Resource(cause)) => {
-                kernel(cause, storage)
-            }
-            _ => None,
-        },
-        InspectionReportDenial::Bridge(cause) => match cause {
-            BridgeQueryObservationReportingStop::Resource(cause)
-            | BridgeQueryObservationReportingStop::Basis(
-                CanonicalBasisPreparationStop::Resource { cause, .. },
-            )
-            | BridgeQueryObservationReportingStop::Digest(
-                CanonicalDigestAdmissionStop::Resource(cause),
-            ) => kernel(cause, storage),
-            _ => None,
-        },
+            | BridgeQueryObservationReportingStop::Digest(CanonicalDigestAdmissionStop::Resource(
+                cause,
+            )),
+        ) => kernel(cause, storage),
         _ => None,
     }
 }

@@ -26,7 +26,7 @@ use super::capability_progression::{
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitDenialStage,
     WorthQueryApplicationCommitOutcome, WorthQueryApplicationCommitReceipt,
-    WorthQueryApplicationCommitTerminalKind, WorthQueryApplicationIdempotencyResolutionDenialKind,
+    WorthQueryApplicationIdempotencyResolutionDenialKind,
     WorthQueryOperationAuthorizationDenialKind, WorthQueryPrincipalResolutionMode,
 };
 

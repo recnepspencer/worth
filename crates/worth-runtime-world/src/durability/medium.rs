@@ -50,6 +50,7 @@ pub enum WorldDurableMediumDenial {
     PublicationUnresolved,
     StaleCheckpoint,
     CheckpointSelectionRequired,
+    CheckpointOriginRetention,
     Storage(String),
 }
 impl From<WorldDurableFrameDenial> for WorldDurableMediumDenial {
@@ -79,6 +80,14 @@ pub trait RuntimeWorldDurableMedium: Debug + Send + Sync {
     /// terminal indeterminate custody: it permits teardown, never serving or
     /// a NoEffect conclusion. Home retains those tasks through physical close.
     fn publication_task_posture(&self) -> WorldPublicationTaskPosture;
+    /// Retire this exact adapter's physical serving share without waiting or
+    /// destroying its original allocation. The Home's Native/physical keepers
+    /// remain borrowed throughout; a stopped request preserves active custody.
+    fn retire_for_home(
+        &self,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<(), WorldDurableMediumDenial>;
+
     /// Acquire one actual protected physical W root without payload I/O.
     /// Called only while the actual durable publication reservation is held.
     /// The same original request funds metadata and nonwaiting admission.

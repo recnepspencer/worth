@@ -58,6 +58,26 @@ pub fn approval_requirement(
     Vec<worth_relational::facade::identity::EntityId>,
 ) {
     let proposal = proposal::published_proposal(application, instance.clone(), key + 2);
+    let (required, evidence, _join) =
+        approval_requirement_after_proposal(application, instance, key);
+    (proposal, required, evidence)
+}
+
+/// Advances an actually proposed instance through its real assessments and approval wait.
+pub fn approval_requirement_after_proposal(
+    application: &DocumentWorkflowRuntime<
+        worth_query_testkit_document_retention::facade::document_retention_model::programs::RetentionProgramP0,
+        impl worth_query_host::facade::declaration::application_program::ApplicationWorkflowSpec<
+            Schema = worth_query_testkit_document_retention::facade::document_retention_model::schema::DocumentRetentionSchema,
+        >,
+    >,
+    instance: PublishedWorkflowInstanceRef,
+    key: u64,
+) -> (
+    RequiredWorkflowApproval,
+    Vec<worth_relational::facade::identity::EntityId>,
+    worth_query_host::facade::application_entry::PerformedWorkflowTransition,
+) {
     let mut evidence = Vec::new();
     for offset in [3, 5] {
         let settlement = settle_assessment(application, instance.clone(), key + offset);
@@ -71,15 +91,15 @@ pub fn approval_requirement(
             other => panic!("expected accepted assessment, got {other:?}"),
         }
     }
-    match advance_instance(application, instance.clone(), key + 7) {
-        Ok(WorkflowProgressOutcome::Completed(_)) => {}
+    let join = match advance_instance(application, instance.clone(), key + 7) {
+        Ok(WorkflowProgressOutcome::Completed(performed)) => performed,
         other => panic!("expected completed evidence join, got {other:?}"),
-    }
+    };
     let required = match advance_instance(application, instance.clone(), key + 8)
         .expect("approval requirement must prepare")
     {
         WorkflowProgressOutcome::AwaitingApproval(required) => required,
         other => panic!("expected an approval requirement, got {other:?}"),
     };
-    (proposal, required, evidence)
+    (required, evidence, join)
 }

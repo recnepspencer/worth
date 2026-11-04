@@ -11,6 +11,7 @@ pub(crate) mod provider_anchor;
 mod provider_execution;
 mod provider_execution_owner;
 mod provider_execution_release;
+pub(crate) mod provider_home_retirement;
 mod provider_installation;
 mod report;
 mod semantic_provider_ports;

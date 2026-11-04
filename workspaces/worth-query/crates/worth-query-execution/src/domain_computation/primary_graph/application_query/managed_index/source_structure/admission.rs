@@ -81,10 +81,10 @@ impl SourceTree {
         {
             return Err(control.refuse(Stop::SourceStructureIncomplete));
         }
-        if let Some(root) = root {
-            if self.parent(root, control)?.is_some() || self.region_at(root, control)?.is_none() {
-                return Err(control.refuse(Stop::SourceStructureIncomplete));
-            }
+        if let Some(root) = root
+            && (self.parent(root, control)?.is_some() || self.region_at(root, control)?.is_none())
+        {
+            return Err(control.refuse(Stop::SourceStructureIncomplete));
         }
         Ok(())
     }

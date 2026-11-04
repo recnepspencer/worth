@@ -199,21 +199,50 @@ fn prepare_versioned_publication(
         .replace_truth_target(worth_foundational::FoundationalBranchTarget::basis(target))
         .map_err(|denial| format!("prepared target binding denied: {denial:?}"))?;
     let root = prepared_root.into_root();
-    let mut artifact =
-        RelationalCommitArtifact::from_envelope_with_root(Arc::clone(&envelope), Arc::clone(&root))
-            .map_err(|denial| format!("prepared catalog artifact denied: {denial:?}"))?;
-    if matches!(sequence, PublicationSequence::Truth) {
-        artifact.set_original_inputs(crate::history::OriginalCanonicalInputs {
+    let original_inputs = if matches!(sequence, PublicationSequence::Truth) {
+        let original = crate::history::OriginalCanonicalInputs {
             result_schema: root.retained_schema_authority(),
             prestate_schema: selected_branch_state
                 .state()
                 .root()
                 .retained_schema_authority(),
             mutation: runtime.publication_mutation_config(),
-        });
+        };
+        let recorded =
+            crate::durability::source_initial_inputs::recorded::RecordedCanonicalInputs::capture(
+                &original, execution,
+            )
+            .map_err(|cause| match cause {
+                crate::durability::data::RelationalRecoveryStop::Request(cause) => {
+                    PublicationPreparationDenial::Request(cause)
+                }
+                crate::durability::data::RelationalRecoveryStop::Allocation(_) => {
+                    PublicationPreparationDenial::Request(
+                        crate::execution::RelationalExecutionDenialCause::AllocationFailed,
+                    )
+                }
+                crate::durability::data::RelationalRecoveryStop::Durability(cause) => {
+                    PublicationPreparationDenial::Invalid(format!(
+                        "original input capture: {cause:?}"
+                    ))
+                }
+            })?;
+        envelope
+            .retain_recorded_original_inputs(recorded)
+            .map_err(|cause| PublicationPreparationDenial::Invalid(cause.into()))?;
+        Some(original)
+    } else {
+        None
+    };
+    let mut artifact =
+        RelationalCommitArtifact::from_envelope_with_root(Arc::clone(&envelope), Arc::clone(&root))
+            .map_err(|denial| format!("prepared catalog artifact denied: {denial:?}"))?;
+    if let Some(original) = original_inputs {
+        artifact.set_original_inputs(original);
     }
     if matches!(sequence, PublicationSequence::RecoveryTruth)
-        && let Some(previous) = original_artifact
+        && let Some(previous) =
+            original_artifact.filter(|artifact| artifact.original_inputs().is_some())
     {
         artifact
             .preserve_original_inputs(previous)

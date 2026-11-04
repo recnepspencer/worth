@@ -1,6 +1,6 @@
 //! Canonical codec claims retain the original concrete metadata, never a replay.
 use super::*;
-mod admission;
+pub(super) mod admission;
 use crate::history::data::{CanonicalCodecRetirementKind, CanonicalRequiredOutputCodecRetirement};
 use crate::runtime::RecoveredCheckpointProgramActivationUpdate;
 pub(in super::super) use admission::prepare_canonical_readmission;

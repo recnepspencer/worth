@@ -94,7 +94,7 @@ impl ProductHeadHistoryProtectionObligation {
             return Ok(());
         }
         let mut index = self.protection.reachability.try_lock().map_err(|_| ())?;
-        index.try_retire_product_head(&self.protection.identity, self.seated)?;
+        index.try_retire_direct_protection(&self.protection.identity, self.seated)?;
         self.seated = false;
         self.protection.released = true;
         Ok(())
@@ -160,6 +160,16 @@ impl std::fmt::Debug for ExplicitCommitHistoryProtectionObligation {
 }
 
 impl ExplicitCommitHistoryProtectionObligation {
+    pub(crate) fn try_retire_for_close(&mut self) -> Result<(), ()> {
+        if self.protection.released {
+            return Ok(());
+        }
+        let mut index = self.protection.reachability.try_lock().map_err(|_| ())?;
+        index.try_retire_direct_protection(&self.protection.identity, false)?;
+        self.protection.released = true;
+        Ok(())
+    }
+
     pub(in crate::history) fn issued(protection: CompositeHistoryProtectionObligation) -> Self {
         debug_assert_eq!(protection.class, HistoryProtectionClass::ExplicitObligation);
         Self { protection }

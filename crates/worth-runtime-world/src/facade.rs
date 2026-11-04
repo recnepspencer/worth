@@ -5,12 +5,12 @@
 
 pub use crate::durability::{
     PreparedWorldCheckpoint, RuntimeWorldDurableMedium, WorldCheckpointJournalRecord,
-    WorldCheckpointPort, WorldCheckpointReadSource, WorldCheckpointReadView,
-    WorldCheckpointSelection, WorldCheckpointSubject, WorldDurableArtifact,
-    WorldDurableFrameDenial, WorldDurableHomeBinding, WorldDurableMediumDenial,
-    WorldPublicationObservation, WorldPublicationTaskPosture, WorldReadmissionDenial,
-    WORLD_ARTIFACT_PROTOCOL, WORLD_ARTIFACT_VERSION, WORLD_CHECKPOINT_PROTOCOL,
-    WORLD_CHECKPOINT_VERSION,
+    WorldCheckpointOriginRetirement, WorldCheckpointOriginRetirementDenial, WorldCheckpointPort,
+    WorldCheckpointReadSource, WorldCheckpointReadView, WorldCheckpointSelection,
+    WorldCheckpointSubject, WorldDurableArtifact, WorldDurableFrameDenial, WorldDurableHomeBinding,
+    WorldDurableMediumDenial, WorldPublicationObservation, WorldPublicationTaskPosture,
+    WorldReadmissionDenial, WORLD_ARTIFACT_PROTOCOL, WORLD_ARTIFACT_VERSION,
+    WORLD_CHECKPOINT_PROTOCOL, WORLD_CHECKPOINT_VERSION,
 };
 
 // Public signatures below name the already-issued component owner bundles and
@@ -70,7 +70,8 @@ pub use crate::history::{
     HistoryCatalogCounters, HistoryMetadataLedger, HistoryReclamationDenial, OrdinaryParent,
     RetiredBranchHistoryRelease, RuntimeWorldPerformedPublicationProtection,
     RuntimeWorldPublicationCursor, RuntimeWorldPublicationFrontier, RuntimeWorldPublicationPage,
-    RuntimeWorldPublicationRow, WorldReadmittedPublication, WorldReadmittedPublicationDenial,
+    RuntimeWorldPublicationRow, WorldObservedMemoryPublication, WorldReadmittedPublication,
+    WorldReadmittedPublicationDenial,
 };
 
 pub use crate::identity::{
@@ -147,4 +148,15 @@ pub use crate::lifecycle::{
 
 pub use crate::lifecycle::{
     world_branch_reads_on_this_thread_for_test, RuntimeWorldReadObservation,
+};
+
+pub use crate::publication::{
+    ConsumedPublicationRetirement, ConsumedPublicationRetirementDenial,
+    ConsumedPublicationRetirementProgress, PreparedConsumedPublicationRetirement,
+    RetiredConsumedPublication,
+};
+
+pub use crate::lifecycle::{
+    RetiredRuntimeWorldHome, RuntimeWorldHomeRetirement, RuntimeWorldHomeRetirementDenial,
+    RuntimeWorldHomeRetirementProgress,
 };

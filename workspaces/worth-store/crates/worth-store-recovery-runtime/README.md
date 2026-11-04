@@ -13,7 +13,7 @@ the backend has admitted the existing namespace.
 The production entry runs the complete consuming recovery progression:
 
 ```text
-physical_store_recover <store-root> --bounded-profile=c8-phase2-admission-v1 \
+physical_store_recover <store-root> --bounded-profile=c8-phase2-admission-v2 \
   [--report=<path>]
 ```
 
@@ -26,13 +26,17 @@ returned process status or a fresh reopen.
 The shipped command admits two fixed bounded profiles:
 
 ```text
-physical_store_recover <store-root> --bounded-profile=c8-phase2-admission-v1 \
+physical_store_recover <store-root> --bounded-profile=c8-phase2-admission-v2 \
   [--report=<path outside store-root>]
 ```
 
 The `c8-phase8-fate-coverage-v1` profile is a bounded 4 MiB evidence profile
 used for the explicit all-fates recovery fixture; ordinary Phase 8 admission
-continues to use the 512 KiB `c8-phase2-admission-v1` profile.
+uses the 2 MiB `c8-phase2-admission-v2` profile. The retired v1 profile is
+rejected. Fixed phase storage needs about 800 KiB; the ordinary WAL rewrite
+also retains record and manifest metadata (1,245,169 bytes at 129 records).
+The ordinary history exceeds the whole 2 MiB allowance. Accounting and the
+strict allocation-refusal controls are unchanged.
 
 The report is descriptive evidence only. The fresh process mints platform
 authority, samples the existing namespace, selects physical sources, and

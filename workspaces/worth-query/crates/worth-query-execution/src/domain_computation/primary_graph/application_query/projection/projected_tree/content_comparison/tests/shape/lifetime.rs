@@ -24,7 +24,7 @@ fn frozen_deep_rows_keep_original_funding_through_take_retain_clear_and_last_dro
     allocation.claim(execution, payload as u64).unwrap();
     allocation
         .claim_arc::<super::super::super::super::super::retained_projection::OriginalProjection>(
-            &execution,
+            execution,
         )
         .unwrap();
     let disclosure = ExecutionRequestArrayBuilder::allocate(*execution, 0)

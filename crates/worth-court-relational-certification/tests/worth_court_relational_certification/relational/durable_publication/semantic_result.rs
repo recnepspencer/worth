@@ -114,7 +114,7 @@ fn semantic_result_preserves_original_create_bindings_and_validation_meaning() {
         );
     }
     let artifact = medium.offered().pop().unwrap();
-    assert_eq!(Artifact::FORMAT_VERSION, 4);
+    assert_eq!(Artifact::FORMAT_VERSION, 5);
     let readmitted = Artifact::readmit(artifact.as_bytes(), execution).unwrap();
     assert_eq!(readmitted.envelope().semantic_result(), original);
     release_test_commit_snapshot(&runtime, &committed);
@@ -122,13 +122,20 @@ fn semantic_result_preserves_original_create_bindings_and_validation_meaning() {
 
 #[test]
 fn semantic_result_is_required_even_after_a_corrupt_frame_is_resealed() {
-    use sha2::{Digest as _, Sha256};
     let host = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &ExecutionRequest::serial(&host);
     let medium = TestDurableMedium::new();
     let runtime = durable_runtime(&medium);
     let committed = create_entity_outcome(execution, &runtime, "required-semantic-image");
     let artifact = medium.offered().pop().unwrap();
+    let mut unchanged = artifact.as_bytes().to_vec();
+    crate::canonical_commit_frame::reseal(&mut unchanged);
+    assert_eq!(
+        unchanged,
+        artifact.as_bytes(),
+        "independent unchanged frame counterpart"
+    );
+    Artifact::readmit(&unchanged, execution).unwrap();
     let encoded_image = rmp_serde::to_vec_named(committed.semantic_result()).unwrap();
     let mut bytes = artifact.as_bytes().to_vec();
     let offsets = bytes
@@ -144,8 +151,7 @@ fn semantic_result_is_required_even_after_a_corrupt_frame_is_resealed() {
     bytes.splice(offsets[0]..offsets[0] + encoded_image.len(), [0xc0]);
     let length = (bytes.len() - 66) as u64;
     bytes[58..66].copy_from_slice(&length.to_le_bytes());
-    let digest = Sha256::digest(&bytes[66..]);
-    bytes[26..58].copy_from_slice(&digest);
+    crate::canonical_commit_frame::reseal(&mut bytes);
     assert!(
         Artifact::from_untrusted_bytes(bytes.clone()).is_ok(),
         "frame proof alone is insufficient"

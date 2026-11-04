@@ -160,7 +160,7 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
             .runtime()
             .installed_program_support()?
             .present(record.revision())?;
-        WorthQuerySupportedProgramHandle::rostered(&self.backing.runtime(), record)
+        WorthQuerySupportedProgramHandle::rostered(self.backing.runtime(), record)
     }
 
     /// Removes one rostered program from ordinary host service only after
@@ -269,7 +269,7 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
                 }
             };
             let inspection = match crate::domain_computation::primary_graph::product_activation::inspect_selected_program(execution,
-                    &self.backing.runtime(),
+                    self.backing.runtime(),
                     selected.relational_basis(),
                 ) {
                     Ok(inspection) => inspection,

@@ -16,10 +16,10 @@ impl IndexingSubsystem {
         let Some(image) = self.state.read().cold_checkpoint.clone() else {
             return Default::default();
         };
-        let member = image.directory.manifest.derived_indexes;
+        let directory = image.directory();
+        let member = directory.manifest.derived_indexes;
         let subject = RelationalStorageSubject::Index(
-            image
-                .directory
+            directory
                 .manifest
                 .index_definitions
                 .first()
@@ -36,21 +36,22 @@ impl RelationalDurableColdSource for DeferredIndexImage {
         &self,
         members: &[RelationalDurableMemberLocator],
     ) -> Result<RelationalDurableMemberCustody, Cause> {
-        self.directory.source.retain_members(members)
+        self.directory().source.retain_members(members)
     }
     fn read_member(
         &self,
         member: RelationalDurableMemberLocator,
         limit: u64,
     ) -> Result<Vec<u8>, Cause> {
-        if member != self.directory.manifest.derived_indexes {
+        let directory = self.directory();
+        if member != directory.manifest.derived_indexes {
             return Err(Cause::SourceUnavailable);
         }
         let mut admitted = self
             .admitted
             .lock()
             .unwrap_or_else(|error| error.into_inner());
-        if let Some(Err(failure)) = &*admitted {
+        if let Some(Err(failure)) = &**admitted {
             return Err(failure.cause);
         }
         let result = if member.length > limit {
@@ -59,7 +60,7 @@ impl RelationalDurableColdSource for DeferredIndexImage {
                 limit,
             })
         } else {
-            self.directory.source.read_member(member, limit)
+            directory.source.read_member(member, limit)
         }
         .and_then(|bytes| {
             member_frame::decode(&bytes, member, MemberKind::DerivedIndex)?;
@@ -68,9 +69,9 @@ impl RelationalDurableColdSource for DeferredIndexImage {
         if let Err(cause) = &result
             && cause.is_proven_damage()
         {
-            *admitted = Some(Err(RelationalStorageUnavailable {
+            **admitted = Some(Err(RelationalStorageUnavailable {
                 subject: RelationalStorageSubject::Index(
-                    self.directory
+                    directory
                         .manifest
                         .index_definitions
                         .first()
@@ -88,6 +89,6 @@ impl RelationalDurableColdSource for DeferredIndexImage {
         position: crate::publication::patch::data::PatchStreamPosition,
         limit: u64,
     ) -> Result<Vec<u8>, Cause> {
-        self.directory.source.read_commit(position, limit)
+        self.directory().source.read_commit(position, limit)
     }
 }

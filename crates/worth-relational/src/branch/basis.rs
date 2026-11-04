@@ -1,3 +1,8 @@
+mod retirement;
+pub use retirement::{
+    RelationalBranchBasisRetirement, RelationalBranchBasisRetirementDenial,
+    RelationalBranchBasisRetirementProgress, RetiredRelationalBranchBasis,
+};
 mod component_capture;
 pub(crate) use component_capture::CheckpointComponentDescriptorView;
 use std::sync::{Arc, OnceLock};

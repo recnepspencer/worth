@@ -42,6 +42,10 @@ impl RelationalStoreSection {
 }
 
 impl RelationalSectionCompleteCheckpointPreparation {
+    /// Descriptive counts from the SAME weak source used by this operation.
+    pub fn cold_storage_reads(&self) -> Option<crate::RelationalStoreColdReadCounters> {
+        self.source.upgrade().map(|source| source.counters())
+    }
     pub fn prepare(
         &self,
         execution: &ExecutionRequest<'_, '_>,
@@ -64,8 +68,7 @@ impl RelationalSectionCompleteCheckpointPreparation {
                 },
             )
             .map_err(Denial::Capture)?;
-        let mut publication =
-            SectionPublication::prepare(&source, complete.checkpoint(), execution)?;
+        let mut publication = SectionPublication::prepare_complete(&source, &complete, execution)?;
         publication.selection = Some(selection);
         Ok(PreparedCompleteRelationalSection {
             complete,

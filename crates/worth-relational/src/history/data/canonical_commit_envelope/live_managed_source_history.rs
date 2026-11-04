@@ -37,14 +37,14 @@ impl PartialEq for LiveManagedSourceHistory {
 }
 impl Eq for LiveManagedSourceHistory {}
 impl LiveManagedSourceHistory {
-    pub(crate) fn verified<'a>(
-        envelope: &'a Arc<CanonicalCommitEnvelope>,
-    ) -> Option<&'a PreparedSourceImpactHistory> {
+    pub(crate) fn verified(
+        envelope: &Arc<CanonicalCommitEnvelope>,
+    ) -> Option<&PreparedSourceImpactHistory> {
         Some(&Self::bound(envelope)?.prepared)
     }
-    pub(crate) fn verified_material<'a>(
-        envelope: &'a Arc<CanonicalCommitEnvelope>,
-    ) -> Option<&'a RetainedSourceHistoryMaterial> {
+    pub(crate) fn verified_material(
+        envelope: &Arc<CanonicalCommitEnvelope>,
+    ) -> Option<&RetainedSourceHistoryMaterial> {
         Some(&Self::bound(envelope)?.material)
     }
     fn bound(envelope: &Arc<CanonicalCommitEnvelope>) -> Option<&BoundHistory> {

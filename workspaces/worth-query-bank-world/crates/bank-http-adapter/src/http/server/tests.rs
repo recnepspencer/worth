@@ -10,6 +10,7 @@ use super::super::protocol::{
 };
 use super::{bind_application, BankHttpServerConfiguration};
 
+mod closed_mutation_handoff;
 mod continuation_replay;
 mod elevation;
 mod elevation_request_replay;

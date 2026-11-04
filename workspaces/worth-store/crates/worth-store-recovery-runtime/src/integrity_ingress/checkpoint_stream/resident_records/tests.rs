@@ -14,8 +14,9 @@ use super::{Failure, RecordEvidenceAllocation};
 
 // This fixture must admit the real qualified address/open peak before it
 // presses parser retention. Production recovery profiles are unchanged.
-const ORIGINAL: u64 = 512;
-const PARSER_BYTES: u64 = ORIGINAL - 128;
+const SERVING: u64 = PhysicalRecoveryCoordinationCapacity::serving_evidence_backing_bytes();
+const ORIGINAL: u64 = SERVING + 512;
+const PARSER_BYTES: u64 = 512 - 128;
 
 #[test]
 fn persisted_read_and_parser_records_share_original_native_ceiling_until_disposal() {
@@ -112,9 +113,9 @@ fn persisted_read_and_parser_records_share_original_native_ceiling_until_disposa
     assert_eq!(retry.charged_bytes(), PARSER_BYTES);
     drop(observed);
     retry
-        .reserve_total(ORIGINAL)
+        .reserve_total(ORIGINAL - SERVING)
         .expect("disposing the real read releases its exact 128 bytes");
-    assert_eq!(retry.charged_bytes(), ORIGINAL);
+    assert_eq!(retry.charged_bytes(), ORIGINAL - SERVING);
     drop(retry);
     drop(coordination);
     discovery.finish();

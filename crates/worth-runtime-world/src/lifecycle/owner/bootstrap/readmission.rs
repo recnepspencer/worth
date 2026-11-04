@@ -54,7 +54,7 @@ where
         let result = (|| {
             let original = self
                 .state
-                .relational
+                .relational_services()
                 .basis_port()
                 .export_recorded_retained_component(execution, basis.relational_basis())
                 .map_err(Denial::NativeRecorded)?;
@@ -79,6 +79,16 @@ where
             // The branch frame was already selected through actual Home
             // recovery; installing its SAME identities performs no new I/O.
             let performed = prepared.install().map_err(Denial::RootAdmission)?;
+            self.state
+                .durable
+                .as_ref()
+                .expect("readmitted Home binding")
+                .retain_checkpoint_origin(
+                    prepared
+                        .checkpoint_origin
+                        .take()
+                        .expect("same prepared admitted origin obligation"),
+                );
             *self
                 .state
                 .bootstrap

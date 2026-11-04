@@ -1,8 +1,9 @@
 pub use crate::durability::authority::{
-    FreshRelationalSourceAdmission, ReadmittedRelationalAssociatedEffect,
+    FreshRelationalSourceAdmission, ObservedRelationalMemoryCommit,
+    ReadmittedRelationalAssociatedEffect, ReadmittedRelationalCreatedEntity,
     RefusedRelationalRecordedComponent, RelationalAssociatedEffectRefusal,
     RelationalAssociatedEffectSettlement, RelationalAssociatedEffectSubject,
-    RelationalRecordedComponentAdmissionCause,
+    RelationalFreshSourceAdmissionStop, RelationalRecordedComponentAdmissionCause,
 };
 pub use crate::durability::branch_transition_artifact::{
     RelationalBranchTransitionArtifact, RelationalBranchTransitionArtifactDigest,
@@ -24,6 +25,7 @@ pub use crate::durability::data::{
     RelationalCheckpointArtifactPolicy, RelationalCheckpointMember, RelationalNativeCheckpoint,
     RelationalNativeCheckpointCaptureDenial, RelationalRecoveryStop,
 };
+pub use crate::durability::medium::RelationalInitialInputsPublicationStop;
 pub use crate::durability::medium::{
     CheckpointSelectionIdentity, CheckpointSelectionObservation, DurablePublicationFate,
     OpaqueCapturedCheckpointSubject, RelationalCheckpointAcknowledgementDenial,
@@ -33,9 +35,15 @@ pub use crate::durability::medium::{
     RelationalDurableMemberRetirement, RelationalDurableMemberRetirementObservation,
     RelationalDurableMemberRetirementRefusal, RelationalDurablePublicationRefusal,
     RelationalDurableRecoverySource, RelationalDurableTransitionReadFailure,
+    RelationalMediumRetirementDenial, RelationalMediumRetirementProgress,
     RetiredRelationalDurableMemberCustody,
 };
 pub use crate::durability::migration::ReadmittedCanonicalCommit;
+pub use crate::durability::source_initial_inputs::{
+    RelationalCompleteSourceArtifact, RelationalFreshInitialization,
+    RelationalInitialInputsPublicationDetail, RelationalInitialInputsRefusal,
+    RelationalSourceInitialInputsArtifact,
+};
 pub use crate::durability::{
     RecoveredCheckpointTransition, RecoveredCheckpointTransitionDenial,
     RecoveredCheckpointTransitionError, RecoveredRelationalBranchBasis,
@@ -49,6 +57,7 @@ pub use crate::transactions::data::RecoveredRelationalSemanticResult;
 pub use crate::durability::authority::{
     RefusedRelationalPublicationReadmission, RelationalRecordedSuccessorRefusal,
     RelationalRecoveredPublicationAdmissionCause, RelationalRecoveredPublicationCustody,
+    RelationalRecoveredPublicationRetirement, RetiredRelationalRecoveredPublication,
 };
 pub use crate::durability::data::{
     CheckpointAllocatorInspection, CheckpointRecordFrontier, CheckpointRecordIdentity,

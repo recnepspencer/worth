@@ -183,23 +183,6 @@ impl<Key: Clone + Ord> DependencyIndex<Key> {
             .saturating_add(128)
     }
 
-    /// A lifecycle or scalar event reaches every exact field/entry posting for
-    /// that full-generation entity. The caller charges each yielded routing edge;
-    /// no retained Source roster or unrelated query is enumerated.
-    pub(in crate::domain_computation::primary_graph::application_query) fn entries_for_entity(
-        &self,
-        entity: EntityId,
-    ) -> impl Iterator<Item = &Key> {
-        self.entity
-            .get(&entity)
-            .into_iter()
-            .flat_map(|targets| targets.iter())
-            .filter_map(|target| match target {
-                Target::Entry(key) => Some(key),
-                Target::Membership => None,
-            })
-    }
-
     pub(super) fn affected(
         &self,
         changes: &[ViewChange],

@@ -31,7 +31,7 @@ use crate::orchestration::planning::{
         ManifestEntryBudget, ROOT_ENTRY,
     },
     page_observation::{PageLimit, PageObservationFailure},
-    resolved_basis::ResolvedPlanningBasis,
+    resolved_basis::ResolvedPlanningState,
 };
 use crate::orchestration::reader_limit::{ReaderBytes, UNCOUNTED_READS};
 
@@ -108,7 +108,7 @@ pub(in crate::orchestration::planning) fn discovery_failure(
 /// limit that ran out, and none where verification failed.
 pub(in crate::orchestration::planning) fn unobserved(
     context: PlanningContext,
-    basis: &ResolvedPlanningBasis,
+    basis: &ResolvedPlanningState,
     failure: HistoricalFailure,
 ) -> crate::entry::PhysicalRecoveryOutcome {
     let limit = failure.limit(&context.limits, &basis.observed_pages.manifest_budget);
@@ -120,7 +120,7 @@ pub(in crate::orchestration::planning) fn unobserved(
 /// length.
 pub(in crate::orchestration::planning) fn remaining_observation(
     context: &PlanningContext,
-    basis: &ResolvedPlanningBasis,
+    basis: &ResolvedPlanningState,
 ) -> u64 {
     context
         .limits
@@ -135,7 +135,7 @@ pub(in crate::orchestration::planning) fn remaining_observation(
 /// Charges what a completion phase's reader read, once it has finished, to
 /// the observation bytes every later phase is left with.
 pub(in crate::orchestration::planning) fn charge_reader(
-    basis: &mut ResolvedPlanningBasis,
+    basis: &mut ResolvedPlanningState,
     counters: worth_store::physical_runtime::RecoveryDiscoveryCounters,
 ) {
     let observed = &mut basis.observed_pages;
@@ -151,7 +151,7 @@ pub(in crate::orchestration::planning) fn charge_reader(
 /// handed to `validate`. The root's entry is spent once it is read.
 pub(super) fn observe<R>(
     context: PlanningContext,
-    basis: &mut ResolvedPlanningBasis,
+    basis: &mut ResolvedPlanningState,
     generation: u64,
     record: worth_store_physical_format::PersistedRecordIdentity,
     validate: impl FnOnce(
@@ -180,7 +180,7 @@ pub(super) fn observe<R>(
 /// pays for.
 pub(super) fn observe_charged<R>(
     mut context: PlanningContext,
-    basis: &mut ResolvedPlanningBasis,
+    basis: &mut ResolvedPlanningState,
     generation: u64,
     record: worth_store_physical_format::PersistedRecordIdentity,
     validate: impl FnOnce(

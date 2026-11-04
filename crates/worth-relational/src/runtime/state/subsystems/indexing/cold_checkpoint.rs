@@ -1,5 +1,7 @@
 //! A retained index image is admitted explicitly, before an operation uses it.
+mod captured_inputs;
 mod member_export;
+mod source_retirement;
 use super::super::RuntimeOwnedState;
 use super::{IndexDefinitionReadBinding, IndexingState, IndexingSubsystem};
 use crate::durability::data::RelationalCheckpointDirectory;
@@ -14,10 +16,26 @@ use std::sync::{Arc, Mutex};
 
 #[derive(Debug)]
 pub(super) struct DeferredIndexImage {
-    directory: Arc<RelationalCheckpointDirectory>,
-    _placement: crate::durability::medium::RelationalDurableMemberCustody,
     history: HistorySubsystem,
-    admitted: Mutex<Option<Result<Arc<IndexingState>, RelationalStorageUnavailable>>>,
+    admitted: Mutex<DeferredIndexState>,
+}
+
+#[derive(Debug)]
+struct DeferredIndexState {
+    data: Option<Result<Arc<IndexingState>, RelationalStorageUnavailable>>,
+    directory: crate::durability::data::NativeCheckpointDirectoryEdge,
+    physical: crate::durability::medium::NativeSourceMemberState,
+}
+impl std::ops::Deref for DeferredIndexState {
+    type Target = Option<Result<Arc<IndexingState>, RelationalStorageUnavailable>>;
+    fn deref(&self) -> &Self::Target {
+        &self.data
+    }
+}
+impl std::ops::DerefMut for DeferredIndexState {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.data
+    }
 }
 
 impl DeferredIndexImage {
@@ -26,16 +44,17 @@ impl DeferredIndexImage {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Arc<IndexingState>, Failure> {
         crate::execution::check_request(execution).map_err(Failure::Request)?;
+        let directory = self.directory();
         let mut admitted = self
             .admitted
             .lock()
             .unwrap_or_else(|error| error.into_inner());
-        if let Some(result) = &*admitted {
+        if let Some(result) = &**admitted {
             return result.clone().map_err(Into::into);
         }
         let refusal = |cause| RelationalStorageUnavailable {
             subject: RelationalStorageSubject::Index(
-                self.directory
+                directory
                     .manifest
                     .index_definitions
                     .first()
@@ -46,9 +65,8 @@ impl DeferredIndexImage {
             cause,
         };
         let result = (|| {
-            let key = self.directory.manifest.derived_indexes;
-            let bytes = self
-                .directory
+            let key = directory.manifest.derived_indexes;
+            let bytes = directory
                 .source
                 .read_member(key, 1 << 30)
                 .map_err(refusal)?;
@@ -63,15 +81,11 @@ impl DeferredIndexImage {
                 return Err(refusal(Cause::Damaged).into());
             }
             let mut state = IndexingState::default();
-            state.restore_generation_frontier(self.directory.manifest.index_generation_frontier);
+            state.restore_generation_frontier(directory.manifest.index_generation_frontier);
             state
                 .readmit_checkpoint_catalog(
-                    &self
-                        .directory
-                        .manifest
-                        .index_definitions
-                        .ordinary_owned_copy(),
-                    self.directory.manifest.index_definition_frontier,
+                    &directory.manifest.index_definitions.ordinary_owned_copy(),
+                    directory.manifest.index_definition_frontier,
                 )
                 .map_err(|_| refusal(Cause::Damaged))?;
             crate::durability::derived_index_artifacts::restore_checkpoint_derived_index_artifacts(
@@ -79,7 +93,7 @@ impl DeferredIndexImage {
                 &self.history,
                 &legacy,
                 checkpoint.as_ref(),
-                self.directory.manifest.index_generation_frontier,
+                directory.manifest.index_generation_frontier,
                 &mut Default::default(),
             )
             .map_err(|_| refusal(Cause::Damaged))?;
@@ -88,10 +102,10 @@ impl DeferredIndexImage {
         })();
         match &result {
             Ok(state) => {
-                *admitted = Some(Ok(state.clone()));
+                **admitted = Some(Ok(state.clone()));
             }
             Err(Failure::StorageUnavailable(failure)) if failure.cause.is_proven_damage() => {
-                *admitted = Some(Err(*failure));
+                **admitted = Some(Err(*failure));
             }
             Err(Failure::StorageUnavailable(_)) => {}
             Err(Failure::Request(_)) => {}
@@ -148,10 +162,15 @@ impl IndexingSubsystem {
                     cause: Cause::Damaged,
                 })?;
         state.cold_checkpoint = Some(Arc::new(DeferredIndexImage {
-            _placement: placement,
-            directory,
+            admitted: Mutex::new(DeferredIndexState {
+                physical: crate::durability::medium::NativeSourceMemberState::new(
+                    directory.source.clone(),
+                    placement,
+                ),
+                directory: crate::durability::data::NativeCheckpointDirectoryEdge::new(directory),
+                data: None,
+            }),
             history,
-            admitted: Mutex::new(None),
         }));
         self.install(state);
         Ok(())
@@ -163,7 +182,7 @@ impl IndexingSubsystem {
             .read()
             .cold_checkpoint
             .as_ref()
-            .map(|image| image.directory.manifest.derived_indexes)
+            .map(|image| image.directory().manifest.derived_indexes)
     }
 }
 

@@ -1,6 +1,6 @@
 //! One native phase preserves every incomplete command and capture refusal.
 use bank_domain::schema::BankSchema;
-use bank_server::{BankApplication, BankCommitReceipt};
+use bank_server::{BankApplication, BankClosedCapabilityCommand};
 use worth_query_host::facade::application_entry::*;
 
 type Command<'r, D> = WorthQueryCapabilityCommand<'r, BankSchema, BankApplication, D>;
@@ -17,7 +17,7 @@ pub enum EstateCapabilityCommandOutcome<'r, D, Capture> {
         completed: Completed<'r, D>,
         denial: WorthQueryCapabilityCommandDenial<D>,
     },
-    Closed(BankCommitReceipt),
+    Closed(BankClosedCapabilityCommand),
 }
 
 pub(super) fn advance<'r, D, Capture>(
@@ -32,7 +32,7 @@ pub(super) fn advance<'r, D, Capture>(
         WorthQueryCapabilityCommandAdvance::Completed(completed) => {
             match completed.close_with_evidence(request) {
                 Ok(closed) => EstateCapabilityCommandOutcome::Closed(
-                    BankCommitReceipt::from_closed_capability_command(closed),
+                    BankClosedCapabilityCommand::from_query(closed),
                 ),
                 Err((completed, denial)) => {
                     EstateCapabilityCommandOutcome::CloseRefused { completed, denial }

@@ -39,11 +39,10 @@ where
         // No owner is constructed, and no recovered effects are discovered,
         // until the original request and both actual source admissions agree.
         request.consult().map_err(request_denial)?;
-        let binding = WorldDurableMediumBinding::new(medium);
+        let binding = WorldDurableMediumBinding::new(medium, request)
+            .map_err(WorldReadmissionDenial::Medium)?;
         let root = self.construct_home_root(relational, bridge, binding, Default::default())?;
-        Ok(RuntimeWorldOwner {
-            root: Arc::new(root),
-        })
+        Ok(RuntimeWorldOwner::from_root(root))
     }
 }
 

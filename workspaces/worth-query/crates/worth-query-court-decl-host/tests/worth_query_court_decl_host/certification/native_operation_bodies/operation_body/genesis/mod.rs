@@ -28,7 +28,7 @@ fn ordinary_genesis_replay_and_edit_need_no_scope_write_or_business_bootstrap() 
     assert_eq!(read_retention(&app), 7);
     assert!(matches!(
         create(&app, 301, input(1)).unwrap(),
-        Outcome::AlreadyCommitted { .. }
+        Outcome::RecoveredCommitted { .. }
     ));
     // The ordinary identity-scoped query rejects ambiguity, so replay must leave
     // exactly one selectable entity, not another equal-looking row.

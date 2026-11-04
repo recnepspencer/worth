@@ -44,26 +44,34 @@ pub enum ApplicationHomeDescriptorDenial {
     IncarnationExhausted,
 }
 
-struct PreparedDescriptor {
+pub(crate) struct PreparedDescriptor {
     descriptor: HomeDescriptor,
     payload: crate::frame_encoding::EncodedHomeFrame,
     generation: u64,
 }
 
-pub(crate) fn admit(
+pub(crate) fn prepare_admission(
     serving: &ServingPhysicalRuntime,
     origin: RecoveryStorePresence,
     definition: &RelationalRuntimeDefinition,
     binding: ApplicationHomeBinding,
     build: worth_foundational::facade::ApplicationBuildIdentity,
     execution: &ExecutionRequest<'_, '_>,
-) -> Result<HomeDescriptor, ApplicationHomeDescriptorDenial> {
+) -> Result<PreparedDescriptor, ApplicationHomeDescriptorDenial> {
     use ApplicationHomeDescriptorDenial as Denial;
-    let prepared = crate::request_stage::prepare(
+    crate::request_stage::prepare(
         execution,
         || prepare(serving, origin, definition, binding, build, execution),
         Denial::Execution,
-    )?;
+    )
+}
+
+pub(crate) fn publish(
+    serving: &ServingPhysicalRuntime,
+    prepared: PreparedDescriptor,
+    execution: &ExecutionRequest<'_, '_>,
+) -> Result<HomeDescriptor, ApplicationHomeDescriptorDenial> {
+    use ApplicationHomeDescriptorDenial as Denial;
     let records = serving.anchored_records().map_err(Denial::Unavailable)?;
     let anchor = AnchoredRecordName::new(crate::registry::HOME_ANCHOR).expect("static home anchor");
     let PreparedDescriptor {

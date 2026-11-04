@@ -36,6 +36,7 @@ pub struct AnchoredRecordPublication {
     members: Vec<AnchoredRecordMember>,
     placement: AdmittedRecordPlacementPolicy,
     deadline: PhysicalMutationDeadline,
+    payload_memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
 impl AnchoredRecordPublication {
@@ -54,7 +55,32 @@ impl AnchoredRecordPublication {
             members: Vec::new(),
             placement,
             deadline,
+            payload_memory: None,
         }
+    }
+
+    /// Admit this independent payload copy before growth. The same grant moves
+    /// with the actual payload through publication planning and interruption.
+    pub fn new_for_request(
+        name: AnchoredRecordName,
+        expected_generation: u64,
+        payload: &[u8],
+        placement: AdmittedRecordPlacementPolicy,
+        deadline: PhysicalMutationDeadline,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Self, worth_execution::WorkCeilingDenial> {
+        let bytes = payload.len() as u64;
+        let payload_memory = request.reserve_retained_memory(bytes)?;
+        let payload = payload.to_vec();
+        Ok(Self {
+            name,
+            expected_generation,
+            payload,
+            members: Vec::new(),
+            placement,
+            deadline,
+            payload_memory,
+        })
     }
 
     /// The value's members, in the order the value lists them.

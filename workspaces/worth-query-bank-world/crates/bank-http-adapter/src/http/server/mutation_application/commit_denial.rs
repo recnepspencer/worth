@@ -68,7 +68,7 @@ pub(in crate::http::server) fn commit_denial(
             BankHttpNextAction::CorrectRequest,
         ),
         // The key's earlier commit took effect; reading current state shows it.
-        Denial::IdempotencyReceiptNotRetained { .. } => {
+        Denial::IdempotencyForeignAffinity => {
             BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh)
         }
         Denial::IdempotencyIntentUnverifiable => BankHttpDenial::new(

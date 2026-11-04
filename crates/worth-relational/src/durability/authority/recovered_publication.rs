@@ -4,6 +4,10 @@ use crate::branch::{AdmittedRelationalBranchBasis, RelationalBranchBasisDenial};
 use crate::history::retention::RelationalBranchRetentionLease;
 
 mod admission;
+mod retirement;
+pub use retirement::{
+    RelationalRecoveredPublicationRetirement, RetiredRelationalRecoveredPublication,
+};
 mod successor;
 pub use successor::RelationalRecordedSuccessorRefusal;
 mod subject;

@@ -15,10 +15,11 @@ pub enum WorthQueryOperationCloseDenial {
     Owner(worth_query_execution::facade::product::WorthQueryProductBranchOwnerCleanupDenial),
 }
 
-/// No source, demand, descriptor or pending cleanup remains owned by this result.
+/// Native disposal evidence with any remaining original dispatch/recovery custody.
+/// Closing is not business completion.
 pub struct WorthQueryClosedOperation {
     managed: Option<
-        worth_query_execution::facade::domain_computation::WorthQueryDirectRunCleanupReceipt,
+        worth_query_execution::facade::primary_graph::WorthQueryApplicationManagedCleanupReceipt,
     >,
     retired_component_count: usize,
     output_unavailable: Option<WorthQueryApplicationProgramOutputUnavailable>,
@@ -33,7 +34,7 @@ pub(super) fn terminal_outcome_can_close<D, R>(
             super::native_publication::native_terminal_can_close(posture)
         }
         WorthQueryApplicationMutationOutcome::AlreadyCommitted(_)
-        | WorthQueryApplicationMutationOutcome::PreviouslyCommitted(_)
+        | WorthQueryApplicationMutationOutcome::RecoveredCommitted(_)
         | WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift
         | WorthQueryApplicationMutationOutcome::DomainDenied(_)
         | WorthQueryApplicationMutationOutcome::Cancelled
@@ -65,10 +66,15 @@ impl WorthQueryClosedOperation {
         self.output_unavailable.as_ref()
     }
     /// Native release evidence can retain logical recovery requirements; closure is no settlement proof.
+    /// Lends the actual remaining original dispatch/recovery owner.
+    pub fn managed_cleanup_receipt_mut(&mut self) -> Option<&mut worth_query_execution::facade::primary_graph::WorthQueryApplicationManagedCleanupReceipt>{
+        self.managed.as_mut()
+    }
     pub fn managed_cleanup_receipt(
         &self,
-    ) -> Option<&worth_query_execution::facade::domain_computation::WorthQueryDirectRunCleanupReceipt>
-    {
+    ) -> Option<
+        &worth_query_execution::facade::primary_graph::WorthQueryApplicationManagedCleanupReceipt,
+    > {
         self.managed.as_ref()
     }
     pub const fn retired_component_count(&self) -> usize {

@@ -32,6 +32,19 @@ impl ReadmittedRegionDirectory {
         directory: Arc<RelationalCheckpointDirectory>,
         symbols: crate::runtime::RuntimeSymbolTable,
     ) -> Result<Self, DurabilityError> {
+        if let Some(catalog) = directory.source_schemas.get() {
+            let schemas = catalog
+                .rows
+                .iter()
+                .map(|(digest, schema)| (*digest, schema.clone()))
+                .collect();
+            return Ok(Self {
+                schemas,
+                directory,
+                symbols: symbols.detached_owner_snapshot(),
+                cells: BTreeMap::new(),
+            });
+        }
         let mut schemas = BTreeMap::new();
         for (index, image) in directory.manifest.schemas.iter().enumerate() {
             let (registry, contracts) = image.readmit_registry().map_err(corrupt)?;
@@ -78,7 +91,7 @@ impl ReadmittedRegionDirectory {
                 std::collections::btree_map::Entry::Vacant(entry) => {
                     let cell = RelationalRegionResidency::cold(RelationalColdRegion {
                         kind_authority: leaf.kind_authority,
-                        source: self.directory.source.clone(),
+                        source: Some(self.directory.source.clone()),
                         partition_id: leaf.partition_id,
                         head: leaf.head,
                         history: leaf.history,

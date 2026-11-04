@@ -181,6 +181,14 @@ impl PreparedRelationalCommitCandidate {
         ))
     }
 
+    pub(crate) fn index_preparation_symbols(&self) -> Option<crate::runtime::RuntimeSymbolTable> {
+        self._payload
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .as_ref()
+            .map(|payload| payload.execution.candidate_symbols())
+    }
+
     pub(crate) fn change_summary_basis_and_roots(
         &self,
     ) -> Option<(

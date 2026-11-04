@@ -181,10 +181,10 @@ impl WorthQueryRequestedElevation {
 
 /// Every way committing an elevation request can end.
 ///
-/// This mirrors the application commit outcome. `Requested` and
-/// `AlreadyRequested` carry the move-only requested-elevation receipt.
+/// This mirrors the application commit outcome. `Requested` carries the move-only requested-elevation receipt.
 #[derive(Debug)]
 pub enum WorthQueryElevationRequestOutcome {
+    RecoveredCommitted(crate::domain_computation::primary_graph::provider::WorthQueryRecoveredApplicationCommitReceipt),
     CleanupRequired(Box<super::WorthQueryApplicationCleanupRequired>),
     /// The product branch moved after the basis. Nothing was committed.
     ProductStale(crate::domain_computation::WorthQueryProductStaleApplication),
@@ -197,8 +197,6 @@ pub enum WorthQueryElevationRequestOutcome {
     NoEffect(super::WorthQueryApplicationNoEffect),
     /// This attempt committed the request.
     Requested(WorthQueryRequestedElevation),
-    /// The idempotency key had already committed this request; nothing was redone.
-    AlreadyRequested(WorthQueryRequestedElevation),
     /// The basis was stale at compare. Nothing was committed; re-read and retry.
     Stale(WorthQueryApplicationStaleAttempt),
     /// The attempt was cancelled before it landed.
@@ -220,13 +218,11 @@ pub(in crate::domain_computation::primary_graph) fn requested_outcome(
     binding: WorthQueryElevationRequestBinding,
 ) -> WorthQueryElevationRequestOutcome {
     match outcome {
+        WorthQueryApplicationCommitOutcome::RecoveredCommitted(receipt) => {
+            WorthQueryElevationRequestOutcome::RecoveredCommitted(receipt)
+        }
         WorthQueryApplicationCommitOutcome::Committed(commit) => {
             WorthQueryElevationRequestOutcome::Requested(WorthQueryRequestedElevation::new(
-                binding, commit,
-            ))
-        }
-        WorthQueryApplicationCommitOutcome::AlreadyCommitted(commit) => {
-            WorthQueryElevationRequestOutcome::AlreadyRequested(WorthQueryRequestedElevation::new(
                 binding, commit,
             ))
         }

@@ -10,6 +10,7 @@ use worth_query_execution::facade::{
     primary_graph::WorthQueryHomeRetirementDenial,
 };
 use worth_store_application::*;
+mod maintenance;
 mod retirement;
 mod retry;
 
@@ -69,6 +70,11 @@ enum CloseCustody<Schema, Program> {
         home: WorldSealedApplicationHome,
         cause: WorthQueryHomeRetirementDenial,
     },
+    MaintenanceRetirement {
+        query: WorthQueryRetiringHomeQuery<Schema, Program>,
+        home: WorldSealedApplicationHome,
+        cause: ApplicationHomeCloseDenial,
+    },
     QueryReleased {
         cause: ApplicationHomeCloseDenial,
         posture: ApplicationHomeClosePosture,
@@ -77,9 +83,26 @@ enum CloseCustody<Schema, Program> {
 }
 impl<Schema, Program> std::fmt::Debug for WorthQueryApplicationHomeCloseRefused<Schema, Program> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_tuple("WorthQueryApplicationHomeCloseRefused")
-            .field(&self.detail())
-            .finish()
+        let mut output = f.debug_struct("WorthQueryApplicationHomeCloseRefused");
+        output.field("reason", &self.detail());
+        let phase = match &self.custody {
+            CloseCustody::MemoryLifecycleRequired(_) => "memory-lifecycle",
+            CloseCustody::WorldAdmission { .. } => "world-admission",
+            CloseCustody::QueryAdmission { .. } => "query-admission",
+            CloseCustody::World { .. } => "world-close",
+            CloseCustody::QueryRetirement { .. } => "query-retirement",
+            CloseCustody::MaintenanceRetirement { .. } => "maintenance-retirement",
+            CloseCustody::QueryReleased { .. } => "physical-close",
+        };
+        output.field("phase", &phase);
+        if let CloseCustody::QueryReleased {
+            posture: ApplicationHomeClosePosture::RecoveryRequired(custody),
+            ..
+        } = &self.custody
+        {
+            output.field("checkpoint", custody.checkpoint_result());
+        }
+        output.finish()
     }
 }
 impl<Schema: ApplicationSchema, Program: 'static> WorthQueryApplicationHome<Schema, Program> {
@@ -146,6 +169,7 @@ impl<Schema, Program> WorthQueryApplicationHomeCloseRefused<Schema, Program> {
             CloseCustody::World { home, .. } => Some(home.reason()),
             CloseCustody::WorldAdmission { cause, .. } => Some(cause),
             CloseCustody::QueryReleased { cause, .. } => Some(cause),
+            CloseCustody::MaintenanceRetirement { cause, .. } => Some(cause),
             _ => None,
         }
     }
@@ -166,6 +190,7 @@ impl<Schema, Program> WorthQueryApplicationHomeCloseRefused<Schema, Program> {
             CloseCustody::QueryAdmission { cause, .. }
             | CloseCustody::QueryRetirement { cause, .. } => format!("{cause:?}"),
             CloseCustody::QueryReleased { cause, .. } => format!("{cause:?}"),
+            CloseCustody::MaintenanceRetirement { cause, .. } => format!("{cause:?}"),
         }
     }
 }

@@ -20,6 +20,8 @@
 "worth-runtime-bridge" = { "path" = "../worth-runtime-bridge" }
 "worth-server" = { "path" = "../worth-server" }
 
+"worth-query-testkit-host" = { "path" = "../../workspaces/worth-query/crates/worth-query-testkit-host" }
+
 [lib]
 test = false
 doctest = false

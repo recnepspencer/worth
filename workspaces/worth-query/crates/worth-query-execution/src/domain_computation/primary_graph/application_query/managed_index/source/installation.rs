@@ -11,7 +11,10 @@ use worth_relational::facade::runtime::ManagedIndexSourceProgram;
 
 #[derive(Default)]
 pub(in crate::domain_computation::primary_graph) struct ManagedSourceInstallation {
-    sources: HashMap<ManagedIndexSourceProgram, Arc<dyn SourceService>>,
+    sources: HashMap<ManagedIndexSourceProgram, usize>,
+    ordered_sources: Vec<Arc<dyn SourceService>>,
+    _allocation:
+        Option<Arc<crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation>>,
     public_cache_owner: bool,
     predicate_routing: bool,
 }
@@ -49,6 +52,8 @@ impl ManagedSourceInstallation {
             return Ok((
                 Self {
                     sources: HashMap::new(),
+                    ordered_sources: Vec::new(),
+                    _allocation: None,
                     public_cache_owner: !providers.is_empty(),
                     predicate_routing: false,
                 },
@@ -58,33 +63,49 @@ impl ManagedSourceInstallation {
         let (issuer, authority) =
             super::initialization::SourceInitializationIssuer::install(execution)
                 .map_err(super::initialization::initialization_execution_denial)?;
-        let sources = required
-            .into_iter()
-            .map(|(program, (provider, cold))| {
-                Ok((
-                    program.clone(),
-                    provider.bind(execution, program, cold, authority.clone())?,
-                ))
-            })
-            .collect::<Result<
-                HashMap<_, _>,
-                worth_relational::facade::transactions::RelationalExecutionDenialCause,
-            >>()
+        use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
+        let allocation =
+            crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation::open(
+                execution,
+            )
             .map_err(super::initialization::initialization_execution_denial)?;
-        let predicate_routing = sources
-            .values()
-            .any(|service| service.predicate_axis().is_some());
+        allocation
+            .claim_slice::<Arc<dyn SourceService>>(execution, required.len())
+            .map_err(super::initialization::initialization_execution_denial)?;
+        let mut ordered_sources = Vec::new();
+        ordered_sources
+            .try_reserve_exact(required.len())
+            .map_err(|_| {
+                super::initialization::initialization_execution_denial(Cause::AllocationFailed)
+            })?;
+        let mut sources = HashMap::new();
+        let mut predicate_routing = false;
+        // The layout owns declaration order. Hash storage supplies point lookup only.
+        // Removing by program preserves the original deduplication and last provider.
+        for source in layout.required_managed_sources() {
+            let Some((provider, cold)) = required.remove(&source.program) else {
+                continue;
+            };
+            let service = provider
+                .bind(execution, source.program.clone(), cold, authority.clone())
+                .map_err(super::initialization::initialization_execution_denial)?;
+            predicate_routing |= service.predicate_axis().is_some();
+            sources.insert(source.program.clone(), ordered_sources.len());
+            ordered_sources.push(service);
+        }
         Ok((
             Self {
                 public_cache_owner: !providers.is_empty(),
                 sources,
+                ordered_sources,
+                _allocation: Some(allocation),
                 predicate_routing,
             },
             Some(issuer),
         ))
     }
     pub(in crate::domain_computation::primary_graph) fn dispose_predicates(&self) {
-        for service in self.sources.values() {
+        for service in &self.ordered_sources {
             if let Some(axis) = service.predicate_axis() {
                 axis.dispose();
             }
@@ -94,6 +115,8 @@ impl ManagedSourceInstallation {
         &self,
         program: &ManagedIndexSourceProgram,
     ) -> Option<&Arc<dyn SourceService>> {
-        self.sources.get(program)
+        self.sources
+            .get(program)
+            .map(|index| &self.ordered_sources[*index])
     }
 }

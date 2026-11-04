@@ -204,7 +204,7 @@ impl HistorySubsystem {
         Ok(())
     }
 
-    pub(super) fn readmit_replayed_root_descriptor(
+    pub(crate) fn readmit_replayed_root_descriptor(
         &self,
         commit_id: crate::history::data::CommitId,
         descriptor: crate::branch::RelationalBranchRootDescriptor,

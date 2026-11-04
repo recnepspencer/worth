@@ -87,7 +87,7 @@ fn shared_codec_reapplication_closes_replays_and_uses_current_source_capability(
         replayed.original_input(),
         &fixture.action(fixture.estate_account)
     );
-    let WorthQuerySourceCompletion::Recovered {
+    let WorthQuerySourceCompletion::Recorded {
         receipt: recovered,
         retained: None,
         ..
@@ -95,10 +95,8 @@ fn shared_codec_reapplication_closes_replays_and_uses_current_source_capability(
     else {
         panic!("the original shared-codec completion must retain recovered provenance");
     };
-    assert_eq!(recovered.commit_reference(), receipt.commit_reference());
-    assert_eq!(
-        recovered.committed_product_publication().composite_commit(),
-        receipt.committed_product_publication().composite_commit()
+    worth_query_bank_testkit_server::facade::recorded_commit_axes::assert_agrees(
+        recovered, &receipt,
     );
     assert!(replayed.close(&request).is_ok());
 

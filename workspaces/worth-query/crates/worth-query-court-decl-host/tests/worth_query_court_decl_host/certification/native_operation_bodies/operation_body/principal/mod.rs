@@ -25,11 +25,18 @@ fn admitted_actor_survives_reconstruction_and_cannot_be_chosen_by_input() {
     )
     .unwrap();
     // invoke supplies retention_days=99. The admitted native principal is 1.
-    assert!(matches!(invoke(&restored, 360), Outcome::Committed { .. }));
-    assert!(matches!(
-        invoke(&restored, 360),
-        Outcome::AlreadyCommitted(_)
-    ));
+    let Outcome::Committed {
+        receipt: original, ..
+    } = invoke(&restored, 360)
+    else {
+        panic!("the admitted actor commits the original operation");
+    };
+    let Outcome::RecoveredCommitted(recorded) = invoke(&restored, 360) else {
+        panic!("the actor's retry observes the recorded original");
+    };
+    worth_query_testkit_certification_canonical::facade::recorded_receipt_comparison::assert_original(
+        &recorded, &original,
+    );
     let scope = request_scope();
     let principal = authenticate_operator(restored.runtime().installed_schema(), &scope);
     let result = restored

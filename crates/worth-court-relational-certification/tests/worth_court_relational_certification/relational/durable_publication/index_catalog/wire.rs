@@ -1,6 +1,5 @@
 //! Mutate only the actual producer payload; keep original field order intact.
 use super::*;
-use sha2::{Digest as _, Sha256};
 
 fn key_offset(body: &[u8], key: &str) -> usize {
     let encoded = rmp_serde::to_vec_named(key).unwrap();
@@ -22,7 +21,7 @@ fn reseal(artifact: &Artifact, body: &[u8]) -> Vec<u8> {
     let mut frame = artifact.as_bytes()[..66].to_vec();
     frame.extend_from_slice(body);
     frame[58..66].copy_from_slice(&(body.len() as u64).to_le_bytes());
-    frame[26..58].copy_from_slice(&Sha256::digest(body));
+    crate::canonical_commit_frame::reseal(&mut frame);
     frame
 }
 fn replace_delta_scalar(body: &mut [u8], key: &str, old: u8, new: u8) {

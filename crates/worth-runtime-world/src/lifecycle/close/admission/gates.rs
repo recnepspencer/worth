@@ -4,10 +4,11 @@ use crate::lifecycle::{
     close::{RuntimeWorldCloseContract, RuntimeWorldCloseState},
     owner::{RuntimeWorldBootstrapState, RuntimeWorldOperationLedgerState, RuntimeWorldOwnerState},
 };
-use std::sync::MutexGuard;
+use std::sync::{MutexGuard, RwLockWriteGuard};
 use worth_execution::ExecutionRequest;
 
 pub(super) struct CloseAdmissionGates<'owner> {
+    _calls: RwLockWriteGuard<'owner, ()>,
     _bootstrap: MutexGuard<'owner, RuntimeWorldBootstrapState>,
     _operation: MutexGuard<'owner, RuntimeWorldOperationLedgerState>,
     pub(super) close: MutexGuard<'owner, RuntimeWorldCloseContract>,
@@ -23,6 +24,11 @@ where
     T: Copy + Ord + Send + Sync + 'static,
 {
     request.check_live().map_err(Denial::Stopped)?;
+    let calls = state
+        .operation
+        .call_exclusion
+        .try_write()
+        .map_err(|_| Denial::Busy)?;
     let bootstrap = state.bootstrap.try_lock().map_err(|_| Denial::Busy)?;
     match &*bootstrap {
         RuntimeWorldBootstrapState::InProgress => return Err(Denial::AlreadyClosing),
@@ -43,14 +49,13 @@ where
     {
         return Err(Denial::OwnerUnavailable);
     }
-    if state
+    state
         .recovery
+        .try_close_recovered_count(state.durable.is_some(), request)?;
+    if state
+        .custody
         .try_has_close_custody()
         .map_err(|_| Denial::Busy)?
-        || state
-            .custody
-            .try_has_close_custody()
-            .map_err(|_| Denial::Busy)?
     {
         return Err(Denial::UnresolvedBusinessCustody);
     }
@@ -59,6 +64,7 @@ where
     }
     request.check_live().map_err(Denial::Stopped)?;
     Ok(CloseAdmissionGates {
+        _calls: calls,
         _bootstrap: bootstrap,
         _operation: operation,
         close,

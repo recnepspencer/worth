@@ -1,10 +1,14 @@
 //! World closes through the same Home close/recovery lifecycle. Its actual
-//! close report travels into that custody after owner Drop releases its pins.
+//! close report and actual owner travel into deferred retirement custody.
 use super::WorldReadmittedApplicationHome;
 use worth_execution::ExecutionRequest;
 use worth_runtime_world::facade::RuntimeWorldOwnerLifecycleObservation;
 mod admission;
+mod bridge_retirement;
 mod checkpoint;
+pub(crate) use bridge_retirement::{
+    HomeBridgeCloseCustody, PreparedHomeBridgeRetirement, RetiredHomeBridgeComposition,
+};
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum WorldHomeClosePosture {
@@ -12,18 +16,61 @@ pub enum WorldHomeClosePosture {
     RecoveryRequired(RuntimeWorldOwnerLifecycleObservation),
 }
 
-/// World has actually closed and dropped. Native teardown is deliberately
+/// World has sealed and moved into its actual retirement. Native teardown is
 /// delayed until the Host releases its Query/source/Bridge observations.
 pub struct WorldSealedApplicationHome {
     home: crate::ReadmittedApplicationHome,
     composition: Option<super::attachment::ApplicationHomeBridgeComposition>,
 }
 impl WorldSealedApplicationHome {
+    #[doc(hidden)]
+    pub fn retire_checkpoint_operation(
+        &self,
+        operation: crate::ApplicationHomeCheckpointOperation,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<
+        crate::RetiredApplicationHomeCheckpointOperation,
+        (
+            crate::ApplicationHomeCheckpointOperation,
+            crate::ApplicationHomeCloseDenial,
+        ),
+    > {
+        operation.retire_for_home(&self.home.context.serving, request)
+    }
+    /// Closed Host retirement borrows the same Native owner; no raw handle or
+    /// source escapes, and its Store-owned Arc remains alive throughout.
+    #[doc(hidden)]
+    pub fn with_query_retirement_owners<R>(
+        &self,
+        retire: impl FnOnce(
+            &worth_relational::facade::runtime::RelationalRuntime,
+            &std::sync::Arc<
+                std::sync::RwLock<worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly>,
+            >,
+        ) -> R,
+    ) -> R {
+        retire(
+            self.home.relational().runtime(),
+            &self
+                .composition
+                .as_ref()
+                .expect("Query Home owns its original composition")
+                .conditional
+                .as_ref()
+                .expect("Query owns its original assembly"),
+        )
+    }
     pub fn home_identity(&self) -> worth_foundational::facade::HomeIdentity {
         self.home.home_identity()
     }
     pub fn incarnation(&self) -> worth_foundational::facade::HomeIncarnation {
         self.home.incarnation()
+    }
+    /// Exact released origin and occurrence image keys, retained until explicit Home reclaim.
+    pub fn checkpoint_origin_retirement(
+        &self,
+    ) -> Option<&worth_runtime_world::facade::WorldCheckpointOriginRetirement> {
+        self.home.context.world_origin_retirement.as_ref()
     }
     pub fn world_close_report(&self) -> &worth_runtime_world::facade::RuntimeWorldCloseReport {
         self.home
@@ -137,6 +184,9 @@ where
                 .context
                 .world_publications
                 .settle_for_close(&self.home.context.serving);
+            if let Err(reason) = self.prepare_composite_close(request) {
+                return Err(WorldHomeCloseRefused { home: self, reason });
+            }
             let report = match self.world.lifecycle_port().close(request, &self.world) {
                 Ok(report) => report,
                 Err(cause) => {
@@ -175,17 +225,44 @@ where
         if let Err(reason) = checkpoint::settle_before_world_drop(&mut self, request) {
             return Err(WorldHomeCloseRefused { home: self, reason });
         }
+        if self.home.context.world_origin_retirement.is_none() {
+            match self.world.retire_checkpoint_origin(request, self.home.relational().runtime()) {
+                Ok(retired) => self.home.context.world_origin_retirement = Some(retired),
+                Err(worth_runtime_world::facade::WorldCheckpointOriginRetirementDenial::NotInstalled) => {
+                    // This owner never installed a World basis, so it has no origin obligation.
+                }
+                Err(cause) => return Err(WorldHomeCloseRefused {
+                    home: self,
+                    reason: crate::ApplicationHomeCloseDenial::WorldCheckpointOrigin(cause),
+                }),
+            }
+        }
         let Self {
-            home,
+            mut home,
             world,
             world_cleanup,
             composition,
         } = self;
-        drop(world_cleanup);
-        // Weak service ports and descriptive reports do not own this World.
-        // Caller observations keep their own actual Native read custody, which
-        // the unchanged Native close admission may still truthfully refuse.
-        drop(world);
+        let cleanup = world_cleanup.expect("same complete original result cleanup");
+        let report = home
+            .context
+            .world_close_report
+            .as_ref()
+            .expect("actual closed World report");
+        match world.into_home_retirement(report, cleanup) {
+            Ok(original) => home.context.world_owner_retirement = Some(original),
+            Err((world, cleanup, cause)) => {
+                return Err(WorldHomeCloseRefused {
+                    home: Self {
+                        home,
+                        world,
+                        world_cleanup: Some(cleanup),
+                        composition,
+                    },
+                    reason: crate::ApplicationHomeCloseDenial::WorldOwnerRetirement(cause),
+                })
+            }
+        }
         Ok(WorldSealedApplicationHome { home, composition })
     }
 }

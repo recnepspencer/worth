@@ -1,5 +1,5 @@
-//! Every elevation lifecycle commit, and its exact replay, reports the two
-//! request identities its admission derived once each: the input and the key.
+//! Fresh lifecycle commits report the two admission identities once each.
+//! Recorded retries preserve original meaning and expose no live work counters.
 //!
 //! Each derivation hashes its encoded bytes behind framing of 16 bytes of
 //! lengths plus its domain and scope. The input is framed with the 30-byte
@@ -17,7 +17,7 @@ use crate::{
 };
 
 #[test]
-fn each_lifecycle_commit_and_replay_reports_its_request_identities_once() {
+fn lifecycle_commits_report_request_work_and_retries_preserve_original_meaning() {
     let time = AuthorizationTimeController::at_epoch_seconds(100);
     let fixture = emergency_request_world_at(
         "estate-lifecycle-canonical-work",
@@ -42,30 +42,32 @@ fn each_lifecycle_commit_and_replay_reports_its_request_identities_once() {
         duration: Duration::from_secs(300),
     };
     let key = BankIdempotencyKey::new("lifecycle-work-request").unwrap();
-    let mut requests = (0..3).map(|_| {
-        fixture
-            .runtime
-            .request_estate_emergency_access_with_key(&requester, request, &key, &scope)
-            .unwrap()
-    });
-    let Some(BankEstateElevationRequestOutcome::Requested(requested)) = requests.next() else {
+    let BankEstateElevationRequestOutcome::Requested(requested) = fixture
+        .runtime
+        .request_estate_emergency_access_with_key(&requester, request, &key, &scope)
+        .unwrap()
+    else {
         panic!("the first request must commit");
     };
-    let Some(BankEstateElevationRequestOutcome::AlreadyRequested(replayed_request)) =
-        requests.next()
-    else {
-        panic!("the exact request must replay");
-    };
-    let Some(BankEstateElevationRequestOutcome::AlreadyRequested(late_request)) = requests.next()
-    else {
-        panic!("the exact request must replay again");
-    };
+    let request_data = fixture.lifecycle_original(&requester, request, &key, &scope);
+    assert_eq!(
+        request_data.changed_record_count(),
+        requested.request_changed_record_count()
+    );
+    super::lifecycle_observation::assert_selected_original(
+        &fixture,
+        &requester,
+        &scope,
+        &request_data,
+    );
+    assert_eq!(
+        fixture.lifecycle_original(&requester, request, &key, &scope),
+        request_data
+    );
     // Input 284 encoded, 351 hashed, 6 blocks. Key "lifecycle-work-request"
     // (22 bytes) 109 encoded, 200 hashed with 91 bytes of framing (37-byte
     // `RequestEstateEmergencyAccessOperation`), 4 blocks.
-    for requested in [&requested, &replayed_request, &late_request] {
-        assert_request_identities(requested.request_canonical_work().admission(), 393, 551, 10);
-    }
+    assert_request_identities(requested.request_canonical_work().admission(), 393, 551, 10);
 
     let approve = EstateAction::ApproveEmergencyAccess {
         estate: ESTATE,
@@ -81,17 +83,26 @@ fn each_lifecycle_commit_and_replay_reports_its_request_identities_once() {
     let BankEstateElevationApprovalOutcome::Approved(approved) = approve_with(requested) else {
         panic!("the first approval must commit");
     };
-    let BankEstateElevationApprovalOutcome::AlreadyApproved(replayed_approval) =
-        approve_with(replayed_request)
-    else {
-        panic!("the exact approval must replay");
-    };
+    let approval_key = key.clone();
+    let approval_data = fixture.lifecycle_original(&approver, approve, &key, &scope);
+    assert_eq!(
+        approval_data.changed_record_count(),
+        approved.approval_changed_record_count()
+    );
+    super::lifecycle_observation::assert_selected_original(
+        &fixture,
+        &approver,
+        &scope,
+        &approval_data,
+    );
+    assert_eq!(
+        fixture.lifecycle_original(&approver, approve, &key, &scope),
+        approval_data
+    );
     // Input 92 encoded, 159 hashed, 3 blocks. Key "lifecycle-work-approval"
     // (23 bytes) 111 encoded, 202 hashed with 91 bytes of framing (37-byte
     // `ApproveEstateEmergencyAccessOperation`), 4 blocks.
-    for approved in [&approved, &replayed_approval] {
-        assert_request_identities(approved.approval_canonical_work().admission(), 203, 361, 7);
-    }
+    assert_request_identities(approved.approval_canonical_work().admission(), 203, 361, 7);
 
     let close = EstateAction::RevokeEmergencyAccess {
         estate: ESTATE,
@@ -107,31 +118,39 @@ fn each_lifecycle_commit_and_replay_reports_its_request_identities_once() {
     let BankEstateElevationCloseOutcome::Closed(mandatory) = close_with(approved) else {
         panic!("the first close must commit");
     };
-    let BankEstateElevationCloseOutcome::AlreadyClosed(replayed_mandatory) =
-        close_with(replayed_approval)
-    else {
-        panic!("the exact close must replay");
-    };
+    let close_data = fixture.lifecycle_original(&approver, close, &key, &scope);
+    assert_eq!(
+        close_data.changed_record_count(),
+        mandatory.close_changed_record_count()
+    );
+    super::lifecycle_observation::assert_selected_original(
+        &fixture,
+        &approver,
+        &scope,
+        &close_data,
+    );
+    assert_eq!(
+        fixture.lifecycle_original(&approver, close, &key, &scope),
+        close_data
+    );
     // Input 91 encoded, 158 hashed, 3 blocks. Key "lifecycle-work-close"
     // (20 bytes) 108 encoded, 198 hashed with 90 bytes of framing (36-byte
     // `RevokeEstateEmergencyAccessOperation`), 4 blocks.
-    for mandatory in [&mandatory, &replayed_mandatory] {
-        assert_request_identities(mandatory.close_canonical_work().admission(), 199, 356, 7);
-    }
-    // Past the request's expiry a fresh approval is denied, so this replay
-    // recovers the approval after that denial and still reports both
-    // derivations.
+    assert_request_identities(mandatory.close_canonical_work().admission(), 199, 356, 7);
+    // Recorded data cannot produce a second phase owner. Its exact original
+    // artifact remains observable after later transitions and request expiry.
     time.advance_to_epoch_seconds(401);
-    let BankEstateElevationApprovalOutcome::AlreadyApproved(late_approval) =
-        approve_with(late_request)
-    else {
-        panic!("the exact approval must replay after the close");
-    };
-    assert_request_identities(
-        late_approval.approval_canonical_work().admission(),
-        203,
-        361,
-        7,
+    assert_eq!(
+        fixture.lifecycle_original(&approver, approve, &approval_key, &scope),
+        approval_data
+    );
+    assert_eq!(
+        fixture.lifecycle_head(&approver, &scope),
+        close_data
+            .new_product_head()
+            .memory()
+            .unwrap()
+            .selected_commit()
     );
 
     let complete = EstateAction::CompleteMandatoryReview {
@@ -149,17 +168,25 @@ fn each_lifecycle_commit_and_replay_reports_its_request_identities_once() {
     let BankEstateMandatoryReviewOutcome::Reviewed(reviewed) = review_with(mandatory) else {
         panic!("the first review must commit");
     };
-    let BankEstateMandatoryReviewOutcome::AlreadyReviewed(replayed_review) =
-        review_with(replayed_mandatory)
-    else {
-        panic!("the exact review must replay");
-    };
+    let review_data = fixture.lifecycle_original(&reviewer, complete, &key, &scope);
+    assert_eq!(
+        review_data.changed_record_count(),
+        reviewed.review_changed_record_count()
+    );
+    super::lifecycle_observation::assert_selected_original(
+        &fixture,
+        &reviewer,
+        &scope,
+        &review_data,
+    );
+    assert_eq!(
+        fixture.lifecycle_original(&reviewer, complete, &key, &scope),
+        review_data
+    );
     // Input 123 encoded, 190 hashed, 4 blocks. Key "lifecycle-work-review"
     // (21 bytes) 109 encoded, 201 hashed with 92 bytes of framing (38-byte
     // `CompleteEstateMandatoryReviewOperation`), 4 blocks.
-    for reviewed in [&reviewed, &replayed_review] {
-        assert_request_identities(reviewed.review_canonical_work().admission(), 232, 391, 8);
-    }
+    assert_request_identities(reviewed.review_canonical_work().admission(), 232, 391, 8);
 }
 
 fn assert_request_identities(

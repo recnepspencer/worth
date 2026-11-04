@@ -1,10 +1,10 @@
 error[E0624]: associated function `new` is private
- --> $WORKSPACE/crates/worth-testkit-server/assets/ui/construction/worth_native/private_direct_facade_constructor.rs
+ --> tests/ui/construction/worth_native/private_direct_facade_constructor.rs:2:74
   |
-  |       let _constructor = worth_server::WorthServerWorthNativeDirectFacade::new;
+2 |       let _constructor = worth_server::WorthServerWorthNativeDirectFacade::new;
   |                                                                            ^^^ private associated function
   |
- ::: $WORKSPACE/crates/worth-server/src/worth_native/direct/facade.rs
+ ::: src/worth_native/direct/facade.rs
   |
   | /     pub(crate) fn new(
   | |         admission: WorthServerAdmission,

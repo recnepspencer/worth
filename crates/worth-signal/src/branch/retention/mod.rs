@@ -17,6 +17,10 @@ mod outcome;
 mod registry;
 
 pub use lease::SignalBranchRetentionLease;
+pub use lease::{
+    RetiredSignalBranchRetention, SignalBranchRetentionRetirement,
+    SignalBranchRetentionRetirementDenial, SignalBranchRetentionRetirementProgress,
+};
 pub(crate) use lease::{SignalBranchAdmissionLease, SignalBranchAdmissionReservation};
 pub use outcome::{
     SignalBranchRetentionAcquisitionDenial, SignalBranchRetentionOwnerPosture,

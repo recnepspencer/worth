@@ -1,8 +1,9 @@
 //! Existing artifacts readmit their actual Query publication, never initialization.
 use super::*;
+#[inline(never)]
 pub(super) fn finish_existing_home<Schema, Program>(
     phase: &WorthQueryBootstrapAdvancementPhase<'_>,
-    mut home: UnsharedReadmittedApplicationHome,
+    home: UnsharedReadmittedApplicationHome,
     query: PreparedHomeNativeMeaning<Schema, Program>,
     checkpoint_limits: ApplicationHomeCheckpointLimits,
 ) -> Result<
@@ -15,8 +16,31 @@ where
     Program::Outputs:
         ApplicationProgramOutputsShape<Schema> + WorthQueryApplicationProgramRoots<Schema>,
 {
+    let (query, home) = finalize_native(phase, home, query)?;
+    let (query, home) = attach_source(phase, home, query)?;
+    let (query, home) = attach_world(phase, home, query, checkpoint_limits)?;
+    super::service::finish_service(phase, query, home, checkpoint_limits)
+}
+
+#[inline(never)]
+fn finalize_native<Schema, Program>(
+    phase: &WorthQueryBootstrapAdvancementPhase<'_>,
+    mut home: UnsharedReadmittedApplicationHome,
+    query: PreparedHomeNativeMeaning<Schema, Program>,
+) -> Result<
+    (
+        ReadmittedExistingHomeNativeMeaning<Schema, Program>,
+        UnsharedReadmittedApplicationHome,
+    ),
+    WorthQueryApplicationHomeOpenRefused<Schema, Program>,
+>
+where
+    Schema: ApplicationSchemaComposition,
+    Program: ApplicationProgramDefinition<Schema> + 'static,
+    Program::Outputs:
+        ApplicationProgramOutputsShape<Schema> + WorthQueryApplicationProgramRoots<Schema>,
+{
     use WorthQueryApplicationHomeOpenRefused as Refused;
-    let request = phase.execution_request();
     let (native, authority, outcome) = match home.recovered_query_finalization_parts() {
         Ok(parts) => parts,
         Err(cause) => {
@@ -32,6 +56,29 @@ where
             Ok(query) => query,
             Err(query) => return Err(Refused::ExistingNativeFinalization { query, home }),
         };
+    Ok((query, home))
+}
+
+#[inline(never)]
+fn attach_source<Schema, Program>(
+    phase: &WorthQueryBootstrapAdvancementPhase<'_>,
+    home: UnsharedReadmittedApplicationHome,
+    query: ReadmittedExistingHomeNativeMeaning<Schema, Program>,
+) -> Result<
+    (
+        PreparedExistingHomeQueryRuntime<Schema, Program>,
+        DirectoryHome,
+    ),
+    WorthQueryApplicationHomeOpenRefused<Schema, Program>,
+>
+where
+    Schema: ApplicationSchemaComposition,
+    Program: ApplicationProgramDefinition<Schema> + 'static,
+    Program::Outputs:
+        ApplicationProgramOutputsShape<Schema> + WorthQueryApplicationProgramRoots<Schema>,
+{
+    use WorthQueryApplicationHomeOpenRefused as Refused;
+    let request = phase.execution_request();
     let bridge = match query.home_bridge_definition() {
         Ok(bridge) => bridge,
         Err(cause) => return Err(Refused::ExistingBridgeDefinition { query, home, cause }),
@@ -59,6 +106,27 @@ where
             Ok(query) => query,
             Err(query) => return Err(Refused::ExistingSourceAttachment { query, home }),
         };
+    Ok((query, home))
+}
+
+#[inline(never)]
+fn attach_world<Schema, Program>(
+    phase: &WorthQueryBootstrapAdvancementPhase<'_>,
+    home: DirectoryHome,
+    query: PreparedExistingHomeQueryRuntime<Schema, Program>,
+    checkpoint_limits: ApplicationHomeCheckpointLimits,
+) -> Result<
+    (ReadmittedHomeQueryService<Schema, Program>, DirectoryHome),
+    WorthQueryApplicationHomeOpenRefused<Schema, Program>,
+>
+where
+    Schema: ApplicationSchemaComposition,
+    Program: ApplicationProgramDefinition<Schema> + 'static,
+    Program::Outputs:
+        ApplicationProgramOutputsShape<Schema> + WorthQueryApplicationProgramRoots<Schema>,
+{
+    use WorthQueryApplicationHomeOpenRefused as Refused;
+    let request = phase.execution_request();
     let mut home = home;
     let maintenance = match super::super::maintenance::prepare(&home, checkpoint_limits, &request) {
         Ok(operation) => operation,
@@ -83,5 +151,5 @@ where
         Ok(query) => query.consume(|query| query),
         Err(query) => return Err(Refused::ExistingQueryAttachment { query, home }),
     };
-    super::service::finish_service(phase, query, home, checkpoint_limits)
+    Ok((query, home))
 }

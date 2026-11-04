@@ -1,7 +1,7 @@
 //! Actual Home/Native/World custody survives process death and explicit release.
 use worth_execution::ExecutionRequest;
 use worth_runtime_world::facade::*;
-use worth_store_application::{ApplicationHomeCheckpointDenial, ApplicationHomeCloseOutcome};
+use worth_store_application::ApplicationHomeCloseOutcome;
 mod child;
 mod published_predecessor;
 const LOCATION: &str = "WORTH_WORLD_RELEASE_HOME";
@@ -76,7 +76,34 @@ fn killed_native_effect_reopens_original_world_custody_releases_and_reopens_agai
     // Teardown must permit the very reopen needed to inspect terminal journal
     // uncertainty. The actual owner drops its pins; durable custody stays open.
     drop((claim, page));
-    close(fixture.home, &execution);
+    let sealed = fixture
+        .home
+        .seal_world(&execution)
+        .unwrap_or_else(|refused| {
+            panic!(
+                "recovered durable custody must seal: {:?}",
+                refused.reason()
+            )
+        });
+    let retained = sealed.world_close_report().recovered_custody();
+    assert_eq!(retained.len(), 1);
+    assert_eq!(retained[0].identity().ordinal(), number(2));
+    assert_eq!(retained[0].attempt_identity().ordinal(), number(0));
+    assert_eq!(retained[0].reserved_commit_identity().ordinal(), number(1));
+    assert_eq!(retained[0].native_receipt(), Some(&receipt));
+    let closed = sealed.finish_close(&execution);
+    match &closed {
+        ApplicationHomeCloseOutcome::Closed {
+            checkpoint: Ok(_), ..
+        } => {}
+        ApplicationHomeCloseOutcome::Closed {
+            checkpoint: Err(cause),
+            ..
+        } => panic!("original recovered checkpoint: {cause:?}"),
+        ApplicationHomeCloseOutcome::CloseRefused { reason, .. } => {
+            panic!("original recovered physical close: {reason:?}")
+        }
+    }
     let fixture = open(&location, &execution);
     let inspection = fixture.home.world().inspection_port();
     let page = inspection.recovery_page(None, maximum()).unwrap();
@@ -159,6 +186,13 @@ fn killed_native_effect_reopens_original_world_custody_releases_and_reopens_agai
     );
     drop(head);
     close(second.home, &execution);
+    // Every reopen above occurs while the first close report and its actual
+    // retired Native/World allocations remain alive.
+    assert!(matches!(
+        &closed,
+        ApplicationHomeCloseOutcome::Closed { .. }
+    ));
+    drop(closed);
 }
 
 fn close(
@@ -167,13 +201,12 @@ fn close(
 ) {
     match home.close(execution) {
         Ok(ApplicationHomeCloseOutcome::Closed {
-            checkpoint: Err(ApplicationHomeCheckpointDenial::WorldSectionRequired),
-            ..
+            checkpoint: Ok(_), ..
         }) => {}
         Err(refused) => panic!("World close refused: {:?}", refused.reason()),
         Ok(ApplicationHomeCloseOutcome::CloseRefused { reason, .. }) => {
             panic!("Native close refused: {reason:?}")
         }
-        _ => panic!("full World checkpoint remains explicitly unsupported"),
+        _ => panic!("the original coupled checkpoint must complete before physical close"),
     }
 }

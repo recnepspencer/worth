@@ -1,3 +1,4 @@
+use super::recorded_workflow_receipt as recorded;
 pub(crate) use worth_query_testkit_certification_application_graph::facade::certification::application_graph::workflow_retry::*;
 
 #[test]
@@ -22,13 +23,15 @@ fn bounded_retry_spends_durable_attempts_and_duplicate_replay_spends_none() {
     };
 
     let mut paths = Vec::new();
+    let mut originals = Vec::new();
     for key in 802..808 {
         match propose_authoring_instance(&application, instance.clone(), key)
             .expect("the current retry proposal must prepare")
         {
             WorkflowProposalOutcome::Published(performed) => {
                 paths.push(performed.node_path().to_owned());
-                assert!(!performed.replayed());
+                assert!(performed.receipt().changed_record_count() > 0);
+                originals.push(performed);
             }
             other => panic!("expected a published retry proposal, got {other:?}"),
         }
@@ -36,9 +39,12 @@ fn bounded_retry_spends_durable_attempts_and_duplicate_replay_spends_none() {
             match propose_authoring_instance(&application, instance.clone(), key)
                 .expect("the duplicate revision key must replay")
             {
-                WorkflowProposalOutcome::Published(performed) => {
-                    assert_eq!(performed.node_path(), "proposal/revise");
-                    assert!(performed.replayed());
+                WorkflowProposalOutcome::RecoveredCommitted(receipt) => {
+                    let original = originals.last().unwrap();
+                    assert_eq!(original.node_path(), "proposal/revise");
+                    recorded::original(&receipt, original.receipt());
+                    recorded::creates(&receipt, original.proposal().entity_id());
+                    recorded::creates(&receipt, original.transition());
                 }
                 other => panic!("expected replayed revision, got {other:?}"),
             }

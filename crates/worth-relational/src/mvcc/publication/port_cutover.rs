@@ -260,12 +260,11 @@ fn memory_frame_stop_outcome(
     if let Denial::Request(stop) = cause {
         return RelationalPublicationOutcome::RequestStopped(stop);
     }
-    if let Denial::Allocation(allocation) = &cause {
-        if let worth_execution::ExecutionAllocationDenialClass::Request(stop) =
+    if let Denial::Allocation(allocation) = &cause
+        && let worth_execution::ExecutionAllocationDenialClass::Request(stop) =
             allocation.classify()
-        {
-            return RelationalPublicationOutcome::RequestStopped(stop);
-        }
+    {
+        return RelationalPublicationOutcome::RequestStopped(stop);
     }
     RelationalPublicationOutcome::denied(RelationalPublicationDenial::CanonicalArtifactEncoding(
         cause,

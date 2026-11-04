@@ -234,6 +234,19 @@ fn original_schema_capture_retains_exact_roster_and_refuses_before_copy() {
 fn transition_backing_refusal_precedes_archive_and_retains_its_own_grant() {
     let mut runtime = runtime_with_test_schema();
     let identity = runtime.main_branch_identity();
+    // Isolate the stream backing bill from the producer's independently owned
+    // original schema carrier, now required before every transition durable step.
+    let setup = crate::test_execution_policy::serial_request();
+    runtime
+        .history
+        .branch_cell(identity.branch_id())
+        .unwrap()
+        .root()
+        .unwrap()
+        .retained_schema_authority()
+        .recorded_image(&ExecutionRequest::serial(&setup))
+        .unwrap();
+    assert!(setup.memory().unwrap().charged_memory_bytes() > 0);
     let bill = u64::try_from(
         std::alloc::Layout::array::<RetainedBranchTransition>(4)
             .unwrap()
@@ -292,4 +305,5 @@ fn transition_backing_refusal_precedes_archive_and_retains_its_own_grant() {
     assert_eq!(host.memory().unwrap().charged_memory_bytes(), bill);
     drop(runtime);
     assert_eq!(host.memory().unwrap().charged_memory_bytes(), 0);
+    assert_eq!(setup.memory().unwrap().charged_memory_bytes(), 0);
 }

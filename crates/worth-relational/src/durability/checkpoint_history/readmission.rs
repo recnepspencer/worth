@@ -14,6 +14,12 @@ struct Backing {
 #[derive(Debug, Clone)]
 pub(crate) struct SelectedCheckpointRead(Arc<Backing>);
 impl SelectedCheckpointRead {
+    pub(crate) fn preflight_retirement(
+        &self,
+        source: &dyn RelationalDurableColdSource,
+    ) -> Result<(), crate::durability::medium::RelationalDurableMemberRetirementRefusal> {
+        self.0.original.preflight_retirement(source)
+    }
     pub(crate) fn capture(
         source: Arc<dyn RelationalDurableColdSource>,
         request: &ExecutionRequest<'_, '_>,
@@ -42,9 +48,11 @@ impl SelectedCheckpointRead {
         member: RelationalDurableMemberLocator,
         limit: u64,
     ) -> Result<ExecutionImmutableBytes, Refusal> {
-        self.0
+        let bytes = self
+            .0
             .original
-            .read_selected_member(source, request, member, limit)
+            .read_selected_member(source, request, member, limit)?;
+        Ok(bytes)
     }
     pub(crate) fn into_retirement(self) -> SelectedCheckpointReadRetirement {
         SelectedCheckpointReadRetirement {
@@ -59,7 +67,7 @@ impl SelectedCheckpointRead {
 
 #[derive(Debug)]
 struct RetiredReadData {
-    _source: Arc<dyn RelationalDurableColdSource>,
+    source: Option<Arc<dyn RelationalDurableColdSource>>,
     _memory: Option<ExecutionMemoryReservation>,
 }
 #[derive(Debug)]
@@ -92,7 +100,7 @@ impl SelectedCheckpointReadRetirement {
             {
                 self.original = Some(original.into_retirement());
                 self.data = Some(RetiredReadData {
-                    _source: source,
+                    source: Some(source),
                     _memory,
                 });
                 return O::Advanced;
@@ -111,10 +119,17 @@ impl SelectedCheckpointReadRetirement {
                     .take()
                     .expect("original retirement is owned")
                     .into_retired()
-                    .ok()
-                    .expect("complete retirement retains original inert data"),
+                    .unwrap_or_else(|_| {
+                        unreachable!("complete retirement retains original inert data")
+                    }),
             );
             self.complete = true;
+            // The separately borrowed authentic source keeps this release nonfinal.
+            self.data
+                .as_mut()
+                .expect("unique original read data")
+                .source
+                .take();
         }
         observation
     }

@@ -23,6 +23,7 @@ where
     pub fn prepare_workflow_operation_recovery_from_owner(
         self,
         required: &RequiredWorkflowOperation,
+        original: &worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt,
     ) -> Result<
         WorthQueryPreparedWorkflowOperationRecovery<'application, Schema, IntentBinding<Schema, Intent>>,
         WorthQueryWorkflowOperationRecoveryPreparationDenial,
@@ -31,6 +32,6 @@ where
         <IntentBinding<Schema, Intent> as ApplicationMutationBinding<Schema>>::Input:
             Clone + Send + Sync + 'static,
     {
-        self.native.prepare_workflow_operation_recovery_from_owner(required)
+        self.native.prepare_workflow_operation_recovery_from_owner(required, original)
     }
 }

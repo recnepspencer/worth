@@ -10,7 +10,9 @@ use worth_execution::{ExecutionOrderedMap, ExecutionOrderedMapCell};
 mod retained_release;
 mod retirement;
 #[cfg(test)]
-pub(crate) use retained_release::assert_external_cut_and_lane_busy;
+pub(crate) use retained_release::{
+    assert_external_cut_and_lane_busy, assert_recovered_cut_and_lane_busy,
+};
 pub(crate) use retained_release::{
     RelationalRetentionRetirementCustody, RelationalRetentionRetirementError,
 };
@@ -269,4 +271,10 @@ fn lock_lane(
     lane.state
         .lock()
         .unwrap_or_else(|poisoned| poisoned.into_inner())
+}
+
+impl RelationalBranchRetentionBinding {
+    pub(in crate::history::retention) fn same_lane(&self, other: &Self) -> bool {
+        Weak::ptr_eq(&self.owner, &other.owner) && Arc::ptr_eq(&self.lane, &other.lane)
+    }
 }

@@ -8,10 +8,10 @@ use worth_query_host::facade::{
     admission::authenticated_principal::WorthQueryRequestScope,
     application_contribution::{WorthQueryAdvancementDenial, WorthQueryAdvancementPhase},
     primary_graph::{
-        WorthQueryApplicationCleanupRequired, WorthQueryApplicationManagedCleanup,
-        WorthQueryApplicationUncommitted, WorthQueryMutationCleanupFailure,
+        WorthQueryApplicationCleanupRequired, WorthQueryApplicationCommitOutcome,
+        WorthQueryApplicationManagedCleanup, WorthQueryApplicationManagedCleanupReceipt,
+        WorthQueryMutationCleanupFailure,
     },
-    runtime::WorthQueryDirectRunCleanupReceipt,
 };
 
 /// Actual failed native cleanup. Neither a clone nor a business completion.
@@ -21,7 +21,7 @@ use worth_query_host::facade::{
 #[derive(Debug)]
 #[must_use = "retain actual cleanup and original business evidence"]
 pub struct BankManagedCleanup {
-    business: WorthQueryApplicationUncommitted,
+    business: WorthQueryApplicationCommitOutcome,
     native: WorthQueryApplicationManagedCleanup,
 }
 /// Physical cleanup evidence remains separate from the original business outcome.
@@ -32,8 +32,8 @@ pub struct BankManagedCleanup {
 /// ```
 #[must_use = "release does not settle the original business outcome"]
 pub struct BankReleasedManagedCleanup {
-    business: WorthQueryApplicationUncommitted,
-    receipt: WorthQueryDirectRunCleanupReceipt,
+    business: WorthQueryApplicationCommitOutcome,
+    receipt: WorthQueryApplicationManagedCleanupReceipt,
 }
 impl From<Box<WorthQueryApplicationCleanupRequired>> for BankManagedCleanup {
     fn from(required: Box<WorthQueryApplicationCleanupRequired>) -> Self {
@@ -43,7 +43,7 @@ impl From<Box<WorthQueryApplicationCleanupRequired>> for BankManagedCleanup {
 }
 impl BankManagedCleanup {
     /// Borrows the original native uncommitted outcome.
-    pub fn business(&self) -> &WorthQueryApplicationUncommitted {
+    pub fn business(&self) -> &WorthQueryApplicationCommitOutcome {
         &self.business
     }
     /// Borrows the native issuer or execution refusal from the latest retry.
@@ -86,19 +86,23 @@ impl BankManagedCleanup {
 }
 impl BankReleasedManagedCleanup {
     /// Borrows the original native uncommitted outcome.
-    pub fn business(&self) -> &WorthQueryApplicationUncommitted {
+    pub fn business(&self) -> &WorthQueryApplicationCommitOutcome {
         &self.business
     }
     /// Borrows the actual physical receipt; this is not a Bank commit.
-    pub fn receipt(&self) -> &WorthQueryDirectRunCleanupReceipt {
+    pub fn receipt(&self) -> &WorthQueryApplicationManagedCleanupReceipt {
         &self.receipt
+    }
+    /// Borrows the actual retained first-delivery custody after physical cleanup.
+    pub fn receipt_mut(&mut self) -> &mut WorthQueryApplicationManagedCleanupReceipt {
+        &mut self.receipt
     }
     /// Transfers actual evidence, not a reconstructed receipt or completion.
     pub fn into_parts(
         self,
     ) -> (
-        WorthQueryApplicationUncommitted,
-        WorthQueryDirectRunCleanupReceipt,
+        WorthQueryApplicationCommitOutcome,
+        WorthQueryApplicationManagedCleanupReceipt,
     ) {
         (self.business, self.receipt)
     }

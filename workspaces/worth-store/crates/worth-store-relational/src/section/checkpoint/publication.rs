@@ -2,6 +2,7 @@
 use super::*;
 
 pub(super) struct SectionPublication {
+    initial_predecessor: Option<Option<[u8; 32]>>,
     source: std::sync::Arc<crate::cold_source::StoreColdSource>,
     retained: crate::cold_source::RetainedMemberPublication,
     bytes: Vec<u8>,
@@ -18,12 +19,45 @@ impl SectionPublication {
         checkpoint: &RelationalNativeCheckpoint,
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<Self, RelationalSectionCheckpointDenial> {
+        Self::prepare_encoded(
+            source,
+            checkpoint,
+            execution,
+            None,
+            26,
+            checkpoint.bytes(),
+            || {
+                super::super::codec::encode(checkpoint)
+                    .ok_or(RelationalSectionCheckpointDenial::MalformedSection)
+            },
+        )
+    }
+    pub(super) fn prepare_complete(
+        source: &std::sync::Arc<crate::cold_source::StoreColdSource>,
+        complete: &worth_relational::facade::durability::CompleteRelationalNativeCheckpoint,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> Result<Self, RelationalSectionCheckpointDenial> {
+        Self::prepare_encoded(
+            source,
+            complete.checkpoint(),
+            execution,
+            Some(complete.initial_predecessor()),
+            super::super::complete_codec::HEADER,
+            complete.source_artifact().as_bytes(),
+            || super::super::complete_codec::encode(complete),
+        )
+    }
+    fn prepare_encoded(
+        source: &std::sync::Arc<crate::cold_source::StoreColdSource>,
+        checkpoint: &RelationalNativeCheckpoint,
+        execution: &ExecutionRequest<'_, '_>,
+        initial_predecessor: Option<Option<[u8; 32]>>,
+        header: usize,
+        payload: &[u8],
+        encode: impl FnOnce() -> Result<Vec<u8>, RelationalSectionCheckpointDenial>,
+    ) -> Result<Self, RelationalSectionCheckpointDenial> {
         use RelationalSectionCheckpointDenial as Denial;
-        let size = checkpoint
-            .bytes()
-            .len()
-            .checked_add(26)
-            .ok_or(Denial::SizeLimit)?;
+        let size = payload.len().checked_add(header).ok_or(Denial::SizeLimit)?;
         if size > 1 << 30 {
             return Err(Denial::SizeLimit);
         }
@@ -37,12 +71,11 @@ impl SectionPublication {
                 } else {
                     context.poll()?;
                 }
-                Ok(super::super::codec::encode(checkpoint))
+                Ok(encode())
             })
             .map_err(Denial::Execution)?;
-        let bytes = copied
-            .map_err(|stop| Denial::Execution(WorkCeilingDenial::Stopped(stop)))?
-            .ok_or(Denial::MalformedSection)?;
+        let bytes =
+            copied.map_err(|stop| Denial::Execution(WorkCeilingDenial::Stopped(stop)))??;
         let retained = source
             .protect_member_selection_for_request(
                 checkpoint.members().iter().map(|member| member.locator()),
@@ -50,6 +83,7 @@ impl SectionPublication {
             )
             .map_err(Denial::ReadProtection)?;
         Ok(Self {
+            initial_predecessor,
             source: source.clone(),
             retained,
             bytes,
@@ -69,6 +103,15 @@ impl SectionPublication {
                 Denial::CaptureNotBound,
             ));
         }
+        if self.initial_predecessor.is_some()
+            && checkpoint
+                .publication_subject()
+                .and_then(|subject| subject.initial_inputs_coordinate())
+                != super::super::complete_codec::coordinates(&self.bytes)
+                    .map(|value| (value.revision, value.digest))
+        {
+            return Err(RelationalSectionCheckpointDenial::MalformedSection);
+        }
         checkpoint
             .validate_publication_source(
                 &(self.source.clone()
@@ -87,8 +130,26 @@ impl SectionPublication {
         previous: &[u8],
     ) -> Result<(), RelationalSectionCheckpointDenial> {
         use RelationalSectionCheckpointDenial as Denial;
-        let prior = super::super::codec::coverage(previous).ok_or(Denial::MalformedSection)?;
-        let next = super::super::codec::coverage(&self.bytes).ok_or(Denial::MalformedSection)?;
+        let complete_prior = super::super::complete_codec::coordinates(previous);
+        let complete_next = super::super::complete_codec::coordinates(&self.bytes);
+        let (prior, next) = match (complete_prior, complete_next) {
+            (Some(prior), Some(next)) => {
+                if next.revision < prior.revision
+                    || next.revision == prior.revision && next.digest != prior.digest
+                    || next.revision > prior.revision.saturating_add(1)
+                    || next.revision > prior.revision
+                        && self.initial_predecessor != Some(Some(prior.digest))
+                {
+                    return Err(Denial::StaleCapture);
+                }
+                ((prior.covered, prior.through), (next.covered, next.through))
+            }
+            (None, None) => (
+                super::super::codec::coverage(previous).ok_or(Denial::MalformedSection)?,
+                super::super::codec::coverage(&self.bytes).ok_or(Denial::MalformedSection)?,
+            ),
+            (Some(_), None) | (None, Some(_)) => return Err(Denial::MalformedSection),
+        };
         if next.0 < prior.0 || next.1 < prior.1 {
             return Err(Denial::StaleCapture);
         }

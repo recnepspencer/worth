@@ -271,6 +271,10 @@ pub(crate) struct PreparedCommitPublicationCompletion {
 }
 
 impl PreparedCommitPublicationExecution {
+    pub(crate) fn candidate_symbols(&self) -> crate::runtime::RuntimeSymbolTable {
+        self.publication.candidate_symbols.clone()
+    }
+
     pub(crate) fn caller_association(&self) -> Option<crate::mvcc::RelationalCallerAssociation> {
         self.publication.caller_association()
     }

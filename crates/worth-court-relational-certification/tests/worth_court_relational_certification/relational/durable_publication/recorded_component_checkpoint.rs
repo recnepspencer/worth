@@ -1,4 +1,21 @@
 use super::*;
+use worth_relational::facade::{
+    durability::RelationalDurableMemberLocator, publication::PatchStreamPosition,
+    storage::RelationalStorageUnavailableCause,
+};
+fn selected_member(
+    medium: &TestDurableMedium,
+    position: PatchStreamPosition,
+) -> RelationalDurableMemberLocator {
+    use sha2::{Digest, Sha256};
+    let bytes = medium
+        .artifact_bytes(position)
+        .expect("original offered canonical frame");
+    RelationalDurableMemberLocator {
+        sha256: Sha256::digest(&bytes).into(),
+        length: bytes.len() as u64,
+    }
+}
 
 #[test]
 fn recorded_component_checkpoint_missing_selected_source_refuses_with_original_subject() {
@@ -11,7 +28,12 @@ fn recorded_component_checkpoint_missing_selected_source_refuses_with_original_s
     else {
         panic!("canonical predecessor");
     };
+    let member = selected_member(&original.medium, before.position());
     original.medium.drop_artifact(before.position());
+    original
+        .medium
+        .refuse_member_read_for_test(member, RelationalStorageUnavailableCause::MissingMember);
+    let journal_reads = original.medium.canonical_journal_reads();
     let refusal = authority
         .admit_recorded_component(execution, &runtime, &original.before)
         .unwrap_err();
@@ -19,6 +41,8 @@ fn recorded_component_checkpoint_missing_selected_source_refuses_with_original_s
         refusal.cause(),
         RelationalRecordedComponentAdmissionCause::Source(_)
     ));
+    assert_eq!(original.medium.last_member_fault_for_test(), Some(member));
+    assert_eq!(original.medium.canonical_journal_reads(), journal_reads);
     assert!(!refusal.retains_acquired_custody());
     assert_ne!(original.before, original.after);
 }
@@ -158,7 +182,10 @@ fn recorded_component_checkpoint_reexport_refuses_missing_original_source() {
     let Target::Canonical(target) = recorded.target() else {
         panic!("the source-issued predecessor is canonical")
     };
+    let member = selected_member(&medium, target.position());
     medium.drop_artifact(target.position());
+    medium.refuse_member_read_for_test(member, RelationalStorageUnavailableCause::MissingMember);
+    let journal_reads = medium.canonical_journal_reads();
     assert!(matches!(
         runtime
             .owner_component_services()
@@ -166,6 +193,8 @@ fn recorded_component_checkpoint_reexport_refuses_missing_original_source() {
             .export_recorded_retained_component(execution, &basis),
         Err(RelationalRecordedComponentRefusal::Source(_))
     ));
+    assert_eq!(medium.last_member_fault_for_test(), Some(member));
+    assert_eq!(medium.canonical_journal_reads(), journal_reads);
     assert_recorded_basis(&runtime, &basis, &recorded);
 }
 
@@ -185,8 +214,11 @@ fn recorded_component_checkpoint_reexport_refuses_corrupt_original_source() {
     let Target::Canonical(target) = recorded.target() else {
         panic!("the source-issued predecessor is canonical")
     };
+    let member = selected_member(&medium, target.position());
     let final_byte = medium.artifact_bytes(target.position()).unwrap().len() - 1;
     medium.flip_artifact_byte(target.position(), final_byte);
+    medium.corrupt_member_read_for_test(member);
+    let journal_reads = medium.canonical_journal_reads();
     assert!(matches!(
         runtime
             .owner_component_services()
@@ -194,5 +226,7 @@ fn recorded_component_checkpoint_reexport_refuses_corrupt_original_source() {
             .export_recorded_retained_component(execution, &basis),
         Err(RelationalRecordedComponentRefusal::Source(_))
     ));
+    assert_eq!(medium.last_member_fault_for_test(), Some(member));
+    assert_eq!(medium.canonical_journal_reads(), journal_reads);
     assert_recorded_basis(&runtime, &basis, &recorded);
 }

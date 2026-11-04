@@ -13,7 +13,7 @@ impl QueryRequestExecution<'_> {
         let owner = Some(product.owner.owner_identity());
         let source = Some(
             product
-                .source
+                .source()
                 .authoritative_source_profile()
                 .runtime_instance_id(),
         );

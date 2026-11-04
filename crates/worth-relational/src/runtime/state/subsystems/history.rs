@@ -48,6 +48,10 @@ pub(crate) use history_head_versions::BranchHeadVersionIndexAuthority;
 pub(crate) use history_preparation_binding::RelationalPreparationHistory;
 #[path = "history_memory_close.rs"]
 mod history_memory_close;
+#[path = "history_source_retirement.rs"]
+mod history_source_retirement;
+pub(crate) use canonical_publication_routes::RelationalPerformedSourceWalk;
+pub(crate) use history_source_retirement::RelationalSourceHistoryBinding;
 #[path = "history_publication.rs"]
 mod history_publication;
 #[path = "history_recovery.rs"]
@@ -66,10 +70,10 @@ pub(crate) use canonical_publication_routes::{
     authored_write_commit_denial, readmit_positioned_canonical_commit, AuthoredWriteGeneration,
     BranchTransitionPublication, BranchTransitionRecordError, CanonicalCheckpointAdmissionError,
     CanonicalPositionAdmission, CanonicalPublicationRecordError, OriginalBranchSchemaInputs,
-    OriginalBranchSchemaInputsDenial, OriginalEmptySchemaObservation,
-    PatchPositionReservationAdmission, PerformedCheckpointSelection,
-    PreparedCanonicalPublicationRoute, RelationalCanonicalPublicationRoutes,
-    RetainedBranchTransition, RetainedCanonicalPosition,
+    OriginalBranchSchemaInputsDenial, OriginalEmptySchemaInstallation,
+    OriginalEmptySchemaObservation, PatchPositionReservationAdmission,
+    PerformedCheckpointSelection, PreparedCanonicalPublicationRoute,
+    RelationalCanonicalPublicationRoutes, RetainedBranchTransition, RetainedCanonicalPosition,
 };
 pub use canonical_publication_routes::{
     RelationalCanonicalPositionAdmissionDenial, RelationalPatchPositionReservationCounters,

@@ -1,8 +1,9 @@
 pub use runtime_state::CompleteRelationalCheckpointPreparation;
 pub(crate) use subsystems::{
     MutationRecordAllocations, MutationSymbolMeanings, OriginalBranchSchemaInputs,
-    OriginalBranchSchemaInputsDenial, OriginalEmptySchemaObservation,
-    OriginalRecordAllocationCursor, OriginalSymbolMeanings, RetainedBranchTransition,
+    OriginalBranchSchemaInputsDenial, OriginalEmptySchemaInstallation,
+    OriginalEmptySchemaObservation, OriginalRecordAllocationCursor, OriginalSymbolMeanings,
+    RetainedBranchTransition,
 };
 mod runtime_state;
 mod subsystems;
@@ -24,6 +25,10 @@ pub(crate) use runtime_state::{
 pub use runtime_state::{
     PreparedRelationalRuntimeClose, RelationalRuntimeCloseDenial, RelationalRuntimeCloseRefused,
 };
+pub use runtime_state::{
+    PreparedRelationalSourceClose, RelationalSourceClose, RelationalSourceCloseDenial,
+    RelationalSourceCloseProgress, RetiredSourceRelationalAllocation,
+};
 pub(in crate::runtime) use runtime_state::{
     RelationalRuntimeOwner, RelationalRuntimePublicationOwner,
 };
@@ -32,12 +37,12 @@ pub(crate) use subsystems::{
     BranchHeadVersionIndexAuthority, BranchTransitionPublication, BranchTransitionRecordError,
     CanonicalCheckpointAdmissionError, CanonicalPositionAdmission, CanonicalPublicationRecordError,
     CapturedIndexDefinitionCatalog, ColdSymbolDirectoryDenial, CommitStrategiesSubsystem,
-    DurabilitySubsystem, HistorySubsystem, IndexCatalogCoverage, IndexDefinitionReadBinding,
-    IndexingState, IndexingSubsystem, LineageIdentityAllocator, LineageState, LineageSubsystem,
-    MirrorResidencyDemandBinding, OriginalCheckpointIndexes, PartitionEdition,
-    PatchPositionReservationAdmission, PendingRecordAllocations, PendingSymbolMeanings,
-    PerformedCheckpointSelection, PreparedCanonicalPublicationRoute, PreparedCommitSequence,
-    PreparedGenerationBatch, PreparedRecoveredVersionedArtifactPublication,
+    DurabilitySubsystem, FrozenCheckpointIndexes, HistorySubsystem, IndexCatalogCoverage,
+    IndexDefinitionReadBinding, IndexingState, IndexingSubsystem, LineageIdentityAllocator,
+    LineageState, LineageSubsystem, MirrorResidencyDemandBinding, OriginalCheckpointIndexes,
+    PartitionEdition, PatchPositionReservationAdmission, PendingRecordAllocations,
+    PendingSymbolMeanings, PerformedCheckpointSelection, PreparedCanonicalPublicationRoute,
+    PreparedCommitSequence, PreparedGenerationBatch, PreparedRecoveredVersionedArtifactPublication,
     PreparedSymbolPublication, PreparedVersionedArtifactAccelerators,
     PreparedVersionedArtifactPublication, PublicationSubsystem, PublishedSnapshotCapacityOwner,
     PublishedSnapshotCloseout, PublishedSnapshotReleaseObservation,

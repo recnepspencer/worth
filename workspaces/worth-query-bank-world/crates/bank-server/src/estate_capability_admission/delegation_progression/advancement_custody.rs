@@ -88,7 +88,7 @@ fn delegation_refuses_before_its_admitted_principal_reader() {
                 None => {
                     assert!(matches!(
                         outcome.unwrap(),
-                        BankMutationCommitOutcome::Committed(_)
+                        CommandCourtOutcome::Committed(_)
                     ));
                     assert!(
                         reads() > before,

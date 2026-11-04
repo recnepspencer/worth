@@ -17,6 +17,7 @@ pub(super) struct PreparedRoot<Phase> {
     rollback: Option<InstalledRootCommitRollback>,
     recovered: bool,
     phase: Phase,
+    pub(super) checkpoint_origin: Option<crate::durability::WorldCheckpointOrigin>,
 }
 
 pub(super) struct ReadmittedRootPreparation {
@@ -113,9 +114,12 @@ where
                     .identities
                     .lock()
                     .unwrap_or_else(|error| error.into_inner()),
-                &self.state.relational.basis_port(),
+                &self.state.relational_services().basis_port(),
                 &self.state.signal.basis_port(),
-                &self.state.bridge,
+                self.state
+                    .bridge
+                    .as_ref()
+                    .expect("serving World owns correspondence"),
                 relational,
                 signal,
                 correspondence,
@@ -160,6 +164,14 @@ where
         let history_pins = match product_head.fork_history(&basis) {
             Ok(pins) => pins,
             Err(_) => return Err(RuntimeWorldBootstrapNoEffectCause::CapacityExhausted),
+        };
+        let checkpoint_origin = if self.state.durable.is_some() {
+            let pins = product_head
+                .fork_history(&basis)
+                .map_err(|_| RuntimeWorldBootstrapNoEffectCause::CapacityExhausted)?;
+            Some(crate::durability::WorldCheckpointOrigin::new(&basis, pins))
+        } else {
+            None
         };
         if !self.owner_is_present() {
             return Err(RuntimeWorldBootstrapNoEffectCause::OwnerUnavailable);
@@ -228,6 +240,7 @@ where
             rollback: root_rollback,
             recovered: posture,
             phase,
+            checkpoint_origin,
         })
     }
 }
@@ -249,6 +262,7 @@ impl<Phase> PreparedRoot<Phase> {
             rollback: self.rollback,
             recovered: self.recovered,
             phase,
+            checkpoint_origin: self.checkpoint_origin,
         }
     }
 }

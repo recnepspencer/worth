@@ -22,6 +22,10 @@ use crate::application_entry::WorthQueryApplicationRequestMutationDenial;
 /// read, publication or cleanup failure remain in the recovery outcome instead.
 #[derive(Debug)]
 pub enum WorthQueryApplicationRecoveryRequestDenial {
+    /// Durable original meaning cannot promote process-local output custody.
+    RecoveredCommitted(
+        worth_query_execution::facade::primary_graph::WorthQueryRecoveredApplicationCommitReceipt,
+    ),
     ProductPreparationPending(
         worth_query_execution::facade::primary_graph::WorthQueryProductPreparationPending,
     ),

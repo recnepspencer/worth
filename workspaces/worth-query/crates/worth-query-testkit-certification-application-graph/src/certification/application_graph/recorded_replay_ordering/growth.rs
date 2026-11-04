@@ -64,7 +64,7 @@ pub(super) fn timed_replay(
     let elapsed = started.elapsed();
     assert!(matches!(
         replay.expect("the oldest recorded key replays"),
-        Outcome::AlreadyCommitted(_) | Outcome::PreviouslyCommitted(_)
+        Outcome::AlreadyCommitted(_) | Outcome::RecoveredCommitted(_)
     ));
     assert_eq!(work, WorthQueryMutationHandlerWork::NotStarted);
     elapsed

@@ -18,7 +18,9 @@ use super::ComponentBasisDependencyClass;
 
 mod composite;
 mod history;
+mod history_retirement;
 pub(crate) use history::HistoryRetentionObligation;
+pub(crate) use history_retirement::RetiringHistoryComponents;
 mod product_head;
 mod retained_partial;
 
@@ -98,9 +100,16 @@ pub(crate) struct RetentionReleaseFailure {
 pub(super) trait RetentionControlSurface: Send + Sync {
     fn try_retire_shared_pair(
         &self,
+        dependency: ComponentBasisDependencyClass,
         relational: &ComponentBasisPinClaim,
         signal: &ComponentBasisPinClaim,
     ) -> Result<(), ()>;
+
+    fn try_take_history_pair_for_close(
+        &self,
+        relational: &ComponentBasisPinClaim,
+        signal: &ComponentBasisPinClaim,
+    ) -> Result<RetiringHistoryComponents, ()>;
 
     fn fork_history_pair(
         &self,

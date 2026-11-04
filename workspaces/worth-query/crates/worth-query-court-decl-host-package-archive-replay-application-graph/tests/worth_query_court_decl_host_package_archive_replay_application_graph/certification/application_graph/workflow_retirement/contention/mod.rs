@@ -48,7 +48,7 @@ fn a_competing_retirement_after_prepare_leaves_one_committed_retirement() {
     );
     let outcome = retire_after(&application, first.clone(), 512, || {
         let winner = expect_retired(retire_definition(&application, first.clone(), 513));
-        assert!(!winner.replayed());
+        assert!(winner.receipt().changed_record_count() > 0);
     });
     expect_changed_facts_stale(outcome.map(|outcome| match outcome {
         WorkflowDefinitionRetirementOutcome::Application(outcome) => outcome,

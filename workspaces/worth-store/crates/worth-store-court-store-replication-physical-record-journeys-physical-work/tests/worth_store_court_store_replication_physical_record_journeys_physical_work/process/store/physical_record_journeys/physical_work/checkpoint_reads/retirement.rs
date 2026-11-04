@@ -32,6 +32,10 @@ fn verified_read(
     (membership, observation)
 }
 
+#[allow(
+    clippy::while_let_loop,
+    reason = "Keep every retirement progress fate explicit"
+)]
 fn finish(
     serving: &ServingPhysicalRuntime,
     request: &ExecutionRequest<'_, '_>,
@@ -147,7 +151,7 @@ fn shared_read_retirement_releases_only_the_original_local_share() {
         1,
         "independently acquired actual reader remains protected"
     );
-    drop(records);
+    // This borrowed facade has no custody; its last use ends the loan.
     drop(independent);
     assert_clean_close(serving);
     retired_local.reclaim();
@@ -205,7 +209,7 @@ fn foreign_store_and_original_stop_preserve_read_retirement_task() {
     // explicitly unbudgeted, with no replacement request or fabricated resume.
     drop(task);
     assert_eq!(protection.snapshot().live_acquisitions(), 0);
-    drop(records);
+    // This borrowed facade has no custody; its last use ends the loan.
     assert_clean_close(serving);
     assert_clean_close(foreign);
     assert_eq!(serial.memory().unwrap().charged_memory_bytes(), 0);

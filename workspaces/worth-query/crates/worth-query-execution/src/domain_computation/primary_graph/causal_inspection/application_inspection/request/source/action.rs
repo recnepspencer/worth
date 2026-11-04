@@ -107,6 +107,10 @@ impl<Schema: ApplicationSchema, Disclosure: ApplicationSourceDisclosureBinding<S
                 .expect("one private source policy preparation")(e, q, p, s, m)
         })
     }
+    #[allow(
+        clippy::type_complexity,
+        reason = "The borrowed policy callback couples the schema binding and original request memory without allocating"
+    )]
     fn execute_inner_core(
         self,
         detail: Option<super::super::super::rich::WorthQueryApplicationMaterializationRequest>,

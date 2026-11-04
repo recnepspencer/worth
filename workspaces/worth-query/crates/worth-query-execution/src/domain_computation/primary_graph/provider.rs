@@ -19,6 +19,10 @@ mod branch_commit_coordination;
 mod commit_causality;
 pub(super) mod committed_dispatch_outbox;
 mod completed_observation;
+mod original_attempt_completion;
+pub(in crate::domain_computation::primary_graph) use original_attempt_completion::{
+    OriginalCompletionPublisher, OriginalCompletionReceiver, OriginalCompletionSlot,
+};
 mod correction_witness;
 pub(in crate::domain_computation::primary_graph) use correction_witness::{
     CorrectionPerformedWitness, CorrectionWitnessDenial,
@@ -32,7 +36,15 @@ mod evidence_window;
 pub(in crate::domain_computation::primary_graph) mod fault_port;
 mod graph_participation;
 mod history_retirement;
+mod home_retirement;
+pub(crate) use home_retirement::PrimaryProviderCustody;
 mod idempotency;
+mod original_publication;
+pub use idempotency::{
+    WorthQueryRecoveredAftermathCausality, WorthQueryRecoveredApplicationCommitReceipt,
+    WorthQueryRecoveredDispatchOutbox,
+};
+use original_publication::OriginalPublication;
 mod inbound_completion;
 mod inbound_cost;
 pub(in crate::domain_computation::primary_graph) mod managed_cleanup_control;
@@ -65,7 +77,6 @@ pub(in crate::domain_computation::primary_graph) use outstanding_dispatch::Outst
 pub(in crate::domain_computation::primary_graph) use pending_application_publication::WorthQueryApplicationPublicationRecoveryReservation;
 mod product_retirement;
 mod provisional_state;
-mod publication_recovery;
 mod resource_support;
 pub(in crate::domain_computation::primary_graph) use resource_support::WorthQueryPrimaryGraphResourceSupport;
 mod session_commit;
@@ -103,7 +114,6 @@ pub use mutation_work::WorthQueryTouchedRecordIdentity;
 pub(in crate::domain_computation) use session_commit::WorthQueryCommittedDispatchOutboxBinding;
 pub(super) use session_commit::WorthQueryCommittedDispatchOutboxBindingDenial;
 pub(super) use session_commit::WorthQueryCommittedDispatchOutboxReceiptSeal;
-pub(super) use session_commit::WorthQueryRetainedApplicationCommitBasis;
 pub(crate) use session_commit::WorthQueryRetainedPreImageSeal;
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -186,6 +196,8 @@ impl WorthQueryPrimaryGraphProvider {
         outcome_identity: super::application_attempt::WorthQueryApplicationCommitOutcomeIdentity,
         emitted_effect_count: u64,
         mutation_partition: worth_relational::facade::identity::PartitionId,
+        product: &worth_runtime_world::facade::ProductBranchObservation,
+        has_output_settlement: bool,
     ) -> worth_relational::facade::transactions::WorkerIntentBatch {
         batch.push(idempotency::idempotency_create_intent(
             self.graph.layout.provider_idempotency(),
@@ -193,6 +205,8 @@ impl WorthQueryPrimaryGraphProvider {
             outcome_identity,
             emitted_effect_count,
             mutation_partition,
+            Some(product),
+            has_output_settlement,
         ))
     }
 
@@ -309,7 +323,7 @@ impl WorthQueryPrimaryGraphProvider {
     }
 }
 
-pub(super) struct WorthQueryPrimaryLogicalGraph;
+pub(crate) struct WorthQueryPrimaryLogicalGraph;
 
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use inbound_completion::completion_preparation_denial;

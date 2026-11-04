@@ -15,7 +15,7 @@ use worth_store_recovery_physics::{
 };
 
 use super::super::context::PlanningContext;
-use super::super::resolved_basis::ResolvedPlanningBasis;
+use super::super::resolved_basis::ResolvedPlanningState;
 use super::historical_publication::{
     charge_reader, discovery_failure, remaining_observation, unobserved, HistoricalFailure,
 };
@@ -30,7 +30,7 @@ mod rewrite_span;
 
 pub(super) fn install(
     mut context: PlanningContext,
-    basis: &mut ResolvedPlanningBasis,
+    basis: &mut ResolvedPlanningState,
 ) -> Result<PlanningContext, crate::entry::PhysicalRecoveryOutcome> {
     let pending: Vec<PhysicalRewriteAdmission> = basis
         .redo

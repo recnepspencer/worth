@@ -113,7 +113,7 @@ impl CompositeHistoryCatalog {
                 .ok_or(CompositeAncestorSelectionDenial::RetiredHistoryGap)?;
             if &current == source {
                 return Ok(RetainedCompositeAncestor {
-                    source: Arc::clone(&source_entry.commit),
+                    source: source_entry.shared_commit(),
                     target: target.clone(),
                     parent_links_followed: visited,
                     _protection: protect_installed(&state, source)?,

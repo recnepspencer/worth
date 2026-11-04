@@ -89,14 +89,14 @@ pub(super) fn apply(
             .state
             .retained_entity_extra(intent.entity_id.partition_id, slot)
     });
-    Ok(MutationOutcome::entity_updated_with_authoritative_patch(
+    MutationOutcome::entity_updated_with_authoritative_patch(
         &workspace.execution(),
         intent.entity_id,
         kind_id,
         old_state,
         new_state,
         patch,
-    )?)
+    )
 }
 
 fn missing(

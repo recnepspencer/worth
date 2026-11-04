@@ -15,6 +15,46 @@ impl Drop for IndexPlacement {
     }
 }
 impl RelationalDurableColdSource for ReplacedIndexSource {
+    fn checkpoint_selected_read_protection(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        crate::durability::medium::RelationalDurableReadPayload,
+        crate::durability::medium::RelationalDurableOwnedReadRefusal,
+    > {
+        self.producer.checkpoint_selected_read_protection(request)
+    }
+    fn retain_members_for_request(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        members: &[RelationalDurableMemberLocator],
+        issuer: std::sync::Weak<dyn RelationalDurableColdSource>,
+    ) -> Result<
+        RelationalDurableMemberCustody,
+        crate::durability::medium::RelationalDurableOwnedReadRefusal,
+    > {
+        RelationalDurableMemberCustody::try_new_from_source_for_request(issuer, request, || {
+            Ok(members.contains(&self.index).then(|| {
+                self.owners.fetch_add(1, Ordering::AcqRel);
+                IndexPlacement(self.owners.clone())
+            }))
+        })
+    }
+    fn read_member_owned(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        original: &(dyn std::any::Any + Send + Sync),
+        member: RelationalDurableMemberLocator,
+        limit: u64,
+    ) -> Result<
+        worth_execution::ExecutionImmutableBytes,
+        crate::durability::medium::RelationalDurableOwnedReadRefusal,
+    > {
+        self.check_placement(member)
+            .map_err(crate::durability::medium::RelationalDurableOwnedReadRefusal::Storage)?;
+        self.producer
+            .read_member_owned(request, original, member, limit)
+    }
     fn retain_members(
         &self,
         members: &[RelationalDurableMemberLocator],
@@ -31,12 +71,7 @@ impl RelationalDurableColdSource for ReplacedIndexSource {
         member: RelationalDurableMemberLocator,
         limit: u64,
     ) -> Result<Vec<u8>, Cause> {
-        if member == self.index
-            && self.replaced.load(Ordering::Acquire)
-            && self.owners.load(Ordering::Acquire) == 0
-        {
-            return Err(Cause::MissingMember);
-        }
+        self.check_placement(member)?;
         self.producer.read_member(member, limit)
     }
     fn read_commit(
@@ -45,6 +80,17 @@ impl RelationalDurableColdSource for ReplacedIndexSource {
         limit: u64,
     ) -> Result<Vec<u8>, Cause> {
         self.producer.read_commit(position, limit)
+    }
+}
+impl ReplacedIndexSource {
+    fn check_placement(&self, member: RelationalDurableMemberLocator) -> Result<(), Cause> {
+        if member == self.index
+            && self.replaced.load(Ordering::Acquire)
+            && self.owners.load(Ordering::Acquire) == 0
+        {
+            return Err(Cause::MissingMember);
+        }
+        Ok(())
     }
 }
 #[test]

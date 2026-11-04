@@ -3,10 +3,19 @@ use super::super::checkpoint_components::{capture_complete, CapturedCompleteComp
 use super::{source::FrozenOriginalInputs, Denial};
 use crate::branch::CheckpointBranchMetadata;
 use crate::durability::data::DurableRecordIdentityState;
-use crate::runtime::{OriginalCheckpointIndexes, RelationalRuntime};
+use crate::runtime::{FrozenCheckpointIndexes, OriginalCheckpointIndexes, RelationalRuntime};
 use worth_execution::ExecutionRequest;
 
 pub(super) struct FrozenCompleteMetadata {
+    original: FrozenOriginalInputs,
+    branches: CheckpointBranchMetadata,
+    components: CapturedCompleteComponents,
+    identity: DurableRecordIdentityState,
+    indexes: FrozenCheckpointIndexes,
+    symbol_frontier: u32,
+    main_cell: usize,
+}
+pub(super) struct CapturedCompleteMetadata {
     pub(super) original: FrozenOriginalInputs,
     pub(super) branches: CheckpointBranchMetadata,
     pub(super) components: CapturedCompleteComponents,
@@ -16,6 +25,31 @@ pub(super) struct FrozenCompleteMetadata {
     pub(super) main_cell: usize,
 }
 impl FrozenCompleteMetadata {
+    pub(super) fn resolve(
+        self,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<CapturedCompleteMetadata, Denial> {
+        let Self {
+            mut original,
+            branches,
+            components,
+            identity,
+            indexes,
+            symbol_frontier,
+            main_cell,
+        } = self;
+        original.protect_original_read(request)?;
+        let indexes = indexes.resolve_for_request(request)?;
+        Ok(CapturedCompleteMetadata {
+            original,
+            branches,
+            components,
+            identity,
+            indexes,
+            symbol_frontier,
+            main_cell,
+        })
+    }
     pub(super) fn capture(
         runtime: &RelationalRuntime,
         request: &ExecutionRequest<'_, '_>,

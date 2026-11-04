@@ -89,6 +89,5 @@ pub(super) fn replay_readmitted_envelope(
         restore_authoritative_envelope,
         !had_checkpoint_artifact,
     )?;
-    recovered_roots.retain_current(restored, &positioned.envelope().branch_context)?;
     Ok(positioned)
 }

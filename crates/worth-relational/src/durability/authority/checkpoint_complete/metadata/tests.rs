@@ -92,7 +92,13 @@ fn borrowed_dictionary_and_full_cache_keep_actual_old_wire_and_members() {
     let old_dictionary = member_frame::encode(MemberKind::Symbols, &old).unwrap();
     assert_eq!(dictionary.0, old_dictionary.0);
     assert_eq!(dictionary.1.bytes(), old_dictionary.1);
-    let cache = encode_indexes(&generations, &request).unwrap();
+    // This is the pure wire view; Complete emission requires an actual resolved owner.
+    let cache = member_frame::encode_for_request(
+        MemberKind::DerivedIndex,
+        &indexes::view(&generations),
+        &request,
+    )
+    .unwrap();
     assert_eq!(
         cache.1.bytes(),
         member_frame::encode(MemberKind::DerivedIndex, &legacy)
@@ -233,7 +239,13 @@ fn metadata_member_directories_preserve_dictionary_ranges_and_alias_custody() {
     let request = ExecutionRequest::serial(&host);
     let dictionary = OriginalSymbolDictionary::capture(&original, &[], &request).unwrap();
     let lineage = capture_lineage(&[], &request).unwrap();
-    let output = capture_metadata_members(&dictionary, &lineage, &[], &request).unwrap();
+    let original = crate::runtime::IndexingSubsystem::default()
+        .checkpoint_inputs_for_request(&request)
+        .unwrap()
+        .resolve_for_request(&request)
+        .unwrap();
+    let output = capture_metadata_members(&dictionary, &lineage, &original, &request).unwrap();
+    drop(original);
     let mut recovered = std::collections::BTreeMap::new();
     for page in &output.symbols {
         assert!(page.valid());

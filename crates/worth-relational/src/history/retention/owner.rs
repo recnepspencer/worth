@@ -1,10 +1,12 @@
 mod component_capture;
+mod index_roots;
+mod retired_roots;
 pub(super) use component_capture::has_live_obligation_room;
 pub(crate) use component_capture::CapturedExternalCheckpointComponents;
 use crossbeam_queue::SegQueue;
-use dashmap::DashMap;
+use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, RwLock};
 
 use crate::branch::{RelationalBranchIdentity, RelationalBranchRoot};
 
@@ -46,7 +48,7 @@ pub(super) struct RelationalBranchRetentionOwnerInner {
     pub(super) next_retirement_generation: AtomicU64,
     pub(super) retirement_slot_count: AtomicUsize,
     pub(super) retired_root_count: AtomicUsize,
-    pub(super) retired_roots: DashMap<usize, RelationalRetiredBranchRoot>,
+    pub(super) retired_roots: RwLock<BTreeMap<usize, RelationalRetiredBranchRoot>>,
     pub(super) retired_root_locators: super::root_locators::RetiredRootLocators,
     pub(super) retired_root_order: SegQueue<(usize, u64)>,
     pub(super) retired_enqueue_count: AtomicU64,
@@ -84,8 +86,8 @@ impl RelationalBranchRetentionOwner {
         // the lanes and this inventory, so one declared branch selects one lane.
         let mut lanes = self
             .inner
-            .retired_roots
-            .iter()
+            .read_retired_roots()
+            .values()
             .flat_map(|entry| {
                 entry
                     .branch_bindings
@@ -121,43 +123,11 @@ impl RelationalBranchRetentionOwner {
             != self.inner.live_head_count.load(Ordering::Acquire)
     }
 
-    /// Reader/observation obligations are the index-liveness authority. A
-    /// retired root can share its Arc with a live sibling without an active
-    /// reader of the deleted branch.
-    pub(crate) fn retained_index_roots(&self) -> super::RetainedIndexRoots {
-        let mut retained = super::RetainedIndexRoots::default();
-        for mut entry in self.inner.retired_roots.iter_mut() {
-            self.inner
-                .index_retention_roots_examined
-                .fetch_add(1, Ordering::Relaxed);
-            if !entry.retired {
-                continue;
-            }
-            let root = &entry.root;
-            let Some(envelope) = root.canonical_envelope() else {
-                continue;
-            };
-            let version = envelope.commit.version_id;
-            let schema = root.schema_authority().schema_version();
-            let root_id = root.id();
-            entry
-                .branch_bindings
-                .retain(|_, binding| binding.has_root_obligation(root_id));
-            for branch in entry.branch_bindings.keys() {
-                retained.retired.insert((branch.clone(), version, schema));
-            }
-            if entry.historical_binding.has_root_obligation(root_id) {
-                retained.historical_versions.insert((version, schema));
-            }
-        }
-        retained
-    }
-
     #[cfg(test)]
     pub(crate) fn retired_branch_binding_count(&self) -> usize {
         self.inner
-            .retired_roots
-            .iter()
+            .read_retired_roots()
+            .values()
             .map(|entry| entry.branch_bindings.len())
             .sum()
     }
@@ -191,7 +161,7 @@ impl RelationalBranchRetentionOwner {
                 next_retirement_generation: AtomicU64::new(0),
                 retirement_slot_count: AtomicUsize::new(0),
                 retired_root_count: AtomicUsize::new(0),
-                retired_roots: DashMap::new(),
+                retired_roots: RwLock::new(BTreeMap::new()),
                 retired_root_locators: Default::default(),
                 retired_root_order: SegQueue::new(),
                 retired_enqueue_count: AtomicU64::new(0),
@@ -271,7 +241,7 @@ impl RelationalBranchRetentionOwner {
             .into_iter()
             .find_map(|(root_key, generation)| {
                 self.inner
-                    .retired_roots
+                    .read_retired_roots()
                     .get(&root_key)
                     .filter(|retired| retired.generation == generation)
                     .map(|retired| {

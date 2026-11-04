@@ -43,6 +43,7 @@ impl ChangedRecords {
     }
 
     pub(super) fn cold(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         view: &VisibilityProjectionView,
         work: &mut MaintenanceWork,
     ) -> Result<Self, Denial> {
@@ -69,17 +70,14 @@ impl ChangedRecords {
                 return work.prepare(1, 0);
             };
             work.prepare(33, 0)?;
-            let Some(partition) = root.partition_state(partition_id).map_err(|failure| {
-                Denial::Execution(
-                    crate::execution::RelationalExecutionDenialCause::StorageUnavailable(failure),
-                )
-            })?
-            else {
+            view.demand_regions_head(execution, [partition_id])
+                .map_err(Denial::Execution)?;
+            let Some(partition) = root.accepted_head_region_view(partition_id) else {
                 return Ok(());
             };
-            for slot in partition.entity_arena.live_bitset.iter_set_slots() {
+            for slot in partition.entity_arena().live_slots() {
                 work.read()?;
-                let Some(slot_view) = partition.entity_arena.get_slot(slot) else {
+                let Some(slot_view) = partition.entity_arena().get_slot(slot) else {
                     continue;
                 };
                 let id = EntityId::new(partition_id, slot as u64, slot_view.generation());
@@ -96,9 +94,9 @@ impl ChangedRecords {
                     entities.insert(id);
                 }
             }
-            for slot in partition.relation_arena.live_bitset.iter_set_slots() {
+            for slot in partition.relation_arena().live_slots() {
                 work.read()?;
-                let Some(slot_view) = partition.relation_arena.get_slot(slot) else {
+                let Some(slot_view) = partition.relation_arena().get_slot(slot) else {
                     continue;
                 };
                 let id = RelationId::new(partition_id, slot as u64, slot_view.generation());

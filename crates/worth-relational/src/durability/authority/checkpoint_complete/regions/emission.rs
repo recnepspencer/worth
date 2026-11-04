@@ -55,6 +55,7 @@ pub(super) fn capture(
         .map_err(request_stop)?;
         source.root.try_visit_checkpoint_regions(|region| {
             crate::execution::check_request(request).map_err(request_stop)?;
+            #[expect(clippy::disallowed_methods, reason = "Fixed allocation identity deduplicates custody; canonical order never uses this address")]
             let identity = Arc::as_ptr(&region.cell) as usize;
             let key = (identity, group.carrier);
             if cache.get(&key).is_none() {

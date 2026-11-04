@@ -21,7 +21,10 @@ fn native_initial_pressure_precedes_read_and_funded_slices_survive_coordination(
     let (root, frame, digest) = one_head();
     let limit = window.recovery_byte_limit();
     let held = ports
-        .begin_operation(Scope::Recovery, NonZeroU64::new(limit - 1).unwrap())
+        .begin_operation(
+            Scope::Recovery,
+            NonZeroU64::new(limit - SERVING_BACKING_BYTES - 1).unwrap(),
+        )
         .unwrap();
     let before = events.snapshot();
     let mut numeric = resident(&window, limit);
@@ -78,7 +81,7 @@ fn native_initial_pressure_precedes_read_and_funded_slices_survive_coordination(
     let slices = observed.slices.capacity() as u64 * size_of::<SelectedArtifactSlice>() as u64;
     assert_eq!(
         ports.counters().active_operation_bytes_for(Scope::Recovery),
-        entries + slices
+        SERVING_BACKING_BYTES + entries + slices
     );
     let funded = observed
         .into_funded_slices_with_resident(&mut numeric)
@@ -158,7 +161,7 @@ fn branch_growth_denial_unwinds_all_implicit_buffers_then_same_owner_retries() {
     );
     assert_eq!(
         ports.counters().active_operation_bytes_for(Scope::Recovery),
-        held.as_ref().unwrap().bytes()
+        SERVING_BACKING_BYTES + held.as_ref().unwrap().bytes()
     );
     drop(held);
     let observed = observe_with_read(
@@ -175,10 +178,13 @@ fn branch_growth_denial_unwinds_all_implicit_buffers_then_same_owner_retries() {
     assert_eq!(observed.entries(), &[head(1), head(2)]);
     assert_eq!(
         ports.counters().active_operation_bytes_for(Scope::Recovery),
-        numeric.used()
+        SERVING_BACKING_BYTES + numeric.used()
     );
     drop(observed);
-    assert_eq!(ports.counters().active_operation_bytes(), 0);
+    assert_eq!(
+        ports.counters().active_operation_bytes(),
+        SERVING_BACKING_BYTES
+    );
 }
 
 #[test]
@@ -213,7 +219,10 @@ fn malformed_block_and_roster_mismatch_release_scratch_without_discard_callbacks
         );
         assert!(matches!(result, Err(Denial::CertificateRoster)));
         assert_eq!(numeric.used(), 0);
-        assert_eq!(ports.counters().active_operation_bytes(), 0);
+        assert_eq!(
+            ports.counters().active_operation_bytes(),
+            SERVING_BACKING_BYTES
+        );
     }
 }
 
@@ -241,11 +250,12 @@ fn second_native_observation_preserves_first_charge_and_empty_keeps_owner_bindin
         |_, _, storage| charged_frame(&frame, storage),
     )
     .unwrap();
-    let first_bytes = ports.counters().active_operation_bytes_for(Scope::Recovery);
+    let first_bytes =
+        ports.counters().active_operation_bytes_for(Scope::Recovery) - SERVING_BACKING_BYTES;
     let held = ports
         .begin_operation(
             Scope::Recovery,
-            NonZeroU64::new(limit - first_bytes - 1).unwrap(),
+            NonZeroU64::new(limit - SERVING_BACKING_BYTES - first_bytes - 1).unwrap(),
         )
         .unwrap();
     let mut reads = 0;
@@ -286,10 +296,13 @@ fn second_native_observation_preserves_first_charge_and_empty_keeps_owner_bindin
     assert!(first.same_bytes(&second));
     assert_eq!(
         ports.counters().active_operation_bytes_for(Scope::Recovery),
-        first_bytes + second.owned_heap_bytes().unwrap()
+        SERVING_BACKING_BYTES + first_bytes + second.owned_heap_bytes().unwrap()
     );
     drop((first, second));
-    assert_eq!(ports.counters().active_operation_bytes(), 0);
+    assert_eq!(
+        ports.counters().active_operation_bytes(),
+        SERVING_BACKING_BYTES
+    );
     let empty_root = DurablePhysicalRootManifest::builder(2, 9, 2, 43)
         .admit()
         .unwrap();

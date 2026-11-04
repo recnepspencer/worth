@@ -22,6 +22,7 @@ use crate::domain_computation::primary_graph::application_attempt::provider_exec
 /// progression outcome, including the dispatch anchor the commit carried.
 pub(super) struct WorthQueryAuthorizedCompareContext<'a> {
     provider: &'a crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider,
+    original_completion: &'a crate::domain_computation::primary_graph::provider::OriginalCompletionReceiver,
     idempotency: WorthQueryApplicationIdempotencyBinding,
     product: crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
     preconditions:
@@ -31,7 +32,7 @@ pub(super) struct WorthQueryAuthorizedCompareContext<'a> {
     aftermath_causality: Option<
         crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
     >,
-    authority_binding: super::super::super::WorthQueryApplicationCommitAuthorityBinding,
+    authority_binding: crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitAuthorityBinding,
     provider_session:
         crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding,
 }
@@ -87,6 +88,7 @@ impl<'a> WorthQueryAuthorizedCompareContext<'a> {
         );
         Self {
             provider: authority.provider(),
+            original_completion: authority.original_completion,
             idempotency: authority.idempotency(),
             product,
             preconditions: admission.mutation_preconditions(),
@@ -94,7 +96,7 @@ impl<'a> WorthQueryAuthorizedCompareContext<'a> {
             dispatch_outbox,
             aftermath_causality: authority.aftermath_causality().cloned(),
             authority_binding:
-                super::super::super::WorthQueryApplicationCommitAuthorityBinding::from_admission(
+                crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitAuthorityBinding::from_admission(
                     admission,
                     authority.idempotency(),
                 ),
@@ -121,8 +123,8 @@ pub(super) fn finish_authorized_compare(
                 );
             }
             let resolved = context
-                .provider
-                .observe_completed_application_for_session(committed_session.terminal_binding())
+                .original_completion
+                .take(committed_session.terminal_binding())
                 .ok_or(WorthQueryCommittedComponentResolutionDenial::Unavailable(
                     "typed provider terminal evidence could not be resolved after commit",
                 ))
@@ -182,18 +184,34 @@ fn resolve_indeterminate_commit(
         WorthQueryApplicationCommitRecoveryKind::CommitRecoveryRequired,
         &failure,
     );
-    match context.provider.resolve_idempotency_binding_at_product(
+    if let Some(completed) = context.original_completion.take(&context.provider_session) {
+        return resolve_committed_components(&context, completed).map_or_else(
+            |denial| {
+                WorthQueryProviderProgressionOutcome::Indeterminate(
+                    committed_component_recovery_evidence(denial),
+                )
+            },
+            |resolved| seal_committed_outcome(context, resolved),
+        );
+    }
+    let resolution = context.provider.resolve_idempotency_binding_at_product(
         execution,
         context.idempotency,
         &context.product,
-    ) {
-        Ok(WorthQueryProviderIdempotencyResolution::Equivalent(receipt)) => {
-            match resolve_committed_components(&context, receipt) {
-                Ok(resolved) => seal_committed_outcome(context, resolved),
-                Err(denial) => WorthQueryProviderProgressionOutcome::Indeterminate(
+    );
+    if let Some(completed) = context.original_completion.take(&context.provider_session) {
+        return resolve_committed_components(&context, completed).map_or_else(
+            |denial| {
+                WorthQueryProviderProgressionOutcome::Indeterminate(
                     committed_component_recovery_evidence(denial),
-                ),
-            }
+                )
+            },
+            |resolved| seal_committed_outcome(context, resolved),
+        );
+    }
+    match resolution {
+        Ok(WorthQueryProviderIdempotencyResolution::Readmitted(receipt)) => {
+            WorthQueryProviderProgressionOutcome::RecoveredCommitted(receipt)
         }
         Ok(WorthQueryProviderIdempotencyResolution::PreparationPending { handle, stage }) => {
             WorthQueryProviderProgressionOutcome::ProductPreparationPending(

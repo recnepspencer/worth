@@ -81,3 +81,9 @@ pub(crate) use settled_adoption::SettledRelationalPublicationAdoption;
 
 mod movement_cutoff;
 pub(crate) use movement_cutoff::{ProductMovementCutoff, ProductMovementCutoffDenial};
+
+pub use performed::{
+    ConsumedPublicationRetirement, ConsumedPublicationRetirementDenial,
+    ConsumedPublicationRetirementProgress, PreparedConsumedPublicationRetirement,
+    RetiredConsumedPublication,
+};

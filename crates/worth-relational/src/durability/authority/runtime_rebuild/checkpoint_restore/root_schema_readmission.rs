@@ -166,7 +166,9 @@ impl RootSchemaReadmissionCatalog {
     }
 }
 
-fn validate_root_image_integrity(image: &DurableBranchRootImage) -> Result<(), DurabilityError> {
+pub(super) fn validate_root_image_integrity(
+    image: &DurableBranchRootImage,
+) -> Result<(), DurabilityError> {
     if image.format_version != DurableBranchRootImage::CURRENT_FORMAT_VERSION {
         return Err(corrupt_checkpoint(format!(
             "unsupported branch-root image version `{}`",

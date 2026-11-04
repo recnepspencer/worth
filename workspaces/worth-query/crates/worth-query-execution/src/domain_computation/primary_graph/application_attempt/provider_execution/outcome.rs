@@ -1,8 +1,7 @@
 use super::super::{
     WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitDenialStage,
-    WorthQueryApplicationCommitOutcome, WorthQueryApplicationCommitReceipt,
-    WorthQueryApplicationNoEffect, WorthQueryApplicationStaleAttempt,
-    WorthQueryPendingApplicationCommitReceipt,
+    WorthQueryApplicationCommitOutcome, WorthQueryApplicationNoEffect,
+    WorthQueryApplicationStaleAttempt, WorthQueryPendingApplicationCommitReceipt,
 };
 use crate::domain_computation::provider_session::WorthQueryMutationGraphWorkCompletion;
 
@@ -14,7 +13,7 @@ pub(in crate::domain_computation) enum WorthQueryProviderProgressionOutcome {
 
     NoEffect(WorthQueryApplicationNoEffect),
     Committed(WorthQueryPendingApplicationCommitReceipt),
-    AlreadyCommitted(WorthQueryApplicationCommitReceipt),
+    RecoveredCommitted(crate::domain_computation::primary_graph::provider::WorthQueryRecoveredApplicationCommitReceipt),
     Stale(WorthQueryApplicationStaleAttempt),
     Cancelled,
     TimedOut,
@@ -44,10 +43,8 @@ impl WorthQueryProviderProgressionOutcome {
             Self::Committed(receipt) => {
                 WorthQueryApplicationCommitOutcome::Committed(receipt.complete(completion)?)
             }
-            Self::AlreadyCommitted(receipt) => {
-                WorthQueryApplicationCommitOutcome::AlreadyCommitted(
-                    receipt.with_retry_cleanup(completion)?,
-                )
+            Self::RecoveredCommitted(receipt) => {
+                WorthQueryApplicationCommitOutcome::RecoveredCommitted(receipt)
             }
             Self::Stale(stale) => WorthQueryApplicationCommitOutcome::Stale(stale),
             Self::Cancelled => WorthQueryApplicationCommitOutcome::Cancelled,

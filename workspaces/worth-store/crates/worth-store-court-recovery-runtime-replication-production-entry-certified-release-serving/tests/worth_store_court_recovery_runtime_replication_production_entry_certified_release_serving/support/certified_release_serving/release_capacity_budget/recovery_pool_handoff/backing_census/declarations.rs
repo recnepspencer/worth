@@ -61,6 +61,9 @@ pub(crate) fn retained_evidence_bytes(handoff: &RecoveredPhysicalRuntimeHandoff)
         bytes > 0,
         "genuine release recovery carries actual WAL selection storage"
     );
+    // The native receiver retains exactly one additional source payload slot.
+    let bytes =
+        bytes + std::mem::size_of::<worth_store_recovery_physics::PhysicalSourceSelection>() as u64;
     assert_eq!(handoff.wal_selection_charged_bytes(), bytes);
     let sample_bytes = handoff.freshness_sample().owned_heap_bytes().unwrap();
     assert!(

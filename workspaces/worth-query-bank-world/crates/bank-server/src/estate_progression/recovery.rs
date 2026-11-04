@@ -18,6 +18,8 @@ use super::{
 };
 use crate::{BankAuthenticatedPrincipal, BankIdentityRuntime};
 
+mod cleanup_dispatch;
+mod disclosure;
 mod handle_lifecycle;
 
 impl BankIdentityRuntime {
@@ -50,6 +52,39 @@ impl BankIdentityRuntime {
         );
         let admission = self.admit_notification_operation(&phase, principal, action, request)?;
         self.resolve_admitted_idempotency(&phase, &admission, binding)
+
+        }).map_err(|cause| BankEstateProgressionDenial::ApplicationEntry(worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause)))?
+    }
+
+    /// Read exact committed idempotency before an HTTP recovery slot is reserved.
+    pub fn observe_estate_recovery_claim_status(
+        &self,
+
+        principal: &BankAuthenticatedPrincipal,
+        action: EstateAction,
+        key: &BankIdempotencyKey,
+        request: &WorthQueryRequestScope,
+    ) -> Result<Option<super::BankRecoveryClaimStatus>, BankEstateProgressionDenial> {
+        self.application_runtime().with_application_advancement(request, |phase| {
+
+        if matches!(action, EstateAction::DisburseEstate(_)) {
+            let binding = WorthQueryApplicationIdempotencyBinding::for_mutation_identities(
+                &ApplicationMutationIdentities::<BankSchema, DisburseEstateMutationBinding>::encode(
+                    key, &action,
+                )
+                .map_err(BankEstateProgressionDenial::from_mutation_identity)?,
+            );
+            let admission = self.admit_estate_disbursement(&phase, principal, action, request)?;
+            return self.application_runtime().resolve_admitted_recovery_claim_status(&phase, &admission, binding).map(|status| status.map(super::BankRecoveryClaimStatus::from_query)).map_err(BankEstateProgressionDenial::from_idempotency);
+        }
+        let binding = WorthQueryApplicationIdempotencyBinding::for_mutation_identities(
+            &ApplicationMutationIdentities::<BankSchema, NotifyEstateDeathMutationBinding>::encode(
+                key, &action,
+            )
+            .map_err(BankEstateProgressionDenial::from_mutation_identity)?,
+        );
+        let admission = self.admit_notification_operation(&phase, principal, action, request)?;
+        self.application_runtime().resolve_admitted_recovery_claim_status(&phase, &admission, binding).map(|status| status.map(super::BankRecoveryClaimStatus::from_query)).map_err(BankEstateProgressionDenial::from_idempotency)
 
         }).map_err(|cause| BankEstateProgressionDenial::ApplicationEntry(worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause)))?
     }

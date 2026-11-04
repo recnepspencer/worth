@@ -31,7 +31,7 @@ fn deny_initial_path(boundary: Boundary, path_allowance: u64) {
     let held = ports
         .begin_operation(
             Scope::Recovery,
-            NonZeroU64::new(ORIGINAL - metadata - path_allowance).unwrap(),
+            NonZeroU64::new(ORIGINAL - SERVING_BACKING_BYTES - metadata - path_allowance).unwrap(),
         )
         .unwrap();
     let mut discovery = media.bounded_discovery(8, 4096).unwrap();
@@ -75,7 +75,7 @@ fn deny_initial_path(boundary: Boundary, path_allowance: u64) {
     assert_eq!(discovery.counters().bytes_read, 0);
     assert_eq!(
         observer.snapshot().for_dimension(dimension).active_units(),
-        held.bytes()
+        SERVING_BACKING_BYTES + held.bytes()
     );
     assert_eq!(std::fs::read(wal.join(FIRST)).unwrap(), [17; PAYLOAD]);
     drop(failure);
@@ -88,7 +88,7 @@ fn deny_initial_path(boundary: Boundary, path_allowance: u64) {
     assert_eq!(observed.artifacts()[0].bytes(), Some(&[17; PAYLOAD][..]));
     assert_eq!(
         observer.snapshot().for_dimension(dimension).active_units(),
-        observed.charged_bytes()
+        SERVING_BACKING_BYTES + observed.charged_bytes()
     );
     drop(observed);
     drop(window);
@@ -145,7 +145,7 @@ fn file_address_denies_after_listing_and_context_then_same_owner_retries() {
     assert_eq!(failure.charged_bytes(), diagnostic);
     assert_eq!(
         observer.snapshot().for_dimension(dimension).active_units(),
-        held.bytes() + diagnostic
+        SERVING_BACKING_BYTES + held.bytes() + diagnostic
     );
     let shared = failure.clone();
     drop(failure);
@@ -158,7 +158,7 @@ fn file_address_denies_after_listing_and_context_then_same_owner_retries() {
     assert_eq!(observed.artifacts()[0].bytes(), Some(&[17; PAYLOAD][..]));
     assert_eq!(
         observer.snapshot().for_dimension(dimension).active_units(),
-        observed.charged_bytes() + diagnostic
+        SERVING_BACKING_BYTES + observed.charged_bytes() + diagnostic
     );
     drop(observed);
     drop(window);

@@ -33,7 +33,7 @@ class StoreExecutablePrebuildTests(unittest.TestCase):
         library = dict(reason='compiler-artifact', package_id='authority', target={'name': 'authority', 'kind': ['lib']},
                        profile={'test': False}, features=['observed'], fresh=True, filenames=['authority-native.rlib'])
         native = NativeFeatureGraph(root / 'workspaces/worth-store', ('authority/observed',),
-                                    {library_identity(library): {signature(library)}}, ())
+                                    {library_identity(library): {signature(library)}}, (), ('native-owner',))
         return native, [*events, library]
 
     def test_only_independently_compiled_binary_can_be_retained(self):
@@ -86,10 +86,21 @@ class StoreExecutablePrebuildTests(unittest.TestCase):
                 calls.append(command)
                 return SimpleNamespace(returncode=0, stdout='\n'.join(map(json.dumps, events)))
             result = prepare(root, root / 'output', runner, 'ci-test', native=native)
+            self.assertNotIn('--workspace', calls[0])
+            self.assertNotIn('--bins', calls[0])
+            self.assertEqual([calls[0][index + 1] for index, argument in enumerate(calls[0])
+                              if argument == '--package'],
+                             [*dict.fromkeys(request['package'] for request in REQUESTS),
+                              'native-owner', 'authority'])
+            self.assertIn('--no-default-features', calls[0])
+            self.assertEqual([calls[0][index + 1] for index, argument in enumerate(calls[0])
+                              if argument == '--bin'],
+                             [request['binary'] for request in REQUESTS])
             self.assertEqual(calls[0][calls[0].index('--features') + 1], 'authority/observed')
             self.assertTrue(Path(result['WORTH_PREBUILT_EXECUTABLES']).is_file())
             receipt = json.loads((root / 'output/native-feature-graph.json').read_text())
             self.assertEqual(receipt['validated_shared_libraries'], 1)
+            self.assertEqual(receipt['native_packages'], ['native-owner'])
 
     def test_product_adapter_refuses_cached_library_graph_drift_before_path_publication(self):
         with tempfile.TemporaryDirectory() as temporary:

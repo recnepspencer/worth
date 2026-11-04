@@ -1,4 +1,9 @@
 //! Primary Graph application contracts.
+pub use worth_foundational::facade::{
+    DurableCompositeCommitIdentity, DurableProductBranchReference, DurableQueryOutputSettlement,
+    MemoryProductBranchReference, RecordedCompositePublicationAttemptIdentity,
+    RecordedProductBranchReference, WorldOwnerCoordinate,
+};
 mod managed_index;
 mod mutation_handler;
 pub use crate::domain_computation::primary_graph::application_attempt::WorthQuerySignedCreationPreparationDenial;
@@ -117,15 +122,16 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryApplicationIdempotencyResolutionDenialKind,
     WorthQueryApplicationInvariantProjectionAuthority,
     WorthQueryApplicationInvariantProjectionReader,
-    WorthQueryApplicationInvariantProjectionSnapshot, WorthQueryApplicationLiveCauseDenialKind,
-    WorthQueryApplicationLiveCloseOutcome, WorthQueryApplicationLiveControlDenial,
-    WorthQueryApplicationLiveControls, WorthQueryApplicationLiveDeliveryCloseReceipt,
-    WorthQueryApplicationLiveLease, WorthQueryApplicationLiveOpenDenial,
-    WorthQueryApplicationLiveOpenDenialKind, WorthQueryApplicationLiveOutcome,
-    WorthQueryApplicationLiveOverflow, WorthQueryApplicationLiveUpdate,
-    WorthQueryApplicationManagedCleanupFailure, WorthQueryApplicationOmission,
-    WorthQueryApplicationOneShotDenial, WorthQueryApplicationOneShotDenialKind,
-    WorthQueryApplicationOneShotResult, WorthQueryApplicationOperationInvariantProjectionReader,
+    WorthQueryApplicationInvariantProjectionSnapshot, WorthQueryApplicationLandedCommit,
+    WorthQueryApplicationLiveCauseDenialKind, WorthQueryApplicationLiveCloseOutcome,
+    WorthQueryApplicationLiveControlDenial, WorthQueryApplicationLiveControls,
+    WorthQueryApplicationLiveDeliveryCloseReceipt, WorthQueryApplicationLiveLease,
+    WorthQueryApplicationLiveOpenDenial, WorthQueryApplicationLiveOpenDenialKind,
+    WorthQueryApplicationLiveOutcome, WorthQueryApplicationLiveOverflow,
+    WorthQueryApplicationLiveUpdate, WorthQueryApplicationManagedCleanupFailure,
+    WorthQueryApplicationOmission, WorthQueryApplicationOneShotDenial,
+    WorthQueryApplicationOneShotDenialKind, WorthQueryApplicationOneShotResult,
+    WorthQueryApplicationOperationInvariantProjectionReader,
     WorthQueryApplicationOperationInvariantProjectionSnapshot,
     WorthQueryApplicationOutputDemandDisclosure, WorthQueryApplicationOutputDemandSource,
     WorthQueryApplicationOutputEntity, WorthQueryApplicationOutputFamilyEntry,
@@ -215,11 +221,10 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryGranularInvalidationCoverage, WorthQueryGranularInvalidationDeliveryBatch,
     WorthQueryGranularInvalidationInstallation, WorthQueryGranularInvalidationObservation,
     WorthQueryGranularSourceReadBasis, WorthQueryGranularTransportMergeDenial,
-    WorthQueryHistoricalApplicationCommit, WorthQueryInboundAdmissionDenial,
-    WorthQueryInboundAuthenticatedPermanentDenial, WorthQueryInboundCleanupReport,
-    WorthQueryInboundCostObservation, WorthQueryInboundIndexRepairDenial,
-    WorthQueryInboundMaintenanceReport, WorthQueryInboundPendingReason,
-    WorthQueryInboundPermanentDenialKind, WorthQueryInboundReceipt,
+    WorthQueryInboundAdmissionDenial, WorthQueryInboundAuthenticatedPermanentDenial,
+    WorthQueryInboundCleanupReport, WorthQueryInboundCostObservation,
+    WorthQueryInboundIndexRepairDenial, WorthQueryInboundMaintenanceReport,
+    WorthQueryInboundPendingReason, WorthQueryInboundPermanentDenialKind, WorthQueryInboundReceipt,
     WorthQueryInboundReceiptPosture, WorthQueryInboundSourceControlDenial,
     WorthQueryInboundSourcePosture, WorthQueryInboundTerminalObservation,
     WorthQueryInboundVerifierHandle, WorthQueryInboundVerifierInstallationDenial,
@@ -306,6 +311,10 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryValueDecodeDenial, WorthQueryWorkflowDefinitionDisposition,
     WorthQueryWorkflowDispositions, WorthQueryWorkflowInstanceDisposition,
 };
+pub use crate::domain_computation::primary_graph::{
+    WorthQueryRecoveredAftermathCausality, WorthQueryRecoveredApplicationCommitReceipt,
+    WorthQueryRecoveredDispatchOutbox,
+};
 
 pub use crate::domain_computation::application_aftermath::{
     compensate_recovery_handle, dispose_recovery_handle, expire_recovery_handle,
@@ -341,8 +350,8 @@ pub use crate::domain_computation::runtime_time::WorthQueryRuntimeTimeSample;
 pub use worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts;
 pub use worth_runtime_world::facade::{
     CompositeAncestorSelectionDenial, CompositeHistoryCatalogDenial, NoEffectCause,
-    ProductBranchAncestorSelectionDenial, ProductExactHistoryDenial, ProductUnpublishedNextAction,
-    ProductUnpublishedRecoveryHandle, RecoveryContinuationContract,
+    ProductBranchAncestorSelectionDenial, ProductExactHistoryDenial, ProductUnpublishedCause,
+    ProductUnpublishedNextAction, ProductUnpublishedRecoveryHandle, RecoveryContinuationContract,
     RuntimeWorldBranchAdmissionDenial, RuntimeWorldRecoveryCursor, RuntimeWorldRecoveryDenial,
     RuntimeWorldRecoveryPage, RuntimeWorldServiceDenial,
     RuntimeWorldSettledRelationalAdoptionDenial,
@@ -376,16 +385,8 @@ pub use crate::domain_computation::invalidation_equivalence_control::WorthQueryI
 pub use worth_runtime_bridge::facade::BridgeConditionalDenialKind;
 pub use worth_runtime_bridge::facade::BridgeCorrespondenceDeliveryStop;
 
-pub use crate::domain_computation::{
-    primary_graph::{
-        WorthQueryApplicationCleanupRequired, WorthQueryApplicationManagedCleanup,
-        WorthQueryManagedCleanupRegistrationDenial, WorthQueryManagedCleanupScheduleForTest,
-    },
-    WorthQueryManagedRunCleanupFailureKind, WorthQueryMutationCleanupFailure,
-    WorthQueryMutationCleanupFailureKind,
-};
-
-pub use worth_runtime_bridge::facade::BridgeExecutionBasisFinalizationFailureKind;
+mod managed_cleanup;
+pub use managed_cleanup::*;
 
 mod product;
 pub use product::*;

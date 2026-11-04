@@ -1,5 +1,6 @@
 use worth_runtime_world::facade::{
-    ProductBranchObservation, RuntimeWorldPublicationPort, RuntimeWorldRecoveryPort,
+    ProductBranchObservation, RuntimeWorldObservationPort, RuntimeWorldPublicationPort,
+    RuntimeWorldRecoveryPort,
 };
 
 use std::sync::Arc;
@@ -14,6 +15,7 @@ pub(crate) struct WorthQueryProductPublicationBinding {
     observation: ProductBranchObservation,
     publication: RuntimeWorldPublicationPort<(), (), (), (), ()>,
     recovery: RuntimeWorldRecoveryPort,
+    observation_port: RuntimeWorldObservationPort,
     clock: crate::domain_computation::execution_runtime::product_world::WorthQueryProductWorldClock,
     root_identity: Arc<WorthQueryProductRootIdentity>,
 }
@@ -24,6 +26,7 @@ impl WorthQueryProductPublicationBinding {
         observation: ProductBranchObservation,
         publication: RuntimeWorldPublicationPort<(), (), (), (), ()>,
         recovery: RuntimeWorldRecoveryPort,
+        observation_port: RuntimeWorldObservationPort,
         clock: crate::domain_computation::execution_runtime::product_world::WorthQueryProductWorldClock,
         root_identity: Arc<WorthQueryProductRootIdentity>,
     ) -> Self {
@@ -32,6 +35,7 @@ impl WorthQueryProductPublicationBinding {
             observation,
             publication,
             recovery,
+            observation_port,
             clock,
             root_identity,
         }
@@ -47,6 +51,10 @@ impl WorthQueryProductPublicationBinding {
 
     pub(crate) fn recovery(&self) -> RuntimeWorldRecoveryPort {
         self.recovery.clone()
+    }
+
+    pub(crate) fn observation_port(&self) -> &RuntimeWorldObservationPort {
+        &self.observation_port
     }
 
     pub(crate) fn root_identity(&self) -> Arc<WorthQueryProductRootIdentity> {
@@ -71,6 +79,7 @@ impl super::WorthQueryProductRuntime {
             observation,
             self.owner.publication_port(),
             self.owner.recovery_port(),
+            self.owner.observation_port(),
             self.clock.clone(),
             self.root_identity(),
         )

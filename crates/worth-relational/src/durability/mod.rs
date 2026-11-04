@@ -1,3 +1,4 @@
+pub(crate) use authority::RecoveredRootInventory;
 pub(crate) use authority::{AdmittedRecoveredCodecPublication, RecoveredCodecPublicationCustody};
 pub mod access;
 pub mod authority;
@@ -18,3 +19,4 @@ pub(crate) mod log;
 pub(crate) mod medium;
 pub(crate) mod migration;
 pub(crate) mod recovery;
+pub(crate) mod source_initial_inputs;

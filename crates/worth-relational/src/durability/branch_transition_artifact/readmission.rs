@@ -44,7 +44,8 @@ impl RelationalBranchTransitionArtifact {
         }
         check_canonical_frame(&wire.transition)?;
         let positioned =
-            PositionedBranchTransition::admit(wire.sequence, wire.follows, wire.transition);
+            PositionedBranchTransition::admit(wire.sequence, wire.follows, wire.transition)
+                .with_schema_carrier(wire.schema_carrier);
         if !is_canonical_payload(&TransitionPayloadRef::new(&positioned), payload) {
             return Err(Refusal::NonCanonicalPayload);
         }

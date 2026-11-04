@@ -9,6 +9,65 @@ from unit_plan import command_for, declare, verify
 
 
 class RequiredUnitPlanTests(unittest.TestCase):
+    def test_all_targets_checked_harness_cannot_be_charged_as_its_normal_library(self):
+        library = unit('owner', dependencies=[3])
+        source = graph(unit('court', kind='test', dependencies=[1]), library, library, unit('dependency'))
+        source['roots'] = [0, 1, 2]
+        with tempfile.TemporaryDirectory() as temporary:
+            for subcommand in ('check', 'clippy'):
+                plan = declare(['cargo', subcommand, '--all-targets'], temporary, {}, json.dumps(source))
+                ordinary = attribute(event(library), plan)
+                checked = event(library)
+                checked['profile']['test'] = True
+                harness = attribute(checked, plan)
+                self.assertNotEqual(ordinary['identity'], harness['identity'])
+                self.assertFalse(ordinary['test_harness'])
+                self.assertTrue(harness['test_harness'])
+
+    def test_standalone_identical_checked_stages_preserve_both_compiler_obligations(self):
+        library = unit('owner', dependencies=[2])
+        source = graph(library, library, unit('dependency'))
+        source['roots'] = [0, 1]
+        with tempfile.TemporaryDirectory() as temporary:
+            plan = declare(['cargo', 'clippy', '--all-targets'], temporary, {}, json.dumps(source))
+            stages = [row for row in plan['units'] if row['target']['name'] == 'owner']
+            self.assertEqual({row['test_harness'] for row in stages}, {False, True})
+            self.assertEqual(len({row['identity'] for row in stages}), 2)
+
+    def test_checked_example_keeps_ordinary_and_test_stages_with_the_same_dependencies(self):
+        example = unit('inbound', kind='example', dependencies=[2])
+        example['target'].update(crate_types=['bin'], test=True)
+        source = graph(example, example, unit('dependency'))
+        source['roots'] = [0, 1]
+        before = json.dumps(source, sort_keys=True)
+        with tempfile.TemporaryDirectory() as temporary:
+            for command in ('check', 'clippy'):
+                plan = declare(['cargo', command, '--all-targets'], temporary, {}, json.dumps(source))
+                normal = attribute(event(example), plan)
+                checked = event(example)
+                checked['profile']['test'] = True
+                test_stage = attribute(checked, plan)
+                self.assertNotEqual(normal['identity'], test_stage['identity'])
+                self.assertFalse(normal['test_harness'])
+                self.assertTrue(test_stage['test_harness'])
+                self.assertEqual(normal['dependency_units'], test_stage['dependency_units'])
+                self.assertEqual(json.dumps(source, sort_keys=True), before)
+                reversed_roots = {**source, 'roots': [1, 0]}
+                reordered = declare(['cargo', command, '--all-targets'], temporary, {}, json.dumps(reversed_roots))
+                self.assertEqual({row['identity'] for row in plan['units']},
+                                 {row['identity'] for row in reordered['units']})
+
+    def test_an_ordinary_example_check_does_not_authorize_an_unrequested_test_stage(self):
+        example = unit('inbound', kind='example')
+        example['target'].update(crate_types=['bin'], test=True)
+        with tempfile.TemporaryDirectory() as temporary:
+            plan = declare(['cargo', 'clippy', '--example', 'inbound'], temporary, {}, json.dumps(graph(example)))
+            observed = event(example)
+            attribute(observed, plan)
+            observed['profile']['test'] = True
+            with self.assertRaises(CompilerUnitRefusal):
+                attribute(observed, plan)
+
     def test_explicit_checked_tests_distinguish_library_harness_from_dependency(self):
         library = unit('owner', dependencies=[3])
         observed_graph = graph(unit('court', kind='test', dependencies=[1]),

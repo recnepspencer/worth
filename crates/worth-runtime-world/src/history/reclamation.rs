@@ -102,6 +102,9 @@ impl HistoryReclamationOutcome {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum HistoryReclamationDenial {
+    /// Occurrences and their exact components remain authoritative for the
+    /// lifetime of a directory Home. Durable reclamation is a later protocol.
+    AuthoritativeDurableHistory,
     OwnerUnavailable(crate::lifecycle::RuntimeWorldOwnerUnavailable),
     Catalog(CompositeHistoryCatalogDenial),
     // A batch's candidates are refused whole; only the tests' batches name them.

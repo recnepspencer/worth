@@ -362,6 +362,7 @@ impl PerformedWorkflowTransition {
 /// nothing landed, or why a landed commit could not be projected.
 #[derive(Debug)]
 pub enum WorkflowProgressOutcome {
+    RecoveredCommitted(crate::domain_computation::primary_graph::provider::WorthQueryRecoveredApplicationCommitReceipt),
     AwaitingProposal(RequiredWorkflowProposal),
     AwaitingActor(RequiredWorkflowActor),
     AwaitingAssessment(RequiredWorkflowAssessment),
@@ -370,8 +371,8 @@ pub enum WorkflowProgressOutcome {
     AwaitingEvidence(RequiredWorkflowEvidence),
     AwaitingApproval(RequiredWorkflowApproval),
     Completed(PerformedWorkflowTransition),
-    /// The commit did not land. A landed commit, first or replayed, is the
-    /// performed variant.
+    /// The commit did not land. Fresh completion retains its actual performed
+    /// transition; a later keyed call exposes only `RecoveredCommitted` data.
     Application(WorthQueryApplicationUncommitted),
     ProjectionDenied(super::super::WorthQueryApplicationCommitReceipt),
     /// A landed receipt is retained when its required projection read stops.

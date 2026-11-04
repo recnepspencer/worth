@@ -5,21 +5,18 @@ use worth_store::physical_runtime::{ArtifactCeiling, PageAddress, ReadGrant, Unc
 use crate::entry::PhysicalRecoveryPublicationSettlement;
 use crate::progression::{CustodyState, PlanningCustody};
 
-pub(super) fn rebind_selected_custody(
-    mut state: crate::progression::NamespaceDurableState,
+pub(crate) fn prepare_selected_custody_rebind(
+    state: &mut crate::progression::NamespaceDurableState,
     expectation: &mut crate::progression::RecoveryPublicationExpectation,
     settlement: &crate::entry::PhysicalRecoveryPublicationSettlementLedger,
     counters: &crate::entry::PhysicalRecoveryPublicationCounters,
     completed: &worth_store::physical_runtime::CompletedPhysicalRecoveryFreshReopen,
-) -> Result<
-    crate::progression::NamespaceDurableState<CustodyState>,
-    crate::progression::NamespaceDurableState,
-> {
+) -> Result<Option<worth_store_recovery_physics::VerifiedEffectiveReleaseHeadRosterV14>, ()> {
     // Store's generation-zero root and SHA check in construction guards this early return.
     if matches!(&state.custody, PlanningCustody::NoCheckpoint)
         && state.verified_selected_tier_custody.is_none()
     {
-        return Ok(into_reopened_state(state, CustodyState::NoCheckpoint));
+        return Ok(None);
     }
     let selected = state.selection.root().selected();
     let source = selected.manifest();
@@ -33,7 +30,7 @@ pub(super) fn rebind_selected_custody(
         || expectation.source_generation() != source.generation()
         || expectation.current_selector().root_generation() != published.generation()
     {
-        return Err(state);
+        return Err(());
     }
     if published != source
         && (!matches!(
@@ -43,7 +40,7 @@ pub(super) fn rebind_selected_custody(
             || expectation.staging_generation() != published.generation()
             || published.generation() <= source.generation())
     {
-        return Err(state);
+        return Err(());
     }
     match &mut state.custody {
         PlanningCustody::SourceHeads(claim) => {
@@ -51,7 +48,7 @@ pub(super) fn rebind_selected_custody(
                 .rebind_published_root(&state.selection, published, completed.format())
                 .is_err()
             {
-                return Err(state);
+                return Err(());
             }
         }
         PlanningCustody::NoRelease(claim) => {
@@ -59,7 +56,7 @@ pub(super) fn rebind_selected_custody(
                 .rebind_published_root(&state.selection, published, completed.format())
                 .is_err()
             {
-                return Err(state);
+                return Err(());
             }
         }
         PlanningCustody::PendingPrepared { claim, .. } => {
@@ -67,10 +64,10 @@ pub(super) fn rebind_selected_custody(
                 .rebind_published_root(&state.selection, published, completed.format())
                 .is_err()
             {
-                return Err(state);
+                return Err(());
             }
             let Some(topology) = expectation.take_release_topology() else {
-                return Err(state);
+                return Err(());
             };
             if claim
                 .rebind_verified_topology(
@@ -81,16 +78,16 @@ pub(super) fn rebind_selected_custody(
                 )
                 .is_err()
             {
-                return Err(state);
+                return Err(());
             }
         }
         PlanningCustody::OrderedCompleted { claim, .. } => {
             if claim.selected_root() != published || published != source {
-                return Err(state);
+                return Err(());
             }
         }
         PlanningCustody::NoCheckpoint => {}
-        PlanningCustody::Unresolved => return Err(state),
+        PlanningCustody::Unresolved => return Err(()),
     }
     let pending_effective = if let PlanningCustody::PendingPrepared { claim, .. } =
         &mut state.custody
@@ -102,7 +99,7 @@ pub(super) fn rebind_selected_custody(
             .checked_add(claim.ordered_released_batches().len() as u64)
             .and_then(|entries| entries.checked_add(1))
         else {
-            return Err(state);
+            return Err(());
         };
         let Some(maximum_retained_bytes) = state
             .coordination
@@ -110,7 +107,7 @@ pub(super) fn rebind_selected_custody(
             .recovery_allocation_admission()
             .map(|allocation| allocation.byte_limit())
         else {
-            return Err(state);
+            return Err(());
         };
         let admitted = if claim.ordered_history().is_some() {
             worth_store_recovery_physics::VerifiedEffectiveReleaseHeadRosterV14::admit_ordered_pending(
@@ -127,71 +124,20 @@ pub(super) fn rebind_selected_custody(
         };
         match admitted {
             Ok(effective) => Some(effective),
-            Err(_) => return Err(state),
+            Err(_) => return Err(()),
         }
     } else {
         None
     };
-    let selected_free = if let Some(claim) = &state.verified_selected_tier_custody {
-        let byte_limit = claim.free_header().encode(completed.format()).len() as u64;
-        let (media, observed) = observed_published_free_header(
-            state.authority.media,
-            &mut state.integrity_trace,
-            published,
-            completed.format(),
-            byte_limit,
-        );
-        state.authority.media = media;
-        match observed {
-            Some(header) => Some(header),
-            None => return Err(state),
-        }
-    } else {
-        None
-    };
-    if let Some(claim) = &mut state.verified_selected_tier_custody
-        && claim
-            .rebind_published_root_and_free_header(
-                &state.selection,
-                published,
-                selected_free
-                    .as_ref()
-                    .expect("tier claim requires observed free header"),
-                completed.format(),
-            )
-            .is_err()
-    {
-        return Err(state);
-    }
-    let planning = std::mem::replace(&mut state.custody, PlanningCustody::Unresolved);
-    let custody = match (planning, pending_effective) {
-        (PlanningCustody::NoCheckpoint, None) => CustodyState::NoCheckpoint,
-        (PlanningCustody::NoRelease(claim), None) => CustodyState::NoRelease(claim),
-        (PlanningCustody::SourceHeads(claim), None) => CustodyState::SourceHeads(claim),
-        (PlanningCustody::PendingPrepared { claim, replay }, Some(effective_heads)) => {
-            CustodyState::Pending {
-                claim,
-                replay: replay.into_head(),
-                effective_heads,
-            }
-        }
-        (
-            PlanningCustody::OrderedCompleted {
-                claim,
-                effective_heads,
-            },
-            None,
-        ) => CustodyState::OrderedCompleted {
-            claim,
-            effective_heads,
-        },
-        (planning, _) => {
-            state.custody = planning;
-            return Err(state);
-        }
-    };
-    Ok(into_reopened_state(state, custody))
+    Ok(pending_effective)
 }
+
+#[path = "custody_rebind/completion.rs"]
+mod completion;
+pub(super) use completion::complete;
+#[path = "custody_rebind/tier_observation.rs"]
+mod tier_observation;
+pub(super) use tier_observation::observe_selected_tier;
 
 /// This phase conversion is private to the successful selected-root rebind.
 fn into_reopened_state(

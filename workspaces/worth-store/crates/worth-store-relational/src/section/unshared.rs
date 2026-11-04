@@ -1,5 +1,7 @@
 //! Concrete Home construction phases precede the Native owner's first Arc.
+mod close;
 use super::*;
+mod source_attachment;
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
 use worth_relational::facade::{
@@ -12,8 +14,7 @@ use worth_relational::facade::{
     },
 };
 use worth_store::physical_runtime::{
-    AdmittedRecordPlacementPolicy, AnchoredRecordMembership, AnchoredRecordReadMembership,
-    ServingPhysicalRuntime,
+    AdmittedRecordPlacementPolicy, AnchoredRecordMembership, ServingPhysicalRuntime,
 };
 
 pub(super) struct AttachedRelationalRuntime {
@@ -24,6 +25,7 @@ pub(super) struct AttachedRelationalRuntime {
 }
 pub struct UnrecoveredRelationalSection {
     attached: AttachedRelationalRuntime,
+    prepared_source: Option<super::PreparedRelationalHomeSource>,
 }
 pub struct UnsharedReadmittedRelationalSection {
     attached: AttachedRelationalRuntime,
@@ -67,22 +69,27 @@ impl AttachedRelationalRuntime {
 }
 
 impl UnrecoveredRelationalSection {
-    pub fn prepare_close(
-        self,
-    ) -> Result<ClosingRelationalSection, (Self, RelationalSectionCloseDenial)> {
-        match super::close::prepare_attached_close(self.attached) {
-            Ok(closing) => Ok(closing),
-            Err((attached, cause)) => Err((Self { attached }, cause)),
-        }
-    }
-    pub fn attach_unrecovered_home(
-        definition: RelationalRuntimeDefinition,
-        serving: Arc<ServingPhysicalRuntime>,
-        placement: AdmittedRecordPlacementPolicy,
-        checkpoint_selection: Arc<dyn RelationalCheckpointSelectionSource>,
-    ) -> Result<Self, RelationalRuntimeConstructionDenial> {
-        let source = crate::cold_source::StoreColdSource::new(serving.clone());
-        Self::attach_with_source(definition, serving, placement, source, checkpoint_selection)
+    pub fn home_fresh_schema_initialization(
+        &mut self,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<
+        worth_proof::FreshNativeInitialization<
+            worth_relational::facade::durability::RelationalFreshInitialization,
+        >,
+        worth_relational::facade::runtime::RelationalInitialSchemaInstallationDenial,
+    > {
+        use worth_relational::facade::{
+            durability::RelationalInitialInputsRefusal as Input,
+            runtime::RelationalInitialSchemaInstallationDenial as Denial,
+        };
+        request
+            .in_scope(|_| {
+                self.attached
+                    .runtime
+                    .begin_fresh_home_initialization(request)
+            })
+            .map_err(|cause| Denial::from_initial_inputs(Input::Request(cause.into())))?
+            .map_err(Denial::from_initial_inputs)
     }
     pub(super) fn attach_with_source(
         definition: RelationalRuntimeDefinition,
@@ -98,7 +105,10 @@ impl UnrecoveredRelationalSection {
             source,
             checkpoint_selection,
         )
-        .map(|attached| Self { attached })
+        .map(|attached| Self {
+            attached,
+            prepared_source: None,
+        })
     }
     pub fn home_schema_installation_runtime(&mut self) -> &mut RelationalRuntime {
         &mut self.attached.runtime
@@ -170,85 +180,8 @@ impl UnrecoveredRelationalSection {
             Err(cause) => Err((self, cause)),
         }
     }
-
-    /// Admit the closed Home's actual selected read before the shared Native
-    /// recovery core. A refusal preserves this SAME unshared Native owner.
-    pub fn readmit_home_from_read(
-        self,
-        selected: Option<(
-            worth_execution::ExecutionImmutableBytes,
-            std::ops::Range<usize>,
-            &AnchoredRecordReadMembership,
-        )>,
-        expected: &RelationalInitialSchemaInstallationReceipt,
-        execution: &ExecutionRequest<'_, '_>,
-    ) -> Result<
-        (UnsharedReadmittedRelationalSection, Option<[u64; 2]>),
-        (Self, RelationalSectionReadmissionDenial),
-    > {
-        if expected.runtime_instance_id() != self.attached.runtime.runtime_instance_id() {
-            return Err((
-                self,
-                RelationalSectionReadmissionDenial::InitialSchemaRuntimeMismatch,
-            ));
-        }
-        self.readmit_home_from_read_without_schema(selected, execution)
-    }
-
-    pub fn readmit_home_from_read_without_schema(
-        mut self,
-        selected: Option<(
-            worth_execution::ExecutionImmutableBytes,
-            std::ops::Range<usize>,
-            &AnchoredRecordReadMembership,
-        )>,
-        execution: &ExecutionRequest<'_, '_>,
-    ) -> Result<
-        (UnsharedReadmittedRelationalSection, Option<[u64; 2]>),
-        (Self, RelationalSectionReadmissionDenial),
-    > {
-        let checkpoint = match super::readmission::prepare_home_source(
-            &self.attached.cold_source,
-            selected,
-            execution,
-        ) {
-            Ok(checkpoint) => checkpoint,
-            Err(cause) => return Err((self, cause)),
-        };
-        match super::readmission::recover_runtime(
-            &mut self.attached.runtime,
-            &self.attached.cold_source,
-            &self.attached.serving,
-            checkpoint,
-            execution,
-        ) {
-            Ok(admitted) => Ok((
-                UnsharedReadmittedRelationalSection {
-                    attached: self.attached,
-                    source: super::readmission::source::ReadmittedRelationalSource::Recovered {
-                        authority: admitted.authority,
-                        outcome: admitted.outcome,
-                    },
-                },
-                admitted.selected_coverage,
-            )),
-            Err(cause) => Err((self, cause)),
-        }
-    }
 }
 impl UnsharedReadmittedRelationalSection {
-    pub fn prepare_close(
-        self,
-    ) -> Result<ClosingRelationalSection, (Self, RelationalSectionCloseDenial)> {
-        let Self { attached, source } = self;
-        match super::close::prepare_attached_close(attached) {
-            Ok(mut closing) => {
-                closing.source = Some(source);
-                Ok(closing)
-            }
-            Err((attached, cause)) => Err((Self { attached, source }, cause)),
-        }
-    }
     pub fn home_fresh_query_finalization_parts(
         &mut self,
     ) -> Result<

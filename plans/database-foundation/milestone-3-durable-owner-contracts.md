@@ -1731,6 +1731,388 @@ contracts and `docs/capability-index.md` for the real public capability. Example
 must use Decl/Host and the actual mandatory path; selected Native-only evidence
 must not be described as multi-owner checkpoint completion.
 
+## Complete Home original-input persistence and reopen (P-A design)
+
+### Canonical v5 commitment refinement (implementation design review)
+
+The additive normalized image must prove original-role derivation against the
+unchanged CHK18 index. A copied canonical digest next to role DATA does not do
+this. Independent review rejected that design on 2026-11-02: a rewritten policy
+and recomputed Complete wrapper checksum could retain the original index digest.
+
+Canonical v5 therefore changes the digest grammar as part of its already
+authorized format cutover. Its commitment is
+`SHA256("worth.relational.canonical.v5\0" || LE64(position) || LE64(commit) ||
+SHA256(position-value) || SHA256(canonical-value) || SHA256(original-inputs-value))`.
+The three values are exact, canonical, named-MessagePack field values from the
+v5 payload. The map has exactly the required position, canonical and
+original-inputs fields. Full-frame verification hashes the actual borrowed
+value slices; full admission retains header agreement, exact canonical encoding
+and result-carrier validation. The input value explicitly carries the optional
+result image, whose presence must equal a change of schema carrier. Each image
+must validate its own full carrier content and agree with its result reference.
+
+The v5 original-inputs map has exactly four fields in this fixed canonical
+order: `result_image`, `prestate_schema`, `result_schema`, `mutation`. This order
+is part of v5, not a reinterpretation of any landed payload. The normalized row
+retains the canonical-value leaf, position, commit and the original role/policy
+DATA. Source admission reconstructs its input commitment from the corresponding
+CHK18 schema image when the schema changes. It hashes the map header, first
+key and exact result-image value ONCE per distinct carrier, retaining a cloneable
+SHA-256 prefix state in a request-funded concrete Native map. The nil-result
+prefix is computed once too. Each row clones the matching prefix state and
+appends only the three small named role/policy fields, then finalizes its input
+leaf. It recomputes the position leaf and composite commitment and compares it
+with the unchanged index digest. This is O(C + T + Sbytes) work and
+O(S * sizeof(Sha256)) prefix storage in addition to existing manifest/roster
+owners, where S counts distinct selected schema carriers; alternating large
+carriers across history cannot multiply schema bytes by C. Original schema
+images are shared. No covered canonical body is read. Every map node/prefix
+state is admitted from the invoking request before allocation and dies with
+that admission. Full-frame verification still hashes its actual input slice.
+
+All v5 digest producers, stream index producers and payload agreement checks
+use this one grammar. The omitted canonical-value bytes and reusable hash
+states are DATA, not authority witnesses. No landed CHK18, transition or Home
+manifest format changes are introduced by this refinement.
+
+Required adversarial courts preserve CHK18/index and covered canonical members,
+alter a normalized policy or schema reference, recompute the Complete wrapper
+checksum, and require refusal. The positive image-plus-tail court makes covered
+canonical-body reads unavailable during reopen. A cost court varies both the
+covered history length and carrier size and verifies that each distinct image
+contributes once to admission hashing, independently of schema-change count.
+
+Status: the coordinator accepted design `f8c881ba9a` and granted the exact
+Store, Query, Host and facade/caller handoff on 2026-11-02. A fresh independent
+review approved the cached-prefix commitment refinement after rejecting the
+unbound digest copy and then the per-row full-image hashing design. Implementation
+and qualification are in progress; no reopen completion is claimed yet. The
+starting point is `c068abc047`. This section governs only the original Native
+input chronology and its Home source admission; Query source retirement,
+Home transitions/discard and receipt reconstruction retain their other owners.
+
+### Boundary and durable owner
+
+The adversary kills an initialized Home before its first canonical write, or
+after selecting a checkpoint and accepting a later tail. Reopen must retain
+the original birth, installation position, transition schema attribution and
+each canonical mutation policy. It must then produce another Complete capture
+without the original process, covered journals, initializer or current-policy
+substitution. Schema content equality alone does not establish an event role.
+
+Native owns and admits these inputs. Store transports their opaque artifacts
+and authenticates physical selection; World continues to own its image/cut
+and reconciliation. Initial-schema installation must acquire an explicit
+original ExecutionRequest AND an actual fresh-source phase before it can
+publish durable initialization. The present request-free installation API is
+not an I/O seam. Adding a request alone is incorrect: Host opening currently
+calls install_home_native_schema on BOTH fresh and existing raw receivers
+before Home readmission. The receiver's empty history proves no source newness.
+
+Store's existing physical ProvenAbsent custody alone selects a closed Native
+fresh-initialization issuer. Its concrete move-only runtime payload retains
+the SAME exclusive attached runtime/source and original installation subject.
+The permission phase shape belongs in worth-proof; the payload, sources and
+prepared cell replacement belong to Native. Exact factory caller seals admit
+only the owning Section and its Store origin-routing consumer. ExistingArtifacts
+cannot obtain this phase, even for empty coverage. No public generic marker,
+boolean or medium-presence check can enable initialization.
+
+Split Query's installation contract into fresh initialization and existing
+receiver-configuration preparation. The latter is strictly nonpublishing and
+provides only expected configured schema/service meaning to actual recovery;
+it cannot create or replace source input evidence. Store must route these
+before installation, rather than exposing an unqualified runtime whose caller
+chooses publication. Both paths share pure lowering/preparation, not source
+authority. Move the existing source-origin choice earlier in the SAME Host
+recipe with the smallest coordinated opening.rs change; do not run an
+initializer or manufacture a recovered source on either path. Call sites
+must cut over together; no ambient request or default allowance is permitted.
+
+Use a new Native-owned `RelationalSourceInitialInputsArtifact`, protocol
+`worth.relational.source.initial-inputs`, version 1. Store supplies one exact
+new anchor, `relational.initial-inputs`, through the existing Native medium
+binding and protected-source port. This is the real initialization durable
+step, with the existing Committed/ProvenNoEffect/Indeterminate topology and
+subject-bound consumed witness. It is not a Store schema parser or a second
+source-admission authority. The closed registry addition and the exact medium,
+source and Query installation call sites need a narrow integration handoff
+because those files are outside the assigned P-A paths.
+
+The artifact contains a mandatory Birth entry and an explicit installation
+posture: NotInstalled or Installed with the actual before/after Empty axes and
+exact `follows_transition`. It carries the full required schema images using
+the existing DurableBranchRootSchemaImage grammar and content digest. Birth
+also binds the source's actual main-branch name. No generation, version, schema
+role or absent policy is inferred from ordering in a schema-content union.
+The artifact's entry list is declared tagged and length-delimited in version
+1; unknown tags refuse. Its two legal states are BirthOnly and
+BirthAndInstallation, with a required Native input revision and predecessor
+artifact digest. BirthOnly is revision 1 without a predecessor; adding the
+single installation is revision 2 and links the exact original revision-1
+digest. A combined first publication is revision 1 with both entries and no
+predecessor. These are recorded artifact coordinates, not an independent live
+allocator. No other progression is legal. Initial installation preserves the
+original birth. It never consumes a canonical or lifecycle transition
+position, or relabels installation as Archive/Fork/Delete.
+
+Every protected source cut freezes the actual initialization artifact revision,
+payload digest and read custody together with its C/T bounds. Complete capture
+freezes the accepted initialization subject under the SAME configuration and
+publication epochs as its other original inputs; physical protection must
+cover that exact frozen subject. The Complete image records that subject and
+its entire admitted entry prefix. ACK and monotonic selection compare this
+coordinate as well as C/T/catalog coverage. Equal C/T coverage cannot erase an
+accepted installation or acknowledge a different initialization subject.
+
+On reopen, the SAME protected cut supplies the selected Complete prefix and
+the current initialization artifact. Equality means no initialization tail.
+The only unequal admissible case is a BirthOnly selected prefix followed by
+its exact linked BirthAndInstallation successor. Validate unchanged birth,
+predecessor digest, revision, before/after axes and follows_transition; merge
+that one uncovered installation into the original C/T interleaving at its
+recorded insertion point. Admit any newly referenced schema from that genuine
+successor artifact. Installation is before C1 and follows exactly its recorded
+T, including the supported archived-Empty case. A missing, regressed,
+unrelated or ambiguous successor refuses. Never replace the selected prefix
+with a blindly read latest anchor. This also covers C0 checkpoints followed
+by installation with no canonical or transition tail at all.
+
+Birth publication precedes the first durable Native effect or fresh-source
+admission. Initial installation validates and prepares its complete replacement
+before publishing its actual before/after inputs; only Committed permits the
+live schema/cell cutover. If birth has not yet been published, the same initial
+installation step can record birth and installation together. An initialized
+zero-write Home therefore has real durable evidence. A request-free Memory
+construction remains explicitly nondurable; it mints no durable witness.
+
+No-effect preserves the original live cells, input chronology and accepted
+anchor. Indeterminate retains the original subject in the same Native medium
+barrier and blocks subsequent Native publication until recovery. A kill after
+the anchored commit but before cutover admits that recorded installation on
+reopen. A kill before commitment recovers the previous admitted artifact or
+refuses incomplete initialization. Neither case reruns a caller initializer.
+An existing Home with no source artifact never regains a fresh opportunity.
+
+### Wire placement and format decision
+
+The scoped search of canonical_commit_artifact/payload_wire.rs and
+branch_transition_artifact/payload_wire.rs found exact, deny_unknown_fields
+payloads with no declared tagged extension. Canonical v4 also binds its exact
+position/envelope payload digest. Adding fields under those versions would
+reinterpret landed bytes. Cut over canonical **4 to 5** and transition **1 to
+2**, as authorized by the coordinator. Keep their existing positions, source
+affinity, original frames and authoritative-envelope predicates.
+
+Canonical v5 adds required Native-owned input DATA to its digested payload:
+the exact prestate/result full-schema carrier references and the three actual
+MutationConfig policies. It is attached before original frame sizing, digest,
+emission and durable acceptance, not only to the postpublication catalog. A
+schema-changing canonical step also supplies its newly required full carrier
+in that same artifact; unchanged-schema commits carry references only. The
+initial-input artifact supplies the birth/installation carriers. Existing
+immutable schema owners cache their admitted descriptive carrier so ordinary
+unchanged-schema publication does not serialize the entire registry. This
+cache grants no authority and retains only its own actual funded DATA.
+
+Transition v2 adds the required reference to the actual schema used by that
+original transition, inside the same digested payload. It must resolve in the
+already admitted source prefix. A transition grants no new schema meaning.
+The full positioned transition, not its name or sequence alone, binds the
+attribution. Original input DATA moves through replay, catalog replacement,
+coverage compaction and detached/continuing stream lifetimes.
+
+CHK18's CheckpointWire has exactly manifest/members/envelopes; its flat26
+manifest and canonical-member roster have no input-attribution extension.
+Preserve CHK18 and WSRCKPT1 version 3 byte grammars. Add a distinct Native-owned
+Complete source artifact, protocol `worth.relational.complete-source`, version
+1, containing the unchanged CHK18 artifact and a normalized original-input
+image bound to its exact digest, coverage and source/main binding. The image
+contains birth/installation roles, every covered positioned transition plus
+its schema reference, and every covered canonical subject's schema references
+and policies. Canonical subject linkage includes position, commit and original
+payload digest. Schema content resolves against the SAME CHK18 schema union;
+there is no second full registry codec or archive.
+
+The Store Relational owner adds a distinct Complete section artifact that
+carries this Native artifact; ordinary WSRCKPT1 version-3 section production
+keeps its standalone meaning. The Home still has exactly one Relational and
+one World section, one member union and one selection. Do not add another Home
+section tag or change Home manifest v2. A new Complete section cannot be
+constructed from an ordinary section or a serialized Complete flag.
+
+Development Homes that cease opening through the Complete Home route are:
+Homes with canonical v4 or earlier; transition v1; missing initial-input
+artifacts; and selected ordinary WSRCKPT1/CHK18 sections without the new bound
+Complete-source artifact. This includes previously selected Home2/CHK18
+development Homes. Unselected old Homes also require the initialization
+artifact and current journal formats. There is no migration, missing-field
+default, on-open rewrite, automatic discard or reinitialization. Existing
+standalone ordinary Native APIs retain their explicit, weaker contract; they
+cannot issue Complete Home admission.
+
+Unsupported versions use Foundational boundary_protocol identity, version,
+current-only compatibility window and BoundaryProtocolUnsupportedVersion.
+Missing inputs and malformed/mismatched current inputs have distinct typed
+Native refusals. Before descriptor/incarnation PUBLICATION, Store lends an
+actual protected physical cut to a closed Native format-eligibility preflight.
+Native inspects its initialization frame, selected section/Complete wrapper
+and uncovered canonical/transition frame versions. Selected ordinary old
+sections fail here, before member or body reconstruction. Each uncovered
+record is checked; inspecting only the first or last entry is insufficient.
+The source owner provides bounded header streaming from that SAME cut, not a
+Store codec, latest-reader lookup or uncharged full-body retention. Selected
+Complete-member framing must also meet its Native-declared format contract;
+the implementation must not postpone a predecessor-version refusal until
+after incarnation publication. Version eligibility grants no schema, replay,
+recovery, service or fresh-initialization authority. It only permits descriptor
+admission to continue. Existing descriptor/binding checks and full Native
+readmission still run in D8 order. Unsupported-format tests must observe both
+unchanged incarnation/anchor generation and no Native/World publication.
+The preflight/actual readmission must retain the same source cut under the
+continuously held mutation lease; a later unprotected inspection is not enough.
+
+### Admission, funding and destination
+
+The Native Complete-source decoder takes the original request, exact protected
+selected backing/range and SAME selected member/source custody. Validate outer
+version and bounds, CHK18 digest/coverage/member inventory, initial image and
+all source-bound role links before installation. Reuse actual root/schema and
+canonical admission, including semantic result and association checks. Carry
+the admitted schema owners into the existing branch stream and canonical
+catalog; a fresh recovery receiver still discards its own construction seed.
+Uncovered canonical/transition records extend this same chronology in their
+original interleaving. Missing full schema DATA or live typed service issuers
+retain honest refusals; recorded recipe DATA never manufactures an issuer.
+
+Fund artifact sizing/emission, nested schema decode, normalized image storage,
+source metadata and retained input owners before growth under the SAME
+request. Retain actual reservations with their independent escaping owners;
+temporary decode/canonicalization backing dies before its grant. A stopped or
+refused admission retains the original owning Home/source and prior selection.
+There is no replacement request, fresh-source fallback or reconstructed
+performed proof. ACK continues the SAME selected attempt and cursor.
+
+Populated responsibilities stay beneath existing owners:
+
+```text
+worth-relational/src/durability/
+  source_initial_inputs/       artifact frame, codec, owned admission
+  complete_source/             bound CHK18/input-image artifact and admission
+  canonical_commit_artifact/   required v5 original inputs
+  branch_transition_artifact/  required v2 schema attribution
+  authority/runtime_rebuild/   source-bound input installation and tail joins
+  medium/                     original initialization step/fate binding
+worth-relational/src/history/commit/artifact/ original input DATA lifetime
+worth-relational/src/runtime/initial_schema_installation/ prepare/durable/cutover
+worth-relational/src/runtime/state/subsystems/canonical_publication_routes/
+  branch_transition_stream/    actual birth/installation/transition custody
+worth-store-relational/src/section/{readmission,checkpoint}/ Complete section
+worth-query-court-query-decl-host/.../application_home/ real reopen courts
+```
+
+Implementation order is fresh-only initialization phase, format eligibility
+and exact origin/call-site handoff; initialization owner/port and request-bearing
+cutover; v5/v2 producer/owned decode; Complete image emission and source
+admission; recovery/Section integration; then real Host filesystem evidence.
+Do not remove CompleteNativeRequired until the complete admitted graph reaches
+the actual recovered stream/catalog and a second Complete succeeds.
+
+Acceptance maps D12 and Phase 3 open/reopen to real filesystem postcheckpoint
+reopen, process-killed image-plus-nonempty-tail restart, interrupted owner ACK,
+bounded Host tails, damage/foreign/schema/incomplete refusals, and
+same_directory_reopens_reads_and_commits_without_replaying_initializer_or_old_key.
+Keep the recovered-Empty missing-original negative. Prove covered canonical
+journals unavailable with the existing actual read observer and positive
+damage matches; inspect original values/history/components and produce/select/
+ACK a second Complete. Run only added/changed named cases, never ignored tests
+or the exhaustive Home oracle. Completion also requires touched formatting,
+dirty line caps, boundary-check, agent-context and fresh independent review.
+Exact commands and final counts belong in target/lane-evidence logs.
+
+### Original-input requirement trace (qualification in progress)
+
+| Requirement | Named behavior court |
+| --- | --- |
+| D12 original-role reconstruction and repeat Complete | `complete_source_recovery_restores_original_inputs_for_another_complete_capture` |
+| D12 original canonical policy binding | `normalized_policy_rewrite_refuses_with_unchanged_canonical_index_and_resealed_wrapper` |
+| D12 original schema role binding | `normalized_schema_role_rewrite_refuses_with_unchanged_canonical_index_and_resealed_wrapper` |
+| D12 zero-C initialization successor and exact T insertion | `birth_checkpoint_reopens_with_archived_empty_installation_tail_at_zero_commits` |
+| D17 exact initialization fate and original live cutover | `initialization_no_effect_preserves_original_cells_and_indeterminate_blocks_later_publication` |
+| Bounded original-role hash work, both independent axes | `cached_input_commitments_hash_each_schema_once_as_history_and_carrier_size_grow` |
+| Format stability and pre-effect predecessor refusal | `native_format_predecessors_refuse_filesystem_home_before_incarnation_or_owner_publication` |
+| Ordinary selected sections cannot grant Complete admission | `ordinary_selected_native_refuses_before_incarnation_and_native_or_world_publication` |
+| Same-cut owning retry after cancellation/anchor replacement | `controlled_home_refusal_retains_original_selection_across_anchor_advance` |
+| D12 filesystem selected-image reopen and another Complete | `selected_complete_home_reopens_and_selects_another_complete_checkpoint` |
+| D12 process kill, normalized image plus nonempty tail | `killed_home_reopens_normalized_image_plus_nonempty_tail` |
+| D12 original ACK resume and killed unacknowledged selection | `interrupted_owner_ack_resumes_original_attempt_and_reopens_unacknowledged_selection` |
+| Phase 3 bounded Host tail, actual body-read counts with headroom | `automatic_checkpoints_bound_host_reopen_journal_reads_with_headroom` |
+| D12 journal-only process kill without checkpoint or initializer replay | `journal_only_killed_home_reopens_original_inputs_and_commits_without_initializing` |
+| D17 source admission validates original bytes despite a resident body | `associated_effects_read_exact_source_and_report_actual_pending_and_settled_routes` |
+| D17 selected original frame binds its indexed subject and retains proven damage | `selected_original_export_binds_its_indexed_subject_and_preserves_proven_damage` |
+| D17 invoking request stop precedes retained damage | `strict_original_capture_keeps_work_stop_precedence_over_retained_damage` |
+| D12 deferred image recapture and actual rebuilt live-tail generations | `cold_complete_recapture_preserves_original_index_generations_and_live_tail` |
+| D17 original Full/Delta family decoding and retained funding | `original_full_and_delta_index_tuples_preserve_all_entry_families_and_funding` |
+| D17 invoking cancellation and exhausted-memory refusal without retained data | `original_index_decode_refuses_cancelled_and_exhausted_invoking_requests_without_retaining_data` |
+| D17 exact original frame widths and missing-attribution seal | `prepared_memory_frame_preserves_position_widths_and_seals_absent_input_attribution` |
+| D12 cold Head refresh without omitted History, D17 pre-I/O budget gate | `cold_selected_index_refresh_preserves_budget_gate_and_reads_head_without_history` |
+| D12 World origin retains its exact coupled component obligations | `checkpoint_origin_keeps_exact_component_leases_after_history_claims_retire` |
+| D17 explicit World origin retirement requires Closed and actual Home binding | `checkpoint_origin_retirement_requires_closed_world_and_an_actual_home_binding` |
+| D12 existing inline scalar wire grammar and exact allocation preflight | `inline_payload_preflight_quotes_owned_bytes_and_refuses_malformed_bodies` |
+| D17 scalar length authority refuses before visiting an oversized body | `inline_payload_preflight_refuses_oversized_length_before_visiting_payload` |
+| D17 original recovery limit refuses combined state construction before allocation | `planned_backing_refuses_combined_construction_before_allocating` |
+| D17 actual capacity and construction peak survive backing release | `planned_backing_peak_keeps_actual_capacity_and_construction_overlap` |
+| D17 later staging refusal retains measured construction memory without effects | `later_staging_refusal_preserves_the_larger_construction_peak_without_effects` |
+| D17 original request and exact final-frame child funding, retained repair custody | `checkpoint_transition_admission_refusal_retains_acknowledged_effects_for_explicit_repair` |
+| Phase 3 default-stack changed-build existing-source readmission | `changed_host_build_keeps_initializer_closed_and_reaches_native_readmission` |
+| Phase 3 default-stack writer exclusion and killed-owner takeover | `competing_host_processes_admit_exactly_one_writer_until_process_death` |
+| Phase 3 selected completion/activation refusals keep the owning Home | `selected_completion_and_activation_failures_keep_owned_home_without_initializing` |
+| Phase 3 same-directory reopen preserves old keys and suppresses initialization | `same_directory_reopens_reads_and_commits_without_replaying_initializer_or_old_key` |
+
+These are implementation obligations, not a pass ledger. Real Host reopen,
+process-kill/tail, ACK and bounded-tail executions remain required above; their exact
+source HEAD, command, outcome and counts must appear in lane evidence.
+
+### Exact scope handoff (granted by coordinator)
+
+The coordinator granted the following exact participants after accepting this
+design. Caller patterns remain exact; Host opening is changed last, after
+checking the integration branch and its session report:
+
+- Store Application registry.rs: the exact relational.initial-inputs anchor,
+  plus the explicit registry-version compatibility decision if required by
+  its physical registry contract. Keep the existing journals and owner tags.
+- Store Application open/mod.rs and descriptor admission: hold the original
+  protected source and complete Native format preflight before incarnation
+  publication; later readmission consumes the same cut.
+- Store Application relational_preparation and Store Relational section/unshared:
+  select fresh-only initialization from actual physical origin before schema
+  installation, retaining the owning refusal on every exit.
+- Store Relational journal_medium and cold_source: initialization publication,
+  original-request-funded opaque reads and exact protected header admission.
+- Query Execution bootstrap/{initial_installation,native_meaning} and
+  application_installation/home_preparation: distinct fresh publishing and
+  existing nonpublishing contracts, using the original bootstrap phase request.
+- Host application_home/opening.rs: the minimum reordered typed handoff needed
+  before its current generic install_home_native_schema call. Coordinate with
+  the integration owner's stack split; do not edit opening/fresh.rs or the
+  reserved pipeline/state files as a workaround.
+- Proof/Native/Store facades and factory configuration: only the concrete phase
+  export and exact Section/Application/Host callers of the final named doors.
+  A generic factory family or broad source-pattern exception is forbidden.
+
+The physical registry's anchored-name list checks disjoint reservation names;
+it is not the persisted ordered-journal identity. Adding the single initialization
+anchor therefore preserves journal registry version 3 and its exact eleven
+journals. No older journal identity is reinterpreted. Descriptor preparation
+continues to validate existing binding/legacy shape before Native eligibility;
+only descriptor publication follows the preflight.
+
+The new original-input artifacts and their codecs alone cannot satisfy the
+task without this handoff. Keep the selected-Home refusal until the integrated
+owner step, early format gate, input coverage and real reopen evidence exist.
+
 ## Recovery and service contract
 
 Store Application consumes named Proof stages in order:
@@ -2068,3 +2450,866 @@ Query installation/receipt reconstruction, or Relational's envelope version
 and association field. The Phase 3 implementation agent owns those integration
 edits; the main chat's Root coordinates assignment and final landing. Local World proofs do
 not certify the joint production-host lost-response/kill/reopen/retry journey.
+
+
+### Original-input source court placement ruling
+
+The four newly introduced in-crate source courts are relocated, preserving their
+six behaviour names, into the existing relational certification binary. The
+commitment growth court now creates actual schema-transition commits with two
+carriers and compares every computed leaf against the original wire frame. Its
+compiled sealed receiver observation reads only the actual Complete artifact,
+uses the production catalog, and returns immutable computed DATA. It accepts no
+schema, policy, repetition count, callback, or authority override.
+
+The existing Native owner medium's `runtime_attachment.rs` baseline gains only
+`ExecutionRequest`: the mandatory durable publication trait now borrows that
+request. This creates no request or composition root. D14 permits the existing
+owner-private medium; this exact signature update does not permit new courts.
+Runner-generated timing catalogs are archived with lane evidence and excluded
+from the implementation diff.
+
+
+The anchored-record failure classification is owned by the physical Store:
+`AnchoredRecordPublicationFailure::into_publication_fate` reuses the existing
+foundational fate and retains its actual failure/custody payload. Its internal
+match is exhaustive despite the external failure enum being non-exhaustive.
+The initial-input medium exhaustively consumes that fate; it does not classify
+unknown physical variants itself. This is one method on the existing facade
+failure type, with no additional type, feature, or boundary pattern.
+
+
+### P-A implementation qualification at the World caller seam
+
+The relocated original-input courts have six passing behaviour results,
+including real two-carrier commit history, independent original-frame leaf
+comparisons, resealed-role refusals, C0 installation tail and repeat Complete.
+The focused Native restore/transition/canonical/initial-installation packet has
+38 initial passes and two passing targeted accounting reruns. The two stale
+accounting assumptions were the v4 whole-map hash bill and charging the new
+schema carrier to the stream-backing-only fixture. Their refusal assertions
+remain intact.
+
+Filesystem Home courts are implemented but **unrun**. Store Application/Query
+compilation stops at the exhaustive match in
+`crates/worth-runtime-world/src/lifecycle/owner/branch_service/creation/execution/forks.rs:238`:
+`RelationalBranchTransitionStop::OriginalInputsStopped` needs its corresponding
+World denial projection. World is outside this owner's granted paths; its
+narrow caller migration is awaiting the coordinator's scope answer. No fallback
+or wildcard is added to hide that required integration.
+
+The integration report now exists, at final integration HEAD
+`6750f1376fd6780e0e33de78b8d70a5b0d25f15f`, but explicitly says blocked and not
+ready to land. It is not merged. The minimal Host `opening.rs` routing edit is a
+pending merge seam with that owner's split. No final implementation approval or
+Phase 3 completion is claimed by this qualification note.
+
+
+### Corrective admission ownership after independent review
+
+The reconstruction graph is attempt-local: each RecoveryPlan consumption owns
+fresh fixed-size directory bindings with shared intrinsic manifest/read custody.
+A retained plan clone is never mutated. The graph's original request grant also
+funds those exact binding allocations. Test:
+`cloned_complete_plan_retries_after_member_read_cancellation_without_directory_contamination`
+cancels at the real medium's first full member read after graph preparation,
+then retries the SAME retained Complete plan and captures another Complete.
+
+Both uncovered journal suffixes receive a complete same-cut ten-byte version
+scan before ANY tail body admission. The prefix grants no SHA/readmission proof.
+The two existing Native artifact facade types expose only
+`preflight_frame_version`; physical stream and body verification remain owned.
+The predecessor filesystem case now places a genuine current record first,
+then a 2 MiB predecessor, and admits under a 512 KiB budget. Both refusal classes
+must remain typed unsupported versions and leave descriptor/owner heads intact.
+
+Canonical demand observation includes actual selected-checkpoint canonical
+member bodies as well as journal transport. The existing selected canonical
+reader reports completed body reads to its actual source; bounded prefix probes
+never count as full bodies. Host inspection names this observation
+`native_canonical_body_reads`, so the bounded-tail court cannot hide historical
+body replay behind checkpoint member placement. This is passive DATA only.
+
+
+### Deferred-index original-input handoff still required
+
+The new cold-plan retry court remains red at its final repeat-Complete capture.
+Cancellation, retained-plan recovery and canonical export precede that retained
+assertion. Source-freeze diagnostics show original input capture, branch metadata
+and component capture all succeed. The index owner's
+`runtime/state/subsystems/indexing/checkpoint_inputs.rs` then deliberately
+refuses while `cold_checkpoint` remains present. The exact guard is not bypassed.
+The diagnostic edits are removed; their source and full logs remain in lane
+evidence. The committed court keeps the failing assertion.
+
+An honest continuation requires the Native index owner to freeze its actual
+admitted-or-deferred original index input under the same publication snapshot.
+The deferred case retains the actual image/read custody; after logical epochs
+are released, its original bytes are read and decoded under the SAME invoking
+request. Complete serialization consumes that captured DATA. No runtime demand,
+cache rebuild, omission or fresh replacement occurs inside the frozen cut.
+Artifact wire formats do not change for this handoff.
+
+That owner is `runtime/state/subsystems/indexing.rs` and `indexing/`, outside
+P-A's current granted paths. A coordinator decision is pending for this exact
+owner integration and for the World fork-stop projection already recorded
+above. Filesystem qualification and approving final review remain outstanding.
+
+
+### Corrective review: fresh Birth publication custody and payload tails
+
+Fresh Home admission carries `RelationalFreshSourceAdmissionStop::Publication`
+with the original initialization publisher's concrete stop, including the
+unresolved revision/digest subject. Store retains that stop in its fresh-source
+readmission denial. A proven-no-effect Birth cannot become accepted live input;
+an indeterminate Birth bars later publication through the same medium owner.
+
+Canonical v5 (decision implemented in `9ce79d758d`) commits exactly three
+MessagePack values. The earlier v4 negative that resealed an arbitrary payload
+with an appended MessagePack value cannot retain that framing premise: a fourth
+value has no valid v5 commitment shape. The retained negative now agrees with the
+header length, preserves all three original commitments, and requires
+`InvalidPayloadShape` before decoding. The independent outer-frame trailing-byte
+and reordered-map negatives remain separate assertions.
+
+
+### Granted owner continuation: deferred index DATA and journal-only cutover
+
+The coordinator grants the World typed caller migration, Native index owner
+continuation, and finished integration merge. The original Complete input and
+wire decisions remain unchanged.
+
+Boundary: an index checkpoint cut consists of the exact immutable definition
+catalog, generation frontier, live generation roster, and optional retained
+`DeferredIndexImage`. Capturing that Arc under the logical cut performs no
+provider call and does not demand or replace live cache state. The directory
+already owns its original selected-read and placement custody. After both
+logical epochs end, the continuation reads the exact derived-index member via
+that custody under the invoking request, verifies its frame, and decodes its
+original cache DATA. It then combines those generations with the frozen live
+roster by exact generation identity, with the actual live owner taking precedence
+for a repeated identity. It preserves the frozen catalog and frontiers.
+
+Funding precedes growth: allocation-free borrowed wire traversal quotes the
+concrete full-generation or supported delta tuple, generation headers/strings,
+persistent entry-map and row geometry, and canonical aspect-value owners.
+Retained and simultaneous decode scratch reservations live with the resulting
+captured DATA until serialization releases the last owner. Delta reconstruction
+also reserves each actual reconstructed byte buffer before growth and applies
+the same entry-owner quote before decoding it. Shared provider placement is not
+recharged. The continuation never installs into the live index subsystem or its
+admission cache. Existing generation validation remains one owner rule shared
+with ordinary checkpoint restoration. Cancellation or denial drops only this
+attempt's DATA; retry uses the original frozen/read custody.
+
+Implementation order: merge the finished opening/default-stack integration;
+project the Native typed World stop; implement this frozen index continuation
+and its request-funded decode; repair journal-only source synchronization;
+then execute the retained second-Complete assertion and real filesystem Host
+qualification. The normal-stack controls run directly with `RUST_MIN_STACK`
+unset, without ignored or exhaustive courts.
+
+Journal-only boundary: recovery's provisional replay artifact is not the source
+artifact. Source synchronization may replace the former using the actual
+admitted durable source, but must not transfer original-input custody across
+those distinct envelope cells. The same-cell preservation guard remains strict
+for ordinary publication. Home recovery installs reconstructed original inputs
+from its admitted schema/chronology graph after source routes are finalized.
+The Host reproducer must kill a filesystem writer with only a journal, reopen
+without initializing, read its committed value and commit again.
+
+
+### Resolved index emission predecessor
+
+The concrete implementation review found that exposing a frozen live roster
+before deferred resolution left the Complete phase skippable. Frozen index
+inputs now consume into a distinct resolved original-index carrier. Frozen
+Complete metadata similarly consumes into captured metadata after original-read
+protection and index resolution. Both metadata-member emission and its index
+encoder require the resolved carrier; no raw-slice conversion or compatibility
+constructor exists.
+
+The pure cache-wire court retains its existing payload, locator, byte equality
+and allocation assertions through the production wire view and request encoder.
+It does not fabricate a resolved owner from those descriptive fixture rows.
+The metadata-directory court uses an actual empty index owner's captured and
+resolved state. The unchanged retained-plan second-Complete assertion and the
+nonempty covered-plus-tail court qualify the production continuation.
+
+
+### Prepublication original payload DATA and recovery source linkage
+
+The focused independent recovery review identified two product defects: source
+admission was being treated as same-cell input-custody transfer for a metadata
+merge, and Memory publication performed a full hash after candidate preparation,
+outside the shared commit work account. The latter also denied the existing
+World publication contract when its already-prepared invoking scope was fully
+spent without any refused charge.
+
+Native now prepares the exact v5 canonical-value and recorded-input leaves in
+the original request's shared preparation account. A private move-only carrier
+owns the SAME immutable canonical Arc and both leaves; route preparation checks
+that actual owner against the residency cell. Original input attribution seals
+Some or explicit standalone None before hashing. None cannot acquire later
+attribution through another Arc. These leaves are DATA and grant no admission,
+performed proof, source identity or custody. Comparison and external admission
+still hash their actual subjects. The reserved-position producer combines only
+the scalar position leaf, commit and carried leaves using the unchanged v5
+commitment grammar. Its private deterministic emission checks counted length
+and constructs its own immutable frame; it does not re-admit its own emitted
+bytes or repeat a full hash inside the publication cutover.
+
+The existing route stage settles this hash into RequestWorkBudget; the new
+original-schema capture in prepare_commit is settled into that same account too.
+Metadata-only source artifacts with no original-input custody do not enter the
+same-cell preservation operation. The preservation guard itself remains strict.
+Reconstructed source evidence is installed only through the existing admitted
+chronology graph, after actual root/source linkage.
+
+### Corrected fixture claims against the durable projection
+
+No test is deleted or ignored. The v5 decision in accepted f8c881ba9a and its
+composite commitment implementation retires the old flat-SHA resealing recipe;
+semantic refusal courts now independently compose the three-leaf commitment,
+including the changed header subject, before asserting their original semantic
+refusal. Their semantic assertions remain unchanged.
+
+The selected canonical member route already present at c068abc047 owns a third
+placement variant. Its concrete enum/cell tag costs one additional word versus
+the old two-variant fixture. The memory-layout court now bounds that exact one
+word while retaining all independent scalar tuple and original-frame assertions.
+Its independent reference frame includes v5's required original_inputs field.
+
+Milestone 3's explicit durable projection table excludes diagnostics and derived
+cache DATA. It retires FULL envelope equality as a durable-recovery claim for
+the CAD, hostile-workload, merge and aggregate logical-component courts. Their
+replacement compares every envelope field after removing only those two omitted
+lanes, and additionally checks the original schema/policy attribution. Existing
+full/embedded codec courts retain their FULL language and assertions. Covered
+history must name its actual selected directory, with no journal fallback; the
+caller-association court checks that placement and still compares original
+artifact bytes, digests, positions, caller association and recovered meaning.
+
+The original-request SDK custody cutover makes serial field-text imports funded
+by their real serial ledger; the field-text courts now assert that bill and the
+typed Request memory refusal. The snapshot-lifetime court funds its actual
+receiving metadata as well as text, retaining the last-owner refund assertion.
+
+
+D17 and the accepted original-source/owned-read decision retire the assumption
+that ordinary Native capture owns ONLY its encoded backing, or that recovery's
+first allocation is managed UTF-8. The capture court retains zero-budget
+pre-effect refusal, cancellation, byte equality, clone pointer equality,
+editable recovered truth and exact final-owner refund, now observing ALL actual
+capture/readmission grants. It fills the remaining invoking ledger to prove
+that escaped clones retain their exact aggregate bill, then proves that the
+last original/readmitted owner refunds that whole bill. The existing Native
+byte-owner court still proves exact encoded/enclosing-backing custody. The
+managed-text checkpoint court keeps its typed one-byte policy refusal,
+unchanged source and target, and successful funded retry; D17 may refuse a
+metadata owner before reaching text. Neither court substitutes another request
+for its governed capture or recovery invocation.
+
+
+The same durable-projection decision retires the expectation that the recovered
+process emits no diagnostic trace while replaying a diagnostics-free merge.
+That court still proves the ACTUAL original artifact contains no diagnostics,
+requires recovered typed merge authority, compares every durable field and
+original input, and checks the recovered branch head. Process-local replay
+traces cannot be an oracle for missing original authority.
+
+Phase 4's sealed semantic/envelope consistency rule retires a plan fixture that
+changed only descriptor_semantics_version to 99 while retaining a semantic
+image describing version 1. This is a contradictory canonical artifact, not a
+coherent unsupported-version plan. The court now requires the earlier exact
+semantic SchemaMismatch refusal, with unchanged owner and branch head. It does
+not manufacture a new original semantic image or bypass that admission guard.
+
+
+Follow-up owner evidence exposed the same retired diagnostic-equality assumption
+in the merge certification artifact and deleted-convergence courts. Their
+machine boolean and assertions now use that same complete durable-field/input
+comparison; original live diagnostic-value assertions remain intact. A codec
+ordering-refusal fixture now retains only baseline bytes, releasing its actual
+Native capture's observation pins before asking to replace the destination.
+The runtime's pinned-destination refusal itself is unchanged.
+
+The shared-work-account court's equal-price assumption is also retired by the
+exact original-payload hashing contract. Strategy validation explicitly keeps
+StrategyCommitArtifactBundle::from_lowered, while the other entries call
+into_validation_parts and discard that decoration. They are distinct original
+canonical subjects even for equal mutation intent. The court now independently
+measures EACH entry, requires its exact own ceiling to succeed both with and
+without an enclosing SDK scope, compares recorded and full SDK charges, and
+requires its own one-short ceiling to refuse without moving the branch. No
+accounting bound or original-request denial assertion is relaxed.
+
+
+The selected-directory canonical-member route present at c068abc047 retires the
+cold fixture's assumption that every member transport read is a record/index/
+lineage/symbol payload, and that canonical bodies always use journal transport.
+The fixture now derives canonical locator-to-position classification from the
+original offered frames. It records actual selected locators separately from
+actual journal calls, and includes both in the existing canonical-position spy.
+Selected reads still return the actual selected member bytes, never the journal
+map. Both locator-specific and canonical-position faults remain active. The
+record/history zero-read and exact demand/sticky-refusal assertions remain;
+the envelope courts additionally forbid journal fallback and require selected
+member demand. The aggregate fixture independently counts its selected head
+reads and forbids journal calls. Replacement and corrupt-byte wrappers now
+implement the actual owned ports while retaining their original pin/Drop or
+byte-corruption semantics and request-funded returned buffers.
+
+
+Protected-read refusal conversion now requires the caller's explicit storage
+subject. Eight unchanged cold-source courts exposed the old converter's erased
+position (Envelope(0) for actual positions1/3/4); this was a product defect.
+Selected singleton and journal artifact reads pass their actual indexed position.
+The deferred index frame uses its existing aggregate Index(0) subject. Source-
+wide/Birth/selection doors retain their explicit existing source-level Envelope(0)
+context. One exhaustive mapping still preserves every request, allocation,
+provider and frame refusal. There is no implicit default or parallel classifier.
+
+
+The unchanged envelope failure matrix then exposed a separate product defect:
+selected retained export wrapped actual storage refusals as Readmission and
+bypassed its cell's proven-damage state. Selected export now returns the same
+StorageUnavailable variant as journal export. Strict original capture checks
+and records the same cell damage. Only existing is_proven_damage causes stick;
+request, allocation and retryable storage failures retain their prior topology.
+Both selected and strict journal original reads invoke the existing scalar
+index/frame subject checker before returning original bytes. Locator integrity
+alone never establishes indexed position, commit or canonical payload binding.
+
+
+Source-bound associated-effect and recorded-component admission validate original
+frames even if their logical body is resident. They consult the invoking request
+first, then the cell's retained proven damage, before capturing any new Journal
+read protection. Selected sources use their held directory cut. Recorded basis
+export uses this route only for Journal/Selected; descriptive Memory export
+keeps its existing contract. The exact export caller is a merge seam with
+P-D b84a8953d0, whose request-funded payload comparisons must compose with it.
+
+A derived EntityField generation is cache state, not an implicit canonical-tail
+effect. The cold index continuation court first recaptures and compares complete
+original generation DATA before any warming build. It then invokes the actual
+recovered index owner at the verified tail basis and checks another Complete
+contains both original and real live-tail generations. It never assumes recovery
+can manufacture a producer's unjournaled cache generation.
+
+The coordinator's additional handoffs are recorded in orchestration/m3/prompts/
+p3_reopen_grants.md (outside git). Storage's kind-commitment reuse requires an
+unchanged relation-slot axis as well as unchanged outgoing/incoming incidence:
+relation history can change kind claims even with two remote endpoints. The
+original CDC property and saved failing seed are retained. The proposed whole-
+arena replacement correction was superseded by that directly observed cause;
+no unsupported arena change is part of this slice. Query frontier setup derives
+its work grant from independent actual Native applications and installed reads;
+its explicit short caller ceilings and typed stop/prefix assertions remain. The
+301-publication history fixture keeps accounting and all other policy axes but
+sets no unrelated aggregate work ceiling.
+
+The original Host split still overflowed on the default stack. Actual captured
+AMD64 unwind evidence showed source selection and planning frames retained by
+Store recovery through terminal verification. The exact recovery dispatcher
+now returns the selected source and planned owner before progressing stage,
+publish and reopen. All original owners, effects and refusal returns remain;
+this structural change has no stack-size or profile override. Default-stack
+sufficiency remains a qualification obligation until the named direct controls
+complete successfully.
+
+The bounded-tail filesystem court exposed a distinct World origin obligation.
+The durable Branch recipe still names the original Native input after ordinary
+World history retirement. The recipe's binding now holds the SAME admitted
+Native basis and a shared claim on its existing World component pin pair. A
+basis clone alone would keep root bytes alive but would lose the Native external
+component roster once the last World pin retired. The original recipe's separate
+historical obligation keeps that SAME existing external lease registered; it
+creates no new dependency class or owner lease. Preparation acquires this claim
+before the durable step, and pending/refused preparation retains it. Fresh durable bootstrap
+installs that holder after its actual root installation and before retiring the
+pending bundle; readmission installs it from the actual admitted original root.
+No current-schema reconstruction, old-header union or additional owner lease is
+used. Root installation moves the prepared holder; it never reacquires custody.
+
+The holder has Uninstalled, Held and Retired states and cannot be reseeded.
+WorldCheckpointOrigin::retire consumes the holder outside locks and yields
+WorldCheckpointOriginRetirement, which reports release of this one obligation,
+not global source retirement. Its retention_keys identify the exact registry
+entries for the owning close's subsequent reclamation. RuntimeWorldOwner::retire_checkpoint_origin is
+reachable by the owning Home close and requires World Closed. Busy, open or
+closing World, absent binding, uninstalled origin and repeated retirement have
+typed refusals. The coordinator will wire this method into P-B Home close at
+integration; this slice does not change close progression or history reclamation.
+
+Cold derived-index reconstruction admits Head through the original request
+before borrowing accepted immutable custody. Cold-budget eligibility remains
+before any demand. Both changed-record discovery and field-key preparation use
+the admitted Head; they do not require Full or fetch omitted History. The court
+cold_selected_index_refresh_preserves_budget_gate_and_reads_head_without_history
+uses a real selected source with its actual History member unavailable, checks
+the pre-I/O budget refusal, then requires changed current entries, actual Head
+reads, no History read, no Full admission and no canonical publication.
+
+The accepted coupled-close checkpoint contract (integration 6750f1376f and the
+original-input design f8c881ba9a) retires the refusal fixture's assumption that
+closing after an initializer panic loses the Query index definitions. Native
+finalization registers those definitions before the callback; owning close can
+checkpoint that actual catalog even with no seed publication. The old behaviour
+name initializer_refusal_without_canonical_indexes_reopens_at_require_recovered_without_replay
+is therefore replaced by
+initializer_refusal_reopens_at_missing_world_origin_without_replaying_initializer.
+It requires the exact typed ExistingWorldRoot/ExistingRoot/Denied/OwnerUnavailable
+refusal and retains every callback, contact, mutation-lease and owning-close
+assertion. RequireRecovered is unchanged; the existing owner court
+recovered_index_name_without_matching_kind_cannot_bind still refuses a missing
+matching definition. No World origin is synthesized and initialization never
+replays. The existing public refusal now exposes its exact Root denial and World
+denial types through the Host audience facade, without a new dependency.
+
+The final-frame capture fixture uses its existing funded original bootstrap
+request for Native metadata/consolidation and Complete output, as required by
+D17 and the accepted original-input design f8c881ba9a. That decision retires the
+fixture's old claim that Native output and the Query frame share the capture
+policy child's allowance: Complete output is funded by the original execution
+request. A zero child of that SAME original lease therefore isolates the final
+Query frame refusal. Repair grants that child exactly the observed frame quote,
+requires the retained charge to equal that quote and its refund after consumption,
+and retains the zero-root admission, exact refusal and single callback assertions.
+
+Strict original-artifact validation also exposed a scalar preflight omission:
+the normal decoder already accepts INLINE_BYTES (tag24), while its allocation
+preflight rejected that same wire body. The preflight now uses the existing
+InlineBytes length authority, checks the whole body and quotes the exact retained
+payload vector. This repairs the existing format rather than adding a new tag
+or changing a persisted version.
+
+Physical recovery's existing PlannedPhysicalRecovery remains the sole move-only
+planned-phase receiver. Its payload now resides in one sealed, checked vector
+slot, so return continuations do not duplicate the large inline owner state.
+Preparation uses the original PhysicalRecoveryOpenRequest recovery-memory limit
+and happens before plan-cost admission, while context, basis and execution
+inputs are still owned. It preflights requested backing plus one full payload
+construction temporary before allocation, then admits actual capacity with the
+same overlap before consuming inputs. Existing live-input and lifecycle cost
+floors remain; the backing construction peak also enters plan-cost admission.
+The private backing exposes no mutable collection, alternate issuer or empty
+planned receiver. Consumption moves the actual state onward; cancellation keeps
+the existing explicit coordination shutdown and refusal. Allocation failure is
+PlannedStateAllocation, and budget failure follows the existing typed planning
+cost-denial path. This changes no persisted format or recovery authority.
+
+The selected physical source keeps its existing ResidentSourceSelection owner
+and native WAL allocation custody. Its payload moves into one sealed vector
+slot. Before allocation, the original coordination recovery ceiling admits the
+existing reservation, exact requested slot bytes, its actual SourceSelectionInput
+header and one PhysicalSourceSelection movement temporary. The existing pure
+Physics selection finishes before this new representation admission, preserving
+its semantic refusal precedence. No duplicate validation or new Physics door is
+introduced. The input aggregate disposes selection before its grant on refusal.
+Allocator capacity must remain exact. Filling the slot cannot allocate; subsequent
+settlement retains the original reservation plus actual slot capacity and releases
+only construction storage. The allocation owner preserves its peak after settlement;
+plan cost retains that independent construction floor and all previous floors.
+The receiver's own checked heap accounting includes actual slot capacity and the
+underlying selection's heaps, so the payload removed from inline parents stays
+counted. SourceSelection is the exact typed allocation boundary. Source facts,
+selection/refusal order, coordination custody and const borrowing remain unchanged.
+This is a named construction allowance, not a measurement of the complete stack.
+
+Recovery planning finishes selected-input verification while its driver owns the
+same mutable ResolvedPlanningBasis. Verification returns before execution-product
+construction starts. WAL-drop traversal also returns before the final selected
+release gate, manifest-residue verification and historical-consumed admission.
+The in-loop pending-WAL admission remains in that traversal; no work or refusal
+is reordered. These returns prevent unrelated construction and traversal frames
+from staying active across the subsequent owners. They add no allocation or
+phase issuer and retain every existing proof in the same basis. Qualification
+must establish the resulting stack behavior; source decomposition alone proves
+no numerical bound.
+
+Selected-release admission dispatches exhaustively to the existing HeadV2,
+NoRelease and Absent custody families. Each receiver retains its original
+pending, ordered-history, source-probe and exact-root checks in their original
+order, so unrelated posture-local temporaries need not coexist. The shared
+probe reads the same selected V2 bytes and preserves the FailedIngest exception.
+Malformed certificates and unrelated descriptor families still refuse. This
+composition introduces no issuer or allocation and requires fresh qualification.
+
+ResolvedPlanningBasis retains one actual ResolvedPlanningState in checked backing.
+Inner verification and construction borrow that state directly; no Deref, alias
+or alternate phase issuer preserves the former inline shape. Capture uses the
+original recovery-memory ceiling, counts the actual context/state and existing
+heaps, and admits backing plus movement before allocation and actual capacity
+afterward. Private unused-capacity bytes remain in every subsequent live count.
+The original context survives until a typed capture refusal is formed. The later
+planned-storage admission additionally funds resolved-state extraction alongside
+planned-state construction and both retained backings. State-owned counters take
+the maximum of capture and subsequent peaks, including early refusal paths.
+Consuming extraction transfers the same proofs and releases the old backing.
+
+
+Execution construction keeps one checked ExecutionBasis payload under the Store
+recovery runtime. The deepest publication closeout prepares backing through the
+original PlanningResidentAllowance, admits backing and movement before reserve,
+checks actual capacity, and seals the actual staging/publication/quiescence
+values once. Derivation and completion carry this compact owner unchanged.
+Cost, publication-effect and planned-storage admission borrow its payload; their
+live census includes owner header, actual backing, and nested allocations once.
+Final construction extracts it only after fallible admission and alongside the
+resolved-state extraction. The original planned-storage window admits both
+extractions together with retained backing and planned-state movement. Existing
+memory/allocation refusal types retain the invoking context and measured peaks.
+This storage changes no publication proof, public plan, source or durable format.
+Default-stack filesystem qualification remains required independently of this
+composition decision.
+
+
+Terminal recovery dispatches each concrete typed owner to its next receiver:
+planned staging, closed-stage publication, namespace-durable reopen, then finish.
+Each returns the existing terminal outcome directly. No future-phase Result is
+reserved in the preceding receiver; Rust tail-call elimination is not assumed.
+This changes no transition order, cancellation, effects, or refusal ownership.
+
+The closed staged payload has its own checked StagedStateBacking. Planning
+prepares this successor slot alongside planned-state backing from the same
+original recovery allowance, before either reservation and before staging effects.
+Aggregate preflight covers requested capacities and the larger of planning or
+staging construction/extraction overlap; actual capacities are admitted afterward.
+Both backing headers remain in the live census and the peak reaches original
+plan-cost admission. The successor backing moves linearly from planned custody
+into RecoveryStagingInput. After the existing interruption checks, staging seals
+its actual closed-state payload once without allocating or failing. Publication
+and closed-stage cancellation consume that same payload. Earlier cancellation or
+staging failure drops only the unused empty successor backing. There is no late
+allocation fallback and no optional phase owner. Filesystem default-stack courts
+remain the qualification for the resulting call chain.
+
+
+Staging input itself now occupies a third checked slot under that same original
+allowance. Empty input backing is distinct from executable RecoveryStagingInput.
+A non-inlined conversion receiver consumes planned custody, explicitly drops the
+unused redo plan, seals the exact actual input payload, and returns before staging
+execution starts. Execution borrows this state and has only a narrow mutable
+integrity-trace accessor. Completion extracts once after both interruption checks;
+blocking extracts once into the existing owning outcome. No copied view, Deref,
+alias, optional owner, authority clone, or post-effect allocation is introduced.
+Aggregate preflight and actual-capacity accounting include all three backings.
+The admitted movement peak is the maximum of final planned construction plus its
+original extractions, planned extraction plus input construction/movement, and
+input extraction plus staged construction/movement. Thus unused redo need not
+remain live alongside later settlement storage to avoid stack copies.
+
+
+Published namespace custody uses a fourth checked slot, prepared in the same
+original allowance before effects and carried without optionality through input,
+closed staging and publication state. Its payload is exactly the existing
+namespace state, expectation, counters and settlement. The generic
+NamespaceDurableState<C> remains unchanged. The sole publication constructor
+seals this payload once, including preexisting-namespace success; fresh reopen
+consumes it once. Requested and actual namespace capacity and publication
+construction/extraction overlap join the original aggregate peak. Unused
+backing drops on the existing cancellation/failure paths.
+
+Publication completion, denied-before-effect and indeterminate settlements each
+have a non-inlined receiver. All existing counters, completed-readiness checking,
+exact escaped-effect predicate and owning session postures remain unchanged.
+This removes coexistence of unrelated fate-local temporaries. No numerical stack
+bound follows from this source decomposition; normal-stack filesystem controls
+remain mandatory.
+
+
+Publication state uses a fifth checked actual-payload slot under that original
+allowance. Closed staging carries its empty backing; from_staged seals the same
+publication proofs once and returns a thin owner plus the existing publication
+plan. Ordinary reads/execute/readiness/preexisting validation borrow the payload.
+Only terminal block, indeterminate or into_namespace consumes it. Aggregate
+requested/actual capacity and movement admission include staged-to-publication
+and publication-to-namespace overlap. No partial-state mutation, authority clone,
+late allocation, alias or alternate publication issuer replaces the existing path.
+
+
+### Fresh-reopen payload custody and retained census
+
+The normal-stack selected-Complete control reached fresh reopen after publication.
+ReopenedPhysicalRecovery therefore owns the actual ReopenedPayload through a sixth
+slot reserved from the original PlanningResidentAllowance before staging effects.
+Requested aggregate storage, actual capacities and namespace-to-reopened payload
+movement enter the original plan-cost peak. The empty slot passes linearly through
+planned, staging input, staged, publication and namespace custody. Fresh reopen
+builds and executes its command while borrowing the namespace payload. Separate
+non-inlined completed/denied receivers extract it once; the completed receiver
+rebinds the same selected custody and seals the actual reopened payload. No cleanup
+runs until that receiver returns. Cleanup borrows the payload, with only consuming
+fresh-reopen extraction and admitted-WAL release exposed as narrow mutations.
+Terminal failure and handoff extract once. Handoff's live census includes actual
+reopened capacity, its compact owner header and nested heaps exactly once.
+The independent planned quota tests include all six capacities and movement.
+
+The inline-frame refusal cost court derives its late staging allowance from the
+root requirement observed in its earlier original-request refusal plus one real
+page. This admits the first frame and preserves the exact DirtyFrames refusal on
+the second, the zero-effects assertion and the strict later-versus-earlier peak.
+
+
+### Historical World occurrence recipe custody
+
+The normalized World image retains each occurrence edge after ordinary history
+retirement. Its checkpoint-origin owner must therefore retain that edge's actual
+Native basis and shared exact two-component history obligation. Before Native
+effects, WorldOccurrenceCustody prepares one original-request-funded linked slot.
+Finalization fills it from the actual successor commit and Bound publication pins;
+there is no new external lease or product-head authority. The attempt resource
+lease retains this same slot through submission, pending, refusal and unwinding.
+On the medium's actual Committed branch it moves infallibly to the origin holder.
+A capture racing after ACK still sees the exact basis pinned by the attempt while
+that transfer completes. Reopen prepares and fills equivalent slots from each
+installed occurrence's existing observation claims. Consuming origin retirement
+releases every held basis and pair and returns all exact reclamation keys; list
+retirement and destruction are iterative. Native's missing-image guard and the
+bounded-tail filesystem court remain unchanged. No historical headers are unioned.
+
+
+### Selected-custody rebind preparation returns before owned observation
+
+The next measured overflow entered selected-custody rebinding from a terminal
+receiver that retained a full-state Result. Split that flow at the actual media
+ownership boundary: borrow the real namespace fields through validation, claim
+rebinding and pending-effective-head admission, then return only the existing
+optional roster. A narrow method owns that mutation; no mutable payload escapes.
+Separate non-inlined terminal receivers consume the namespace once on failure or
+owned completion. Owned completion legally moves media through the existing
+bounded discovery, restores it, rebinds the tier's observed free header, converts
+custody and seals the already-funded reopened payload. The generation-zero fast
+path, predicate/read order and claim/topology mutations on denial are preserved.
+No full namespace-state Result or media placeholder exists. Original construction
+admission and independent quota assertions include two optional-roster movement
+temporaries in addition to namespace plus two reopened payloads.
+
+
+### Owned tier observation returns the same backing before conversion
+
+The remaining owned continuation combined discovery with custody conversion and
+two reopened constructions. Split observation from conversion. A non-inlined
+observation receiver inspects the real borrowed tier claim, returning the compact
+namespace owner immediately when absent. Otherwise it takes the actual payload
+and SAME emptied NamespaceDurableBacking, preserving capacity. Consuming media
+observation/restoration and tier rebind run in this receiver, which reseals that
+same slot without allocation and returns before conversion. The thin caller keeps
+the actual optional pending roster. The final non-inlined converter extracts once,
+handles NoCheckpoint through its common exhaustive custody conversion, and seals
+one ReopenedPayload. Refusal restores the original planning custody before the
+unchanged indeterminate outcome. Original movement admission and both independent
+quota assertions cover three namespace payloads plus two live optional rosters,
+while counting already-funded backing capacity once. No numerical stack guarantee
+is claimed without the direct default-stack acceptance case.
+
+
+### Publication expectation stays in its original funded slot
+
+Stable compiler-emitted IR identifies repeated large inline expectation values in
+reopen conversion and final handoff. These are compiler local-storage totals,
+not a numerical runtime-frame guarantee and not the size of the root-protocol
+field. RecoveryPublicationExpectation now owns its actual ExpectationPayload in
+one slot admitted from the original PlanningResidentAllowance at publication-plan
+birth in closeout::seal. The plan's mandatory empty backing travels with the plan;
+into_command_parts populates that SAME slot before publication. Getters borrow,
+and only the existing release-topology extraction mutates its unique payload.
+Plan and expectation are move-only: unused Clone implementations are removed,
+rather than allowing unmetered allocation when cloning the new slot.
+
+The plan residency census counts empty actual capacity plus its existing nested
+buffers; expectation residency counts populated actual capacity plus its SAME
+nested buffers. Handoff therefore still counts the actual expectation bytes
+when its inline header shrinks. Requested preflight, actual capacity and original
+peak accounting include the plan-to-expectation conversion window explicitly.
+Existing phase quota assertions retain that floor; independent value-only tests
+prove refusal before reservation and actual-capacity/conversion accounting.
+Sealed singleton payload extraction uses remove(0), preserving the one-value
+invariant and capacity without constructing an Option of the large payload.
+No variable-length inventory/tree removal changes, late allocation, generic
+namespace-state change, public issuer, proof meaning change or compatibility path
+is introduced. Direct default-stack controls remain the acceptance evidence.
+
+Requirements: D17 original storage/construction admission maps to
+expectation_slot_refuses_full_plan_conversion_before_allocating and
+expectation_slot_counts_actual_capacity_and_plan_conversion_overlap; retained
+handoff census remains covered by the genuine release-recovery serving court.
+
+
+### Application recovery returns before constructing serving-handoff values
+
+Compiler constants in the owned storage quota evidence distinguish the actual
+remaining aggregates: planning custody30152, final custody21880, namespace
+state60744, final namespace state52472, base image plan17784, expectation payload
+13600, recovered core65576 and serving handoff60056 bytes in that profile.
+These are sizeof values, not runtime frame bounds. The expectation conversion
+removed part of the inline footprint; it did not alone qualify default-stack
+reopen.
+
+Application's recover now obtains its existing PhysicalRecoveryOpenRequest from
+a returning non-inlined preparer. That preparer keeps the exact original limits,
+configuration, held-media authority, backend profile and admission-refusal mapping.
+A separate non-inlined dispatcher returns PhysicalRecoveryOutcome. Deep physical
+recovery therefore has no caller reserving an eventual serving-handoff value.
+Only after physical recovery returns does recovered_serving::from_recovery_outcome
+perform the unchanged core-to-serving conversion and classify typed refusals;
+it calls existing serving open internally and returns ServingPhysicalRuntime.
+No serving-handoff value returns to recover. The actual ServingHandoff yieldpoint
+remains after conversion inside serving open. Media ownership, source order,
+limits, effect evidence and stage attribution stay unchanged, without new
+allocation, authority or larger limits. This narrow physical_admission change is
+a default-stack merge seam; it does not change Query close or source retirement.
+
+
+### Core-to-serving conversion has one final owner construction
+
+The focused default-stack observation after9347d324ab shows physical recovery,
+fresh reopen and cleanup returned. The remaining call depth enters the recovered
+core's into_serving_parts beneath its delegating into_serving_handoff and the
+Application terminal outcome receiver. Eliminate that intermediate optional
+(media,custody) tuple and optional custody value. The existing public consuming
+into_serving_handoff performs the SAME core deconstruction, explicit reopen Drop,
+four valid custody combinations, fingerprint checks and invalid-combination None,
+constructing the final handoff directly. Custody is initialized before media so
+missing fingerprints cannot move media into a partial handoff earlier than before.
+The certification release helper consumes this SAME handoff and returns its
+custody while releasing media. Remove into_serving_parts after its two-caller
+cutover. Fields remain confined to the private recovery_construction owner;
+there is no new public issuer, allocation, authority, limit or durable format.
+This is a narrow Store conversion merge seam, with public signatures preserved.
+
+### Source preparation returns before serving attachment
+
+The next focused default-stack observation confirms physical recovery and the
+core-to-serving conversion return. Media admission still retained the Application
+outcome-conversion receiver and two generic success-map receivers carrying the
+large custody by value. A private, non-inlined source preparer now returns either
+the SAME qualified absent media or the existing boxed-payload recovery outcome.
+Only then does finish initialize fresh media or convert the recovered handoff.
+The handoff converter returns before serving open and its unchanged yieldpoint.
+No extra box, allocation, qualification, presence check or recovery is added.
+
+Recovered serving admission uses an exhaustive match of the existing six raw
+transition outcomes. Success attaches the SAME custody to the admitted media;
+Denied, Deferred, Stale, RebindRequired and Failed retain their exact payloads.
+The existing ProofOutcome conversion wraps that result. This replaces the local
+closure carrying custody through generic mapping frames; it creates no issuer,
+authority, limit or alternate admission. On non-success the unused custody is
+dropped as before. These private Application phase boundaries and narrow Store
+admission changes preserve source classification and refusal stages. The direct
+default-stack acceptance control remains required evidence.
+
+### Serving custody carries one actual release family
+
+At e7d4d5d46a media admission returns; default-stack failure reaches Store's
+record-open entry. The serving seal still carries four mutually exclusive
+release claims plus an optional effective roster simultaneously in its layout.
+Search finds exactly four evidence construction literals, all in the existing
+recovered_custody/construction owner, each selecting one valid family. Replace
+these five optional fields with private RecoveredReleaseCustody: HeadV2,
+NoRelease, PendingWal { claim, effective }, and OrderedHistorical { effective,
+claim }. This is the owning runtime's custody representation of existing real
+witnesses, not a new witness, issuer or cross-runtime family vocabulary. Tier
+remains orthogonal. Core's current construction representation stays unchanged.
+
+The release_custody child owns that representation and borrowed observations.
+Remove verified_basis's six-option tuple, replacing it with borrowed release
+and tier accessors; migrate the sole publication-ledger consumer exhaustively.
+Checkpoint/media freshness still perform the same absence, fingerprint, head
+walk, historical raw, certificate and tier reads. Pending/historical validators
+receive their mandatory actual effective roster directly. Heap census counts
+the SAME selected claim, effective roster, shared checkpoint and shared history
+once, with historical effective-before-claim drop order preserved. No allocation,
+cloning, new public API or funding change is added. Existing genuine serving
+custody court plus direct default-stack acceptance and typed refusal courts
+qualify this cut; compiler sizeof evidence distinguishes layout improvement from
+a runtime frame guarantee. Independent design review approved this plan.
+
+### Original Store admission prepares the serving evidence slot
+
+Compiler sizeof now reports serving handoff32312 bytes (previously60056), while
+the genuine serving pool-transfer court passes and direct default-stack acceptance
+still overflows. Preserve the closed family and move its actual evidence into one
+Store-owned, original-funded slot. Coordination::admit prepares it immediately
+after restricting residency to the original recovery allocation, before semantic
+or scheduler work and before effects. An owned Recovery OperationAllocationGrant
+precedes try_reserve_exact; actual capacity must match the reservation, with typed
+insufficient-memory, allocation and allocator-capacity refusals. Payload storage
+drops before its grant. No later allocation, replacement slot or default is added.
+
+Coordination's actual heap census includes the empty slot capacity. The same slot
+passes through quiescent parts to the sole Core constructor, then the existing
+custody constructors populate its actual payload once. Core requires that backing;
+coordination without an allocation admission remains supported but cannot construct
+a recovered Core. WAL, selected-media and final verification keep the SAME backed
+evidence owner and borrow its payload. Retained custody census counts actual slot
+capacity plus existing nested owners; bootstrap-covered census subtracts the slot's
+independently live grant to avoid reserving it twice. Existing consuming installation
+retires the proof only after ledger lowering. The original pool and grant survive
+all these transfers. Use the existing read-allocation owner's typed reservation and
+denial mapping; widen only its internal constructor reach, without a public door.
+
+Mechanical quiescent-parts callers must keep all assertions and dispose the added
+owner at the same observation boundary. Existing native pool/source-pressure
+fixtures must fund intrinsic backing from the actual owner quote; retain their
+independent pressure/denial/rollback assertions. Qualify through original storage
+quota, actual serving pool-transfer/pressure courts and the direct default-stack
+acceptance control, then the unchanged filesystem reopen courts. Internal facade
+entries remain exact. This Store-only design has independent APPROVE; no numerical
+stack bound is claimed before those controls pass.
+
+Requirement D17 original admission and refusal-before-effects map to
+original_recovery_budget_refuses_serving_evidence_before_effects_and_releases_home;
+actual capacity/charge lifetime and consuming release map to the strengthened
+genuine_release_recovery_moves_one_pool_through_core_seal_and_serving court.
+Core's read-only serving_evidence_backing_bytes reports actual capacity to that
+court, without exposing a constructor or mutator. Its existing type facade is
+unchanged. The new backing type has only internal record_serving facade entries.
+
+### Unmet bounded-history admission gate: owner/authority handoff
+
+The unchanged filesystem bounded-tail court at242e713c1a now reopens, so the
+historical occurrence custody repair closes MissingRecoveredImage. It then
+observes156 Native canonical body reads, against8 tail entries plus32 fixed
+headroom. The selected cut covers36 of41 canonical entries and33 of38 World
+occurrences. Eager World associated-effect admission, predecessor/successor
+component admission and first image materialization reread covered original
+bodies. This is an actual unbounded-history cost, not a counter defect. The
+court, its bound and Native's strict original-source/missing-image guards stay
+unchanged. Request-local caching alone cannot close D12.
+
+Current WRTHRCS1 protocol worth.relational.complete-source v1 carries CHK18,
+initial inputs and normalized original schema/mutation roles. Its exact-only
+DTOs contain neither semantic_result nor the original branch_cell_checkpoint.
+Store WSRCSRC1 v1 wraps that artifact; Host selects ExternalMembers, so original
+canonical singleton bodies remain external. CHK18 headers/image descriptors do
+not establish these missing original admission meanings. Canonical5's envelope
+leaf is a flat hash of the full named authoritative envelope, including those
+fields and patch/merged-plan/lineage. Its three outer leaves do not permit a
+compact field opening. Copying that hash beside invented projection fields is
+insufficient; reconstructing the whole envelope still processes every body.
+
+A format-preserving lazy historical cut needs the held history owners:
+catalog/entry requires a full CompositeRuntimeWorldCommit and retention claim;
+history/commit requires admitted composite basis/component evidence; publication
+readmission requires full Native recovered custody and before/after snapshots.
+The bootstrap occurrence owner constructs each eagerly, while catalog readmission
+has no execution request for deferred source work. Skipping historical rows loses
+public history, and substituting today's head falsifies lineage. P-D owns the
+catalog/publication/bootstrap seams and P-B owns commit/basis. Native would need
+an honest selected-image retention contract distinct from an executable basis.
+
+The alternative is an explicitly specified persisted publication-admission
+projection, authored from actual original artifacts through its real owner's
+durable step and original request. A new sibling artifact is preferred by format
+stability, but it requires a declared authority/binding contract: the landed flat
+envelope leaf cannot independently authenticate a compact projection. Extending
+the exact-only v1 DTO is not an available extension point and would require a
+clean version/old-Home refusal decision. No such contract, format change or held
+owner rewrite is implemented here. This part is blocked pending that coordinated
+owner/authority decision; Complete reopen is not certified.
+
+Evidence: host-original-serving-reopen-controls-direct-unset.log4/1/0, unchanged
+case automatic_checkpoints_bound_host_reopen_journal_reads_with_headroom;
+independent historical-occurrence and canonical-commitment read-only reviews.

@@ -31,7 +31,7 @@ fn transport_publication_obeys_shared_operation_capacity() {
         .unwrap()
         .unwrap();
     let transport = CompletingTransport(AtomicUsize::new(0));
-    let completed = dispatch_external_effect(&transport, admitted).unwrap();
+    let completed = dispatch_external_effect(&transport, admitted, || {}).unwrap();
     world
         .application
         .record_installed_transport_completion(

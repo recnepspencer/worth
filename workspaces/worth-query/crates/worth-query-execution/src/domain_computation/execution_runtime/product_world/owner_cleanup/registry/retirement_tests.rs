@@ -72,7 +72,7 @@ fn with_cleanup(
     runtime.owner_cleanup = WorthQueryProductBranchOwnerCleanupRegistry::new(None);
     let probe = Arc::new(Probe {
         runtime: runtime
-            .source
+            .source()
             .authoritative_source_profile()
             .runtime_instance_id(),
         outer: Mutex::new(()),

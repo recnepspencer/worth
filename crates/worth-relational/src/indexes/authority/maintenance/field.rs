@@ -164,8 +164,8 @@ fn refresh_entities(
             work.prepare(1, 0)?;
             let (old_key, new_key) = if work.prepares_allocations() {
                 (
-                    super::field_keys::entity(before, *id, locator, work)?,
-                    super::field_keys::entity(Some(after), *id, locator, work)?,
+                    super::field_keys::entity(execution, before, *id, locator, work)?,
+                    super::field_keys::entity(execution, Some(after), *id, locator, work)?,
                 )
             } else {
                 (
@@ -238,8 +238,8 @@ fn refresh_relations(
             work.prepare(1, 0)?;
             let (old_key, new_key) = if work.prepares_allocations() {
                 (
-                    super::field_keys::relation(before, *id, locator, work)?,
-                    super::field_keys::relation(Some(after), *id, locator, work)?,
+                    super::field_keys::relation(execution, before, *id, locator, work)?,
+                    super::field_keys::relation(execution, Some(after), *id, locator, work)?,
                 )
             } else {
                 (

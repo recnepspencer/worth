@@ -1,6 +1,6 @@
 pub(crate) use history::{
-    OriginalBranchSchemaInputs, OriginalBranchSchemaInputsDenial, OriginalEmptySchemaObservation,
-    RetainedBranchTransition,
+    OriginalBranchSchemaInputs, OriginalBranchSchemaInputsDenial, OriginalEmptySchemaInstallation,
+    OriginalEmptySchemaObservation, RetainedBranchTransition,
 };
 pub(crate) use record_identity::{MutationRecordAllocations, OriginalRecordAllocationCursor};
 mod commit_strategies;
@@ -39,16 +39,17 @@ pub(crate) use history::{
     PreparedCanonicalPublicationRoute, PreparedCommitSequence,
     PreparedRecoveredVersionedArtifactPublication, PreparedVersionedArtifactAccelerators,
     PreparedVersionedArtifactPublication, RelationalCanonicalPublicationRoutes,
-    RelationalForkMaterializationCost, RelationalForkOwnerBinding, RelationalPreparationHistory,
-    RetainedCanonicalPosition,
+    RelationalForkMaterializationCost, RelationalForkOwnerBinding, RelationalPerformedSourceWalk,
+    RelationalPreparationHistory, RelationalSourceHistoryBinding, RetainedCanonicalPosition,
 };
 pub use history::{RelationalBranchSharingCostCounters, RelationalPhase4ReferenceCostCounters};
 pub use history::{
     RelationalCanonicalPositionAdmissionDenial, RelationalPatchPositionReservationCounters,
 };
 pub(crate) use indexing::{
-    CapturedIndexDefinitionCatalog, IndexCatalogCoverage, IndexDefinitionReadBinding,
-    IndexingState, IndexingSubsystem, OriginalCheckpointIndexes, PreparedGenerationBatch,
+    CapturedIndexDefinitionCatalog, FrozenCheckpointIndexes, IndexCatalogCoverage,
+    IndexDefinitionReadBinding, IndexingState, IndexingSubsystem, OriginalCheckpointIndexes,
+    PreparedGenerationBatch,
 };
 pub(crate) use lineage::{
     LineageState, LineageSubsystem, ResidentLineageEventPage, ResidentLineageNode,

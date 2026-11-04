@@ -183,7 +183,7 @@ impl<K: RecordKind> RecordArena<K> {
         let Some(physical) = self.physical_index(slot) else {
             return Ok(None);
         };
-        Ok(self.aspect_versions.carrier_mut_using(physical, request)?)
+        self.aspect_versions.carrier_mut_using(physical, request)
     }
     pub(crate) fn field_revisions_at_mut_using(
         &mut self,

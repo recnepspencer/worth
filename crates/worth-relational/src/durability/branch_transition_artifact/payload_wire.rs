@@ -15,6 +15,7 @@ pub(super) struct TransitionPayloadRef<'a> {
     sequence: RelationalBranchTransitionSequence,
     follows: PatchStreamPosition,
     transition: &'a RelationalBranchTransition,
+    schema_carrier: Option<[u8; 32]>,
 }
 
 impl<'a> TransitionPayloadRef<'a> {
@@ -23,6 +24,7 @@ impl<'a> TransitionPayloadRef<'a> {
             sequence: positioned.sequence(),
             follows: positioned.follows(),
             transition: positioned.transition(),
+            schema_carrier: positioned.schema_carrier(),
         }
     }
 }
@@ -33,4 +35,12 @@ pub(super) struct TransitionPayloadWire {
     pub(super) sequence: RelationalBranchTransitionSequence,
     pub(super) follows: PatchStreamPosition,
     pub(super) transition: RelationalBranchTransition,
+    #[serde(deserialize_with = "required_schema_carrier")]
+    pub(super) schema_carrier: Option<[u8; 32]>,
+}
+
+fn required_schema_carrier<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<Option<[u8; 32]>, D::Error> {
+    Option::deserialize(deserializer)
 }

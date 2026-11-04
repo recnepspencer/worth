@@ -10,7 +10,9 @@ use crate::domain_computation::primary_graph::{
 /// Fresh metadata admission and exact revision/output overlap remain necessary.
 pub(in crate::domain_computation::primary_graph) enum OriginalSettledProducerSource {
     Committed {
+        #[allow(dead_code, reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it")]
         settlement: Option<Arc<RecordedSettlementIdentity>>,
+        #[allow(dead_code, reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it")]
         publication: Option<WorthQueryProductBranchReadIdentity>,
         changes: WorthQueryApplicationCommittedChanges,
         inputs: Option<
@@ -18,13 +20,16 @@ pub(in crate::domain_computation::primary_graph) enum OriginalSettledProducerSou
         >,
         conditional: Option<worth_runtime_bridge::facade::BridgeConditionalCausalObservation>,
         evaluation: Option<Arc<crate::domain_computation::primary_graph::application_contribution::ProducerOutputEvaluation>>,
+        #[allow(dead_code, reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it")]
         disclosure: Option<Arc<OriginalSourceInspectionDisclosure>>,
         original_publication: Option<Arc<super::OriginalProducingPublication>>,
     },
     StableReused {
+        #[allow(dead_code, reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it")]
         settlement: Arc<RecordedSettlementIdentity>,
     },
     Restored {
+        #[allow(dead_code, reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it")]
         checkpoint: super::super::WorthQueryAcceptedOutputCheckpointIdentity,
     },
 }

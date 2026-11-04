@@ -17,6 +17,7 @@ pub(in crate::domain_computation::primary_graph::provider) struct PreparedTouche
 }
 
 impl PreparedTouchedRecords {
+    #[cfg(test)]
     pub(super) fn prepare(
         candidate: &PreparedRelationalCommitCandidate,
 
@@ -74,6 +75,7 @@ impl PreparedTouchedRecords {
     }
 }
 
+#[derive(Debug)]
 pub(super) enum TouchedRecordsPreparationDenial {
     Allocation(worth_execution::ExecutionAllocationDenial),
     ChangedRecordsUnavailable,

@@ -30,7 +30,7 @@ pub struct WorthQueryPrimaryGraph {
     relational_runtime_instance_id: u64,
     binding_identity: ApplicationSchemaBindingIdentity,
     pub(super) layout: Arc<WorthQueryPrimaryGraphLayout>,
-    source_owner: WorthQueryRelationalSourceOwner,
+    source_owner: home_retirement::PrimaryGraphSourceCustody,
     aggregate_projections: Arc<Mutex<super::aggregate_projection::WorthQueryAggregateProjections>>,
     output_lineage: Arc<Mutex<super::output_lineage::WorthQueryApplicationOutputLineage>>,
     managed_derived_views: Arc<super::application_query::derived_view::ManagedDerivedViewRegistry>,
@@ -79,7 +79,7 @@ impl WorthQueryPrimaryGraph {
             relational_runtime_instance_id,
             binding_identity,
             layout,
-            source_owner,
+            source_owner: home_retirement::PrimaryGraphSourceCustody::new(source_owner),
             aggregate_projections: Arc::new(Mutex::new(
                 super::aggregate_projection::WorthQueryAggregateProjections::default(),
             )),
@@ -157,7 +157,7 @@ impl WorthQueryPrimaryGraph {
     ) -> crate::domain_computation::provider_session::WorthQueryGraphReadOwnerPort {
         crate::domain_computation::provider_session::WorthQueryGraphReadOwnerPort::new(
             self.binding_identity.clone(),
-            self.source_owner.clone(),
+            self.source_owner.retain_live(),
             Arc::clone(&self.layout),
         )
     }
@@ -179,7 +179,7 @@ impl std::fmt::Debug for WorthQueryPrimaryGraph {
 pub struct WorthQueryPrimaryGraphIntegrationHandle {
     pub(super) application_publication:
         Option<Arc<application_publication::ApplicationPublication>>,
-    pub(super) source_owner: WorthQueryRelationalSourceOwner,
+    pub(super) source_owner: home_retirement::PrimaryGraphSourceCustody,
     pub(super) layout: Arc<WorthQueryPrimaryGraphLayout>,
     pub(super) primary_index_ids: Arc<[worth_relational::facade::indexes::DerivedIndexId]>,
     pub(super) aggregate_projections:

@@ -74,7 +74,7 @@ pub use denial::{
 
 /// Every way an application compare-and-commit can end.
 ///
-/// `Committed` and `AlreadyCommitted` landed and carry the receipt. Every other
+/// Live and recovered committed outcomes carry distinct receipts. Every other
 /// variant did not land cleanly; see [`landed`](Self::landed) to split the two
 /// sides. `Indeterminate` may have moved the branch: it is unresolved, not
 /// failed, and does not call for a blind retry.
@@ -95,9 +95,8 @@ pub enum WorthQueryApplicationCommitOutcome {
     NoEffect(WorthQueryApplicationNoEffect),
     /// This attempt committed; the receipt says what landed.
     Committed(super::WorthQueryApplicationCommitReceipt),
-    /// The idempotency key had already committed the same intent; the receipt is
-    /// the earlier commit's, and the change was not made again.
-    AlreadyCommitted(super::WorthQueryApplicationCommitReceipt),
+    /// Original durable meaning, with no live delivery or execution authority.
+    RecoveredCommitted(crate::domain_computation::primary_graph::provider::WorthQueryRecoveredApplicationCommitReceipt),
     /// The candidate's basis was stale at compare. Nothing was committed; re-read and
     /// retry.
     Stale(WorthQueryApplicationStaleAttempt),
@@ -123,8 +122,9 @@ impl WorthQueryApplicationCommitOutcome {
     /// typed terminal with its recovery custody intact.
     pub fn require_committed(self) -> Result<super::WorthQueryApplicationCommitReceipt, Self> {
         match self {
-            Self::Committed(receipt) | Self::AlreadyCommitted(receipt) => Ok(receipt),
+            Self::Committed(receipt) => Ok(receipt),
             other @ (Self::CleanupRequired(_)
+            | Self::RecoveredCommitted(_)
             | Self::ProductStale(_)
             | Self::ProductUnpublished(_)
             | Self::ProductPreparationPending(_)
@@ -140,17 +140,19 @@ impl WorthQueryApplicationCommitOutcome {
         }
     }
 
-    /// Splits a landed commit from every terminal that did not land. The flag
-    /// is true when the landing replays an earlier commit of the same
-    /// idempotency.
+    /// Splits committed meaning from every unresolved or uncommitted terminal.
+    /// The result preserves the distinction between live and recovered receipts.
     pub fn landed(
         self,
-    ) -> Result<(super::WorthQueryApplicationCommitReceipt, bool), WorthQueryApplicationUncommitted>
-    {
+    ) -> Result<WorthQueryApplicationLandedCommit, WorthQueryApplicationUncommitted> {
         use WorthQueryApplicationUncommitted as Uncommitted;
         Err(match self {
-            Self::Committed(receipt) => return Ok((receipt, false)),
-            Self::AlreadyCommitted(receipt) => return Ok((receipt, true)),
+            Self::Committed(receipt) => {
+                return Ok(WorthQueryApplicationLandedCommit::Live { receipt })
+            }
+            Self::RecoveredCommitted(receipt) => {
+                return Ok(WorthQueryApplicationLandedCommit::Recovered(receipt))
+            }
             Self::CleanupRequired(cleanup) => Uncommitted::CleanupRequired(cleanup),
             Self::ProductStale(stale) => Uncommitted::ProductStale(stale),
             Self::ProductUnpublished(unpublished) => Uncommitted::ProductUnpublished(unpublished),
@@ -166,6 +168,14 @@ impl WorthQueryApplicationCommitOutcome {
             Self::Indeterminate(evidence) => Uncommitted::Indeterminate(evidence),
         })
     }
+}
+
+/// A recovered observation cannot be passed to a door requiring live receipt
+/// custody. Both alternatives still describe an actual original commitment.
+#[derive(Debug)]
+pub enum WorthQueryApplicationLandedCommit {
+    Live { receipt: super::WorthQueryApplicationCommitReceipt },
+    Recovered(crate::domain_computation::primary_graph::provider::WorthQueryRecoveredApplicationCommitReceipt),
 }
 
 /// Every commit terminal except a landed commit. An outcome that reports its

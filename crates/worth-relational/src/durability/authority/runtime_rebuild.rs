@@ -8,6 +8,8 @@ pub(crate) use index_catalog::RecoveredIndexCatalog;
 mod history_parity;
 mod journal_residency;
 mod merge_plan;
+mod original_inputs;
+mod original_schemas;
 mod recovered_counter_capacity;
 mod recovered_lineage_artifacts;
 mod recovered_schema_basis;
@@ -30,7 +32,7 @@ use recovered_counter_capacity::{
 use recovered_lineage_artifacts::{
     reconcile_recovered_lineage_artifacts, validate_recovered_lineage_artifacts,
 };
-pub(super) use root_inventory::RecoveredRootInventory;
+pub(crate) use root_inventory::RecoveredRootInventory;
 
 /// The exclusive state of a runtime this rebuild constructed and has not yet
 /// handed to anyone.
@@ -64,6 +66,7 @@ pub(super) fn rebuild_runtime_from_plan(
 > {
     crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
     let mut plan = admitted.into_plan();
+    let original_schemas = original_schemas::OriginalSchemaGraph::admit(&mut plan, execution)?;
     let tail_envelopes = plan.tail_envelopes_in_stream_order();
     validate_tail_lineage_allocator_capacity(tail_envelopes.iter().copied())?;
     validate_recovered_lineage_artifacts(plan.checkpoint.as_ref(), tail_envelopes.iter().copied())?;
@@ -90,7 +93,13 @@ pub(super) fn rebuild_runtime_from_plan(
     let mut checkpoint_work = None;
     if let Some(checkpoint) = plan.checkpoint.take() {
         let mut work = crate::durability::data::CheckpointRestoreWork::default();
-        restore_checkpoint_state(execution, &mut restored, checkpoint, &mut work)?;
+        restore_checkpoint_state(
+            execution,
+            &mut restored,
+            checkpoint,
+            &mut work,
+            original_schemas.as_ref(),
+        )?;
         checkpoint_work = Some(work);
     }
     // Tail replay performs ordinary compare-and-publish cutovers. Seed its
@@ -100,6 +109,10 @@ pub(super) fn rebuild_runtime_from_plan(
 
     refresh_checkpoint_counters(&mut restored)?;
     clear_recovery_partition_pins(&mut restored);
+    if let Some(graph) = &original_schemas {
+        original_inputs::restore_prefix(&restored, graph, execution)?;
+        original_inputs::install_if_due(&restored, graph, execution)?;
+    }
 
     let mut pending_tail = plan.tail_log.clone();
     pending_tail.sort_by_key(|commit| commit.position());
@@ -139,6 +152,24 @@ pub(super) fn rebuild_runtime_from_plan(
                 positioned_exactly,
                 &mut recovered_roots,
             )?;
+            if let Some(graph) = &original_schemas {
+                original_inputs::install_if_due(&restored, graph, execution)?;
+            }
+        }
+        if let Some(graph) = &original_schemas {
+            original_inputs::require_replay_prestate(&restored, graph, pending.envelope())?;
+            let inputs = pending
+                .envelope()
+                .recorded_original_inputs()
+                .ok_or_else(|| {
+                    crate::durability::checkpoints::region_directory::corrupt(
+                        "Home tail original inputs missing",
+                    )
+                })?;
+            restored.restore_source_replay_configuration(
+                &inputs.mutation,
+                graph.get(inputs.result_schema)?.registry(),
+            );
         }
         let commit_id = pending.envelope().commit.commit_id;
         let restore_authoritative_envelope = plan.should_restore_authoritative_envelope(commit_id);
@@ -150,6 +181,12 @@ pub(super) fn rebuild_runtime_from_plan(
             restore_authoritative_envelope,
             &mut recovered_roots,
         )?;
+        if let Some(graph) = &original_schemas {
+            original_inputs::bind_replayed_schema(&mut restored, graph, &positioned, execution)?;
+        }
+        // Register only the finalized source/schema-bound owner before another
+        // canonical entry or transition can resolve this commit's root.
+        recovered_roots.retain_current(&restored, &positioned.envelope().branch_context)?;
         finalized_tail.push(positioned);
     }
     for transition in pending_transitions {
@@ -160,6 +197,19 @@ pub(super) fn rebuild_runtime_from_plan(
             positioned_exactly,
             &mut recovered_roots,
         )?;
+        if let Some(graph) = &original_schemas {
+            original_inputs::install_if_due(&restored, graph, execution)?;
+        }
+    }
+    if original_schemas.is_some() {
+        restored.restore_source_replay_configuration(
+            &crate::config::data::MutationConfig {
+                cascade_delete_policy: plan.config.storage.cascade_delete_policy,
+                adjacency_policy: plan.config.storage.adjacency_policy.clone(),
+                cross_context_policy: plan.config.storage.cross_context_policy,
+            },
+            &plan.config.schema.registry,
+        );
     }
     restored.record_identity.release_unowned_reservations();
     let recovered_checkpoint = restored.durability.latest_checkpoint();
@@ -217,5 +267,8 @@ pub(super) fn rebuild_runtime_from_plan(
 
     finalize_restored_runtime(execution, &mut restored)?;
     journal_residency::install(execution, &restored, &plan)?;
+    if let Some(graph) = &original_schemas {
+        original_inputs::restore_catalog(&restored, graph, &plan, execution)?;
+    }
     Ok((restored, plan, checkpoint_work, recovered_roots))
 }

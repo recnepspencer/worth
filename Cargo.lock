@@ -1896,6 +1896,7 @@ name = "worth-court-relational-certification"
 version = "0.1.0"
 dependencies = [
  "rmp-serde",
+ "serde",
  "serde_json",
  "sha2",
  "worth-execution",
@@ -1941,6 +1942,7 @@ dependencies = [
  "worth-proof",
  "worth-query",
  "worth-query-host",
+ "worth-query-testkit-host",
  "worth-runtime-bridge",
  "worth-server",
  "worth-testkit-compiler",
@@ -2095,6 +2097,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "worth-query-decl"
+version = "0.1.0"
+dependencies = [
+ "worth-query-declaration",
+]
+
+[[package]]
 name = "worth-query-declaration"
 version = "0.1.0"
 dependencies = [
@@ -2168,6 +2177,22 @@ dependencies = [
  "worth-query-execution",
  "worth-query-installation",
  "worth-runtime-world",
+]
+
+[[package]]
+name = "worth-query-testkit-host"
+version = "0.1.0"
+dependencies = [
+ "worth-execution",
+ "worth-foundational",
+ "worth-harness",
+ "worth-query",
+ "worth-query-admission",
+ "worth-query-decl",
+ "worth-query-declaration",
+ "worth-query-execution",
+ "worth-query-host",
+ "worth-relational",
 ]
 
 [[package]]
@@ -2568,6 +2593,7 @@ name = "worth-store-relational"
 version = "0.1.0"
 dependencies = [
  "worth-execution",
+ "worth-foundational",
  "worth-proof",
  "worth-relational",
  "worth-store",
@@ -2659,6 +2685,7 @@ dependencies = [
  "worth-proof",
  "worth-query",
  "worth-query-host",
+ "worth-query-testkit-host",
  "worth-runtime-bridge",
  "worth-server",
 ]

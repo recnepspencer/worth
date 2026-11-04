@@ -7,6 +7,10 @@
 /// conditional bindings, and managed computation owners.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryPrimaryGraphInstallationDenialKind {
+    NativeInitialInputsRejected,
+    NativeInitialPublicationBusy,
+    NativeInitialPublicationRefused,
+    NativeInitialPublicationUnresolved,
     /// Typed readiness declaration or installed field meaning was refused.
     ReadinessContractRejected,
     /// A binding or input belongs to a different runtime.
@@ -223,11 +227,32 @@ pub struct WorthQueryPrimaryGraphInstallationDenial {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 enum InstallationDenialCause {
+    NativeInitialization(
+        worth_relational::facade::runtime::RelationalInitialSchemaInstallationDenial,
+    ),
     Readiness(super::application_contribution::WorthQueryOutputReadinessContractDenial),
     NativeValidation(crate::domain_computation::WorthQueryInvariantExecutionFailure),
 }
 
 impl WorthQueryPrimaryGraphInstallationDenial {
+    pub fn native_initialization_denial(
+        &self,
+    ) -> Option<&worth_relational::facade::runtime::RelationalInitialSchemaInstallationDenial> {
+        match self.cause.as_deref()? {
+            InstallationDenialCause::NativeInitialization(cause) => Some(cause),
+            InstallationDenialCause::Readiness(_)
+            | InstallationDenialCause::NativeValidation(_) => None,
+        }
+    }
+    pub(super) fn with_native_initialization(
+        mut self,
+        cause: worth_relational::facade::runtime::RelationalInitialSchemaInstallationDenial,
+    ) -> Self {
+        self.cause = Some(Box::new(InstallationDenialCause::NativeInitialization(
+            cause,
+        )));
+        self
+    }
     /// A complete feature's typed handler slot was left unconfigured.
     #[doc(hidden)]
     pub fn missing_mutation_handler<Schema, Binding>() -> Self

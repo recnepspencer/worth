@@ -13,6 +13,8 @@ use crate::publication::patch::data::PatchStreamPosition;
 pub(super) struct ArtifactPayloadRef<'a> {
     position: PatchStreamPosition,
     canonical: AuthoritativeArtifactEnvelopeRef<'a>,
+    original_inputs:
+        Option<&'a crate::durability::source_initial_inputs::recorded::RecordedCanonicalInputs>,
 }
 
 impl<'a> ArtifactPayloadRef<'a> {
@@ -23,6 +25,7 @@ impl<'a> ArtifactPayloadRef<'a> {
         Self {
             position,
             canonical: AuthoritativeArtifactEnvelopeRef::new(envelope),
+            original_inputs: envelope.recorded_original_inputs(),
         }
     }
 }
@@ -32,5 +35,17 @@ impl<'a> ArtifactPayloadRef<'a> {
 pub(super) struct ArtifactPayloadWire<'a> {
     pub(super) position: PatchStreamPosition,
     #[serde(borrow)]
-    pub(super) canonical: CanonicalEnvelopeWire<'a>,
+    pub(super) canonical: CanonicalEnvelopeWire<crate::symbols::data::SymbolSnapshotWire<'a>>,
+    #[serde(deserialize_with = "required_original_inputs")]
+    pub(super) original_inputs:
+        Option<crate::durability::source_initial_inputs::recorded::RecordedCanonicalInputs>,
+}
+
+fn required_original_inputs<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<
+    Option<crate::durability::source_initial_inputs::recorded::RecordedCanonicalInputs>,
+    D::Error,
+> {
+    Option::deserialize(deserializer)
 }

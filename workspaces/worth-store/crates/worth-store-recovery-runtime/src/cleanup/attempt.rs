@@ -51,8 +51,8 @@ impl<'recovery, 'basis> RecoveryCleanupAttemptBasis<'recovery, 'basis> {
     ) -> RecoveryCleanupAttempt {
         let target = RecoveryCleanupTarget::Wal(candidate.artifact());
         let attempt = match self.command_basis.execute(
-            self.reopened.state.coordination.owner(),
-            &self.reopened.state.authority.media,
+            self.reopened.payload().state.coordination.owner(),
+            &self.reopened.payload().state.authority.media,
             candidate.artifact(),
         ) {
             StoreCleanupCommandExecution::Attempt(attempt) => attempt,
@@ -159,7 +159,7 @@ fn freshness_matches(
 ) -> bool {
     sample.store_identity() == reopened.store_identity()
         && Some(sample.cleanup_plan_identity()) == plan.authority_identity()
-        && sample.sealed_publication_basis() == reopened.expectation.plan_identity()
+        && sample.sealed_publication_basis() == reopened.payload().expectation.plan_identity()
         && sample.policy_identity() != [0; 32]
         && expected_policy.is_none_or(|policy| policy == sample.policy_identity())
 }

@@ -72,6 +72,11 @@ pub enum RecoveryAuthorityParity {
 
 #[derive(Debug, Clone)]
 pub struct RecoveryPlan {
+    pub(crate) original_source: Option<
+        std::sync::Arc<
+            crate::durability::source_initial_inputs::source_admission::SourceOriginalInputs,
+        >,
+    >,
     pub config: crate::runtime::RelationalRuntimeConfig,
     pub(crate) cold_source:
         Option<std::sync::Arc<dyn crate::durability::medium::RelationalDurableColdSource>>,
@@ -166,6 +171,7 @@ impl RecoveryPlan {
             .as_ref()
             .map(crate::durability::access::checkpoint_coverage);
         Self {
+            original_source: None,
             config,
             cold_source,
             checkpoint,

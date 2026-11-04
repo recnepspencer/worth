@@ -14,6 +14,32 @@ pub struct RelationalDurableMemberLocator {
 /// Read-only committed storage, injected before recovery readmission. A fork
 /// may share this port without acquiring any publication authority.
 pub trait RelationalDurableColdSource: Send + Sync + std::fmt::Debug {
+    /// Passive observation at the actual selected canonical-body read seam.
+    /// Prefix probes do not call this and no admission authority is produced.
+    fn observe_canonical_member_read(&self, _member: RelationalDurableMemberLocator) {}
+    /// Bounded descriptive framing bytes from the SAME selected member read.
+    /// A prefix is never evidence of payload integrity or schema authority.
+    fn read_member_prefix_owned(
+        &self,
+        _request: &worth_execution::ExecutionRequest<'_, '_>,
+        _original: &(dyn std::any::Any + Send + Sync),
+        _member: RelationalDurableMemberLocator,
+        _length: usize,
+    ) -> Result<worth_execution::ExecutionImmutableBytes, super::RelationalDurableOwnedReadRefusal>
+    {
+        Err(super::RelationalDurableOwnedReadRefusal::UnsupportedProvider)
+    }
+    fn read_initial_inputs_owned(
+        &self,
+        _request: &worth_execution::ExecutionRequest<'_, '_>,
+        _original: &(dyn std::any::Any + Send + Sync),
+        _limit: u64,
+    ) -> Result<
+        Option<worth_execution::ExecutionImmutableBytes>,
+        super::RelationalDurableOwnedReadRefusal,
+    > {
+        Err(super::RelationalDurableOwnedReadRefusal::UnsupportedProvider)
+    }
     /// Capture the provider's actual immutable native cut. No legacy read fallback.
     fn checkpoint_read_protection(
         &self,

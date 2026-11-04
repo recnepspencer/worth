@@ -4,7 +4,8 @@ use crate::symbols::data::{RelationalFieldText, RelationalFieldTextAdmissionDeni
 use worth_execution::{ExecutionImmutableBytes, ExecutionRequest};
 impl super::RelationalRuntime {
     /// Adopts admitted backing or imports through the ORIGINAL selected policy.
-    /// Serial/System custody is immutable but explicitly carries no lease charge.
+    /// External text is copied and funded through the original request,
+    /// including a serial request's actual memory ledger.
     /// The interner retains text until its last actual table/snapshot owner drops;
     /// a later transaction refusal does not roll back text admission.
     pub fn admit_field_text(

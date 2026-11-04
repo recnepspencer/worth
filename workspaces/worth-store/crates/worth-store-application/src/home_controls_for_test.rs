@@ -86,6 +86,7 @@ impl crate::ReadmittedApplicationHome {
             || self.relational.prepare_complete_checkpoint(execution),
             Some(&observer),
             None,
+            None,
         )
     }
 
@@ -100,6 +101,7 @@ impl crate::ReadmittedApplicationHome {
             None,
             execution,
             || self.relational.prepare_complete_checkpoint(execution),
+            None,
             None,
             Some(&observer),
         )

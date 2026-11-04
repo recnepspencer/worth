@@ -173,6 +173,7 @@ where
     pub fn prepare_workflow_operation_recovery_from_owner(
         self,
         required: &RequiredWorkflowOperation,
+        original: &worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt,
     ) -> Result<
         WorthQueryPreparedWorkflowOperationRecovery<'application, Schema, IntentBinding<Schema, Intent>>,
         WorthQueryWorkflowOperationRecoveryPreparationDenial,
@@ -184,7 +185,7 @@ where
         let runtime = self.application_runtime();
         let scope = self.request_scope().clone();
         runtime.with_application_advancement(&scope, |phase| {
-            self.prepare_workflow_operation_recovery_in_advancement(&phase, required)
+            self.prepare_workflow_operation_recovery_in_advancement(&phase, required, original)
         }).map_err(|cause| {
             WorthQueryWorkflowOperationRecoveryPreparationDenial::Opening(
                 WorthQueryApplicationRecoveryRequestDenial::advancement(cause))
@@ -195,6 +196,7 @@ where
         mut self,
         phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
         required: &RequiredWorkflowOperation,
+        original: &worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt,
     ) -> Result<
         WorthQueryPreparedWorkflowOperationRecovery<'application, Schema, IntentBinding<Schema, Intent>>,
         WorthQueryWorkflowOperationRecoveryPreparationDenial,
@@ -228,7 +230,7 @@ where
             &prepared.admission,
             prepared.idempotency,
             required.transition_identity_bytes(),
-            None,
+            Some(original),
         )
         .map_err(WorthQueryWorkflowOperationRecoveryPreparationDenial::Inspection)?;
         let receipt = match custody {

@@ -89,10 +89,8 @@ impl DerivedSourceDependencies {
             values.insert(key.clone(), Arc::clone(body));
             added |= index >= original.len();
         }
-        if !added {
-            if let Some(prior) = prior {
-                return Ok(Arc::clone(prior));
-            }
+        if !added && let Some(prior) = prior {
+            return Ok(Arc::clone(prior));
         }
         let bytes = values
             .len()

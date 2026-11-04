@@ -31,7 +31,11 @@ fn execute_prepared_merge_survives_durability_append_and_recovery() {
         .expect("recovered merge envelope");
 
     assert_eq!(before_bundle.visible_truth, recovered_bundle.visible_truth);
-    assert_eq!(merge_envelope, recovered_envelope);
+    crate::tests::support::assert_durable_commit_meaning_eq(
+        execution,
+        &merge_envelope,
+        &recovered_envelope,
+    );
     assert!(merge_envelope
         .diagnostics_summary
         .entries

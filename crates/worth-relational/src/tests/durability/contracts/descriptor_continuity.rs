@@ -110,55 +110,38 @@ fn durability_recovery_plan_preserves_explicit_verification_mode() {
 }
 
 #[test]
-fn durability_recovery_plan_reports_descriptor_version_mismatch_before_recovery() {
+fn contradictory_descriptor_version_refuses_before_recovery_or_owner_effects() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
     let runtime = durable_runtime_with_test_schema();
     create_entity_outcome(execution, &runtime, "main-a");
-    runtime.performance_access().reset_counters();
+    let owner = runtime.runtime_instance_id();
+    let head = runtime.history().branch_head(&BranchId("main".into()));
     attached_test_medium(&runtime).rewrite_artifact_envelope(
         execution,
         crate::facade::publication::PatchStreamPosition(1),
         |envelope| envelope.descriptor_semantics_version = DescriptorSemanticsVersion(99),
     );
-
-    let plan = runtime
+    // The unchanged original semantic image still says version 1. Native must
+    // reject that contradiction before offering a schema-continuity plan.
+    let refused = runtime
         .durability()
         .recovery_plan_from_source(
             execution,
             durable_recovery_source(&runtime),
             RecoveryMode::NormalRecoveryVerification,
         )
-        .unwrap();
-
-    assert_eq!(
-        plan.descriptor_semantics_version,
-        DescriptorSemanticsVersion(99)
+        .unwrap_err();
+    assert!(
+        matches!(refused, crate::durability::data::RelationalRecoveryStop::Durability(error)
+        if error.class == RecoveryFailureClass::CorruptCanonicalArtifact
+            && error.detail.contains("PositionAdmission(SemanticResult(SchemaMismatch))"))
     );
+    assert_eq!(runtime.runtime_instance_id(), owner);
     assert_eq!(
-        plan.authority_continuity.descriptor_version_parity,
-        RecoveryAuthorityParity::Drift
+        runtime.history().branch_head(&BranchId("main".into())),
+        head
     );
-    assert!(matches!(
-        plan.authority_continuity.first_mismatch,
-        Some(
-            RecoveryAuthorityContinuityMismatch::DescriptorSemanticsVersion {
-                expected: DescriptorSemanticsVersion(1),
-                found: DescriptorSemanticsVersion(99),
-            }
-        )
-    ));
-    assert_eq!(
-        plan.authority_continuity.verification_outcome,
-        RecoveryVerificationOutcome::Rejected {
-            layer: ReplayVerificationLayer::DigestParity,
-            detail: "descriptor semantics version mismatch".to_string(),
-        }
-    );
-    let counters = runtime.performance_access().counters();
-    assert!(counters.descriptor_version_mismatches_encountered >= 1);
-    assert!(counters.replay_digest_parity_checks >= 1);
 }
 
 #[test]

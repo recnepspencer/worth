@@ -176,9 +176,9 @@ impl WorthQueryApplicationCommitAuthorityBinding {
         Input: Clone + Send + Sync + 'static,
     {
         let retained_governed_input = match admission.original_input() {
-            Some((input, identity)) => Some(WorthQueryRetainedGovernedInput::from_admission(
+            Some((input, _identity)) => Some(WorthQueryRetainedGovernedInput::from_admission(
                 input,
-                Some(identity),
+                admission.governed_input_identity().copied(),
                 admission.original_scope(),
                 admission.original_correction_disclosure(),
                 admission.original_encoded_input(),

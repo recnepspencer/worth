@@ -33,6 +33,9 @@ impl std::error::Error for BankWorldSeedDenial {}
 
 #[derive(Debug)]
 pub enum BankIdentityRuntimeBuildError {
+    BootstrapAdvancement(
+        worth_query_host::facade::application_contribution::WorthQueryAdvancementDenial,
+    ),
     ApplicationProgramValidation(ApplicationProgramValidationDenial),
     ApplicationInstallation(Box<WorthQueryInMemoryApplicationDenial>),
     SchemaDeclaration(Box<ApplicationSchemaDeclarationDenial>),
@@ -55,6 +58,7 @@ pub enum BankIdentityRuntimeBuildError {
 impl std::fmt::Display for BankIdentityRuntimeBuildError {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::BootstrapAdvancement(error) => error.fmt(formatter),
             Self::ApplicationProgramValidation(error) => error.fmt(formatter),
             Self::ApplicationInstallation(error) => error.fmt(formatter),
             Self::SchemaDeclaration(error) => error.fmt(formatter),
@@ -76,6 +80,7 @@ impl std::fmt::Display for BankIdentityRuntimeBuildError {
 impl std::error::Error for BankIdentityRuntimeBuildError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         Some(match self {
+            Self::BootstrapAdvancement(error) => error,
             Self::ApplicationProgramValidation(error) => error,
             Self::ApplicationInstallation(error) => error.as_ref(),
             Self::SchemaDeclaration(error) => error.as_ref(),

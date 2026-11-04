@@ -7,6 +7,7 @@ impl RecoveredCheckpointCustodyEvidence {
     pub(super) fn verify_pending_wal_release(
         &self,
         verified: &VerifiedPendingWalReleaseCustody,
+        effective: &VerifiedEffectiveReleaseHeadRosterV14,
         store: StableStoreIdentity,
         root: &DurablePhysicalRootManifest,
         actual_sha256: [u8; 32],
@@ -29,10 +30,6 @@ impl RecoveredCheckpointCustodyEvidence {
         {
             return Err(RecoveredCheckpointCustodyDenial::SelectedCheckpointMismatch);
         }
-        let effective = self
-            .effective_release_heads
-            .as_ref()
-            .ok_or(RecoveredCheckpointCustodyDenial::SelectedCheckpointMismatch)?;
         let replay = verified
             .selected_head_replay()
             .ok_or(RecoveredCheckpointCustodyDenial::SelectedCheckpointMismatch)?;

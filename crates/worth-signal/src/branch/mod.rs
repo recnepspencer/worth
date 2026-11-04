@@ -123,3 +123,8 @@ pub use snapshot_reconstruction::{
     SignalBranchSnapshotReconstructionDenial, SignalBranchSnapshotReconstructionOutcome,
 };
 pub use target::{SignalBranchTarget, SignalBranchTargetConstructionDenial};
+
+pub use retention::{
+    RetiredSignalBranchRetention, SignalBranchRetentionRetirement,
+    SignalBranchRetentionRetirementDenial, SignalBranchRetentionRetirementProgress,
+};

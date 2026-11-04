@@ -17,8 +17,16 @@ use worth_query_installation::facade::{
 };
 
 pub(in crate::domain_computation::primary_graph) struct ProgramAssemblyRefused<Schema, Program> {
+    #[allow(
+        dead_code,
+        reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it"
+    )]
     pub(in crate::domain_computation::primary_graph) runtime:
         WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    #[allow(
+        dead_code,
+        reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it"
+    )]
     pub(in crate::domain_computation::primary_graph) admitted: Option<(
         WorthQueryInstalledApplicationProgram<Schema, Program>,
         Vec<WorthQuerySupportedProgramRecord>,

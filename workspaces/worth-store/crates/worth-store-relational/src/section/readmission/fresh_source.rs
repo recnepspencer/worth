@@ -19,7 +19,7 @@ pub(in crate::section) fn admit(
             runtime
                 .durability_recovery()
                 .admit_fresh_home_source(execution, plan)
-                .map_err(Denial::Native)
+                .map_err(Denial::FreshSource)
         })());
     });
     match (scope, result) {

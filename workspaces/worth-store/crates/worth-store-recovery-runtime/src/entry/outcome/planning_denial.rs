@@ -15,6 +15,14 @@ pub use ordered_release::{
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PhysicalRecoveryPlanningDenial {
+    ResolvedStateAllocation {
+        requested_bytes: u64,
+        cause: std::collections::TryReserveError,
+    },
+    PlannedStateAllocation {
+        requested_bytes: u64,
+        cause: std::collections::TryReserveError,
+    },
     PublicationCandidateAllocation {
         requested_bytes: u64,
         cause: std::collections::TryReserveError,

@@ -77,7 +77,7 @@ pub(crate) fn lower_provider_aftermath_causality(
         .contract()
         .for_key(valid_aspect_key(ASPECT)?)
         .identified_by(identity)
-        .at_revision(aspects().vocabulary().revision(3))
+        .at_revision(aspects().vocabulary().revision(4))
         .struct_aspect(shape);
     let registry = register_entity(
         registry,

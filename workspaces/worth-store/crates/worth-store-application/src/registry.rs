@@ -6,6 +6,7 @@ use worth_store::physical_runtime::{
 
 pub(crate) const HOME_ANCHOR: &str = "home";
 pub(crate) const CHECKPOINT_ANCHOR: &str = "home.checkpoint";
+pub(crate) const RELATIONAL_INITIAL_INPUTS_ANCHOR: &str = "relational.initial-inputs";
 
 #[derive(Clone, Copy)]
 pub(crate) enum HomeJournalAdmission {
@@ -71,7 +72,11 @@ pub(crate) fn registry() -> OrderedJournalRegistry {
     OrderedJournalRegistry::declare(
         3,
         &HOME_JOURNALS.map(|journal| journal.name),
-        &[HOME_ANCHOR, CHECKPOINT_ANCHOR],
+        &[
+            HOME_ANCHOR,
+            CHECKPOINT_ANCHOR,
+            RELATIONAL_INITIAL_INPUTS_ANCHOR,
+        ],
     )
     .expect("the application registry declares unique disjoint names")
 }

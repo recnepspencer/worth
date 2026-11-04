@@ -137,7 +137,7 @@ pub(super) fn region_with_history() -> RegionFixture {
     let cold = RelationalColdRegion {
         history_members: members.history_members,
         kind_authority: members.kind_authority,
-        source: source.clone(),
+        source: Some(source.clone()),
         partition_id: partition.partition_id,
         head: members.head.0,
         history: members.history.0,

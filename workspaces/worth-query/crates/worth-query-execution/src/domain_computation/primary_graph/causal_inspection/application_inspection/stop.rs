@@ -16,10 +16,26 @@ mod output_tests;
 pub(super) enum InspectionCause {
     Unavailable,
     Advancement(WorthQueryAdvancementDenial),
+    #[allow(
+        dead_code,
+        reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it"
+    )]
     Selection(crate::basis::WorthQueryProductBranchAdmissionDenial),
     Binding(CaptureStop<InspectionBindingDenial>),
+    #[allow(
+        dead_code,
+        reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it"
+    )]
     Principal(WorthQueryPrincipalResolutionDenial),
+    #[allow(
+        dead_code,
+        reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it"
+    )]
     Scope(WorthQueryEntityResolutionDenial),
+    #[allow(
+        dead_code,
+        reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it"
+    )]
     Query(WorthQueryApplicationQueryAdmissionDenial),
     Admission(InspectionAdmissionDenial),
 }

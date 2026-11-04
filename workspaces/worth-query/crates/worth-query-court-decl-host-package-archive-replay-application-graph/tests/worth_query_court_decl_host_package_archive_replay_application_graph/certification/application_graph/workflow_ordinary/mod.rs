@@ -1,3 +1,4 @@
+use super::recorded_workflow_receipt as recorded;
 pub(crate) use worth_query_testkit_certification_application_graph::facade::certification::application_graph::workflow_ordinary::*;
 
 #[test]
@@ -126,37 +127,55 @@ fn ordinary_run_pumps_join_and_terminal_with_stable_replay_keys() {
     ));
     assert_eq!(partial.transitions().len(), 1);
     assert!(!partial.transitions()[0].replayed());
-    let first = run(&[918_207, 918_208]);
+    let retry_partial = run(&[918_207, 918_208]);
+    let WorthQueryOrdinaryWorkflowRunStop::Outcome(WorkflowProgressOutcome::RecoveredCommitted(
+        data,
+    )) = retry_partial.stop()
+    else {
+        panic!(
+            "recorded join data stops the run without performing a transition: {:?}",
+            retry_partial.stop()
+        );
+    };
+    assert_eq!(retry_partial.attempted_steps(), 1);
+    assert!(retry_partial.transitions().is_empty());
+    worth_query_testkit_certification_canonical::facade::recorded_receipt_comparison::assert_transition(
+        data,
+        &partial.transitions()[0],
+    );
+    assert_eq!(partial.transitions()[0].node_path(), "checks/join");
+    assert!(!partial.transitions()[0].terminal());
+    // The second key was not spent by recorded data; it still performs its one original transition.
+    let first = run(&[918_208]);
     assert!(matches!(
         first.stop(),
         WorthQueryOrdinaryWorkflowRunStop::Terminal
     ));
-    assert_eq!(first.attempted_steps(), 2);
-    assert_eq!(first.transitions().len(), 2);
-    assert_eq!(first.transitions()[0].node_path(), "checks/join");
-    assert!(!first.transitions()[0].terminal());
-    assert_eq!(first.transitions()[1].node_path(), "completed");
-    assert!(first.transitions()[1].terminal());
-    assert!(first.transitions()[0].replayed());
-    assert!(!first.transitions()[1].replayed());
-    let replay = run(&[918_207, 918_208]);
-    assert!(matches!(
-        replay.stop(),
-        WorthQueryOrdinaryWorkflowRunStop::Terminal
-    ));
-    assert_eq!(replay.attempted_steps(), 2);
-    assert!(replay
-        .transitions()
-        .iter()
-        .all(|transition| transition.replayed()));
-    assert_eq!(
-        replay.transitions()[0].transition(),
-        first.transitions()[0].transition()
-    );
-    assert_eq!(
-        replay.transitions()[1].transition(),
-        first.transitions()[1].transition()
-    );
+    assert_eq!(first.attempted_steps(), 1);
+    assert_eq!(first.transitions().len(), 1);
+    assert_eq!(first.transitions()[0].node_path(), "completed");
+    assert!(first.transitions()[0].terminal());
+    assert!(!first.transitions()[0].replayed());
+    for (keys, original) in [
+        (&[918_207, 918_208][..], &partial.transitions()[0]),
+        (&[918_208][..], &first.transitions()[0]),
+    ] {
+        let replay = run(keys);
+        let WorthQueryOrdinaryWorkflowRunStop::Outcome(
+            WorkflowProgressOutcome::RecoveredCommitted(data),
+        ) = replay.stop()
+        else {
+            panic!(
+                "the original key returns recorded data: {:?}",
+                replay.stop()
+            );
+        };
+        assert_eq!(replay.attempted_steps(), 1);
+        assert!(replay.transitions().is_empty());
+        worth_query_testkit_certification_canonical::facade::recorded_receipt_comparison::assert_transition(
+            data, original,
+        );
+    }
 }
 
 #[test]
@@ -191,13 +210,13 @@ fn ordinary_publication_uses_installed_binding_and_real_commit_authority() {
         WorkflowDefinitionPublicationOutcome::Published(performed) => performed,
         other => panic!("the ordinary definition must publish: {other:?}"),
     };
-    assert!(!first.replayed());
+    assert!(first.receipt().changed_record_count() > 0);
     let replay = match publish() {
-        WorkflowDefinitionPublicationOutcome::Published(performed) => performed,
+        WorkflowDefinitionPublicationOutcome::RecoveredCommitted(performed) => performed,
         other => panic!("the exact ordinary retry must publish: {other:?}"),
     };
-    assert!(replay.replayed());
-    assert_eq!(first.definition(), replay.definition());
+    recorded::original(&replay, first.receipt());
+    recorded::creates(&replay, first.definition().entity_id());
     let start_key = 918_002_u64;
     let start = || {
         runtime
@@ -216,14 +235,14 @@ fn ordinary_publication_uses_installed_binding_and_real_commit_authority() {
         WorkflowInstanceStartOutcome::Started(started) => started,
         other => panic!("the ordinary definition must start: {other:?}"),
     };
-    assert!(!started.replayed());
+    assert!(started.receipt().changed_record_count() > 0);
     assert_eq!(started.instance().start_node_path(), "done");
     let replayed_start = match start() {
-        WorkflowInstanceStartOutcome::Started(started) => started,
+        WorkflowInstanceStartOutcome::RecoveredCommitted(started) => started,
         other => panic!("the exact ordinary start must replay: {other:?}"),
     };
-    assert!(replayed_start.replayed());
-    assert_eq!(started.instance(), replayed_start.instance());
+    recorded::original(&replayed_start, started.receipt());
+    recorded::creates(&replayed_start, started.instance().entity_id());
 
     let run = |keys: &[u64]| {
         runtime
@@ -253,14 +272,20 @@ fn ordinary_publication_uses_installed_binding_and_real_commit_authority() {
     assert!(progressed.transitions()[0].terminal());
     assert!(!progressed.transitions()[0].replayed());
     let replayed = run(&[918_003]);
-    assert!(matches!(
-        replayed.stop(),
-        WorthQueryOrdinaryWorkflowRunStop::Terminal
-    ));
-    assert!(replayed.transitions()[0].replayed());
-    assert_eq!(
-        progressed.transitions()[0].transition(),
-        replayed.transitions()[0].transition()
+    let WorthQueryOrdinaryWorkflowRunStop::Outcome(WorkflowProgressOutcome::RecoveredCommitted(
+        data,
+    )) = replayed.stop()
+    else {
+        panic!(
+            "terminal retry returns recorded data: {:?}",
+            replayed.stop()
+        );
+    };
+    assert_eq!(replayed.attempted_steps(), 1);
+    assert!(replayed.transitions().is_empty());
+    worth_query_testkit_certification_canonical::facade::recorded_receipt_comparison::assert_transition(
+        data,
+        &progressed.transitions()[0],
     );
 }
 

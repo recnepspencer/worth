@@ -7,7 +7,7 @@ fn public_progression_releases_the_exact_ready_estate_and_recovers_retry() {
     let fixture = release_world("estate-release-commit", ReleaseWorldSpec::ready());
     let specialist = fixture.authenticate_actor();
     let binding = idempotency(11);
-    let outcome = {
+    let outcome_closed = {
         let closing_actor = &specialist;
         let closing_scope = worth_query_bank_testkit_server::facade::support::request_scope();
         let closing_request = fixture.world.runtime.request(closing_actor, &closing_scope);
@@ -21,11 +21,14 @@ fn public_progression_releases_the_exact_ready_estate_and_recovers_retry() {
             done.evidence(),
             worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Fresh { .. }
         ));
-        bank_server::BankCommitReceipt::from_closed_source(
+        bank_server::BankClosedSourceCompletion::from_query(
             done.close_with_evidence(&closing_request)
                 .unwrap_or_else(|(_, cause)| panic!("source close: {cause:?}")),
         )
     };
+    let outcome = outcome_closed
+        .live_receipt()
+        .expect("fresh completion retains its actual live receipt");
 
     let receipt = outcome;
     assert_eq!(receipt.changed_record_count(), 2);
@@ -33,7 +36,7 @@ fn public_progression_releases_the_exact_ready_estate_and_recovers_retry() {
     assert_eq!(receipt.decision_fact_count(), Some(18));
     assert_admission_derives_the_request_identities_once(receipt.canonical_work());
     assert_release_posture(&fixture, EstateCaseStatus::Released);
-    assert_equivalent_retry(&fixture, &specialist, binding, &receipt);
+    assert_equivalent_retry(&fixture, &specialist, binding, &outcome_closed);
 
     let (_fresh_source, fresh) = {
         let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Refused { operation: original_source, denial: worth_query_host::facade::application_entry::WorthQuerySourceOnlyDenial::Mutation(worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::Handler(worth_query_host::facade::primary_graph::MutationHandlerExecutionDenial::Handler(cause))) } = release(&fixture, &specialist, idempotency(12)) else { panic!("native pre-effect refusal") };
@@ -61,7 +64,7 @@ fn four_lawful_executors_and_many_unrelated_reviews_preserve_bounded_readiness()
         },
     );
     let specialist = fixture.authenticate_actor();
-    let outcome = {
+    let outcome_closed = {
         let closing_actor = &specialist;
         let closing_scope = worth_query_bank_testkit_server::facade::support::request_scope();
         let closing_request = fixture.world.runtime.request(closing_actor, &closing_scope);
@@ -75,11 +78,14 @@ fn four_lawful_executors_and_many_unrelated_reviews_preserve_bounded_readiness()
             done.evidence(),
             worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Fresh { .. }
         ));
-        bank_server::BankCommitReceipt::from_closed_source(
+        bank_server::BankClosedSourceCompletion::from_query(
             done.close_with_evidence(&closing_request)
                 .unwrap_or_else(|(_, cause)| panic!("source close: {cause:?}")),
         )
     };
+    let outcome = outcome_closed
+        .live_receipt()
+        .expect("fresh completion retains its actual live receipt");
     let receipt = outcome;
     assert_eq!(receipt.decision_fact_count(), Some(18));
     assert_release_posture(&fixture, EstateCaseStatus::Released);

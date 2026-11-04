@@ -335,9 +335,9 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationRequest<'_, '_, '_, Schema>
                             WorthQueryApplicationCommitOutcome::ProductPreparationPending(pending),
                         ));
                     }
-                    WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(receipt) => {
+                    WorthQueryApplicationIdempotencyResolution::RecoveredCommitted(receipt) => {
                         return Ok(NativeCommandResult::Commit(
-                            WorthQueryApplicationCommitOutcome::AlreadyCommitted(receipt),
+                            WorthQueryApplicationCommitOutcome::RecoveredCommitted(receipt),
                         ))
                     }
                     WorthQueryApplicationIdempotencyResolution::IntentDrift => {

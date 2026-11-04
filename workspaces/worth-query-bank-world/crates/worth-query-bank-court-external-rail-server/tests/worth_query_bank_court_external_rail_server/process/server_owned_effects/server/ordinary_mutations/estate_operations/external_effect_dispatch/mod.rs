@@ -56,7 +56,10 @@ fn a_succeeding_rail_completes_and_no_fault_ever_reports_completion() {
 fn unsupported_version_survives_the_rail_adapter_and_publication_boundary() {
     let world =
         dispatch_world_with_protocol_support("predating-v1", RailProtocolSupportProfile::V2Only);
-    let receipt = world.commit_notification(52);
+    let receipt_closed = world.commit_notification(52);
+    let receipt = receipt_closed
+        .live_receipt()
+        .expect("fresh source retains its full native owner");
 
     assert_eq!(
         receipt
@@ -91,7 +94,10 @@ fn unsupported_version_survives_the_rail_adapter_and_publication_boundary() {
 fn the_rail_decodes_the_committed_notice_rather_than_echoing_a_correlation() {
     let world = dispatch_world("decoded-notice");
     world.transport.under(FaultScript::Succeed, PATIENT);
-    let receipt = world.commit_notification(47);
+    let receipt_closed = world.commit_notification(47);
+    let receipt = receipt_closed
+        .live_receipt()
+        .expect("fresh source retains its full native owner");
 
     assert_eq!(
         receipt
@@ -131,7 +137,7 @@ fn the_rail_decodes_the_committed_notice_rather_than_echoing_a_correlation() {
 fn an_unknown_correlation_yields_no_notice_from_the_rail() {
     let world = dispatch_world("unknown-correlation");
     world.transport.under(FaultScript::Succeed, PATIENT);
-    let _ = world.commit_notification(49);
+    let _original_closed = world.commit_notification(49);
 
     let stranger = RailCorrelation::new(ESTATE_DEATH_NOTICE_RAIL, vec![0xAB; 32]);
     assert_eq!(
@@ -148,7 +154,10 @@ fn late_reconciliation_observes_rail_completion_without_dispatching_again() {
         FaultScript::CompleteAfterDelay { delay_millis: 300 },
         IMPATIENT,
     );
-    let receipt = world.commit_notification(43);
+    let receipt_closed = world.commit_notification(43);
+    let receipt = receipt_closed
+        .live_receipt()
+        .expect("fresh source retains its full native owner");
 
     let posture = receipt
         .external_dispatch_posture()

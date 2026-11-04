@@ -22,6 +22,7 @@ where
 {
     fn try_retire_shared_pair(
         &self,
+        dependency: ComponentBasisDependencyClass,
         relational: &ComponentBasisPinClaim,
         signal: &ComponentBasisPinClaim,
     ) -> Result<(), ()> {
@@ -32,7 +33,7 @@ where
         for claim in [relational, signal] {
             let entry = state.entries.get(&claim.key).ok_or(())?;
             if claim.owner != state.owner_identity
-                || claim.dependency != ComponentBasisDependencyClass::ProductBranchHead
+                || claim.dependency != dependency
                 || entry.lease_identity != claim.lease_identity
                 || entry.owner_lease.is_none()
                 || entry.counts.get(claim.dependency) == 0
@@ -53,6 +54,14 @@ where
         state.active_obligations -= 2;
         state.costs.dependency_releases = state.costs.dependency_releases.saturating_add(2);
         Ok(())
+    }
+
+    fn try_take_history_pair_for_close(
+        &self,
+        relational: &ComponentBasisPinClaim,
+        signal: &ComponentBasisPinClaim,
+    ) -> Result<crate::retention::component_obligation::RetiringHistoryComponents, ()> {
+        self.try_take_checkpoint_pair(relational, signal)
     }
 
     fn fork_history_pair(

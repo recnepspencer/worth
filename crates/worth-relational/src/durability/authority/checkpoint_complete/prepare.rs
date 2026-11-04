@@ -21,8 +21,7 @@ pub(super) fn prepare(
     {
         return Err(Denial::OriginalAuthorityUnavailable);
     }
-    let mut frozen = FrozenCompleteMetadata::capture(runtime, execution)?;
-    frozen.original.protect_original_read(execution)?;
+    let mut frozen = FrozenCompleteMetadata::capture(runtime, execution)?.resolve(execution)?;
     let commits = frozen.original.read_canonical(execution, 1 << 30)?;
     let dictionary =
         OriginalSymbolDictionary::capture(&frozen.original.symbols, &commits, execution)?;
@@ -37,11 +36,20 @@ pub(super) fn prepare(
         &roots,
     )?;
     let schemas = CompleteSchemas::capture(&frozen.original, &commits, execution)?;
+    let initial = crate::durability::source_initial_inputs::capture::capture_complete(
+        main,
+        &frozen.original.branches,
+        None,
+        execution,
+    )
+    .map_err(initial_stop)?;
+    let original_image =
+        super::original_image::emit(&frozen.original.branches, &commits, execution)?;
     let lineage = super::metadata::capture_lineage(&commits, execution)?;
     let mut metadata = super::metadata::capture_metadata_members(
         &dictionary,
         &lineage,
-        &frozen.indexes.generations,
+        &frozen.indexes,
         execution,
     )?;
     let canonical = CanonicalOutput::prepare(&commits, &mut metadata.members, execution)?;
@@ -130,10 +138,49 @@ pub(super) fn prepare(
             execution,
         )?;
     }
+    let initial_artifact = initial
+        .artifact
+        .as_ref()
+        .ok_or(Denial::OriginalAuthorityUnavailable)?;
     checkpoint = checkpoint
-        .with_manifest_publication(publication)
-        .bind_publication(runtime.durability.medium(), execution)?;
-    Ok(CompleteRelationalNativeCheckpoint { checkpoint })
+        .with_manifest_publication(
+            publication
+                .map(|publication| publication.with_initial_inputs(initial_artifact.clone())),
+        )
+        .bind_original_publication(
+            runtime.durability.medium(),
+            Some(initial_artifact.clone()),
+            execution,
+        )?;
+    let source_artifact =
+        crate::durability::source_initial_inputs::RelationalCompleteSourceArtifact::emit(
+            &checkpoint,
+            initial
+                .artifact
+                .as_ref()
+                .ok_or(Denial::OriginalAuthorityUnavailable)?,
+            &original_image,
+            execution,
+        )
+        .map_err(initial_stop)?;
+    Ok(CompleteRelationalNativeCheckpoint {
+        checkpoint,
+        source_artifact,
+        initial_predecessor: initial.predecessor,
+    })
+}
+fn initial_stop(
+    cause: crate::durability::source_initial_inputs::RelationalInitialInputsRefusal,
+) -> Denial {
+    use crate::durability::source_initial_inputs::RelationalInitialInputsRefusal as Refusal;
+    match cause {
+        Refusal::Request(cause) => Denial::Request(cause),
+        Refusal::Native(cause) => stop(cause),
+        cause => Denial::Durability(DurabilityError::new(
+            RecoveryFailureClass::CorruptCheckpoint,
+            format!("Complete original input image refused: {cause:?}"),
+        )),
+    }
 }
 fn stop(cause: RelationalRecoveryStop) -> Denial {
     crate::durability::checkpoint_history::capture::capture_stop(cause)

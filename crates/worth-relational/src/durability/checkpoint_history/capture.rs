@@ -26,7 +26,14 @@ pub(crate) fn capture(
         .as_ref()
         .map(|source| RelationalDurableReadProtection::capture(source, request))
         .transpose()
-        .map_err(|cause| capture_stop(owned_stop(cause)))?;
+        .map_err(|cause| {
+            capture_stop(owned_stop(
+                cause,
+                crate::storage::data::RelationalStorageSubject::Envelope(
+                    crate::publication::patch::data::PatchStreamPosition(0),
+                ),
+            ))
+        })?;
     for (ordinal, entry) in captured.manifest.commits.iter().enumerate() {
         crate::execution::check_request(request)
             .map_err(RelationalNativeCheckpointCaptureDenial::Request)?;
@@ -76,7 +83,10 @@ pub(crate) fn capture(
 fn corrupt(detail: &str) -> DurabilityError {
     DurabilityError::new(RecoveryFailureClass::CorruptCheckpoint, detail)
 }
-pub(crate) fn owned_stop(cause: Refusal) -> RelationalRecoveryStop {
+pub(crate) fn owned_stop(
+    cause: Refusal,
+    subject: crate::storage::data::RelationalStorageSubject,
+) -> RelationalRecoveryStop {
     match cause {
         Refusal::Request(cause) => RelationalRecoveryStop::Request(cause),
         Refusal::Buffer(worth_execution::ExecutionRequestArrayDenial::Request(cause)) => {
@@ -85,13 +95,9 @@ pub(crate) fn owned_stop(cause: Refusal) -> RelationalRecoveryStop {
         Refusal::Buffer(worth_execution::ExecutionRequestArrayDenial::Allocation(cause)) => {
             RelationalRecoveryStop::Allocation(cause)
         }
-        Refusal::Storage(cause) => crate::storage::data::RelationalStorageUnavailable {
-            subject: crate::storage::data::RelationalStorageSubject::Envelope(
-                crate::publication::patch::data::PatchStreamPosition(0),
-            ),
-            cause,
+        Refusal::Storage(cause) => {
+            crate::storage::data::RelationalStorageUnavailable { subject, cause }.into()
         }
-        .into(),
         Refusal::UnsupportedProvider => DurabilityError::new(
             RecoveryFailureClass::UnsupportedLegacySemantics,
             "original protected canonical source unsupported",
@@ -99,9 +105,7 @@ pub(crate) fn owned_stop(cause: Refusal) -> RelationalRecoveryStop {
         .into(),
         Refusal::ForeignSource | Refusal::ForeignProtection | Refusal::Busy | Refusal::Bounds => {
             crate::storage::data::RelationalStorageUnavailable {
-                subject: crate::storage::data::RelationalStorageSubject::Envelope(
-                    crate::publication::patch::data::PatchStreamPosition(0),
-                ),
+                subject,
                 cause: crate::storage::data::RelationalStorageUnavailableCause::SourceUnavailable,
             }
             .into()

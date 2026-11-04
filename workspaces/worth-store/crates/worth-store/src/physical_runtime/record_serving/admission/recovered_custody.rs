@@ -43,12 +43,24 @@ pub(in crate::physical_runtime) use media_freshness::FundedMediaVerifiedRecovere
 #[path = "recovered_custody/resident_memory.rs"]
 mod resident_memory;
 
+#[path = "recovered_custody/release_custody.rs"]
+mod release_custody;
+pub(in crate::physical_runtime) use release_custody::RecoveredReleaseCustody;
+
+#[path = "recovered_custody/storage.rs"]
+mod storage;
+pub(in crate::physical_runtime) use storage::PreparedRecoveredCustodyBacking;
+
 pub struct RecoveredPhysicalCheckpointCustody {
     residency: crate::physical_runtime::instance::PhysicalResidencyOwner,
     evidence: RecoveredCheckpointCustodyEvidence,
 }
 
 pub(in crate::physical_runtime) struct RecoveredCheckpointCustodyEvidence {
+    backing: PreparedRecoveredCustodyBacking,
+}
+
+struct RecoveredCheckpointCustodyPayload {
     #[cfg(feature = "recovery-runtime-owner")]
     checkpoint_ownership:
         crate::physical_runtime::recovery_coordination::RecoveryCheckpointOwnership,
@@ -57,11 +69,7 @@ pub(in crate::physical_runtime) struct RecoveredCheckpointCustodyEvidence {
     recovery_allocation: crate::physical_runtime::PhysicalRecoveryAllocationAdmission,
     #[cfg(feature = "recovery-runtime-owner")]
     root: DurablePhysicalRootManifest,
-    head_v2: Option<VerifiedSelectedReleaseHeadCustodyV2>,
-    no_release: Option<RecoveredNoReleaseCustody>,
-    pending_wal_release: Option<VerifiedPendingWalReleaseCustody>,
-    effective_release_heads: Option<VerifiedEffectiveReleaseHeadRosterV14>,
-    historical_release: Option<VerifiedOrderedHistoricalReleaseCustody>,
+    release: RecoveredReleaseCustody,
     tier: Option<VerifiedSelectedTierEpochCustody>,
     #[cfg(feature = "recovery-runtime-owner")]
     selected_wal: crate::physical_runtime::recovery_construction::SelectedWalMediaFingerprint,
@@ -93,7 +101,7 @@ pub(in crate::physical_runtime) enum RecoveredCheckpointCustodyDenial {
 impl RecoveredPhysicalCheckpointCustody {
     #[cfg(feature = "recovery-runtime-owner")]
     pub fn checkpoint(&self) -> Option<&crate::physical_runtime::SharedRecoveryCheckpoint> {
-        self.evidence.checkpoint_ownership.checkpoint()
+        self.evidence.payload().checkpoint_ownership.checkpoint()
     }
 
     pub const fn residency_policy(
@@ -121,7 +129,7 @@ impl RecoveredPhysicalCheckpointCustody {
     pub const fn recovery_allocation_admission(
         &self,
     ) -> crate::physical_runtime::PhysicalRecoveryAllocationAdmission {
-        self.evidence.recovery_allocation
+        self.evidence.payload().recovery_allocation
     }
 
     #[cfg(feature = "recovery-runtime-owner")]
@@ -133,6 +141,10 @@ impl RecoveredPhysicalCheckpointCustody {
 }
 
 impl RecoveredCheckpointCustodyEvidence {
+    const fn payload(&self) -> &RecoveredCheckpointCustodyPayload {
+        self.backing.payload()
+    }
+
     #[cfg(feature = "recovery-runtime-owner")]
     fn checkpoint_stream(
         &self,
@@ -142,7 +154,7 @@ impl RecoveredCheckpointCustodyEvidence {
         RecoveredCheckpointCustodyDenial,
     > {
         #[cfg(feature = "recovery-runtime-owner")]
-        if let Some(shared) = self.checkpoint_ownership.checkpoint()
+        if let Some(shared) = self.payload().checkpoint_ownership.checkpoint()
             && shared.facts() == *facts
         {
             return Ok(shared.stream());
@@ -156,7 +168,7 @@ impl RecoveredCheckpointCustodyEvidence {
     pub(in crate::physical_runtime) const fn recovery_allocation_admission(
         &self,
     ) -> crate::physical_runtime::PhysicalRecoveryAllocationAdmission {
-        self.recovery_allocation
+        self.payload().recovery_allocation
     }
 
     #[cfg(feature = "recovery-runtime-owner")]
@@ -169,18 +181,19 @@ impl RecoveredCheckpointCustodyEvidence {
         format: PhysicalRecordFormatDeclaration,
     ) -> Result<(), RecoveredCheckpointCustodyDenial> {
         let actual_sha256: [u8; 32] = Sha256::digest(root.encode(format)).into();
-        if self.store != store || self.root != *root {
+        if self.payload().store != store || self.payload().root != *root {
             return Err(RecoveredCheckpointCustodyDenial::SelectedRootMismatch);
         }
-        if self.historical_release.is_none()
+        if !self.payload().release.is_historical()
             && !self
+                .payload()
                 .selected_controls
                 .as_ref()
                 .is_some_and(|controls| controls.matches_serving_media(media))
         {
             return Err(RecoveredCheckpointCustodyDenial::SelectedCheckpointMismatch);
         }
-        match self.tier.as_ref() {
+        match self.payload().tier.as_ref() {
             Some(tier) => {
                 if tier.selected_root() != root
                     || tier.selected_root_sha256() != actual_sha256
@@ -198,47 +211,24 @@ impl RecoveredCheckpointCustodyEvidence {
             }
             None => {}
         }
-        match (
-            &self.head_v2,
-            &self.no_release,
-            &self.pending_wal_release,
-            &self.historical_release,
-        ) {
-            (Some(head_v2), None, None, None) => {
-                self.verify_head_v2(head_v2, store, root, actual_sha256, format)?
+        match &self.payload().release {
+            RecoveredReleaseCustody::HeadV2(claim) => {
+                self.verify_head_v2(claim, store, root, actual_sha256, format)?
             }
-            (None, Some(no_release), None, None) => {
-                self.verify_no_release(no_release, store, root, actual_sha256)?
+            RecoveredReleaseCustody::NoRelease(claim) => {
+                self.verify_no_release(claim, store, root, actual_sha256)?
             }
-            (None, None, Some(pending), None) => {
-                self.verify_pending_wal_release(pending, store, root, actual_sha256)?
+            RecoveredReleaseCustody::PendingWal { claim, effective } => {
+                self.verify_pending_wal_release(claim, effective, store, root, actual_sha256)?
             }
-            (None, None, None, Some(historical)) => {
-                self.verify_ordered_historical_release(historical, store, root, actual_sha256)?
-            }
-            _ => return Err(RecoveredCheckpointCustodyDenial::SelectedCheckpointMismatch),
+            RecoveredReleaseCustody::OrderedHistorical { effective, claim } => self
+                .verify_ordered_historical_release(claim, effective, store, root, actual_sha256)?,
         }
-        if let Some(tier) = self.tier.as_ref() {
+        if let Some(tier) = self.payload().tier.as_ref() {
             let selected = self
-                .head_v2
-                .as_ref()
-                .map(|claim| claim.checkpoint())
-                .or_else(|| {
-                    self.no_release
-                        .as_ref()
-                        .and_then(RecoveredNoReleaseCustody::selected)
-                        .map(|claim| claim.checkpoint())
-                })
-                .or_else(|| {
-                    self.pending_wal_release
-                        .as_ref()
-                        .map(|claim| claim.checkpoint())
-                })
-                .or_else(|| {
-                    self.historical_release
-                        .as_ref()
-                        .map(|claim| claim.checkpoint())
-                })
+                .payload()
+                .release
+                .selected_checkpoint()
                 .ok_or(RecoveredCheckpointCustodyDenial::SelectedCheckpointMismatch)?;
             if selected.source().identity() != tier.checkpoint().source().identity()
                 || selected.encoded_bytes() != tier.checkpoint().encoded_bytes()
@@ -250,29 +240,24 @@ impl RecoveredCheckpointCustodyEvidence {
         Ok(())
     }
 
-    pub(in crate::physical_runtime) fn verified_basis(
+    pub(in crate::physical_runtime) fn release_custody(&self) -> &RecoveredReleaseCustody {
+        &self.payload().release
+    }
+
+    pub(in crate::physical_runtime) fn tier_custody(
         &self,
-    ) -> (
-        Option<&VerifiedSelectedReleaseHeadCustodyV2>,
-        Option<&RecoveredNoReleaseCustody>,
-        Option<&VerifiedPendingWalReleaseCustody>,
-        Option<&VerifiedEffectiveReleaseHeadRosterV14>,
-        Option<&VerifiedOrderedHistoricalReleaseCustody>,
-        Option<&VerifiedSelectedTierEpochCustody>,
-    ) {
-        (
-            self.head_v2.as_ref(),
-            self.no_release.as_ref(),
-            self.pending_wal_release.as_ref(),
-            self.effective_release_heads.as_ref(),
-            self.historical_release.as_ref(),
-            self.tier.as_ref(),
-        )
+    ) -> Option<&VerifiedSelectedTierEpochCustody> {
+        self.payload().tier.as_ref()
     }
 
     pub(in crate::physical_runtime) fn pending_wal_release(
         &self,
     ) -> Option<&VerifiedPendingWalReleaseCustody> {
-        self.pending_wal_release.as_ref()
+        match &self.payload().release {
+            RecoveredReleaseCustody::HeadV2(_) => None,
+            RecoveredReleaseCustody::NoRelease(_) => None,
+            RecoveredReleaseCustody::PendingWal { claim, .. } => Some(claim),
+            RecoveredReleaseCustody::OrderedHistorical { .. } => None,
+        }
     }
 }

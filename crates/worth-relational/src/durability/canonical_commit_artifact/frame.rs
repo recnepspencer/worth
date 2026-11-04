@@ -8,7 +8,7 @@ use crate::history::data::CommitId;
 use crate::publication::patch::data::PatchStreamPosition;
 
 pub(super) const MAGIC: [u8; 8] = *b"WRTHRCCA";
-pub(super) const FORMAT_VERSION: u16 = 4;
+pub(super) const FORMAT_VERSION: u16 = 5;
 
 const VERSION_OFFSET: usize = MAGIC.len();
 const POSITION_OFFSET: usize = VERSION_OFFSET + 2;
@@ -44,21 +44,7 @@ impl CanonicalCommitArtifactHeader {
     ///
     /// Cost: O(1) header checks, then one SHA-256 pass over the payload.
     pub(super) fn verify(frame: &[u8]) -> Result<(Self, &[u8]), Refusal> {
-        let magic = frame
-            .get(..VERSION_OFFSET)
-            .ok_or(Refusal::TruncatedHeader {
-                available: frame.len(),
-            })?;
-        if magic != MAGIC {
-            return Err(Refusal::UnrecognizedMagic);
-        }
-        let version = u16::from_le_bytes(fixed(frame, VERSION_OFFSET)?);
-        if version != FORMAT_VERSION {
-            return Err(Refusal::UnsupportedVersion {
-                found: version,
-                supported: FORMAT_VERSION,
-            });
-        }
+        validate_frame_version(frame)?;
         let header = Self {
             position: PatchStreamPosition(u64::from_le_bytes(fixed(frame, POSITION_OFFSET)?)),
             commit_id: CommitId(u64::from_le_bytes(fixed(frame, COMMIT_OFFSET)?)),
@@ -66,7 +52,7 @@ impl CanonicalCommitArtifactHeader {
         };
         let declared = u64::from_le_bytes(fixed(frame, LENGTH_OFFSET)?);
         let payload = declared_payload(frame, declared)?;
-        let computed = Digest::of_payload(payload);
+        let computed = Digest::of_payload(header.position.0, header.commit_id.0, payload)?;
         if computed != header.digest {
             return Err(Refusal::DigestMismatch {
                 recorded: header.digest,
@@ -102,4 +88,25 @@ fn declared_payload(frame: &[u8], declared: u64) -> Result<&[u8], Refusal> {
         });
     }
     Ok(payload)
+}
+
+pub(crate) fn validate_frame_version(frame: &[u8]) -> Result<(), Refusal> {
+    let magic = frame
+        .get(..VERSION_OFFSET)
+        .ok_or(Refusal::TruncatedHeader {
+            available: frame.len(),
+        })?;
+    if magic != MAGIC {
+        return Err(Refusal::UnrecognizedMagic);
+    }
+    let version = u16::from_le_bytes(fixed(frame, VERSION_OFFSET)?);
+    let version = worth_foundational::facade::BoundaryProtocolVersion::try_new(u32::from(version))
+        .map_err(|_| Refusal::InvalidVersion)?;
+    let supported = worth_foundational::facade::BoundaryProtocolVersion::new(FORMAT_VERSION as u32);
+    worth_foundational::facade::BoundaryProtocolCompatibilityWindow::inclusive(
+        supported, supported,
+    )
+    .admit(version)
+    .map_err(Refusal::UnsupportedVersion)?;
+    Ok(())
 }

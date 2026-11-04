@@ -1,3 +1,6 @@
+#[path = "bootstrap_tests/checkpoint_origin.rs"]
+mod checkpoint_origin;
+
 #[test]
 fn bootstrap_intent_carries_exact_inputs_and_starts_at_generation_zero() {
     let fixture = crate::branch::reference_test_fixture::real_fixture(4, 4);

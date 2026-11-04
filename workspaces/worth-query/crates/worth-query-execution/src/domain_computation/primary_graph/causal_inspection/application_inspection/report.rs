@@ -32,6 +32,10 @@ pub(super) use comparison::{
 type ResourceStop = MapKernelFailure<RetainedStorageDenial>;
 pub(super) enum InspectionReportDenial {
     Identity(InspectionIdentityStop<ResourceStop>),
+    #[allow(
+        dead_code,
+        reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it"
+    )]
     Input(BridgeQueryObservationReportingInputDenial),
     Bridge(BridgeQueryObservationReportingStop<ResourceStop>),
     ForeignComparison,

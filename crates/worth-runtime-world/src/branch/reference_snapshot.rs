@@ -16,7 +16,7 @@ pub struct ProductBranchReferenceSnapshot {
     branch: ProductBranchIdentity,
     lifecycle: ProductBranchIncarnation,
     generation: ProductBranchReferenceGeneration,
-    commit: Arc<CompositeRuntimeWorldCommit>,
+    commit: Option<Arc<CompositeRuntimeWorldCommit>>,
 }
 
 impl PartialEq for ProductBranchReferenceSnapshot {
@@ -25,8 +25,12 @@ impl PartialEq for ProductBranchReferenceSnapshot {
             && self.branch == other.branch
             && self.lifecycle == other.lifecycle
             && self.generation == other.generation
-            && self.commit.identity() == other.commit.identity()
-            && crate::basis::compare_exact(self.commit.basis(), other.commit.basis()).is_ok()
+            && self.commit_owner().identity() == other.commit_owner().identity()
+            && crate::basis::compare_exact(
+                self.commit_owner().basis(),
+                other.commit_owner().basis(),
+            )
+            .is_ok()
     }
 }
 
@@ -41,6 +45,17 @@ pub(crate) enum ProductBranchReferenceSnapshotDenial {
 }
 
 impl ProductBranchReferenceSnapshot {
+    fn commit_owner(&self) -> &Arc<CompositeRuntimeWorldCommit> {
+        self.commit
+            .as_ref()
+            .expect("only serving snapshot exposes original commit")
+    }
+    pub(crate) fn begin_home_retirement(&mut self) -> crate::history::CompositeCommitRetirement {
+        crate::history::CompositeCommitRetirement::new(
+            self.commit.take().expect("original snapshot consumed once"),
+        )
+    }
+
     pub(crate) fn owner_issued(
         owner: RuntimeWorldOwnerIdentity,
         branch: ProductBranchIdentity,
@@ -65,7 +80,7 @@ impl ProductBranchReferenceSnapshot {
             branch,
             lifecycle,
             generation,
-            commit,
+            commit: Some(commit),
         })
     }
 
@@ -86,13 +101,13 @@ impl ProductBranchReferenceSnapshot {
     }
 
     pub(crate) fn commit(&self) -> &CompositeRuntimeWorldCommit {
-        &self.commit
+        self.commit_owner()
     }
 
     /// The commit this image was captured at, shared: a reuse of this head
     /// installs the very commit the image names rather than looking it up.
     pub(crate) fn shared_commit(&self) -> Arc<CompositeRuntimeWorldCommit> {
-        Arc::clone(&self.commit)
+        Arc::clone(self.commit_owner())
     }
 
     pub fn owner_identity(&self) -> RuntimeWorldOwnerIdentity {
@@ -112,10 +127,10 @@ impl ProductBranchReferenceSnapshot {
     }
 
     pub fn selected_commit(&self) -> &CompositeCommitIdentity {
-        self.commit.identity()
+        self.commit_owner().identity()
     }
 
     pub fn basis(&self) -> &crate::basis::AdmittedCompositeRuntimeWorldBasis {
-        self.commit.basis()
+        self.commit_owner().basis()
     }
 }

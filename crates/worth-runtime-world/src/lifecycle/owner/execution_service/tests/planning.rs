@@ -97,7 +97,7 @@ fn both_changed_settles_relational_before_signal_and_preserves_both_bases() {
         move |_| {
             let (_, observed) = owner_for_callback
                 .state
-                .relational
+                .relational_services()
                 .basis_port()
                 .observe_branch(&relational_branch)
                 .map_err(|_| {

@@ -1,18 +1,42 @@
 //! Original-request control for the SAME positioned authoritative payload grammar.
-use super::{payload_wire::ArtifactPayloadRef, RelationalCanonicalCommitArtifact as Artifact};
-use crate::durability::data::{
-    DurabilityError, RecoveryFailureClass, RelationalRecoveryStop as Stop,
-};
+use super::RelationalCanonicalCommitArtifact as Artifact;
+use crate::durability::data::RelationalRecoveryStop as Stop;
 use crate::history::data::{CanonicalCommitEnvelope, PositionedCanonicalCommit};
 use crate::publication::patch::data::PatchStreamPosition;
 use sha2::{Digest, Sha256};
-use std::{
-    io::{self, Write},
-    sync::Arc,
-};
+use std::sync::Arc;
 use worth_execution::{ExecutionRequest, MapKernelContext, MapKernelStop, WorkCeilingDenial};
 
 impl Artifact {
+    pub(crate) fn canonical_leaf_from_verified_frame(
+        bytes: &[u8],
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<[u8; 32], Stop> {
+        let payload = bytes.get(super::frame::HEADER_LEN..).ok_or_else(|| {
+            crate::durability::data::DurabilityError::new(
+                crate::durability::data::RecoveryFailureClass::CorruptCanonicalArtifact,
+                "verified canonical frame lost its payload",
+            )
+        })?;
+        let canonical = super::borrowed_payload::BorrowedPayload(payload)
+            .field("canonical", request)
+            .map_err(|cause| match cause {
+                super::RelationalCanonicalCommitArtifactRefusal::Request(cause) => {
+                    Stop::Request(cause)
+                }
+                cause => crate::durability::data::DurabilityError::new(
+                    crate::durability::data::RecoveryFailureClass::CorruptCanonicalArtifact,
+                    format!("verified canonical commitment: {cause:?}"),
+                )
+                .into(),
+            })?;
+        super::commitment_writer::in_context(request, |context| {
+            let mut writer =
+                super::commitment_writer::CommitmentWriter::new(Sha256::new(), context);
+            writer.bytes(canonical.0)?;
+            Ok(writer.hash.finalize().into())
+        })
+    }
     pub(crate) fn matches_positioned_payload_for_request(
         original: &PositionedCanonicalCommit,
         candidate: &Arc<CanonicalCommitEnvelope>,
@@ -74,51 +98,25 @@ fn digest(
     envelope: &CanonicalCommitEnvelope,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<[u8; 32], Stop> {
-    context
-        .poll()
-        .map_err(|cause| Stop::Request(cause.into()))?;
-    let mut writer = DigestWriter {
-        hash: Sha256::new(),
-        context,
-        stop: None,
-    };
-    let result =
-        rmp_serde::encode::write_named(&mut writer, &ArtifactPayloadRef::new(position, envelope));
-    if let Some(cause) = writer.stop {
-        return Err(Stop::Request(cause.into()));
-    }
-    result.map_err(|_| {
-        Stop::Durability(DurabilityError::new(
-            RecoveryFailureClass::CorruptCanonicalArtifact,
-            "original authoritative payload serializer refused its admitted data",
-        ))
-    })?;
-    Ok(writer.hash.finalize().into())
-}
-struct DigestWriter<'context, 'scope, 'authority> {
-    hash: Sha256,
-    context: &'context mut MapKernelContext<'scope, 'authority>,
-    stop: Option<MapKernelStop>,
-}
-impl Write for DigestWriter<'_, '_, '_> {
-    fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
-        for chunk in bytes.chunks(64 * 1024) {
-            let result = if self.context.has_accounting() {
-                self.context.checkpoint(chunk.len() as u64)
-            } else {
-                self.context.poll()
-            };
-            if let Err(cause) = result {
-                if self.stop.is_none() {
-                    self.stop = Some(cause);
-                }
-                return Err(io::ErrorKind::Other.into());
-            }
-            self.hash.update(chunk);
-        }
-        Ok(bytes.len())
-    }
-    fn flush(&mut self) -> io::Result<()> {
-        Ok(())
-    }
+    use super::commitment_writer::CommitmentWriter;
+    let mut position_writer = CommitmentWriter::new(Sha256::new(), context);
+    position_writer.value(&position)?;
+    let position_leaf = position_writer.hash.finalize().into();
+    let mut envelope_writer = CommitmentWriter::new(Sha256::new(), context);
+    envelope_writer
+        .value(&crate::history::data::AuthoritativeArtifactEnvelopeRef::new(envelope))?;
+    let envelope_leaf = envelope_writer.hash.finalize().into();
+    let mut input_writer = CommitmentWriter::new(Sha256::new(), context);
+    input_writer.value(&envelope.recorded_original_inputs())?;
+    let input_leaf = input_writer.hash.finalize().into();
+    Ok(
+        *super::RelationalCanonicalCommitArtifactDigest::from_leaves(
+            position.0,
+            envelope.commit.commit_id.0,
+            position_leaf,
+            envelope_leaf,
+            input_leaf,
+        )
+        .as_bytes(),
+    )
 }

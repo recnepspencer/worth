@@ -16,6 +16,9 @@ use crate::durability::medium::{RelationalCommitPublication, RelationalDurableMe
 
 #[path = "performed_stream/recovered_source.rs"]
 mod recovered_source;
+#[path = "performed_stream/source_retirement.rs"]
+mod source_retirement;
+pub(crate) use source_retirement::RelationalPerformedSourceWalk;
 
 #[derive(Default)]
 pub(super) struct PerformedPublicationStream {
@@ -99,7 +102,7 @@ impl PerformedPublicationStream {
     pub(super) fn record_with_cutover<T>(
         &self,
         route: Arc<CanonicalPublicationRoute>,
-        resident: Arc<CanonicalCommitEnvelope>,
+        original_payload: &crate::durability::canonical_commit_artifact::PreparedOriginalCanonicalPayload,
         admission: PatchPositionReservationAdmission<'_, '_, '_>,
         medium: Option<&RelationalDurableMediumBinding>,
         policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
@@ -115,7 +118,7 @@ impl PerformedPublicationStream {
         };
         let original = RelationalCommitPublication::prepare_memory_frame(
             PatchStreamPosition(next_position),
-            &resident,
+            original_payload,
             medium,
             execution,
         )
@@ -123,7 +126,7 @@ impl PerformedPublicationStream {
         let positioned = Arc::new(PositionedCanonicalCommit::admit(
             super::CanonicalPositionAdmission::performed(
                 PatchStreamPosition(next_position),
-                resident,
+                original_payload.envelope().clone(),
             ),
         ));
         // Durable before live: the position is assigned only once the medium

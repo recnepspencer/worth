@@ -64,18 +64,28 @@ impl UnrecoveredApplicationHome {
         }
         let Self {
             relational,
-            context,
+            mut context,
         } = self;
-        let closing = match relational.prepare_close() {
+        let preparation = context
+            .world_close_checkpoint
+            .get_mut()
+            .unwrap_or_else(|error| error.into_inner())
+            .take_native_retirement();
+        let closing = match relational.prepare_close(preparation, request) {
             Ok(closing) => closing,
-            Err((relational, cause)) => {
+            Err((relational, preparation, cause)) => {
+                context
+                    .world_close_checkpoint
+                    .get_mut()
+                    .unwrap_or_else(|error| error.into_inner())
+                    .restore_native_retirement(preparation);
                 return Err(UnrecoveredApplicationHomeCloseRefused {
                     cause: Denial::Relational(cause),
                     home: Self {
                         relational,
                         context,
                     },
-                })
+                });
             }
         };
         Ok(
@@ -97,18 +107,28 @@ impl UnsharedReadmittedApplicationHome {
         }
         let Self {
             relational,
-            context,
+            mut context,
         } = self;
-        let closing = match relational.prepare_close() {
+        let preparation = context
+            .world_close_checkpoint
+            .get_mut()
+            .unwrap_or_else(|error| error.into_inner())
+            .take_native_retirement();
+        let closing = match relational.prepare_close(preparation, request) {
             Ok(closing) => closing,
-            Err((relational, cause)) => {
+            Err((relational, preparation, cause)) => {
+                context
+                    .world_close_checkpoint
+                    .get_mut()
+                    .unwrap_or_else(|error| error.into_inner())
+                    .restore_native_retirement(preparation);
                 return Err(UnsharedApplicationHomeCloseRefused {
                     cause: Denial::Relational(cause),
                     home: Self {
                         relational,
                         context,
                     },
-                })
+                });
             }
         };
         Ok(

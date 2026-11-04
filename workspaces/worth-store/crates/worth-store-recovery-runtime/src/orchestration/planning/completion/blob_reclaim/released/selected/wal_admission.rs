@@ -7,10 +7,10 @@ use worth_store_physical_format::{
 };
 use worth_store_recovery_physics::RecoveryOperationFate;
 
-use super::ResolvedPlanningBasis;
+use super::ResolvedPlanningState;
 
 pub(super) fn admits_indeterminate(
-    basis: &ResolvedPlanningBasis,
+    basis: &ResolvedPlanningState,
     descriptor: BlobReclaimDescriptorV2,
     expected_custody: Option<ReleasedDropCustodyV1>,
     operation_id: [u8; 32],

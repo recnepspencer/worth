@@ -49,7 +49,19 @@ fn inline_domain_write_patch_correction_inverse_and_history_keep_exact_native_by
         &SEVEN,
     );
     let head = super::model::required_output_courts::head(&application);
-    let replayed = tree_reapplication::reapply(&application, &alternative, "inline-reapply");
+    let (_closed, replayed) = tree_reapplication::reapplication_completion::complete(
+        &application,
+        application.runtime().current_world(),
+        &alternative,
+        "inline-reapply",
+    );
+    let WorthQuerySourceCompletion::Recorded {
+        receipt: replayed, ..
+    } = replayed
+    else {
+        panic!("inline duplicate returns original data");
+    };
+    super::model::recorded_receipt::assert_agrees(&replayed, &replay);
     assert_eq!(replayed.commit_reference(), replay.commit_reference());
     assert_eq!(
         super::model::required_output_courts::head(&application),

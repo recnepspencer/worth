@@ -20,7 +20,7 @@ impl StoreColdSource {
             });
         }
         let records = self
-            .serving
+            .serving()
             .anchored_records()
             .map_err(|_| Cause::SourceUnavailable)?;
         let (placed, selected_read) = {

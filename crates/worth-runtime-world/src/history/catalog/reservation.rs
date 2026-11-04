@@ -379,7 +379,7 @@ fn promote_reserved_commit(
     let result = Arc::clone(&commit);
     let entry = CompositeHistoryCatalogEntry {
         pins,
-        commit,
+        commit: Some(commit),
         publication,
         metadata_charge: reservation.commit_charge,
     };

@@ -36,21 +36,22 @@ impl RelationalBranchRetentionOwner {
             .lock()
             .unwrap_or_else(|error| error.into_inner());
         let mut failure = None;
-        // DashMap::iter allocates private guard Arcs. retain's literal-true
-        // visitor changes no entry and allocates no traversal storage. It takes
-        // shard WRITE guards; after a stop its bounded remaining cold traversal
-        // only returns true. No lane/head/state lock is entered in this visitor.
-        self.inner.retired_roots.retain(|_, entry| {
-            if failure.is_none() {
+        // Only metadata sharing/funding occurs under the read gate. Lane
+        // inspection and all removed/transient payload destruction follow it.
+        {
+            let roots = self.inner.read_retired_roots();
+            for entry in roots.values() {
                 for binding in entry.branch_bindings.values() {
                     if let Err(cause) = insert_lane(&mut lanes, binding, &self.inner, request) {
                         failure = Some(cause);
                         break;
                     }
                 }
+                if failure.is_some() {
+                    break;
+                }
             }
-            true
-        });
+        }
         if let Some(cause) = failure {
             return Err(cause);
         }

@@ -40,6 +40,20 @@ pub(super) fn row(
                 "emitted-effect-count",
                 AspectValue::UInt64(0),
             ),
+            // Match the current seven-field Native registration contract
+            // (provider_idempotency revision 4). This administrative row has
+            // no World product affinity or output-settlement occurrence.
+            (
+                "idempotency",
+                "product-affinity",
+                AspectValue::String("memory-only".into()),
+            ),
+            (
+                "idempotency",
+                "attempt-association-source",
+                AspectValue::UInt64(1),
+            ),
+            ("idempotency", "output-settlement", AspectValue::UInt64(0)),
         ],
     );
 }

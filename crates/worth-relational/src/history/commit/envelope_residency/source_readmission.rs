@@ -1,6 +1,54 @@
 //! Journal and selected singleton bytes share the complete existing admission.
 use super::*;
 impl RelationalCommitEnvelopeResidency {
+    /// Source admission validates original bytes even when the logical body is warm.
+    pub(crate) fn readmit_original_positioned(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<PositionedCanonicalCommit, RelationalRecoveryStop> {
+        crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
+        {
+            let state = self.state.lock().unwrap_or_else(|error| error.into_inner());
+            if let Some(failure) = state.damage {
+                return Err(failure.into());
+            }
+        }
+        let (entry, _) = self
+            .source_placement()
+            .ok_or_else(|| RelationalStorageUnavailable {
+                subject: RelationalStorageSubject::Envelope(
+                    self.captured_position()
+                        .unwrap_or(crate::publication::patch::data::PatchStreamPosition(0)),
+                ),
+                cause: Cause::SourceUnavailable,
+            })?;
+        // Only Journal needs a new prefix read. Selected uses its retained cut.
+        let journal = self.journal_placement().map(|(_, source)| source);
+        let protection = journal
+            .as_ref()
+            .map(|source| {
+                crate::durability::medium::RelationalDurableReadProtection::capture(
+                    source, execution,
+                )
+                .map_err(|cause| {
+                    crate::durability::checkpoint_history::capture::owned_stop(
+                        cause,
+                        RelationalStorageSubject::Envelope(entry.position),
+                    )
+                })
+            })
+            .transpose()?;
+        let artifact =
+            self.require_original_artifact(execution, journal.as_ref().zip(protection.as_ref()))?;
+        let result = Self::readmit_owned_artifact(&entry, artifact, execution);
+        if let Err(stop) = &result {
+            self.state
+                .lock()
+                .unwrap_or_else(|error| error.into_inner())
+                .remember_original_failure(stop);
+        }
+        result
+    }
     pub(crate) fn readmit_positioned(
         entry: &RelationalCommitIndexEntry,
         source: &dyn RelationalDurableColdSource,
@@ -36,7 +84,7 @@ impl RelationalCommitEnvelopeResidency {
         })?.into_positioned();
         Self::check_positioned(entry, admitted, execution)
     }
-    fn check_frame(
+    pub(super) fn check_frame(
         entry: &RelationalCommitIndexEntry,
         artifact: &RelationalCanonicalCommitArtifact,
     ) -> Result<(), RelationalRecoveryStop> {
@@ -73,5 +121,16 @@ impl RelationalCommitEnvelopeResidency {
         }
         crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
         Ok(admitted)
+    }
+}
+
+impl EnvelopeState {
+    pub(super) fn remember_original_failure(&mut self, stop: &RelationalRecoveryStop) {
+        if let RelationalRecoveryStop::Durability(error) = stop
+            && let Some(failure) = error.storage_unavailable
+            && failure.cause.is_proven_damage()
+        {
+            self.damage = Some(failure);
+        }
     }
 }

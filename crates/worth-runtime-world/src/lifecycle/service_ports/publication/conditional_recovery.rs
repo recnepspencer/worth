@@ -135,7 +135,7 @@ impl RuntimeWorldPublicationPort<(), (), (), (), ()> {
             &recovery.custody,
             cancellation,
         );
-        match owner.finish_publication(outcome, cancellation) {
+        match owner.finish_publication(&execution, outcome, cancellation) {
             RuntimeWorldPublicationOutcome::Performed(publication) => {
                 let lowering = bridge.commit_owned_conditional_installation_extension(
                     recovery.custody.take_applied(),

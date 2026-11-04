@@ -7,7 +7,7 @@ use worth_store_recovery_physics::PhysicalRewriteAdmission;
 
 use super::super::historical_publication::{self, HistoricalFailure};
 use crate::orchestration::planning::{
-    context::PlanningContext, resolved_basis::ResolvedPlanningBasis,
+    context::PlanningContext, resolved_basis::ResolvedPlanningState,
 };
 
 #[path = "historical_rewrite/inline_membership.rs"]
@@ -20,7 +20,7 @@ enum SourceRoute {
 
 pub(super) fn verify(
     context: PlanningContext,
-    basis: &mut ResolvedPlanningBasis,
+    basis: &mut ResolvedPlanningState,
     admission: PhysicalRewriteAdmission,
 ) -> Result<PlanningContext, crate::entry::PhysicalRecoveryOutcome> {
     let rewrite = admission.redo();

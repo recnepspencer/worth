@@ -67,6 +67,35 @@ pub enum AnchoredRecordPublicationFailure {
     Read(AnchoredRecordReadFailure),
 }
 
+impl AnchoredRecordPublicationFailure {
+    /// Classify inside the owner so every future failure requires an explicit
+    /// fate decision. The actual failure, including stopped custody, is retained.
+    pub fn into_publication_fate(self) -> worth_foundational::facade::DurablePublicationFate<Self> {
+        use worth_foundational::facade::DurablePublicationFate as Fate;
+        match self {
+            failure @ (Self::PublicationBusy
+            | Self::ReservedForOrderedJournal
+            | Self::EmptyPayload
+            | Self::TooManyMembers { .. }
+            | Self::MemberKeyMismatch { .. }
+            | Self::MemberTooLarge { .. }
+            | Self::CarriedMemberNotCurrent { .. }
+            | Self::GenerationConflict { .. }
+            | Self::AnchorTableFull
+            | Self::Unresolved
+            | Self::Batch(_)
+            | Self::Idempotency(_)
+            | Self::Preparation(_)
+            | Self::ProvenNoEffect(_)
+            | Self::Read(_)) => Fate::ProvenNoEffect { detail: failure },
+            failure @ (Self::Indeterminate(_)
+            | Self::CompletedWithoutRecord
+            | Self::OwnedPublication(_)
+            | Self::MemberWrite { .. }) => Fate::Indeterminate { detail: failure },
+        }
+    }
+}
+
 /// Why one batch of new members was not reported durable. Only
 /// `Indeterminate` and `CompletedWithoutRecords` may have written records.
 #[non_exhaustive]

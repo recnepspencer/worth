@@ -1,3 +1,5 @@
+mod home_retirement;
+pub(crate) use home_retirement::HistoryHomeRetirement;
 mod admission;
 mod ancestry;
 mod close_admission;
@@ -6,6 +8,8 @@ mod denial;
 mod entry;
 mod exact_position;
 mod history_retirement;
+mod memory_original;
+pub(crate) use memory_original::MemoryOriginalRegistration;
 mod metadata;
 mod publication;
 mod publication_page;
@@ -94,6 +98,7 @@ mod tests;
 #[derive(Debug, Clone)]
 pub(crate) struct CompositeHistoryCatalog {
     state: Arc<Mutex<CompositeHistoryCatalogState>>,
+    originals: memory_original::MemoryOriginalRegistry,
 }
 
 #[derive(Debug)]
@@ -125,6 +130,7 @@ impl CompositeHistoryCatalog {
             &counters,
         ))));
         Self {
+            originals: Default::default(),
             state: Arc::new(Mutex::new(CompositeHistoryCatalogState {
                 owner,
                 limits: contract,
@@ -164,7 +170,7 @@ impl CompositeHistoryCatalog {
             .entries
             .get(identity)
             .and_then(|slot| slot.get())
-            .map(|entry| Arc::clone(&entry.commit))
+            .map(|entry| entry.shared_commit())
     }
 
     #[cfg(test)]

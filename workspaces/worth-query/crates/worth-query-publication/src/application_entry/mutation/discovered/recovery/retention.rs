@@ -107,9 +107,7 @@ where
             let read = self.read_recovery_idempotency(phase, &prepared)?;
             self.check_recovery_liveness()?;
             match read.into_resolution() {
-                WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(receipt) => {
-                    Ok(receipt)
-                }
+                WorthQueryApplicationIdempotencyResolution::RecoveredCommitted(receipt) => Err(WorthQueryApplicationRecoveryRequestDenial::RecoveredCommitted(receipt)),
                 _ => Err(mismatch()),
             }
         })();

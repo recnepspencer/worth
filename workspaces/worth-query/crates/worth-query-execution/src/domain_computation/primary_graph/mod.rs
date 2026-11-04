@@ -126,6 +126,7 @@ pub(in crate::domain_computation::primary_graph) use application_attempt::WorthQ
 pub(crate) use application_attempt::WorthQueryPerformedExternalRedispatchSeal;
 pub(crate) use provider::WorthQueryRetainedPreImageSeal;
 pub(crate) use provider::WorthQueryPrimaryGraphProvider;
+pub(crate) use provider::WorthQueryPrimaryLogicalGraph;
 pub(in crate::domain_computation) use provider::ApplicationFactTable;
 pub(in crate::domain_computation) use provider::CompletedApplicationFacts;
 pub(in crate::domain_computation) use provider::WorthQueryPrimaryGraphApplicationDecisionFact;

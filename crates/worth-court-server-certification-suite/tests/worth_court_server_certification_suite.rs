@@ -24,3 +24,6 @@ pub(crate) mod shared_support_compat_http_phase_thirteen_runtime;
 #[allow(dead_code, unused_imports)]
 #[path = "worth_court_server_certification_suite/support/worth_native_facade_entry/mod.rs"]
 pub(crate) mod worth_native_facade_entry;
+
+#[path = "worth_court_server_certification_suite/process/mod.rs"]
+mod process;

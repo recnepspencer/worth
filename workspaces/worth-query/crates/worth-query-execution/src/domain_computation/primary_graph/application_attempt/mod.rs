@@ -106,15 +106,16 @@ pub use compare_and_commit::{
     WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitDenialStage,
     WorthQueryApplicationCommitOutcome, WorthQueryApplicationCommitPublicationSource,
     WorthQueryApplicationCommitReceipt, WorthQueryApplicationCommitRecoveryKind,
-    WorthQueryApplicationCommittedChanges, WorthQueryApplicationManagedCleanup,
-    WorthQueryApplicationManagedCleanupFailure, WorthQueryApplicationNoEffect,
+    WorthQueryApplicationCommittedChanges, WorthQueryApplicationLandedCommit,
+    WorthQueryApplicationManagedCleanup, WorthQueryApplicationManagedCleanupFailure,
+    WorthQueryApplicationManagedCleanupReceipt, WorthQueryApplicationNoEffect,
     WorthQueryApplicationNoEffectCause, WorthQueryApplicationStaleAttempt,
     WorthQueryApplicationUncommitted, WorthQueryApplicationUnresolvedCommitEvidence,
+    WorthQueryCleanupDispatchDenial, WorthQueryCleanupDispatchPosture,
     WorthQueryCommittedProductPublication,
 };
 pub(in crate::domain_computation::primary_graph) use compare_and_commit::{
-    WorthQueryCommittedReceiptProjection, WorthQueryPendingApplicationCommitReceipt,
-    WorthQueryProgramActivationUnresolved,
+    WorthQueryCommittedReceiptProjection, WorthQueryProgramActivationUnresolved,
 };
 pub use delegation_activation_program::WorthQueryDelegationActivationProgram;
 pub use denial::{
@@ -168,7 +169,7 @@ pub use idempotency::{
 pub use idempotency_resolution::WorthQueryGuardedWorkflowOperationCustody;
 pub use idempotency_resolution::{
     WorthQueryApplicationIdempotencyResolution, WorthQueryApplicationIdempotencyResolutionDenial,
-    WorthQueryApplicationIdempotencyResolutionDenialKind, WorthQueryHistoricalApplicationCommit,
+    WorthQueryApplicationIdempotencyResolutionDenialKind,
 };
 pub(super) use mandatory_review_outcome::reviewed_outcome;
 pub use mandatory_review_outcome::{WorthQueryMandatoryReviewOutcome, WorthQueryReviewedElevation};
@@ -240,3 +241,7 @@ pub(in crate::domain_computation::primary_graph) use fact::observe_indexed_entit
 pub(in crate::domain_computation::primary_graph) use read_set::CompletedReadScopes;
 
 pub(in crate::domain_computation::primary_graph) use compare_and_commit::MaterializedCommittedField;
+
+pub(in crate::domain_computation) use compare_and_commit::WorthQueryPendingApplicationCommitReceipt;
+
+pub(in crate::domain_computation) use compare_and_commit::RetainedOriginalCleanupCommit;

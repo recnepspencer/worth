@@ -3,37 +3,43 @@ pub(crate) use worth_query_testkit_certification_application_graph::facade::cert
 #[test]
 fn a_full_lineage_refuses_a_new_start_but_replays_a_recorded_one() {
     let (application, definition) = pinned(96_000);
-    let (first, _) = admitted(start(&application, &definition, 96_001));
-    let (second, _) = admitted(start(&application, &definition, 96_002));
+    let first_start = started(start(&application, &definition, 96_001));
+    let first = first_start.instance().clone();
+    let second_start = started(start(&application, &definition, 96_002));
     expect_capacity_refused(start(&application, &definition, 96_003));
     expect_capacity_refused(start(&application, &definition, 96_003));
-    let (replayed, replay) = admitted(start(&application, &definition, 96_002));
-    assert!(
-        replay,
-        "a retry of a recorded start replays on a full lineage"
+    let WorkflowInstanceStartOutcome::RecoveredCommitted(replayed) =
+        start(&application, &definition, 96_002).unwrap()
+    else {
+        panic!("a recorded start resolves original data on a full lineage");
+    };
+    assert_eq!(
+        replayed.commit_reference(),
+        second_start.receipt().commit_reference()
     );
-    assert_eq!(replayed, second);
 
     release_everything(&application);
     expect_capacity_refused(start(&application, &definition, 96_004));
-    let (replayed, replay) = admitted(start(&application, &definition, 96_001));
-    assert!(replay, "a cold retry of a recorded start replays");
-    assert_eq!(replayed, first);
-
-    let ended = cancelled(cancel_instance(&application, first, 96_010));
-    assert!(!ended.replayed());
-    let (_, replay) = admitted(start(&application, &definition, 96_003));
-    assert!(
-        !replay,
-        "the refused key recorded nothing, and cancellation released a pin",
+    let WorkflowInstanceStartOutcome::RecoveredCommitted(replayed) =
+        start(&application, &definition, 96_001).unwrap()
+    else {
+        panic!("a cold recorded start resolves original owner data");
+    };
+    assert_eq!(
+        replayed.commit_reference(),
+        first_start.receipt().commit_reference()
     );
+
+    let _ended = cancelled(cancel_instance(&application, first, 96_010));
+    // Matching Started proves the refused key can make one fresh start.
+    admitted(start(&application, &definition, 96_003));
     expect_capacity_refused(start(&application, &definition, 96_011));
 }
 
 #[test]
 fn publication_takes_no_pin_and_eviction_releases_none() {
     let (application, definition) = pinned(96_100);
-    let (first, _) = admitted(start(&application, &definition, 96_101));
+    let first = admitted(start(&application, &definition, 96_101));
     admitted(start(&application, &definition, 96_102));
     let successor = replace_definition(
         &application,
@@ -68,7 +74,7 @@ fn publication_takes_no_pin_and_eviction_releases_none() {
     );
     expect_capacity_refused(start(&application, &successor, 96_122));
 
-    let (migrated, _) = admitted(migrate_instance(
+    let migrated = admitted(migrate_instance(
         &application,
         first,
         successor.clone(),
@@ -89,8 +95,7 @@ fn publication_with_a_free_pin_still_admits_one_start() {
         reviewed_document_definition("applied"),
         96_310,
     );
-    let (_, replay) = admitted(start(&application, &successor, 96_311));
-    assert!(!replay, "publishing the successor took no pin");
+    admitted(start(&application, &successor, 96_311));
     expect_capacity_refused(start(&application, &successor, 96_312));
 }
 
@@ -100,7 +105,7 @@ fn publication_with_a_free_pin_still_admits_one_start() {
 #[test]
 fn a_migration_exchanges_exactly_one_pin() {
     let (application, definition) = pinned(96_400);
-    let (first, _) = admitted(start(&application, &definition, 96_401));
+    let first = admitted(start(&application, &definition, 96_401));
     admitted(start(&application, &definition, 96_402));
     let successor = replace_definition(
         &application,
@@ -108,7 +113,7 @@ fn a_migration_exchanges_exactly_one_pin() {
         reviewed_document_definition("applied"),
         96_410,
     );
-    let (migrated, _) = admitted(migrate_instance(
+    let migrated = admitted(migrate_instance(
         &application,
         first,
         successor.clone(),
@@ -116,9 +121,8 @@ fn a_migration_exchanges_exactly_one_pin() {
         96_420,
     ));
     expect_capacity_refused(start(&application, &successor, 96_421));
-    assert!(!cancelled(cancel_instance(&application, migrated, 96_430)).replayed());
-    let (_, replay) = admitted(start(&application, &successor, 96_431));
-    assert!(!replay);
+    let _ended = cancelled(cancel_instance(&application, migrated, 96_430));
+    admitted(start(&application, &successor, 96_431));
     expect_capacity_refused(start(&application, &successor, 96_432));
 }
 
@@ -128,12 +132,12 @@ fn a_migration_exchanges_exactly_one_pin() {
 #[test]
 fn a_fork_continuation_exchanges_its_copys_pin() {
     let (application, definition) = pinned(96_500);
-    let (first, _) = admitted(start(&application, &definition, 96_501));
+    let first = admitted(start(&application, &definition, 96_501));
     admitted(start(&application, &definition, 96_502));
     let fork = fork_of(&application, first.branch());
     let on_fork = definition.held_on(fork);
     expect_capacity_refused(start(&application, &on_fork, 96_503));
-    let (successor, _) = admitted(continue_on_fork(
+    let successor = admitted(continue_on_fork(
         &application,
         fork,
         first,
@@ -142,9 +146,8 @@ fn a_fork_continuation_exchanges_its_copys_pin() {
         96_510,
     ));
     expect_capacity_refused(start(&application, &on_fork, 96_511));
-    assert!(!cancelled(cancel_instance(&application, successor, 96_520)).replayed());
-    let (_, replay) = admitted(start(&application, &on_fork, 96_521));
-    assert!(!replay);
+    let _ended = cancelled(cancel_instance(&application, successor, 96_520));
+    admitted(start(&application, &on_fork, 96_521));
     expect_capacity_refused(start(&application, &on_fork, 96_522));
     expect_capacity_refused(start(&application, &definition, 96_530));
 }
@@ -159,7 +162,7 @@ fn warm_progression_has_no_cold_compilation_or_reconstruction() {
     let compiled = application.runtime().workflow_compilation_reuse_counters();
     let progress = application.runtime().workflow_instance_progress_counters();
 
-    let (instance, _) = admitted(start(&application, &definition, 96_210));
+    let instance = admitted(start(&application, &definition, 96_210));
     let (proposal, required, _) = approval_requirement(&application, instance.clone(), 96_210);
     match approve_instance(
         &application,

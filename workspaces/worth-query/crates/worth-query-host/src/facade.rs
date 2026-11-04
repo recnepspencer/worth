@@ -360,8 +360,8 @@ pub use worth_query_publication::facade as publication;
 pub use worth_query_publication::facade::application_entry;
 
 pub use crate::application_home::{
-    discard_home, HomeCustodyReadmissionDenial, WorldCompositionRetained,
-    WorthQueryApplicationHome, WorthQueryApplicationHomeCheckpoint,
+    discard_home, ApplicationHomeQueryRootDenial, HomeCustodyReadmissionDenial,
+    WorldCompositionRetained, WorthQueryApplicationHome, WorthQueryApplicationHomeCheckpoint,
     WorthQueryApplicationHomeCheckpointDenial, WorthQueryApplicationHomeCheckpointInspection,
     WorthQueryApplicationHomeCheckpointJournalObservation,
     WorthQueryApplicationHomeCheckpointLimits, WorthQueryApplicationHomeCloseRefused,

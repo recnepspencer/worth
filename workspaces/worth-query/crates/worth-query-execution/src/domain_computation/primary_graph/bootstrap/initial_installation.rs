@@ -10,6 +10,12 @@ pub(super) fn install(
     additions: RelationalSchemaRegistry,
     registrations: Vec<CustomInvariantRegistration>,
     layout: &WorthQueryPrimaryGraphLayout,
+    request: &worth_execution::ExecutionRequest<'_, '_>,
+    initialization: Option<
+        worth_proof::FreshNativeInitialization<
+            worth_relational::facade::durability::RelationalFreshInitialization,
+        >,
+    >,
 ) -> Result<
     (RelationalInitialSchemaInstallationReceipt, [u8; 32]),
     WorthQueryPrimaryGraphInstallationDenial,
@@ -25,11 +31,22 @@ pub(super) fn install(
         .filter(|source| source.definition.maintenance().native_cold().is_some())
         .map(|source| source.program.clone())
         .collect();
-    let invariant_installation_receipt = relational_runtime
-        .prepare_initial_schema_installation()
-        .map_err(map_initial_schema_installation_denial)?
-        .install_with_managed_sources(additions, registrations, public_source_programs)
-        .map_err(map_initial_schema_installation_denial)?;
+    let invariant_installation_receipt = match initialization {
+        Some(initialization) => relational_runtime
+            .prepare_fresh_home_schema_installation(request, initialization)
+            .map_err(map_initial_schema_installation_denial)?
+            .install_with_managed_sources(
+                request,
+                additions,
+                registrations,
+                public_source_programs,
+            ),
+        None => relational_runtime
+            .prepare_initial_schema_installation()
+            .map_err(map_initial_schema_installation_denial)?
+            .install_with_managed_sources(additions, registrations, public_source_programs),
+    }
+    .map_err(map_initial_schema_installation_denial)?;
     if invariant_installation_receipt.custom_invariant_inventory_digest()
         != &expected_invariant_inventory_digest
     {

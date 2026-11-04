@@ -5,6 +5,7 @@ mod capture;
 mod contracts;
 mod draft;
 mod metadata;
+mod original_image;
 mod prepare;
 mod records;
 mod regions;
@@ -21,10 +22,21 @@ use crate::durability::data::{
 #[derive(Debug)]
 pub struct CompleteRelationalNativeCheckpoint {
     checkpoint: RelationalNativeCheckpoint,
+    initial_predecessor: Option<[u8; 32]>,
+    source_artifact: crate::durability::source_initial_inputs::RelationalCompleteSourceArtifact,
 }
 impl CompleteRelationalNativeCheckpoint {
+    /// The recorded predecessor of this producer's accepted initialization.
+    pub fn initial_predecessor(&self) -> Option<[u8; 32]> {
+        self.initial_predecessor
+    }
     pub fn checkpoint(&self) -> &RelationalNativeCheckpoint {
         &self.checkpoint
+    }
+    pub fn source_artifact(
+        &self,
+    ) -> &crate::durability::source_initial_inputs::RelationalCompleteSourceArtifact {
+        &self.source_artifact
     }
 }
 

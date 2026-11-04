@@ -11,6 +11,8 @@ use worth_store::physical_runtime::ServingPhysicalRuntime;
 #[derive(Debug)]
 pub struct ApplicationHomeCheckpointInspection {
     pub journals: [ApplicationHomeCheckpointJournalObservation; 5],
+    /// Actual canonical bodies from journal transport and selected checkpoint members.
+    pub native_canonical_body_reads: u64,
     pub due: bool,
     pub pending: Option<ApplicationHomeCheckpointRecovery>,
 }
@@ -20,6 +22,7 @@ pub(crate) fn inspect(
     owner: &HomeCheckpointOwner,
     world: &WorldCheckpointPort,
     limits: ApplicationHomeCheckpointLimits,
+    native_canonical_body_reads: u64,
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<ApplicationHomeCheckpointInspection, Denial> {
     request.consult().map_err(Denial::Execution)?;
@@ -33,6 +36,7 @@ pub(crate) fn inspect(
     )?;
     Ok(ApplicationHomeCheckpointInspection {
         journals: cadence.journals,
+        native_canonical_body_reads,
         due: cadence.due,
         pending: owner.pending().map(|attempt| attempt.observation()),
     })

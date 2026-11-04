@@ -31,11 +31,10 @@ struct EventPageCell {
 }
 #[derive(Debug)]
 pub(super) struct RuntimeLineageEventResidency {
-    source: Arc<dyn RelationalDurableColdSource>,
+    pub(super) custody: Mutex<crate::durability::medium::NativeSourceMemberState>,
     pages: BTreeMap<RelationalDurableMemberLocator, Arc<EventPageCell>>,
     routes: BTreeMap<RelationalLineageEventPageRoute, Vec<Arc<EventPageCell>>>,
     commit_bindings: BTreeMap<CommitId, RelationalCommitReceipt>,
-    _placement: RelationalDurableMemberCustody,
 }
 impl RuntimeLineageEventResidency {
     pub(super) fn new(
@@ -86,7 +85,10 @@ impl RuntimeLineageEventResidency {
             pages.insert(descriptor.member, cell);
         }
         Ok(Self {
-            source: directory.source.clone(),
+            custody: Mutex::new(crate::durability::medium::NativeSourceMemberState::new(
+                directory.source.clone(),
+                placement,
+            )),
             pages,
             routes,
             commit_bindings: directory
@@ -95,7 +97,6 @@ impl RuntimeLineageEventResidency {
                 .iter()
                 .map(|entry| (entry.commit.commit_id, entry.commit.clone()))
                 .collect(),
-            _placement: placement,
         })
     }
     pub(super) fn member_subjects(
@@ -145,7 +146,10 @@ impl RuntimeLineageEventResidency {
         }
         selected
             .into_values()
-            .map(|cell| cell.demand(execution, self.source.as_ref(), &self.commit_bindings))
+            .map(|cell| {
+                let source = self.source().map_err(|cause| cell.storage_failure(cause))?;
+                cell.demand(execution, source.as_ref(), &self.commit_bindings)
+            })
             .collect()
     }
 }

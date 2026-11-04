@@ -19,6 +19,7 @@ pub struct FreshRelationalSourceAdmission {
     birth: Arc<RelationalBranchRootSchemaAuthority>,
     schema: Arc<RelationalBranchRootSchemaAuthority>,
     invariant_generation: u64,
+    initial_inputs_digest: [u8; 32],
 }
 impl FreshRelationalSourceAdmission {
     pub(super) fn capture(
@@ -59,6 +60,14 @@ impl FreshRelationalSourceAdmission {
                     .birth
                     .as_ref()
                     .ok_or_else(|| refused("fresh producer has no original birth"))?;
+                let initial_inputs_digest = inputs
+                    .accepted_initial_inputs
+                    .as_ref()
+                    .and_then(|inputs| inputs.artifact.as_ref())
+                    .map(|artifact| artifact.payload_digest())
+                    .ok_or_else(|| {
+                        refused("fresh producer has no durably accepted original initialization")
+                    })?;
                 let initial = inputs
                     .installation
                     .as_ref()
@@ -92,6 +101,7 @@ impl FreshRelationalSourceAdmission {
                     .cold_source()
                     .ok_or_else(|| refused("fresh source detached"))?;
                 Ok(Self {
+                    initial_inputs_digest,
                     runtime_instance_id: runtime.runtime_instance_id(),
                     generation,
                     truth_version,
@@ -132,6 +142,7 @@ impl FreshRelationalSourceAdmission {
             || !Arc::ptr_eq(&self.schema, &observed.schema)
             || self.source.as_ptr().cast::<()>() != observed.source.as_ptr().cast::<()>()
             || self.invariant_generation != observed.invariant_generation
+            || self.initial_inputs_digest != observed.initial_inputs_digest
         {
             return Err(refused("fresh initial source has advanced or changed"));
         }

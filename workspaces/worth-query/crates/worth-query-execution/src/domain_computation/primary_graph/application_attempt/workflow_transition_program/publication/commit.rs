@@ -176,7 +176,7 @@ where
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         );
         let projected = match outcome.landed() {
-            Ok((receipt, replayed)) => {
+            Ok(crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationLandedCommit::Live { receipt }) => {
                 self.primary_provider
                     .graph
                     .with_runtime(execution, |runtime| {
@@ -191,10 +191,11 @@ where
                             assessment,
                             approval,
                             operation_receipt_identity,
-                            replayed,
+                            false,
                         )
                     })
             }
+            Ok(crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationLandedCommit::Recovered(receipt)) => return WorkflowProgressOutcome::RecoveredCommitted(receipt),
             Err(uncommitted) => WorkflowProgressOutcome::Application(uncommitted),
         };
         if let (Some(progress_update), WorkflowProgressOutcome::Completed(performed)) =

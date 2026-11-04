@@ -1891,6 +1891,14 @@ Read with `WorthQueryApplicationAttemptDenial::kind()` and `subject()`.
 | `WorthQueryWorkflowOperationBindingDenial` | `for_workflow_operation`, `for_workflow_operation_recovery` |
 | `WorthQueryOrdinaryWorkflowPublicationDenial` | Ordinary lane publication |
 
+Advanced owner acceptance and recovery require a borrowed, genuine
+`WorthQueryApplicationCommitReceipt` in addition to the current bound request.
+The resolver checks its original operation, scope, branch and exact durable
+commit before using it. `WorthQueryRecoveredApplicationCommitReceipt` is data
+and cannot satisfy that parameter. Ordinary applications retain their
+`WorthQueryWorkflowOperation` and let its advancement lend the actual completion;
+closing a duplicate recorded wrapper releases only that wrapper's native cleanup.
+
 ## You can
 
 - Publish several definition revisions in one lineage, each naming its expected predecessor.
@@ -2131,6 +2139,7 @@ not grant authority or replace the lifecycle explanations above.
 
 | Variant | Shape |
 | --- | --- |
+| `RecoveredCommitted` | tuple (WorthQueryRecoveredApplicationCommitReceipt) |
 | `AwaitingProposal` | tuple (RequiredWorkflowProposal) |
 | `AwaitingActor` | tuple (RequiredWorkflowActor) |
 | `AwaitingAssessment` | tuple (RequiredWorkflowAssessment) |

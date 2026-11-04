@@ -27,7 +27,7 @@ impl<S: ModelSchema> ApplicationManagedIndexBinding<S> for ModelIndex<S> {
     const NAME: &'static str = "PrincipalPrefix";
     const PROVIDER: &'static str = "worth.query.tests.prefix-provider.v1";
     const PROVIDER_VERSION: u32 = 1;
-    const STRUCTURE: ApplicationManagedIndexSourceStructure = if matches!(S::MODE, 5 | 6 | 7) {
+    const STRUCTURE: ApplicationManagedIndexSourceStructure = if matches!(S::MODE, 5..=7) {
         ApplicationManagedIndexSourceStructure::BinarySourceTree
     } else {
         ApplicationManagedIndexSourceStructure::Opaque

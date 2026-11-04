@@ -23,9 +23,10 @@ use crate::physical_runtime::{
 
 use super::{semantics, PhysicalRecoveryCoordinationCapacity};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PhysicalRecoveryCoordinationAdmissionError {
     Residency(worth_store_buffer_pool::PhysicalResidencyDenial),
+    ServingCustodyBacking(crate::physical_runtime::PhysicalRecoveryRejoinResidentDenial),
     FreshnessMediaMismatch,
     SignalUnavailable,
     SignalBindingMismatch,
@@ -50,6 +51,8 @@ pub struct PhysicalRecoveryCoordination {
     pub(super) cleanup_capacity: PhysicalRecoveryCoordinationCapacity,
     recovery_allocation: Option<crate::physical_runtime::PhysicalRecoveryAllocationAdmission>,
     rejoin_resident: RecoveryRejoinResidentState,
+    pub(super) serving_custody_backing:
+        Option<crate::physical_runtime::record_serving::PreparedRecoveredCustodyBacking>,
     pub(super) root_protocol_counters: crate::physical_runtime::RootProtocolRouteCounterCells,
     pub(super) checkpoint_selection: super::selected_checkpoint::RecoveryCheckpointSelection,
     runtime: RuntimeIdentity,
@@ -99,6 +102,18 @@ impl PhysicalRecoveryCoordination {
                 )
                 .map_err(PhysicalRecoveryCoordinationAdmissionError::Residency)?;
         }
+        let serving_custody_backing = match recovery_allocation {
+            Some(allocation) => {
+                let window = crate::physical_runtime::PhysicalRecoveryReadAllocation::new(
+                    &residency,
+                    allocation,
+                    lifecycle_from(session.session_identity_bytes()),
+                );
+                Some(crate::physical_runtime::record_serving::PreparedRecoveredCustodyBacking::prepare(&window)
+                    .map_err(PhysicalRecoveryCoordinationAdmissionError::ServingCustodyBacking)?)
+            }
+            None => None,
+        };
         let capacity = capacity.work_capacity();
         let semantics = semantics::install(
             media.store_identity(),
@@ -159,6 +174,7 @@ impl PhysicalRecoveryCoordination {
             cleanup_capacity,
             recovery_allocation,
             rejoin_resident: RecoveryRejoinResidentState::Unadmitted,
+            serving_custody_backing,
             root_protocol_counters: crate::physical_runtime::RootProtocolRouteCounterCells::default(
             ),
             checkpoint_selection:
@@ -245,9 +261,10 @@ impl PhysicalRecoveryCoordination {
     ) -> Option<(
         crate::physical_runtime::instance::PhysicalResidencyOwner,
         super::selected_checkpoint::RecoveryCheckpointOwnership,
+        Option<crate::physical_runtime::record_serving::PreparedRecoveredCustodyBacking>,
     )> {
-        let (residency, checkpoint) = self.into_quiescent_parts()?;
-        Some((residency, checkpoint.into_ownership()?))
+        let (residency, checkpoint, backing) = self.into_quiescent_parts()?;
+        Some((residency, checkpoint.into_ownership()?, backing))
     }
 
     fn into_quiescent_parts(
@@ -255,6 +272,7 @@ impl PhysicalRecoveryCoordination {
     ) -> Option<(
         crate::physical_runtime::instance::PhysicalResidencyOwner,
         super::selected_checkpoint::RecoveryCheckpointSelection,
+        Option<crate::physical_runtime::record_serving::PreparedRecoveredCustodyBacking>,
     )> {
         let _ = self.reconcile_signal_settlements();
         if !self.is_ready() {
@@ -272,7 +290,11 @@ impl PhysicalRecoveryCoordination {
             && work.settling() == 0
             && self.signal.dispose() == PhysicalSignalShutdownOutcome::Disposed
             && self.scheduler.capacity_snapshot().active_reservations() == 0;
-        quiescent.then_some((self.residency, self.checkpoint_selection))
+        quiescent.then_some((
+            self.residency,
+            self.checkpoint_selection,
+            self.serving_custody_backing,
+        ))
     }
 
     pub(in crate::physical_runtime) const fn freshness(

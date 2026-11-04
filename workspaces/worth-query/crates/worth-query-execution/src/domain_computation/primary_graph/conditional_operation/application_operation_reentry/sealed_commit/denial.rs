@@ -194,8 +194,8 @@ fn classify_kind(kind: Kind) -> Outcome {
         | Kind::CandidateIdentityExhausted
         | Kind::IndexMaintenanceBudgetExceeded
         | Kind::IndexGenerationIdentityExhausted
+        | Kind::IdempotencyForeignAffinity
         | Kind::IdempotencyIntentDrift
-        | Kind::IdempotencyReceiptNotRetained { .. }
         | Kind::IdempotencyIntentUnverifiable
         | Kind::MutationBindingMismatch
         | Kind::MutationInputMismatch

@@ -15,6 +15,7 @@ use worth_foundational::facade::{
 };
 
 pub(super) fn entity(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     view: Option<&VisibilityProjectionView>,
     id: EntityId,
     locator: &AspectFieldLocator,
@@ -24,15 +25,12 @@ pub(super) fn entity(
     work.prepare(1, 0)?;
     let root = view.selected_root().ok_or(Denial::SnapshotUnavailable)?;
     work.prepare(33, 0)?;
-    let Some(partition) = root.partition_state(id.partition_id).map_err(|failure| {
-        Denial::Execution(
-            crate::execution::RelationalExecutionDenialCause::StorageUnavailable(failure),
-        )
-    })?
-    else {
+    view.demand_regions_head(execution, [id.partition_id])
+        .map_err(Denial::Execution)?;
+    let Some(partition) = root.accepted_head_region_view(id.partition_id) else {
         return Ok(None);
     };
-    let Some(slot) = partition.entity_arena.get_slot(id.slot_index()) else {
+    let Some(slot) = partition.entity_arena().get_slot(id.slot_index()) else {
         return Ok(None);
     };
     if slot.lifecycle() != RecordLifecycleState::Live
@@ -60,6 +58,7 @@ pub(super) fn entity(
 }
 
 pub(super) fn relation(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     view: Option<&VisibilityProjectionView>,
     id: RelationId,
     locator: &AspectFieldLocator,
@@ -69,15 +68,12 @@ pub(super) fn relation(
     work.prepare(1, 0)?;
     let root = view.selected_root().ok_or(Denial::SnapshotUnavailable)?;
     work.prepare(33, 0)?;
-    let Some(partition) = root.partition_state(id.partition_id).map_err(|failure| {
-        Denial::Execution(
-            crate::execution::RelationalExecutionDenialCause::StorageUnavailable(failure),
-        )
-    })?
-    else {
+    view.demand_regions_head(execution, [id.partition_id])
+        .map_err(Denial::Execution)?;
+    let Some(partition) = root.accepted_head_region_view(id.partition_id) else {
         return Ok(None);
     };
-    let Some(slot) = partition.relation_arena.get_slot(id.slot_index()) else {
+    let Some(slot) = partition.relation_arena().get_slot(id.slot_index()) else {
         return Ok(None);
     };
     if !matches!(

@@ -164,11 +164,11 @@ where
             ),
         };
         let outcome = match outcome.landed() {
-            Ok((receipt, false)) => {
+            Ok(worth_query_execution::facade::primary_graph::WorthQueryApplicationLandedCommit::Live { receipt }) => {
                 WorthQueryApplicationMutationOutcome::Committed { receipt, result }
             }
-            Ok((receipt, true)) => WorthQueryApplicationMutationOutcome::AlreadyCommitted(receipt),
-            Err(uncommitted) => WorthQueryApplicationMutationOutcome::Commit(uncommitted),
+            Ok(worth_query_execution::facade::primary_graph::WorthQueryApplicationLandedCommit::Recovered(receipt)) => WorthQueryApplicationMutationOutcome::RecoveredCommitted(receipt),
+                    Err(uncommitted) => WorthQueryApplicationMutationOutcome::Commit(uncommitted),
         };
         super::WorthQueryApplicationMutationAttemptReport::new(outcome, decision_work)
     }

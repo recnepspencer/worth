@@ -62,6 +62,9 @@ pub(in crate::domain_computation) struct WorthQueryUnpublishedIdempotencyDisposi
 }
 
 impl WorthQueryUnpublishedIdempotencyStore {
+    pub(super) fn home_close_has_work(&self) -> bool {
+        !self.by_key.is_empty() || !self.by_recovery.is_empty()
+    }
     pub(super) fn new(maximum_entries: Option<usize>) -> Self {
         assert!(
             maximum_entries != Some(0),

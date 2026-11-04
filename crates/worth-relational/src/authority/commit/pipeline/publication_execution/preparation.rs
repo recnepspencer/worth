@@ -12,6 +12,7 @@ use crate::transactions::data::{CommitLog, TransactionCommitError};
 pub(super) struct PreparedPublicationPhase {
     pub(super) record_allocations: crate::runtime::PendingRecordAllocations,
     pub(super) symbol_meanings: crate::runtime::PreparedSymbolPublication,
+    pub(super) candidate_symbols: crate::runtime::RuntimeSymbolTable,
     pub(super) mirror_publication: crate::storage::PreparedMirrorPublication,
     pub(super) prepared_history: crate::mvcc::PreparedRelationalPublication,
     pub(super) validated_lineage_events: crate::runtime::ValidatedLineageEventBatch,
@@ -253,9 +254,8 @@ pub(super) fn prepare_publication_phase(
                 .map(|root| root.schema_authority().registry_arc())
         })
         .unwrap_or_else(|| std::sync::Arc::new(runtime.config.schema.registry.clone()));
-    let prepared_history = runtime
-        .mvcc_publication_authority()
-        .prepare_commit(
+    let prepare_history = || {
+        runtime.mvcc_publication_authority().prepare_commit(
             execution,
             commit_id,
             commit_reference.clone(),
@@ -266,9 +266,21 @@ pub(super) fn prepare_publication_phase(
             publication_schema_registry.as_ref(),
             output_positions,
         )
-        .map_err(|denial| {
+    };
+    let prepared_history = match (
+        super::super::request_lease(execution),
+        runtime.commit_work_budget.as_ref(),
+    ) {
+        (Some(_), Some(budget)) => budget
+            .run_stage(*execution, prepare_history)
+            .map_err(|cause| TransactionCommitError::execution(cause.into()))?
+            .map_err(|denial| {
+                preparation_denial::transaction_error(denial, &branch_basis, commit_log.clone())
+            })?,
+        _ => prepare_history().map_err(|denial| {
             preparation_denial::transaction_error(denial, &branch_basis, commit_log.clone())
-        })?;
+        })?,
+    };
     runtime
         .validate_reserved_lineage_events(canonical_commit_envelope.lineage_events())
         .map_err(|detail| {
@@ -326,6 +338,7 @@ pub(super) fn prepare_publication_phase(
     Ok(PreparedPublicationPhase {
         record_allocations: mutation_identities.records,
         symbol_meanings,
+        candidate_symbols: runtime.services.symbols.clone(),
         mirror_publication,
         prepared_history,
         validated_lineage_events,

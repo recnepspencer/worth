@@ -64,6 +64,12 @@ impl std::fmt::Debug for RetiredRelationalDurableMemberCustody {
 }
 
 impl RelationalDurableMemberCustody {
+    pub(crate) fn preflight_retirement(
+        &self,
+        source: &dyn RelationalDurableColdSource,
+    ) -> Result<(), RelationalDurableMemberRetirementRefusal> {
+        validate_original(&self.owner, source)
+    }
     pub fn into_retirement(self) -> RelationalDurableMemberRetirement {
         RelationalDurableMemberRetirement {
             shared: Some(self.owner),
@@ -82,7 +88,6 @@ impl RelationalDurableMemberRetirement {
         source: &dyn RelationalDurableColdSource,
     ) -> RelationalDurableMemberRetirementObservation {
         use RelationalDurableMemberRetirementObservation as O;
-        use RelationalDurableMemberRetirementRefusal as R;
         if self.complete {
             return O::Complete;
         }
@@ -94,18 +99,7 @@ impl RelationalDurableMemberRetirement {
             .as_deref()
             .or(self.exclusive.as_ref())
             .expect("incomplete retirement owns its original custody");
-        let Some(issuer) = &original.source else {
-            return O::Refused(R::UnsupportedProvider);
-        };
-        // Compare DATA identities, not trait vtables. Never upgrade: a temporary
-        // last strong source could run its destructor on this bounded edge.
-        // The retained Weak prevents allocation/address reuse after owner loss.
-        if issuer.as_ptr().cast::<()>()
-            != (source as *const dyn RelationalDurableColdSource).cast::<()>()
-        {
-            return O::Refused(R::ForeignSource);
-        }
-        if let Err(cause) = source.validate_member_custody_retirement(original.owner.as_ref()) {
+        if let Err(cause) = validate_original(original, source) {
             return O::Refused(cause);
         }
         if let Some(shared) = self.shared.take() {
@@ -134,6 +128,20 @@ impl RelationalDurableMemberRetirement {
             _original: self.exclusive,
         })
     }
+}
+
+fn validate_original(
+    original: &OriginalMemberCustody,
+    source: &dyn RelationalDurableColdSource,
+) -> Result<(), RelationalDurableMemberRetirementRefusal> {
+    use RelationalDurableMemberRetirementRefusal as R;
+    let issuer = original.source.as_ref().ok_or(R::UnsupportedProvider)?;
+    if issuer.as_ptr().cast::<()>()
+        != (source as *const dyn RelationalDurableColdSource).cast::<()>()
+    {
+        return Err(R::ForeignSource);
+    }
+    source.validate_member_custody_retirement(original.owner.as_ref())
 }
 
 impl RetiredRelationalDurableMemberCustody {

@@ -1,4 +1,6 @@
+mod external_retirement;
 mod initial_empty_stop;
+pub(crate) use external_retirement::RetiredSignalExternalObligation;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, MutexGuard, Weak};
 

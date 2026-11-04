@@ -1,4 +1,5 @@
 //! One actual Home checkpoint owner serves manual and automatic advancement.
+mod controls_for_test;
 use super::{
     owner::HomeCheckpointOwner, ApplicationHomeCheckpoint as Summary,
     ApplicationHomeCheckpointDenial as Denial, ApplicationHomeCheckpointLimits,
@@ -19,12 +20,55 @@ pub struct ApplicationHomeCheckpointOperation {
     native: RelationalSectionCompleteCheckpointPreparation,
     limits: ApplicationHomeCheckpointLimits,
 }
+/// Original operation metadata after its actual serving alias is discharged.
+pub struct RetiredApplicationHomeCheckpointOperation {
+    _owner: Arc<HomeCheckpointOwner>,
+    _world: WorldCheckpointPort,
+    _native: RelationalSectionCompleteCheckpointPreparation,
+    _limits: ApplicationHomeCheckpointLimits,
+}
+impl std::fmt::Debug for RetiredApplicationHomeCheckpointOperation {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("RetiredApplicationHomeCheckpointOperation")
+    }
+}
 impl std::fmt::Debug for ApplicationHomeCheckpointOperation {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         formatter.write_str("ApplicationHomeCheckpointOperation")
     }
 }
 impl ApplicationHomeCheckpointOperation {
+    pub(crate) fn retire_for_home(
+        self,
+        owner: &Arc<ServingPhysicalRuntime>,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<RetiredApplicationHomeCheckpointOperation, (Self, crate::ApplicationHomeCloseDenial)>
+    {
+        if !Arc::ptr_eq(&self.serving, owner) {
+            return Err((
+                self,
+                crate::ApplicationHomeCloseDenial::ForeignCheckpointOperation,
+            ));
+        }
+        if let Err(cause) = request.consult() {
+            return Err((self, crate::ApplicationHomeCloseDenial::Execution(cause)));
+        }
+        let Self {
+            serving,
+            owner,
+            world,
+            native,
+            limits,
+        } = self;
+        // The matching borrowed Home Arc guarantees nonfinal local release.
+        drop(serving);
+        Ok(RetiredApplicationHomeCheckpointOperation {
+            _owner: owner,
+            _world: world,
+            _native: native,
+            _limits: limits,
+        })
+    }
     pub(crate) fn new(
         serving: Arc<ServingPhysicalRuntime>,
         owner: Arc<HomeCheckpointOwner>,
@@ -50,6 +94,25 @@ impl ApplicationHomeCheckpointOperation {
             || self.native.prepare(request),
             None,
             None,
+            None,
+        )
+    }
+    /// The actual operation owns this passive observer through its selected
+    /// boundary. It grants neither selection nor acknowledgement authority.
+    pub fn checkpoint_with_native_ack_observer_for_test(
+        &self,
+        request: &ExecutionRequest<'_, '_>,
+        observer: Box<dyn Fn() + Send + Sync>,
+    ) -> Result<Summary, Denial> {
+        super::journey::checkpoint(
+            &self.serving,
+            &self.owner,
+            Some(&self.world),
+            request,
+            || self.native.prepare(request),
+            None,
+            Some(observer.as_ref()),
+            None,
         )
     }
     pub fn recover_checkpoint(
@@ -74,6 +137,12 @@ impl ApplicationHomeCheckpointOperation {
             &self.owner,
             &self.world,
             self.limits,
+            self.native
+                .cold_storage_reads()
+                .ok_or(Denial::Native(
+                    worth_store_relational::RelationalSectionCheckpointDenial::OwnerUnavailable,
+                ))?
+                .commit_reads,
             request,
         )?;
         if !observed.due {

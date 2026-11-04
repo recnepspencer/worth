@@ -4,6 +4,7 @@ use crate::durability::canonical_commit_artifact::{
     RelationalCanonicalCommitArtifact as Artifact,
     RelationalCanonicalCommitArtifactEncodeDenial as Denial,
 };
+use crate::durability::data::RelationalRecoveryStop as Stop;
 use crate::storage::data::{
     RelationalStorageSubject, RelationalStorageUnavailable,
     RelationalStorageUnavailableCause as Cause,
@@ -40,40 +41,63 @@ impl RelationalCommitEnvelopeResidency {
             &crate::durability::medium::RelationalDurableReadProtection,
         )>,
     ) -> Result<Artifact, crate::durability::data::RelationalRecoveryStop> {
-        let state = self.state.lock().unwrap_or_else(|error| error.into_inner());
-        let failure = |cause| {
-            crate::durability::data::RelationalRecoveryStop::from(RelationalStorageUnavailable {
-                subject: RelationalStorageSubject::Envelope(state.position.as_ref().map_or(
-                    crate::publication::patch::data::PatchStreamPosition(0),
-                    |position| position.position(),
-                )),
-                cause,
-            })
-        };
-        if let EnvelopeBacking::SelectedCheckpoint { entry, directory } = &state.backing {
-            return Self::selected_artifact(entry, directory, execution, 1 << 30);
+        crate::execution::check_request(execution).map_err(Stop::Request)?;
+        let mut state = self.state.lock().unwrap_or_else(|error| error.into_inner());
+        if let Some(failure) = state.damage {
+            return Err(failure.into());
         }
-        let bytes = match &state.backing {
-            EnvelopeBacking::Memory {
-                original: Some(bytes),
-                ..
-            } => bytes.clone(),
-            EnvelopeBacking::Memory { .. } => return Err(failure(Cause::SourceUnavailable)),
-            EnvelopeBacking::SelectedCheckpoint { .. } => {
-                unreachable!("selected source handled before byte dispatch")
+        let position = state.position.as_ref().map_or(
+            crate::publication::patch::data::PatchStreamPosition(0),
+            |position| position.position(),
+        );
+        let result = (|| {
+            let failure = |cause| {
+                crate::durability::data::RelationalRecoveryStop::from(
+                    RelationalStorageUnavailable {
+                        subject: RelationalStorageSubject::Envelope(position),
+                        cause,
+                    },
+                )
+            };
+            if let EnvelopeBacking::SelectedCheckpoint { entry, directory } = &state.backing {
+                return Self::selected_artifact(entry, directory, execution, 1 << 30);
             }
-            EnvelopeBacking::Journal { entry, source, .. } => {
-                let (actual, protection) =
-                    original.ok_or_else(|| failure(Cause::SourceUnavailable))?;
-                if !std::sync::Arc::ptr_eq(actual, source) {
-                    return Err(failure(Cause::SourceUnavailable));
+            let bytes = match &state.backing {
+                EnvelopeBacking::Memory {
+                    original: Some(bytes),
+                    ..
+                } => bytes.clone(),
+                EnvelopeBacking::Memory { .. } => return Err(failure(Cause::SourceUnavailable)),
+                EnvelopeBacking::SelectedCheckpoint { .. } => {
+                    unreachable!("selected source handled before byte dispatch")
                 }
-                protection
-                    .read_commit_owned_at(actual, execution, entry.position, 1 << 30)
-                    .map_err(crate::durability::checkpoint_history::capture::owned_stop)?
+                EnvelopeBacking::Journal { entry, source, .. } => {
+                    let (actual, protection) =
+                        original.ok_or_else(|| failure(Cause::SourceUnavailable))?;
+                    if !std::sync::Arc::ptr_eq(actual, source) {
+                        return Err(failure(Cause::SourceUnavailable));
+                    }
+                    protection
+                        .read_commit_owned_at(actual, execution, entry.position, 1 << 30)
+                        .map_err(|cause| {
+                            crate::durability::checkpoint_history::capture::owned_stop(
+                                cause,
+                                RelationalStorageSubject::Envelope(entry.position),
+                            )
+                        })?
+                }
+            };
+            let artifact =
+                Artifact::from_owned_bytes(bytes).map_err(|_| failure(Cause::Damaged))?;
+            if let EnvelopeBacking::Journal { entry, .. } = &state.backing {
+                Self::check_frame(entry, &artifact)?;
             }
-        };
-        Artifact::from_owned_bytes(bytes).map_err(|_| failure(Cause::Damaged))
+            Ok(artifact)
+        })();
+        if let Err(stop) = &result {
+            state.remember_original_failure(stop);
+        }
+        result
     }
 
     pub(crate) fn export_artifact(
@@ -99,8 +123,11 @@ impl RelationalCommitEnvelopeResidency {
             });
         }
         if let EnvelopeBacking::SelectedCheckpoint { entry, directory } = &state.backing {
-            return Self::selected_artifact(entry, directory, execution, 1 << 30)
-                .map_err(Denial::Readmission);
+            let result = Self::selected_artifact(entry, directory, execution, 1 << 30);
+            if let Err(stop) = &result {
+                state.remember_original_failure(stop);
+            }
+            return result.map_err(export_stop);
         }
         if let Some(commit) = state
             .position
@@ -145,5 +172,16 @@ impl RelationalCommitEnvelopeResidency {
                 Err(Denial::StorageUnavailable(failure))
             }
         }
+    }
+}
+
+fn export_stop(stop: Stop) -> Denial {
+    match stop {
+        Stop::Durability(error) => match error.storage_unavailable {
+            Some(failure) => Denial::StorageUnavailable(failure),
+            None => Denial::Readmission(Stop::Durability(error)),
+        },
+        Stop::Request(cause) => Denial::Readmission(Stop::Request(cause)),
+        Stop::Allocation(cause) => Denial::Readmission(Stop::Allocation(cause)),
     }
 }

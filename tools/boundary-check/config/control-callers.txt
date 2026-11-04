@@ -1,4 +1,5 @@
 # Law 1, reach: exact test targets, test-only mounted sources, fixtures and certification sources.
+crates/worth-execution/ workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/process/host/durable_retry/request_stops.rs
 workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/native_components/index_catalog.rs
 workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/query_readmission/bootstrap_publication.rs
 workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/journal_absence.rs
@@ -551,3 +552,34 @@ workspaces/worth-store/crates/worth-store/ workspaces/worth-store/crates/worth-s
 
 # Bank current accounts observes only passive installed provider attempt counters.
 workspaces/worth-query-bank-world/crates/bank-server/ workspaces/worth-query-bank-world/crates/worth-query-bank-court-external-rail-server/tests/worth_query_bank_court_external_rail_server/server/ordinary_reads/current_accounts/mod.rs
+
+# Actual source preparation retains the existing owned read observer.
+workspaces/worth-store/crates/worth-store-relational/ workspaces/worth-store/crates/worth-store-application/src/open/native_source.rs
+
+# Complete Home ACK court observes its actual receiver, never a reconstructed receipt.
+workspaces/worth-store/crates/worth-store-application/ workspaces/worth-query/crates/worth-query-host/src/application_home/checkpoint.rs
+workspaces/worth-query/crates/worth-query-host/ workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/host/application_home/reopening/checkpoint_restart/writer.rs
+
+# Passive actual-Complete commitment observation; returns computed DATA only.
+crates/worth-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/cost/relational/source_initial_inputs.rs
+
+# Cancel only the actual medium member-read ingress for retained Complete-plan retry.
+crates/worth-testkit-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/plan_retry.rs
+
+# Actual held selected-member fault controls; source issuer and original cut stay unchanged.
+crates/worth-testkit-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/recorded_component_checkpoint.rs
+# Original cfg(test) observation metadata retained without exercising its control.
+crates/worth-relational/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/execution_runtime/product_world/source_owner/home_retirement.rs
+
+# The relocated coupled checkpoint court observes its actual issued operation.
+workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/interrupted_close/checkpoint.rs
+# Actual Native-effect/World-compare seam; no outcome injection.
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/process/host/durable_retry/fate_reopening.rs
+crates/worth-runtime-world/ workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/process/host/durable_retry/fate_reopening.rs
+
+# Concurrent retry courts inspect actual installed history to distinguish one commit from repeated sets.
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/process/host/durable_retry/mod.rs
+workspaces/worth-query/crates/worth-query-execution/ crates/worth-court-server-certification-suite/tests/worth_court_server_certification_suite/process/durable_query_retry/mod.rs
+
+# Actual cleanup scheduling for the closed HTTP original-custody journey.
+workspaces/worth-query-bank-world/crates/bank-server/ workspaces/worth-query-bank-world/crates/bank-http-adapter/src/http/server/tests/closed_mutation_handoff/retained_effect.rs

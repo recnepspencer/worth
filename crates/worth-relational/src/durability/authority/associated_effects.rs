@@ -7,7 +7,11 @@ use crate::history::RelationalCommitEnvelopeResidency;
 use crate::transactions::data::RecoveredRelationalSemanticResult;
 use std::sync::{Arc, Weak};
 
+mod created_row;
 mod readmission;
+pub use created_row::ReadmittedRelationalCreatedEntity;
+mod memory_original;
+pub use memory_original::ObservedRelationalMemoryCommit;
 
 /// Exact discovered index and weak owner/source identities. The actual Native
 /// owner retains source custody; an observer cannot keep a closed Home serving.
@@ -75,6 +79,9 @@ impl ReadmittedRelationalAssociatedEffect {
     }
     pub fn semantic_result(&self) -> &crate::transactions::data::RelationalCommitSemanticResult {
         self.semantic.semantic()
+    }
+    pub fn recovered_semantic_result(&self) -> &RecoveredRelationalSemanticResult {
+        &self.semantic
     }
     pub fn settlement(&self) -> RelationalAssociatedEffectSettlement {
         self.settlement

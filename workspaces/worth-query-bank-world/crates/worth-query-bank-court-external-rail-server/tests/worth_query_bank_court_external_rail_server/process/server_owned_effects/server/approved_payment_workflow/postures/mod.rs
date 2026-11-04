@@ -22,11 +22,22 @@ fn pending_rail_dispatch_remains_under_the_committed_outbox_owner() {
         LedgerStatus::Acknowledged
     );
     assert_eq!(ready.rail.completed_effect_count(), 0);
-    let replay = ready
-        .perform()
-        .into_performed()
-        .expect("the operation replay reads retained custody");
-    assert!(!replay.newly_committed());
+    let replay = ready.perform();
+    let BankApprovedPaymentApplyOutcome::RecoveredCommitted(replay) = replay else {
+        panic!("the operation replay retains data without new authority");
+    };
+    assert_eq!(
+        replay.commit_reference(),
+        performed.correction_source().relational()
+    );
+    assert_eq!(
+        replay.emitted_effect_count(),
+        performed.emitted_effect_count()
+    );
+    assert_eq!(
+        replay.dispatch_outbox().is_some(),
+        performed.co_committed_dispatch_outbox()
+    );
     assert_eq!(ready.rail.attempts().len(), 1);
     let workflow = ready
         .fixture
@@ -38,6 +49,7 @@ fn pending_rail_dispatch_remains_under_the_committed_outbox_owner() {
         .accept_native_effect(
             ready.instance.clone(),
             &ready.operation,
+            &performed,
             ready.authority.clone(),
             ready.authority.clone(),
             &key("approved-payment:operation:perform"),
@@ -81,6 +93,7 @@ fn lost_dispatch_recovery_remains_pending_until_authenticated_inbound() {
         .accept_native_effect(
             ready.instance.clone(),
             &ready.operation,
+            &performed,
             ready.authority.clone(),
             ready.authority.clone(),
             &key("approved-payment:operation:perform"),
@@ -116,6 +129,7 @@ fn lost_dispatch_recovery_remains_pending_until_authenticated_inbound() {
         .advanced()
         .prepare_native_effect_recovery(
             &required,
+            &performed,
             ready.authority.clone(),
             &key("approved-payment:operation:perform"),
         )
@@ -132,6 +146,7 @@ fn lost_dispatch_recovery_remains_pending_until_authenticated_inbound() {
         .accept_native_recovered_effect(
             ready.instance.clone(),
             &required,
+            &performed,
             ready.authority.clone(),
             ready.authority.clone(),
             &key("approved-payment:operation:perform"),

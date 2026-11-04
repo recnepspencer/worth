@@ -296,3 +296,6 @@ impl crate::runtime::RelationalRuntime {
 mod cutover;
 #[path = "port_preflight.rs"]
 mod preflight;
+
+#[path = "port_service_retirement.rs"]
+mod service_retirement;

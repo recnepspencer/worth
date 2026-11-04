@@ -1,8 +1,9 @@
 pub use state::CompleteRelationalCheckpointPreparation;
 pub(crate) use state::{
     MutationRecordAllocations, MutationSymbolMeanings, OriginalBranchSchemaInputs,
-    OriginalBranchSchemaInputsDenial, OriginalEmptySchemaObservation,
-    OriginalRecordAllocationCursor, OriginalSymbolMeanings, RetainedBranchTransition,
+    OriginalBranchSchemaInputsDenial, OriginalEmptySchemaInstallation,
+    OriginalEmptySchemaObservation, OriginalRecordAllocationCursor, OriginalSymbolMeanings,
+    RetainedBranchTransition,
 };
 pub mod builder;
 mod construction;
@@ -59,9 +60,9 @@ pub(crate) use initial_schema_installation::{
     codec_field_changes, codec_field_changes_in_context, CodecFieldComparisonStop, CodecFieldLocus,
 };
 pub use initial_schema_installation::{
-    custom_invariant_inventory_digest, RelationalInitialSchemaInstallation,
-    RelationalInitialSchemaInstallationDenial, RelationalInitialSchemaInstallationDenialKind,
-    RelationalInitialSchemaInstallationReceipt,
+    custom_invariant_inventory_digest, FreshRelationalInitialSchemaInstallation,
+    RelationalInitialSchemaInstallation, RelationalInitialSchemaInstallationDenial,
+    RelationalInitialSchemaInstallationDenialKind, RelationalInitialSchemaInstallationReceipt,
 };
 pub use interruption_counters::RelationalInterruptionCostCounters;
 pub use operation_control::RelationalPatchPositionReservationGateForTest;
@@ -87,9 +88,10 @@ pub(crate) use state::{
     AdmittedRelationalRuntimeOperation, AuthoredWriteGeneration, BranchHeadVersionIndexAuthority,
     BranchTransitionPublication, BranchTransitionRecordError, CanonicalCheckpointAdmissionError,
     CanonicalPositionAdmission, CanonicalPublicationRecordError, CapturedIndexDefinitionCatalog,
-    ColdSymbolDirectoryDenial, CommitStrategiesSubsystem, DurabilitySubsystem, HistorySubsystem,
-    IndexCatalogCoverage, IndexingState, IndexingSubsystem, LineageIdentityAllocator, LineageState,
-    LineageSubsystem, MirrorResidencyDemandBinding, OriginalCheckpointIndexes, PartitionEdition,
+    ColdSymbolDirectoryDenial, CommitStrategiesSubsystem, DurabilitySubsystem,
+    FrozenCheckpointIndexes, HistorySubsystem, IndexCatalogCoverage, IndexingState,
+    IndexingSubsystem, LineageIdentityAllocator, LineageState, LineageSubsystem,
+    MirrorResidencyDemandBinding, OriginalCheckpointIndexes, PartitionEdition,
     PatchPositionReservationAdmission, PendingRecordAllocations, PendingSymbolMeanings,
     PerformedCheckpointSelection, PreparedCanonicalPublicationRoute, PreparedCommitSequence,
     PreparedGenerationBatch, PreparedRecoveredVersionedArtifactPublication,
@@ -114,6 +116,10 @@ pub(crate) use state::{
     PendingRelationalPublicationSettlement, PerformedRelationalSettlement,
     RelationalPendingSettlementReservation, RelationalSettlementClaim,
     RelationalSettlementReservationDenial, ReservedRelationalSettlement,
+};
+pub use state::{
+    PreparedRelationalSourceClose, RelationalSourceClose, RelationalSourceCloseDenial,
+    RelationalSourceCloseProgress, RetiredSourceRelationalAllocation,
 };
 
 pub use crate::visibility::materialization::read_records::BoundedFrontierReadStop;

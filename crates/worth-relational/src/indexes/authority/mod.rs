@@ -14,6 +14,7 @@ mod maintenance;
 pub(crate) use maintenance::candidate::PreparedCandidateIndexPublication;
 #[cfg(test)]
 pub(crate) use maintenance::charge_rendezvous::at_next_charges;
+pub(crate) use maintenance::{persistent_map_path_bytes, row_copy_bounds};
 mod packet_planning;
 
 use crate::history::data::CommitId;

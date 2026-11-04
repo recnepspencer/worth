@@ -245,10 +245,16 @@ impl PhysicalRecoveryConstructionPort {
             let _ = coordination.shutdown_is_quiescent();
             return Err(RecoveredPhysicalRuntimeConstructionDenial::RuntimeIdentityUnavailable);
         };
-        let (residency, checkpoint_ownership) = coordination
+        let (residency, checkpoint_ownership, serving_custody_backing) = coordination
             .into_quiescent_recovery_parts()
             .ok_or(RecoveredPhysicalRuntimeConstructionDenial::CoordinationNotQuiescent)?;
+        let serving_custody_backing = serving_custody_backing.ok_or(
+            RecoveredPhysicalRuntimeConstructionDenial::RejoinResident(
+                crate::physical_runtime::PhysicalRecoveryRejoinResidentDenial::MissingResidentAdmission,
+            ),
+        )?;
         Ok(RecoveredPhysicalRuntimeCore {
+            serving_custody_backing,
             residency,
             checkpoint_ownership,
             store: media.store_identity(),

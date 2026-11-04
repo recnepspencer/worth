@@ -209,6 +209,7 @@ fn publish_with_snapshot(
         .expect("pending application publication retains causality until final cutover");
     // The output's lineage record and its settlement row hold the consumed
     // outputs; the completed receipt evidence never does.
+    let original_completion = attempt.affinity().take_original_completion_publisher();
     let consumed_outputs = attempt.retain_consumed_outputs();
     let outstanding = attempt.take_outstanding_dispatch_reservation();
     let predicate = pending.predicate.as_ref().map(|owner| {
@@ -314,10 +315,13 @@ fn publish_with_snapshot(
         .committed_product_publication()
         .composite_commit()
         .clone();
+    let mut indexed = completed.clone();
+    drop(indexed.take_history());
+    original_completion.complete(completed);
     provider
         .completed_commit_evidence
         .lock()
         .unwrap_or_else(|poisoned| poisoned.into_inner())
-        .record(completed);
+        .record(indexed);
     Ok(settled)
 }

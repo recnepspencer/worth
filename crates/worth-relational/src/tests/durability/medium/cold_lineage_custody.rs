@@ -14,6 +14,7 @@ struct ReplacingHomeSource {
 struct MemberOwners {
     members: Vec<RelationalDurableMemberLocator>,
     custody: Arc<Mutex<BTreeMap<RelationalDurableMemberLocator, usize>>>,
+    _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 impl Drop for MemberOwners {
     fn drop(&mut self) {
@@ -28,10 +29,78 @@ impl Drop for MemberOwners {
     }
 }
 impl RelationalDurableColdSource for ReplacingHomeSource {
+    fn checkpoint_selected_read_protection(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        crate::durability::medium::RelationalDurableReadPayload,
+        crate::durability::medium::RelationalDurableOwnedReadRefusal,
+    > {
+        self.producer.checkpoint_selected_read_protection(request)
+    }
+    fn retain_members_for_request(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        members: &[RelationalDurableMemberLocator],
+        issuer: std::sync::Weak<dyn RelationalDurableColdSource>,
+    ) -> Result<
+        RelationalDurableMemberCustody,
+        crate::durability::medium::RelationalDurableOwnedReadRefusal,
+    > {
+        use crate::durability::medium::RelationalDurableOwnedReadRefusal as Refusal;
+        let bytes = std::alloc::Layout::array::<RelationalDurableMemberLocator>(members.len())
+            .map_err(|_| Refusal::Bounds)?
+            .size();
+        let memory = request.reserve_retained_memory(bytes as u64)?;
+        RelationalDurableMemberCustody::try_new_from_source_for_request(issuer, request, || {
+            self.register(members, memory).map_err(Refusal::Storage)
+        })
+    }
+    fn read_member_owned(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        original: &(dyn std::any::Any + Send + Sync),
+        member: RelationalDurableMemberLocator,
+        limit: u64,
+    ) -> Result<
+        worth_execution::ExecutionImmutableBytes,
+        crate::durability::medium::RelationalDurableOwnedReadRefusal,
+    > {
+        self.check_placement(member)
+            .map_err(crate::durability::medium::RelationalDurableOwnedReadRefusal::Storage)?;
+        self.producer
+            .read_member_owned(request, original, member, limit)
+    }
     fn retain_members(
         &self,
         members: &[RelationalDurableMemberLocator],
     ) -> Result<RelationalDurableMemberCustody, Cause> {
+        Ok(RelationalDurableMemberCustody::new(
+            self.register(members, None)?,
+        ))
+    }
+    fn read_member(
+        &self,
+        locator: RelationalDurableMemberLocator,
+        limit: u64,
+    ) -> Result<Vec<u8>, Cause> {
+        self.check_placement(locator)?;
+        self.producer.read_member(locator, limit)
+    }
+    fn read_commit(
+        &self,
+        position: crate::publication::patch::data::PatchStreamPosition,
+        limit: u64,
+    ) -> Result<Vec<u8>, Cause> {
+        self.producer.read_commit(position, limit)
+    }
+}
+impl ReplacingHomeSource {
+    fn register(
+        &self,
+        members: &[RelationalDurableMemberLocator],
+        memory: Option<worth_execution::ExecutionMemoryReservation>,
+    ) -> Result<MemberOwners, Cause> {
         if members
             .iter()
             .any(|member| !self.producer.members.contains_key(member))
@@ -42,29 +111,19 @@ impl RelationalDurableColdSource for ReplacingHomeSource {
         for member in members {
             *custody.entry(*member).or_default() += 1;
         }
-        Ok(RelationalDurableMemberCustody::new(MemberOwners {
+        Ok(MemberOwners {
             members: members.to_vec(),
             custody: self.custody.clone(),
-        }))
+            _memory: memory,
+        })
     }
-    fn read_member(
-        &self,
-        locator: RelationalDurableMemberLocator,
-        limit: u64,
-    ) -> Result<Vec<u8>, Cause> {
+    fn check_placement(&self, member: RelationalDurableMemberLocator) -> Result<(), Cause> {
         if self.replaced.load(Ordering::Acquire)
-            && !self.custody.lock().unwrap().contains_key(&locator)
+            && !self.custody.lock().unwrap().contains_key(&member)
         {
             return Err(Cause::MissingMember);
         }
-        self.producer.read_member(locator, limit)
-    }
-    fn read_commit(
-        &self,
-        position: crate::publication::patch::data::PatchStreamPosition,
-        limit: u64,
-    ) -> Result<Vec<u8>, Cause> {
-        self.producer.read_commit(position, limit)
+        Ok(())
     }
 }
 

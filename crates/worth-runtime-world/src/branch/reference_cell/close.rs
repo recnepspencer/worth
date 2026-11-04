@@ -40,3 +40,17 @@ impl ProductBranchReferenceCell {
         Ok(())
     }
 }
+
+impl ProductBranchReferenceCell {
+    pub(crate) fn try_begin_home_basis_retirement(
+        &self,
+    ) -> Result<crate::history::CompositeCommitRetirement, crate::lifecycle::RuntimeWorldCloseDenial>
+    {
+        let mut image = self
+            .state
+            .current
+            .try_write()
+            .map_err(|_| crate::lifecycle::RuntimeWorldCloseDenial::Busy)?;
+        Ok(image.snapshot.begin_home_retirement())
+    }
+}

@@ -117,15 +117,14 @@ impl CanonicalCheckpointPublication {
 struct DisplacedSlot {
     backing: Option<RetiredCanonicalPlacement>,
     directory: Option<Arc<RelationalCheckpointDirectory>>,
-    inert: Option<Box<crate::durability::data::CheckpointDirectoryRetirement>>,
+    inert: Option<crate::durability::data::CheckpointDirectoryRetirement>,
 }
 /// Unique operation storage, mutated only under CheckpointPublication's phase lock.
 #[derive(Debug)]
 pub(crate) struct RetiredCanonicalPlacements {
     slots: Vec<DisplacedSlot>,
     next: usize,
-    spare: Option<crate::durability::data::PreparedCheckpointDirectoryRetirement>,
-    active: Option<Box<crate::durability::data::CheckpointDirectoryRetirement>>,
+    active: Option<crate::durability::data::CheckpointDirectoryRetirement>,
     _memory: Option<ExecutionMemoryReservation>,
 }
 impl RetiredCanonicalPlacements {
@@ -149,7 +148,6 @@ impl RetiredCanonicalPlacements {
         Ok(Self {
             slots,
             next: 0,
-            spare: None,
             active: None,
             _memory: memory,
         })
@@ -169,6 +167,7 @@ impl RetiredCanonicalPlacements {
         &mut self,
         request: &ExecutionRequest<'_, '_>,
         context: &mut MapKernelContext<'_, '_>,
+        source: Option<&dyn crate::durability::medium::RelationalDurableColdSource>,
     ) -> Result<(), Ack> {
         while self.next < self.slots.len() {
             request.check_live().map_err(Ack::Stopped)?;
@@ -185,7 +184,12 @@ impl RetiredCanonicalPlacements {
                 self.next += 1;
                 continue;
             }
-            let slot = &self.slots[self.next];
+            let slot = &mut self.slots[self.next];
+            if let Some(backing) = &mut slot.backing {
+                // The newly installed directory retains the SAME source;
+                // releasing this displaced local edge cannot destroy it.
+                backing.retire_journal_source(source)?;
+            }
             let has_directory = slot.directory.is_some()
                 || slot
                     .backing
@@ -195,14 +199,7 @@ impl RetiredCanonicalPlacements {
                 self.next += 1;
                 continue;
             }
-            // A possible final alias is never consumed until its actual task storage exists.
-            if self.spare.is_none() {
-                self.spare = Some(
-                    crate::durability::data::PreparedCheckpointDirectoryRetirement::prepare(
-                        request,
-                    )?,
-                );
-            }
+            // Each original directory carries its own prepaid retirement storage.
             let slot = &mut self.slots[self.next];
             let directory = slot
                 .directory
@@ -214,12 +211,7 @@ impl RetiredCanonicalPlacements {
                 })
                 .expect("checked displaced directory is retained");
             if let Some(directory) = Arc::into_inner(directory) {
-                self.active = Some(
-                    self.spare
-                        .take()
-                        .expect("prepared task box precedes final alias extraction")
-                        .fill(directory),
-                );
+                self.active = Some(directory.into_retirement());
             } else {
                 // Arc::into_inner atomically released only this genuine nonfinal share.
                 self.next += 1;

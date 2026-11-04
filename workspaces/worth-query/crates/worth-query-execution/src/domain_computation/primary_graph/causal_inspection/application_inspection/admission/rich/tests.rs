@@ -4,9 +4,7 @@ use crate::domain_computation::{
     authorization::application_disclosure::prepare_funded_pending_disclosure,
     primary_graph::{
         application_query::FreshQueryPermissionStop,
-        causal_inspection::application_inspection::{
-            report, rich::WorthQueryApplicationEvidenceFamily as Family,
-        },
+        causal_inspection::application_inspection::rich::WorthQueryApplicationEvidenceFamily as Family,
         tests::fixture::{
             diagnostic_comparison::DiagnosticAccountBinding, installed_inspection_capability_world,
             live_scope,

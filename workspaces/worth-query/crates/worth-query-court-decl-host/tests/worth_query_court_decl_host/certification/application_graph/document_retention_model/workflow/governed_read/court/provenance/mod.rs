@@ -40,7 +40,8 @@ fn foreign_spec_present_and_unperformed_intents_are_both_undisclosed() {
         .unwrap();
     let missing = absent.discovery_intent();
     drop(absent);
-    assert!(!performed.replayed());
+    // Started is the fresh performed variant; D9 no longer wraps a replay in it.
+    assert!(performed.receipt().changed_record_count() > 0);
     drop(performed);
     // Retain a genuine different Spec on the SAME runtime/schema/branch, not a fabricated vocabulary.
     let application = super::super::runtime::retain_with_signing_owner(

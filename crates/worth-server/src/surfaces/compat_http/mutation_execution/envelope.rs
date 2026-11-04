@@ -2,8 +2,6 @@ use crate::{
     WorthServerDirectContextArtifact, WorthServerQuerySupportPosture, WorthServerResponseEnvelope,
 };
 
-use super::idempotency::WorthServerIdempotentRetryReceipt;
-
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthServerCompatibilityMutationEnvelope {
     support_posture: WorthServerQuerySupportPosture,
@@ -11,7 +9,6 @@ pub struct WorthServerCompatibilityMutationEnvelope {
     handoff_digest: String,
     direct_context: WorthServerDirectContextArtifact,
     response_envelope: WorthServerResponseEnvelope,
-    retry_receipt: WorthServerIdempotentRetryReceipt,
     canonical_digest: String,
 }
 
@@ -22,13 +19,11 @@ impl WorthServerCompatibilityMutationEnvelope {
         handoff_digest: String,
         direct_context: WorthServerDirectContextArtifact,
         response_envelope: WorthServerResponseEnvelope,
-        retry_receipt: WorthServerIdempotentRetryReceipt,
     ) -> Self {
         let canonical_digest = format!(
-            "worth-server-compat-mutation-envelope-v2|handoff:{}|response:{}|retry:{}",
+            "worth-server-compat-mutation-envelope-v3|handoff:{}|response:{}",
             handoff_digest,
             response_envelope.canonical_digest(),
-            retry_receipt.canonical_digest(),
         );
         Self {
             support_posture,
@@ -36,7 +31,6 @@ impl WorthServerCompatibilityMutationEnvelope {
             handoff_digest,
             direct_context,
             response_envelope,
-            retry_receipt,
             canonical_digest,
         }
     }
@@ -59,10 +53,6 @@ impl WorthServerCompatibilityMutationEnvelope {
 
     pub fn response_envelope(&self) -> &WorthServerResponseEnvelope {
         &self.response_envelope
-    }
-
-    pub fn retry_receipt(&self) -> &WorthServerIdempotentRetryReceipt {
-        &self.retry_receipt
     }
 
     pub fn canonical_digest(&self) -> &str {

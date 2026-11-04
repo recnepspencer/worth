@@ -90,19 +90,19 @@ where
         aftermath_causality,
     } = prepared;
     let snapshot = lease.snapshot();
-    let attempt_basis = WorthQueryApplicationAttemptBasis::capture(
-        application,
-        &admission,
-        snapshot,
-        lease.product(),
-    )
-    .map_err(|_| denied(DenialStage::ManagedRunAdmission))?;
     let execution = phase
         .execution_request_for(&application.product_runtime)
         .map_err(|foreign| {
             crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(foreign)
                 .into_commit_outcome()
         })?;
+    let attempt_basis = WorthQueryApplicationAttemptBasis::capture(
+        application,
+        &admission,
+        snapshot,
+        lease.product(),
+        execution.allocation_policy(),
+    )?;
     let operation = bind_execution_operation(
         application,
         &admission,
@@ -126,7 +126,7 @@ where
     let request_bridge = application.bridge.ordinary().fork_managed_request_lane();
     let run_admission = application
         .runtime
-        .managed_run_admission(&request_bridge, &application.product_runtime.source);
+        .managed_run_admission(&request_bridge, application.product_runtime.source());
     let running = run_admission
         .admit_direct(&operation, attempt, read_request, execution)
         .map_err(|failure| {

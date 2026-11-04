@@ -148,6 +148,10 @@ impl DerivedIndexArtifacts {
         artifacts
     }
 
+    pub(crate) fn into_generations(self) -> Vec<DerivedIndexGeneration> {
+        self.generations
+    }
+
     pub fn is_empty(&self) -> bool {
         self.generations.is_empty()
     }

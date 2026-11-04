@@ -10,7 +10,12 @@ fn causal_fact_survives_post_commit_snapshot_failure_via_relational_owner_read()
     let pending = prepared.pending();
     let parent = pending.parent().clone();
     world.faults.fail_next_post_commit_snapshot();
-    let receipt = correction_source::committed(correction_source::publish(&world, prepared));
+    let crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome::Committed(
+        receipt,
+    ) = correction_source::publish(&world, prepared)
+    else {
+        panic!("the original performing owner transfers its actual completion");
+    };
     assert_eq!(
         world.faults.failed_post_commit_snapshot_consumption_count(),
         1
@@ -43,5 +48,5 @@ fn causal_fact_survives_post_commit_snapshot_failure_via_relational_owner_read()
             })
         })
         .unwrap();
-    assert_eq!(reread, *carried);
+    assert_eq!(carried, &reread);
 }

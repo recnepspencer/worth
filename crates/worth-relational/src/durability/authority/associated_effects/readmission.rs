@@ -47,7 +47,7 @@ impl DurabilityAuthority<'_> {
             _ => return Err(Refusal::CatalogSubjectChanged),
         }
         let positioned = residency
-            .demand_positioned(execution, 1 << 30)
+            .readmit_original_positioned(execution)
             .map_err(Refusal::Recovery)?;
         if positioned.envelope().caller_association() != subject.association()
             || subject.association().is_none()

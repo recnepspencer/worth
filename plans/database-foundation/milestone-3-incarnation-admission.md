@@ -350,3 +350,190 @@ metadata evidence; actual filesystem N+1 session qualification remains blocked
 by reserved readmission. Existing selected-product current/foreign courts
 exercise unchanged affinity and zero-provider-call behavior. No installation,
 Native, Store Section or Host-opening implementation changes are made.
+
+
+## Resume from integrated Home lifecycle
+
+Merge parents: P-C 2c278b4aa4 and integration ab96940a4a. The semantic cut keeps
+real Store lease/incarnation admission, integration's reopen/close/receipt
+custody and P-C's pre-effect Home fences. Ten conflicts are resolved by keeping
+both recovery close/incarnation modules and facade entries; preserving discard
+and World fencing courts; taking the integration's stricter Serving/Closed
+controls; and moving the unchanged tombstone checks into the new physical-open
+preparation stage at the same before/after lease-qualification points. No Store
+physical recovery algorithm, Native format or checkpoint owner is changed.
+
+The integration's retained-selector failure reached RecoveredCommitted because
+that branch did not include P-C. The merged Query product admission checks its
+carried real World owner before any source selection/idempotency recovery.
+The court must require the D7 StaleIncarnation variant instead of generic
+ForeignOwner while keeping provider-contact and persisted-balance assertions.
+Actual N+1 capabilities, recovery handles and sessions must be qualified using
+filesystem Homes; pure metadata comparisons do not replace those journeys.
+
+Qualification order: full cargo check --workspace --tests, sequentially Root,
+Query, Store; then selected real Home courts by name, directly with
+RUST_MIN_STACK absent, plus narrowly affected authority controls. Retain
+changed-build authored binding/history and real producer lazy-lineage controls.
+One compilation at a time, free-space check before each, stop below25GB.
+Broad normal qualification is deferred to the joint exit by coordinator ruling.
+At completion run formatting, dirty linecaps, boundary and generated-context
+checks, request fresh independent review, then commit the reviewed merge.
+D16 remains deferred to P-A D12. Reserved P-A checkpoint/readmission and
+integration Bank/physical-recovery paths are not available for D7 fixes.
+
+
+The resumed Query affinity court additionally reuses HostIdentitySurface's
+existing authored inspection capability and public seed_identity_graph in a
+filesystem Home. It retains genuinely admitted access through abandonment and
+reopen, produces two fresh governed observations, and requires typed stale
+inspection refusal, then confirms the same rows through a fresh authorized read. This exercises shared
+disclosure at the actual receiver; it does not fabricate an owner/fence or
+reinterpret a durable receipt as authority. The same-Home selector court now
+also freshly resolves the original durable key after the stale refusal.
+
+
+The changed-build filesystem Host court now publishes balance9 under buildA,
+retains only its actual durable RelationalCommitReceipt, and under buildB reads
+balance9 and resolves the exact original receipt. Original supplier contacts
+are1; buildB contacts are0 before and after durable retry. The opening observer
+borrows the same result and real supplier counter without copying Home custody.
+This proves authored value/history and no supplier replay; the genuine producer
+component court remains the separate stale-derived-lineage control.
+
+
+First resumed Store lane:12 passed,1 failed. Actual World N+1 selector fencing,
+original durable occurrence readmission, recovered close/reopen/old-handle
+fencing, writer contention and discard controls pass. The strengthened changed-
+build case exposed a fixture defect: with_open invoked its observer while the
+bootstrap advancement was still live, so a new business request correctly
+refused ExecutionRequest(NestedOpening). Compare the existing public Host
+same-directory court, which ends bootstrap before requests. The fixture now
+transfers the original result in caller-owned Box storage, ends bootstrap and
+only then invokes its observer. No Home or refusal is cloned. This keeps a
+large owning outcome out of extra caller return frames while preserving the
+ordinary public opening call; direct normal-stack qualification remains required.
+Only changed-build and contention (the affected observer callers) are rerun.
+
+
+Normal-stack direct Host changed-build, process contention/death/reopen and
+fresh discard/reinitialize pass after the bootstrap observer correction. Three
+raw Store/World courts overflow their default stack. Read-only PE unwind/PDB
+inventory of the built executable records2248 frames above16KiB, including
+World fixture composition callback478536B, opener200520B and repeated scope
+carriage around18KiB. It also records reserved physical recovery frames; this
+inventory is static frame allocation, not a dynamic crash trace. No compiler
+or profile override is used to obtain it.
+
+Correct the actual fixture representation: box its owning refusal payloads,
+retain its same Signal owner in Box storage, and transfer one boxed input owner
+through execution callbacks to one non-inlined composition function. Neither
+Home, refusal nor Signal is cloned or reconstructed, and phase/request ordering
+is unchanged. The one destructuring caller exhaustively matches the same exact
+physical lease refusal after unboxing it. Existing partial-custody assertions
+stay intact. No Store physical recovery, Native codec or D12 owner changes are
+made. Recheck the affected court, then rerun only affected World fixture courts
+and their direct default-stack controls; successful Host controls are reused.
+
+
+The resumed Query selector and fresh durable retry pass both nextest and direct
+normal-stack runs. The new rich-capability journey currently cannot reachN+1:
+its actual ProductReadBasis retains the original product, authorization product
+and read owner port, so after dropping Home a second open returns the real
+MutationOwnerContended refusal. An owner-contract ruling is requested rather
+than dropping Native custody or fabricating old access. The incoming sibling
+retry court also cannot reach its assertion: create_product_branch deliberately
+returns DurableBranchPublicationRequired on directory owners (2171c049f44),
+whereas the court added in73b4b5934a expects that ordinary door to succeed. No
+unlogged fork or durable-format extension is implemented to bypass this guard.
+
+The real directory producer journey is added alongside the component court:
+produce underA, reopen underA and reuse the same output without producer calls,
+then reopen underB and reproduce only after explicit demand. Its first check
+required an explicit bool closure argument. Its first runtime run then exposed
+missing durable supplier declarations in the reused memory fixture. The actual
+SetRetention and RetentionAssessment handlers only use Native reads/writes;
+their declared capability is now RelationalMutation, following the existing
+Home balance handler. No handler logic or admission guard is weakened. This
+journey remains under qualification and is not yet claimed as passed.
+
+
+### Resumed qualification facts and boundary decisions still required
+
+The World fixture frame correction passes all five selected World controls.
+Direct execution with RUST_MIN_STACK absent passes the actual N+1 selector,
+recovered-handle, ordinary-occurrence and partial-custody controls. The separate
+external-read close control still overflows; no exact dynamic crash frame is
+claimed. The Query same-directory control also overflows directly, while its
+nextest run and the required old-selector direct run pass. Static unwind/PDB
+inventories retain original and corrected executable hashes. Do not replace
+these outcomes with the large stack configured for ordinary Cargo launches.
+
+The real directory producer case fails on first demand with
+MissingApplicableProducer, including a direct normal-stack run. Search of
+application_installation/home_preparation for installed_producers/producers
+shows no installation. source/assembly.rs transfers handlers/resources/indexes;
+world.rs binds the build identity but never consumes state.pending.producers;
+application_runtime/installation/home_attachment.rs assembles default producer
+registries. In contrast construction.rs seals and installs the configured
+registry at lines112-119,206-215 and restores accepted output lineage at240-257.
+Installing providers alone would not prove durable original-output readmission.
+An owner decision is requested before widening the slice to this contract. The
+new court is retained with its original positive assertions; no missing-producer
+refusal is accepted as changed-build qualification. Existing component output
+lineage controls pass but do not replace this filesystem journey.
+
+The rich capability case retains actual ProductReadBasis owners through Home
+abandonment. provider_session/graph_obligation/session/product_read.rs carries
+the product observation lease, authorization product and graph read owner port.
+These keep the real D7 mutation lease alive, so the next public Host open
+returns MutationOwnerContended before stale-capability consumption. An explicit
+owner ruling is required on lifetime exclusion versus a retirement/detachment
+contract that admits N+1 with the old value still retained. No custody is dropped
+by a test-only bypass. This does not qualify actual N+1 Query capability/session
+use, even though the receiver fences and focused metadata controls exist.
+
+The inherited-directory-key sibling court asks the ordinary branch creation
+door to succeed. World create_product_branch deliberately returns
+DurableBranchPublicationRequired for a durable owner (2171c049f44); the positive
+court was introduced by73b4b5934a. No unlogged durable branch is manufactured to
+make that test pass. This is a separate branch-publication owner seam.
+
+Focused Root authority rerun:26 passed,0 failed,0 ignored. Broader qualification
+remains unrun by the joint-exit ruling. Every attempted lane and correction is
+retained under target/lane-evidence/pc-d7-resume*. Its final index records exact
+commands, source HEAD, dirty state, timing, status and counts; source tree and
+merge parents must be frozen for independent review before a commit is made.
+
+
+A further owner constraint is explicit: application_contribution/producer/
+registry.rs preflight_home_retirement refuses every nonempty installed producer
+registry with Unsupported(InstalledProducers), and application_runtime/
+home_retirement.rs invokes it before teardown. Thus simply copying the memory
+registry installation would not preserve the integration's close contract.
+Producer installation, durable output recovery and retirement need one coherent
+owner handoff. None is bypassed here. The exact observed refusal remains
+MissingApplicableProducer on the first directory demand, not a claimed failure
+at a later, unexecuted recovery step.
+
+
+### Phase checks on the resumed merge
+
+Selected provider/session controls44/0/0 and the exact original Store descriptor
+changed-build control1/0/0 pass. Root/Query/Store formatting passes. Dirty caps
+pass1726 Rust files, including the existing Foundational facade exemption.
+Boundary-check fails seven BC9002_TEST_TOPOLOGY sites in merged Native source
+courts. All seven are staged changes against the parked parent and match the
+integration parent exactly; they are merged-scope blockers, not untouched-file
+debt. Their exact paths and parent comparisons are recorded in
+pc-d7-resume-boundary-findings.json and the raw phase-boundary.log. No baseline
+allowlist is expanded to hide them. Their Native owner/court migration is not
+implemented within the D7 authority slice.
+
+Agent-context check found stale Host metadata after the facade merge. Running
+its own generate command regenerates the six configured contexts; the corrected
+check passes. No generated context is hand-edited. Review also caught obsolete
+Native blocker wording in the touched capability index. Both passages now state
+the observed capability lease refusal, absent actual N+1 session qualification,
+passing authored/history checks and missing directory producer installation.
+No unexecuted later step is described as an observed refusal.

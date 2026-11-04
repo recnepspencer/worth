@@ -19,6 +19,7 @@ use super::owner_inputs::RuntimeWorldOwnerInputs;
 
 mod bootstrap;
 mod branch_service;
+mod checkpoint_origin;
 mod construction;
 mod execution_service;
 mod inspection_service;
@@ -85,11 +86,11 @@ where
     pub(super) owner_identity: RuntimeWorldOwnerIdentity,
     pub(super) identities: Mutex<RuntimeWorldIdentityIssuer>,
     pub(crate) durable: Option<Arc<crate::durability::WorldDurableMediumBinding>>,
-    pub(super) relational: RelationalOwnerServicePorts,
+    pub(super) relational: Option<RelationalOwnerServicePorts>,
     pub(super) signal: SignalOwnerServicePorts<D, I, E, Ctx, T>,
     pub(super) signal_definition_publication:
         worth_signal::facade::branch::SignalConditionalDefinitionPublicationPort<D, I, E, Ctx, T>,
-    pub(super) bridge: RuntimeWorldCorrespondencePort,
+    pub(super) bridge: Option<RuntimeWorldCorrespondencePort>,
     pub(super) execution: super::execution::InstalledExecution,
     pub(super) clock: RuntimeWorldClock,
     pub(super) history: CompositeHistoryCatalog,
@@ -165,10 +166,10 @@ where
                 owner_identity,
                 identities: Mutex::new(identities),
                 durable,
-                relational,
+                relational: Some(relational),
                 signal,
                 signal_definition_publication,
-                bridge,
+                bridge: Some(bridge),
                 execution,
                 clock,
                 history,
@@ -211,3 +212,16 @@ where
 #[cfg(test)]
 #[path = "owner_tests.rs"]
 mod tests;
+
+impl<D, I, E, Ctx, T> RuntimeWorldOwnerState<D, I, E, Ctx, T>
+where
+    D: Copy + Ord + std::fmt::Debug + Send + Sync + 'static,
+    I: Copy + Ord + Send + Sync + 'static,
+    T: Copy + Ord + Send + Sync + 'static,
+{
+    pub(super) fn relational_services(&self) -> &RelationalOwnerServicePorts {
+        self.relational
+            .as_ref()
+            .expect("only the original serving World uses Native services")
+    }
+}

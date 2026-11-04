@@ -84,6 +84,23 @@ pub(crate) struct ObservationRetentionObligation {
 }
 
 impl ObservationRetentionObligation {
+    pub(crate) fn try_retire_shared_for_close(&mut self) -> Result<(), ()> {
+        let (Some(relational), Some(signal)) = (&self._relational.claim, &self._signal.claim)
+        else {
+            assert!(self._relational.claim.is_none() && self._signal.claim.is_none());
+            return Ok(());
+        };
+        relational.control.try_retire_shared_pair(
+            ComponentBasisDependencyClass::AdmittedObservation,
+            relational,
+            signal,
+        )?;
+        // Exact owner leases remain with the admitted history/origin holder.
+        self._relational.claim = None;
+        self._signal.claim = None;
+        Ok(())
+    }
+
     pub(crate) fn owner_issued(
         commit: &CompositeRuntimeWorldCommit,
         pair: IssuedComponentPinPair,
@@ -107,12 +124,10 @@ impl ObservationRetentionObligation {
         }
     }
 
-    #[cfg(test)]
     pub(crate) fn relational(&self) -> &ComponentBasisPinObligation {
         &self._relational
     }
 
-    #[cfg(test)]
     pub(crate) fn signal(&self) -> &ComponentBasisPinObligation {
         &self._signal
     }

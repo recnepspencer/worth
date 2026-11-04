@@ -13,6 +13,10 @@ use crate::domain_computation::execution_runtime::product_world::{
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryProductBranchCreationRecoveryCause {
     OpenAttemptRetained,
+    OriginalObservationStopped(
+        worth_relational::facade::transactions::RelationalExecutionDenialCause,
+    ),
+    OriginalObservationUnavailable,
     WorldOccurrencePending,
     WorldOccurrenceRefused,
     WorldOccurrenceReadmissionRequired,
@@ -246,6 +250,12 @@ fn inspection(
 fn map_cause(cause: ProductUnpublishedCause) -> WorthQueryProductBranchCreationRecoveryCause {
     use ProductUnpublishedCause as Cause;
     match cause {
+        Cause::OriginalObservationStopped(stop) => {
+            WorthQueryProductBranchCreationRecoveryCause::OriginalObservationStopped(stop)
+        }
+        Cause::OriginalObservationUnavailable => {
+            WorthQueryProductBranchCreationRecoveryCause::OriginalObservationUnavailable
+        }
         Cause::WorldOccurrencePending => {
             WorthQueryProductBranchCreationRecoveryCause::WorldOccurrencePending
         }

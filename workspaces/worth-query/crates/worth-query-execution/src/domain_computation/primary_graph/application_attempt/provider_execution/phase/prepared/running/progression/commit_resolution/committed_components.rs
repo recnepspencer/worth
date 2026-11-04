@@ -23,7 +23,7 @@ pub(super) enum WorthQueryCommittedComponentResolutionDenial {
 /// long as it lives; every other copy of the evidence stays detached.
 pub(super) fn resolve_committed_components(
     context: &WorthQueryAuthorizedCompareContext<'_>,
-    mut receipt: crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphCommittedApplication,
+    receipt: crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphCommittedApplication,
 ) -> Result<WorthQueryResolvedCommitComponents, WorthQueryCommittedComponentResolutionDenial> {
     let causality =
         resolve_exact_committed_aftermath(context.aftermath_causality.as_ref(), &receipt).map_err(
@@ -33,7 +33,6 @@ pub(super) fn resolve_committed_components(
                 )
             },
         )?;
-    context.provider.claim_fresh_history(&mut receipt);
     let projection = WorthQueryCommittedReceiptProjection::resolve(receipt).map_err(|_| {
         WorthQueryCommittedComponentResolutionDenial::Unavailable(
             "committed dispatch outbox binding was denied",

@@ -21,7 +21,10 @@ fn authored_creation_publishes_state_and_audit_in_one_candidate() {
         (read_retention(&second), read_audit(&second)),
         (21, (21, 7))
     );
-    assert!(matches!(invoke(&first, 200), Outcome::AlreadyCommitted(_)));
+    assert!(matches!(
+        invoke(&first, 200),
+        Outcome::RecoveredCommitted(_)
+    ));
     assert!(matches!(
         invoke(&first, 201),
         Outcome::DomainDenied(WorthQueryOperationBodyDenial::SourceMismatch { .. })

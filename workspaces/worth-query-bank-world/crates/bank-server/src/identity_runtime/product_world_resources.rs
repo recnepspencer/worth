@@ -7,7 +7,7 @@ use worth_query_host::facade::runtime::{
 };
 
 // Twice the 64 MiB preparation ceiling leaves framework memory headroom.
-// The 16 million work ceiling bounds every advancement in both placements.
+// The 16 million work ceiling bounds ordinary advancements in both placements.
 const BANK_EXECUTION_POLICY: worth_foundational::ExecutionRequestPolicy =
     worth_foundational::ExecutionRequestPolicy::new(
         worth_foundational::ExecutionPosture::Serial,
@@ -52,4 +52,19 @@ pub(crate) fn bank_product_world_resources() -> WorthQueryProductWorldResources 
         BANK_EXECUTION_POLICY,
     )
     .expect("the bank Product World resources are statically valid")
+}
+
+/// Initial construction admits the whole supplied source graph at once.
+/// Eight ordinary work windows fund that bounded host setup; the installed
+/// runtime still receives BANK_EXECUTION_POLICY, including its 16M ceiling.
+pub(super) fn bank_bootstrap_policy() -> worth_foundational::ExecutionRequestPolicy {
+    worth_foundational::ExecutionRequestPolicy::new(
+        worth_foundational::ExecutionPosture::Serial,
+        worth_foundational::DeterminismContract::CanonicalBitwise,
+        worth_foundational::ExecutionBudget::new(
+            std::num::NonZeroUsize::MIN,
+            Some(128 * 1024 * 1024),
+            Some(8 * 16_000_000),
+        ),
+    )
 }

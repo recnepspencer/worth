@@ -28,6 +28,8 @@ mod cold_index_fixture;
 mod cold_index_frontier;
 #[path = "cold_index_matrix.rs"]
 mod cold_index_matrix;
+#[path = "cold_index_refresh.rs"]
+mod cold_index_refresh;
 #[path = "cold_invariants.rs"]
 mod cold_invariants;
 #[path = "cold_lineage_custody.rs"]
@@ -62,6 +64,7 @@ mod cold_read_door;
 mod cold_read_matrix;
 #[path = "cold_reserved_checkpoint.rs"]
 mod cold_reserved_checkpoint;
+mod cold_selected_subject;
 #[path = "cold_symbols.rs"]
 mod cold_symbols;
 #[path = "cold_tail_matrix.rs"]
@@ -247,6 +250,19 @@ fn a_cold_point_read_keeps_cross_partition_kind_authority_after_an_unrelated_wri
             .iter()
             .map(|artifact| (artifact.position(), artifact.as_bytes().to_vec()))
             .collect(),
+        canonical_members: artifacts
+            .iter()
+            .map(|artifact| {
+                (
+                    crate::durability::log::native_checkpoint_codec::member_frame::locator(
+                        artifact.as_bytes(),
+                    ),
+                    artifact.position(),
+                )
+            })
+            .collect(),
+        canonical_member_reads: Default::default(),
+        journal_reads: Default::default(),
         damaged: AtomicBool::new(false),
         reads: AtomicUsize::new(0),
         member_reads: std::sync::Mutex::new(Vec::new()),

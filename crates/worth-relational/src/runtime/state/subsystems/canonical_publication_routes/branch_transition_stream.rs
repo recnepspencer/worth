@@ -21,6 +21,8 @@ use super::RelationalCanonicalPublicationRoutes;
 mod retained_log;
 #[path = "branch_transition_stream/schema_inputs.rs"]
 mod schema_inputs;
+#[path = "branch_transition_stream/source_recovery.rs"]
+mod source_recovery;
 pub(crate) use schema_inputs::{
     OriginalBranchSchemaInputs, OriginalBranchSchemaInputsDenial, OriginalEmptySchemaInstallation,
     OriginalEmptySchemaObservation, RetainedBranchTransition,
@@ -41,6 +43,8 @@ struct BranchTransitionStreamState {
     log: Vec<RetainedBranchTransition>,
     birth: Option<OriginalEmptySchemaObservation>,
     installation: Option<OriginalEmptySchemaInstallation>,
+    initial_inputs:
+        Option<Arc<crate::durability::source_initial_inputs::image::InitialInputsImage>>,
     _log_memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
@@ -59,6 +63,7 @@ pub(crate) enum BranchTransitionRecordError<D, S> {
     StorageCapacityExhausted,
     /// A restored sequence disagrees with this stream's original prefix.
     OriginalPrefixMismatch,
+    OriginalInputsStopped(crate::durability::data::RelationalRecoveryStop),
     /// The durable step did not admit the cutover.
     Step(S),
 }
@@ -70,6 +75,11 @@ pub(crate) struct BranchTransitionPublication<'routes> {
 }
 
 impl RelationalCanonicalPublicationRoutes {
+    pub(crate) fn try_initial_schema_publication(
+        &self,
+    ) -> Result<std::sync::RwLockWriteGuard<'_, ()>, ()> {
+        self.lifecycle.try_write().map_err(|_| ())
+    }
     pub(crate) fn begin_branch_transition(&self) -> BranchTransitionPublication<'_> {
         #[cfg(test)]
         self.lifecycle_order.transition_contact();
@@ -119,7 +129,12 @@ impl BranchTransitionPublication<'_> {
             .head()
             .next()
             .ok_or(BranchTransitionRecordError::SequenceCapacityExhausted)?;
-        let positioned = PositionedBranchTransition::admit(sequence, follows, transition);
+        let carrier = schema
+            .recorded_image(execution)
+            .map_err(BranchTransitionRecordError::OriginalInputsStopped)?
+            .carrier_digest();
+        let positioned = PositionedBranchTransition::admit(sequence, follows, transition)
+            .with_schema_carrier(Some(carrier));
         let retained = self
             .routes
             .branch_transitions
@@ -244,6 +259,7 @@ impl BranchTransitionStream {
                 log: state.log.clone(),
                 birth: state.birth.clone(),
                 installation: state.installation.clone(),
+                initial_inputs: state.initial_inputs.clone(),
                 // This existing ordinary detached-copy allocation is not a
                 // controlled positive. Capture separately admits its own roster.
                 _log_memory: None,

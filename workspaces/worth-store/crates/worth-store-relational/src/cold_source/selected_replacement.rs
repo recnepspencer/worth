@@ -38,7 +38,7 @@ impl SelectedReplacement {
         if self
             .issuer
             .as_ref()
-            .is_some_and(|issuer| issuer.as_ptr() != source as *const StoreColdSource)
+            .is_some_and(|issuer| !std::ptr::eq(issuer.as_ptr(), source))
             || self.expected.is_some_and(|original| original != expected)
         {
             return Err(Denial::DifferentSelection);
@@ -87,7 +87,7 @@ impl SelectedReplacement {
             .as_ref()
             .expect("retained verified replacement read");
         let records = source
-            .serving
+            .serving()
             .anchored_records()
             .map_err(Denial::Unavailable)?;
         let membership = records
@@ -157,6 +157,10 @@ impl SelectedReplacement {
             .map_err(|_| Denial::Busy)??;
         Ok(())
     }
+    #[allow(
+        clippy::while_let_loop,
+        reason = "Retirement progress stays exhaustive so a new fate requires an owner decision"
+    )]
     fn retire_previous(
         &mut self,
         source: &StoreColdSource,
@@ -171,7 +175,7 @@ impl SelectedReplacement {
         }
         if let Some(task) = self.retirement.as_mut() {
             let records = source
-                .serving
+                .serving()
                 .anchored_records()
                 .map_err(Denial::Unavailable)?;
             loop {
@@ -203,20 +207,19 @@ pub(crate) fn read_expected(
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<AnchoredRecordReadMembership, Denial> {
     let records = source
-        .serving
+        .serving()
         .anchored_records()
         .map_err(Denial::Unavailable)?;
-    let reader =
-        source
-            .serving
-            .try_records_for_checkpoint(request)
-            .map_err(|cause| match cause {
-                Capture::Busy => Denial::Busy,
-                Capture::Request(cause) => {
-                    Denial::Execution(worth_execution::WorkCeilingDenial::Stopped(cause))
-                }
-                Capture::Protection(cause) => Denial::Read(ReadFailure::Protection(cause)),
-            })?;
+    let reader = source
+        .serving()
+        .try_records_for_checkpoint(request)
+        .map_err(|cause| match cause {
+            Capture::Busy => Denial::Busy,
+            Capture::Request(cause) => {
+                Denial::Execution(worth_execution::WorkCeilingDenial::Stopped(cause))
+            }
+            Capture::Protection(cause) => Denial::Read(ReadFailure::Protection(cause)),
+        })?;
     let mut stream = records
         .open_payload_from(&reader, request, expected.name(), expected.payload_bytes())
         .map_err(Denial::Read)?

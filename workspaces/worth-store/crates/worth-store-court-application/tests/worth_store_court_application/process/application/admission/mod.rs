@@ -24,45 +24,22 @@ fn with_open<R>(
     path: &Path,
     build: ApplicationBuildIdentity,
     initialized: Arc<AtomicUsize>,
-    observe: impl FnOnce(&Result<Home, Refused>) -> R,
+    observe: impl FnOnce(&Result<Home, Refused>, &Arc<AtomicUsize>) -> R,
 ) -> R {
-    let input = fixture::request(
-        path.to_owned(),
-        build,
-        initialized,
-        Arc::new(AtomicUsize::new(0)),
-    );
+    let contacts = Arc::new(AtomicUsize::new(0));
+    let input = fixture::request(path.to_owned(), build, initialized, contacts.clone());
     let lease = checkpoint_capture::lease(128 << 20);
     let execution = worth_execution::ExecutionRequest::leased(&lease);
-    with_bootstrap_advancement_from_request(execution, |phase| {
-        // Observe the original result in its opening frame, without moving the
-        // large, concrete refusal custody through additional caller frames.
-        observe(&input.open_in_advancement(&phase))
+    let opened = with_bootstrap_advancement_from_request(execution, |phase| {
+        // Transfer the original owning result out of bootstrap before the
+        // observer can issue business requests. Box is caller-owned storage;
+        // it copies neither Home custody nor the opening refusal.
+        Box::new(input.open_in_advancement(&phase))
     })
-    .unwrap()
+    .unwrap();
+    observe(&opened, &contacts)
 }
 
 fn build() -> ApplicationBuildIdentity {
     ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID")).unwrap()
-}
-
-fn assert_known_native_readmission_block(
-    cause: &worth_store_application::ApplicationHomeOpenRefusal,
-) {
-    use worth_relational::facade::durability::{RecoveryFailureClass, RelationalRecoveryStop};
-    use worth_store_application::ApplicationHomeOpenRefusal as Cause;
-    use worth_store_relational::RelationalSectionReadmissionDenial as Native;
-    match cause {
-        Cause::Relational(Native::CompleteNativeRequired) => {}
-        Cause::Relational(Native::Native(RelationalRecoveryStop::Durability(cause))) => {
-            assert_eq!(cause.class, RecoveryFailureClass::CorruptCheckpoint);
-            // The current Native adapter renders this particular artifact
-            // refusal inside its typed corruption class. P-A owns that path.
-            assert!(
-                cause.detail.contains("RootLinkage"),
-                "unexpected Native refusal: {cause:?}"
-            );
-        }
-        cause => panic!("unexpected readmission refusal, not the reserved P-A block: {cause:?}"),
-    }
 }

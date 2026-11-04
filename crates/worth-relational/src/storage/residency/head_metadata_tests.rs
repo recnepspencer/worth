@@ -45,7 +45,13 @@ fn a_head_append_matches_a_separately_recomputed_full_history_root() {
     let fixture = region_with_history();
     let backing = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&backing);
-    let head = region_load::load_head(&fixture.cold, execution, 1 << 24).unwrap();
+    let head = region_load::load_head(
+        &fixture.cold,
+        fixture.cold.source.as_ref().unwrap(),
+        execution,
+        1 << 24,
+    )
+    .unwrap();
     let symbols = fixture.cold.symbols.interner_snapshot();
     let slot = fixture.entity.slot_index();
     let mut written_head = head.partition.clone();
@@ -109,7 +115,14 @@ fn a_head_append_matches_a_separately_recomputed_full_history_root() {
         "retiring and appending under the carried frontier loads no history"
     );
 
-    let full = region_load::load_full(&fixture.cold, &head, execution, 1 << 24).unwrap();
+    let full = region_load::load_full(
+        &fixture.cold,
+        fixture.cold.source.as_ref().unwrap(),
+        &head,
+        execution,
+        1 << 24,
+    )
+    .unwrap();
     let mut written_full = full.partition.clone();
     written_full
         .entity_arena
@@ -237,6 +250,6 @@ fn cell_with_head(
         corrupt: AtomicBool::new(false),
     });
     cold.head = locator;
-    cold.source = source.clone();
+    cold.source = Some(source.clone());
     (RelationalRegionResidency::cold(cold).unwrap(), source)
 }
