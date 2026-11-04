@@ -58,12 +58,7 @@ fn checkpoint_roles_reject_invalid_names_unknown_entities_and_duplicates() {
     );
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let entity = EntityId::new(PartitionId::main(), 1, 1);
-    let checkpoint_role = |role: &str, entity_name: &str| WorthQueryCheckpointOutputRole {
-        role: role.into(),
-        posture: WorthQueryApplicationOutputPosture::Preserve,
-        entity_name: entity_name.into(),
-        entity,
-    };
+    let checkpoint_role = |role: &str, entity_name: &str| WorthQueryCheckpointOutputRole::new_for_test(role.into(), WorthQueryApplicationOutputPosture::Preserve, entity_name.into(), entity);
 
     assert!(
         WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles_for_test(
@@ -179,13 +174,7 @@ fn declaration_inventory_denies_undeclared_missing_and_wrong_entity_roles() {
         WorthQueryApplicationAttemptDenialKind::MissingOutputRole
     );
 
-    let wrong_entity = WorthQueryApplicationEffectEntity::<Schema, Entity> {
-        reference: EntityReference::Existing(EntityId::new(PartitionId::main(), 13, 0)),
-        entity: "other-entity".to_owned(),
-        created_effect: None,
-        program: Arc::clone(&program),
-        _marker: PhantomData,
-    };
+    let wrong_entity = WorthQueryApplicationEffectEntity::<Schema, Entity>::new_for_test(EntityReference::Existing(EntityId::new(PartitionId::main(), 13, 0)), "other-entity".to_owned(), None, Arc::clone(&program), PhantomData);
     assert_eq!(
         candidate
             .bind_for_test(
@@ -231,13 +220,7 @@ fn created_role_must_name_an_actual_create_effect_before_commit() {
         kind_id: KindId::new(9),
         client_key: ClientKey::raw("created-output"),
     };
-    let created = WorthQueryApplicationEffectEntity::<Schema, Entity> {
-        reference: EntityReference::Created(created_ref),
-        entity: "entity".to_owned(),
-        created_effect: Some(0),
-        program: Arc::clone(&program),
-        _marker: PhantomData,
-    };
+    let created = WorthQueryApplicationEffectEntity::<Schema, Entity>::new_for_test(EntityReference::Created(created_ref), "entity".to_owned(), Some(0), Arc::clone(&program), PhantomData);
     let mut candidate = prepared_create_candidate();
     candidate
         .bind_for_test(OutputRoleUse::fixed_for_test::<OnlyCreated>(), &created, &program)
@@ -252,17 +235,11 @@ fn created_role_must_name_an_actual_create_effect_before_commit() {
 fn created_role_accepts_a_create_effect_in_an_existing_context_partition() {
     let program = Arc::new(());
     let context_partition = PartitionId::new(7);
-    let created = WorthQueryApplicationEffectEntity::<Schema, Entity> {
-        reference: EntityReference::Created(CreatedEntityRef {
+    let created = WorthQueryApplicationEffectEntity::<Schema, Entity>::new_for_test(EntityReference::Created(CreatedEntityRef {
             partition_id: context_partition,
             kind_id: KindId::new(9),
             client_key: ClientKey::raw("context-created-output"),
-        }),
-        entity: "entity".to_owned(),
-        created_effect: Some(0),
-        program: Arc::clone(&program),
-        _marker: PhantomData,
-    };
+        }), "entity".to_owned(), Some(0), Arc::clone(&program), PhantomData);
     let effect = WorthQueryApplicationRealizedEffect::CreateEntity {
         kind: KindId::new(9),
         key: "context-created-output".to_owned(),
@@ -282,17 +259,11 @@ fn created_role_accepts_a_create_effect_in_an_existing_context_partition() {
 #[test]
 fn owner_resolved_creation_projects_the_exact_typed_identity() {
     let program = Arc::new(());
-    let created = WorthQueryApplicationEffectEntity::<Schema, Entity> {
-        reference: EntityReference::Created(CreatedEntityRef {
+    let created = WorthQueryApplicationEffectEntity::<Schema, Entity>::new_for_test(EntityReference::Created(CreatedEntityRef {
             partition_id: PartitionId::main(),
             kind_id: KindId::new(10),
             client_key: ClientKey::raw("owner-created-output"),
-        }),
-        entity: "entity".to_owned(),
-        created_effect: Some(0),
-        program: Arc::clone(&program),
-        _marker: PhantomData,
-    };
+        }), "entity".to_owned(), Some(0), Arc::clone(&program), PhantomData);
     let assigned = EntityId::new(PartitionId::main(), 11, 1);
     let mut candidate = prepared_create_candidate();
     candidate

@@ -13,13 +13,7 @@ fn native_identity_describes_its_shared_key_without_changing_custody() {
     }
     for length in [0, 1, 8, 33, 1_024] {
         // Owner-local storage evidence; this constructs no reader/grant.
-        let identity = WorthQueryInvariantEntityIdentity::<(), ()> {
-            entity_id: EntityId::new(PartitionId::main(), 3, 1),
-            kind: KindId(7),
-            entity: Arc::from("x".repeat(length)),
-            authority_identity: 19,
-            _marker: PhantomData,
-        };
+        let identity = WorthQueryInvariantEntityIdentity::<(), ()>::new_for_test(EntityId::new(PartitionId::main(), 3, 1), KindId(7), Arc::from("x".repeat(length)), 19, PhantomData);
         let weak = Arc::downgrade(&(*identity.entity_for_test()));
         let clone = identity.clone();
         assert!(Arc::ptr_eq(&(*identity.entity_for_test()), &(*clone.entity_for_test())));

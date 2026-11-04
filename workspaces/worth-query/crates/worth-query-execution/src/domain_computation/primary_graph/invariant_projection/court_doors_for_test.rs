@@ -66,3 +66,22 @@ where
         Self::active_snapshot_count(self, request_execution)
     }
 }
+
+impl<Schema, Entity> WorthQueryInvariantEntityIdentity<Schema, Entity> {
+    #[doc(hidden)]
+    pub fn new_for_test(
+        entity_id: EntityId,
+        kind: KindId,
+        entity: Arc<str>,
+        authority_identity: u64,
+        _marker: PhantomData<fn() -> (Schema, Entity)>,
+    ) -> Self {
+        Self {
+            entity_id,
+            kind,
+            entity,
+            authority_identity,
+            _marker,
+        }
+    }
+}

@@ -17,14 +17,10 @@ fn full_key_run_lookup_preserves_endpoints_and_interior_matches() {
 
     let mut run = Run::empty(3, policy).unwrap();
     for (ordinal, limit) in [2, 4, 6].into_iter().enumerate() {
-        *(*run.slots_for_test())[ordinal].borrow_mut() = Some(RetainedFact {
-            key: key(b"same", Some((b"predicate", limit)), policy),
-            value: Body {
+        *(*run.slots_for_test())[ordinal].borrow_mut() = Some(RetainedFact::new_for_test(key(b"same", Some((b"predicate", limit)), policy), Body {
                 scalar: limit as u64,
                 roles: 1,
-            },
-            ordinal,
-        });
+            }, ordinal));
         (*run.used_mut_for_test()) += 1;
     }
     for limit in [2, 4, 6] {

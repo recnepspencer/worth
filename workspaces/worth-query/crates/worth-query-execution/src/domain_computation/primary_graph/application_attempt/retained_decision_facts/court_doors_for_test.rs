@@ -31,3 +31,14 @@ impl<T> RetainedFact<T> {
         &self.key
     }
 }
+
+impl<T> RetainedFact<T> {
+    #[doc(hidden)]
+    pub fn new_for_test(key: AdmittedFactKey, value: T, ordinal: usize) -> Self {
+        Self {
+            key,
+            value,
+            ordinal,
+        }
+    }
+}

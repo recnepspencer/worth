@@ -41,3 +41,10 @@ impl ComputationCallCharge {
         }
     }
 }
+
+impl ComputationCallAccounting {
+    #[doc(hidden)]
+    pub fn new_for_test(demand: usize, consumed: usize) -> Self {
+        Self { demand, consumed }
+    }
+}

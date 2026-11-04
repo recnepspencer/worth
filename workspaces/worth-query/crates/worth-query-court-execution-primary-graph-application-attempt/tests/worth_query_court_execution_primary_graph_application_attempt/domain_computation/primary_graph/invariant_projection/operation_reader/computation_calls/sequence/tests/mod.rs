@@ -20,7 +20,7 @@ pub fn calls() -> Vec<(ComputationRead, Call)> {
             (
                 ComputationRead::ItemKey(worth_execution::PartitionItemId(i as u64)),
                 (
-                    ComputationCallCharge::new_for_test(Some(ComputationCallAccounting { demand, consumed }), Arc::from([])),
+                    ComputationCallCharge::new_for_test(Some(ComputationCallAccounting::new_for_test(demand, consumed)), Arc::from([])),
                     Some(i as u64 + 1),
                 ),
             )
