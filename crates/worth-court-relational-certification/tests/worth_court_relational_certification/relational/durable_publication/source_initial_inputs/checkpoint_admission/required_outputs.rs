@@ -88,15 +88,16 @@ fn captured_outputs(
         .unwrap();
     let (owner, installed) = receipt.issue_application_publication_owner();
     let mut observed = Vec::new();
-    for family in families {
+    for (ordinal, family) in families.iter().enumerate() {
+        let client_key = format!("image-output-{ordinal}");
         let mut transaction = begin_main_transaction(&runtime);
         transaction
-            .push_batch(batch_create(family), request.allocation_policy())
+            .push_batch(batch_create(&client_key), request.allocation_policy())
             .unwrap();
         let target = CreatedEntityRef {
             partition_id: PartitionId::main(),
             kind_id: KindId(1),
-            client_key: worth_relational::facade::symbols::ClientKey::raw(*family),
+            client_key: worth_relational::facade::symbols::ClientKey::raw(&client_key),
         };
         let publication = RequiredOutputPublication::Birth {
             admission: owner.admit_required_output("image-creator", [7; 32]),
@@ -177,4 +178,76 @@ fn selector_families<'a>(node: &'a serde_json::Value, found: &mut Vec<&'a str>) 
     selector_families(&node["left"], found);
     found.push(node["family"].as_str().unwrap());
     selector_families(&node["right"], found);
+}
+
+#[test]
+fn long_selector_families_preserve_utf8_and_bound_invoking_request_stops() {
+    use worth_execution::{
+        CancellationSource, ExecutionWorkCeiling, MapKernelStop, SerialMemoryBudget, SerialRequest,
+        WorkCeilingDenial,
+    };
+    let policy = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
+    let setup = &ExecutionRequest::serial(&policy);
+    // Place a four-byte scalar across the first wire chunk boundary, then keep
+    // a long shared prefix so both copying and ordering require several polls.
+    let prefix = "x".repeat(64 * 1024 - 1) + "🦀" + &"z".repeat(3 * 64 * 1024);
+    let first = prefix.clone() + "a";
+    let second = prefix + "b";
+    let (captured, _) = captured_outputs(setup, &[&first, &second]);
+    let image = captured
+        .admission_image()
+        .seal_home_cut(&cut(&captured), setup)
+        .unwrap();
+    let raw = image.as_bytes();
+    let (decoded, report) = setup
+        .run(ExecutionWorkCeiling::new(None), |_| {
+            parse(raw, setup).unwrap()
+        })
+        .unwrap();
+    assert_eq!(decoded.as_bytes(), raw);
+    drop(decoded);
+    for remaining_family_passes in [1_u64, 5] {
+        let host = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
+        let request = &ExecutionRequest::serial(&host);
+        let ceiling = report.charged_work() - (second.len() as u64 * remaining_family_passes / 2);
+        let mut observed = None;
+        let (stopped, _) = request
+            .run(ExecutionWorkCeiling::new(Some(ceiling)), |_| {
+                request.run_native_with_checkpoint(|context| {
+                    let parsed = parse(raw, request);
+                    observed = Some((parsed, context.charged_work()));
+                })
+            })
+            .unwrap();
+        assert!(stopped.is_err());
+        let (parsed, spent) = observed.unwrap();
+        assert_eq!(
+            parsed.unwrap_err(),
+            Refusal::Request(WorkCeilingDenial::Stopped(MapKernelStop::WorkCeiling).into())
+        );
+        assert!(
+            ceiling - spent <= 64 * 1024,
+            "a family operation exceeded one declared chunk between checkpoints: {}",
+            ceiling - spent
+        );
+    }
+    let mut bytes = ExecutionRequestArrayBuilder::allocate(*setup, raw.len()).unwrap();
+    bytes.extend_from_slice(raw).unwrap();
+    let bytes = bytes.seal_immutable_bytes().unwrap();
+    let cancellation = CancellationSource::new();
+    let budget = SerialMemoryBudget::new(Some(0));
+    let host = SerialRequest::from_memory(budget.clone(), cancellation.token(), None);
+    cancellation.cancel();
+    assert_eq!(
+        RelationalCheckpointAdmissionArtifact::from_untrusted_region(
+            bytes,
+            0..raw.len(),
+            &ExecutionRequest::serial(&host)
+        )
+        .unwrap_err(),
+        Refusal::Request(
+            worth_relational::facade::transactions::RelationalExecutionDenialCause::Cancelled
+        ),
+    );
+    assert_eq!(budget.charged_memory_bytes(), 0);
 }

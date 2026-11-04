@@ -1,6 +1,8 @@
 //! Decode derived route selectors without constructing a root or publication.
 use super::RelationalCheckpointAdmissionRefusal as Refusal;
-use crate::durability::canonical_commit_artifact::borrowed_payload::{malformed, BorrowedPayload};
+use crate::durability::canonical_commit_artifact::borrowed_payload::{
+    malformed, BorrowedPayload, Cursor,
+};
 use crate::history::data::{CommitId, RequiredOutputPublicationPositions};
 use worth_execution::{ExecutionOrderedMap, ExecutionRequest};
 
@@ -10,9 +12,7 @@ pub(super) fn read(
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<ExecutionOrderedMap<CommitId, RequiredOutputPublicationPositions>, Refusal> {
     traversal(roots.len(), request)?;
-    let roots = BorrowedPayload(roots)
-        .field("roots", request)
-        .map_err(projected_stop)?;
+    let roots = named_field(roots, "roots", &["roots", "empty", "schemas"], request)?;
     let mut positions = ExecutionOrderedMap::default();
     let mut stopped = None;
     traversal(roots.0.len(), request)?;
@@ -51,9 +51,15 @@ fn read_row(
         return Err(Refusal::InvalidProjectedMeaning);
     };
     traversal(header.0.len(), request)?;
-    let commit = header.field("commit", request).map_err(projected_stop)?;
-    let commit: CommitId =
-        rmp_serde::from_slice(commit.0).map_err(|_| Refusal::InvalidProjectedMeaning)?;
+    let commit = named_field(
+        header.0,
+        "commit",
+        &["commit", "components", "schema", "regions"],
+        request,
+    )?;
+    let mut scalar = Cursor::new(commit.0, request);
+    let commit = CommitId(scalar.unsigned().map_err(projected_stop)?);
+    scalar.finish().map_err(projected_stop)?;
     let Some(root_position) = commits.get(&commit.0).copied() else {
         return Err(Refusal::InvalidProjectedMeaning);
     };
@@ -77,6 +83,31 @@ fn read_row(
             ))
         })?;
     Ok(())
+}
+
+fn named_field<'a>(
+    bytes: &'a [u8],
+    selected: &str,
+    fields: &[&str],
+    request: &ExecutionRequest<'_, '_>,
+) -> Result<BorrowedPayload<'a>, Refusal> {
+    let mut cursor = Cursor::new(bytes, request);
+    if cursor.map_length().map_err(projected_stop)? != fields.len() {
+        return Err(Refusal::InvalidProjectedMeaning);
+    }
+    let mut result = None;
+    for expected in fields {
+        let key = cursor.string_bytes().map_err(projected_stop)?;
+        if key.len() != expected.len() || key != expected.as_bytes() {
+            return Err(Refusal::InvalidProjectedMeaning);
+        }
+        let value = cursor.value().map_err(projected_stop)?;
+        if *expected == selected {
+            result = Some(BorrowedPayload(value));
+        }
+    }
+    cursor.finish().map_err(projected_stop)?;
+    result.ok_or(Refusal::InvalidProjectedMeaning)
 }
 
 fn traversal(bytes: usize, request: &ExecutionRequest<'_, '_>) -> Result<(), Refusal> {

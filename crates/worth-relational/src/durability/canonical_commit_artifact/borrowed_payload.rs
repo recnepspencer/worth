@@ -2,7 +2,7 @@
 use super::RelationalCanonicalCommitArtifactRefusal as Refusal;
 use worth_execution::ExecutionRequest;
 mod cursor;
-use cursor::Cursor;
+pub(crate) use cursor::Cursor;
 
 #[derive(Clone, Copy)]
 pub(crate) struct BorrowedPayload<'a>(pub(crate) &'a [u8]);
