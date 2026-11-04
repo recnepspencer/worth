@@ -222,10 +222,12 @@ impl Court {
             .unwrap()
             .settlement_identity_for_test())
             .clone();
+        // The key reads the bindings before the lineage is borrowed mutably.
+        let target_source = source(TypeId::of_for_test::<Target>());
         let cell = &mut (*self
             .lineage
             .by_source_mut_for_test())
-            .get_mut(&source(TypeId::of_for_test::<Target>()))
+            .get_mut(&target_source)
             .unwrap()
             .get_mut(&(*self.coordinate.occurrence_for_test()))
             .unwrap()
