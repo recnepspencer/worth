@@ -8,8 +8,11 @@ from coupling_graph import components, layering, upward_edges
 from crate_partition import Partition, path_module
 from module_coupling import coupling, freeze, ratchet, report
 from split_candidates import balanced
+from module_graph import LibraryModel
+from ownership_units import Classifier, header_parts, units
 
 FIXTURE = Path(__file__).parent / 'fixtures/coupling'
+OWNERSHIP = Path(__file__).parent / 'fixtures/ownership'
 PARENT = ('graph',)
 
 
@@ -115,3 +118,33 @@ class PartitionTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class OwnershipTests(unittest.TestCase):
+    """A type moves with every inherent impl and foreign-trait impl, wherever they live."""
+
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory()
+        self.root = Path(self.temporary.name)
+        shutil.copytree(OWNERSHIP, self.root / 'fixture')
+        self.model = LibraryModel(self.root / 'fixture/src/lib.rs', self.root)
+        self.units, _orphans = units(self.model)
+
+    def tearDown(self):
+        self.temporary.cleanup()
+
+    def test_impl_headers_name_trait_and_self_type(self):
+        generics, trait, self_type, _header = header_parts('impl<T: Clone> std::fmt::Debug for Wrapper<T> {}')
+        self.assertEqual((generics, trait, self_type), ({'T'}, ('std', 'fmt', 'Debug'), ('Wrapper',)))
+        self.assertEqual(header_parts('impl Plain {}')[1:3], (None, ('Plain',)))
+
+    def test_units_gather_impls_from_every_module(self):
+        thing = self.units[(('graph', 'high'), 'Thing')]
+        self.assertEqual(sorted(i.module for i in thing.impls), [('graph', 'side'), ('graph', 'side')])
+
+    def test_a_unit_moves_only_when_every_impl_needs_nothing_above(self):
+        classifier = Classifier(self.model, ('graph',), ['low', 'side', 'high'], self.units)
+        self.assertEqual(classifier.judge((('graph', 'high'), 'Plain'), 'low')[0], 'movable')
+        verdict, detail = classifier.judge((('graph', 'high'), 'Thing'), 'low')
+        self.assertEqual(verdict, 'behaviour-coupled')
+        self.assertIn('graph::high::measure', {item for _label, _node, item, _kind in detail})
