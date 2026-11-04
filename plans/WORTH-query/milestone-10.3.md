@@ -165,6 +165,14 @@ refusal. A report naming a record whose only legal recovery entrance was just
 closed is not a usable handoff. Read-only observation holders may remain under
 their existing contract and must be reported separately from active recovery.
 
+**Holder census.** Where a residual is a shared runtime, medium or physical holder, the report and every share refusal carry [10.7](milestone-10.7.md)'s typed holder census, never an anonymous count. The census is diagnostic and grants no retirement authority.
+
+**Owner lifecycle states as types.** World and Query owners expose their Open, Closing and Closed states as consuming types where the transition is stable:
+- operations legal only after close (origin retirement, reclaim) take the closed owner;
+- inspection ports are issued only from the open owner.
+
+This deletes runtime refusals that exist only to reject the wrong state, such as `OwnerNotClosed`. Permission, currentness and live availability stay runtime checks at their use boundary, as the parent requires.
+
 | Requirement / law | Setup and action | Expected observation / defect exposed | Boundary and lane |
 |---|---|---|---|
 | Close/admission race | Pause genuine publication and race session/World close in both winner orders. | No admitted effect after successful close; active winner keeps exact custody and produces lawful close refusal/progress. | Existing World close/custody court plus Query session integration, CI. |
@@ -172,6 +180,8 @@ their existing contract and must be reported separately from active recovery.
 | Recovery still needs World | Retain genuine recovery requiring the open World service, then request terminal application close. | Closing retains runtime and recovery until resolved or lawfully transferred; no dead recovery ID masquerades as usable custody. | World recovery/close plus Query application-close integration, CI. |
 | Stop draining | Cancel between two actual close releases, then resume. | Already completed release preserved, unfinished owner returned, no all-or-nothing claim. | Query close integration, CI. |
 | Locality | Close one application while another has live demands. | Only targeted lifetime is closed; sibling remains usable. | Public Query multi-runtime fixture, CI. |
+| Holder census | Close while distinct local and external shares remain. | Refusal and report name every live role; each disappears after its real release. | 10.7 Home close courts plus Query session close, CI. |
+| State typestate | Call a closed-only retirement on an open owner, and an open-only inspection on a closed owner; lawful twins. | Compile failure at the intended boundary; no runtime `OwnerNotClosed` path remains. | Consolidated compile-contract lane. |
 
 10.5 supplies demand/live/provider adapters to this close contract. This phase
 qualifies operation/World close; group-wide application close additionally
