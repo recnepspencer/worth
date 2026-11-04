@@ -112,7 +112,10 @@ fn memory_release_preserves_original_key_and_refuses_handler_replay() {
     drop(page);
     // Directory lifecycle only, as established by bed4f954f5d; a Memory Home
     // cannot prove physical closure through this door (Host README).
-    let refused = home.close(&execution).unwrap_err();
+    let refused = match home.close(&execution) {
+        Ok(_) => panic!("the Directory-only lifecycle door cannot close a Memory Home"),
+        Err(refused) => refused,
+    };
     assert!(refused.directory_denial().is_none());
     assert!(refused.query_denial().is_none());
     let home = refused.resume().unwrap();
