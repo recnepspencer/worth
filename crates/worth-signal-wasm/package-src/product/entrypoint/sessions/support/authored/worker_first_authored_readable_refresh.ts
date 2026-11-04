@@ -1,3 +1,13 @@
+export async function refreshWorkerFirstAuthoredReadables(deps) {
+  const finish = deps.changedHostDependencyIds?.length > 0 ? deps.hostRefreshes?.begin() : null;
+  try {
+    await refreshWorkerFirstAuthoredCallbackReadables(deps);
+    await refreshWorkerFirstAuthoredReadableSignals(deps);
+  } finally {
+    finish?.();
+  }
+}
+
 import {
   applyCommittedWorkerFirstAuthoredInputs,
 } from "./worker_first_authored_input_state.js";
@@ -157,8 +167,9 @@ async function refreshWorkerFirstAuthoredReadableIds(deps) {
   // One transport round trip for the readable set, rather than one per node.
   // Preparation and adoption remain O(readable count + returned value size).
   try {
+    const hostEpoch = deps.hostRefreshes?.epoch();
     const packet = await deps.bridge.readSignals({ signalIds: currentIds });
-    adoptCurrentWorkerReadback(deps, packet.signals);
+    adoptCurrentWorkerReadback(deps, packet.signals, hostEpoch);
   } catch (error) {
     if (!currentIds.some((id) => isUnknownSignalIdError(error, id))) {
       throw error;
@@ -171,6 +182,7 @@ async function refreshWorkerFirstAuthoredReadableIds(deps) {
 }
 
 async function refreshSurvivingAuthoredReadables(deps, readableIds) {
+  const hostEpoch = deps.hostRefreshes?.epoch();
   const refreshedSignals = [];
   for (const id of readableIds) {
     try {
@@ -183,10 +195,11 @@ async function refreshSurvivingAuthoredReadables(deps, readableIds) {
       invalidateAuthoredReadable(deps.authoredReadables, id, deps.invalidationMessage);
     }
   }
-  adoptCurrentWorkerReadback(deps, refreshedSignals);
+  adoptCurrentWorkerReadback(deps, refreshedSignals, hostEpoch);
 }
 
-function adoptCurrentWorkerReadback(deps, signals) {
+function adoptCurrentWorkerReadback(deps, signals, hostEpoch) {
+  if (hostEpoch !== deps.hostRefreshes?.epoch()) return;
   // Writes can arrive while readback is in flight; check the dependency basis
   // again at adoption rather than promoting an older worker result to the tip.
   const pending = pendingWorkerReadableIds(deps);

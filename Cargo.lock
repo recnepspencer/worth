@@ -1759,7 +1759,7 @@ dependencies = [
 
 [[package]]
 name = "worth-signal-wasm"
-version = "1.6.2"
+version = "1.6.3"
 dependencies = [
  "base64",
  "console_error_panic_hook",

@@ -20,11 +20,13 @@ import {
   readWorkerFirstAuthoredReadableValue,
 } from "./worker_first_authored_readable_state.js";
 import { assertAuthoredReadableReads } from "./worker_first_authored_readable_reads.js";
+import { createHostRefreshCurrentness } from "./worker_first_host_refresh_currentness.js";
 import {
   captureWorkerFirstAuthoredCallback,
 } from "./worker_first_authored_callback_authoring.js";
 import { buildWorkerFirstHostDependencyReport } from "./worker_first_host_dependency_report.js";
 import {
+  refreshWorkerFirstAuthoredReadables,
   refreshWorkerFirstAuthoredCallbackReadables,
   refreshWorkerFirstAuthoredReadableSignals,
 } from "./worker_first_authored_readable_refresh.js";
@@ -72,6 +74,7 @@ export function createWorkerFirstRootAuthoredRuntime(
 }
 
 class WorkerFirstRootAuthoredRuntime {
+  #hostRefreshes = createHostRefreshCurrentness();
   #bridge;
   #activeImportContext;
   #requireActive;
@@ -240,22 +243,19 @@ class WorkerFirstRootAuthoredRuntime {
     writeWorkerFirstAuthoredInputBaselineValue(this.#authoredInputs, id, value);
   }
 
-  async refreshReadables(changedIds = [], changedHostDependencyIds = []) {
-    await refreshWorkerFirstAuthoredCallbackReadables({
+  acknowledgementReadbackIds() {
+    return [...this.#authoredReadables].filter(([, state]) =>
+      state.invalidatedMessage === null && state.publicationState !== "pending").map(([id]) => id);
+  }
+  hostDependencyReadback() { return this.#hostRefreshes; }
+
+  async refreshReadables(changedIds = [], changedHostDependencyIds = [], bridge = this.#bridge) {
+    await refreshWorkerFirstAuthoredReadables({
+      hostRefreshes: this.#hostRefreshes,
       pendingInputIds: () => pendingWorkerInputIds(this.#authoredInputs, this.#activeImportContext()),
-      bridge: this.#bridge,
-      authoredInputs: this.#authoredInputs,
-      authoredReadables: this.#authoredReadables,
-      authoredCallbacks: this.#authoredCallbacks,
-      changedIds,
-      changedHostDependencyIds,
+      bridge, authoredInputs: this.#authoredInputs, authoredReadables: this.#authoredReadables,
+      authoredCallbacks: this.#authoredCallbacks, changedIds, changedHostDependencyIds,
       captureCallback: (callback, family) => this.#captureCallback(callback, family),
-      awaitPublication: (id) => this.#publications.awaitPublication(id),
-    });
-    await refreshWorkerFirstAuthoredReadableSignals({
-      pendingInputIds: () => pendingWorkerInputIds(this.#authoredInputs, this.#activeImportContext()),
-      bridge: this.#bridge,
-      authoredReadables: this.#authoredReadables,
       awaitPublication: (id) => this.#publications.awaitPublication(id),
     });
   }
@@ -313,6 +313,7 @@ class WorkerFirstRootAuthoredRuntime {
 
   async refreshAllReadables() {
     const refreshDeps = {
+      hostRefreshes: this.#hostRefreshes,
       pendingInputIds: () => pendingWorkerInputIds(this.#authoredInputs, this.#activeImportContext()),
       bridge: this.#bridge,
       authoredReadables: this.#authoredReadables,
@@ -320,6 +321,7 @@ class WorkerFirstRootAuthoredRuntime {
     };
     await refreshWorkerFirstAuthoredReadableSignals(refreshDeps);
     await refreshWorkerFirstAuthoredCallbackReadables({
+      hostRefreshes: this.#hostRefreshes,
       bridge: this.#bridge,
       authoredInputs: this.#authoredInputs,
       authoredReadables: this.#authoredReadables,

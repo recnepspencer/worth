@@ -8,7 +8,7 @@ test("worker mutation readback round trips stay bounded as the derived chain gro
   const packets = [];
   globalThis.Worker = class extends Worker {
     postMessage(message, ...args) {
-      if (message.method === "readSignals") packets.push(message.args[0].signalIds.length);
+      if (["readSignals", "applyTransactionAcknowledged"].includes(message.method)) packets.push(message.args[0].signalIds.length);
       return super.postMessage(message, ...args);
     }
   };

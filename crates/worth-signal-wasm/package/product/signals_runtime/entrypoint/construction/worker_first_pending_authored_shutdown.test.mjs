@@ -10,7 +10,7 @@ test("root shutdown retains imported sources until a pending authored callback c
   let releaseMutation = () => {};
   class GatedWorker extends NodeWorker {
     postMessage(message, ...options) {
-      if (holdMutation && message.method === "applyTransactionProjection") {
+      if (holdMutation && message.method === "applyTransactionAcknowledged") {
         holdMutation = false;
         releaseMutation = () => {
           releaseMutation = () => {};

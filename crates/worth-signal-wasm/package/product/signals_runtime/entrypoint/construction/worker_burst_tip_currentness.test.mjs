@@ -51,19 +51,19 @@ for (const sourceKind of ["authored declarative", "authored callback", "imported
   });
 }
 
-test("a write arriving during worker readback retains the newer projection", async () => {
+test("a write arriving while a committed acknowledgement is in flight retains the newer projection", async () => {
   const previousWorker = globalThis.Worker;
   let hold = false, releaseReadback, sawReadback;
   const blocked = new Promise(resolve => { sawReadback = resolve; });
   globalThis.Worker = class extends Worker {
-    postMessage(message, ...args) {
-      if (hold && message.method === "readSignals") {
+    emit(event, message, ...args) {
+      if (event === "message" && hold && message.value?.transaction) {
         hold = false;
-        releaseReadback = () => super.postMessage(message, ...args);
+        releaseReadback = () => super.emit(event, message, ...args);
         sawReadback();
-        return;
+        return true;
       }
-      return super.postMessage(message, ...args);
+      return super.emit(event, message, ...args);
     }
   };
   const { createSignals, cleanup } = await loadSignalsModule({ rawSurface: "real" });
@@ -92,5 +92,45 @@ test("a write arriving during worker readback retains the newer projection", asy
     await signals?.terminate();
     await cleanup();
     globalThis.Worker = previousWorker;
+  }
+});
+
+test("a completed host dependency refresh cannot be replaced by an older acknowledgement", async () => {
+  const previousWorker = globalThis.Worker;
+  const blocked = Promise.withResolvers();
+  let hold = false, release = () => {};
+  globalThis.Worker = class extends Worker {
+    emit(event, message, ...args) {
+      if (event === "message" && hold && message.value?.transaction) {
+        hold = false;
+        release = () => super.emit(event, message, ...args);
+        blocked.resolve();
+        return true;
+      }
+      return super.emit(event, message, ...args);
+    }
+  };
+  const { createSignals, hostCapabilityPlan, persistenceCapability, cleanup } =
+    await loadSignalsModule({ rawSurface: "real" });
+  let signals, writing;
+  let current = { revision: 1 };
+  try {
+    signals = await createSignals({ hostCapabilities: hostCapabilityPlan({
+      persistence: persistenceCapability({ source: { current: () => current } }),
+    }) });
+    const input = await signals.inputAsync(0);
+    const output = await signals.computedAsync(() => signals.host.persistence.value().revision);
+    hold = true;
+    writing = input.set(1);
+    await blocked.promise;
+    current = { revision: 2 };
+    await signals.host.persistence.commit();
+    assert.equal(output(), 2);
+    release();
+    await writing;
+    assert.equal(output(), 2, "cached readback predates the host refresh and must be discarded");
+  } finally {
+    release(); await writing?.catch(() => {}); await signals?.terminate();
+    globalThis.Worker = previousWorker; await cleanup();
   }
 });

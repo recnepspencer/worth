@@ -7,91 +7,19 @@ import {
   createWorkerFirstSnapshotEnvelopeArtifact,
 } from "./worker_first_history_proofs.js";
 
-export async function buildActiveImportContext(bridge, definition, snapshot) {
+export async function buildActiveImportContext(bridge, definition, snapshot, committedState = null) {
   const inputIds = definition.inputDescriptors.map((descriptor) => descriptor.sourceId);
   const outputIds = definition.descriptors.map((descriptor) => descriptor.publishedId);
   const outputSourceIds = definition.descriptors.map((descriptor) => descriptor.sourceId);
   const signalIds = [...new Set([...inputIds, ...outputIds, ...outputSourceIds])];
-  const branchesPromise = bridge.branches();
-  const currentBranchPromise = bridge.currentBranch();
-  // Exact runtime restore artifacts are root-branch evidence: the runtime refuses to mint
-  // them while a child branch is active, so the context only asks for them on the root branch
-  // and records the denial otherwise. Definitions have no branch preflight and stay cached.
-  const exactRuntimeArtifactsPromise = currentBranchPromise.then((branch) => (
-    branch.parent_branch_id === null
-      ? Promise.all([
-        bridge.exportWorkerRuntimeEnvelope(),
-        bridge.exportWorkerRuntimeEnvelopeWire(),
-        bridge.exportWorkerRuntimeEnvelopePortableWire(),
-      ])
-      : null
-  ));
-  const [
-    runtimeDefinitionEnvelope,
-    snapshotEnvelopeArtifact,
-    exactRuntimeArtifacts,
-    diagnosticsSummaryPacket,
-    diagnosticsHistoryPacket,
-    signalReadbackPacket,
-    versionSummaries,
-    health,
-    currentBranch,
-    branches,
-    latestFlow,
-    latestObservation,
-    performanceSummary,
-    latestFailure,
-    latestRollback,
-    latestInvalidationPlanningEstimate,
-    latestInvalidationTraceRecords,
-    recentHistory,
-    runtimeProofReport,
-    whys,
-    replays,
-    lineages,
-    replaysByBranch,
-    branchSnapshotArtifacts,
-    branchSnapshotEnvelopes,
-    branchStateProofs,
-  ] = await Promise.all([
-    bridge.exportDefinitions(),
-    bridge.exportWorkerSnapshotEnvelopeArtifact(),
-    exactRuntimeArtifactsPromise,
-    bridge.readDiagnosticsSummary(),
-    bridge.readDiagnosticsHistory(),
-    bridge.readSignals({ signalIds }),
-    bridge.readVersions(signalIds),
-    bridge.health(),
-    currentBranchPromise,
-    branchesPromise,
-    bridge.latestFlow(),
-    bridge.latestObservation(),
-    bridge.performanceSummary(),
-    bridge.latestFailure(),
-    bridge.latestRollback(),
-    bridge.latestInvalidationPlanningEstimate(),
-    bridge.latestInvalidationTraceRecords(),
-    bridge.recentHistory(),
-    bridge.runtimeProofReport(),
-    Promise.all(signalIds.map(async (id) => [id, await bridge.why(id)])),
-    Promise.all(signalIds.map(async (id) => [id, await bridge.replayFor(id)])),
-    Promise.all(signalIds.map(async (id) => [id, await bridge.lineageFor(id)])),
-    branchesPromise.then((workerBranches) => Promise.all(
-      workerBranches.map(async (branch) => [branch.id, await bridge.replayForBranch(branch.id)]),
-    )),
-    branchesPromise.then((workerBranches) => Promise.all(
-      workerBranches.map(async (branch) => [branch.id, await bridge.branchSnapshotArtifact(branch.id)]),
-    )),
-    branchesPromise.then((workerBranches) => Promise.all(
-      workerBranches.map(async (branch) => [
-        branch.id,
-        await bridge.branchSnapshotEnvelopeArtifact(branch.id),
-      ]),
-    )),
-    branchesPromise.then((workerBranches) => Promise.all(
-      workerBranches.map(async (branch) => [branch.id, await bridge.branchStateProof(branch.id)]),
-    )),
-  ]);
+  const {
+    runtimeDefinitionEnvelope, snapshotEnvelopeArtifact, exactRuntimeArtifacts,
+    signalReadbackPacket, versionSummaries, health, currentBranch, branches,
+    latestFlow, latestObservation, performanceSummary, latestFailure, latestRollback,
+    latestInvalidationPlanningEstimate, latestInvalidationTraceRecords, recentHistory,
+    runtimeProofReport, whys, replays, lineages, replaysByBranch, branchSnapshotArtifacts,
+    branchSnapshotEnvelopes, branchStateProofs, diagnosticsSummary, diagnosticsHistory,
+  } = committedState ?? await bridge.readImportState({ signalIds });
   const definitions = normalizeWorkerRuntimeDefinitionEnvelope(runtimeDefinitionEnvelope);
   const runtimeEnvelopeArtifact = exactRuntimeArtifacts === null
     ? null
@@ -125,8 +53,8 @@ export async function buildActiveImportContext(bridge, definition, snapshot) {
       return runtimeEnvelopeArtifact;
     },
     snapshotEnvelope: createWorkerFirstSnapshotEnvelopeArtifact(snapshotEnvelopeArtifact),
-    diagnosticsSummary: diagnosticsSummaryPacket.summary,
-    diagnosticsHistory: diagnosticsHistoryPacket.history,
+    diagnosticsSummary,
+    diagnosticsHistory,
     signalValueById: new Map(
       signalReadbackPacket.signals.map((signal) => [signal.id, signal.value]),
     ),
