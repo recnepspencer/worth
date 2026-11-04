@@ -1,16 +1,16 @@
 // A request stopped before registration admits its decision-fact binding
 // keeps that control outcome and releases every attempt-local resource.
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::WorthQueryProgressedApplicationCommit;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::WorthQueryProviderProgressionCompletion;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::session_admission::admit_provider_session;
+use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::WorthQueryProgressedApplicationCommit;
+use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::WorthQueryProviderProgressionCompletion;
+use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::session_admission::admit_provider_session;
 use crate::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::session_admission::registration_conflict_tests::equivalent_programs;
 use crate::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::session_admission::registration_conflict_tests::start;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::progressed::finish_application_commit;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::WorthQueryRunningApplicationCommit;
+use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::progressed::finish_application_commit;
+use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::WorthQueryRunningApplicationCommit;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::idempotency;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitOutcome;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::registered::WorthQueryProviderAttemptRegistrationContext;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::outcome::WorthQueryProviderProgressionOutcome;
+use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::registered::WorthQueryProviderAttemptRegistrationContext;
+use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::outcome::WorthQueryProviderProgressionOutcome;
 use worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 
@@ -27,7 +27,7 @@ fn cancellation_at_registration_binding_is_cancelled_not_denied() {
     world
         .application
         .with_host_advancement(|active_phase| {
-            let host_custody = active_phase.test_host_request_for_test();
+            let host_custody = active_phase.test_host_request();
             let phase = &active_phase;
             let head = || {
                 world
@@ -38,12 +38,24 @@ fn cancellation_at_registration_binding_is_cancelled_not_denied() {
             };
             let head_before = head();
             let (program, _) = equivalent_programs(
-                &host_custody.phase_for_application_for_test(&world.application),
+                &host_custody.phase_for_application(&world.application),
                 &world,
                 &request,
                 "interrupted-registration",
             );
-            let (admission, lease, provider_attempt, outcome_identity, _, mut authorization, idempotency, mut running, mutation_run, attempt_basis, aftermath_causality,) = start(phase, &world, program, idempotency(185, 186)).into_parts_for_test();
+            let WorthQueryRunningApplicationCommit {
+                admission,
+                lease,
+                provider_attempt,
+                mut authorization,
+                idempotency,
+                mut running,
+                mutation_run,
+                attempt_basis,
+                aftermath_causality,
+                outcome_identity,
+                workflow_settlement_publication: _,
+            } = start(phase, &world, program, idempotency(185, 186));
             let admitted = admit_provider_session(
                 phase,
                 &mut running,
@@ -55,7 +67,7 @@ fn cancellation_at_registration_binding_is_cancelled_not_denied() {
             // The request stops after session admission, so the first owner
             // consult to observe it is registration's decision-fact binding.
             cancellation.cancel();
-            let Err(failure) = admitted.register_for_test(
+            let Err(failure) = admitted.register(
                 &mut authorization,
                 provider_attempt,
                 attempt_basis,
@@ -70,8 +82,8 @@ fn cancellation_at_registration_binding_is_cancelled_not_denied() {
             ) else {
                 panic!("a cancelled request must not register its provider attempt")
             };
-            let (outcome, cleanup,) =
-                failure.into_completion_for_test().into_parts_for_test();
+            let WorthQueryProviderProgressionCompletion { outcome, cleanup } =
+                failure.into_completion();
             assert!(
                 matches!(outcome, WorthQueryProviderProgressionOutcome::Cancelled),
                 "the binding's request stop is a control outcome, never a denial"
@@ -80,14 +92,21 @@ fn cancellation_at_registration_binding_is_cancelled_not_denied() {
                 &phase.borrowed_request_for_test(),
                 phase,
                 &world.application,
-                WorthQueryProgressedApplicationCommit::new_for_test(None, outcome, lease, running, cleanup, admission.publication_request_for_test().clone()),
+                WorthQueryProgressedApplicationCommit {
+                    workflow_settlement_publication: None,
+                    outcome,
+                    lease,
+                    running,
+                    cleanup,
+                    request: admission.publication_request().clone(),
+                },
             );
             assert!(matches!(
                 finished,
                 WorthQueryApplicationCommitOutcome::Cancelled
             ));
             assert_eq!(
-                (*world
+                world
                     .application
                     .runtime
                     .primary_provider

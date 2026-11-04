@@ -16,7 +16,7 @@ pub use worth_query_testkit_execution_primary_graph_application_contribution::do
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::idempotency;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::resolved_account;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::role_use::OutputRoleUse;
+pub use worth_query_execution::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::role_use::OutputRoleUse;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::Account;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::AccountLabel;
@@ -42,36 +42,26 @@ fn later_commit_recovery_selects_exact_evidence_and_rejects_foreign_reference_ax
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let first_account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(
-                &(phase).test_host_request_for_test(),
-                &world,
-                "open",
-                &request,
-            )
+            resolved_account(&(phase).test_host_request(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let later_account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(
-                &(phase).test_host_request_for_test(),
-                &world,
-                "unrelated",
-                &request,
-            )
+            resolved_account(&(phase).test_host_request(), &world, "unrelated", &request)
         })
         .expect("the fixture read owns its installed host call");
     let first = world
         .application
         .with_host_advancement(|phase| {
             retained_status_program(
-                &(phase).test_host_request_for_test(),
+                &(phase).test_host_request(),
                 &world,
                 &principal,
                 &first_account,
@@ -98,7 +88,7 @@ fn later_commit_recovery_selects_exact_evidence_and_rejects_foreign_reference_ax
         .application
         .with_host_advancement(|phase| {
             retained_status_program(
-                &(phase).test_host_request_for_test(),
+                &(phase).test_host_request(),
                 &world,
                 &principal,
                 &later_account,
@@ -112,7 +102,7 @@ fn later_commit_recovery_selects_exact_evidence_and_rejects_foreign_reference_ax
         .application
         .with_host_advancement(|phase| {
             retained_status_program(
-                &(phase).test_host_request_for_test(),
+                &(phase).test_host_request(),
                 &world,
                 &principal,
                 &later_account,
@@ -153,7 +143,7 @@ fn later_commit_recovery_selects_exact_evidence_and_rejects_foreign_reference_ax
     foreign_parents.parents.push(foreign_parents.commit_id);
     for foreign in [foreign_version, foreign_branch, foreign_parents] {
         assert!(
-            (*world
+            world
                 .application
                 .runtime.primary_provider
                 .observe_completed_application(&foreign)

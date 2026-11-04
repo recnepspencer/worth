@@ -6,12 +6,12 @@ use std::sync::Arc;
 
 use crate::domain_computation::primary_graph::tests::inbound_admission::fixture::installed_world;
 use crate::domain_computation::primary_graph::tests::inbound_admission::verifier::signed_envelope;
-use worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::dispatch::dispatch_external_effect;
+use worth_query_execution::domain_computation::application_aftermath::external_effect::dispatch::dispatch_external_effect;
 use worth_query_execution::facade::domain_computation::WorthQueryExternalDispatchRequest;
 use worth_query_execution::facade::domain_computation::WorthQueryExternalEffectTransport;
 use worth_query_execution::facade::domain_computation::WorthQueryExternalTransportOutcome;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_runtime::inbound_publication::installed_transport::InstalledTransportCompletion;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_runtime::inbound_publication::custody::InstalledTransportResumeOutcome;
+use worth_query_execution::domain_computation::primary_graph::application_runtime::inbound_publication::installed_transport::InstalledTransportCompletion;
+use worth_query_execution::domain_computation::primary_graph::application_runtime::inbound_publication::custody::InstalledTransportResumeOutcome;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitOutcome;
 use worth_query_execution::facade::domain_computation::WorthQueryInboundReceiptPosture;
 
@@ -45,18 +45,15 @@ fn synchronous_completed_and_later_signed_callback_share_one_world_terminal() {
         .lookup_completed_inbound(record.correlation())
         .expect("complete derived index")
         .expect("Completed enters World terminal owner");
+    assert_eq!(terminal.operation(), record.operation_slot().unwrap());
+    assert!(terminal.authenticated_message_identity().is_none());
     assert_eq!(
-        terminal.operation_for_test(),
-        record.operation_slot().unwrap()
-    );
-    assert!(terminal.authenticated_message_identity_for_test().is_none());
-    assert_eq!(
-        terminal.original_world_commit_for_test(),
+        terminal.original_world_commit(),
         receipt.committed_product_publication().composite_commit(),
     );
     assert_ne!(
-        terminal.original_world_commit_for_test(),
-        terminal.completion_world_commit_for_test()
+        terminal.original_world_commit(),
+        terminal.completion_world_commit()
     );
 
     let envelope = signed_envelope(record, [0x91; 32], record.payload(), false);
@@ -89,8 +86,8 @@ fn synchronous_completed_and_later_signed_callback_share_one_world_terminal() {
             .lookup_completed_inbound(record.correlation())
             .unwrap()
             .unwrap()
-            .completion_world_commit_for_test(),
-        terminal.completion_world_commit_for_test(),
+            .completion_world_commit(),
+        terminal.completion_world_commit(),
     );
 }
 
@@ -110,20 +107,20 @@ fn transport_candidate_rejects_another_owner_and_terminal_matches_later_attempt(
         .expect("the fixture read owns its installed host call");
     let binding = world
         .application
-        .resolve_installed_transport_completion_binding_for_test(&first_owner)
+        .resolve_installed_transport_completion_binding(&first_owner)
         .unwrap();
     let first_attempt = world
         .application
-        .admit_external_dispatch_attempt_for_test(first_owner.clone())
+        .admit_external_dispatch_attempt(first_owner.clone())
         .unwrap();
     let later_attempt = world
         .application
-        .admit_external_dispatch_attempt_for_test(first_owner.clone())
+        .admit_external_dispatch_attempt(first_owner.clone())
         .unwrap();
     let transport = CompletingTransport(AtomicUsize::new(0));
     let completed = dispatch_external_effect(&transport, first_attempt).unwrap();
     let later = dispatch_external_effect(&transport, later_attempt).unwrap();
-    assert!(completed.matches_committed_owner_for_test(binding.runtime_for_test(), &first_owner));
+    assert!(completed.matches_committed_owner(binding.runtime(), &first_owner));
     assert_ne!(
         completed.causal_ladder().attempt().identity(),
         later.causal_ladder().attempt().identity()
@@ -142,13 +139,13 @@ fn transport_candidate_rejects_another_owner_and_terminal_matches_later_attempt(
         .expect("the fixture read owns its installed host call");
     let other_binding = world
         .application
-        .resolve_installed_transport_completion_binding_for_test(&other_owner)
+        .resolve_installed_transport_completion_binding(&other_owner)
         .unwrap();
-    assert!(!completed.matches_committed_owner_for_test(binding.runtime_for_test(), &other_owner));
+    assert!(!completed.matches_committed_owner(binding.runtime(), &other_owner));
     let lease = world
         .application
         .product_runtime()
-        .admit_product_occurrence_for_test(
+        .admit_product_occurrence(
             other_owner
                 .committed_product_publication()
                 .product_incarnation(),
@@ -158,7 +155,7 @@ fn transport_candidate_rejects_another_owner_and_terminal_matches_later_attempt(
         world.application.runtime.primary_provider.prepare_installed_transport_completion_candidate(&host_custody.borrowed_request_for_test(),
             lease.relational_basis(), &other_owner, &completed, &other_binding,
         ),
-        Err(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::inbound_completion::WorthQueryInboundCompletionPreparationDenial::DispatchOwnerMismatch)
+        Err(worth_query_execution::domain_computation::primary_graph::provider::inbound_completion::WorthQueryInboundCompletionPreparationDenial::DispatchOwnerMismatch)
     )) }).expect("the fixture read owns its installed host call");
 
     let evidence =
@@ -173,7 +170,7 @@ fn transport_candidate_rejects_another_owner_and_terminal_matches_later_attempt(
         .unwrap();
     world
         .application
-        .record_installed_transport_completion_for_test(evidence, in_flight)
+        .record_installed_transport_completion(evidence, in_flight)
         .unwrap();
     let request = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
     world
@@ -181,14 +178,12 @@ fn transport_candidate_rejects_another_owner_and_terminal_matches_later_attempt(
         .with_host_advancement(|active_phase| {
             let phase = &active_phase;
             assert!(matches!(
-                world
-                    .application
-                    .resume_installed_transport_completion_for_test(
-                        &phase.borrowed_request_for_test(),
-                        phase,
-                        first_owner.record().correlation(),
-                        &request
-                    ),
+                world.application.resume_installed_transport_completion(
+                    &phase.borrowed_request_for_test(),
+                    phase,
+                    first_owner.record().correlation(),
+                    &request
+                ),
                 InstalledTransportResumeOutcome::Performed,
             ));
         })
@@ -202,8 +197,8 @@ fn transport_candidate_rejects_another_owner_and_terminal_matches_later_attempt(
         .unwrap()
         .unwrap();
     let later_evidence =
-        InstalledTransportCompletion::from_observed_dispatch_for_test(first_owner, &later).unwrap();
-    assert!(terminal.matches_transport_observation_for_test(&later_evidence, &binding));
+        InstalledTransportCompletion::from_observed_dispatch(first_owner, &later).unwrap();
+    assert!(terminal.matches_transport_observation(&later_evidence, &binding));
 }
 
 #[test]
@@ -222,11 +217,11 @@ fn two_real_completed_attempts_share_the_first_world_terminal() {
         .expect("the fixture read owns its installed host call");
     let first_attempt = world
         .application
-        .admit_external_dispatch_attempt_for_test(owner.clone())
+        .admit_external_dispatch_attempt(owner.clone())
         .unwrap();
     let second_attempt = world
         .application
-        .admit_external_dispatch_attempt_for_test(owner.clone())
+        .admit_external_dispatch_attempt(owner.clone())
         .unwrap();
     let first_lease = world
         .application
@@ -256,11 +251,10 @@ fn two_real_completed_attempts_share_the_first_world_terminal() {
     );
 
     let first_evidence =
-        InstalledTransportCompletion::from_observed_dispatch_for_test(owner.clone(), &first)
-            .unwrap();
+        InstalledTransportCompletion::from_observed_dispatch(owner.clone(), &first).unwrap();
     world
         .application
-        .record_installed_transport_completion_for_test(first_evidence, first_lease)
+        .record_installed_transport_completion(first_evidence, first_lease)
         .unwrap();
     let request = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
     world
@@ -268,14 +262,12 @@ fn two_real_completed_attempts_share_the_first_world_terminal() {
         .with_host_advancement(|active_phase| {
             let phase = &active_phase;
             assert!(matches!(
-                world
-                    .application
-                    .resume_installed_transport_completion_for_test(
-                        &phase.borrowed_request_for_test(),
-                        phase,
-                        owner.record().correlation(),
-                        &request
-                    ),
+                world.application.resume_installed_transport_completion(
+                    &phase.borrowed_request_for_test(),
+                    phase,
+                    owner.record().correlation(),
+                    &request
+                ),
                 InstalledTransportResumeOutcome::Performed,
             ));
         })
@@ -290,34 +282,31 @@ fn two_real_completed_attempts_share_the_first_world_terminal() {
         .unwrap();
 
     assert_eq!(
-        (*world
+        world
             .application
             .runtime.primary_provider
             .begin_external_dispatch_in_flight(&owner)
             .err(),
-        Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::outstanding_dispatch::in_flight::WorthQueryOutstandingInFlightDenial::TerminalReached),
+        Some(worth_query_execution::domain_computation::primary_graph::provider::outstanding_dispatch::in_flight::WorthQueryOutstandingInFlightDenial::TerminalReached),
         "a physical attempt after the World terminal names completion, not a mismatch"
     );
     let late_evidence =
-        InstalledTransportCompletion::from_observed_dispatch_for_test(owner.clone(), &later)
-            .unwrap();
+        InstalledTransportCompletion::from_observed_dispatch(owner.clone(), &later).unwrap();
     world
         .application
-        .record_installed_transport_completion_for_test(late_evidence, second_lease)
+        .record_installed_transport_completion(late_evidence, second_lease)
         .unwrap();
     world
         .application
         .with_host_advancement(|active_phase| {
             let phase = &active_phase;
             assert!(matches!(
-                world
-                    .application
-                    .resume_installed_transport_completion_for_test(
-                        &phase.borrowed_request_for_test(),
-                        phase,
-                        owner.record().correlation(),
-                        &request
-                    ),
+                world.application.resume_installed_transport_completion(
+                    &phase.borrowed_request_for_test(),
+                    phase,
+                    owner.record().correlation(),
+                    &request
+                ),
                 InstalledTransportResumeOutcome::Performed,
             ));
         })
