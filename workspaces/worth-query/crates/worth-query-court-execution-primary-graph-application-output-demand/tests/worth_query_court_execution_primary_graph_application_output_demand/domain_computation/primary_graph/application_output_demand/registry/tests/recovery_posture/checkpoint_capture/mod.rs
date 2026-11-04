@@ -20,9 +20,13 @@ fn checkpoint_capture_includes_only_idle_ready_outputs_in_canonical_order() {
     let occurrence = receipt.product_branch().occurrence_for_test();
     let registry = WorthQueryOutputDemandRegistry::default();
     let z_key = key("z-producer", 1, 1);
-    let z_source = (*z_key.source_for_test()).checkpoint_identity().bytes_for_test();
+    let z_source = (*z_key.source_for_test())
+        .checkpoint_identity()
+        .bytes_for_test();
     let a_key = key("a-producer", 1, 2);
-    let a_source = (*a_key.source_for_test()).checkpoint_identity().bytes_for_test();
+    let a_source = (*a_key.source_for_test())
+        .checkpoint_identity()
+        .bytes_for_test();
     let ready = |receipt| {
         DemandState::Output(WorthQueryOutputProgress::new_for_test(
             WorthQueryOutputCheckpoint::Ready(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::ready_backing::ReadyCompletion::for_test(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryCompletedOutputDemand::new_for_test(WorthQueryAcceptedOutputAuthority::Committed(receipt), worth_query_execution::facade::domain_computation::WorthQueryOutputReadinessDeliveryEvidence::for_test_for_test()))),
@@ -54,7 +58,11 @@ fn checkpoint_capture_includes_only_idle_ready_outputs_in_canonical_order() {
         WorthQueryOutputDemandDenialKind::Superseded,
         "stopped before capture",
     ));
-    (*(*registry.state_for_test()).lock().unwrap().records_mut_for_test()).insert_for_test(
+    (*(*registry.state_for_test())
+        .lock()
+        .unwrap()
+        .records_mut_for_test())
+    .insert_for_test(
         stopped_key,
         record(occurrence, DemandState::Output(stopped), 1),
     );
@@ -84,7 +92,10 @@ fn checkpoint_output_slots_ignore_superseded_source_generations() {
     };
 
     assert!(checkpoint([1; 32]).same_output_slot(&checkpoint([2; 32])));
-    assert!(
-        !checkpoint([1; 32]).same_output_slot(&{ let __source_partition = [8; 32]; let mut __base = checkpoint([2; 32]); *__base.source_partition_mut_for_test() = __source_partition; __base })
-    );
+    assert!(!checkpoint([1; 32]).same_output_slot(&{
+        let __source_partition = [8; 32];
+        let mut __base = checkpoint([2; 32]);
+        *__base.source_partition_mut_for_test() = __source_partition;
+        __base
+    }));
 }

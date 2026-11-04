@@ -102,7 +102,10 @@ fn members_admitted_on_another_branch_are_foreign_after_the_reads() {
                 .unwrap();
             let sibling = world
                 .application
-                .select_product_branch_for_test(&execution, fork_product.observation_for_test().branch_identity())
+                .select_product_branch_for_test(
+                    &execution,
+                    fork_product.observation_for_test().branch_identity(),
+                )
                 .unwrap();
             let sibling_principal = sibling
                 .resolve_authenticated_principal(
@@ -122,10 +125,20 @@ fn members_admitted_on_another_branch_are_foreign_after_the_reads() {
                     WorthQueryPrincipalResolutionMode::Ordinary,
                 )
                 .unwrap();
-            assert_eq!(sibling_root.entity_id_for_test(), roots[1].entity_id_for_test());
+            assert_eq!(
+                sibling_root.entity_id_for_test(),
+                roots[1].entity_id_for_test()
+            );
             assert_ne!(
-                sibling.product().relational_basis_for_test().identity().branch_id(),
-                old.product().relational_basis_for_test().identity().branch_id()
+                sibling
+                    .product()
+                    .relational_basis_for_test()
+                    .identity()
+                    .branch_id(),
+                old.product()
+                    .relational_basis_for_test()
+                    .identity()
+                    .branch_id()
             );
             let second_access =
                 WorthQueryApplicationQueryAccessContext::new(&sibling_principal, &sibling_root);
@@ -144,7 +157,9 @@ fn members_admitted_on_another_branch_are_foreign_after_the_reads() {
                                 roots
                                     .iter()
                                     .zip(["open", "unrelated"])
-                                    .map(|(root, status)| (root.entity_id_for_test(), status.to_owned()))
+                                    .map(|(root, status)| {
+                                        (root.entity_id_for_test(), status.to_owned())
+                                    })
                                     .collect()
                             },
                             |member: &String| {

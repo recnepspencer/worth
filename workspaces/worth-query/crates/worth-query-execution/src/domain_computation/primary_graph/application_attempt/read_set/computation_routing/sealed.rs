@@ -6,8 +6,7 @@ use crate::domain_computation::primary_graph::{
 };
 use std::sync::Arc;
 
-pub struct PreparedComputationFacts
-{
+pub struct PreparedComputationFacts {
     index: Arc<ComputationFactIndex>,
     metadata: Arc<
         worth_execution::ExecutionOrderedMap<WorthQueryApplicationFactKey, SealedComputationFact>,

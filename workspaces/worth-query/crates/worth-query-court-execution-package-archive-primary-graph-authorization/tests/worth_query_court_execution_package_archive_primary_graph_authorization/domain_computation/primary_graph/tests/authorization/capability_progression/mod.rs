@@ -260,7 +260,12 @@ pub fn build_touch_program(
     admission: Admission,
     replacement: &str,
 ) -> Program {
-    let account = resolved_account(&(phase_custody).test_host_request_for_test(), world, "open", request);
+    let account = resolved_account(
+        &(phase_custody).test_host_request_for_test(),
+        world,
+        "open",
+        request,
+    );
     let (_, projection, _) = world
         .invariant
         .project_admitted_operation(

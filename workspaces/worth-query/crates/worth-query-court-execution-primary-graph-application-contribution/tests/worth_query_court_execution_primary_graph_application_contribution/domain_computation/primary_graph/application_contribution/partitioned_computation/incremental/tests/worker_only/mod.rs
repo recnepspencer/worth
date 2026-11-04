@@ -263,10 +263,7 @@ fn worker_only_partition_run_retains_facts_reuses_and_observes_a_real_source_edi
         unchanged.runs.as_slice(),
         [(Run::Incremental, None)]
     ));
-    let subject = (*(*unchanged
-        .sealed
-        .state_for_test())
-        .facts_for_test())
+    let subject = (*(*unchanged.sealed.state_for_test()).facts_for_test())
         .facts_for_test()
         .find_map(|(_, fact, _)| {
             if let WorthQueryApplicationObservedFact::Field { entity_id, .. } = fact {
@@ -277,14 +274,11 @@ fn worker_only_partition_run_retains_facts_reuses_and_observes_a_real_source_edi
         })
         .unwrap();
     let field = AccountLabel::reference();
-    let locator = (*(*(*world
-        .application
-        .primary_provider_for_test())
-        .graph_for_test())
+    let locator = (*(*(*world.application.primary_provider_for_test()).graph_for_test())
         .layout_for_test())
-        .field_locator_for_test(field.entity(), field.aspect(), field.field())
-        .unwrap()
-        .clone();
+    .field_locator_for_test(field.entity(), field.aspect(), field.field())
+    .unwrap()
+    .clone();
     let label = "worker-only-updated";
     let request = live_scope();
     world

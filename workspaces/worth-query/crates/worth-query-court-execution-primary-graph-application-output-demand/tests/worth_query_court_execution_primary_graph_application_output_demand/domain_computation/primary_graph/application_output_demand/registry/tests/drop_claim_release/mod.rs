@@ -57,11 +57,18 @@ fn registry_drop_closed_claim_release_is_two_rows_without_a_registry_pass() {
         let state = (*registry.state_for_test()).lock().unwrap();
         for key in &old[..2] {
             assert!(!(*state.records_for_test())[key].has_cached_ready_for_test());
-            assert!((*(*state.records_for_test())[key].closed_cleanup_for_test()).queued_for_test());
+            assert!(
+                (*(*state.records_for_test())[key].closed_cleanup_for_test()).queued_for_test()
+            );
         }
         assert!((*state.records_for_test())[&old[2]].has_cached_ready_for_test());
-        assert!((*(*state.records_for_test())[&old[2]].closed_cleanup_for_test()).queued_for_test());
-        assert_eq!((*(*state.records_for_test())[&old[2]].framework_required_count_for_test()), 0);
+        assert!(
+            (*(*state.records_for_test())[&old[2]].closed_cleanup_for_test()).queued_for_test()
+        );
+        assert_eq!(
+            (*(*state.records_for_test())[&old[2]].framework_required_count_for_test()),
+            0
+        );
     }
     assert_eq!(contacts[0], contacts[1]);
 }

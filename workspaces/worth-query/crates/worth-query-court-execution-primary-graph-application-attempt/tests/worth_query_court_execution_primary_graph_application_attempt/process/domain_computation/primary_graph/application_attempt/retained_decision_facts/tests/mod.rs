@@ -196,18 +196,23 @@ fn sealed_canonical_seed_moves_into_merge_without_cloning_values() {
     for (index, record) in sealed.iter().enumerate() {
         assert_eq!((*record.value_for_test()).scalar, index as u64);
         assert_eq!((*record.ordinal_for_test()), index);
-        assert_eq!((*record.value_for_test()).roles, if index == 64 { 3 } else { 1 });
+        assert_eq!(
+            (*record.value_for_test()).roles,
+            if index == 64 { 3 } else { 1 }
+        );
     }
 }
 
 #[test]
 fn physical_content_allocation_is_allocation_denial_without_fabricated_sdk_cause() {
     use worth_query_execution::facade::domain_computation::WorthQueryApplicationAttemptDenialKind as Kind;
-    let denied = StoreDenial::PhysicalAllocation.into_attempt_denial_for_test("retained content scratch");
+    let denied =
+        StoreDenial::PhysicalAllocation.into_attempt_denial_for_test("retained content scratch");
     assert_eq!(denied.kind(), Kind::AllocationDenied);
     assert!(denied.allocation_denial().is_none());
     assert!(denied.source_retention_interruption().is_none());
-    let overflow = StoreDenial::Representability.into_attempt_denial_for_test("retained content scratch");
+    let overflow =
+        StoreDenial::Representability.into_attempt_denial_for_test("retained content scratch");
     assert_eq!(overflow.kind(), Kind::RetainedSourceStorageDenied);
 }
 

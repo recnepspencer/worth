@@ -11,7 +11,9 @@ fn ordinary_resolution_keeps_lookup_cancellation_and_deadline() {
         let world = installed_authorization_world(true);
         let selected = world
             .application
-            .with_host_advancement(|phase| world.selected_product(&phase.test_host_request_for_test()))
+            .with_host_advancement(|phase| {
+                world.selected_product(&phase.test_host_request_for_test())
+            })
             .unwrap();
         let cancellation = WorthQueryCancellationSource::new();
         let deadline = std::time::Instant::now() + std::time::Duration::from_secs(1);

@@ -104,12 +104,11 @@ fn an_erased_successor_without_a_row_key_is_returned_without_effects() {
         .expect("an invalid successor is returned to its owner");
     assert_eq!(*held.downcast::<u32>().unwrap(), 7);
     assert_eq!(
-        (*(*registry
-            .state_for_test())
+        (*(*registry.state_for_test())
             .lock()
             .unwrap()
             .records_for_test())
-            .publication_count_for_test(),
+        .publication_count_for_test(),
         0
     );
 }

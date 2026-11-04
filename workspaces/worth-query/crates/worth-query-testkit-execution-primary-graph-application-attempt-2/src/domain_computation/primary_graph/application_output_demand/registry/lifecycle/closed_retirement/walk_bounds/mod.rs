@@ -44,8 +44,7 @@ impl WalkBoundsDemandRegistryStateForTest for DemandRegistryState {
                     WorthQueryOutputCheckpoint::Ready(completion.clone()),
                 ))
             };
-            (*state
-                .records_mut_for_test())
+            (*state.records_mut_for_test())
                 .insert_for_test(newest.clone(), record(occurrence(), ready(), 0));
             let mut row = record(occurrence(), ready(), 0);
             (*row.prerequisites_mut_for_test()).push(Arc::new(old.clone()));
@@ -69,8 +68,14 @@ impl WalkBoundsDemandRegistryStateForTest for DemandRegistryState {
                         "",
                     ));
                 }
-                (*(*state.records_mut_for_test()).get_mut(&old).unwrap().state_mut_for_test()) = stopped;
-                (*(*state.records_mut_for_test()).get_mut(&newest).unwrap().state_mut_for_test()) =
+                (*(*state.records_mut_for_test())
+                    .get_mut(&old)
+                    .unwrap()
+                    .state_mut_for_test()) = stopped;
+                (*(*state.records_mut_for_test())
+                    .get_mut(&newest)
+                    .unwrap()
+                    .state_mut_for_test()) =
                     DemandState::Failed(WorthQueryOutputDemandDenial::new_for_test(
                         WorthQueryOutputDemandDenialKind::Superseded,
                         "",
@@ -79,20 +84,22 @@ impl WalkBoundsDemandRegistryStateForTest for DemandRegistryState {
             crate::domain_computation::primary_graph::application_output_demand::registry::tests::walk_bounds::add_custody(&mut state, &receipts[..entries], neighbors);
             let before = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::record_map::occurrence_rows_visited();
             match site {
-                0 => {(*
+                0 => {
+                    (*
                     // The dependent has moved its claim before retirement.
                     (*state
                         .records_mut_for_test())
                         .get_mut(&old)
                         .unwrap()
-                        .framework_required_count_mut_for_test()) = 0;(*
-                    (*state
-                        .records_mut_for_test())
+                        .framework_required_count_mut_for_test()) = 0;
+                    (*(*state.records_mut_for_test())
                         .get_mut(&newest)
                         .unwrap()
-                        .framework_required_count_mut_for_test()) = 1;(*
-                    (*state.records_mut_for_test()).get_mut(&dependent).unwrap().prerequisites_mut_for_test())[0] =
-                        Arc::new(newest.clone());
+                        .framework_required_count_mut_for_test()) = 1;
+                    (*(*state.records_mut_for_test())
+                        .get_mut(&dependent)
+                        .unwrap()
+                        .prerequisites_mut_for_test())[0] = Arc::new(newest.clone());
                     state.retire_row_for_test(&old, &mut Vec::new());
                 }
                 1 => {
@@ -102,7 +109,11 @@ impl WalkBoundsDemandRegistryStateForTest for DemandRegistryState {
                     assert!(newest_ready(&(*state.records_for_test()), &old));
                 }
                 3 => {
-                    assert!(held(&(*state.records_for_test()), &newest, &(*state.records_for_test())[&newest]));
+                    assert!(held(
+                        &(*state.records_for_test()),
+                        &newest,
+                        &(*state.records_for_test())[&newest]
+                    ));
                 }
                 4 => {
                     state.release_record_prerequisites_for_test(&dependent);

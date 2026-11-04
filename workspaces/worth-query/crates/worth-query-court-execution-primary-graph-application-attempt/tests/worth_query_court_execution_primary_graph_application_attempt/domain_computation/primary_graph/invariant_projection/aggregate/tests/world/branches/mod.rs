@@ -81,7 +81,8 @@ impl AggregateWorld {
         phase_custody: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
         source: &str,
     ) -> EntityId {
-        (*self.authority
+        (*self
+            .authority
             .project(
                 phase_custody,
                 |reader| reader.resolve_entity(SourceIdentity::reference(), source.to_owned()),
@@ -100,7 +101,8 @@ impl AggregateWorld {
         phase_custody: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
         source: EntityId,
     ) -> RelationId {
-        (*self.authority
+        (*self
+            .authority
             .project(
                 phase_custody,
                 |reader| reader.relations_to(AggregateContribution::reference(), &self.target),
@@ -187,12 +189,13 @@ impl AggregateWorld {
             .descriptor()
             .branch_id()
             .clone();
-        (*self.authority
-            .graph_for_test())
-            .with_runtime(&phase_custody.borrowed_request_for_test(), |runtime| {
+        (*self.authority.graph_for_test()).with_runtime(
+            &phase_custody.borrowed_request_for_test(),
+            |runtime| {
                 runtime
                     .branch_identity(&branch_id)
                     .expect("the branch's relational identity is installed")
-            })
+            },
+        )
     }
 }

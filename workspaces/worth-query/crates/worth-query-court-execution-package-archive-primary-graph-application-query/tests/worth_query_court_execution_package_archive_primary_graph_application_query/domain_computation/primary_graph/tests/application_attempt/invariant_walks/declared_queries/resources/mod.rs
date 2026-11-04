@@ -26,9 +26,9 @@ fn complete_declared_path_retains_original_memory_until_last_source() {
             .as_ref()
             .unwrap()
             .walks_for_test())
-            .as_ref()
-            .unwrap()
-            .values()[0],
+        .as_ref()
+        .unwrap()
+        .values()[0],
     );
     let retained = result.observed_sources()[0].clone();
     drop(result);

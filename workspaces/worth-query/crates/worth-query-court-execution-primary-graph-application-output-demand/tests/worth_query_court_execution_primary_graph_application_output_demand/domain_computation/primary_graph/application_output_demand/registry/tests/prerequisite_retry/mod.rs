@@ -6,10 +6,18 @@ fn pending_required_prerequisite_preserves_its_retryable_operation() {
     let registry = WorthQueryOutputDemandRegistry::default();
     let demand_key = key("dependent", 70, 1);
     let wake = Arc::new(DemandWake::new_for_test(Mutex::new(0), Condvar::new()));
-    (*(*registry.state_for_test()).lock().unwrap().records_mut_for_test()).insert_for_test(
-        demand_key.clone(),
-        { let __required_interests = 1; let __wake = Arc::clone(&wake); let mut __base = record(occurrence(), DemandState::Running, 1); *__base.required_interests_mut_for_test() = __required_interests; *__base.wake_mut_for_test() = __wake; __base },
-    );
+    (*(*registry.state_for_test())
+        .lock()
+        .unwrap()
+        .records_mut_for_test())
+    .insert_for_test(demand_key.clone(), {
+        let __required_interests = 1;
+        let __wake = Arc::clone(&wake);
+        let mut __base = record(occurrence(), DemandState::Running, 1);
+        *__base.required_interests_mut_for_test() = __required_interests;
+        *__base.wake_mut_for_test() = __wake;
+        __base
+    });
     let demand_interest = required_interest(&registry, demand_key.clone(), wake);
     let mut denial = WorthQueryOutputDemandDenial::new_for_test(
         WorthQueryOutputDemandDenialKind::IncompleteDependencyCoverage,
@@ -24,7 +32,11 @@ fn pending_required_prerequisite_preserves_its_retryable_operation() {
         WorthQueryOutputDemandRecoveryPosture::Retryable
     );
     assert!(matches!(
-        (*(*(*registry.state_for_test()).lock().unwrap().records_for_test())[&demand_key].state_for_test()),
+        (*(*(*registry.state_for_test())
+            .lock()
+            .unwrap()
+            .records_for_test())[&demand_key]
+            .state_for_test()),
         DemandState::Scheduled
     ));
 }
@@ -41,10 +53,18 @@ fn an_upstream_retired_after_the_execution_read_it_is_a_retryable_stale_claim() 
     let registry = WorthQueryOutputDemandRegistry::default();
     let reader_key = key("reader", 71, 1);
     let wake = Arc::new(DemandWake::new_for_test(Mutex::new(0), Condvar::new()));
-    (*(*registry.state_for_test()).lock().unwrap().records_mut_for_test()).insert_for_test(
-        reader_key.clone(),
-        { let __required_interests = 1; let __wake = Arc::clone(&wake); let mut __base = record(occurrence(), DemandState::Running, 1); *__base.required_interests_mut_for_test() = __required_interests; *__base.wake_mut_for_test() = __wake; __base },
-    );
+    (*(*registry.state_for_test())
+        .lock()
+        .unwrap()
+        .records_mut_for_test())
+    .insert_for_test(reader_key.clone(), {
+        let __required_interests = 1;
+        let __wake = Arc::clone(&wake);
+        let mut __base = record(occurrence(), DemandState::Running, 1);
+        *__base.required_interests_mut_for_test() = __required_interests;
+        *__base.wake_mut_for_test() = __wake;
+        __base
+    });
     let reader = required_interest(&registry, reader_key, wake);
     let resources = WorthQueryInvalidationResources::new();
     let source_owner =
@@ -62,7 +82,9 @@ fn an_upstream_retired_after_the_execution_read_it_is_a_retryable_stale_claim() 
         worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(
             true,
         );
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
     let selected = graph
         .integration_handle_for_test()
         .with_runtime(request_execution, |runtime| {

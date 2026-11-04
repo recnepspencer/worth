@@ -175,5 +175,8 @@ fn unauthorized_caller_leaves_the_row_for_an_authorized_peer_to_ready() {
     {
         panic!("the authorized peer publishes the row it executed");
     }
-    assert!(matches!(registry.begin_for_test(&authorized), Admission::Ready(_)));
+    assert!(matches!(
+        registry.begin_for_test(&authorized),
+        Admission::Ready(_)
+    ));
 }

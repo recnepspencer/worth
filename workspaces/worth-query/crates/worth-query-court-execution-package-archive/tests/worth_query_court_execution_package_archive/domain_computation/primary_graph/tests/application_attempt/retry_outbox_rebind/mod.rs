@@ -57,7 +57,11 @@ pub fn commit_response_lost(
         .with_host_advancement(|phase| {
             let phase_custody = &phase;
 
-            authenticated_principal(&(phase_custody).test_host_request_for_test(), world, &request)
+            authenticated_principal(
+                &(phase_custody).test_host_request_for_test(),
+                world,
+                &request,
+            )
         })
         .expect("the fixture read owns its installed host call");
     let account = world
@@ -126,7 +130,11 @@ pub fn retry_without_managed_work(
         .with_host_advancement(|phase| {
             let phase_custody = &phase;
 
-            authenticated_principal(&(phase_custody).test_host_request_for_test(), world, &retry_request)
+            authenticated_principal(
+                &(phase_custody).test_host_request_for_test(),
+                world,
+                &retry_request,
+            )
         })
         .expect("the fixture read owns its installed host call");
     let retry_account = world
@@ -193,7 +201,11 @@ pub fn consume_armed_session_and_invariant_sentinels(world: &AuthorizationWorld)
         .with_host_advancement(|phase| {
             let phase_custody = &phase;
 
-            authenticated_principal(&(phase_custody).test_host_request_for_test(), world, &request)
+            authenticated_principal(
+                &(phase_custody).test_host_request_for_test(),
+                world,
+                &request,
+            )
         })
         .expect("the fixture read owns its installed host call");
     let probe_account = world
@@ -243,7 +255,11 @@ pub fn consume_armed_session_and_invariant_sentinels(world: &AuthorizationWorld)
         .with_host_advancement(|phase| {
             let phase_custody = &phase;
 
-            authenticated_principal(&(phase_custody).test_host_request_for_test(), world, &request)
+            authenticated_principal(
+                &(phase_custody).test_host_request_for_test(),
+                world,
+                &request,
+            )
         })
         .expect("the fixture read owns its installed host call");
     let probe_account = world
@@ -296,7 +312,11 @@ pub fn assert_unseen_commit_uses_the_managed_path(world: &AuthorizationWorld) {
         .with_host_advancement(|phase| {
             let phase_custody = &phase;
 
-            authenticated_principal(&(phase_custody).test_host_request_for_test(), world, &request)
+            authenticated_principal(
+                &(phase_custody).test_host_request_for_test(),
+                world,
+                &request,
+            )
         })
         .expect("the fixture read owns its installed host call");
     let probe_account = world

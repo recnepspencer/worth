@@ -54,10 +54,17 @@ fn selected_delivery_keeps_both_producer_and_applicability_identity() {
             )
             .map(|(interest, _pause)| interest)
             .unwrap();
-        assert_eq!((*joined.key_for_test()), own, "other producer: {other_producer}");
+        assert_eq!(
+            (*joined.key_for_test()),
+            own,
+            "other producer: {other_producer}"
+        );
         let state = (*registry.state_for_test()).lock().unwrap();
         assert_eq!((*(*state.records_for_test())[&own].interests_for_test()), 2);
-        assert_eq!((*(*state.records_for_test())[&foreign].interests_for_test()), 1);
+        assert_eq!(
+            (*(*state.records_for_test())[&foreign].interests_for_test()),
+            1
+        );
         assert_eq!((*state.records_for_test()).len_for_test(), 2);
         drop(state);
         drop(joined);

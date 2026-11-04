@@ -136,8 +136,10 @@ fn other_scheduling_stops_still_fail_the_row_and_release_obligations() {
         assert_eq!(denial.recovery_posture(), Posture::Terminal);
         let state = (*fixture.registry.state_for_test()).lock().unwrap();
         let row = &(*state.records_for_test())[&(*fixture.interest.key_for_test())];
-        assert!(matches!(&(*row.state_for_test()), DemandState::Failed(stored)
-            if stored == &denial));
+        assert!(
+            matches!(&(*row.state_for_test()), DemandState::Failed(stored)
+            if stored == &denial)
+        );
         assert_eq!(
             worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::required_stop::head_stop(&(*state.records_for_test()), &(*fixture.interest.key_for_test())),
             Some(denial)
@@ -206,15 +208,13 @@ fn a_new_key_stays_claimable_after_a_caller_resource_stop() {
     use worth_query_execution::facade::application_contribution::WorthQueryManagedComputationResourceDenial as Resource;
     for finish in [Finish::Ordinary, Finish::Selected] {
         let fixture = Fixture::new(false);
-        (*(*(*fixture
-            .registry
-            .state_for_test())
+        (*(*(*fixture.registry.state_for_test())
             .lock()
             .unwrap()
             .records_mut_for_test())
-            .get_mut(&(*fixture.interest.key_for_test()))
-            .unwrap()
-            .successor_of_mut_for_test()) = None;
+        .get_mut(&(*fixture.interest.key_for_test()))
+        .unwrap()
+        .successor_of_mut_for_test()) = None;
         let kind = WorthQueryOutputDemandDenialKind::ExecutionRequest(Advance::Resource(
             Resource::WorkExhausted,
         ));

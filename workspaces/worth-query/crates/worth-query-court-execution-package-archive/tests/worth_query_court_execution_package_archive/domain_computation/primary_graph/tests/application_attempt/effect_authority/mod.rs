@@ -21,12 +21,14 @@ fn compile_capability_does_not_widen_the_installed_effect_program() {
             let borrowed_execution = host_custody.borrowed_request_for_test();
             let execution = &borrowed_execution;
             let principal = authenticated_principal(
-                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
+                &(host_custody.phase_for_application_for_test(&world.application))
+                    .test_host_request_for_test(),
                 &world,
                 &request,
             );
             let account = resolved_account(
-                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
+                &(host_custody.phase_for_application_for_test(&world.application))
+                    .test_host_request_for_test(),
                 &world,
                 "open",
                 &request,
@@ -38,7 +40,8 @@ fn compile_capability_does_not_widen_the_installed_effect_program() {
                 .unwrap();
             let admission = world
                 .selected_product(
-                    &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
+                    &(host_custody.phase_for_application_for_test(&world.application))
+                        .test_host_request_for_test(),
                 )
                 .authorize_operation(
                     &host_custody.phase_for_application_for_test(&world.application),
@@ -119,18 +122,21 @@ fn entity_from_another_admitted_scope_cannot_become_an_effect_target() {
             let borrowed_execution = host_custody.borrowed_request_for_test();
             let execution = &borrowed_execution;
             let principal = authenticated_principal(
-                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
+                &(host_custody.phase_for_application_for_test(&world.application))
+                    .test_host_request_for_test(),
                 &world,
                 &request,
             );
             let account = resolved_account(
-                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
+                &(host_custody.phase_for_application_for_test(&world.application))
+                    .test_host_request_for_test(),
                 &world,
                 "open",
                 &request,
             );
             let foreign = resolved_account(
-                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
+                &(host_custody.phase_for_application_for_test(&world.application))
+                    .test_host_request_for_test(),
                 &world,
                 "unrelated",
                 &request,
@@ -142,7 +148,8 @@ fn entity_from_another_admitted_scope_cannot_become_an_effect_target() {
                 .unwrap();
             let admission = world
                 .selected_product(
-                    &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
+                    &(host_custody.phase_for_application_for_test(&world.application))
+                        .test_host_request_for_test(),
                 )
                 .authorize_operation(
                     &host_custody.phase_for_application_for_test(&world.application),

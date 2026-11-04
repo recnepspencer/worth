@@ -238,8 +238,13 @@ pub fn native_stamp_for_independent_grant(
     world: &worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::authorization_world_installation::AuthorizationWorld,
 ) -> worth_relational::facade::authorization::RelationalAuthorizationDependencyWire {
     let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
-    let snapshot = selected.application_basis_for_test().snapshot_handle().clone();
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let snapshot = selected
+        .application_basis_for_test()
+        .snapshot_handle()
+        .clone();
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
     let grant = grant(
         &(phase_custody).test_host_request_for_test(),
         execution,

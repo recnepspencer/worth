@@ -66,9 +66,7 @@ fn lease_opened_after_reservation_receives_the_exact_committed_successor() {
     let (parked_tx, parked_rx) = mpsc::sync_channel(0);
     let (release_tx, release_rx) = mpsc::sync_channel(0);
     let release_rx = Arc::new(Mutex::new(release_rx));
-    (*world
-        .application
-        .primary_provider_for_test())
+    (*world.application.primary_provider_for_test())
         .set_application_commit_causality_reservation_hook_for_test(Some(Arc::new(move || {
             parked_tx.send(()).unwrap();
             release_rx.lock().unwrap().recv().unwrap();
@@ -102,9 +100,7 @@ fn lease_opened_after_reservation_receives_the_exact_committed_successor() {
             .unwrap();
                 release_tx.send(()).unwrap();
                 let committed = committed.join().unwrap();
-                (*world
-                    .application
-                    .primary_provider_for_test())
+                (*world.application.primary_provider_for_test())
                     .set_application_commit_causality_reservation_hook_for_test(None);
 
                 let WorthQueryApplicationLiveOutcome::Delivered(update) =
@@ -165,10 +161,7 @@ fn publication_without_a_joining_subscriber_releases_marker_and_observation() {
                 .unwrap()
         })
         .expect("the fixture read owns its installed host call");
-    let retention_before = (*world
-        .application
-        .product_runtime()
-        .owner_for_test())
+    let retention_before = (*world.application.product_runtime().owner_for_test())
         .inspection_port()
         .retention_snapshot()
         .unwrap();
@@ -180,7 +173,10 @@ fn publication_without_a_joining_subscriber_releases_marker_and_observation() {
                 &(phase).test_host_request_for_test(),
                 &host_custody.borrowed_request_for_test(),
                 &world,
-                world.application.product_runtime().default_branch_for_test(),
+                world
+                    .application
+                    .product_runtime()
+                    .default_branch_for_test(),
                 &principal,
                 &account,
                 &request,
@@ -199,18 +195,13 @@ fn publication_without_a_joining_subscriber_releases_marker_and_observation() {
         panic!("the no-subscriber application must commit");
     };
     assert_eq!(
-        (*world
-            .application
-            .primary_provider_for_test())
+        (*world.application.primary_provider_for_test())
             .active_application_commit_causality_partitions_for_test(),
         0
     );
     // Compare before preparing the live attempt and after it finishes, with
     // the descriptive receipt still retained. Neither receipt owner pins it.
-    let retention_after_publication = (*world
-        .application
-        .product_runtime()
-        .owner_for_test())
+    let retention_after_publication = (*world.application.product_runtime().owner_for_test())
         .inspection_port()
         .retention_snapshot()
         .unwrap();
@@ -220,6 +211,9 @@ fn publication_without_a_joining_subscriber_releases_marker_and_observation() {
     );
     assert_eq!(
         committed.committed_product_publication().product_branch(),
-        world.application.product_runtime().default_branch_for_test()
+        world
+            .application
+            .product_runtime()
+            .default_branch_for_test()
     );
 }

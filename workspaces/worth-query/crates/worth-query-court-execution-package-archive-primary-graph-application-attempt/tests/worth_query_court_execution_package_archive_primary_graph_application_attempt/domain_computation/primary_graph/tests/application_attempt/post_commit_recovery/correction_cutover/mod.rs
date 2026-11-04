@@ -11,9 +11,7 @@ fn pending_correction_cutover_never_looks_unseen_on_another_branch() {
         .application
         .with_host_advancement(|phase| world.selected_product(&phase.test_host_request_for_test()))
         .unwrap();
-    let _delivery = (*world
-        .application
-        .primary_provider_for_test())
+    let _delivery = (*world.application.primary_provider_for_test())
         .observe_application_commit_causality_for_test(selected.product());
     let request = live_scope();
     let sibling = world
@@ -50,7 +48,12 @@ fn pending_correction_cutover_never_looks_unseen_on_another_branch() {
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&phase.test_host_request_for_test(), &world, "open", &request)
+            resolved_account(
+                &phase.test_host_request_for_test(),
+                &world,
+                "open",
+                &request,
+            )
         })
         .unwrap();
     let program = world
@@ -111,7 +114,10 @@ fn pending_correction_cutover_never_looks_unseen_on_another_branch() {
         }
         Observed::Completed(recorded, committed) => {
             assert_eq!(recorded, receipt.authority_binding().idempotency_binding());
-            assert_eq!(committed.commit_reference_for_test(), receipt.commit_reference());
+            assert_eq!(
+                committed.commit_reference_for_test(),
+                receipt.commit_reference()
+            );
         }
         _ => panic!("cross-branch lookup must retain exact pending or completed evidence"),
     }

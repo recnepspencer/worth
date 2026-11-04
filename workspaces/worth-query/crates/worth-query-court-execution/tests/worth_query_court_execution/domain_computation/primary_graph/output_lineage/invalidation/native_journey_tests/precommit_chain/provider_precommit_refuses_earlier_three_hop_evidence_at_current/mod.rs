@@ -23,8 +23,13 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
             (entity, product)
         })
         .expect("initial source selection borrows its installed phase");
-    let coordinate = ProductCoordinate::new_for_test(product.observation_for_test().lifecycle_incarnation(), product.observation_for_test().reference_generation().get());
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let coordinate = ProductCoordinate::new_for_test(
+        product.observation_for_test().lifecycle_incarnation(),
+        product.observation_for_test().reference_generation().get(),
+    );
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
     let handle = graph.integration_handle_for_test();
     let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
     let status_ref = AccountStatus::reference();
@@ -133,7 +138,17 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
     // A discontinuous B row has no direct facts. Its shared A evidence must
     // still catch the changed source fact after full verification is required.
     owner
-        .register_settlement_for_test(SettlementRegistration::new_for_test(None, None, Arc::clone(&b), RetainedSourceFacts::for_test_for_test(false, Arc::from([])), None, after.clone(), OrdSet::new(), Some(FullVerificationReason::DeclaredChangeUnavailable), OrdSet::unit(Arc::clone(&a))))
+        .register_settlement_for_test(SettlementRegistration::new_for_test(
+            None,
+            None,
+            Arc::clone(&b),
+            RetainedSourceFacts::for_test_for_test(false, Arc::from([])),
+            None,
+            after.clone(),
+            OrdSet::new(),
+            Some(FullVerificationReason::DeclaredChangeUnavailable),
+            OrdSet::unit(Arc::clone(&a)),
+        ))
         .expect("discontinuous B row is retained at the selected source");
     assert!(matches!(
         owner.currentness_for_test(&after, &b),
@@ -274,7 +289,9 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
     assert_eq!(
         world
             .application
-            .with_host_advancement(|phase| world.selected_product(&phase.test_host_request_for_test()))
+            .with_host_advancement(
+                |phase| world.selected_product(&phase.test_host_request_for_test())
+            )
             .expect("product selection borrows its installed phase")
             .product()
             .observation_for_test(),

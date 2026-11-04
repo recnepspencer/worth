@@ -1,9 +1,7 @@
 //! Source disclosure associates the sole funded parameter capture with its source.
 use super::super::application_query::CapturedApplicationQueryParameters;
 
-pub struct OriginalSourceDisclosure(
-    CapturedApplicationQueryParameters,
-);
+pub struct OriginalSourceDisclosure(CapturedApplicationQueryParameters);
 
 impl OriginalSourceDisclosure {
     pub(super) fn captured(parameters: CapturedApplicationQueryParameters) -> Self {

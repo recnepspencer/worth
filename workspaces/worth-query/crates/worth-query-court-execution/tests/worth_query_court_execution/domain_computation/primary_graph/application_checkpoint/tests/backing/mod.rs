@@ -41,7 +41,9 @@ fn query_clones_decode_into_the_same_native_payload_backing() {
     let bytes = Arc::new(checkpoint.bytes().to_vec().into_boxed_slice());
     let lifetime = Arc::downgrade(&bytes);
     drop(checkpoint);
-    let checkpoint = WorthQueryApplicationCheckpoint::new_for_test(worth_execution::ExecutionImmutableBytes::from_external_bytes(bytes));
+    let checkpoint = WorthQueryApplicationCheckpoint::new_for_test(
+        worth_execution::ExecutionImmutableBytes::from_external_bytes(bytes),
+    );
     assert_three_handoffs_share_backing(checkpoint, b"abc", 1);
     assert!(lifetime.upgrade().is_none());
 }
@@ -59,7 +61,11 @@ fn encoded_query_clones_preserve_shared_backing_through_native_handoff() {
     )
     .expect("the actual production formatter creates an authenticated Query frame");
     assert_eq!(sections.total_bytes(), checkpoint.bytes().len());
-    assert_three_handoffs_share_backing(checkpoint, native, publication.bootstrap_commit_id_for_test().0);
+    assert_three_handoffs_share_backing(
+        checkpoint,
+        native,
+        publication.bootstrap_commit_id_for_test().0,
+    );
 }
 
 pub fn assert_three_handoffs_share_backing(

@@ -11,12 +11,14 @@ fn one_field_family_instance_cannot_satisfy_two_planned_entity_dependencies() {
             let borrowed_execution = host_custody.borrowed_request_for_test();
             let execution = &borrowed_execution;
             let principal = authenticated_principal(
-                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
+                &(host_custody.phase_for_application_for_test(&world.application))
+                    .test_host_request_for_test(),
                 &world,
                 &request,
             );
             let account = resolved_account(
-                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
+                &(host_custody.phase_for_application_for_test(&world.application))
+                    .test_host_request_for_test(),
                 &world,
                 "open",
                 &request,
@@ -28,7 +30,8 @@ fn one_field_family_instance_cannot_satisfy_two_planned_entity_dependencies() {
                 .unwrap();
             let admission = world
                 .selected_product(
-                    &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
+                    &(host_custody.phase_for_application_for_test(&world.application))
+                        .test_host_request_for_test(),
                 )
                 .authorize_operation(
                     &host_custody.phase_for_application_for_test(&world.application),

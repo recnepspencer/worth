@@ -36,12 +36,7 @@ use currentness::{
 pub(crate) mod running;
 pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) use local_workflow_settlement::LocalWorkflowSettlementPublication;
 
-pub struct WorthQueryPreparedApplicationCommit<
-    Schema,
-    Operation,
-    Input,
-    Scope,
-> {
+pub struct WorthQueryPreparedApplicationCommit<Schema, Operation, Input, Scope> {
     admission: crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<
         Schema,
         Operation,

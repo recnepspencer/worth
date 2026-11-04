@@ -23,7 +23,10 @@ fn changed_identity_field_makes_resolved_scope_stale_before_admission() {
                 .application
                 .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch_for_test(),
+                    world
+                        .application
+                        .product_runtime()
+                        .default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_authenticated_principal(
@@ -44,7 +47,10 @@ fn changed_identity_field_makes_resolved_scope_stale_before_admission() {
                 .application
                 .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch_for_test(),
+                    world
+                        .application
+                        .product_runtime()
+                        .default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
@@ -103,14 +109,11 @@ pub fn change_account_status(
     account: worth_relational::facade::identity::EntityId,
     new_status: &str,
 ) {
-    let graph = (*world
-        .application
-        .runtime_for_test())
+    let graph = (*world.application.runtime_for_test())
         .primary_graph()
         .expect("test world publishes a primary graph");
     let status_field = AccountStatus::reference();
-    let locator = (*graph
-        .layout_for_test())
+    let locator = (*graph.layout_for_test())
         .field_locator_for_test(
             status_field.entity(),
             status_field.aspect(),

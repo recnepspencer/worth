@@ -22,8 +22,16 @@ pub fn insert(
     key: &WorthQueryOutputDemandKey,
     checkpoint: Checkpoint,
 ) {
-    let occurrence = checkpoint.receipt().unwrap().product_branch().occurrence_for_test();
-    (*(*registry.state_for_test()).lock().unwrap().records_mut_for_test()).insert_for_test(
+    let occurrence = checkpoint
+        .receipt()
+        .unwrap()
+        .product_branch()
+        .occurrence_for_test();
+    (*(*registry.state_for_test())
+        .lock()
+        .unwrap()
+        .records_mut_for_test())
+    .insert_for_test(
         key.clone(),
         record(
             occurrence,
@@ -45,7 +53,13 @@ pub fn owner(
     registry: &WorthQueryOutputDemandRegistry,
     key: WorthQueryOutputDemandKey,
 ) -> WorthQueryOutputDemandInterest {
-    let wake = Arc::clone(&(*(*(*registry.state_for_test()).lock().unwrap().records_for_test())[&key].wake_for_test()));
+    let wake = Arc::clone(
+        &(*(*(*registry.state_for_test())
+            .lock()
+            .unwrap()
+            .records_for_test())[&key]
+            .wake_for_test()),
+    );
     interest(registry, key, wake)
 }
 pub fn returned(
@@ -98,8 +112,7 @@ fn old_cell_cannot_finish_a_replacement_row_with_the_same_numeric_claim() {
         unreachable!()
     };
     assert!(!output.owns_checkpoint_for_test(&old_checkpoint));
-    assert!((*output
-        .checkpoint_for_test())
+    assert!((*output.checkpoint_for_test())
         .as_ref()
         .is_some_and(|checkpoint| output.owns_checkpoint_for_test(checkpoint)));
 }
@@ -121,7 +134,11 @@ fn foreign_registry_and_missing_record_return_the_exact_claimed_cell() {
         foreign.finish_checkpoint_owned_for_test(&owner, claim, checkpoint, None),
         WorthQueryOutputDemandDenialKind::ForeignDemand,
     );
-    let removed = (*(*registry.state_for_test()).lock().unwrap().records_mut_for_test()).remove_for_test(&key);
+    let removed = (*(*registry.state_for_test())
+        .lock()
+        .unwrap()
+        .records_mut_for_test())
+    .remove_for_test(&key);
     drop(removed);
     let checkpoint = returned(
         registry.finish_checkpoint_owned_for_test(&owner, claim, checkpoint, None),
@@ -143,10 +160,11 @@ fn cleanup_claim_keeps_the_original_stop_and_refuses_a_second_borrow() {
     let owner = owner(&registry, key.clone());
     let (first_claim, checkpoint) = claim(&registry, &owner);
     registry.release_product_occurrence_for_test(occurrence);
-    let stop = match registry.finish_checkpoint_owned_for_test(&owner, first_claim, checkpoint, None) {
-        Err(CheckpointFinishStop::Restored(stop)) => stop,
-        _ => panic!("the original stopped claim is restored"),
-    };
+    let stop =
+        match registry.finish_checkpoint_owned_for_test(&owner, first_claim, checkpoint, None) {
+            Err(CheckpointFinishStop::Restored(stop)) => stop,
+            _ => panic!("the original stopped claim is restored"),
+        };
     assert_eq!(stop.kind(), WorthQueryOutputDemandDenialKind::Closed);
     let (cleanup_claim, checkpoint) = {
         let mut state = (*registry.state_for_test()).lock().unwrap();
@@ -159,13 +177,17 @@ fn cleanup_claim_keeps_the_original_stop_and_refuses_a_second_borrow() {
             .expect("present custody can be disposed");
         assert_ne!(claimed.0, first_claim);
         assert!(
-            output.claim_stopped_checkpoint_for_close_for_test().is_none(),
+            output
+                .claim_stopped_checkpoint_for_close_for_test()
+                .is_none(),
             "no double loan"
         );
         row.finish_for_test();
         claimed
     };
-    assert!(matches!(registry.begin_for_test(&owner), Admission::Failed(ref denial) if denial == &stop));
+    assert!(
+        matches!(registry.begin_for_test(&owner), Admission::Failed(ref denial) if denial == &stop)
+    );
     assert!(
         owner.require_read_closeable().is_err(),
         "a stopped outstanding loan retains custody"
@@ -181,5 +203,7 @@ fn cleanup_claim_keeps_the_original_stop_and_refuses_a_second_borrow() {
         matches!(registry.finish_checkpoint_owned_for_test(&owner, cleanup_claim, checkpoint, None),
         Err(CheckpointFinishStop::Restored(ref denial)) if denial == &stop)
     );
-    assert!(matches!(registry.begin_for_test(&owner), Admission::Failed(ref denial) if denial == &stop));
+    assert!(
+        matches!(registry.begin_for_test(&owner), Admission::Failed(ref denial) if denial == &stop)
+    );
 }

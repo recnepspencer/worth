@@ -55,16 +55,22 @@ fn a_failed_edit_followed_by_a_stopped_rebuild_preserves_both_attempts() {
     let mut retained = retained;
     let request = live_scope();
     let execution = QueryRequestExecution::open_for_test(serial_placement(), &request);
-    (*retained.tree_mut_for_test()) = ReductionTree::<u64, fn(&u64, &u64) -> u64>::try_from_declared_native(
-        plan(&keys),
-        keys.iter().map(|id| (*id, 1)).collect(),
-        0,
-        phase_panicking as fn(&u64, &u64) -> u64,
-        Some(execution.dispatch_for_test().unwrap().native_lease_for_test()),
-        || execution.checkpoint_for_test(),
-    )
-    .unwrap()
-    .0;
+    (*retained.tree_mut_for_test()) =
+        ReductionTree::<u64, fn(&u64, &u64) -> u64>::try_from_declared_native(
+            plan(&keys),
+            keys.iter().map(|id| (*id, 1)).collect(),
+            0,
+            phase_panicking as fn(&u64, &u64) -> u64,
+            Some(
+                execution
+                    .dispatch_for_test()
+                    .unwrap()
+                    .native_lease_for_test(),
+            ),
+            || execution.checkpoint_for_test(),
+        )
+        .unwrap()
+        .0;
     reset_counts();
     PANIC_AT.set(Some(1));
     // A reducer panic in each pass: the edit has one entered

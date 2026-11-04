@@ -135,7 +135,12 @@ fn checkpoint_readmission_keeps_absence_a_value() {
         TypeId::of_for_test::<Binding>(),
         TypeId::of_for_test::<OptionalOutputs>(),
         ["companion"].into_iter(),
-        &[WorthQueryCheckpointOutputRole::new_for_test("preserved".into(), WorthQueryApplicationOutputPosture::Preserve, "entity".into(), entity)],
+        &[WorthQueryCheckpointOutputRole::new_for_test(
+            "preserved".into(),
+            WorthQueryApplicationOutputPosture::Preserve,
+            "entity".into(),
+            entity,
+        )],
         |_| Some(TypeId::of_for_test::<Entity>()),
         &execution,
     )
@@ -145,7 +150,9 @@ fn checkpoint_readmission_keeps_absence_a_value() {
     assert!(outputs.entity::<Companion>().unwrap().is_none());
     assert_eq!(outputs.entity::<Subject>().unwrap().entity_id(), entity);
     assert_eq!(
-        readmitted.bound_entity_for_test(&companion_as_required()).err(),
+        readmitted
+            .bound_entity_for_test(&companion_as_required())
+            .err(),
         Some(WorthQueryApplicationOutputProjectionDenial::CardinalityMismatch)
     );
     // Reading it as another contract is refused once, at the typed view;

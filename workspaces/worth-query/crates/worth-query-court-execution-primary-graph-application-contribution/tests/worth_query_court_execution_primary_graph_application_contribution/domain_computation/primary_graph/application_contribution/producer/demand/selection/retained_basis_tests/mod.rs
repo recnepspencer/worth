@@ -12,10 +12,13 @@ fn owner_retained_program_basis_survives_a_new_head_without_admitting_foreign_or
     let world = installed_authorization_world(true);
     let selected = world
         .application
-        .with_host_advancement(|host_phase| world.selected_product(&host_phase.test_host_request_for_test()))
+        .with_host_advancement(|host_phase| {
+            world.selected_product(&host_phase.test_host_request_for_test())
+        })
         .expect("installed host call opens");
-    let source =
-        WorthQueryProductBranchReadIdentity::from_observation_for_test(selected.product().observation_for_test());
+    let source = WorthQueryProductBranchReadIdentity::from_observation_for_test(
+        selected.product().observation_for_test(),
+    );
     let retained = selected.retain_application_read();
     let request = live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
@@ -37,7 +40,9 @@ fn owner_retained_program_basis_survives_a_new_head_without_admitting_foreign_or
     commit_live_activity(&world, &principal, &request);
     let selected_current = world
         .application
-        .with_host_advancement(|host_phase| world.selected_product(&host_phase.test_host_request_for_test()))
+        .with_host_advancement(|host_phase| {
+            world.selected_product(&host_phase.test_host_request_for_test())
+        })
         .expect("installed host call opens");
     let current = selected_current.product().observation_for_test();
     assert!(!source.matches_observation_for_test(current));

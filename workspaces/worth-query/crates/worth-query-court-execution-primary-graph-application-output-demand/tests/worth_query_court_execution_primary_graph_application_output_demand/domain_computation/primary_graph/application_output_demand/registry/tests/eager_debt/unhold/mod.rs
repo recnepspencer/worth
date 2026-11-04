@@ -10,12 +10,14 @@ pub fn run(
     let cancel = seed & 1 == 0;
     {
         let mut state = (*world.registry.state_for_test()).lock().unwrap();
-        (*(*state
-            .records_mut_for_test())
+        (*(*state.records_mut_for_test())
             .get_mut(&world.keys[2])
             .unwrap()
             .required_interests_mut_for_test()) = 1;
-        (*world.owners[2].as_mut().unwrap().requires_output_mut_for_test()) = true;
+        (*world.owners[2]
+            .as_mut()
+            .unwrap()
+            .requires_output_mut_for_test()) = true;
     }
     worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::application_output_demand::registry::prerequisite_claims::custody_note_steps::unhold(
         world.owners[2].as_ref().unwrap(),
@@ -51,7 +53,9 @@ pub fn run(
     if let Some(entry) = world.model.custody.get_mut(&1) {
         entry.tokens = 0;
     }
-    world.registry.release_prepared_token_for_test(&context.commit(1));
+    world
+        .registry
+        .release_prepared_token_for_test(&context.commit(1));
     world.model.settle();
     for _ in 0..4 {
         world.admission().unwrap();

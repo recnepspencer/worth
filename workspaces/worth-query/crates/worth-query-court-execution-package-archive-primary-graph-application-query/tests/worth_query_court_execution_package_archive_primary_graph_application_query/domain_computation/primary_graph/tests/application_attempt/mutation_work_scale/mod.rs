@@ -174,8 +174,11 @@ pub fn mutation_work(
                 unrelated_accounts,
             );
             let request = live_scope();
-            let principal =
-                authenticated_principal(&(phase_custody).test_host_request_for_test(), &world, &request);
+            let principal = authenticated_principal(
+                &(phase_custody).test_host_request_for_test(),
+                &world,
+                &request,
+            );
             let account = resolved_account(
                 &(phase_custody).test_host_request_for_test(),
                 &world,
@@ -221,7 +224,11 @@ pub fn no_demand_mutation_program(
     Account,
 > {
     let request = live_scope();
-    let principal = authenticated_principal(&(phase_custody).test_host_request_for_test(), world, &request);
+    let principal = authenticated_principal(
+        &(phase_custody).test_host_request_for_test(),
+        world,
+        &request,
+    );
     let account = resolved_account(
         &(phase_custody).test_host_request_for_test(),
         world,
@@ -337,13 +344,11 @@ pub fn grow_unrelated_accounts(
         return;
     }
     let graph = (*(*world.application.primary_provider_for_test()).graph_for_test()).clone();
-    let kind = (*graph
-        .layout_for_test())
+    let kind = (*graph.layout_for_test())
         .entity_kind_for_test(Account::reference().name())
         .expect("account kind is installed");
     let locator = |entity: &str, aspect: &str, field: &str| {
-        (*graph
-            .layout_for_test())
+        (*graph.layout_for_test())
             .field_locator_for_test(entity, aspect, field)
             .expect("scale field is installed")
             .clone()

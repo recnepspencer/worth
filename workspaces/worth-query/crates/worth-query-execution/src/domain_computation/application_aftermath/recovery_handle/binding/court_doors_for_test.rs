@@ -17,7 +17,10 @@ impl WorthQueryRecoveryHandleBinding {
 
 impl WorthQueryRecoveryHandleBinding {
     #[doc(hidden)]
-    pub fn committed_dispatch_outbox_for_test(&self) -> &Option<crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxBinding> {
+    pub fn committed_dispatch_outbox_for_test(
+        &self,
+    ) -> &Option<crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxBinding>
+    {
         &self.committed_dispatch_outbox
     }
 }
@@ -87,7 +90,11 @@ impl WorthQueryRecoveryHandleBinding {
 
 impl WorthQueryRecoveryHandleBinding {
     #[doc(hidden)]
-    pub fn committed_dispatch_outbox_mut_for_test(&mut self) -> &mut Option<crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxBinding> {
+    pub fn committed_dispatch_outbox_mut_for_test(
+        &mut self,
+    ) -> &mut Option<
+        crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxBinding,
+    > {
         &mut self.committed_dispatch_outbox
     }
 }
@@ -108,7 +115,9 @@ impl WorthQueryRecoveryHandleBinding {
 
 impl WorthQueryRecoveryHandleBinding {
     #[doc(hidden)]
-    pub fn installed_aftermath_mut_for_test(&mut self) -> &mut WorthQueryInstalledAftermathContract {
+    pub fn installed_aftermath_mut_for_test(
+        &mut self,
+    ) -> &mut WorthQueryInstalledAftermathContract {
         &mut self.installed_aftermath
     }
 }
@@ -129,7 +138,9 @@ impl WorthQueryRecoveryHandleBinding {
 
 impl WorthQueryRecoveryHandleBinding {
     #[doc(hidden)]
-    pub fn retained_governed_input_mut_for_test(&mut self) -> &mut Option<WorthQueryRetainedGovernedInput> {
+    pub fn retained_governed_input_mut_for_test(
+        &mut self,
+    ) -> &mut Option<WorthQueryRetainedGovernedInput> {
         &mut self.retained_governed_input
     }
 }
@@ -150,7 +161,10 @@ impl WorthQueryRecoveryHandleBinding {
 
 impl WorthQueryRecoveryHandleBinding {
     #[doc(hidden)]
-    pub fn from_receipt_for_test( receipt: &WorthQueryApplicationCommitReceipt, expires_at_unix_ms: Option<u64>) -> Result<Self, WorthQueryRecoveryHandleDenial> {
+    pub fn from_receipt_for_test(
+        receipt: &WorthQueryApplicationCommitReceipt,
+        expires_at_unix_ms: Option<u64>,
+    ) -> Result<Self, WorthQueryRecoveryHandleDenial> {
         Self::from_receipt(receipt, expires_at_unix_ms)
     }
 }

@@ -121,8 +121,7 @@ fn ordinary_handler_clear_of_absent_field_retains_aspect_absence() {
     let cleared =
         crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::journey::demand(&clearing, true).expect("clearing an absent Optional field is lawful");
     let receipt = cleared.application_commit_receipt().unwrap();
-    let completed = (*clearing
-        .primary_provider_for_test())
+    let completed = (*clearing.primary_provider_for_test())
         .observe_completed_application_for_test(receipt.commit_reference())
         .unwrap();
     assert!(
@@ -133,15 +132,15 @@ fn ordinary_handler_clear_of_absent_field_retains_aspect_absence() {
             .is_none(),
         "a clear that leaves the aspect absent did not move the read"
     );
-    let aspect =(*(* (*clearing
-        .primary_provider_for_test())
-        .graph_for_test())
-        .layout_for_test())
+    let aspect = (*(*(*clearing.primary_provider_for_test()).graph_for_test()).layout_for_test())
         .field_locator_for_test("Body", "SourceNotes", "SourceSelection")
         .unwrap()
         .aspect()
         .aspect_key();
-    let facts = completed.commit_evidence().rebased_source_facts_for_test().unwrap();
+    let facts = completed
+        .commit_evidence()
+        .rebased_source_facts_for_test()
+        .unwrap();
     let (entity, revision) = facts
         .iter_for_test()
         .find_map(|fact| match fact {

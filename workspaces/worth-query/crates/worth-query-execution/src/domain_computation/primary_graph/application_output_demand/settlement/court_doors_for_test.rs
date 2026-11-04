@@ -38,7 +38,9 @@ impl WorthQueryOutputDemandSettlement {
 
 impl WorthQueryOutputDemandSettlement {
     #[doc(hidden)]
-    pub fn readiness_delivery_for_test(&self) -> &Option<WorthQueryOutputReadinessDeliveryEvidence> {
+    pub fn readiness_delivery_for_test(
+        &self,
+    ) -> &Option<WorthQueryOutputReadinessDeliveryEvidence> {
         &self.readiness_delivery
     }
 }
@@ -59,7 +61,33 @@ impl WorthQueryOutputDemandSettlement {
 
 impl WorthQueryOutputDemandSettlement {
     #[doc(hidden)]
-    pub fn new_for_test(posture: WorthQueryOutputSettlementPosture, runtime_authority: u64, schema_binding: ApplicationSchemaBindingIdentity, producer_identity: SettlementProducerIdentity, output_family_identity: String, receipt: Option<SettlementReceiptCustody>, stable: Option<super::super::super::output_lineage::PublishedStableLineage>, output_correspondence: Arc<WorthQueryApplicationOutputCorrespondence>, restored_source: Option<super::super::WorthQueryRestoredAcceptedOutput>, readiness_delivery: Option<WorthQueryOutputReadinessDeliveryEvidence>, producer_contacts_in_this_demand: usize, observation: Arc<WorthQueryApplicationReadObservation>) -> Self {
-        Self { posture, runtime_authority, schema_binding, producer_identity, output_family_identity, receipt, stable, output_correspondence, restored_source, readiness_delivery, producer_contacts_in_this_demand, observation }
+    pub fn new_for_test(
+        posture: WorthQueryOutputSettlementPosture,
+        runtime_authority: u64,
+        schema_binding: ApplicationSchemaBindingIdentity,
+        producer_identity: SettlementProducerIdentity,
+        output_family_identity: String,
+        receipt: Option<SettlementReceiptCustody>,
+        stable: Option<super::super::super::output_lineage::PublishedStableLineage>,
+        output_correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
+        restored_source: Option<super::super::WorthQueryRestoredAcceptedOutput>,
+        readiness_delivery: Option<WorthQueryOutputReadinessDeliveryEvidence>,
+        producer_contacts_in_this_demand: usize,
+        observation: Arc<WorthQueryApplicationReadObservation>,
+    ) -> Self {
+        Self {
+            posture,
+            runtime_authority,
+            schema_binding,
+            producer_identity,
+            output_family_identity,
+            receipt,
+            stable,
+            output_correspondence,
+            restored_source,
+            readiness_delivery,
+            producer_contacts_in_this_demand,
+            observation,
+        }
     }
 }

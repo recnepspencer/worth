@@ -82,7 +82,9 @@ fn two_first_candidates_cannot_orphan_the_performed_publications_cell() {
     let world = installed_authorization_world(true);
     let selected = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
+        .with_host_advancement(|phase| {
+            world.selected_product(&(phase).test_host_request_for_test())
+        })
         .expect("the fixture read owns its installed host call");
     let entity = world
         .application
@@ -99,7 +101,9 @@ fn two_first_candidates_cannot_orphan_the_performed_publications_cell() {
                 .entity_id_for_test()
         })
         .expect("the fixture read owns its installed host call");
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
     let handle = graph.integration_handle_for_test();
     let owner = Arc::clone(&(*(*handle.source_owner_for_test()).invalidation_owner_for_test()));
     let reference = AccountStatus::reference();
@@ -108,119 +112,123 @@ fn two_first_candidates_cannot_orphan_the_performed_publications_cell() {
         .field_locator_for_test(reference.entity(), reference.aspect(), reference.field())
         .unwrap()
         .clone();
-    let result: Result<_, &'static str> = handle.with_runtime_mut_for_test(request_execution, |runtime| {
-        // A real Native fork has no Query lookup cell before its first write.
-        // No derived table, Native head or existing registration is erased.
-        let branch = BranchId("concurrent-first-native-fork".to_owned());
-        let (_, source) = runtime
-            .observe_fork_source(runtime.main_branch_identity().branch_id())
-            .unwrap();
-        runtime
-            .fork_branch(request_execution, branch.clone(), source)
-            .unwrap();
-        assert!(!(*(*owner.branches_for_test()).lock().unwrap().cells_for_test()).contains_key(&branch));
-        let (first_ready, observe_first) = mpsc::channel();
-        let (release_first, wait_release) = mpsc::channel();
-        let (second_ready, observe_second) = mpsc::channel();
-        let (first_done, wait_done) = mpsc::channel();
-        let registration = runtime
-            .publication_companion_port()
-            .begin_required_registration()
-            .unwrap()
-            .activate(Arc::new(FirstWriterGate {
-                owner: Arc::clone(&owner),
-                entered: AtomicUsize::new(0),
-                first_ready,
-                release_first: std::sync::Mutex::new(wait_release),
-                second_ready,
-                first_done: std::sync::Mutex::new(wait_done),
-            }))
-            .unwrap();
-        let first = candidate(
-            request_execution,
-            runtime,
-            &branch,
-            entity,
-            status.clone(),
-            "first",
-        );
-        let second = candidate(
-            request_execution,
-            runtime,
-            &branch,
-            entity,
-            status,
-            "second",
-        );
-        let port = runtime.publication_port();
-        let (performed, second, hang_guard) = std::thread::scope(|threads| {
-            let first_thread = threads.spawn(|| {
-                let published = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                    port.compare_and_publish(request_execution, first)
-                }));
-                first_done.send(()).unwrap();
-                published.unwrap()
-            });
-            if observe_first
-                .recv_timeout(std::time::Duration::from_secs(10))
-                .is_err()
-            {
-                let _ = release_first.send(());
-                let published = first_thread
-                    .join()
-                    .map_err(|_| "hang guard: first candidate panicked before reaching its gate")?;
-                if let RelationalPublicationOutcome::Performed(performed) = published {
-                    let committed = runtime.settle_performed_publication(performed).unwrap();
-                    release_test_commit_snapshot(runtime, &committed);
+    let result: Result<_, &'static str> =
+        handle.with_runtime_mut_for_test(request_execution, |runtime| {
+            // A real Native fork has no Query lookup cell before its first write.
+            // No derived table, Native head or existing registration is erased.
+            let branch = BranchId("concurrent-first-native-fork".to_owned());
+            let (_, source) = runtime
+                .observe_fork_source(runtime.main_branch_identity().branch_id())
+                .unwrap();
+            runtime
+                .fork_branch(request_execution, branch.clone(), source)
+                .unwrap();
+            assert!(!(*(*owner.branches_for_test())
+                .lock()
+                .unwrap()
+                .cells_for_test())
+            .contains_key(&branch));
+            let (first_ready, observe_first) = mpsc::channel();
+            let (release_first, wait_release) = mpsc::channel();
+            let (second_ready, observe_second) = mpsc::channel();
+            let (first_done, wait_done) = mpsc::channel();
+            let registration = runtime
+                .publication_companion_port()
+                .begin_required_registration()
+                .unwrap()
+                .activate(Arc::new(FirstWriterGate {
+                    owner: Arc::clone(&owner),
+                    entered: AtomicUsize::new(0),
+                    first_ready,
+                    release_first: std::sync::Mutex::new(wait_release),
+                    second_ready,
+                    first_done: std::sync::Mutex::new(wait_done),
+                }))
+                .unwrap();
+            let first = candidate(
+                request_execution,
+                runtime,
+                &branch,
+                entity,
+                status.clone(),
+                "first",
+            );
+            let second = candidate(
+                request_execution,
+                runtime,
+                &branch,
+                entity,
+                status,
+                "second",
+            );
+            let port = runtime.publication_port();
+            let (performed, second, hang_guard) = std::thread::scope(|threads| {
+                let first_thread = threads.spawn(|| {
+                    let published = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                        port.compare_and_publish(request_execution, first)
+                    }));
+                    first_done.send(()).unwrap();
+                    published.unwrap()
+                });
+                if observe_first
+                    .recv_timeout(std::time::Duration::from_secs(10))
+                    .is_err()
+                {
+                    let _ = release_first.send(());
+                    let published = first_thread.join().map_err(|_| {
+                        "hang guard: first candidate panicked before reaching its gate"
+                    })?;
+                    if let RelationalPublicationOutcome::Performed(performed) = published {
+                        let committed = runtime.settle_performed_publication(performed).unwrap();
+                        release_test_commit_snapshot(runtime, &committed);
+                    }
+                    return Err("hang guard: the first candidate did not reach its prepared gate");
                 }
-                return Err("hang guard: the first candidate did not reach its prepared gate");
-            }
-            let second_thread =
-                threads.spawn(|| port.compare_and_publish(request_execution, second));
-            let overlapping = observe_second.recv_timeout(std::time::Duration::from_secs(10));
-            release_first.send(()).unwrap();
-            let first = first_thread
-                .join()
-                .map_err(|_| "first candidate panicked")?;
-            let second = second_thread
-                .join()
-                .map_err(|_| "second candidate panicked")?;
-            let results = (first, second);
-            // Timeouts diagnose a hung gate only. Native outcomes come from
-            // the joined publications, never from elapsed time.
-            let hang_guard = overlapping
-                .err()
-                .map(|_| "hang guard: the second candidate did not reach preflight");
-            Ok((results.0, results.1, hang_guard))
-        })?;
-        let RelationalPublicationOutcome::Performed(performed) = performed else {
-            panic!("the first candidate performs");
-        };
-        let committed = runtime.settle_performed_publication(performed).unwrap();
-        assert!(
-            !matches!(second, RelationalPublicationOutcome::Performed(_)),
-            "a competitor with the old head cannot perform"
-        );
-        let branch = committed.snapshot.branch_id();
-        let cell = (*(*owner
-            .branches_for_test())
-            .lock()
-            .unwrap()
-            .cells_for_test())
+                let second_thread =
+                    threads.spawn(|| port.compare_and_publish(request_execution, second));
+                let overlapping = observe_second.recv_timeout(std::time::Duration::from_secs(10));
+                release_first.send(()).unwrap();
+                let first = first_thread
+                    .join()
+                    .map_err(|_| "first candidate panicked")?;
+                let second = second_thread
+                    .join()
+                    .map_err(|_| "second candidate panicked")?;
+                let results = (first, second);
+                // Timeouts diagnose a hung gate only. Native outcomes come from
+                // the joined publications, never from elapsed time.
+                let hang_guard = overlapping
+                    .err()
+                    .map(|_| "hang guard: the second candidate did not reach preflight");
+                Ok((results.0, results.1, hang_guard))
+            })?;
+            let RelationalPublicationOutcome::Performed(performed) = performed else {
+                panic!("the first candidate performs");
+            };
+            let committed = runtime.settle_performed_publication(performed).unwrap();
+            assert!(
+                !matches!(second, RelationalPublicationOutcome::Performed(_)),
+                "a competitor with the old head cannot perform"
+            );
+            let branch = committed.snapshot.branch_id();
+            let cell = (*(*owner.branches_for_test())
+                .lock()
+                .unwrap()
+                .cells_for_test())
             .get(branch)
             .and_then(|slot| slot.admitted());
-        let visible = cell.map(|cell| {
-            let image = cell.read_image();
-            (image.commit_id(), image.position())
+            let visible = cell.map(|cell| {
+                let image = cell.read_image();
+                (image.commit_id(), image.position())
+            });
+            let expected = (
+                Some(committed.commit.commit_id),
+                Some(committed.patch_position()),
+            );
+            release_test_commit_snapshot(runtime, &committed);
+            drop(registration);
+            Ok((visible, expected, hang_guard))
         });
-        let expected = (
-            Some(committed.commit.commit_id),
-            Some(committed.patch_position()),
-        );
-        release_test_commit_snapshot(runtime, &committed);
-        drop(registration);
-        Ok((visible, expected, hang_guard))
-    });
     // Report hang guards on the test thread after releasing the runtime lock.
     let (visible, expected, hang_guard) = result.expect("first-candidate hang guard");
     assert!(hang_guard.is_none(), "{}", hang_guard.unwrap_or("no hang"));

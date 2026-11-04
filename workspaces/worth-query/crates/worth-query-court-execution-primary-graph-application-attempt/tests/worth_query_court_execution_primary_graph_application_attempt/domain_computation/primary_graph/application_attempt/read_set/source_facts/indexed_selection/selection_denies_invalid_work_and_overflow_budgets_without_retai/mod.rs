@@ -21,7 +21,12 @@ fn selection_denies_invalid_work_and_overflow_budgets_without_retaining_partial_
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
+            resolved_account(
+                &(phase).test_host_request_for_test(),
+                &world,
+                "open",
+                &request,
+            )
         })
         .expect("the fixture read owns its installed host call");
     let actor = world
@@ -124,8 +129,7 @@ fn selection_denies_invalid_work_and_overflow_budgets_without_retaining_partial_
         })
         .expect("the fixture read owns its installed host call");
     assert!(
-        !(*reads
-            .facts_for_test())
+        !(*reads.facts_for_test())
             .iter_for_test()
             .any(|fact| matches!(fact, Fact::IndexedEntitySelection { .. })),
         "an overflowing prefix cannot become a complete source fact"

@@ -14,7 +14,10 @@ fn cancelled_request_cannot_reuse_otherwise_current_authority() {
                 .application
                 .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch_for_test(),
+                    world
+                        .application
+                        .product_runtime()
+                        .default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_authenticated_principal(
@@ -35,7 +38,10 @@ fn cancelled_request_cannot_reuse_otherwise_current_authority() {
                 .application
                 .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch_for_test(),
+                    world
+                        .application
+                        .product_runtime()
+                        .default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
@@ -99,7 +105,10 @@ fn admitted_operation_retains_expiry_and_cancellation_authority() {
                 .application
                 .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch_for_test(),
+                    world
+                        .application
+                        .product_runtime()
+                        .default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_authenticated_principal(
@@ -120,7 +129,10 @@ fn admitted_operation_retains_expiry_and_cancellation_authority() {
                 .application
                 .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch_for_test(),
+                    world
+                        .application
+                        .product_runtime()
+                        .default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
@@ -205,7 +217,10 @@ fn admitted_operation_retains_expiry_and_cancellation_authority() {
                 .application
                 .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch_for_test(),
+                    world
+                        .application
+                        .product_runtime()
+                        .default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_authenticated_principal(

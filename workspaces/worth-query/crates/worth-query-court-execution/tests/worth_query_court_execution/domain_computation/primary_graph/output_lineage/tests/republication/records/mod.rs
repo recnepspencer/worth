@@ -55,7 +55,28 @@ pub fn performed(
             DecisionContextUse::default().key_for_test(),
         )
         .unwrap();
-    { let __producing_implementation = None; let __required_publication = None; let __native_prior_checkpoint = None; let __computation_source = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false); let __consumed_outputs = Arc::clone(consumed); let __completed_handler_facts = Some(boundary); let __completed_decision_reuse = Some(completed); let __prepared_input_reuse_key = Some(input_key(selection, INPUT)); let __native_output_witness = OnceLock::from(Arc::clone(witness)); let mut __base = row; *__base.producing_implementation_mut_for_test() = __producing_implementation; *__base.required_publication_mut_for_test() = __required_publication; *__base.native_prior_checkpoint_mut_for_test() = __native_prior_checkpoint; *__base.computation_source_mut_for_test() = __computation_source; *__base.consumed_outputs_mut_for_test() = __consumed_outputs; *__base.completed_handler_facts_mut_for_test() = __completed_handler_facts; *__base.completed_decision_reuse_mut_for_test() = __completed_decision_reuse; *__base.prepared_input_reuse_key_mut_for_test() = __prepared_input_reuse_key; *__base.native_output_witness_mut_for_test() = __native_output_witness; __base }
+    {
+        let __producing_implementation = None;
+        let __required_publication = None;
+        let __native_prior_checkpoint = None;
+        let __computation_source = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false);
+        let __consumed_outputs = Arc::clone(consumed);
+        let __completed_handler_facts = Some(boundary);
+        let __completed_decision_reuse = Some(completed);
+        let __prepared_input_reuse_key = Some(input_key(selection, INPUT));
+        let __native_output_witness = OnceLock::from(Arc::clone(witness));
+        let mut __base = row;
+        *__base.producing_implementation_mut_for_test() = __producing_implementation;
+        *__base.required_publication_mut_for_test() = __required_publication;
+        *__base.native_prior_checkpoint_mut_for_test() = __native_prior_checkpoint;
+        *__base.computation_source_mut_for_test() = __computation_source;
+        *__base.consumed_outputs_mut_for_test() = __consumed_outputs;
+        *__base.completed_handler_facts_mut_for_test() = __completed_handler_facts;
+        *__base.completed_decision_reuse_mut_for_test() = __completed_decision_reuse;
+        *__base.prepared_input_reuse_key_mut_for_test() = __prepared_input_reuse_key;
+        *__base.native_output_witness_mut_for_test() = __native_output_witness;
+        __base
+    }
 }
 
 pub fn assert_continues_the_performed_read(row: &RecordedOutput) {
@@ -91,5 +112,18 @@ pub fn untracked(row: RecordedOutput, context: DecisionContextUse) -> RecordedOu
     let boundary = CompletedHandlerFactBoundary::completed_for_test(1);
     let completed = boundary.seal_decision_reuse_for_test(decision(DECISION_KEY), context);
     assert!(completed.is_none());
-    { let __producing_implementation = None; let __required_publication = None; let __completed_handler_facts = Some(boundary); let __completed_decision_reuse = completed; let __prepared_input_reuse_key = None; let mut __base = row; *__base.producing_implementation_mut_for_test() = __producing_implementation; *__base.required_publication_mut_for_test() = __required_publication; *__base.completed_handler_facts_mut_for_test() = __completed_handler_facts; *__base.completed_decision_reuse_mut_for_test() = __completed_decision_reuse; *__base.prepared_input_reuse_key_mut_for_test() = __prepared_input_reuse_key; __base }
+    {
+        let __producing_implementation = None;
+        let __required_publication = None;
+        let __completed_handler_facts = Some(boundary);
+        let __completed_decision_reuse = completed;
+        let __prepared_input_reuse_key = None;
+        let mut __base = row;
+        *__base.producing_implementation_mut_for_test() = __producing_implementation;
+        *__base.required_publication_mut_for_test() = __required_publication;
+        *__base.completed_handler_facts_mut_for_test() = __completed_handler_facts;
+        *__base.completed_decision_reuse_mut_for_test() = __completed_decision_reuse;
+        *__base.prepared_input_reuse_key_mut_for_test() = __prepared_input_reuse_key;
+        __base
+    }
 }

@@ -20,7 +20,10 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
                 .application
                 .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch_for_test(),
+                    world
+                        .application
+                        .product_runtime()
+                        .default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_authenticated_principal(
@@ -41,7 +44,10 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
                 .application
                 .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch_for_test(),
+                    world
+                        .application
+                        .product_runtime()
+                        .default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
@@ -140,12 +146,16 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
     assert_eq!((*first.aspects_for_test()).len(), 1);
     assert_eq!(first.adjacencies.len(), 1);
     assert_eq!(second.adjacencies.len(), 1);
-    assert!(!(*first
-        .entities_for_test())
-        .contains(&(*result.observed_sources()[1].footprint_for_test().root_for_test())));
-    assert!(!(*second
-        .entities_for_test())
-        .contains(&(*result.observed_sources()[0].footprint_for_test().root_for_test())));
+    assert!(!(*first.entities_for_test()).contains(
+        &(*result.observed_sources()[1]
+            .footprint_for_test()
+            .root_for_test())
+    ));
+    assert!(!(*second.entities_for_test()).contains(
+        &(*result.observed_sources()[0]
+            .footprint_for_test()
+            .root_for_test())
+    ));
     assert_eq!(
         (*first.adjacencies[0].relation_kind_for_test()),
         (*second.adjacencies[0].relation_kind_for_test())
@@ -210,7 +220,9 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
         &dependencies,
         &worth_query_execution::publication_boundary::program_publication_access(),
     );
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
     let observed_source = &result.observed_sources()[0];
     let worth_query_execution::facade::domain_computation::WorthQueryApplicationBasisSelectionIdentity::Product(product) = &(*observed_source.selection_for_test()) else {
         panic!("the product query must retain its selected branch identity");
@@ -248,7 +260,9 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
     let kind = (*first.adjacencies[0].relation_kind_for_test());
     let selected = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
+        .with_host_advancement(|phase| {
+            world.selected_product(&(phase).test_host_request_for_test())
+        })
         .expect("the fixture read owns its installed host call");
     let (relation_id, target) = world
         .application
@@ -262,7 +276,10 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
                         .visible_relations_of_kind(
                             &host_custody.borrowed_request_for_test(),
                             kind,
-                            selected.application_basis_for_test().snapshot_handle().version_id(),
+                            selected
+                                .application_basis_for_test()
+                                .snapshot_handle()
+                                .version_id(),
                         )
                         .expect("fixture read request remains live")
                         .into_iter()
@@ -312,7 +329,9 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
     };
     let current = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
+        .with_host_advancement(|phase| {
+            world.selected_product(&(phase).test_host_request_for_test())
+        })
         .expect("the fixture read owns its installed host call");
     world
         .application

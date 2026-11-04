@@ -66,22 +66,66 @@ fn edit_encoding_denial_rebuilds_and_matches_reuse_off() {
     };
     let request = live_scope();
     let execution = QueryRequestExecution::open_for_test(serial_placement(), &request);
-    let (items, digests, membership, item_keys, call_sequence, routing, partitions, _native_run, _tree) =
-        prior.into_parts_for_test();
+    let (
+        items,
+        digests,
+        membership,
+        item_keys,
+        call_sequence,
+        routing,
+        partitions,
+        _native_run,
+        _tree,
+    ) = prior.into_parts_for_test();
     let retained = {
-// Bound in the original literal order, passed in the door's.
-let (call_sequence, items, digests, membership, item_keys, routing, partitions, native_run, tree) = (Arc::clone(&call_sequence), items, digests, membership, item_keys, routing, partitions, native_run, ReductionTree::<Value, fn(&Value, &Value) -> Value>::try_from_declared_native(
-            plan(&keys),
-            keys.iter().map(|id| (*id, value(1))).collect(),
-            value(0),
-            combine as fn(&Value, &Value) -> Value,
-            Some(execution.dispatch_for_test().unwrap().native_lease_for_test()),
-            || execution.checkpoint_for_test(),
+        // Bound in the original literal order, passed in the door's.
+        let (
+            call_sequence,
+            items,
+            digests,
+            membership,
+            item_keys,
+            routing,
+            partitions,
+            native_run,
+            tree,
+        ) = (
+            Arc::clone(&call_sequence),
+            items,
+            digests,
+            membership,
+            item_keys,
+            routing,
+            partitions,
+            native_run,
+            ReductionTree::<Value, fn(&Value, &Value) -> Value>::try_from_declared_native(
+                plan(&keys),
+                keys.iter().map(|id| (*id, value(1))).collect(),
+                value(0),
+                combine as fn(&Value, &Value) -> Value,
+                Some(
+                    execution
+                        .dispatch_for_test()
+                        .unwrap()
+                        .native_lease_for_test(),
+                ),
+                || execution.checkpoint_for_test(),
+            )
+            .unwrap()
+            .0,
+        );
+        RetainedPartitions::new_for_test(
+            items,
+            digests,
+            membership,
+            item_keys,
+            call_sequence,
+            routing,
+            partitions,
+            native_run,
+            tree,
         )
-        .unwrap()
-        .0);
-RetainedPartitions::new_for_test(items, digests, membership, item_keys, call_sequence, routing, partitions, native_run, tree)
-};
+    };
     let reducer = WorthQueryDeterministicReducer::canonical(|| value(0), combine);
     let cases = [(
         Value {
@@ -104,7 +148,9 @@ RetainedPartitions::new_for_test(items, digests, membership, item_keys, call_seq
             )
         };
         let edited = run(plan(&keys).checked_build_work());
-        assert!(matches!((*edited.report_for_test()), TreeRun::Rebuilt(observed, _) if observed == cause));
+        assert!(
+            matches!((*edited.report_for_test()), TreeRun::Rebuilt(observed, _) if observed == cause)
+        );
         assert!(matches!(edited.outcome_into_for_test(), Err(actual) if actual == denial));
         let rebuilt = run(None);
         assert!(matches!(rebuilt.outcome_into_for_test(), Err(actual) if actual == denial));
@@ -124,10 +170,16 @@ RetainedPartitions::new_for_test(items, digests, membership, item_keys, call_seq
                 .collect(),
             value(0),
             combine as fn(&Value, &Value) -> Value,
-            Some(execution.dispatch_for_test().unwrap().native_lease_for_test()),
+            Some(
+                execution
+                    .dispatch_for_test()
+                    .unwrap()
+                    .native_lease_for_test(),
+            ),
             || execution.checkpoint_for_test(),
         );
-        let fresh = fresh.map_err(WorthQueryPartitionedComputationDenial::<u32>::from_reduction_for_test);
+        let fresh =
+            fresh.map_err(WorthQueryPartitionedComputationDenial::<u32>::from_reduction_for_test);
         assert!(matches!(fresh, Err(actual) if actual == denial));
     }
 }
@@ -138,18 +190,19 @@ fn supplied_native_counter_failure_is_normalized_and_its_metrics_are_carried() {
         worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation::install_on_this_thread();
     // Supply a typed native failure to exercise production normalization and metric carriage.
     use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tree_attempt::TreeAttempt;
-    let native =
-        TreeAttempt::<(), _>::native_for_test(Err(ReductionRunFailure::<worth_execution::MapKernelStop> {
-            reason: ReductionRunStop::WorkCounterOverflow,
-            metrics: worth_execution::ReductionMetrics::from_accounting(
-                worth_execution::ReductionAccounting {
-                    structural_visits: u64::MAX,
-                    charged_work: u64::MAX,
-                    charged_span: u64::MAX,
-                    ..Default::default()
-                },
-            ),
-        }));
+    let native = TreeAttempt::<(), _>::native_for_test(Err(ReductionRunFailure::<
+        worth_execution::MapKernelStop,
+    > {
+        reason: ReductionRunStop::WorkCounterOverflow,
+        metrics: worth_execution::ReductionMetrics::from_accounting(
+            worth_execution::ReductionAccounting {
+                structural_visits: u64::MAX,
+                charged_work: u64::MAX,
+                charged_span: u64::MAX,
+                ..Default::default()
+            },
+        ),
+    }));
 
     let reported = native.finish_edits_for_test::<u32>().resolve_for_test(|| {
         TreeAttempt::<(), ReductionRunFailure<worth_execution::MapKernelStop>>::native_for_test(Ok((
@@ -167,8 +220,7 @@ fn supplied_native_counter_failure_is_normalized_and_its_metrics_are_carried() {
         TreeRun::Rebuilt(Rebuild::WorkCounterOverflow, _)
     ));
     assert_eq!(
-        (*reported
-            .report_for_test())
+        (*reported.report_for_test())
             .metrics_for_test()
             .accounted_metrics()
             .expect("explicit accounted fixture")
@@ -194,6 +246,8 @@ fn supplied_native_counter_failure_is_normalized_and_its_metrics_are_carried() {
             TreeAttempt::<(), ReductionRunFailure<worth_execution::MapKernelStop>>::native_for_test(Ok(((), worth_execution::ReductionMetrics::default())))
             .map_result_for_test(|outcome| outcome.map_err(worth_query_execution::facade::application_contribution::WorthQueryPartitionedComputationDenial::from_reduction_for_test))
         });
-        assert!(matches!((*reported.report_for_test()), TreeRun::Rebuilt(actual, _) if actual == cause));
+        assert!(
+            matches!((*reported.report_for_test()), TreeRun::Rebuilt(actual, _) if actual == cause)
+        );
     }
 }

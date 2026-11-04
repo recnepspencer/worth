@@ -11,7 +11,9 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
     let world = installed_authorization_world(true);
     let selected = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
+        .with_host_advancement(|phase| {
+            world.selected_product(&(phase).test_host_request_for_test())
+        })
         .expect("the fixture read owns its installed host call");
     let resolve = |key: &str| {
         world
@@ -32,14 +34,18 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
     };
     let live = resolve("account-1");
     let retired = resolve("account-2");
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
     let layout = graph.layout_for_test();
     let handle = graph.integration_handle_for_test();
     let correspondence = mixed_correspondence(request_execution, live, retired);
     let foreign = installed_authorization_world(true);
     let foreign_selected = foreign
         .application
-        .with_host_advancement(|phase| foreign.selected_product(&(phase).test_host_request_for_test()))
+        .with_host_advancement(|phase| {
+            foreign.selected_product(&(phase).test_host_request_for_test())
+        })
         .expect("the fixture read owns its installed host call");
     world
         .application
@@ -276,7 +282,14 @@ pub fn mixed_correspondence(
             ),
         ]
         .into_iter()
-        .map(|(role, posture, entity)| WorthQueryCheckpointOutputRole::new_for_test(role.into(), posture, "Account".into(), entity))
+        .map(|(role, posture, entity)| {
+            WorthQueryCheckpointOutputRole::new_for_test(
+                role.into(),
+                posture,
+                "Account".into(),
+                entity,
+            )
+        })
         .collect::<Vec<_>>(),
         |_| Some(TypeId::of_for_test::<()>()),
         request_execution,

@@ -62,7 +62,10 @@ impl LiveContext {
                     .application
                     .select_product_branch_for_test(
                         execution,
-                        world.application.product_runtime().default_branch_for_test(),
+                        world
+                            .application
+                            .product_runtime()
+                            .default_branch_for_test(),
                     )
                     .expect("the selected product branch remains admitted")
                     .resolve_authenticated_principal(
@@ -105,7 +108,10 @@ impl LiveContext {
             .application
             .select_product_branch_for_test(
                 execution,
-                self.world.application.product_runtime().default_branch_for_test(),
+                self.world
+                    .application
+                    .product_runtime()
+                    .default_branch_for_test(),
             )
             .expect("the selected product branch remains admitted")
             .resolve_authenticated_principal(
@@ -136,7 +142,10 @@ impl LiveContext {
             .application
             .select_product_branch_for_test(
                 execution,
-                self.world.application.product_runtime().default_branch_for_test(),
+                self.world
+                    .application
+                    .product_runtime()
+                    .default_branch_for_test(),
             )
             .expect("the selected product branch remains admitted")
             .resolve_entity(
@@ -170,10 +179,7 @@ impl LiveContext {
     }
 
     pub fn close_source(&self) {
-        (*(*self.world
-            .application
-            .primary_provider_for_test())
-            .live_delivery_for_test())
+        (*(*self.world.application.primary_provider_for_test()).live_delivery_for_test())
             .close_for_test();
     }
 
@@ -192,9 +198,7 @@ impl LiveContext {
 
     pub fn assert_source_released(&self) {
         assert_eq!(
-            (*self.world
-                .application
-                .primary_provider_for_test())
+            (*self.world.application.primary_provider_for_test())
                 .active_application_commit_causality_partitions_for_test(),
             0
         );
@@ -318,7 +322,9 @@ fn fresh_principal_admission_precedes_empty_and_overflow_progress() {
 }
 
 pub fn observer(lease: &TestLiveLease<'_>) -> BridgeExecutionBasisLifecycleObserver {
-    let basis = (*lease.basis_for_test()).as_ref().expect("open lease retains its basis");
+    let basis = (*lease.basis_for_test())
+        .as_ref()
+        .expect("open lease retains its basis");
     basis.bridge.lifecycle_observer()
 }
 

@@ -20,9 +20,12 @@ pub use worth_query_execution::court_doors_for_test::domain_computation::primary
 #[test]
 fn newer_root_retires_only_its_matching_source() {
     let (scope, occurrence) = real_scope_and_occurrence();
-    let older = BoundOutputSource::new_for_test(scope, key("producer", 5, 1).source_into_for_test());
-    let sibling = BoundOutputSource::new_for_test(scope, key("producer", 5, 2).source_into_for_test());
-    let newer = BoundOutputSource::new_for_test(scope, key("producer", 6, 1).source_into_for_test());
+    let older =
+        BoundOutputSource::new_for_test(scope, key("producer", 5, 1).source_into_for_test());
+    let sibling =
+        BoundOutputSource::new_for_test(scope, key("producer", 5, 2).source_into_for_test());
+    let newer =
+        BoundOutputSource::new_for_test(scope, key("producer", 6, 1).source_into_for_test());
     assert_eq!(root_revision_order(&older, &newer), Some(Ordering::Less));
     assert_eq!(
         root_revision_order(&sibling, &sibling),
@@ -30,16 +33,57 @@ fn newer_root_retires_only_its_matching_source() {
     );
     assert_eq!(root_revision_order(&older, &sibling), None);
     let mut custody = {
-// Bound in the original literal order, passed in the door's.
-let (occurrence, root_kind, source, discovery, bound_sources, consumed_sources, retired_sources, retired, token_count, cleanup, completed) = (occurrence, PreparedOutputRootKind::Discovered(TypeId::of_for_test::<()>()), None, None, Some(vec![older.clone(), sibling.clone()]), Vec::new(), Vec::new(), None, 0, Default::default(), false);
-SourceCustody::new_for_test(occurrence, root_kind, source, discovery, consumed_sources, retired_sources, bound_sources, retired, token_count, cleanup, completed)
-};
+        // Bound in the original literal order, passed in the door's.
+        let (
+            occurrence,
+            root_kind,
+            source,
+            discovery,
+            bound_sources,
+            consumed_sources,
+            retired_sources,
+            retired,
+            token_count,
+            cleanup,
+            completed,
+        ) = (
+            occurrence,
+            PreparedOutputRootKind::Discovered(TypeId::of_for_test::<()>()),
+            None,
+            None,
+            Some(vec![older.clone(), sibling.clone()]),
+            Vec::new(),
+            Vec::new(),
+            None,
+            0,
+            Default::default(),
+            false,
+        );
+        SourceCustody::new_for_test(
+            occurrence,
+            root_kind,
+            source,
+            discovery,
+            consumed_sources,
+            retired_sources,
+            bound_sources,
+            retired,
+            token_count,
+            cleanup,
+            completed,
+        )
+    };
     custody.retire_superseded_roots_for_test(&[newer, sibling.clone()]);
     assert_eq!(
-        custody.source_denial_for_test(&(*older.identity_for_test())).unwrap().kind(),
+        custody
+            .source_denial_for_test(&(*older.identity_for_test()))
+            .unwrap()
+            .kind(),
         WorthQueryOutputDemandDenialKind::Superseded
     );
-    assert!(custody.source_denial_for_test(&(*sibling.identity_for_test())).is_none());
+    assert!(custody
+        .source_denial_for_test(&(*sibling.identity_for_test()))
+        .is_none());
     assert!(
         (*custody.retired_for_test()).is_none(),
         "one stale root cannot retire its sibling custody"

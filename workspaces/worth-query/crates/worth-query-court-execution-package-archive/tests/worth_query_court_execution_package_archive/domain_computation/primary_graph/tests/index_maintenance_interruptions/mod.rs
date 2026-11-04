@@ -12,7 +12,9 @@ pub use worth_query_declaration::facade::authentication::WorthQueryPrincipalMapp
 
 pub fn index_currency_stop(cancelled: bool) {
     let world = installed_world(&[("currency-stop", WorthQueryPrincipalMappingStatus::Enabled)]);
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
     let handle = graph.integration_handle_for_test();
     let setup_host = worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request();
     let setup = ExecutionRequest::serial(&setup_host);
@@ -80,7 +82,9 @@ pub fn index_currency_stop(cancelled: bool) {
 
 pub fn mutation_index_refresh_stop(cancelled: bool) {
     let world = installed_world(&[("refresh-stop", WorthQueryPrincipalMappingStatus::Enabled)]);
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
     let handle = graph.integration_handle_for_test();
     let source = CancellationSource::new();
     let host = SerialRequest::from_memory(SerialMemoryBudget::new(None), source.token(), None);

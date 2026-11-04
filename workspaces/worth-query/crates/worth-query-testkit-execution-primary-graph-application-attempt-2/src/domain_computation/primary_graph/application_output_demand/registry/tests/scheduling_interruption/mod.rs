@@ -38,7 +38,8 @@ impl Finish {
         fixture: &Fixture,
         kind: WorthQueryOutputDemandDenialKind,
     ) -> WorthQueryOutputDemandDenial {
-        let mut denial = WorthQueryOutputDemandDenial::new_for_test(kind, "scheduling stopped".to_owned());
+        let mut denial =
+            WorthQueryOutputDemandDenial::new_for_test(kind, "scheduling stopped".to_owned());
         (*denial.readmission_failure_mut_for_test()) = Some("original scheduling refusal");
         let mut result = Err(denial);
         match self {
@@ -53,8 +54,10 @@ impl Finish {
                     .finish_scheduling_for_test(&fixture.interest, source, &mut result);
             }
             Self::Selected => {
-                let (admission, finish) =
-                    fixture.registry.begin_admitted_for_test(&fixture.interest).unwrap();
+                let (admission, finish) = fixture
+                    .registry
+                    .begin_admitted_for_test(&fixture.interest)
+                    .unwrap();
                 let WorthQueryOutputDemandAdvanceAdmission::Schedule(source) = admission else {
                     panic!("the selected caller must claim scheduling");
                 };

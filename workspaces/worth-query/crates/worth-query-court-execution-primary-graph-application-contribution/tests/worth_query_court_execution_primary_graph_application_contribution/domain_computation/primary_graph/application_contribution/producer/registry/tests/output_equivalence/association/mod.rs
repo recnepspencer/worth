@@ -47,11 +47,17 @@ pub fn dependency(
 #[test]
 fn readiness_dependency_requires_actual_output_generation_and_physical_binding() {
     let declaration = declaration::<Struct>();
-    let field = declaration.installed_output_equivalence_into_for_test().unwrap();
+    let field = declaration
+        .installed_output_equivalence_into_for_test()
+        .unwrap();
     let output = Record::entity(0, 7, 3);
     for record in [None, Some(output)] {
         assert!(dependency_matches_output(
-            &dependency(&field, record, (*(*field.field_for_test()).native_binding_for_test()).clone()),
+            &dependency(
+                &field,
+                record,
+                (*(*field.field_for_test()).native_binding_for_test()).clone()
+            ),
             &field,
             output
         ));
@@ -63,7 +69,11 @@ fn readiness_dependency_requires_actual_output_generation_and_physical_binding()
     ] {
         assert!(
             !dependency_matches_output(
-                &dependency(&field, Some(wrong), (*(*field.field_for_test()).native_binding_for_test()).clone()),
+                &dependency(
+                    &field,
+                    Some(wrong),
+                    (*(*field.field_for_test()).native_binding_for_test()).clone()
+                ),
                 &field,
                 output
             ),

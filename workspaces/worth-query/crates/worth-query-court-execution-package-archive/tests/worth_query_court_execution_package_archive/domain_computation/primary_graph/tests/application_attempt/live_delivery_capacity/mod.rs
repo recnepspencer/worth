@@ -34,7 +34,12 @@ pub fn assert_live_reservation_denial(
     let account = world
         .application
         .with_application_advancement(&request, |phase| {
-            resolved_account(&phase.test_host_request_for_test(), &world, "open", &request)
+            resolved_account(
+                &phase.test_host_request_for_test(),
+                &world,
+                "open",
+                &request,
+            )
         })
         .unwrap();
     let branch = world.application.current_world();
@@ -47,13 +52,9 @@ pub fn assert_live_reservation_denial(
         .unwrap();
     let product_before = selected.product().selected_commit().clone();
     let bridge_before = bridge_head_commit(&world, resource_request);
-    let _live = (*world
-        .application
-        .primary_provider_for_test())
+    let _live = (*world.application.primary_provider_for_test())
         .observe_application_commit_causality_for_test(selected.product());
-    (*world
-        .application
-        .primary_provider_for_test())
+    (*world.application.primary_provider_for_test())
         .set_application_commit_causality_limits_for_test(batch_capacity);
     let program = world
         .application
@@ -97,16 +98,19 @@ pub fn assert_live_reservation_denial(
     assert_eq!(product_after.product().selected_commit(), &product_before);
     assert_eq!(bridge_head_commit(&world, resource_request), bridge_before);
     assert_eq!(
-        (*world
-            .application
-            .primary_provider_for_test())
+        (*world.application.primary_provider_for_test())
             .published_application_commit_count_for_test(),
         0
     );
     world
         .application
         .with_application_advancement(&request, |phase| {
-            resolved_account(&phase.test_host_request_for_test(), &world, "open", &request)
+            resolved_account(
+                &phase.test_host_request_for_test(),
+                &world,
+                "open",
+                &request,
+            )
         })
         .unwrap();
 }

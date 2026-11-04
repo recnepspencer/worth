@@ -177,7 +177,9 @@ pub fn assert_only_peer_remains(
     baseline: usize,
     both_attempts: usize,
 ) {
-    let after_victim = world.invariant.active_snapshot_count_for_test(request_execution);
+    let after_victim = world
+        .invariant
+        .active_snapshot_count_for_test(request_execution);
     let owned = both_attempts
         .checked_sub(baseline)
         .expect("interleaved attempts cannot reduce baseline snapshot ownership");
@@ -280,7 +282,12 @@ pub fn start(
         &phase.borrowed_request_for_test(),
         phase,
         application,
-        WorthQueryApplicationCommitPreparationRequest::new_for_test(program, idempotency, None, None),
+        WorthQueryApplicationCommitPreparationRequest::new_for_test(
+            program,
+            idempotency,
+            None,
+            None,
+        ),
     );
     let WorthQueryApplicationCommitPreparation::Ready(prepared) = prepared else {
         panic!("association fixture must reach ordinary prepared posture")
@@ -295,7 +302,11 @@ pub fn equivalent_programs(
     replacement: &str,
 ) -> (RetainedProgram, RetainedProgram) {
     let request = live_scope();
-    let principal = authenticated_principal(&(phase_custody).test_host_request_for_test(), world, &request);
+    let principal = authenticated_principal(
+        &(phase_custody).test_host_request_for_test(),
+        world,
+        &request,
+    );
     let account = resolved_account(
         &(phase_custody).test_host_request_for_test(),
         world,

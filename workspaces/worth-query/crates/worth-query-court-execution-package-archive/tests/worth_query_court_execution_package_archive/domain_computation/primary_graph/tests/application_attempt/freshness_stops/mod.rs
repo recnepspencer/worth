@@ -24,7 +24,12 @@ pub fn check(observe_field: bool) {
         .with_host_advancement(|phase| {
             (
                 authenticated_principal(&phase.test_host_request_for_test(), &world, &request),
-                resolved_account(&phase.test_host_request_for_test(), &world, "open", &request),
+                resolved_account(
+                    &phase.test_host_request_for_test(),
+                    &world,
+                    "open",
+                    &request,
+                ),
             )
         })
         .unwrap();

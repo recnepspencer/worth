@@ -47,7 +47,10 @@ pub fn reject_legacy_codec(session: &ValueDecodeSession<'_>) {
     assert!(session
         .decode::<U64ApplicationValueBinding>("Source", "Value", "Number", &AspectValue::UInt64(1))
         .is_none());
-    assert_eq!(session.denial_for_test(), Some(Decode::BindingContractMismatch));
+    assert_eq!(
+        session.denial_for_test(),
+        Some(Decode::BindingContractMismatch)
+    );
 }
 pub fn controlled_cause(result: Result<(), WorthQueryManagedIndexWorkDenial>) -> Stop {
     match result {
@@ -123,10 +126,9 @@ fn original_content_reservation_keeps_its_payer_and_first_memory_or_cancel_refus
     let memory = SerialMemoryBudget::new(Some(ceiling));
     let storage = SerialRequest::from_memory(memory.clone(), cancel.token(), None);
     let execution = ExecutionRequest::serial(&storage);
-    let held = controlled(
-        &execution,
-        |control| Ok(control.reserve_content_memory_for_test(64)?),
-    )
+    let held = controlled(&execution, |control| {
+        Ok(control.reserve_content_memory_for_test(64)?)
+    })
     .unwrap()
     .expect("actual accounted original reservation");
     assert_eq!(memory.charged_memory_bytes(), 64);
@@ -135,14 +137,19 @@ fn original_content_reservation_keeps_its_payer_and_first_memory_or_cancel_refus
 
     let expected = RefCell::new(None);
     let result = controlled(&execution, |control| {
-        let first = control.reserve_content_memory_for_test(ceiling + 1).unwrap_err();
+        let first = control
+            .reserve_content_memory_for_test(ceiling + 1)
+            .unwrap_err();
         assert!(matches!(
             first,
             Stop::Request(WorkCeilingDenial::Admission(LeaseDenial::MemoryExhausted(
                 _
             )))
         ));
-        assert_eq!(control.reserve_content_memory_for_test(1).unwrap_err(), first);
+        assert_eq!(
+            control.reserve_content_memory_for_test(1).unwrap_err(),
+            first
+        );
         *expected.borrow_mut() = Some(first);
         Ok(()) // original memory refusal cannot be swallowed by the caller
     });

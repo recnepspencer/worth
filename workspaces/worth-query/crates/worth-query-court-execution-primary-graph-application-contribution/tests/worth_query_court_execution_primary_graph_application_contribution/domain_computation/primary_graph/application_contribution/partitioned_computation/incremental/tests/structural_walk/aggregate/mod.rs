@@ -12,9 +12,7 @@ use std::sync::atomic::Ordering;
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::decision::identity;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::aggregate_observation::AggregateObservation;
 pub fn body(run: &SealedComputationRun) -> Arc<AggregateObservation> {
-    let values: Vec<_> = (*(*run
-        .state_for_test())
-        .facts_for_test())
+    let values: Vec<_> = (*(*run.state_for_test()).facts_for_test())
         .facts_for_test()
         .filter_map(|(_, fact, _)| match fact {
             Fact::Aggregate { observation } => Some(observation.clone()),
@@ -52,7 +50,12 @@ fn actual_aggregate_inputs_force_fresh_computation_before_reuse_in_both_postures
             accounted,
             Cause::AggregateRead,
         );
-        assert_eq!((*installed.owner_for_test()).gathers.load(Ordering::Relaxed), 2);
+        assert_eq!(
+            (*installed.owner_for_test())
+                .gathers
+                .load(Ordering::Relaxed),
+            2
+        );
         let current = body(&next);
         assert!(!Arc::ptr_eq(&original, &current));
         assert_ne!(original.source_for_test(), current.source_for_test());

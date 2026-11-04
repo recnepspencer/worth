@@ -36,7 +36,8 @@ fn scalar_readiness_uses_exact_declared_and_installed_binding() {
     .bind_application_schema(declaration.clone())
     .unwrap();
     let field =
-        FieldExpectation::declared_for_test(declaration.erased(), Value::reference::<Scalar>()).unwrap();
+        FieldExpectation::declared_for_test(declaration.erased(), Value::reference::<Scalar>())
+            .unwrap();
     field.seal_for_test(&installed).unwrap();
     assert!(matches!(
         (*field.aspect_for_test()).shape(),
@@ -58,7 +59,8 @@ fn scalar_readiness_uses_exact_declared_and_installed_binding() {
         Err(worth_foundational::facade::MaskAdmissibilityDenial::FieldMaskRequiresStruct)
     );
     let alias =
-        FieldExpectation::declared_for_test(declaration.erased(), Alias::reference::<Scalar>()).unwrap_err();
+        FieldExpectation::declared_for_test(declaration.erased(), Alias::reference::<Scalar>())
+            .unwrap_err();
     assert_eq!(
         alias.field_locus_for_test(),
         Some(&schema::ApplicationFieldBindingLocus::new(

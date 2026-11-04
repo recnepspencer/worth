@@ -23,18 +23,21 @@ fn cancelled_cleanup_preserves_the_interleaved_peer() {
                 cancellation.token(),
             );
             let principal = authenticated_principal(
-                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
+                &(host_custody.phase_for_application_for_test(&world.application))
+                    .test_host_request_for_test(),
                 &world,
                 &request,
             );
             let account = resolved_account(
-                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
+                &(host_custody.phase_for_application_for_test(&world.application))
+                    .test_host_request_for_test(),
                 &world,
                 "open",
                 &request,
             );
             let victim = retained_status_program(
-                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
+                &(host_custody.phase_for_application_for_test(&world.application))
+                    .test_host_request_for_test(),
                 &world,
                 &principal,
                 &account,

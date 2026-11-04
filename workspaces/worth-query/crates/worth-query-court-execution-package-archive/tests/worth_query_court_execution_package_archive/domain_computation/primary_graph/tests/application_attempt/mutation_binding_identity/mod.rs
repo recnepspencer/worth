@@ -50,9 +50,18 @@ fn a_retry_names_the_same_intent_and_a_changed_input_does_not() {
         let identities = Identities::encode(&key, &input).expect("the request encodes");
         WorthQueryApplicationIdempotencyBinding::for_mutation_identities(&identities)
     };
-    assert_eq!(build("open").intent_text_for_test(), build("open").intent_text_for_test());
-    assert_ne!(build("open").intent_text_for_test(), build("closed").intent_text_for_test());
-    assert_eq!(build("open").key_text_for_test(), build("closed").key_text_for_test());
+    assert_eq!(
+        build("open").intent_text_for_test(),
+        build("open").intent_text_for_test()
+    );
+    assert_ne!(
+        build("open").intent_text_for_test(),
+        build("closed").intent_text_for_test()
+    );
+    assert_eq!(
+        build("open").key_text_for_test(),
+        build("closed").key_text_for_test()
+    );
 }
 
 #[test]
@@ -82,7 +91,12 @@ fn two_bindings_sharing_key_namespace_operation_and_input_type_never_replay_each
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
+            resolved_account(
+                &(phase).test_host_request_for_test(),
+                &world,
+                "open",
+                &request,
+            )
         })
         .expect("the fixture read owns its installed host call");
     let first = world
@@ -103,7 +117,12 @@ fn two_bindings_sharing_key_namespace_operation_and_input_type_never_replay_each
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request_for_test(), &world, "committed", &request)
+            resolved_account(
+                &(phase).test_host_request_for_test(),
+                &world,
+                "committed",
+                &request,
+            )
         })
         .expect("the fixture read owns its installed host call");
     let retry = world
@@ -158,7 +177,12 @@ fn a_binding_the_schema_never_installed_is_refused_instead_of_panicking() {
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
+            resolved_account(
+                &(phase).test_host_request_for_test(),
+                &world,
+                "open",
+                &request,
+            )
         })
         .expect("the fixture read owns its installed host call");
     let operation = world
@@ -228,7 +252,8 @@ fn handler_contact_is_preserved_after_a_later_execution_denial() {
             .with_host_advancement(|phase| {
                 let host_custody = phase.test_host_request_for_test();
                 authenticated_principal(
-                    &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
+                    &(host_custody.phase_for_application_for_test(&world.application))
+                        .test_host_request_for_test(),
                     &world,
                     &request,
                 )
@@ -239,7 +264,8 @@ fn handler_contact_is_preserved_after_a_later_execution_denial() {
             .with_host_advancement(|phase| {
                 let host_custody = phase.test_host_request_for_test();
                 resolved_account(
-                    &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
+                    &(host_custody.phase_for_application_for_test(&world.application))
+                        .test_host_request_for_test(),
                     &world,
                     "open",
                     &request,

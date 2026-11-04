@@ -14,15 +14,16 @@ pub fn assert_second_real_overlay_is_rejected(
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         None,
     );
-    let receipt = (*world
-        .application
-        .primary_provider_for_test())
+    let receipt = (*world.application.primary_provider_for_test())
         .capture_application_read_set_for_test(execution, &staged.read_authority(), control)
         .expect("real registered facts must produce a decision read set");
-    let fresh = match (*world
-        .application
-        .primary_provider_for_test())
-        .compare_application_read_set_for_test(execution, &staged.read_authority(), receipt, control)
+    let fresh = match (*world.application.primary_provider_for_test())
+        .compare_application_read_set_for_test(
+            execution,
+            &staged.read_authority(),
+            receipt,
+            control,
+        )
         .expect("real registered facts must compare")
     {
         WorthQueryDecisionReadSetFreshnessOutcome::Fresh(fresh) => fresh,
@@ -56,21 +57,29 @@ pub fn assert_second_real_overlay_is_rejected(
         lowered.identity(),
         1,
     );
-    let denial = match staged.provisional_provider_for_test().stage_provisional_overlay_for_test(
-        session,
-        WorthQueryProvisionalEffectProgramView::new(&lowered, 1),
-        substitute_admission,
-    ) {
+    let denial = match staged
+        .provisional_provider_for_test()
+        .stage_provisional_overlay_for_test(
+            session,
+            WorthQueryProvisionalEffectProgramView::new(&lowered, 1),
+            substitute_admission,
+        ) {
         Ok(_) => panic!("second real overlay must not replace the first"),
         Err(denial) => denial,
     };
     assert!(denial
         .detail()
         .contains("cannot stage this application overlay"));
-    assert_eq!(first.view_for_test().physical_overlay_identity(), first_identity);
+    assert_eq!(
+        first.view_for_test().physical_overlay_identity(),
+        first_identity
+    );
     staged
         .provisional_provider_for_test()
-        .discard_provisional_overlay_for_test(staged.execution_request_for_test(), first.view_for_test())
+        .discard_provisional_overlay_for_test(
+            staged.execution_request_for_test(),
+            first.view_for_test(),
+        )
         .expect("the first exact overlay must remain independently discardable");
     let _ = staged.abort();
     assert_eq!(

@@ -26,16 +26,19 @@ pub fn capture(world: &World, key: u64, execution: &ExecutionRequest<'_, '_>) ->
         .application
         .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch_for_test(),
+            world
+                .application
+                .product_runtime()
+                .default_branch_for_test(),
         )
         .unwrap();
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-    let kind = (*graph
-        .layout_for_test())
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
+    let kind = (*graph.layout_for_test())
         .entity_kind_for_test(NodeKey::reference::<OrbitSchema<true>>().entity())
         .unwrap();
-    let relation = (*(*graph
-        .layout_for_test())
+    let relation = (*(*graph.layout_for_test())
         .relation(Next::reference::<OrbitSchema<true>>().name())
         .unwrap()
         .kind_for_test());
@@ -93,17 +96,21 @@ pub fn at_current<R>(
         .application
         .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch_for_test(),
+            world
+                .application
+                .product_runtime()
+                .default_branch_for_test(),
         )
         .unwrap();
-    (*world
-        .application
-        .runtime_for_test())
+    (*world.application.runtime_for_test())
         .primary_graph()
         .unwrap()
         .integration_handle_for_test()
         .with_runtime(execution, |runtime| {
-            read(runtime, selected.application_basis_for_test().snapshot_handle())
+            read(
+                runtime,
+                selected.application_basis_for_test().snapshot_handle(),
+            )
         })
 }
 

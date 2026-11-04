@@ -74,7 +74,10 @@ fn complete_declared_paths_preserve_cycles_reverse_and_actual_origins() {
             )
         })
         .collect();
-    let body = &(*selections[0].1.walks_for_test()).as_ref().unwrap().values()[0];
+    let body = &(*selections[0].1.walks_for_test())
+        .as_ref()
+        .unwrap()
+        .values()[0];
     assert_eq!(body.key_for_test().roots_for_test().len(), 2);
     for (root, selection) in selections {
         assert!(Arc::ptr_eq(
@@ -94,8 +97,7 @@ fn complete_declared_paths_preserve_cycles_reverse_and_actual_origins() {
             .unwrap();
         let expected = std::collections::BTreeSet::from([visit.root, root]);
         assert_eq!(
-            (*selection
-                .aspects_for_test())
+            (*selection.aspects_for_test())
                 .iter()
                 .map(|aspect| (*aspect.entity_for_test()))
                 .collect::<std::collections::BTreeSet<_>>(),

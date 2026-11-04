@@ -10,7 +10,9 @@ impl WorthQueryInstalledWorkflowArtifactContracts {
 
 impl WorthQueryInstalledWorkflowArtifactContracts {
     #[doc(hidden)]
-    pub fn with_output_for_test( output: Arc<worth_query_installation::facade::WorthQueryInstalledArtifactContractAuthority>) -> Self {
+    pub fn with_output_for_test(
+        output: Arc<worth_query_installation::facade::WorthQueryInstalledArtifactContractAuthority>,
+    ) -> Self {
         Self::with_output(output)
     }
 }

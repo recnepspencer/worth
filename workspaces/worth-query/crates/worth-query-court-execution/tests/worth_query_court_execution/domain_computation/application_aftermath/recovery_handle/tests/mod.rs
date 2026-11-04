@@ -35,7 +35,9 @@ fn recovery_registry_enumerates_terminates_and_covers_four_paths_without_leak() 
     let slot = registry.register_axis_probe_for_test();
     assert!(registry.is_live_for_test(slot));
     assert!(registry.enumerate_live_for_test().contains(&slot));
-    assert!(registry.mark_terminal_for_test(slot, WorthQueryRecoveryResourceTerminal::ForceTerminated));
+    assert!(
+        registry.mark_terminal_for_test(slot, WorthQueryRecoveryResourceTerminal::ForceTerminated)
+    );
     assert!(!registry.is_live_for_test(slot));
     assert_eq!(
         registry.terminal_of_for_test(slot),
@@ -75,7 +77,9 @@ fn only_relinquishment_returns_a_commits_mint_claim() {
     ] {
         let registry = WorthQueryRecoveryHandleRegistry::new_for_test();
         let claim = real_claim(3);
-        let slot = registry.register_once_for_test(claim.clone()).expect("first claim");
+        let slot = registry
+            .register_once_for_test(claim.clone())
+            .expect("first claim");
         assert!(registry.mark_terminal_for_test(slot, retaining));
         registry
             .register_once_for_test(claim)
@@ -87,7 +91,9 @@ fn only_relinquishment_returns_a_commits_mint_claim() {
 
     let registry = WorthQueryRecoveryHandleRegistry::new_for_test();
     let claim = real_claim(3);
-    let first = registry.register_once_for_test(claim.clone()).expect("first claim");
+    let first = registry
+        .register_once_for_test(claim.clone())
+        .expect("first claim");
     assert!(registry.relinquish_for_test(first));
     let second = registry
         .register_once_for_test(claim)

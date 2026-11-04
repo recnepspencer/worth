@@ -8,10 +8,14 @@ use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_co
 fn exact_execution_association_denies_each_independent_owner_axis_swap() {
     let exact_attempt = attempt();
     let foreign_attempt = attempt();
-    let exact =
-        WorthQueryBoundGraphExecutionAssociation::capture_for_test(&call(&exact_attempt, "same-scope"));
-    let foreign =
-        WorthQueryBoundGraphExecutionAssociation::capture_for_test(&call(&foreign_attempt, "same-scope"));
+    let exact = WorthQueryBoundGraphExecutionAssociation::capture_for_test(&call(
+        &exact_attempt,
+        "same-scope",
+    ));
+    let foreign = WorthQueryBoundGraphExecutionAssociation::capture_for_test(&call(
+        &foreign_attempt,
+        "same-scope",
+    ));
     let expected_snapshot =
         WorthQueryBoundExecutionSnapshotIdentity::capture_for_test(Arc::from("snapshot"));
     let authority = exact_attempt.attempt.binding_authority_for_test();
@@ -20,7 +24,8 @@ fn exact_execution_association_denies_each_independent_owner_axis_swap() {
     assert!(exact.admits_execution_for_test(authority, session, None, &expected_snapshot));
 
     let mut session_swap = exact.clone();
-    (*session_swap.provider_session_mut_for_test()) = (*foreign.provider_session_for_test()).clone();
+    (*session_swap.provider_session_mut_for_test()) =
+        (*foreign.provider_session_for_test()).clone();
     assert!(!session_swap.admits_execution_for_test(authority, session, None, &expected_snapshot));
 
     let mut attempt_swap = exact.clone();

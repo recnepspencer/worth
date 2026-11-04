@@ -26,7 +26,9 @@ pub fn assert_axis_drift(
         &baseline,
     )
     .finish();
-    let denied = truth.check_for_test(&drifted).expect_err("drifted binding denies");
+    let denied = truth
+        .check_for_test(&drifted)
+        .expect_err("drifted binding denies");
     assert_eq!(denied.kind(), kind);
 }
 

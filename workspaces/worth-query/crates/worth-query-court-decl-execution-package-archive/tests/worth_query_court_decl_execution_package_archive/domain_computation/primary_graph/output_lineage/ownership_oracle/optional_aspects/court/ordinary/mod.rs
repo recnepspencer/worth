@@ -15,8 +15,7 @@ pub fn roles_and_nonownership<Schema: BirthSchema>(
     let graph = &(*(*runtime.primary_provider_for_test()).graph_for_test());
     let correspondence = receipt.retain_output_correspondence_for_test();
     let lineage = graph.output_lineage.lock().unwrap();
-    let rows: Vec<_> = (*lineage
-        .by_source_for_test())
+    let rows: Vec<_> = (*lineage.by_source_for_test())
         .values()
         .flat_map(|l| l.values())
         .flat_map(|g| g.values())
@@ -47,7 +46,9 @@ pub fn roles_and_nonownership<Schema: BirthSchema>(
             RequiredOutputRoleTarget {
                 role: role.to_owned(),
                 entity_name: name.to_owned(),
-                kind: (*graph.layout_for_test()).entity_kind_for_test(name).unwrap(),
+                kind: (*graph.layout_for_test())
+                    .entity_kind_for_test(name)
+                    .unwrap(),
                 posture: RequiredOutputRolePosture::Create,
                 target: EntityReference::Existing(id),
             }

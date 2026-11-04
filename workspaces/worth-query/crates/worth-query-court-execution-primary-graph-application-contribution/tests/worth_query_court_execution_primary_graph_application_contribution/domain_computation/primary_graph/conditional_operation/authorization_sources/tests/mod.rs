@@ -35,12 +35,14 @@ fn governed_temporal_operation_uses_real_capability_progression() {
             let borrowed_execution = host_custody.borrowed_request_for_test();
             let execution = &borrowed_execution;
             let principal = authenticated_principal(
-                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
+                &(host_custody.phase_for_application_for_test(&world.application))
+                    .test_host_request_for_test(),
                 &world,
                 &request,
             );
             let account = resolved_account(
-                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
+                &(host_custody.phase_for_application_for_test(&world.application))
+                    .test_host_request_for_test(),
                 &world,
                 "open",
                 &request,
@@ -61,7 +63,8 @@ fn governed_temporal_operation_uses_real_capability_progression() {
             let input = admitted_input();
             let authorization = WorthQueryGovernedTemporalOperationAuthorization::new(capability);
             let selected = world.selected_product(
-                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
+                &(host_custody.phase_for_application_for_test(&world.application))
+                    .test_host_request_for_test(),
             );
             let admission = authorization
                 .authorize(

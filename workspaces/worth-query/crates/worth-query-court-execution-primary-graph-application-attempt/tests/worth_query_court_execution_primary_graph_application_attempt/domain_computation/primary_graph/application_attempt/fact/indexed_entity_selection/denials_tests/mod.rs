@@ -17,17 +17,19 @@ fn indexed_reobservation_preserves_native_request_and_lookup_denials() {
     let world = installed_authorization_world(true);
     let selected = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
+        .with_host_advancement(|phase| {
+            world.selected_product(&(phase).test_host_request_for_test())
+        })
         .expect("the fixture read owns its installed host call");
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
     let field = AccountNote::reference();
-    let locator = (*graph
-        .layout_for_test())
+    let locator = (*graph.layout_for_test())
         .field_locator_for_test(field.entity(), field.aspect(), field.field())
         .unwrap()
         .clone();
-    let kind = (*graph
-        .layout_for_test())
+    let kind = (*graph.layout_for_test())
         .entity_kind_for_test(AccountIdentity::reference().entity())
         .unwrap();
     let value = StringApplicationValueBinding::encode(&"reviewed".to_owned()).unwrap();

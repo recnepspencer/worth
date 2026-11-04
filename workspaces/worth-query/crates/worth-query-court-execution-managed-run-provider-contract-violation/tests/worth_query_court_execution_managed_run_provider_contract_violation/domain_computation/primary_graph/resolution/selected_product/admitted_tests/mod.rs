@@ -14,7 +14,8 @@ fn admitted_selected_principal_matches_ordinary_and_certification() {
             let borrowed_execution = host_custody.borrowed_request_for_test();
             let execution = &borrowed_execution;
             let selected = world.selected_product(
-                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
+                &(host_custody.phase_for_application_for_test(&world.application))
+                    .test_host_request_for_test(),
             );
             let request = live_scope();
             let external = world.authenticate("alice", Duration::from_secs(60), &request);
@@ -41,9 +42,18 @@ fn admitted_selected_principal_matches_ordinary_and_certification() {
                         mode,
                     )
                     .expect("admitted principal uses the same selected truth");
-                assert_eq!(fresh.principal_entity_id_for_test(), legacy.principal_entity_id_for_test());
-                assert_eq!(fresh.mapping_entity_id_for_test(), legacy.mapping_entity_id_for_test());
-                assert_eq!(fresh.target_relation_id_for_test(), legacy.target_relation_id_for_test());
+                assert_eq!(
+                    fresh.principal_entity_id_for_test(),
+                    legacy.principal_entity_id_for_test()
+                );
+                assert_eq!(
+                    fresh.mapping_entity_id_for_test(),
+                    legacy.mapping_entity_id_for_test()
+                );
+                assert_eq!(
+                    fresh.target_relation_id_for_test(),
+                    legacy.target_relation_id_for_test()
+                );
                 assert_eq!(fresh.principal_identity(), legacy.principal_identity());
                 assert_eq!(
                     fresh.examined_candidate_count(),

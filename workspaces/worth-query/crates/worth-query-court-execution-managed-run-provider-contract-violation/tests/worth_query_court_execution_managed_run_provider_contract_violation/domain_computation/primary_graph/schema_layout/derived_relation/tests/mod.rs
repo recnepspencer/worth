@@ -100,7 +100,10 @@ fn typed_ordered_event_schema_installs_exact_native_roles_and_full_physical_rost
         (*live.from_for_test()),
         ApplicationGraphMemberMeaning::Entity("Event".into())
     );
-    assert_eq!((*live.to_for_test()), ApplicationGraphMemberMeaning::Entity("Row".into()));
+    assert_eq!(
+        (*live.to_for_test()),
+        ApplicationGraphMemberMeaning::Entity("Row".into())
+    );
     let expected = std::collections::BTreeSet::from([
         (previous, event, event),
         (introduces, event, row),

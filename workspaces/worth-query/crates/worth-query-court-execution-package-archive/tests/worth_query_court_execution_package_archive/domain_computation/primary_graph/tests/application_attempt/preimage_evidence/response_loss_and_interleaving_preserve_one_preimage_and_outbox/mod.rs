@@ -17,25 +17,37 @@ fn response_loss_and_interleaving_preserve_one_preimage_and_outbox_bundle() {
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
+            resolved_account(
+                &(phase).test_host_request_for_test(),
+                &world,
+                "open",
+                &request,
+            )
         })
         .expect("the fixture read owns its installed host call");
     let unrelated = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request_for_test(), &world, "unrelated", &request)
+            resolved_account(
+                &(phase).test_host_request_for_test(),
+                &world,
+                "unrelated",
+                &request,
+            )
         })
         .expect("the fixture read owns its installed host call");
     let selected = world
         .application
         .product_runtime()
-        .admit_product_branch_for_test(world.application.product_runtime().default_branch_for_test())
+        .admit_product_branch_for_test(
+            world
+                .application
+                .product_runtime()
+                .default_branch_for_test(),
+        )
         .unwrap();
     let commit_count = || {
-        (*(*world
-            .application
-            .primary_provider_for_test())
-            .graph_for_test())
+        (*(*world.application.primary_provider_for_test()).graph_for_test())
             .with_runtime(request_execution, |runtime| {
                 runtime.history().immutable_commit_count()
             })
@@ -111,7 +123,12 @@ fn response_loss_and_interleaving_preserve_one_preimage_and_outbox_bundle() {
     let after_original = world
         .application
         .product_runtime()
-        .admit_product_branch_for_test(world.application.product_runtime().default_branch_for_test())
+        .admit_product_branch_for_test(
+            world
+                .application
+                .product_runtime()
+                .default_branch_for_test(),
+        )
         .unwrap();
     assert_ne!(after_original.selected_commit(), selected.selected_commit());
     assert_eq!(commit_count(), baseline + 1);
@@ -148,7 +165,10 @@ fn response_loss_and_interleaving_preserve_one_preimage_and_outbox_bundle() {
     assert!(recovered.is_same_authoritative_commit(&original));
     assert_eq!(recovered.mutation_work(), original.mutation_work());
     assert_eq!(recovered.dispatch_outbox(), original.dispatch_outbox());
-    assert_eq!(recovered.retained_preimage_for_test(), original.retained_preimage_for_test());
+    assert_eq!(
+        recovered.retained_preimage_for_test(),
+        original.retained_preimage_for_test()
+    );
     assert_eq!(original.terminal().attempt_resources_released(), Some(true));
     assert_eq!(recovered.terminal().attempt_resources_released(), None);
     assert!(recovered.dispatch_outbox().is_some());
@@ -159,9 +179,7 @@ fn response_loss_and_interleaving_preserve_one_preimage_and_outbox_bundle() {
     let original_preimage = original.retained_preimage_for_test().cloned();
     drop(original);
     drop(recovered);
-    let occurrence = (*world
-        .application
-        .primary_provider_for_test())
+    let occurrence = (*world.application.primary_provider_for_test())
         .observe_completed_application_for_test(&commit)
         .expect("response loss and receipt disposal preserve the performed source");
     assert_eq!(

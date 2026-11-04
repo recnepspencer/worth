@@ -150,7 +150,12 @@ fn cancellation_after_program_preparation_prevents_provider_commit() {
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
+            resolved_account(
+                &(phase).test_host_request_for_test(),
+                &world,
+                "open",
+                &request,
+            )
         })
         .expect("the fixture read owns its installed host call");
     let program = world
@@ -180,7 +185,12 @@ fn cancellation_after_program_preparation_prevents_provider_commit() {
     let _still_open = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &fresh_request)
+            resolved_account(
+                &(phase).test_host_request_for_test(),
+                &world,
+                "open",
+                &fresh_request,
+            )
         })
         .expect("the fixture read owns its installed host call");
 }
@@ -202,7 +212,12 @@ fn cancelled_admission_cannot_inspect_provider_idempotency() {
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
+            resolved_account(
+                &(phase).test_host_request_for_test(),
+                &world,
+                "open",
+                &request,
+            )
         })
         .expect("the fixture read owns its installed host call");
     let operation = world

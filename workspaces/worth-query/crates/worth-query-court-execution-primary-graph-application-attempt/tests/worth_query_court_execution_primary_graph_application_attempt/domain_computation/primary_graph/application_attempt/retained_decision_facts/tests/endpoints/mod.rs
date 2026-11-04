@@ -34,9 +34,11 @@ fn retained_endpoint_capture_and_union_keep_full_exact_ids_and_charge_coexistenc
     .unwrap();
     assert_eq!(&*left, &[id(1), id(3)]);
     let shared = left.clone();
-    let right =
-        AdmittedAdjacencyEndpoints::capture_for_test(&[id(4), id(3)], control(Policy::SystemAllocation))
-            .unwrap();
+    let right = AdmittedAdjacencyEndpoints::capture_for_test(
+        &[id(4), id(3)],
+        control(Policy::SystemAllocation),
+    )
+    .unwrap();
     // The parent holds the old two-ID backing while its child admits the new
     // three-ID backing. These charges coexist at the common parent ledger.
     let child = parent.child(request(quote)).unwrap();
@@ -53,10 +55,13 @@ fn retained_endpoint_capture_and_union_keep_full_exact_ids_and_charge_coexistenc
     assert_eq!(parent.reserve_memory(budget).unwrap().bytes(), budget);
     let short = authority().request_lease(request(quote)).unwrap();
     let held =
-        AdmittedAdjacencyEndpoints::capture_for_test(&[id(1)], control(Policy::Execution(&short))).unwrap();
-    let incoming =
-        AdmittedAdjacencyEndpoints::capture_for_test(&[id(2), id(3)], control(Policy::SystemAllocation))
+        AdmittedAdjacencyEndpoints::capture_for_test(&[id(1)], control(Policy::Execution(&short)))
             .unwrap();
+    let incoming = AdmittedAdjacencyEndpoints::capture_for_test(
+        &[id(2), id(3)],
+        control(Policy::SystemAllocation),
+    )
+    .unwrap();
     let denied = match held.union_for_test(&incoming, control(Policy::Execution(&short))) {
         Err(StoreDenial::Allocation(denied)) => denied,
         _ => panic!("old endpoint backing must remain charged during replacement"),

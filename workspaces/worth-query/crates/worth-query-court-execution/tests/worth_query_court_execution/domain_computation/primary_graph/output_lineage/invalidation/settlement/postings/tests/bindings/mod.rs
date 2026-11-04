@@ -29,7 +29,7 @@ fn shared_bindings_detach_exactly_and_historical_storage_lives_until_final_drop(
             .settlements_for_test()
             .unwrap()
             .settlements_for_test())
-            .len(),
+        .len(),
         2
     );
     worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::settlement::posting_removal::remove(&mut state, &first, &projection).unwrap();
@@ -39,21 +39,21 @@ fn shared_bindings_detach_exactly_and_historical_storage_lives_until_final_drop(
             .settlements_for_test()
             .unwrap()
             .settlements_for_test())
-            .iter()
-            .cloned()
-            .collect::<Vec<_>>(),
+        .iter()
+        .cloned()
+        .collect::<Vec<_>>(),
         vec![second.clone()]
     );
     assert!((*(*historical.posting_bindings_for_test())[&0]
         .settlements_for_test()
         .unwrap()
         .settlements_for_test())
-        .contains(&first));
+    .contains(&first));
     assert!(!(*(*historical.posting_bindings_for_test())[&0]
         .settlements_for_test()
         .unwrap()
         .settlements_for_test())
-        .contains(&second));
+    .contains(&second));
     worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::settlement::posting_removal::remove(&mut state, &second, &projection).unwrap();
     assert!((*state.postings_for_test()).is_empty());
     assert!((*state.posting_bindings_for_test()).is_empty());

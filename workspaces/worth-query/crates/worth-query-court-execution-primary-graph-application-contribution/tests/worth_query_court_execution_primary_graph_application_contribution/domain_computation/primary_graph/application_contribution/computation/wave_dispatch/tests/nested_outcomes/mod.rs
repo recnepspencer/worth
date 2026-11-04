@@ -27,8 +27,7 @@ fn an_unrelated_error_cannot_take_an_earlier_requests_stop() {
                         )
                         .unwrap();
                         let held = (*managed.request_for_test()).reserve(0).unwrap();
-                        let nested = (*managed
-                            .request_for_test())
+                        let nested = (*managed.request_for_test())
                             .dispatch_for_test()
                             .unwrap()
                             .map_for_test(10, &map, held, |_, context| {

@@ -1,9 +1,9 @@
 //! The installed managed path owns completion and original-request refusal.
-use worth_query_execution::facade::application_contribution::WorthQueryManagedComputationOwner;
 use crate::domain_computation::primary_graph::application_contribution::computation::tests::*;
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
+use worth_query_execution::facade::application_contribution::WorthQueryManagedComputationOwner;
 use worth_query_execution::facade::domain_computation::HandlerFailure;
 use worth_query_execution::facade::domain_computation::HandlerResult;
 
@@ -80,7 +80,9 @@ pub fn run(
         completed: completed.clone(),
     };
     let installed =
-        WorthQueryInstalledManagedComputation::<Schema, Feature, Computation, _>::new_for_test(owner);
+        WorthQueryInstalledManagedComputation::<Schema, Feature, Computation, _>::new_for_test(
+            owner,
+        );
     let execution = QueryRequestExecution::open_for_test(
         worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(
             worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy(

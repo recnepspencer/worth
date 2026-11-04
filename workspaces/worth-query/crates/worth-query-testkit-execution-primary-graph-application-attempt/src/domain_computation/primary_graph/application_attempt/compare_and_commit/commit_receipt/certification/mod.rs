@@ -26,8 +26,7 @@ impl CertificationWorthQueryApplicationCommitReceiptForTest for WorthQueryApplic
         mut self,
         disclosure: std::sync::Arc<worth_query_execution::court_doors_for_test::domain_computation::primary_graph::source_disclosure::inspection::OriginalSourceInspectionDisclosure>,
     ) -> Self {
-        (*self.authority_binding_mut_for_test())
-            .corrupt_original_disclosure_for_test(disclosure);
+        (*self.authority_binding_mut_for_test()).corrupt_original_disclosure_for_test(disclosure);
         self
     }
 
@@ -42,8 +41,7 @@ impl CertificationWorthQueryApplicationCommitReceiptForTest for WorthQueryApplic
         mut self,
         binding: worth_query_execution::facade::domain_computation::WorthQueryApplicationIdempotencyBinding,
     ) -> Self {
-        (*self.authority_binding_mut_for_test())
-            .replace_idempotency_binding_for_test(binding);
+        (*self.authority_binding_mut_for_test()).replace_idempotency_binding_for_test(binding);
         self
     }
 }

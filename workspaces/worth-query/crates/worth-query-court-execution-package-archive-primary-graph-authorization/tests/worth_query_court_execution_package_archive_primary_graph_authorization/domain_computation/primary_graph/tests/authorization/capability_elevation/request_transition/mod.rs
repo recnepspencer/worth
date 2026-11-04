@@ -116,8 +116,11 @@ fn request_upper_bound_cannot_widen_scope_or_swap_purpose() {
         world
             .application
             .with_host_advancement(|phase| {
-                let principal =
-                    authenticated_principal(&(phase).test_host_request_for_test(), &world, &request);
+                let principal = authenticated_principal(
+                    &(phase).test_host_request_for_test(),
+                    &world,
+                    &request,
+                );
                 let access = request_access(
                     &(phase).test_host_request_for_test(),
                     &world,
@@ -150,12 +153,14 @@ fn proposed_grant_must_independently_authorize_the_governed_upper_bound() {
             let host_custody = phase.test_host_request_for_test();
 
             let principal = authenticated_principal(
-                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
+                &(host_custody.phase_for_application_for_test(&world.application))
+                    .test_host_request_for_test(),
                 &world,
                 &request,
             );
             let access = request_access(
-                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
+                &(host_custody.phase_for_application_for_test(&world.application))
+                    .test_host_request_for_test(),
                 &world,
                 &principal,
                 &request,
@@ -323,7 +328,10 @@ pub fn resolve_created_identities(
         .application
         .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch_for_test(),
+            world
+                .application
+                .product_runtime()
+                .default_branch_for_test(),
         )
         .expect("the selected product branch remains admitted")
         .resolve_entity(
@@ -338,7 +346,10 @@ pub fn resolve_created_identities(
         .application
         .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch_for_test(),
+            world
+                .application
+                .product_runtime()
+                .default_branch_for_test(),
         )
         .expect("the selected product branch remains admitted")
         .resolve_entity(

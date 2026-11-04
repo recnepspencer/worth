@@ -17,9 +17,7 @@ use crate::domain_computation::primary_graph::output_lineage::RecordedSettlement
 
 /// Bound to the exact source root checked by the cutoff, and to the new
 /// lineage address whose marks this source image will install.
-pub struct PreparedCurrentSettlementRegistration<
-    'selected,
-> {
+pub struct PreparedCurrentSettlementRegistration<'selected> {
     prepared: PreparedSettlementRegistration,
     identity: Arc<RecordedSettlementIdentity>,
     selected: &'selected PositionedRelationalSnapshot,
@@ -30,9 +28,7 @@ pub struct CurrentSettlementRegistrationCleanup {
     _identity: Arc<RecordedSettlementIdentity>,
 }
 
-pub struct StoppedCurrentSettlementRegistration<
-    'selected,
-> {
+pub struct StoppedCurrentSettlementRegistration<'selected> {
     stopped: StoppedSettlementRegistration,
     identity: Arc<RecordedSettlementIdentity>,
     selected: &'selected PositionedRelationalSnapshot,

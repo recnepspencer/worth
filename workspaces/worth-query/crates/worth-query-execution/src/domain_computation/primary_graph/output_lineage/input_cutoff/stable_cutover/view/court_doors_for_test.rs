@@ -4,7 +4,8 @@ use super::*;
 impl PublishedStableLineage {
     #[doc(hidden)]
     pub fn exact_settlement_for_test(
-        &self) -> &Arc<super::super::super::super::RecordedSettlementIdentity> {
+        &self,
+    ) -> &Arc<super::super::super::super::RecordedSettlementIdentity> {
         Self::exact_settlement(self)
     }
 }

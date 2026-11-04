@@ -15,13 +15,23 @@ fn stale_identity_is_refused_before_counted_native_field_provider_work() {
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
+            resolved_account(
+                &(phase).test_host_request_for_test(),
+                &world,
+                "open",
+                &request,
+            )
         })
         .expect("the fixture read owns its installed host call");
     let other = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request_for_test(), &world, "unrelated", &request)
+            resolved_account(
+                &(phase).test_host_request_for_test(),
+                &world,
+                "unrelated",
+                &request,
+            )
         })
         .expect("the fixture read owns its installed host call");
     let operation = world
@@ -83,7 +93,12 @@ fn stale_identity_is_refused_before_counted_native_field_provider_work() {
     let newer = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request_for_test(), &world, "changed", &request)
+            resolved_account(
+                &(phase).test_host_request_for_test(),
+                &world,
+                "changed",
+                &request,
+            )
         })
         .expect("the fixture read owns its installed host call");
     let denial = world

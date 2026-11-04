@@ -122,7 +122,6 @@ pub fn complete_with_contacts(
         .unwrap()
 }
 
-
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::*;
 #[test]
 fn real_mode2_mixed_query_publication_attests_neither_whole_nor_created_subset() {

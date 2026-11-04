@@ -24,7 +24,9 @@ pub fn leased_checkpoint_retains_one_frame_charge_through_native_handoff_and_reo
     let world = installed_world(&[("alice", WorthQueryPrincipalMappingStatus::Enabled)]);
     let original_principal = world
         .application
-        .with_host_advancement(|phase| resolve_alice(&(phase).test_host_request_for_test(), &world, 1))
+        .with_host_advancement(|phase| {
+            resolve_alice(&(phase).test_host_request_for_test(), &world, 1)
+        })
         .expect("fixture host admits the identity read");
     let refusal = world
         .application

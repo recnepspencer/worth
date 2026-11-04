@@ -37,8 +37,7 @@ impl SourceFacts {
         }
     }
 }
-pub enum SourceFactValues
-{
+pub enum SourceFactValues {
     Admitted(std::vec::IntoIter<WorthQueryApplicationObservedFact>),
     Projected(
         Option<RetainedSourceFactValues>,

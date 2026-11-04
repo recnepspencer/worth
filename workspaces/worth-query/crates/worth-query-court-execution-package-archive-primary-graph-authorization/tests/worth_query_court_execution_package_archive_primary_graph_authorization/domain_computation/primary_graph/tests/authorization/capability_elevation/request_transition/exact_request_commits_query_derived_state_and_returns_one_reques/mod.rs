@@ -12,7 +12,8 @@ fn exact_request_commits_query_derived_state_and_returns_one_requested_receipt()
             .with_host_advancement(|phase| {
                 let host_custody = phase.test_host_request_for_test();
                 authenticated_principal(
-                    &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
+                    &(host_custody.phase_for_application_for_test(&world.application))
+                        .test_host_request_for_test(),
                     &world,
                     &request,
                 )
@@ -23,7 +24,8 @@ fn exact_request_commits_query_derived_state_and_returns_one_requested_receipt()
             .with_host_advancement(|phase| {
                 let host_custody = phase.test_host_request_for_test();
                 request_reads(
-                    &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
+                    &(host_custody.phase_for_application_for_test(&world.application))
+                        .test_host_request_for_test(),
                     &world,
                     &principal,
                     &request,
@@ -45,7 +47,10 @@ fn exact_request_commits_query_derived_state_and_returns_one_requested_receipt()
         assert_eq!(receipt.commit_receipt().emitted_effect_count(), 0);
         assert_eq!(receipt.elevation_key(), "elevation-request-2");
         assert_eq!(receipt.review_key(), "review-request-2");
-        assert_eq!(receipt.requester(), principal.principal_entity_id_for_test());
+        assert_eq!(
+            receipt.requester(),
+            principal.principal_entity_id_for_test()
+        );
         assert_eq!(receipt.elevation_identity(), &string("elevation-2"));
         assert_eq!(receipt.reason(), &string("protect-customer"));
         assert_eq!(receipt.requested_status(), &string("requested"));
@@ -59,7 +64,8 @@ fn exact_request_commits_query_derived_state_and_returns_one_requested_receipt()
             .with_host_advancement(|phase| {
                 let host_custody = phase.test_host_request_for_test();
                 resolve_created_identities(
-                    &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
+                    &(host_custody.phase_for_application_for_test(&world.application))
+                        .test_host_request_for_test(),
                     &host_custody.borrowed_request_for_test(),
                     &world,
                     &request,

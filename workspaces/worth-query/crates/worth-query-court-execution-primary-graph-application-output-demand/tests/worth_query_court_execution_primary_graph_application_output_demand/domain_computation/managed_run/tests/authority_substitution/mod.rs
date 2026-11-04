@@ -68,11 +68,15 @@ fn foreign_query_runtime_denies_before_resource_or_lower_basis_checks() {
         resource_request,
     );
 
-    let rejection =
-        match foreign.admit_direct_run_for_test(&operation, attempt, lower.bridge, lower.relational) {
-            Ok(_) => panic!("foreign Query runtime admitted another runtime's run"),
-            Err(rejection) => rejection,
-        };
+    let rejection = match foreign.admit_direct_run_for_test(
+        &operation,
+        attempt,
+        lower.bridge,
+        lower.relational,
+    ) {
+        Ok(_) => panic!("foreign Query runtime admitted another runtime's run"),
+        Err(rejection) => rejection,
+    };
     let denial = rejection.denial_for_test();
     assert_eq!(
         denial.kind(),
@@ -105,11 +109,15 @@ fn stale_installation_generation_denies_before_resource_or_lower_basis_checks() 
         resource_request,
     );
 
-    let rejection =
-        match runtime.admit_direct_run_for_test(&operation, attempt, lower.bridge, lower.relational) {
-            Ok(_) => panic!("stale installed operation admitted a managed run"),
-            Err(rejection) => rejection,
-        };
+    let rejection = match runtime.admit_direct_run_for_test(
+        &operation,
+        attempt,
+        lower.bridge,
+        lower.relational,
+    ) {
+        Ok(_) => panic!("stale installed operation admitted a managed run"),
+        Err(rejection) => rejection,
+    };
     let denial = rejection.denial_for_test();
     assert_eq!(
         denial.kind(),
@@ -137,11 +145,15 @@ fn independently_valid_resource_attempt_cannot_substitute_for_the_operation() {
         resource_request,
     );
 
-    let rejection =
-        match runtime.admit_direct_run_for_test(&operation, attempt, lower.bridge, lower.relational) {
-            Ok(_) => panic!("foreign resource attempt substituted for the operation"),
-            Err(rejection) => rejection,
-        };
+    let rejection = match runtime.admit_direct_run_for_test(
+        &operation,
+        attempt,
+        lower.bridge,
+        lower.relational,
+    ) {
+        Ok(_) => panic!("foreign resource attempt substituted for the operation"),
+        Err(rejection) => rejection,
+    };
     {
         let denial = rejection.denial_for_test();
         assert_eq!(
@@ -153,7 +165,9 @@ fn independently_valid_resource_attempt_cannot_substitute_for_the_operation() {
     }
     let returned_attempt = rejection.into_resource_attempt_for_test();
     assert_eq!(
-        returned_attempt.binding_authority_for_test().binding_identity(),
+        returned_attempt
+            .binding_authority_for_test()
+            .binding_identity(),
         attempt_operation.binding_identity()
     );
     assert_eq!(
@@ -182,17 +196,33 @@ fn bridge_attempt_for_a_different_run_intent_cannot_substitute() {
         resource_request,
     );
 
-    let rejection =
-        match runtime.admit_direct_run_for_test(&operation, attempt, lower.bridge, lower.relational) {
-            Ok(_) => panic!("Bridge authority for another run intent substituted"),
-            Err(rejection) => rejection,
-        };
+    let rejection = match runtime.admit_direct_run_for_test(
+        &operation,
+        attempt,
+        lower.bridge,
+        lower.relational,
+    ) {
+        Ok(_) => panic!("Bridge authority for another run intent substituted"),
+        Err(rejection) => rejection,
+    };
     assert_eq!(
         rejection.denial_for_test().kind(),
         WorthQueryManagedRunDenialKind::BridgeManagedIntentMismatch
     );
-    assert_eq!(rejection.denial_for_test().counters().bridge_intent_check_count(), 1);
-    assert_eq!(rejection.denial_for_test().counters().bridge_source_check_count(), 0);
+    assert_eq!(
+        rejection
+            .denial_for_test()
+            .counters()
+            .bridge_intent_check_count(),
+        1
+    );
+    assert_eq!(
+        rejection
+            .denial_for_test()
+            .counters()
+            .bridge_source_check_count(),
+        0
+    );
 }
 
 #[test]
@@ -252,11 +282,15 @@ fn independently_valid_snapshot_lease_cannot_substitute_within_one_runtime() {
         resource_request,
     );
 
-    let rejection =
-        match runtime.admit_direct_run_for_test(&operation, attempt, lower.bridge, lower.relational) {
-            Ok(_) => panic!("different active snapshot lease substituted for Bridge truth"),
-            Err(rejection) => rejection,
-        };
+    let rejection = match runtime.admit_direct_run_for_test(
+        &operation,
+        attempt,
+        lower.bridge,
+        lower.relational,
+    ) {
+        Ok(_) => panic!("different active snapshot lease substituted for Bridge truth"),
+        Err(rejection) => rejection,
+    };
     let denial = rejection.denial_for_test();
     assert_eq!(
         denial.kind(),

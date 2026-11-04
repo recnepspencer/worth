@@ -168,7 +168,13 @@ fn every_edit_retains_what_a_fresh_full_run_retains() {
             .map(|id| (id, (id % 3, 10 * id)))
             .collect::<BTreeMap<_, _>>();
         *(*installed.owner_for_test()).entries.lock().unwrap() = entries.clone();
-        let fresh = || Some(ComputationPrior::new_for_test(edition(), Err(Cause::FirstRun), None));
+        let fresh = || {
+            Some(ComputationPrior::new_for_test(
+                edition(),
+                Err(Cause::FirstRun),
+                None,
+            ))
+        };
         let mut last = attempt(&world, &installed, fresh())
             .sealed
             .unwrap()
@@ -223,11 +229,16 @@ fn every_record_absence_rebuilds_the_same_state_as_a_fresh_run() {
         Rerouted::default(),
         ComputationRetention::ProducerOperation,
     );
-    *(*installed.owner_for_test()).entries.lock().unwrap() = (1..=6).map(|id| (id, (id % 3, 10 * id))).collect();
+    *(*installed.owner_for_test()).entries.lock().unwrap() =
+        (1..=6).map(|id| (id, (id % 3, 10 * id))).collect();
     let full = attempt(
         &world,
         &installed,
-        Some(ComputationPrior::new_for_test(edition(), Err(Cause::FirstRun), None)),
+        Some(ComputationPrior::new_for_test(
+            edition(),
+            Err(Cause::FirstRun),
+            None,
+        )),
     );
     let expected = retained(full.sealed.as_ref().unwrap().as_ref().unwrap());
     for (absence, cause) in [
@@ -292,16 +303,19 @@ fn a_missing_call_measurement_is_recorded_as_unmeasured_at_the_discard() {
     let first = first_run(&world, &installed);
     let report = first.runs[0].1.unwrap();
     let sealed = first.sealed.unwrap().unwrap();
-    let typed = (*(*sealed
-        .state_for_test())
-        .typed_for_test())
+    let typed = (*(*sealed.state_for_test()).typed_for_test())
         .downcast_ref::<RetainedPartitions<Parity, Number, u64>>()
         .unwrap();
-    let mut recording =
-        FullRecording::<Parity, Number>::new_for_test(RetainedBasisToken::new_for_test((*(*sealed.state_for_test()).basis_for_test()).clone()));
+    let mut recording = FullRecording::<Parity, Number>::new_for_test(
+        RetainedBasisToken::new_for_test((*(*sealed.state_for_test()).basis_for_test()).clone()),
+    );
     // A reader that could not measure the call supplies None here. This
     // invokes the production discard, with a real completed reduction tree.
-    recording.membership_for_test(None, &(*typed.items_for_test()), Arc::clone(&(*typed.digests_for_test())));
+    recording.membership_for_test(
+        None,
+        &(*typed.items_for_test()),
+        Arc::clone(&(*typed.digests_for_test())),
+    );
     let request = live_scope();
     let execution = QueryRequestExecution::open_for_test(
         RuntimeWorldExecutionPlacement::Serial(

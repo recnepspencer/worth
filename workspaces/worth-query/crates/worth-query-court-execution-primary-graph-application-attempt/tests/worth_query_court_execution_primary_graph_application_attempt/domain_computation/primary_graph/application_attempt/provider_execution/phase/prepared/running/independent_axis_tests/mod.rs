@@ -51,7 +51,9 @@ impl TestAffinityView {
             installed_operation: plan.operation_identity().to_owned(),
             resource_binding: plan.binding_identity().to_owned(),
             operation_attempt: plan.application_operation_attempt_for_test(),
-            operation_slot: plan.application_operation_slot_for_test().map(str::to_owned),
+            operation_slot: plan
+                .application_operation_slot_for_test()
+                .map(str::to_owned),
             schema_binding: plan.application_schema_binding_for_test().cloned(),
             snapshot: plan.application_snapshot_for_test().cloned(),
             graph_work_session: plan.graph_work_session_identity(),
@@ -119,7 +121,8 @@ fn every_plan_session_and_attempt_axis_is_rejected_independently() {
             );
             let (_basis, mut running, mutation_run, lease) = release(foreign);
             let staged = real_terminal_session(&phase, &foreign_world, &mut running);
-            let view = TestAffinityView::capture(&staged.provider_session_terminal_binding_for_test());
+            let view =
+                TestAffinityView::capture(&staged.provider_session_terminal_binding_for_test());
             let _ = staged.abort();
             finish(mutation_run, running, lease);
             view
@@ -139,8 +142,9 @@ fn every_plan_session_and_attempt_axis_is_rejected_independently() {
             let owner_staged = real_terminal_session(execution, &world, &mut owner_running);
             let peer_staged = real_terminal_session(execution, &world, &mut peer_running);
             let owner_terminal = owner_staged.provider_session_terminal_binding_for_test();
-            let peer_view =
-                TestAffinityView::capture(&peer_staged.provider_session_terminal_binding_for_test());
+            let peer_view = TestAffinityView::capture(
+                &peer_staged.provider_session_terminal_binding_for_test(),
+            );
             let base = TestAffinityView::capture(&owner_terminal);
             assert!(basis.affinity_mismatches_view_for_test(&base).is_empty());
 
@@ -207,7 +211,19 @@ pub fn release(
     worth_query_execution::court_doors_for_test::domain_computation::provider_session::graph_obligation::mutation_progression::WorthQueryMutationRunBinding,
     WorthQueryApplicationSnapshotLease,
 ){
-    let (_admission_rest, lease, _provider_attempt_rest, _outcome_identity_rest, _workflow_settlement_publication_rest, _authorization_rest, _idempotency_rest, running, mutation_run, attempt_basis, _aftermath_causality_rest,) = running.into_parts_for_test();
+    let (
+        _admission_rest,
+        lease,
+        _provider_attempt_rest,
+        _outcome_identity_rest,
+        _workflow_settlement_publication_rest,
+        _authorization_rest,
+        _idempotency_rest,
+        running,
+        mutation_run,
+        attempt_basis,
+        _aftermath_causality_rest,
+    ) = running.into_parts_for_test();
     (attempt_basis, running, mutation_run, lease)
 }
 
@@ -257,7 +273,12 @@ pub fn start(
 > {
     let request = live_scope();
     let principal = authenticated_principal(&(phase).test_host_request_for_test(), world, &request);
-    let account = resolved_account(&(phase).test_host_request_for_test(), world, "open", &request);
+    let account = resolved_account(
+        &(phase).test_host_request_for_test(),
+        world,
+        "open",
+        &request,
+    );
     let program: RetainedProgram = retained_status_program(
         &(phase).test_host_request_for_test(),
         world,
@@ -271,7 +292,12 @@ pub fn start(
         &phase.borrowed_request_for_test(),
         phase,
         &world.application,
-        WorthQueryApplicationCommitPreparationRequest::new_for_test(program, idempotency, None, None),
+        WorthQueryApplicationCommitPreparationRequest::new_for_test(
+            program,
+            idempotency,
+            None,
+            None,
+        ),
     ) else {
         panic!("affinity fixture must prepare")
     };

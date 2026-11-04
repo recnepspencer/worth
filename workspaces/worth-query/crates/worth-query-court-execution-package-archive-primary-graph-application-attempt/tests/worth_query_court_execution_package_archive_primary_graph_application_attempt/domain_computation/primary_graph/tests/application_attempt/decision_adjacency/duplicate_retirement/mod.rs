@@ -44,7 +44,12 @@ fn reused_relation_key_is_denied_during_public_authoring() {
     let open = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
+            resolved_account(
+                &(phase).test_host_request_for_test(),
+                &world,
+                "open",
+                &request,
+            )
         })
         .expect("the fixture read owns its installed host call");
     let operation = world
@@ -220,7 +225,8 @@ fn two_real_relation_deletes_share_one_ordered_provisional_step_through_commit()
             .with_host_advancement(|phase| {
                 let host_custody = phase.test_host_request_for_test();
                 resolved_account(
-                    &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
+                    &(host_custody.phase_for_application_for_test(&world.application))
+                        .test_host_request_for_test(),
                     &world,
                     "open",
                     &request,
@@ -232,7 +238,8 @@ fn two_real_relation_deletes_share_one_ordered_provisional_step_through_commit()
             .with_host_advancement(|phase| {
                 let host_custody = phase.test_host_request_for_test();
                 resolved_account(
-                    &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
+                    &(host_custody.phase_for_application_for_test(&world.application))
+                        .test_host_request_for_test(),
                     &world,
                     "unrelated",
                     &request,

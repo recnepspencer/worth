@@ -58,7 +58,14 @@ fn checkpoint_roles_reject_invalid_names_unknown_entities_and_duplicates() {
     );
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let entity = EntityId::new(PartitionId::main(), 1, 1);
-    let checkpoint_role = |role: &str, entity_name: &str| WorthQueryCheckpointOutputRole::new_for_test(role.into(), WorthQueryApplicationOutputPosture::Preserve, entity_name.into(), entity);
+    let checkpoint_role = |role: &str, entity_name: &str| {
+        WorthQueryCheckpointOutputRole::new_for_test(
+            role.into(),
+            WorthQueryApplicationOutputPosture::Preserve,
+            entity_name.into(),
+            entity,
+        )
+    };
 
     assert!(
         WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles_for_test(
@@ -107,19 +114,31 @@ fn duplicate_and_foreign_binding_roles_are_denied_before_commit() {
     let existing = existing_handle(EntityId::new(PartitionId::main(), 1, 0), &program);
     let mut candidate = prepared_candidate();
     candidate
-        .bind_for_test(OutputRoleUse::fixed_for_test::<Preserved>(), &existing, &program)
+        .bind_for_test(
+            OutputRoleUse::fixed_for_test::<Preserved>(),
+            &existing,
+            &program,
+        )
         .expect("first exact role binding is accepted");
 
     assert_eq!(
         candidate
-            .bind_for_test(OutputRoleUse::fixed_for_test::<Preserved>(), &existing, &program)
+            .bind_for_test(
+                OutputRoleUse::fixed_for_test::<Preserved>(),
+                &existing,
+                &program
+            )
             .unwrap_err()
             .kind(),
         WorthQueryApplicationAttemptDenialKind::DuplicateOutputRole
     );
     assert_eq!(
         candidate
-            .bind_for_test(OutputRoleUse::fixed_for_test::<Foreign>(), &existing, &program)
+            .bind_for_test(
+                OutputRoleUse::fixed_for_test::<Foreign>(),
+                &existing,
+                &program
+            )
             .unwrap_err()
             .kind(),
         WorthQueryApplicationAttemptDenialKind::ForeignOutputRole
@@ -134,7 +153,11 @@ fn foreign_handles_and_wrong_action_references_are_denied() {
     let mut candidate = prepared_candidate();
     assert_eq!(
         candidate
-            .bind_for_test(OutputRoleUse::fixed_for_test::<Preserved>(), &existing, &program)
+            .bind_for_test(
+                OutputRoleUse::fixed_for_test::<Preserved>(),
+                &existing,
+                &program
+            )
             .unwrap_err()
             .kind(),
         WorthQueryApplicationAttemptDenialKind::ForeignEffectTarget
@@ -143,7 +166,11 @@ fn foreign_handles_and_wrong_action_references_are_denied() {
     let local_existing = existing_handle(EntityId::new(PartitionId::main(), 3, 0), &program);
     assert_eq!(
         candidate
-            .bind_for_test(OutputRoleUse::fixed_for_test::<Created>(), &local_existing, &program)
+            .bind_for_test(
+                OutputRoleUse::fixed_for_test::<Created>(),
+                &local_existing,
+                &program
+            )
             .unwrap_err()
             .kind(),
         WorthQueryApplicationAttemptDenialKind::OutputRoleActionMismatch
@@ -174,7 +201,13 @@ fn declaration_inventory_denies_undeclared_missing_and_wrong_entity_roles() {
         WorthQueryApplicationAttemptDenialKind::MissingOutputRole
     );
 
-    let wrong_entity = WorthQueryApplicationEffectEntity::<Schema, Entity>::new_for_test(EntityReference::Existing(EntityId::new(PartitionId::main(), 13, 0)), "other-entity".to_owned(), None, Arc::clone(&program), PhantomData);
+    let wrong_entity = WorthQueryApplicationEffectEntity::<Schema, Entity>::new_for_test(
+        EntityReference::Existing(EntityId::new(PartitionId::main(), 13, 0)),
+        "other-entity".to_owned(),
+        None,
+        Arc::clone(&program),
+        PhantomData,
+    );
     assert_eq!(
         candidate
             .bind_for_test(
@@ -195,14 +228,20 @@ fn retire_role_requires_the_matching_delete_effect() {
     let existing = existing_handle(entity_id, &program);
     let mut candidate = prepared_retire_candidate();
     candidate
-        .bind_for_test(OutputRoleUse::fixed_for_test::<OnlyRetired>(), &existing, &program)
+        .bind_for_test(
+            OutputRoleUse::fixed_for_test::<OnlyRetired>(),
+            &existing,
+            &program,
+        )
         .expect("existing handle is eligible for retirement");
     assert_eq!(
         candidate.validate_effects_for_test(&[]).unwrap_err().kind(),
         WorthQueryApplicationAttemptDenialKind::OutputRoleActionMismatch
     );
     candidate
-        .validate_effects_for_test(&[WorthQueryApplicationRealizedEffect::DeleteEntity { entity_id }])
+        .validate_effects_for_test(&[WorthQueryApplicationRealizedEffect::DeleteEntity {
+            entity_id,
+        }])
         .expect("the role and actual retirement agree");
     let sealed = candidate.seal_with_for_test(|_| None);
     assert_eq!(
@@ -220,10 +259,20 @@ fn created_role_must_name_an_actual_create_effect_before_commit() {
         kind_id: KindId::new(9),
         client_key: ClientKey::raw("created-output"),
     };
-    let created = WorthQueryApplicationEffectEntity::<Schema, Entity>::new_for_test(EntityReference::Created(created_ref), "entity".to_owned(), Some(0), Arc::clone(&program), PhantomData);
+    let created = WorthQueryApplicationEffectEntity::<Schema, Entity>::new_for_test(
+        EntityReference::Created(created_ref),
+        "entity".to_owned(),
+        Some(0),
+        Arc::clone(&program),
+        PhantomData,
+    );
     let mut candidate = prepared_create_candidate();
     candidate
-        .bind_for_test(OutputRoleUse::fixed_for_test::<OnlyCreated>(), &created, &program)
+        .bind_for_test(
+            OutputRoleUse::fixed_for_test::<OnlyCreated>(),
+            &created,
+            &program,
+        )
         .expect("created handle belongs to the program");
     assert_eq!(
         candidate.validate_effects_for_test(&[]).unwrap_err().kind(),
@@ -235,11 +284,17 @@ fn created_role_must_name_an_actual_create_effect_before_commit() {
 fn created_role_accepts_a_create_effect_in_an_existing_context_partition() {
     let program = Arc::new(());
     let context_partition = PartitionId::new(7);
-    let created = WorthQueryApplicationEffectEntity::<Schema, Entity>::new_for_test(EntityReference::Created(CreatedEntityRef {
+    let created = WorthQueryApplicationEffectEntity::<Schema, Entity>::new_for_test(
+        EntityReference::Created(CreatedEntityRef {
             partition_id: context_partition,
             kind_id: KindId::new(9),
             client_key: ClientKey::raw("context-created-output"),
-        }), "entity".to_owned(), Some(0), Arc::clone(&program), PhantomData);
+        }),
+        "entity".to_owned(),
+        Some(0),
+        Arc::clone(&program),
+        PhantomData,
+    );
     let effect = WorthQueryApplicationRealizedEffect::CreateEntity {
         kind: KindId::new(9),
         key: "context-created-output".to_owned(),
@@ -248,7 +303,11 @@ fn created_role_accepts_a_create_effect_in_an_existing_context_partition() {
     };
     let mut candidate = prepared_create_candidate();
     candidate
-        .bind_for_test(OutputRoleUse::fixed_for_test::<OnlyCreated>(), &created, &program)
+        .bind_for_test(
+            OutputRoleUse::fixed_for_test::<OnlyCreated>(),
+            &created,
+            &program,
+        )
         .unwrap();
 
     candidate
@@ -259,15 +318,25 @@ fn created_role_accepts_a_create_effect_in_an_existing_context_partition() {
 #[test]
 fn owner_resolved_creation_projects_the_exact_typed_identity() {
     let program = Arc::new(());
-    let created = WorthQueryApplicationEffectEntity::<Schema, Entity>::new_for_test(EntityReference::Created(CreatedEntityRef {
+    let created = WorthQueryApplicationEffectEntity::<Schema, Entity>::new_for_test(
+        EntityReference::Created(CreatedEntityRef {
             partition_id: PartitionId::main(),
             kind_id: KindId::new(10),
             client_key: ClientKey::raw("owner-created-output"),
-        }), "entity".to_owned(), Some(0), Arc::clone(&program), PhantomData);
+        }),
+        "entity".to_owned(),
+        Some(0),
+        Arc::clone(&program),
+        PhantomData,
+    );
     let assigned = EntityId::new(PartitionId::main(), 11, 1);
     let mut candidate = prepared_create_candidate();
     candidate
-        .bind_for_test(OutputRoleUse::fixed_for_test::<OnlyCreated>(), &created, &program)
+        .bind_for_test(
+            OutputRoleUse::fixed_for_test::<OnlyCreated>(),
+            &created,
+            &program,
+        )
         .unwrap();
     let committed = candidate.seal_with_for_test(|_| Some(assigned));
 
@@ -297,7 +366,13 @@ pub fn existing_handle(
     entity_id: EntityId,
     program: &Arc<()>,
 ) -> WorthQueryApplicationEffectEntity<Schema, Entity> {
-    WorthQueryApplicationEffectEntity::new_for_test(EntityReference::Existing(entity_id), "entity".to_owned(), None, Arc::clone(program), PhantomData)
+    WorthQueryApplicationEffectEntity::new_for_test(
+        EntityReference::Existing(entity_id),
+        "entity".to_owned(),
+        None,
+        Arc::clone(program),
+        PhantomData,
+    )
 }
 
 pub fn created_handle(
@@ -305,11 +380,17 @@ pub fn created_handle(
     kind: u32,
     program: &Arc<()>,
 ) -> WorthQueryApplicationEffectEntity<Schema, Entity> {
-    WorthQueryApplicationEffectEntity::new_for_test(EntityReference::Created(CreatedEntityRef {
+    WorthQueryApplicationEffectEntity::new_for_test(
+        EntityReference::Created(CreatedEntityRef {
             partition_id: PartitionId::main(),
             kind_id: KindId::new(kind),
             client_key: ClientKey::raw(key),
-        }), "entity".to_owned(), Some(0), Arc::clone(program), PhantomData)
+        }),
+        "entity".to_owned(),
+        Some(0),
+        Arc::clone(program),
+        PhantomData,
+    )
 }
 
 pub fn create_effect(key: &'static str, kind: u32) -> WorthQueryApplicationRealizedEffect {

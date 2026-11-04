@@ -4,13 +4,16 @@ use super::*;
 impl WorthQuerySessionReadAuthority<'_> {
     #[doc(hidden)]
     pub fn compare_decision_read_set_with_for_test(
-        &self, receipt: WorthQueryCompleteDecisionReadSetReceipt, compare: impl FnMut(
+        &self,
+        receipt: WorthQueryCompleteDecisionReadSetReceipt,
+        compare: impl FnMut(
             super::super::WorthQueryDecisionFactEvidenceView<'_>,
             WorthQueryDecisionFactComparisonAdmission,
         ) -> Result<
             WorthQueryDecisionFactComparisonEvidence,
             WorthQueryDecisionReadSetFailure,
-        >) -> Result<WorthQueryDecisionReadSetFreshnessOutcome, WorthQueryDecisionReadSetFailure> {
+        >,
+    ) -> Result<WorthQueryDecisionReadSetFreshnessOutcome, WorthQueryDecisionReadSetFailure> {
         Self::compare_decision_read_set_with(self, receipt, compare)
     }
 }

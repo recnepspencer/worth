@@ -11,7 +11,9 @@ impl WorthQueryGraphReadStreamAccumulator {
 impl WorthQueryGraphReadStreamAccumulator {
     #[doc(hidden)]
     pub fn finish_for_test(
-        self, call: &WorthQueryGraphProviderCall) -> WorthQueryExecutionGraphReadStreamEvidence {
+        self,
+        call: &WorthQueryGraphProviderCall,
+    ) -> WorthQueryExecutionGraphReadStreamEvidence {
         Self::finish(self, call)
     }
 }

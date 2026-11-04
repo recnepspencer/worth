@@ -45,7 +45,10 @@ fn governed_live_delivery_reuses_only_query_owned_current_authority() {
                 .application
                 .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch_for_test(),
+                    world
+                        .application
+                        .product_runtime()
+                        .default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_authenticated_principal(
@@ -67,7 +70,10 @@ fn governed_live_delivery_reuses_only_query_owned_current_authority() {
                 .application
                 .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch_for_test(),
+                    world
+                        .application
+                        .product_runtime()
+                        .default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_authenticated_principal(
@@ -93,7 +99,10 @@ fn governed_live_delivery_reuses_only_query_owned_current_authority() {
                 .application
                 .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch_for_test(),
+                    world
+                        .application
+                        .product_runtime()
+                        .default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
@@ -190,7 +199,10 @@ fn revoked_capability_stops_governed_live_delivery_before_projection() {
                 .application
                 .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch_for_test(),
+                    world
+                        .application
+                        .product_runtime()
+                        .default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_authenticated_principal(
@@ -212,7 +224,10 @@ fn revoked_capability_stops_governed_live_delivery_before_projection() {
                 .application
                 .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch_for_test(),
+                    world
+                        .application
+                        .product_runtime()
+                        .default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_authenticated_principal(
@@ -238,7 +253,10 @@ fn revoked_capability_stops_governed_live_delivery_before_projection() {
                 .application
                 .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch_for_test(),
+                    world
+                        .application
+                        .product_runtime()
+                        .default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(

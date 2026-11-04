@@ -56,7 +56,9 @@ pub fn template() -> SealedComputationRun {
 /// Only the tree-update boundary is under test here. Unused owner facts are
 /// retained from a real admitted run; local identities carry no authority.
 pub fn retained(source: &SealedComputationRun, keys: &[Id]) -> Retained {
-    let template = (*(*source.state_for_test()).typed_for_test()).downcast_ref::<Retained>().unwrap();
+    let template = (*(*source.state_for_test()).typed_for_test())
+        .downcast_ref::<Retained>()
+        .unwrap();
     let request = live_scope();
     let execution = QueryRequestExecution::open_for_test(serial_placement(), &request);
     let (tree, _) = ReductionTree::<u64, fn(&u64, &u64) -> u64>::try_from_declared_native(
@@ -64,11 +66,19 @@ pub fn retained(source: &SealedComputationRun, keys: &[Id]) -> Retained {
         keys.iter().map(|id| (*id, 1)).collect(),
         0,
         counted as fn(&u64, &u64) -> u64,
-        Some(execution.dispatch_for_test().unwrap().native_lease_for_test()),
+        Some(
+            execution
+                .dispatch_for_test()
+                .unwrap()
+                .native_lease_for_test(),
+        ),
         || execution.checkpoint_for_test(),
     )
     .unwrap();
-    let partition = (*template.partitions_for_test()).values_for_test().next().unwrap();
+    let partition = (*template.partitions_for_test())
+        .values_for_test()
+        .next()
+        .unwrap();
     let policy = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy(std::num::NonZeroUsize::MIN, Some(1 << 36));
     let native = worth_execution::SerialRequest::from_policy(
         &policy,
@@ -101,7 +111,17 @@ pub fn retained(source: &SealedComputationRun, keys: &[Id]) -> Retained {
         execution.allocation_policy_for_test().unwrap(),
     )
     .unwrap();
-    Retained::new_for_test(Arc::clone(&(*template.items_for_test())), (*template.digests_for_test()).clone(), (*template.membership_for_test()).clone(), Arc::clone(&(*template.item_keys_for_test())), Arc::clone(&(*template.call_sequence_for_test())), Arc::clone(&(*template.routing_for_test())), partitions, native_run, tree)
+    Retained::new_for_test(
+        Arc::clone(&(*template.items_for_test())),
+        (*template.digests_for_test()).clone(),
+        (*template.membership_for_test()).clone(),
+        Arc::clone(&(*template.item_keys_for_test())),
+        Arc::clone(&(*template.call_sequence_for_test())),
+        Arc::clone(&(*template.routing_for_test())),
+        partitions,
+        native_run,
+        tree,
+    )
 }
 
 pub fn plan(keys: &[Id]) -> ReductionPlan {
@@ -210,8 +230,7 @@ fn every_edit_obeys_its_pre_edit_shape_bound_and_reconciles() {
                 .accounted_metrics()
                 .expect("explicit accounted fixture")
                 .combine_calls,
-            2 * (*next
-                .report_for_test())
+            2 * (*next.report_for_test())
                 .metrics_for_test()
                 .accounted_metrics()
                 .expect("explicit accounted fixture")
@@ -242,8 +261,7 @@ fn every_edit_obeys_its_pre_edit_shape_bound_and_reconciles() {
                 .accounted_metrics()
                 .expect("explicit accounted fixture")
                 .combine_calls,
-            2 * (*next
-                .report_for_test())
+            2 * (*next.report_for_test())
                 .metrics_for_test()
                 .accounted_metrics()
                 .expect("explicit accounted fixture")

@@ -116,7 +116,8 @@ impl<Query> CapturedFields<'_, Query> {
                     }
                     eprintln!(
                         "query full entity={:?} revision={:?} original={revision:?}",
-                        (*observed.entity_for_test()), observed.native_revision
+                        (*observed.entity_for_test()),
+                        observed.native_revision
                     );
                     let source = self.inspect_binding(context, locator, observed);
                     different_fields +=
@@ -145,9 +146,12 @@ impl<Query> CapturedFields<'_, Query> {
     ) -> InstalledFieldCoordinate<'a> {
         let source = self
             .layout
-            .resolve_field_coordinate_for_test(self.contracts, &(*observed.entity_name_for_test()), original, |work| {
-                checkpoint(context, work)
-            })
+            .resolve_field_coordinate_for_test(
+                self.contracts,
+                &(*observed.entity_name_for_test()),
+                original,
+                |work| checkpoint(context, work),
+            )
             .unwrap()
             .unwrap();
         let planned = self
@@ -164,13 +168,19 @@ impl<Query> CapturedFields<'_, Query> {
         );
         let installed = self
             .layout
-            .resolve_field_coordinate_for_test(self.contracts, &(*observed.entity_name_for_test()), planned, |work| {
-                checkpoint(context, work)
-            })
+            .resolve_field_coordinate_for_test(
+                self.contracts,
+                &(*observed.entity_name_for_test()),
+                planned,
+                |work| checkpoint(context, work),
+            )
             .unwrap()
             .unwrap();
         assert!(source.same_field_for_test(&installed));
-        assert_eq!(source.contract_revision(), (*observed.contract_revision_for_test()));
+        assert_eq!(
+            source.contract_revision(),
+            (*observed.contract_revision_for_test())
+        );
         self.refuse_other_authorities(context, &(*observed.entity_name_for_test()), original);
         source
     }
@@ -198,9 +208,12 @@ impl<Query> CapturedFields<'_, Query> {
             }
             let field = self
                 .layout
-                .resolve_field_coordinate_for_test(self.contracts, &(*observed.entity_name_for_test()), locator, |work| {
-                    checkpoint(context, work)
-                })
+                .resolve_field_coordinate_for_test(
+                    self.contracts,
+                    &(*observed.entity_name_for_test()),
+                    locator,
+                    |work| checkpoint(context, work),
+                )
                 .unwrap()
                 .unwrap();
             assert_eq!(field.entity_kind_for_test(), *kind);
@@ -237,9 +250,9 @@ impl<Query> CapturedFields<'_, Query> {
             );
             assert!(self
                 .layout
-                .resolve_field_coordinate_for_test(self.contracts, owner, &hostile, |work| checkpoint(
-                    context, work
-                ),)
+                .resolve_field_coordinate_for_test(self.contracts, owner, &hostile, |work| {
+                    checkpoint(context, work)
+                },)
                 .unwrap()
                 .is_none());
         }
@@ -258,9 +271,9 @@ impl<Query> CapturedFields<'_, Query> {
         );
         assert!(
             self.layout
-                .resolve_field_coordinate_for_test(self.contracts, owner, &nested, |work| checkpoint(
-                    context, work
-                ))
+                .resolve_field_coordinate_for_test(self.contracts, owner, &nested, |work| {
+                    checkpoint(context, work)
+                })
                 .unwrap()
                 .is_none(),
             "a nested path cannot borrow the Native top-level field revision"

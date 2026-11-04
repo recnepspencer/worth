@@ -22,24 +22,59 @@ pub fn completed_stage(claimed_with_ready: bool) {
     let row_key = key("completed-stage", 5, 1);
     let bound = BoundOutputSource::new_for_test(scope, (*row_key.source_for_test()).clone());
     let mut state = DemandRegistryState::default();
-    state.source_custody.insert(
-        commit.clone(),
-        {
-// Bound in the original literal order, passed in the door's.
-let (cleanup, occurrence, root_kind, source, discovery, bound_sources, consumed_sources, retired_sources, retired, token_count, completed) = (Default::default(), receipt.product_branch().occurrence_for_test(), PreparedOutputRootKind::Discovered(TypeId::of_for_test::<()>()), None, None, Some(vec![bound.clone()]), vec![bound.identity_into_for_test()], Vec::new(), None, 0, true);
-SourceCustody::new_for_test(occurrence, root_kind, source, discovery, consumed_sources, retired_sources, bound_sources, retired, token_count, cleanup, completed)
-},
-    );
+    state.source_custody.insert(commit.clone(), {
+        // Bound in the original literal order, passed in the door's.
+        let (
+            cleanup,
+            occurrence,
+            root_kind,
+            source,
+            discovery,
+            bound_sources,
+            consumed_sources,
+            retired_sources,
+            retired,
+            token_count,
+            completed,
+        ) = (
+            Default::default(),
+            receipt.product_branch().occurrence_for_test(),
+            PreparedOutputRootKind::Discovered(TypeId::of_for_test::<()>()),
+            None,
+            None,
+            Some(vec![bound.clone()]),
+            vec![bound.identity_into_for_test()],
+            Vec::new(),
+            None,
+            0,
+            true,
+        );
+        SourceCustody::new_for_test(
+            occurrence,
+            root_kind,
+            source,
+            discovery,
+            consumed_sources,
+            retired_sources,
+            bound_sources,
+            retired,
+            token_count,
+            cleanup,
+            completed,
+        )
+    });
     let output = if claimed_with_ready {
         let completion = ReadyCompletion::for_test(WorthQueryCompletedOutputDemand::new_for_test(WorthQueryAcceptedOutputAuthority::Committed(receipt), worth_query_execution::facade::domain_computation::WorthQueryOutputReadinessDeliveryEvidence::without_execution_for_test()));
         let mut progress = WorthQueryOutputProgress::restored_for_test(completion);
         progress.claim_for_test(WorthQueryOutputClaimIdentity(1));
         progress
     } else {
-        WorthQueryOutputProgress::stopped_without_checkpoint_for_test(WorthQueryOutputDemandDenial::new_for_test(
-            WorthQueryOutputDemandDenialKind::NoEffect,
-            "finished without an answer",
-        ))
+        WorthQueryOutputProgress::stopped_without_checkpoint_for_test(
+            WorthQueryOutputDemandDenial::new_for_test(
+                WorthQueryOutputDemandDenialKind::NoEffect,
+                "finished without an answer",
+            ),
+        )
     };
     let mut row = record(occurrence(), DemandState::Output(output), 0);
     (*row.source_commits_mut_for_test()).push(commit.clone());
@@ -58,8 +93,7 @@ SourceCustody::new_for_test(occurrence, root_kind, source, discovery, consumed_s
     if claimed_with_ready {
         {
             let mut record = (*state.records_mut_for_test()).get_mut(&row_key).unwrap();
-            let DemandState::Output(output) = &mut (*record.state_mut_for_test())
-            else {
+            let DemandState::Output(output) = &mut (*record.state_mut_for_test()) else {
                 panic!("the actual checkpoint row is retained")
             };
             output.reopen_for_test();

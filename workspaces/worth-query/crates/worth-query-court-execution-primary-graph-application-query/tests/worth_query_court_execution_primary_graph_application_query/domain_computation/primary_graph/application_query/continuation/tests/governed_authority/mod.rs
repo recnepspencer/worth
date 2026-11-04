@@ -149,7 +149,10 @@ pub fn context() -> (
                 .application
                 .select_product_branch_for_test(
                     execution,
-                    world.application.product_runtime().default_branch_for_test(),
+                    world
+                        .application
+                        .product_runtime()
+                        .default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_authenticated_principal(
@@ -164,7 +167,10 @@ pub fn context() -> (
                 .application
                 .select_product_branch_for_test(
                     execution,
-                    world.application.product_runtime().default_branch_for_test(),
+                    world
+                        .application
+                        .product_runtime()
+                        .default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(

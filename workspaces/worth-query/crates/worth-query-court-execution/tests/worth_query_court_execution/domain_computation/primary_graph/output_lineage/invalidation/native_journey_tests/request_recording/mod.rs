@@ -26,12 +26,16 @@ fn a_demand_records_the_row_it_genuinely_verified() {
         .application
         .with_host_advancement(|phase| primed_output(&phase, &world))
         .expect("the fixture read owns its installed host call");
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
     let handle = graph.integration_handle_for_test();
     let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
     let selected = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
+        .with_host_advancement(|phase| {
+            world.selected_product(&(phase).test_host_request_for_test())
+        })
         .expect("the fixture read owns its installed host call");
     world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request_for_test(); handle.with_runtime(request_execution, |runtime| {
         let snapshot = selected.application_basis_for_test().snapshot_handle();
@@ -77,12 +81,16 @@ fn a_verification_records_the_row_it_compared() {
         .application
         .with_host_advancement(|phase| primed_output(&phase, &world))
         .expect("the fixture read owns its installed host call");
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
     let handle = graph.integration_handle_for_test();
     let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
     let selected = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
+        .with_host_advancement(|phase| {
+            world.selected_product(&(phase).test_host_request_for_test())
+        })
         .expect("the fixture read owns its installed host call");
     world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request_for_test(); handle.with_runtime(request_execution, |runtime| {
         let snapshot = selected.application_basis_for_test().snapshot_handle();
@@ -122,7 +130,9 @@ fn a_restored_output_registers_before_commit() {
         .application
         .with_host_advancement(|phase| primed_output(&phase, &world))
         .expect("the fixture read owns its installed host call");
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
     let handle = graph.integration_handle_for_test();
     let (head_handle, head) = handle.with_runtime(request_execution, snapshot);
     let restored = ConsumedOutputEvidence::retained_for_test(
@@ -134,7 +144,10 @@ fn a_restored_output_registers_before_commit() {
     );
 
     assert_eq!(
-        restored.establish_restored_before_commit_for_test(request_execution, &(*handle.source_owner_for_test())),
+        restored.establish_restored_before_commit_for_test(
+            request_execution,
+            &(*handle.source_owner_for_test())
+        ),
         Ok(())
     );
 
@@ -151,7 +164,9 @@ pub fn account_witness(
     snapshot: &SnapshotHandle,
     entity: EntityId,
 ) -> Arc<OnceLock<SealedNativeOutputWitness>> {
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
     let layout = graph.layout_for_test();
     let truth = runtime.read_truth();
     let mut facts = vec![WorthQueryApplicationObservedFact::Entity {
@@ -175,7 +190,12 @@ pub fn account_witness(
         TypeId::of_for_test::<()>(),
         TypeId::of_for_test::<()>(),
         std::iter::empty(),
-        &[WorthQueryCheckpointOutputRole::new_for_test("account".to_owned(), WorthQueryApplicationOutputPosture::Preserve, "Account".to_owned(), entity)],
+        &[WorthQueryCheckpointOutputRole::new_for_test(
+            "account".to_owned(),
+            WorthQueryApplicationOutputPosture::Preserve,
+            "Account".to_owned(),
+            entity,
+        )],
         |_| Some(TypeId::of_for_test::<()>()),
         execution,
     )
@@ -202,7 +222,9 @@ pub fn primed_output(
         )
         .unwrap()
         .entity_id_for_test();
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
     let label_ref = AccountLabel::reference();
     let label = graph
         .layout_for_test()
@@ -225,7 +247,10 @@ pub fn primed_output(
     let (_, product, _) = world
         .selected_product(&(phase_custody).test_host_request_for_test())
         .into_parts_for_test();
-    let coordinate = ProductCoordinate::new_for_test(product.observation_for_test().lifecycle_incarnation(), product.observation_for_test().reference_generation().get());
+    let coordinate = ProductCoordinate::new_for_test(
+        product.observation_for_test().lifecycle_incarnation(),
+        product.observation_for_test().reference_generation().get(),
+    );
     let source = SemanticSource::new_for_test((*world.application.runtime_for_test()).authority_identity().as_u64(), (*world.application.installed_schema_for_test()).binding_identity(), worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity), OutputBindingIdentity::declared_for_test("LabelOutput"));
     (
         entity,

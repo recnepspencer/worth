@@ -91,8 +91,7 @@ fn members_admitted_across_a_commit_are_stale_after_the_same_charged_reads() {
             let first = WorthQueryDerivedPairReadPlans::new(admit(), admit());
             let graph = &(*(*world.application.primary_provider_for_test()).graph_for_test());
             let label = AccountLabel::reference();
-            let locator = (*graph
-                .layout_for_test())
+            let locator = (*graph.layout_for_test())
                 .field_locator_for_test(label.entity(), label.aspect(), label.field())
                 .unwrap()
                 .clone();
@@ -112,7 +111,9 @@ fn members_admitted_across_a_commit_are_stale_after_the_same_charged_reads() {
                                 roots
                                     .iter()
                                     .zip(["open", "unrelated"])
-                                    .map(|(root, status)| (root.entity_id_for_test(), status.to_owned()))
+                                    .map(|(root, status)| {
+                                        (root.entity_id_for_test(), status.to_owned())
+                                    })
                                     .collect()
                             },
                             |member: &String| {

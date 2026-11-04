@@ -312,9 +312,9 @@ pub fn observed_facts(
             },
         ),
     ];
-    assert!(facts
-        .iter()
-        .all(|fact| fact.remains_equal_in_for_test(runtime, execution, snapshot).unwrap()));
+    assert!(facts.iter().all(|fact| fact
+        .remains_equal_in_for_test(runtime, execution, snapshot)
+        .unwrap()));
     facts
 }
 

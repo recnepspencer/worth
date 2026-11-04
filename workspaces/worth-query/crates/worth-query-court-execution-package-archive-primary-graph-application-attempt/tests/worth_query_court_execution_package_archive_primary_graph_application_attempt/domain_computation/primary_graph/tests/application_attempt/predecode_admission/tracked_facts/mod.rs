@@ -31,7 +31,12 @@ fn present_predecode_field_stales_after_a_competing_actual_change() {
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
+            resolved_account(
+                &(phase).test_host_request_for_test(),
+                &world,
+                "open",
+                &request,
+            )
         })
         .expect("the fixture read owns its installed host call");
     let admission = world
@@ -166,7 +171,11 @@ pub fn optional_program(
     Account,
 > {
     let request = live_scope();
-    let principal = authenticated_principal(&(phase_custody).test_host_request_for_test(), world, &request);
+    let principal = authenticated_principal(
+        &(phase_custody).test_host_request_for_test(),
+        world,
+        &request,
+    );
     let account = resolved_account(
         &(phase_custody).test_host_request_for_test(),
         world,

@@ -97,10 +97,7 @@ pub fn committed_indexed_facts(
     else {
         panic!("the installed indexed decision must commit");
     };
-    let facts = (*(*world
-        .application
-        .primary_provider_for_test())
-        .graph_for_test())
+    let facts = (*(*world.application.primary_provider_for_test()).graph_for_test())
         .output_lineage
         .lock()
         .unwrap()
@@ -201,11 +198,14 @@ fn sparse_indexed_rebase_keeps_complete_dependencies_without_work_estimates() {
                 let host_custody = phase.test_host_request_for_test();
 
                 world.selected_product(
-                    &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
+                    &(host_custody.phase_for_application_for_test(&world.application))
+                        .test_host_request_for_test(),
                 )
             })
             .expect("the fixture read owns its installed host call");
-        let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+        let graph = (*world.application.runtime_for_test())
+            .primary_graph()
+            .unwrap();
         let observed = world.application.with_host_advancement(|phase| {   let borrowed_execution = phase.execution_request_for_for_test(&(*world.application.product_runtime_for_test())).expect("fixture borrows its runtime request"); let execution = &borrowed_execution; graph.integration_handle_for_test().with_runtime(&phase.borrowed_request_for_test(), |runtime| {
         let snapshot = selected.application_basis_for_test().snapshot_handle();
         let observed = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::indexed_entity_selection::observe_indexed_entity_selection(
@@ -272,7 +272,8 @@ fn sparse_indexed_rebase_keeps_complete_dependencies_without_work_estimates() {
                 let host_custody = phase.test_host_request_for_test();
 
                 world.selected_product(
-                    &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
+                    &(host_custody.phase_for_application_for_test(&world.application))
+                        .test_host_request_for_test(),
                 )
             })
             .expect("the fixture read owns its installed host call");

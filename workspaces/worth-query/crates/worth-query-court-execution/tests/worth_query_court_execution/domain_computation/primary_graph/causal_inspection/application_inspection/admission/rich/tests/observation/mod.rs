@@ -98,8 +98,13 @@ pub fn capability(
                     WorthQueryPrincipalResolutionMode::Ordinary,
                 )
                 .unwrap();
-            admit_touch_account_capability(&phase.test_host_request_for_test(), world, &principal, request)
-                .unwrap()
+            admit_touch_account_capability(
+                &phase.test_host_request_for_test(),
+                world,
+                &principal,
+                request,
+            )
+            .unwrap()
         })
         .unwrap()
 }

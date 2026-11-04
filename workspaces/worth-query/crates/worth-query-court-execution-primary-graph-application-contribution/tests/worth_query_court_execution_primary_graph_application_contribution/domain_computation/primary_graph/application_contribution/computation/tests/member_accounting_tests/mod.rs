@@ -1,10 +1,10 @@
 //! Explicit accounting survives the same installed member boundary as native compute.
-use worth_query_execution::facade::application_contribution::WorthQueryManagedComputationOwner;
 use crate::domain_computation::primary_graph::application_contribution::computation::tests::*;
 use worth_foundational::DeterminismContract;
 use worth_foundational::ExecutionBudget;
 use worth_foundational::ExecutionPosture;
 use worth_foundational::ExecutionRequestPolicy;
+use worth_query_execution::facade::application_contribution::WorthQueryManagedComputationOwner;
 use worth_query_execution::facade::domain_computation::HandlerFailure;
 use worth_query_execution::facade::domain_computation::HandlerResult;
 
@@ -60,9 +60,11 @@ fn installed_member_preserves_explicit_accounting_and_worker_only_polling() {
             &scope,
         );
         let installed =
-            WorthQueryInstalledManagedComputation::<Schema, Feature, Computation, _>::new_for_test(Owner {
-                accounted: policy.accounting().is_some(),
-            });
+            WorthQueryInstalledManagedComputation::<Schema, Feature, Computation, _>::new_for_test(
+                Owner {
+                    accounted: policy.accounting().is_some(),
+                },
+            );
         let result = installed
             .decision_plan(&7, HandlerResult::Completed)
             .run_for_test(&execution);

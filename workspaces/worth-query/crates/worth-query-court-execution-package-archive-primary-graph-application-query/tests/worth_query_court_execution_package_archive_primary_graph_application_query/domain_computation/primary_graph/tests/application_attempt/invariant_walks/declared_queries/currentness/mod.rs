@@ -23,7 +23,10 @@ fn complete_query_sources_keep_unrelated_changes_and_reject_non_discovery_and_em
                     .application
                     .select_product_branch_for_test(
                         &custody.borrowed_request_for_test(),
-                        world.application.product_runtime().default_branch_for_test(),
+                        world
+                            .application
+                            .product_runtime()
+                            .default_branch_for_test(),
                     )
                     .unwrap();
                 selected
@@ -41,7 +44,10 @@ fn complete_query_sources_keep_unrelated_changes_and_reject_non_discovery_and_em
                     .application
                     .select_product_branch_for_test(
                         &custody.borrowed_request_for_test(),
-                        world.application.product_runtime().default_branch_for_test(),
+                        world
+                            .application
+                            .product_runtime()
+                            .default_branch_for_test(),
                     )
                     .unwrap();
                 selected.require_current_required_set(

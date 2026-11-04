@@ -17,15 +17,19 @@ pub fn fixture(
     worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::walk_bounds::add_live_custody(&mut state, &receipts, 1);
     for mut row in (*state.records_mut_for_test()).values_mut_for_test() {
         (*row.interests_mut_for_test()) = 0;
-        (*row.state_mut_for_test()) = DemandState::Failed(WorthQueryOutputDemandDenial::new_for_test(
-            WorthQueryOutputDemandDenialKind::NoEffect,
-            "completed",
-        ));
+        (*row.state_mut_for_test()) =
+            DemandState::Failed(WorthQueryOutputDemandDenial::new_for_test(
+                WorthQueryOutputDemandDenialKind::NoEffect,
+                "completed",
+            ));
     }
     for (index, receipt) in receipts.iter().enumerate() {
         let commit = receipt.committed_product_publication().composite_commit();
-        (*state.source_custody.get_mut(commit).unwrap().token_count_mut_for_test()) =
-            usize::from(token || index != 0);
+        (*state
+            .source_custody
+            .get_mut(commit)
+            .unwrap()
+            .token_count_mut_for_test()) = usize::from(token || index != 0);
     }
     if !token {
         let mut row = (*state.records_mut_for_test()).get_mut(&selected).unwrap();
@@ -50,7 +54,13 @@ pub fn fixture(
 #[test]
 fn registry_interest_drop_leaves_custody_note_without_sweeping() {
     let (registry, selected, receipts) = fixture(false);
-    let wake = Arc::clone(&(*(*(*registry.state_for_test()).lock().unwrap().records_for_test())[&selected].wake_for_test()));
+    let wake = Arc::clone(
+        &(*(*(*registry.state_for_test())
+            .lock()
+            .unwrap()
+            .records_for_test())[&selected]
+            .wake_for_test()),
+    );
     let owner = interest(&registry, selected, wake);
     let before = contacts();
     drop(owner);

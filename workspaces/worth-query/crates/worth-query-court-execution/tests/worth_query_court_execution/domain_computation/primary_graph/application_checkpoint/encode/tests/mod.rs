@@ -50,7 +50,11 @@ fn checkpoint_one_buffer_matches_independent_v13_grammar_and_sections() {
     scope_wire.extend_from_slice(&scope.local_slot().to_be_bytes());
     scope_wire.extend_from_slice(&scope.generation().to_be_bytes());
     let expected = independent_v13(
-        world.application.publication().bootstrap_commit_id_for_test().0,
+        world
+            .application
+            .publication()
+            .bootstrap_commit_id_for_test()
+            .0,
         &scope_wire,
         native,
         &facts,
@@ -77,8 +81,10 @@ fn checkpoint_one_buffer_matches_independent_v13_grammar_and_sections() {
 
     // Observe the byte owner's actual capacity without growth or conversion.
     let size =
-        ValidatedCheckpointSize::new_for_test(native.len(), &rows, CapturePolicy::SystemAllocation).unwrap();
-    let mut buffer = reserve_buffer(size.total_for_test(), CapturePolicy::SystemAllocation).unwrap();
+        ValidatedCheckpointSize::new_for_test(native.len(), &rows, CapturePolicy::SystemAllocation)
+            .unwrap();
+    let mut buffer =
+        reserve_buffer(size.total_for_test(), CapturePolicy::SystemAllocation).unwrap();
     let capacity = buffer.capacity();
     assert_eq!(capacity, expected.len());
     buffer.extend_from_slice(b"WQAPCP01").unwrap();
@@ -96,7 +102,8 @@ fn checkpoint_one_buffer_matches_independent_v13_grammar_and_sections() {
 
     // A stale size witness cannot permit even one byte beyond its prepared
     // frame. Exercise the real writer guard rather than allocator injection.
-    let short_size = ValidatedCheckpointSize::new_for_test(3, &[], CapturePolicy::SystemAllocation).unwrap();
+    let short_size =
+        ValidatedCheckpointSize::new_for_test(3, &[], CapturePolicy::SystemAllocation).unwrap();
     let mut short_buffer =
         reserve_buffer(short_size.total_for_test(), CapturePolicy::SystemAllocation).unwrap();
     let short_capacity = short_buffer.capacity();
@@ -138,11 +145,14 @@ fn checkpoint_impossible_payload_layout_is_a_typed_allocation_refusal() {
 #[test]
 fn checkpoint_native_length_overflow_is_a_typed_sizing_refusal() {
     for native_len in [usize::MAX, isize::MAX as usize] {
-        let denial =
-            match ValidatedCheckpointSize::new_for_test(native_len, &[], CapturePolicy::SystemAllocation) {
-                Ok(_) => panic!("framing cannot fit beside this native length"),
-                Err(denial) => denial,
-            };
+        let denial = match ValidatedCheckpointSize::new_for_test(
+            native_len,
+            &[],
+            CapturePolicy::SystemAllocation,
+        ) {
+            Ok(_) => panic!("framing cannot fit beside this native length"),
+            Err(denial) => denial,
+        };
         assert_eq!(
             durability(&denial).class,
             RecoveryFailureClass::CheckpointSizeOverflow
@@ -177,7 +187,12 @@ pub fn role(
     entity_name: &str,
     slot: u64,
 ) -> WorthQueryCheckpointOutputRole {
-    WorthQueryCheckpointOutputRole::new_for_test(name.to_owned(), posture, entity_name.to_owned(), entity(slot))
+    WorthQueryCheckpointOutputRole::new_for_test(
+        name.to_owned(),
+        posture,
+        entity_name.to_owned(),
+        entity(slot),
+    )
 }
 
 /// Independent current v13 grammar with literal fixture branch choices.

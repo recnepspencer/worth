@@ -276,7 +276,12 @@ pub fn composed_program(
         .application
         .authorize_capability_operation(phase_custody, access, &operation, Default::default())
         .unwrap();
-    let account = resolved_account(&(phase_custody).test_host_request_for_test(), world, "open", request);
+    let account = resolved_account(
+        &(phase_custody).test_host_request_for_test(),
+        world,
+        "open",
+        request,
+    );
     let (_, projection, _) = world
         .invariant
         .project_admitted_operation(

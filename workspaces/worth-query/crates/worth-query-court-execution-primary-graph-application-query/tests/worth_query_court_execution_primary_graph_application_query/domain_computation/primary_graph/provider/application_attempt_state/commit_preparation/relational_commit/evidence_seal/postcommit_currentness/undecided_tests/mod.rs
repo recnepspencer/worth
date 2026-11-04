@@ -27,14 +27,12 @@ fn only_a_comparison_that_cannot_answer_is_undecidable() {
         .application
         .with_host_advancement(|phase| account_note(&phase, &world, "account-1"))
         .expect("the fixture read owns its installed host call");
-    let kind = (*(*world
-        .application
-        .runtime_for_test())
+    let kind = (*(*world.application.runtime_for_test())
         .primary_graph()
         .unwrap()
         .layout_for_test())
-        .entity_kind_for_test(AccountIdentity::reference().entity())
-        .unwrap();
+    .entity_kind_for_test(AccountIdentity::reference().entity())
+    .unwrap();
     let read = world
         .application
         .with_host_advancement(|phase| {
@@ -107,7 +105,10 @@ fn only_a_comparison_that_cannot_answer_is_undecidable() {
     else {
         panic!("a field revision of a live entity's undeclared field cannot be compared");
     };
-    assert_eq!(own_effect, OwnEffectOnReads::new_for_test(OwnEffect::Undecidable));
+    assert_eq!(
+        own_effect,
+        OwnEffectOnReads::new_for_test(OwnEffect::Undecidable)
+    );
     assert_eq!(
         own_effect.at_own_publication(true),
         FactlessCurrentness::Undecidable,

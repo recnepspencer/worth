@@ -42,13 +42,17 @@ fn postings_and_prior_output_visits_follow_declared_binding_order() {
         let expected = [bindings[0].1, bindings[1].1];
         let posting_names: Vec<_> = postings
             .iter()
-            .map(|p| (*(*p.settlement_for_test()).source_for_test().output_binding_for_test()).as_str_for_test())
+            .map(|p| {
+                (*(*p.settlement_for_test())
+                    .source_for_test()
+                    .output_binding_for_test())
+                .as_str_for_test()
+            })
             .collect();
         assert_eq!(posting_names, expected);
         // checkpoint_prior_outputs walks this exact owner index's keys and charges
         // the selected source's partition navigation before the next source visit.
-        let visits: Vec<_> = (*lineage
-            .by_source_for_test())
+        let visits: Vec<_> = (*lineage.by_source_for_test())
             .keys()
             .map(|source| (*source.output_binding_for_test()).as_str_for_test())
             .collect();

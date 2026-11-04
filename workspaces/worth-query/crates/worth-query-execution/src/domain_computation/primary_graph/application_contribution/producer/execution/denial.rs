@@ -50,8 +50,7 @@ impl ProducerExecutionStop {
     }
 }
 
-pub struct ProducerRequestAdmissionRejection
-{
+pub struct ProducerRequestAdmissionRejection {
     denial: WorthQueryOutputDemandDenial,
 }
 

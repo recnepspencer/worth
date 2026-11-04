@@ -43,7 +43,9 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
     let world = installed_authorization_world(true);
     let selected = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
+        .with_host_advancement(|phase| {
+            world.selected_product(&(phase).test_host_request_for_test())
+        })
         .expect("the fixture read owns its installed host call");
     let entity = world
         .application
@@ -60,14 +62,21 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
                 .entity_id_for_test()
         })
         .expect("the fixture read owns its installed host call");
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
     let layout = graph.layout_for_test();
     let handle = graph.integration_handle_for_test();
     let correspondence = WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles_for_test(
         TypeId::of_for_test::<()>(),
         TypeId::of_for_test::<()>(),
         std::iter::empty(),
-        &[WorthQueryCheckpointOutputRole::new_for_test("account".to_owned(), WorthQueryApplicationOutputPosture::Preserve, "Account".to_owned(), entity)],
+        &[WorthQueryCheckpointOutputRole::new_for_test(
+            "account".to_owned(),
+            WorthQueryApplicationOutputPosture::Preserve,
+            "Account".to_owned(),
+            entity,
+        )],
         |_| Some(TypeId::of_for_test::<()>()),
         &worth_execution::ExecutionRequest::serial(&worth_execution::SerialRequest::from_memory(
             worth_execution::SerialMemoryBudget::new(None),
@@ -77,19 +86,29 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
     )
     .unwrap();
     // Distinct roles may name one entity; each keeps its own expectations.
-    let alias_correspondence = WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles_for_test(
-        TypeId::of_for_test::<()>(),
-        TypeId::of_for_test::<()>(),
-        std::iter::empty(),
-        &["account", "alias"].map(|role| WorthQueryCheckpointOutputRole::new_for_test(role.to_owned(), WorthQueryApplicationOutputPosture::Preserve, "Account".to_owned(), entity)),
-        |_| Some(TypeId::of_for_test::<()>()),
-        &worth_execution::ExecutionRequest::serial(&worth_execution::SerialRequest::from_memory(
-            worth_execution::SerialMemoryBudget::new(None),
-            worth_execution::CancellationToken::new(),
-            None,
-        )),
-    )
-    .unwrap();
+    let alias_correspondence =
+        WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles_for_test(
+            TypeId::of_for_test::<()>(),
+            TypeId::of_for_test::<()>(),
+            std::iter::empty(),
+            &["account", "alias"].map(|role| {
+                WorthQueryCheckpointOutputRole::new_for_test(
+                    role.to_owned(),
+                    WorthQueryApplicationOutputPosture::Preserve,
+                    "Account".to_owned(),
+                    entity,
+                )
+            }),
+            |_| Some(TypeId::of_for_test::<()>()),
+            &worth_execution::ExecutionRequest::serial(
+                &worth_execution::SerialRequest::from_memory(
+                    worth_execution::SerialMemoryBudget::new(None),
+                    worth_execution::CancellationToken::new(),
+                    None,
+                ),
+            ),
+        )
+        .unwrap();
     let status_ref = AccountStatus::reference();
     let label_ref = AccountLabel::reference();
     let planned_status = layout

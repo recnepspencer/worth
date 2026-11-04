@@ -48,7 +48,8 @@ fn independent_projection_bodies_keep_full_generation_occurrence_path_and_comple
     (*different.source_path_mut_for_test()) = Some("root.child".into());
     assert_eq!(compare(different), Ok(false));
     let mut different = row();
-    (*different.incoming_relation_mut_for_test()) = Some(RelationId::new(PartitionId::main(), 9, 1));
+    (*different.incoming_relation_mut_for_test()) =
+        Some(RelationId::new(PartitionId::main(), 9, 1));
     assert_eq!(compare(different), Ok(false));
     let mut left = row();
     (*left.incoming_relation_mut_for_test()) = Some(RelationId::new(PartitionId::main(), 9, 1));

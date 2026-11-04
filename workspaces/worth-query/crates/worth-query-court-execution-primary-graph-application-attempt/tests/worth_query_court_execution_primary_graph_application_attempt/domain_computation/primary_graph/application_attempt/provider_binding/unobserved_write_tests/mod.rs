@@ -35,25 +35,20 @@ fn unobserved_effect_keeps_coordinates_at_public_lowering_without_idempotency_re
         })
         .unwrap();
     let field = AccountLabel::reference();
-    let locator = (*(*(*world
-        .application
-        .primary_provider_for_test())
-        .graph_for_test())
+    let locator = (*(*(*world.application.primary_provider_for_test()).graph_for_test())
         .layout_for_test())
-        .field_locator_for_test(field.entity(), field.aspect(), field.field())
-        .unwrap();
+    .field_locator_for_test(field.entity(), field.aspect(), field.field())
+    .unwrap();
     // The actual installed operation permits Label, but this genuine completed
     // decision observed only Status. No public raw-effect door is introduced.
-    (*program
-        .effects_mut_for_test())
-        .push(WorthQueryApplicationRealizedEffect::UpdateEntity {
-            entity: field.entity().to_owned(),
-            entity_id: account.entity_id_for_test(),
-            fields: BTreeMap::from([(
-                locator.clone(),
-                AspectValue::String("unobserved-label".into()),
-            )]),
-        });
+    (*program.effects_mut_for_test()).push(WorthQueryApplicationRealizedEffect::UpdateEntity {
+        entity: field.entity().to_owned(),
+        entity_id: account.entity_id_for_test(),
+        fields: BTreeMap::from([(
+            locator.clone(),
+            AspectValue::String("unobserved-label".into()),
+        )]),
+    });
     let WorthQueryApplicationCommitOutcome::Denied(denial) =
         world.application.compare_and_commit_application(
             program,

@@ -48,8 +48,7 @@ fn incomplete_native_predecessor_description_is_not_an_ordinary_factory_head() {
 
 pub fn restored_cell() -> Arc<OnceLock<RecordedOutput>> {
     let (lineage, _) = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::output_lineage::registry_fixture::recorded_settlement();
-    (*lineage
-        .by_source_for_test())
+    (*lineage.by_source_for_test())
         .values()
         .next()
         .unwrap()

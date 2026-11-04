@@ -166,7 +166,11 @@ fn released_query_backing_preserves_historical_truth_and_marks_only_live_readers
 }
 
 pub fn query_binding(state: &MarkState, id: u64) -> &QueryReadBinding {
-    match (*state.posting_bindings_for_test()).get(&id).unwrap().as_ref() {
+    match (*state.posting_bindings_for_test())
+        .get(&id)
+        .unwrap()
+        .as_ref()
+    {
         PostingBindings::QueryRead(read) => read,
         PostingBindings::Settlements(_) => panic!("query read is not a producer settlement"),
     }

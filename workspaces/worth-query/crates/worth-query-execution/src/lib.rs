@@ -22,7 +22,7 @@ mod relational_snapshot_release;
 pub mod facade;
 pub mod publication_boundary;
 
-pub mod test_read_stops;
 #[doc(hidden)]
 #[path = "court_doors_for_test/mod.rs"]
 pub mod court_doors_for_test;
+pub mod test_read_stops;

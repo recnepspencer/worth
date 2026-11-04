@@ -43,7 +43,10 @@ pub fn commit_live_activity_with_identity(
 ) -> WorthQueryApplicationCommitReceipt {
     commit_live_activity_on_product(
         world,
-        world.application.product_runtime().default_branch_for_test(),
+        world
+            .application
+            .product_runtime()
+            .default_branch_for_test(),
         principal,
         request,
         label,
@@ -95,7 +98,10 @@ pub fn commit_live_activity_on_product(
         .expect("the live fixture opens its preparation call");
     match world.application.compare_and_commit_application(
         program,
-        WorthQueryApplicationIdempotencyBinding::new_for_test([idempotency_key; 32], [request_digest; 32]),
+        WorthQueryApplicationIdempotencyBinding::new_for_test(
+            [idempotency_key; 32],
+            [request_digest; 32],
+        ),
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     ) {
         WorthQueryApplicationCommitOutcome::Committed(receipt) => receipt,

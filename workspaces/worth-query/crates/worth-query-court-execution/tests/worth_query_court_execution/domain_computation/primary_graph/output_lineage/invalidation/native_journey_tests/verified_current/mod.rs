@@ -12,7 +12,9 @@ fn repeated_current_certification_preserves_image_and_retention_and_rejects_a_ra
     let world = installed_authorization_world(true);
     let selected = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
+        .with_host_advancement(|phase| {
+            world.selected_product(&(phase).test_host_request_for_test())
+        })
         .expect("the fixture read owns its installed host call");
     let entity = world
         .application
@@ -30,11 +32,16 @@ fn repeated_current_certification_preserves_image_and_retention_and_rejects_a_ra
         })
         .expect("the fixture read owns its installed host call");
     let (_, product, _) = selected.into_parts_for_test();
-    let coordinate = ProductCoordinate::new_for_test(product.observation_for_test().lifecycle_incarnation(), product.observation_for_test().reference_generation().get());
+    let coordinate = ProductCoordinate::new_for_test(
+        product.observation_for_test().lifecycle_incarnation(),
+        product.observation_for_test().reference_generation().get(),
+    );
     let source = SemanticSource::new_for_test((*world.application.runtime_for_test()).authority_identity().as_u64(), (*world.application.installed_schema_for_test()).binding_identity(), worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity), OutputBindingIdentity::declared_for_test("StatusOutput"));
     let prior = RecordedSettlementIdentity::retain_for_test(&source, coordinate, 0);
     let current = RecordedSettlementIdentity::retain_for_test(&source, coordinate, 1);
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
     let handle = graph.integration_handle_for_test();
     let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
     let status_ref = AccountStatus::reference();

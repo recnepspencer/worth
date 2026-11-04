@@ -231,7 +231,8 @@ impl<'a> World<'a> {
         }
         for (&id, row) in &model.rows {
             if !row.claims.is_empty() {
-                let upstream = (*(*state.records_for_test())[&keys[id]].prerequisites_for_test()).clone();
+                let upstream =
+                    (*(*state.records_for_test())[&keys[id]].prerequisites_for_test()).clone();
                 let batch = state
                     .prepare_claim_readthrough_for_test(&keys[id], &upstream)
                     .unwrap();
@@ -239,25 +240,64 @@ impl<'a> World<'a> {
                     batch.install_for_test();
                     batch.publish_for_test();
                 }
-                (*(*state.records_mut_for_test()).get_mut(&keys[id]).unwrap().claim_batch_mut_for_test()) = batch;
+                (*(*state.records_mut_for_test())
+                    .get_mut(&keys[id])
+                    .unwrap()
+                    .claim_batch_mut_for_test()) = batch;
             }
         }
         for (&id, entry) in &model.custody {
             let identity = (*keys[1].source_for_test()).clone();
-            state.source_custody.insert(
-                context.commit(id),
-                {
-// Bound in the original literal order, passed in the door's.
-let (occurrence, root_kind, source, discovery, bound_sources, consumed_sources, retired_sources, retired, token_count, cleanup, completed) = (context.completed.product_branch().occurrence_for_test(), PreparedOutputRootKind::Discovered(EqualityTypeId::of_for_test::<()>()), (id == 0).then(|| context.source.clone()), None, entry.bound.map(|_| {
-                        vec![BoundOutputSource::new_for_test(context.scope, identity.clone())]
-                    }), if entry.consumed {
+            state.source_custody.insert(context.commit(id), {
+                // Bound in the original literal order, passed in the door's.
+                let (
+                    occurrence,
+                    root_kind,
+                    source,
+                    discovery,
+                    bound_sources,
+                    consumed_sources,
+                    retired_sources,
+                    retired,
+                    token_count,
+                    cleanup,
+                    completed,
+                ) = (
+                    context.completed.product_branch().occurrence_for_test(),
+                    PreparedOutputRootKind::Discovered(EqualityTypeId::of_for_test::<()>()),
+                    (id == 0).then(|| context.source.clone()),
+                    None,
+                    entry.bound.map(|_| {
+                        vec![BoundOutputSource::new_for_test(
+                            context.scope,
+                            identity.clone(),
+                        )]
+                    }),
+                    if entry.consumed {
                         vec![identity]
                     } else {
                         vec![]
-                    }, vec![], None, entry.tokens, Default::default(), entry.completed);
-SourceCustody::new_for_test(occurrence, root_kind, source, discovery, consumed_sources, retired_sources, bound_sources, retired, token_count, cleanup, completed)
-},
-            );
+                    },
+                    vec![],
+                    None,
+                    entry.tokens,
+                    Default::default(),
+                    entry.completed,
+                );
+                SourceCustody::new_for_test(
+                    occurrence,
+                    root_kind,
+                    source,
+                    discovery,
+                    consumed_sources,
+                    retired_sources,
+                    bound_sources,
+                    retired,
+                    token_count,
+                    cleanup,
+                    completed,
+                )
+            });
         }
         if !late {
             // The claimed predecessor really became superseded under an admission.
@@ -296,14 +336,13 @@ SourceCustody::new_for_test(occurrence, root_kind, source, discovery, consumed_s
             )
             .map(|(interest, _pause)| interest)?;
         // This request row is unrelated to the compared domain; release through real Drop.
-        (*(*(*self.registry
-            .state_for_test())
+        (*(*(*self.registry.state_for_test())
             .lock()
             .unwrap()
             .records_mut_for_test())
-            .get_mut(&(*interest.key_for_test()))
-            .unwrap()
-            .state_mut_for_test()) = DemandState::Failed(WorthQueryOutputDemandDenial::new_for_test(
+        .get_mut(&(*interest.key_for_test()))
+        .unwrap()
+        .state_mut_for_test()) = DemandState::Failed(WorthQueryOutputDemandDenial::new_for_test(
             WorthQueryOutputDemandDenialKind::NoEffect,
             "oracle request completed",
         ));
@@ -315,7 +354,10 @@ SourceCustody::new_for_test(occurrence, root_kind, source, discovery, consumed_s
         self.registry
             .ensure_discovered_sources_bound_for_test(
                 &self.context.commit(0),
-                &[BoundOutputSource::new_for_test(self.context.scope, (*self.keys[0].source_for_test()).clone())],
+                &[BoundOutputSource::new_for_test(
+                    self.context.scope,
+                    (*self.keys[0].source_for_test()).clone(),
+                )],
             )
             .unwrap();
         self.model.bind(0, self.generation);

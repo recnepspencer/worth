@@ -72,7 +72,10 @@ fn a_republication_continues_the_suspended_performed_record() {
             &(*restored.settlement_identity_for_test()),
             &continued.identity
         ));
-        assert!(Arc::ptr_eq(&(*restored.consumed_outputs_for_test()), &consumed));
+        assert!(Arc::ptr_eq(
+            &(*restored.consumed_outputs_for_test()),
+            &consumed
+        ));
         assert!(restored
             .observed_source_facts_for_test()
             .unwrap()
@@ -275,7 +278,9 @@ fn a_stable_alias_is_compared_by_the_witness_of_its_origin() {
                 stage.source.scope,
                 stage.observation.lifecycle_incarnation(),
                 alias_generation,
-                &[stage.lineage.binding_type_for_test(&(*stage.source.output_binding_for_test()))],
+                &[stage
+                    .lineage
+                    .binding_type_for_test(&(*stage.source.output_binding_for_test()))],
                 PARTITION,
                 request_execution,
             )
@@ -283,16 +288,14 @@ fn a_stable_alias_is_compared_by_the_witness_of_its_origin() {
         let [candidate] = candidates.as_slice() else {
             panic!("the partition retains one latest output");
         };
-        assert!((*candidate
-            .observed_source_facts_for_test())
+        assert!((*candidate.observed_source_facts_for_test())
             .as_ref()
             .unwrap()
             .facts_for_test()
             .same_backing_for_test(&Arc::clone(&alias_facts).into()));
         // Selection compares the output half of the alias's fact set, so a
         // moved output ends its exact reuse as it ends its origin's.
-        assert!((*candidate
-            .native_output_witness_for_test())
+        assert!((*candidate.native_output_witness_for_test())
             .as_ref()
             .is_some_and(|witness| Arc::ptr_eq(witness, &performed_witness)));
     });

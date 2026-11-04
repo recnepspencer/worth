@@ -14,14 +14,14 @@ fn uncommitted_upstream_never_admits_a_prepared_member() {
     let selected = world
         .application
         .with_host_advancement(|phase| {
-            (*world
-                .application
-                .runtime_for_test())
+            (*world.application.runtime_for_test())
                 .primary_graph()
                 .unwrap()
                 .with_runtime_for_test(
                     &phase
-                        .execution_request_for_for_test(&(*world.application.product_runtime_for_test()))
+                        .execution_request_for_for_test(
+                            &(*world.application.product_runtime_for_test()),
+                        )
                         .unwrap(),
                     |runtime| {
                         let basis = runtime
@@ -48,7 +48,9 @@ fn uncommitted_upstream_never_admits_a_prepared_member() {
 
     {
         let mut state = (*registry.state_for_test()).lock().unwrap();
-        let (posting, _cleanup) = state.reserve_settlement_vacancy_for_test(&identity).unwrap();
+        let (posting, _cleanup) = state
+            .reserve_settlement_vacancy_for_test(&identity)
+            .unwrap();
         worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::settlement_index::SettlementIndex::fill_prepared_for_test(
             &posting,
             &identity,
@@ -61,12 +63,11 @@ fn uncommitted_upstream_never_admits_a_prepared_member() {
         DemandState::Scheduled,
         DemandState::Running,
     ] {
-        (*(*registry
-            .state_for_test())
+        (*(*registry.state_for_test())
             .lock()
             .unwrap()
             .records_mut_for_test())
-            .insert_for_test(demand_key.clone(), record(occurrence(), state, 1));
+        .insert_for_test(demand_key.clone(), record(occurrence(), state, 1));
         let denied = registry
             .admit_current_outputs(
                 (selected.runtime_instance_id(), selected.root_id()),

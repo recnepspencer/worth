@@ -86,10 +86,11 @@ fn absent_optional_source_stays_current_across_sibling_edit_but_not_presence_cha
         })
         .expect("the fixture read owns its installed host call");
 
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
     let label = AccountLabel::reference();
-    let label_locator = (*graph
-        .layout_for_test())
+    let label_locator = (*graph.layout_for_test())
         .field_locator_for_test(label.entity(), label.aspect(), label.field())
         .unwrap()
         .clone();
@@ -123,8 +124,7 @@ fn absent_optional_source_stays_current_across_sibling_edit_but_not_presence_cha
         .expect("the fixture read owns its installed host call");
 
     let note = AccountNote::reference();
-    let note_locator = (*graph
-        .layout_for_test())
+    let note_locator = (*graph.layout_for_test())
         .field_locator_for_test(note.entity(), note.aspect(), note.field())
         .unwrap()
         .clone();
@@ -174,10 +174,11 @@ fn present_optional_source_denies_equal_value_after_aba() {
         })
         .expect("the fixture read owns its installed host call");
     assert_eq!(before.note(), Some("reviewed"));
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
     let note = AccountNote::reference();
-    let locator = (*graph
-        .layout_for_test())
+    let locator = (*graph.layout_for_test())
         .field_locator_for_test(note.entity(), note.aspect(), note.field())
         .unwrap()
         .clone();
@@ -240,7 +241,9 @@ pub fn current(
     fact: &WorthQueryApplicationObservedFact,
 ) -> bool {
     let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
     graph
         .integration_handle_for_test()
         .with_runtime(execution, |runtime| {
@@ -309,7 +312,10 @@ pub fn execute_with_note_fact(
         .application
         .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch_for_test(),
+            world
+                .application
+                .product_runtime()
+                .default_branch_for_test(),
         )
         .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
@@ -324,7 +330,10 @@ pub fn execute_with_note_fact(
         .application
         .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch_for_test(),
+            world
+                .application
+                .product_runtime()
+                .default_branch_for_test(),
         )
         .expect("the selected product branch remains admitted")
         .resolve_entity(
@@ -371,8 +380,7 @@ pub fn execute_with_note_fact(
     );
     assert_eq!(result.receipt().reads().index_candidates_examined(), 0);
     assert_eq!(
-        (*footprint
-            .aspects_for_test())
+        (*footprint.aspects_for_test())
             .iter()
             .filter(|aspect| aspect
                 .native_revision
@@ -382,8 +390,7 @@ pub fn execute_with_note_fact(
         if account == "account-1" { 2 } else { 3 },
         "each absent optional field must retain an explicit native absence revision"
     );
-    let note = (*footprint
-        .aspects_for_test())
+    let note = (*footprint.aspects_for_test())
         .iter()
         .find(|observed| (*observed.field_for_test()).as_str() == AccountNote::reference().field())
         .expect("the optional note is a tracked source field");

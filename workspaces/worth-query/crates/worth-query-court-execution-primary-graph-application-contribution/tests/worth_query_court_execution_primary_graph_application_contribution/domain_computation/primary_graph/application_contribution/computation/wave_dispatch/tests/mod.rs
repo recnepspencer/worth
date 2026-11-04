@@ -138,7 +138,9 @@ fn a_panicking_compute_drops_its_suffix_and_clears_worker_custody() {
     let after = Arc::new(Mutex::new(false));
     let probe = after.clone();
     let panics = PreparedMember {
-        requests: vec![PreparedCompute::new_for_test::<()>(|_| panic!("declared failure"))],
+        requests: vec![PreparedCompute::new_for_test::<()>(|_| {
+            panic!("declared failure")
+        })],
     };
     let settled = run_stopped(
         Some(2),

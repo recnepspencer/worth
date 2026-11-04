@@ -7,10 +7,16 @@ fn unchanged_source_after_unrelated_world_work_joins_the_active_demand() {
     let older = key_with_identity("producer", 5, 1, 90);
     let later_same_source = key_with_identity("producer", 6, 1, 90);
     let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(root(1));
-    (*(*registry.state_for_test()).lock().unwrap().records_mut_for_test()).insert_for_test(
-        older.clone(),
-        { let __source_scope = Some(scope); let mut __base = record(occurrence(), DemandState::Scheduled, 1); *__base.source_scope_mut_for_test() = __source_scope; __base },
-    );
+    (*(*registry.state_for_test())
+        .lock()
+        .unwrap()
+        .records_mut_for_test())
+    .insert_for_test(older.clone(), {
+        let __source_scope = Some(scope);
+        let mut __base = record(occurrence(), DemandState::Scheduled, 1);
+        *__base.source_scope_mut_for_test() = __source_scope;
+        __base
+    });
 
     let joined = registry
         .admit_for_test(
@@ -28,7 +34,10 @@ fn unchanged_source_after_unrelated_world_work_joins_the_active_demand() {
     let state = (*registry.state_for_test()).lock().unwrap();
     assert_eq!((*state.records_for_test()).len_for_test(), 1);
     assert_eq!((*joined.key_for_test()), older);
-    assert_eq!((*(*state.records_for_test())[&older].interests_for_test()), 2);
+    assert_eq!(
+        (*(*state.records_for_test())[&older].interests_for_test()),
+        2
+    );
 }
 
 #[test]
@@ -40,10 +49,12 @@ fn semantic_join_deterministically_selects_the_latest_active_generation() {
     let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(root(1));
     let mut state = (*registry.state_for_test()).lock().unwrap();
     for key in [&oldest, &latest] {
-        (*state.records_mut_for_test()).insert_for_test(
-            key.clone(),
-            { let __source_scope = Some(scope); let mut __base = record(occurrence(), DemandState::Scheduled, 1); *__base.source_scope_mut_for_test() = __source_scope; __base },
-        );
+        (*state.records_mut_for_test()).insert_for_test(key.clone(), {
+            let __source_scope = Some(scope);
+            let mut __base = record(occurrence(), DemandState::Scheduled, 1);
+            *__base.source_scope_mut_for_test() = __source_scope;
+            __base
+        });
     }
     drop(state);
 
@@ -61,7 +72,14 @@ fn semantic_join_deterministically_selects_the_latest_active_generation() {
         .0;
 
     assert_eq!((*joined.key_for_test()), latest);
-    assert_eq!((*(*(*registry.state_for_test()).lock().unwrap().records_for_test())[&latest].interests_for_test()), 2);
+    assert_eq!(
+        (*(*(*registry.state_for_test())
+            .lock()
+            .unwrap()
+            .records_for_test())[&latest]
+            .interests_for_test()),
+        2
+    );
 }
 
 #[test]
@@ -71,10 +89,16 @@ fn changed_source_can_return_after_its_prior_cycle_was_superseded() {
     let source_b = key_with_identity("producer", 6, 1, 91);
     let returned_a = key_with_identity("producer", 7, 1, 90);
     let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(root(1));
-    (*(*registry.state_for_test()).lock().unwrap().records_mut_for_test()).insert_for_test(
-        source_a.clone(),
-        { let __source_scope = Some(scope); let mut __base = record(occurrence(), DemandState::Scheduled, 1); *__base.source_scope_mut_for_test() = __source_scope; __base },
-    );
+    (*(*registry.state_for_test())
+        .lock()
+        .unwrap()
+        .records_mut_for_test())
+    .insert_for_test(source_a.clone(), {
+        let __source_scope = Some(scope);
+        let mut __base = record(occurrence(), DemandState::Scheduled, 1);
+        *__base.source_scope_mut_for_test() = __source_scope;
+        __base
+    });
 
     let _source_b_interest = registry
         .admit_for_test(
@@ -164,10 +188,14 @@ fn recovery_rejoins_the_older_key_that_retains_newer_semantic_custody() {
     (*retained_record.source_commits_mut_for_test()).push(commit.clone());
     let mut state = (*registry.state_for_test()).lock().unwrap();
     (*state.records_mut_for_test()).insert_for_test(older.clone(), retained_record);
-    (*state.records_mut_for_test()).insert_for_test(
-        newer_non_owner.clone(),
-        { let __required_interests = 1; let __source_scope = Some(scope); let mut __base = record(occurrence, DemandState::Scheduled, 1); *__base.required_interests_mut_for_test() = __required_interests; *__base.source_scope_mut_for_test() = __source_scope; __base },
-    );
+    (*state.records_mut_for_test()).insert_for_test(newer_non_owner.clone(), {
+        let __required_interests = 1;
+        let __source_scope = Some(scope);
+        let mut __base = record(occurrence, DemandState::Scheduled, 1);
+        *__base.required_interests_mut_for_test() = __required_interests;
+        *__base.source_scope_mut_for_test() = __source_scope;
+        __base
+    });
     state.source_custody.insert(
         commit.clone(),
         {
@@ -194,6 +222,12 @@ worth_query_execution::court_doors_for_test::domain_computation::primary_graph::
     let state = (*registry.state_for_test()).lock().unwrap();
     assert_eq!((*recovered.key_for_test()), older);
     assert_eq!((*state.records_for_test()).len_for_test(), 2);
-    assert_eq!((*(*state.records_for_test())[&older].interests_for_test()), 1);
-    assert_eq!((*(*state.records_for_test())[&newer_non_owner].interests_for_test()), 1);
+    assert_eq!(
+        (*(*state.records_for_test())[&older].interests_for_test()),
+        1
+    );
+    assert_eq!(
+        (*(*state.records_for_test())[&newer_non_owner].interests_for_test()),
+        1
+    );
 }

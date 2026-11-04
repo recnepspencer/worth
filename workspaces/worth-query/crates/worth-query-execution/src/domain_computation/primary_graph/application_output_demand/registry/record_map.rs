@@ -232,9 +232,7 @@ mod observation {
     }
 
     impl DemandRecords {
-        pub fn publication_count_for_test(
-            &self,
-        ) -> usize {
+        pub fn publication_count_for_test(&self) -> usize {
             self.3
                  .0
                 .values()

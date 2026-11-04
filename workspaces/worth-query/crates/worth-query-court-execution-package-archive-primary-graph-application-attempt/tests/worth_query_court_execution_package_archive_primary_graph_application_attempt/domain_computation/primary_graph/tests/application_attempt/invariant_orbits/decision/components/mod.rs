@@ -88,7 +88,12 @@ fn empty_census_tracks_negative_guard_facts_and_unrelated_edits_remain_current()
         .handle_for_test()
         .with_runtime(&execution, |runtime| original
             .body
-            .remains_equal_for_test(runtime, &execution, original.lease.snapshot_for_test(), None)
+            .remains_equal_for_test(
+                runtime,
+                &execution,
+                original.lease.snapshot_for_test(),
+                None
+            )
             .unwrap()));
     let (other, key) = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::decision::currentness::prepare(&world, &request, 6, "components-unrelated");
     assert!(matches!(
@@ -121,7 +126,10 @@ fn empty_census_tracks_negative_guard_facts_and_unrelated_edits_remain_current()
                 .application
                 .select_product_branch_for_test(
                     &execution,
-                    world.application.product_runtime().default_branch_for_test(),
+                    world
+                        .application
+                        .product_runtime()
+                        .default_branch_for_test(),
                 )
                 .unwrap();
             let projection = world
@@ -129,12 +137,15 @@ fn empty_census_tracks_negative_guard_facts_and_unrelated_edits_remain_current()
                 .project(&phase, |_| (), Allocation::SystemAllocation)
                 .unwrap();
             let (_, snapshot, _) = projection.into_parts();
-            let (lease, _, _, _) =
-                snapshot.into_lease_and_realized_scope_for_test(selected.product().retained_clone_for_test());
-            assert!(!lease.handle_for_test().with_runtime(&execution, |runtime| original
-                .body
-                .remains_equal_for_test(runtime, &execution, lease.snapshot_for_test(), None)
-                .unwrap()));
+            let (lease, _, _, _) = snapshot.into_lease_and_realized_scope_for_test(
+                selected.product().retained_clone_for_test(),
+            );
+            assert!(!lease
+                .handle_for_test()
+                .with_runtime(&execution, |runtime| original
+                    .body
+                    .remains_equal_for_test(runtime, &execution, lease.snapshot_for_test(), None)
+                    .unwrap()));
         })
         .unwrap();
 }

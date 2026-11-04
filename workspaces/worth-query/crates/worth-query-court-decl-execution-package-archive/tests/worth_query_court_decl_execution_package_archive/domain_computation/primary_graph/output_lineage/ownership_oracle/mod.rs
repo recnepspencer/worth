@@ -185,15 +185,14 @@ pub mod region_output;
 #[path = "../../../../../../../worth-query-certification/fixtures/consumer_values/src/integer_orientation.rs"]
 pub mod worth_query_consumer_values;
 
-
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::base_model::*;
-use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::principal::*;
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::output_contract::*;
-use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::planar_topology::*;
+use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::output_producer::*;
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::planar_islands::*;
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::planar_read::*;
+use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::planar_topology::*;
+use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::principal::*;
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::region_output::*;
-use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::output_producer::*;
 
 #[path = "optional_aspects/mod.rs"]
 pub mod optional_aspects;

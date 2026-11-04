@@ -39,8 +39,16 @@ pub fn fixture_with_commit(
         .performed_obligations_mut_for_test())
         .push(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::PerformedOutputObligation::new_for_test(commit.clone(), key("unmatched", 1, 2).source_into_for_test()));
     let next_record = record(occurrence(), DemandState::Admitted, 1);
-    let old_interest = interest(&registry, old.clone(), Arc::clone(&(*old_record.wake_for_test())));
-    let next_interest = interest(&registry, next.clone(), Arc::clone(&(*next_record.wake_for_test())));
+    let old_interest = interest(
+        &registry,
+        old.clone(),
+        Arc::clone(&(*old_record.wake_for_test())),
+    );
+    let next_interest = interest(
+        &registry,
+        next.clone(),
+        Arc::clone(&(*next_record.wake_for_test())),
+    );
     {
         let mut state = (*registry.state_for_test()).lock().unwrap();
         (*state.records_mut_for_test()).insert_for_test(old, old_record);
@@ -61,5 +69,9 @@ fn replacement_prepares_exact_commit_growth_and_transfers_matching_obligations()
     assert_eq!((*successor.source_commits_for_test()), [commit]);
 
     assert!((*state.required_keys_for_test()).contains(&(*next.key_for_test())));
-    assert_eq!((*(*state.records_for_test())[&(*old.key_for_test())].performed_obligations_for_test()).len(), 0);
+    assert_eq!(
+        (*(*state.records_for_test())[&(*old.key_for_test())].performed_obligations_for_test())
+            .len(),
+        0
+    );
 }

@@ -68,7 +68,9 @@ fn retired_original_incarnation_rebuilds_from_world_and_canonical_relational_pat
 
     let provider = &(*world.application.primary_provider_for_test());
     provider.destroy_completed_inbound_index_for_test();
-    assert!(provider.lookup_completed_inbound_for_test(&correlation).is_err());
+    assert!(provider
+        .lookup_completed_inbound_for_test(&correlation)
+        .is_err());
     let complete = world
         .application
         .with_host_advancement(|phase| {
@@ -87,7 +89,10 @@ fn retired_original_incarnation_rebuilds_from_world_and_canonical_relational_pat
         .lookup_completed_inbound_for_test(&correlation)
         .unwrap()
         .unwrap();
-    assert_eq!(rebuilt.original_world_commit_for_test(), &original_world_commit);
+    assert_eq!(
+        rebuilt.original_world_commit_for_test(),
+        &original_world_commit
+    );
     assert_ne!(
         rebuilt.original_world_commit_for_test(),
         rebuilt.completion_world_commit_for_test()

@@ -27,7 +27,10 @@ fn preview_readmission_retains_original_source_and_runtime_until_promotion() {
     let diagnostics = (*preview.handle_for_test()).diagnostics().clone();
     let original_source = std::sync::Arc::clone(&(*preview._source_for_test()));
     let observer = (*preview.handle_for_test()).liveness_observer();
-    let original_execution = (*preview.handle_for_test()).execution_record().digest().to_owned();
+    let original_execution = (*preview.handle_for_test())
+        .execution_record()
+        .digest()
+        .to_owned();
     let (preview, denial) = other
         .with_host_advancement(|phase| preview.readmit(&phase, &runtime))
         .unwrap()
@@ -36,7 +39,10 @@ fn preview_readmission_retains_original_source_and_runtime_until_promotion() {
         denial,
         WorthQueryApplicationPreviewReadmissionDenial::ForeignPhase
     );
-    assert!(std::sync::Arc::ptr_eq(&(*preview._source_for_test()), &original_source));
+    assert!(std::sync::Arc::ptr_eq(
+        &(*preview._source_for_test()),
+        &original_source
+    ));
     let (preview, denial) = other
         .with_host_advancement(|phase| preview.readmit(&phase, &other))
         .unwrap()
@@ -55,7 +61,9 @@ fn preview_readmission_retains_original_source_and_runtime_until_promotion() {
         &original_source
     ));
     assert_eq!(
-        (*(*preview.session_for_test()).handle_for_test()).execution_record().digest(),
+        (*(*preview.session_for_test()).handle_for_test())
+            .execution_record()
+            .digest(),
         original_execution
     );
     let outcome = preview.promote().unwrap();
@@ -98,7 +106,10 @@ fn readmitted_preview_discard_refusal_retains_source_and_liveness_until_real_clo
         .unwrap();
     let (preview, denial) = preview.discard().unwrap_err();
     assert_eq!(denial.kind(), worth_runtime_bridge::facade::BridgeSpeculationErrorKind::PreviewResidueClassificationMismatch);
-    assert!(std::sync::Arc::ptr_eq(&(*(*preview.session_for_test())._source_for_test()), &source));
+    assert!(std::sync::Arc::ptr_eq(
+        &(*(*preview.session_for_test())._source_for_test()),
+        &source
+    ));
     assert!(observer.admit_active_session().is_some());
     assert!(diagnostics.preview_discard_records().is_empty());
     drop(fault);

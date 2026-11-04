@@ -90,7 +90,9 @@ pub fn run_locality(count: usize) -> LocalityRun {
             .with_host_advancement(|phase| {
                 grow_unrelated_accounts(
                     &phase
-                        .execution_request_for_for_test(&(*world.application.product_runtime_for_test()))
+                        .execution_request_for_for_test(
+                            &(*world.application.product_runtime_for_test()),
+                        )
                         .unwrap(),
                     &world,
                     count,
@@ -106,8 +108,11 @@ pub fn run_locality(count: usize) -> LocalityRun {
         .with_host_advancement(|phase| {
             let custody = phase.test_host_request_for_test();
             let phase_custody = &custody;
-            let principal =
-                authenticated_principal(&(phase_custody).test_host_request_for_test(), &world, &request);
+            let principal = authenticated_principal(
+                &(phase_custody).test_host_request_for_test(),
+                &world,
+                &request,
+            );
 
             let source_query_before =
                 source_query_work(phase_custody, &world, &principal, &request);
@@ -146,7 +151,12 @@ pub fn run_locality(count: usize) -> LocalityRun {
         source_query_after: world
             .application
             .with_host_advancement(|phase| {
-                source_query_work(&phase.test_host_request_for_test(), &world, &principal, &request)
+                source_query_work(
+                    &phase.test_host_request_for_test(),
+                    &world,
+                    &principal,
+                    &request,
+                )
             })
             .expect("the fixture source read owns its host call"),
         mutation_decision_facts: mutation.decision_fact_count(),
@@ -173,7 +183,12 @@ pub fn source_query_work(
     >,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
 ) -> usize {
-    let account = resolved_account(&(phase_custody).test_host_request_for_test(), world, "open", request);
+    let account = resolved_account(
+        &(phase_custody).test_host_request_for_test(),
+        world,
+        "open",
+        request,
+    );
     let query = world
         .application
         .installed_schema()

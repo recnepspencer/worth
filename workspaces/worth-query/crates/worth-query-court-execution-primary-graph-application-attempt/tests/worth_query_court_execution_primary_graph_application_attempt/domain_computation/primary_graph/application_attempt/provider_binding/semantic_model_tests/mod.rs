@@ -143,7 +143,12 @@ fn two_relation_deletes_from_one_adjacency_share_one_provisional_retirement() {
     )
     .expect("both relation deletes are authorized by the observed adjacency");
 
-    assert_eq!((*prepared.effects_for_test()).expected_steps_for_test().len(), 1);
+    assert_eq!(
+        (*prepared.effects_for_test())
+            .expected_steps_for_test()
+            .len(),
+        1
+    );
 }
 
 pub fn admitted<T>(values: Vec<T>) -> worth_execution::ExecutionArray<T> {

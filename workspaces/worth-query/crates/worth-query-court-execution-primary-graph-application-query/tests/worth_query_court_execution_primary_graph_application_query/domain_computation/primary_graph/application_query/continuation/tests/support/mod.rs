@@ -72,7 +72,10 @@ impl ContinuationTestContext {
                     .application
                     .select_product_branch_for_test(
                         execution,
-                        world.application.product_runtime().default_branch_for_test(),
+                        world
+                            .application
+                            .product_runtime()
+                            .default_branch_for_test(),
                     )
                     .expect("the selected product branch remains admitted")
                     .resolve_authenticated_principal(
@@ -87,7 +90,10 @@ impl ContinuationTestContext {
                     .application
                     .select_product_branch_for_test(
                         execution,
-                        world.application.product_runtime().default_branch_for_test(),
+                        world
+                            .application
+                            .product_runtime()
+                            .default_branch_for_test(),
                     )
                     .expect("the selected product branch remains admitted")
                     .resolve_entity(
@@ -248,28 +254,20 @@ impl ContinuationTestContext {
 
     pub fn advance_installation(&mut self) {
         let successor = Arc::new(
-            (*self.world
-                .application
-                .runtime_for_test())
+            (*self.world.application.runtime_for_test())
                 .installed_packages()
                 .successor_generation(),
         );
-        (*self.world
-            .application
-            .runtime_mut_for_test())
+        (*self.world.application.runtime_mut_for_test())
             .commit_successor_installation(successor)
             .unwrap();
     }
 
     pub fn stale_principal_mapping(&self, execution: &worth_execution::ExecutionRequest<'_, '_>) {
-        let graph = (*self
-            .world
-            .application
-            .runtime_for_test())
+        let graph = (*self.world.application.runtime_for_test())
             .primary_graph()
             .expect("test world publishes a primary graph");
-        let layout = (*graph
-            .layout_for_test())
+        let layout = (*graph.layout_for_test())
             .principal_binding_for_test(self.principal.binding())
             .expect("test principal binding is installed")
             .clone();
@@ -287,15 +285,11 @@ impl ContinuationTestContext {
     }
 
     pub fn stale_scope_identity(&self, execution: &worth_execution::ExecutionRequest<'_, '_>) {
-        let graph = (*self
-            .world
-            .application
-            .runtime_for_test())
+        let graph = (*self.world.application.runtime_for_test())
             .primary_graph()
             .expect("test world publishes a primary graph");
         let field = AccountIdentity::reference();
-        let locator = (*graph
-            .layout_for_test())
+        let locator = (*graph.layout_for_test())
             .field_locator_for_test(field.entity(), field.aspect(), field.field())
             .expect("account identity is installed")
             .clone();

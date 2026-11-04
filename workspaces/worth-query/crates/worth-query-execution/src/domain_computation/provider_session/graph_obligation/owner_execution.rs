@@ -150,7 +150,7 @@ pub(crate) mod pin_panic {
         assert!(!ARMED.replace(false), "injected panic inside owner pin");
     }
 
-mod court_doors_for_test;
+    mod court_doors_for_test;
 }
 
 pub(crate) mod pin_control;

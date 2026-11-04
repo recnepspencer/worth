@@ -42,7 +42,10 @@ fn same_observation_preserve_is_a_strict_successor_but_a_distinct_exact_row() {
     assert_ne!(initial, preserve);
     assert!(initial.same_occurrence_for_test(&preserve));
     assert!(!initial.same_semantic_source_for_test(&preserve));
-    assert_eq!(initial.replacement_order_for_test(&preserve), Some(Ordering::Less));
+    assert_eq!(
+        initial.replacement_order_for_test(&preserve),
+        Some(Ordering::Less)
+    );
     assert_eq!(
         preserve.replacement_order_for_test(&initial),
         Some(Ordering::Greater)
@@ -50,7 +53,10 @@ fn same_observation_preserve_is_a_strict_successor_but_a_distinct_exact_row() {
     (*preserve.producer_mut_for_test()) = (*initial.producer_for_test()).clone();
     assert_ne!(initial, preserve);
     assert!(initial.same_semantic_source_for_test(&preserve));
-    assert_eq!(initial.replacement_order_for_test(&preserve), Some(Ordering::Less));
+    assert_eq!(
+        initial.replacement_order_for_test(&preserve),
+        Some(Ordering::Less)
+    );
     assert_eq!(
         preserve.replacement_order_for_test(&initial),
         Some(Ordering::Greater)
@@ -98,7 +104,10 @@ fn family_scope_profile_and_source_movement_do_not_forge_a_successor() {
         "registry-fixture",
         WorthQueryProducerLifecyclePosture::Preserve,
     );
-    assert_eq!(backdated.replacement_order_for_test(&initial), Some(Ordering::Less));
+    assert_eq!(
+        backdated.replacement_order_for_test(&initial),
+        Some(Ordering::Less)
+    );
     let other_root = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::support::key("preserve", 8, 2);
     assert_eq!(initial.replacement_order_for_test(&other_root), None);
 }

@@ -32,7 +32,12 @@ fn distinct_absent_predicates_survive_sealing_and_compare_only_their_own_matches
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
+            resolved_account(
+                &(phase).test_host_request_for_test(),
+                &world,
+                "open",
+                &request,
+            )
         })
         .expect("the fixture read owns its installed host call");
     let operation = world
@@ -103,8 +108,7 @@ fn distinct_absent_predicates_survive_sealing_and_compare_only_their_own_matches
                 .unwrap()
         })
         .expect("the fixture read owns its installed host call");
-    let predicates = (*reads
-        .facts_for_test())
+    let predicates = (*reads.facts_for_test())
         .iter_for_test()
         .filter(|fact| matches!(fact, Fact::IndexedEntitySelection { .. }))
         .cloned()
@@ -174,11 +178,9 @@ pub fn currentness(
     fact: &Fact,
 ) -> bool {
     let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
-    (*(*world
-        .application
-        .primary_provider_for_test())
-        .graph_for_test())
-        .with_runtime(execution, |runtime| {
+    (*(*world.application.primary_provider_for_test()).graph_for_test()).with_runtime(
+        execution,
+        |runtime| {
             let movement = fact
                 .source_currentness_in_for_test(
                     runtime,
@@ -188,7 +190,8 @@ pub fn currentness(
                 .unwrap()
                 .unwrap();
             movement.movement_for_test() == Movement::Unmoved
-        })
+        },
+    )
 }
 
 pub fn set_unrelated_status(
@@ -217,14 +220,12 @@ pub fn set_unrelated_value(
         "unrelated",
         &live_scope(),
     );
-    let installed = (*(*world
-        .application
-        .runtime_for_test())
+    let installed = (*(*world.application.runtime_for_test())
         .primary_graph()
         .unwrap()
         .layout_for_test())
-        .field_locator_for_test(field.0, field.1, field.2)
-        .unwrap();
+    .field_locator_for_test(field.0, field.1, field.2)
+    .unwrap();
     let locator = worth_foundational::facade::AspectFieldLocator::new(
         worth_foundational::facade::LocatorAuthority::Authoritative,
         installed.aspect().aspect_key().clone(),

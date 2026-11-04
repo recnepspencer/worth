@@ -29,7 +29,10 @@ fn real_commit_mapping_denial_reaches_receipt_projection() {
     let binding = seal
         .binding()
         .expect("the committed create has one binding");
-    assert_eq!(binding.record_for_test(), evidence.committed_pending.record_for_test());
+    assert_eq!(
+        binding.record_for_test(),
+        evidence.committed_pending.record_for_test()
+    );
     assert_eq!(binding.record_ref_for_test(), &evidence.expected_record_ref);
 
     assert_eq!(

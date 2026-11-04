@@ -45,12 +45,21 @@ pub fn epoch(
     let meaning = registry
         .intern_for_test(&[7; 32], &[8; 32], footprint, selection)
         .unwrap();
-    WorthQueryObservedSourceEpoch::from_observation_for_test(&[7; 32], &[8; 32], root, selection, meaning)
-        .unwrap()
+    WorthQueryObservedSourceEpoch::from_observation_for_test(
+        &[7; 32], &[8; 32], root, selection, meaning,
+    )
+    .unwrap()
 }
 
 pub fn footprint(root: EntityId, complete: bool) -> WorthQueryObservedSourceFootprint {
-    WorthQueryObservedSourceFootprint::new_for_test(root, complete, vec![root], Vec::new(), None, Vec::new())
+    WorthQueryObservedSourceFootprint::new_for_test(
+        root,
+        complete,
+        vec![root],
+        Vec::new(),
+        None,
+        Vec::new(),
+    )
 }
 
 pub fn product_selection() -> WorthQueryApplicationBasisSelectionIdentity {
@@ -61,7 +70,12 @@ pub fn product_selection() -> WorthQueryApplicationBasisSelectionIdentity {
     let product = world
         .application
         .product_runtime()
-        .admit_product_branch_for_test(world.application.product_runtime().default_branch_for_test())
+        .admit_product_branch_for_test(
+            world
+                .application
+                .product_runtime()
+                .default_branch_for_test(),
+        )
         .expect("the fixture product occurrence is live");
     WorthQueryApplicationBasisSelectionIdentity::Product(
             worth_query_execution::facade::domain_computation::WorthQueryProductBranchReadIdentity::from_observation_for_test(

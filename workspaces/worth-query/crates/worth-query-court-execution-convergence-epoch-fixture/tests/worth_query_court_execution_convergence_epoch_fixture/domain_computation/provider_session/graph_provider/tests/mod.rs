@@ -19,8 +19,13 @@ fn retained_graph_call_cannot_bind_a_later_call_receipt() {
     let attempt = attempt();
     let first = call(&attempt, "first");
     let second = call(&attempt, "second");
-    let foreign_receipt = StreamedReceiptForTest::streamed_for_test(&first, "first", material("first"), projected_work_report())
-        .unwrap();
+    let foreign_receipt = StreamedReceiptForTest::streamed_for_test(
+        &first,
+        "first",
+        material("first"),
+        projected_work_report(),
+    )
+    .unwrap();
 
     assert_eq!(
         second.admit_receipt(foreign_receipt).unwrap_err(),
@@ -35,22 +40,24 @@ fn equal_semantic_results_keep_distinct_call_and_product_occurrences() {
     let second = call(&second_attempt, "canonical-b");
     let first_product = first
         .admit_receipt(
-            StreamedReceiptForTest::streamed_for_test(&first, 
-                    "first",
-                    material_with_rows(["a", "b"]),
-                    projected_work_report(),
-                )
-                .unwrap(),
+            StreamedReceiptForTest::streamed_for_test(
+                &first,
+                "first",
+                material_with_rows(["a", "b"]),
+                projected_work_report(),
+            )
+            .unwrap(),
         )
         .unwrap();
     let second_product = second
         .admit_receipt(
-            StreamedReceiptForTest::streamed_for_test(&second, 
-                    "second",
-                    material_with_rows(["a", "b"]),
-                    projected_work_report(),
-                )
-                .unwrap(),
+            StreamedReceiptForTest::streamed_for_test(
+                &second,
+                "second",
+                material_with_rows(["a", "b"]),
+                projected_work_report(),
+            )
+            .unwrap(),
         )
         .unwrap();
 
@@ -70,22 +77,24 @@ fn graph_product_rows_are_canonical_across_field_insertion_order() {
     let second = call(&attempt, "field-order-b");
     let first_receipt = first
         .admit_receipt(
-            StreamedReceiptForTest::streamed_for_test(&first, 
-                    "first",
-                    material_with_field_order(false),
-                    projected_work_report(),
-                )
-                .unwrap(),
+            StreamedReceiptForTest::streamed_for_test(
+                &first,
+                "first",
+                material_with_field_order(false),
+                projected_work_report(),
+            )
+            .unwrap(),
         )
         .unwrap();
     let second_receipt = second
         .admit_receipt(
-            StreamedReceiptForTest::streamed_for_test(&second, 
-                    "second",
-                    material_with_field_order(true),
-                    projected_work_report(),
-                )
-                .unwrap(),
+            StreamedReceiptForTest::streamed_for_test(
+                &second,
+                "second",
+                material_with_field_order(true),
+                projected_work_report(),
+            )
+            .unwrap(),
         )
         .unwrap();
 
@@ -102,22 +111,24 @@ fn graph_product_preserves_provider_row_order_without_hashing_rows() {
     let second = call(&attempt, "row-order-b");
     let first_receipt = first
         .admit_receipt(
-            StreamedReceiptForTest::streamed_for_test(&first, 
-                    "first",
-                    material_with_rows(["a", "b"]),
-                    projected_work_report(),
-                )
-                .unwrap(),
+            StreamedReceiptForTest::streamed_for_test(
+                &first,
+                "first",
+                material_with_rows(["a", "b"]),
+                projected_work_report(),
+            )
+            .unwrap(),
         )
         .unwrap();
     let second_receipt = second
         .admit_receipt(
-            StreamedReceiptForTest::streamed_for_test(&second, 
-                    "second",
-                    material_with_rows(["b", "a"]),
-                    projected_work_report(),
-                )
-                .unwrap(),
+            StreamedReceiptForTest::streamed_for_test(
+                &second,
+                "second",
+                material_with_rows(["b", "a"]),
+                projected_work_report(),
+            )
+            .unwrap(),
         )
         .unwrap();
 
@@ -135,22 +146,24 @@ fn graph_product_retains_changed_field_values_without_hashing_rows() {
     let second = call(&second_attempt, "field-value-b");
     let first_receipt = first
         .admit_receipt(
-            StreamedReceiptForTest::streamed_for_test(&first, 
-                    "first",
-                    material_with_identity_value("vertex-a"),
-                    projected_work_report(),
-                )
-                .unwrap(),
+            StreamedReceiptForTest::streamed_for_test(
+                &first,
+                "first",
+                material_with_identity_value("vertex-a"),
+                projected_work_report(),
+            )
+            .unwrap(),
         )
         .unwrap();
     let second_receipt = second
         .admit_receipt(
-            StreamedReceiptForTest::streamed_for_test(&second, 
-                    "second",
-                    material_with_identity_value("vertex-b"),
-                    projected_work_report(),
-                )
-                .unwrap(),
+            StreamedReceiptForTest::streamed_for_test(
+                &second,
+                "second",
+                material_with_identity_value("vertex-b"),
+                projected_work_report(),
+            )
+            .unwrap(),
         )
         .unwrap();
 
@@ -171,12 +184,13 @@ fn non_projection_call_cannot_seal_projection_material() {
         WorthQueryGraphProviderCallKind::Observe,
     );
 
-    assert!(StreamedReceiptForTest::streamed_for_test(&call, 
-            "unexpected",
-            material("unexpected"),
-            projected_work_report(),
-        )
-        .is_err());
+    assert!(StreamedReceiptForTest::streamed_for_test(
+        &call,
+        "unexpected",
+        material("unexpected"),
+        projected_work_report(),
+    )
+    .is_err());
 }
 #[test]
 fn provider_session_rejects_resources_admitted_for_another_session() {

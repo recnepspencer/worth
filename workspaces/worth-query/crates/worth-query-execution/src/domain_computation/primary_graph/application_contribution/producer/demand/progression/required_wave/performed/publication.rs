@@ -4,9 +4,7 @@ use crate::domain_computation::primary_graph::application_contribution::producer
 
 /// Only a newly committed effect lends this member's publication seal.
 /// A replay never constructs this capability.
-pub struct PublishedMember<
-    'record,
-> {
+pub struct PublishedMember<'record> {
     performed: &'record mut bool,
 }
 impl PublishedMember<'_> {
@@ -18,9 +16,7 @@ impl PublishedMember<'_> {
 }
 
 /// The receipt and a read-only view of the record at its publication handoff.
-pub struct PublicationHandoff<
-    'record,
-> {
+pub struct PublicationHandoff<'record> {
     receipt: ProducerCommitReceipt,
     recorded: &'record bool,
 }

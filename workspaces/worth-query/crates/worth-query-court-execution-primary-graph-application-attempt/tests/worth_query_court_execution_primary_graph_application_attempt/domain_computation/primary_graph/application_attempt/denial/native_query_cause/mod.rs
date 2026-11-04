@@ -23,8 +23,10 @@ fn native_query_cause_survives_both_query_denials() {
         .zip(non_request_causes())
     {
         assert!(expected.execution_denial().is_none());
-        let attempt =
-            WorthQueryApplicationAttemptDenial::query_read_denial_for_test(attempt_stop, "relation");
+        let attempt = WorthQueryApplicationAttemptDenial::query_read_denial_for_test(
+            attempt_stop,
+            "relation",
+        );
         assert_eq!(
             attempt.kind(),
             WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact
@@ -117,7 +119,8 @@ fn noncanonical_expected_identities_are_one_execution_cause_on_both_query_paths(
         let expected = Session::ExecutionIdentitiesNotCanonical {
             partition_identity: None,
         };
-        let attempt = WorthQueryApplicationAttemptDenial::query_read_denial_for_test(source(), "relation");
+        let attempt =
+            WorthQueryApplicationAttemptDenial::query_read_denial_for_test(source(), "relation");
         assert_eq!(
             attempt.kind(),
             WorthQueryApplicationAttemptDenialKind::ExecutionRequest(expected)

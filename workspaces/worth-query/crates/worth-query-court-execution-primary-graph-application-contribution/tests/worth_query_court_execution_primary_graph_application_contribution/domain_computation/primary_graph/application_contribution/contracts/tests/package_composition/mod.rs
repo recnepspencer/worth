@@ -105,7 +105,10 @@ fn explicit_incoming_domain_and_binding_duplicates_remain_refusals() {
         for _ in 0..copies {
             incoming = incoming.domain_operation(portable.clone());
         }
-        let denial = catalog.compose_package_for_test(incoming).validate().unwrap_err();
+        let denial = catalog
+            .compose_package_for_test(incoming)
+            .validate()
+            .unwrap_err();
         assert_eq!(
             denial.kind(),
             domain::WorthQueryPortablePackageValidationDenialKind::DuplicateDefinition
@@ -120,7 +123,10 @@ fn explicit_incoming_domain_and_binding_duplicates_remain_refusals() {
         for _ in 0..copies {
             incoming = incoming.conditional_application_operation_erased(binding.clone());
         }
-        let denial = catalog.compose_package_for_test(incoming).validate().unwrap_err();
+        let denial = catalog
+            .compose_package_for_test(incoming)
+            .validate()
+            .unwrap_err();
         assert_eq!(denial.kind(), domain::WorthQueryPortablePackageValidationDenialKind::DuplicateConditionalApplicationOperation);
         assert_eq!(denial.slot(), binding.application_operation());
     }

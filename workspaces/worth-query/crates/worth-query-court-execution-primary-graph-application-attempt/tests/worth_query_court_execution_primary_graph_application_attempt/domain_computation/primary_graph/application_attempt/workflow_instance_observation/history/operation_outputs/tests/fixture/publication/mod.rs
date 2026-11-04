@@ -83,8 +83,14 @@ pub fn context_effects(
             (*(*layout.transition_for_test()).protocol_version_for_test()).clone(),
             AspectValue::UInt64(3),
         ),
-        ((*(*layout.transition_for_test()).occurrence_for_test()).clone(), AspectValue::UInt64(0)),
-        ((*(*layout.transition_for_test()).outcome_for_test()).clone(), AspectValue::UInt64(1)),
+        (
+            (*(*layout.transition_for_test()).occurrence_for_test()).clone(),
+            AspectValue::UInt64(0),
+        ),
+        (
+            (*(*layout.transition_for_test()).outcome_for_test()).clone(),
+            AspectValue::UInt64(1),
+        ),
         (
             (*(*layout.transition_for_test()).live_membership_partition_for_test()).clone(),
             AspectValue::UInt64(0),
@@ -179,7 +185,10 @@ pub fn corrupt(layout: &WorthQueryWorkflowLayout, effects: &mut Vec<Effect>, def
                         );
                     }
                     Some("empty") => {
-                        fields.insert((*layout.operation_output.role_for_test()).clone(), text_value(""));
+                        fields.insert(
+                            (*layout.operation_output.role_for_test()).clone(),
+                            text_value(""),
+                        );
                     }
                     Some("posture") => {
                         fields.insert(
@@ -212,10 +221,19 @@ pub fn attach_structural_parent(
         })
     };
     for (kind, key) in [
-        ((*(*layout.lineage_for_test()).entity_kind_for_test()), "lineage"),
-        ((*(*layout.definition_for_test()).entity_kind_for_test()), "definition"),
+        (
+            (*(*layout.lineage_for_test()).entity_kind_for_test()),
+            "lineage",
+        ),
+        (
+            (*(*layout.definition_for_test()).entity_kind_for_test()),
+            "definition",
+        ),
         ((*(*layout.node_for_test()).entity_kind_for_test()), "node"),
-        ((*(*layout.instance_for_test()).entity_kind_for_test()), "instance"),
+        (
+            (*(*layout.instance_for_test()).entity_kind_for_test()),
+            "instance",
+        ),
     ] {
         effects.push(Effect::CreateEntity {
             kind,
@@ -224,10 +242,19 @@ pub fn attach_structural_parent(
             partition: Partition::Context(partition),
         });
     }
-    let lineage = reference((*(*layout.lineage_for_test()).entity_kind_for_test()), "lineage");
-    let definition = reference((*(*layout.definition_for_test()).entity_kind_for_test()), "definition");
+    let lineage = reference(
+        (*(*layout.lineage_for_test()).entity_kind_for_test()),
+        "lineage",
+    );
+    let definition = reference(
+        (*(*layout.definition_for_test()).entity_kind_for_test()),
+        "definition",
+    );
     let node = reference((*(*layout.node_for_test()).entity_kind_for_test()), "node");
-    let instance = reference((*(*layout.instance_for_test()).entity_kind_for_test()), "instance");
+    let instance = reference(
+        (*(*layout.instance_for_test()).entity_kind_for_test()),
+        "instance",
+    );
     for (kind, from, to) in [
         (
             (*layout.lineage_definition_relation_for_test()),
@@ -244,7 +271,11 @@ pub fn attach_structural_parent(
             definition.clone(),
             node.clone(),
         ),
-        ((*layout.instance_lineage_relation_for_test()), instance.clone(), lineage),
+        (
+            (*layout.instance_lineage_relation_for_test()),
+            instance.clone(),
+            lineage,
+        ),
         (
             (*layout.instance_definition_relation_for_test()),
             instance.clone(),
@@ -253,11 +284,17 @@ pub fn attach_structural_parent(
         (
             (*layout.instance_transition_relation_for_test()),
             instance,
-            reference((*(*layout.transition_for_test()).entity_kind_for_test()), "transition"),
+            reference(
+                (*(*layout.transition_for_test()).entity_kind_for_test()),
+                "transition",
+            ),
         ),
         (
             (*layout.transition_node_relation_for_test()),
-            reference((*(*layout.transition_for_test()).entity_kind_for_test()), "transition"),
+            reference(
+                (*(*layout.transition_for_test()).entity_kind_for_test()),
+                "transition",
+            ),
             node,
         ),
     ] {

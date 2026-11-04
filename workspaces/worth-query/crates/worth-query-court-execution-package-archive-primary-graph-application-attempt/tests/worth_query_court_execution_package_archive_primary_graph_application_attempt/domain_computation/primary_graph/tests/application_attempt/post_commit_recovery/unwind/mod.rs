@@ -5,11 +5,11 @@ fn unwind_after_performed_publication_preserves_one_exact_retriable_record() {
     let world = installed_authorization_world(true);
     let selected = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
+        .with_host_advancement(|phase| {
+            world.selected_product(&(phase).test_host_request_for_test())
+        })
         .expect("the fixture read owns its installed host call");
-    let _live = (*world
-        .application
-        .primary_provider_for_test())
+    let _live = (*world.application.primary_provider_for_test())
         .observe_application_commit_causality_for_test(selected.product());
     let request = live_scope();
     let principal = world
@@ -21,7 +21,12 @@ fn unwind_after_performed_publication_preserves_one_exact_retriable_record() {
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
+            resolved_account(
+                &(phase).test_host_request_for_test(),
+                &world,
+                "open",
+                &request,
+            )
         })
         .expect("the fixture read owns its installed host call");
     let before = selected.product().selected_commit().clone();
@@ -71,9 +76,7 @@ fn unwind_after_performed_publication_preserves_one_exact_retriable_record() {
         "the post-Performed unwind must occur exactly once"
     );
     assert_eq!(
-        (*world
-            .application
-            .primary_provider_for_test())
+        (*world.application.primary_provider_for_test())
             .pending_application_publication_count_for_test(),
         0,
         "the internal exact retry must retire the recovered slot"
@@ -104,20 +107,18 @@ fn unwind_after_performed_publication_preserves_one_exact_retriable_record() {
     assert!(recovered.is_same_authoritative_commit(&first_receipt));
     assert_eq!(recovered.emitted_effect_count(), 1);
     assert_eq!(
-        (*world
-            .application
-            .primary_provider_for_test())
+        (*world.application.primary_provider_for_test())
             .pending_application_publication_count_for_test(),
         0,
         "terminal recovery must disarm and retire the exact slot"
     );
-    let emissions = (*world
-        .application
-        .primary_provider_for_test())
+    let emissions = (*world.application.primary_provider_for_test())
         .committed_application_emissions_for_test(recovered.committed_product_publication());
     assert_eq!(emissions.len(), 1);
     assert_eq!(
-        emissions[0].payload_for_test::<String>().map(String::as_str),
+        emissions[0]
+            .payload_for_test::<String>()
+            .map(String::as_str),
         Some("post-performed-effect")
     );
 }

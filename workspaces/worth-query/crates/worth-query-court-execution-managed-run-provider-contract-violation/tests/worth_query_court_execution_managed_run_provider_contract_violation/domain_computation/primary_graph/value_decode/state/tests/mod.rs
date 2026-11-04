@@ -69,10 +69,16 @@ fn cancelled_native_decode_stops_before_body_and_keeps_its_original_refusal() {
     let called = Cell::new(false);
     cancellation.cancel();
     let expected = Stop::Scope(WorkCeilingDenial::Stopped(MapKernelStop::Cancelled));
-    assert_eq!(state.run_for_test(&request, |_| called.set(true)), Err(expected));
+    assert_eq!(
+        state.run_for_test(&request, |_| called.set(true)),
+        Err(expected)
+    );
     assert!(!called.get());
     assert_eq!(state.denial_for_test(), Some(expected));
-    assert_eq!(state.run_for_test(&request, |_| called.set(true)), Err(expected));
+    assert_eq!(
+        state.run_for_test(&request, |_| called.set(true)),
+        Err(expected)
+    );
     assert!(!called.get());
     assert!((*state.memory_for_test()).borrow().is_none());
 }

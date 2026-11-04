@@ -39,7 +39,9 @@ fn live_support_requires_the_exact_contract_and_both_equality_indexes() {
         query.canonical_work_policy().admission_planning(),
     )
     .expect("the live fixture fits its installed canonical budget");
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
 
     let supported = primary_graph_support_inventory(
         query.read_graph(),
@@ -117,7 +119,9 @@ fn provider_mechanism_deletion_mints_no_support_row() {
         query.canonical_work_policy().admission_planning(),
     )
     .expect("the one-shot fixture fits its installed canonical budget");
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
     let hostile =
         lower_layout(missing_scope_index::MissingScopeIndexSchema::declaration().unwrap());
 
@@ -169,7 +173,9 @@ fn continuation_ordering_requires_the_installed_seek_mechanism() {
         &requirements,
         WorthQueryGraphReadAccessRequirementKind::OrderingSupport,
     );
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
 
     assert_support_present(
         primary_graph_support_inventory(
@@ -212,7 +218,9 @@ fn query_runtime_mechanism_deletion_denies_plan_review() {
         query.canonical_work_policy().admission_planning(),
     )
     .expect("the nested fixture fits its installed canonical budget");
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
 
     for kind in [
         WorthQueryGraphReadAccessRequirementKind::ProofSupport,

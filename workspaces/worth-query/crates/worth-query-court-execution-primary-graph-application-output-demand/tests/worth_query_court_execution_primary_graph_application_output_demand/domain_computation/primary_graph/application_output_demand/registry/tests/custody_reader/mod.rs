@@ -33,36 +33,113 @@ fn registry_binding_reader_ignores_logically_absent_completed_custody() {
         .committed_product_publication()
         .composite_commit()
         .clone();
-    let occurrence = (*source.receipt_for_test()).product_branch().occurrence_for_test();
+    let occurrence = (*source.receipt_for_test())
+        .product_branch()
+        .occurrence_for_test();
     let (scope, _) = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::source_custody::real_scope_and_occurrence();
     for seed in 0..16 {
-        let selected = BoundOutputSource::new_for_test(scope, key("binding", seed + 1, 3).source_into_for_test());
-        let newer = BoundOutputSource::new_for_test(scope, key("binding", seed + 2, 3).source_into_for_test());
+        let selected = BoundOutputSource::new_for_test(
+            scope,
+            key("binding", seed + 1, 3).source_into_for_test(),
+        );
+        let newer = BoundOutputSource::new_for_test(
+            scope,
+            key("binding", seed + 2, 3).source_into_for_test(),
+        );
         let make = || {
             let registry = WorthQueryOutputDemandRegistry::default();
             let mut state = (*registry.state_for_test()).lock().unwrap();
-            state.source_custody.insert(
-                current_commit.clone(),
-                {
-// Bound in the original literal order, passed in the door's.
-let (occurrence, root_kind, source, discovery, bound_sources, consumed_sources, retired_sources, retired, token_count, cleanup, completed) = (occurrence, PreparedOutputRootKind::Discovered(EqualityTypeId::of_for_test::<()>()), Some(source.clone()), None, None, Vec::new(), Vec::new(), None, 1, Default::default(), false);
-SourceCustody::new_for_test(occurrence, root_kind, source, discovery, consumed_sources, retired_sources, bound_sources, retired, token_count, cleanup, completed)
-},
-            );
-            state.source_custody.insert(
-                completed_commit.clone(),
-                {
-// Bound in the original literal order, passed in the door's.
-let (occurrence, root_kind, source, discovery, bound_sources, consumed_sources, retired_sources, retired, token_count, cleanup, completed) = (occurrence, PreparedOutputRootKind::Discovered(EqualityTypeId::of_for_test::<()>()), None, None, Some(vec![newer.clone()]), vec![(*newer.identity_for_test()).clone()], Vec::new(), None, 0, Default::default(), true);
-SourceCustody::new_for_test(occurrence, root_kind, source, discovery, consumed_sources, retired_sources, bound_sources, retired, token_count, cleanup, completed)
-},
-            );
+            state.source_custody.insert(current_commit.clone(), {
+                // Bound in the original literal order, passed in the door's.
+                let (
+                    occurrence,
+                    root_kind,
+                    source,
+                    discovery,
+                    bound_sources,
+                    consumed_sources,
+                    retired_sources,
+                    retired,
+                    token_count,
+                    cleanup,
+                    completed,
+                ) = (
+                    occurrence,
+                    PreparedOutputRootKind::Discovered(EqualityTypeId::of_for_test::<()>()),
+                    Some(source.clone()),
+                    None,
+                    None,
+                    Vec::new(),
+                    Vec::new(),
+                    None,
+                    1,
+                    Default::default(),
+                    false,
+                );
+                SourceCustody::new_for_test(
+                    occurrence,
+                    root_kind,
+                    source,
+                    discovery,
+                    consumed_sources,
+                    retired_sources,
+                    bound_sources,
+                    retired,
+                    token_count,
+                    cleanup,
+                    completed,
+                )
+            });
+            state.source_custody.insert(completed_commit.clone(), {
+                // Bound in the original literal order, passed in the door's.
+                let (
+                    occurrence,
+                    root_kind,
+                    source,
+                    discovery,
+                    bound_sources,
+                    consumed_sources,
+                    retired_sources,
+                    retired,
+                    token_count,
+                    cleanup,
+                    completed,
+                ) = (
+                    occurrence,
+                    PreparedOutputRootKind::Discovered(EqualityTypeId::of_for_test::<()>()),
+                    None,
+                    None,
+                    Some(vec![newer.clone()]),
+                    vec![(*newer.identity_for_test()).clone()],
+                    Vec::new(),
+                    None,
+                    0,
+                    Default::default(),
+                    true,
+                );
+                SourceCustody::new_for_test(
+                    occurrence,
+                    root_kind,
+                    source,
+                    discovery,
+                    consumed_sources,
+                    retired_sources,
+                    bound_sources,
+                    retired,
+                    token_count,
+                    cleanup,
+                    completed,
+                )
+            });
             drop(state);
             registry.complete_prepared_source_for_test(&completed);
             registry
         };
         let eager = make();
-        (*eager.state_for_test()).lock().unwrap().prune_completed_custody();
+        (*eager.state_for_test())
+            .lock()
+            .unwrap()
+            .prune_completed_custody();
         eager
             .bind_prepared_output_source_for_test(&current_commit, selected.clone())
             .unwrap();
@@ -70,14 +147,17 @@ SourceCustody::new_for_test(occurrence, root_kind, source, discovery, consumed_s
         assert!(
             (*(*deferred.state_for_test()).lock().unwrap().source_custody[&completed_commit]
                 .source_for_test())
-                .is_none()
+            .is_none()
         );
         assert_eq!(
             deferred.retained_source_custody_count(),
             1,
             "a completed cleanup note retains no performed source"
         );
-        assert!((*deferred.state_for_test()).lock().unwrap().pending_custody_prune_for_test());
+        assert!((*deferred.state_for_test())
+            .lock()
+            .unwrap()
+            .pending_custody_prune_for_test());
         deferred
             .bind_prepared_output_source_for_test(&current_commit, selected.clone())
             .unwrap();

@@ -32,7 +32,9 @@ pub fn with_unmanaged_publications(
             authenticated_principal(&phase.test_host_request_for_test(), &world, &request)
         })
         .expect("the principal fixture opens its host call");
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
     let handle = graph.integration_handle_for_test();
     let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
     let partition = [7; 32];
@@ -41,8 +43,12 @@ pub fn with_unmanaged_publications(
             .application
             .with_host_advancement(|phase| {
                 let phase_custody = &phase;
-                let account =
-                    resolved_account(&phase.test_host_request_for_test(), &world, status, &request);
+                let account = resolved_account(
+                    &phase.test_host_request_for_test(),
+                    &world,
+                    status,
+                    &request,
+                );
 
                 retained_status_program(
                     &(phase_custody).test_host_request_for_test(),
@@ -77,7 +83,10 @@ pub fn with_unmanaged_publications(
             let image = cell.read_image();
             let live = identities
                 .iter()
-                .map(|identity| (*(*image.payload().current_for_test()).settlements_for_test()).contains_key(*identity))
+                .map(|identity| {
+                    (*(*image.payload().current_for_test()).settlements_for_test())
+                        .contains_key(*identity)
+                })
                 .collect::<Vec<_>>();
             runtime.snapshots().release_snapshot(&basis_handle).unwrap();
             live

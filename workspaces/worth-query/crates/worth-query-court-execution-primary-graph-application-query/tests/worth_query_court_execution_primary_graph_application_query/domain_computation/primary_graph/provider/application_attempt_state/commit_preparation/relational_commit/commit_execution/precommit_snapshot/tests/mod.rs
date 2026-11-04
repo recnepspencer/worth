@@ -11,7 +11,9 @@ fn unwind_releases_only_its_precommit_snapshot() {
             );
     let selected = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
+        .with_host_advancement(|phase| {
+            world.selected_product(&(phase).test_host_request_for_test())
+        })
         .expect("the fixture read owns its installed host call");
     let product = selected.product().publication_binding_for_test();
     let graph = (*(*world.application.primary_provider_for_test()).graph_for_test()).clone();

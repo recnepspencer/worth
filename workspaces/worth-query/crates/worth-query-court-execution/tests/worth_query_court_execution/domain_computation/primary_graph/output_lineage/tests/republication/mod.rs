@@ -200,9 +200,7 @@ impl Stage<'_> {
     ) -> Arc<OnceLock<RecordedOutput>> {
         assert!(generation < self.restored_generation());
         let occurrence = self.observation.lifecycle_incarnation();
-        let records = (*self
-            .lineage
-            .by_source_mut_for_test())
+        let records = (*self.lineage.by_source_mut_for_test())
             .entry(self.source.clone())
             .or_default()
             .entry(occurrence)
@@ -212,14 +210,32 @@ impl Stage<'_> {
         let slot = records.len();
         let cell = Arc::new(OnceLock::new());
         let recorded = record({
-// Bound in the original literal order, passed in the door's.
-let (producing_implementation, required_publication, native_prior_checkpoint, performed_origin, consumed_outputs, completed_handler_facts, completed_decision_reuse, prepared_input_reuse_key, native_output_witness, computation_source, mutable, settlement_identity, correspondence, source_identity, source_partition_identity, producer_dependency_identity, idempotency_key_identity) = (None, None, None, None, Arc::from([]), None, None, None, OnceLock::new(), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false), Mutex::new(RecordedOutputMutable::new_for_test(None, (Some(Arc::clone(facts))).map(|facts| worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false).retain_facts_for_test(facts)), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::retained_computation::RecordedComputation::Absent(PriorAbsence::Restored))), RecordedSettlementIdentity::retain_for_test(
+            // Bound in the original literal order, passed in the door's.
+            let (producing_implementation, required_publication, native_prior_checkpoint, performed_origin, consumed_outputs, completed_handler_facts, completed_decision_reuse, prepared_input_reuse_key, native_output_witness, computation_source, mutable, settlement_identity, correspondence, source_identity, source_partition_identity, producer_dependency_identity, idempotency_key_identity) = (None, None, None, None, Arc::from([]), None, None, None, OnceLock::new(), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false), Mutex::new(RecordedOutputMutable::new_for_test(None, (Some(Arc::clone(facts))).map(|facts| worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false).retain_facts_for_test(facts)), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::retained_computation::RecordedComputation::Absent(PriorAbsence::Restored))), RecordedSettlementIdentity::retain_for_test(
                 &self.source,
                 ProductCoordinate::new_for_test(occurrence, generation),
                 slot,
             ), Arc::clone(&self.correspondence), Some(checkpoint_identity([0x31; 32])), Some(PARTITION), None, IDEMPOTENCY_KEY);
-RecordedOutput::new_for_test(producing_implementation, required_publication, computation_source, native_prior_checkpoint, performed_origin, consumed_outputs, completed_handler_facts, completed_decision_reuse, prepared_input_reuse_key, native_output_witness, settlement_identity, correspondence, source_identity, source_partition_identity, producer_dependency_identity, idempotency_key_identity, mutable)
-});
+            RecordedOutput::new_for_test(
+                producing_implementation,
+                required_publication,
+                computation_source,
+                native_prior_checkpoint,
+                performed_origin,
+                consumed_outputs,
+                completed_handler_facts,
+                completed_decision_reuse,
+                prepared_input_reuse_key,
+                native_output_witness,
+                settlement_identity,
+                correspondence,
+                source_identity,
+                source_partition_identity,
+                producer_dependency_identity,
+                idempotency_key_identity,
+                mutable,
+            )
+        });
         assert!(cell.set(recorded).is_ok());
         records.push(Arc::clone(&cell));
         (*self.lineage.partition_index_mut_for_test()).insert_for_test(
@@ -260,7 +276,8 @@ RecordedOutput::new_for_test(producing_implementation, required_publication, com
             republished,
         );
         Some(record.map(|record| {
-            let (identity, predecessor, facts, consumed_outputs, witness) = record.into_parts_for_test();
+            let (identity, predecessor, facts, consumed_outputs, witness) =
+                record.into_parts_for_test();
             Continued {
                 identity,
                 predecessor,
@@ -273,8 +290,8 @@ RecordedOutput::new_for_test(producing_implementation, required_publication, com
 
     /// The only row at the restoration's own address.
     pub fn restored(&self) -> &RecordedOutput {
-        let rows = &(*self.lineage.by_source_for_test())[&self.source][&self.observation.lifecycle_incarnation()]
-            [&self.restored_generation()];
+        let rows = &(*self.lineage.by_source_for_test())[&self.source]
+            [&self.observation.lifecycle_incarnation()][&self.restored_generation()];
         assert_eq!(rows.len(), 1, "one restoration address holds one row");
         rows[0].get().unwrap()
     }

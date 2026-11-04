@@ -10,15 +10,20 @@ fn role_family_accepts_variable_semantic_members_and_enforces_its_contract() {
     let negative = created_handle("face-negative", 20, &program);
     let positive = created_handle("face-positive", 21, &program);
     let negative_role =
-        OutputRoleUse::member_for_test::<Face, WorthQueryCreateOutput>("negative.inherited.wall").unwrap();
+        OutputRoleUse::member_for_test::<Face, WorthQueryCreateOutput>("negative.inherited.wall")
+            .unwrap();
     let positive_role =
         OutputRoleUse::member_for_test::<Face, WorthQueryCreateOutput>("positive.cap").unwrap();
-    candidate.bind_for_test(negative_role, &negative, &program).unwrap();
+    candidate
+        .bind_for_test(negative_role, &negative, &program)
+        .unwrap();
     assert_eq!(
         candidate.validate_effects_for_test(&[]).unwrap_err().kind(),
         WorthQueryApplicationAttemptDenialKind::MissingOutputRole
     );
-    candidate.bind_for_test(positive_role, &positive, &program).unwrap();
+    candidate
+        .bind_for_test(positive_role, &positive, &program)
+        .unwrap();
     candidate
         .validate_effects_for_test(&[
             create_effect("face-negative", 20),
@@ -107,7 +112,8 @@ fn role_family_accepts_variable_semantic_members_and_enforces_its_contract() {
 #[test]
 fn family_range_is_deterministic_and_exposes_mixed_postures_only_within_prefix() {
     let program = Arc::new(());
-    let preserve = OutputRoleUse::member_for_test::<Mixed, WorthQueryPreserveOutput>("preserve").unwrap();
+    let preserve =
+        OutputRoleUse::member_for_test::<Mixed, WorthQueryPreserveOutput>("preserve").unwrap();
     let create = OutputRoleUse::member_for_test::<Mixed, WorthQueryCreateOutput>("create").unwrap();
     let retire = OutputRoleUse::member_for_test::<Mixed, WorthQueryRetireOutput>("retire").unwrap();
     let mut candidate = prepared::<MixedOutputs>();
@@ -139,7 +145,8 @@ fn family_range_is_deterministic_and_exposes_mixed_postures_only_within_prefix()
             &program,
         )
         .unwrap();
-    let committed = candidate.seal_with_for_test(|_| Some(EntityId::new(PartitionId::main(), 41, 1)));
+    let committed =
+        candidate.seal_with_for_test(|_| Some(EntityId::new(PartitionId::main(), 41, 1)));
 
     let outputs = committed.outputs_of_for_test::<MixedOutputs>().unwrap();
     let entries = outputs.family_entries::<Mixed>().unwrap();

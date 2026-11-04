@@ -11,7 +11,9 @@ impl DemandRegistryState {
 impl DemandRegistryState {
     #[doc(hidden)]
     pub fn prepare_required_member_for_test(
-        &self, key: &WorthQueryOutputDemandKey) -> Result<Option<PreparedRequiredMember>, WorthQueryOutputDemandDenial> {
+        &self,
+        key: &WorthQueryOutputDemandKey,
+    ) -> Result<Option<PreparedRequiredMember>, WorthQueryOutputDemandDenial> {
         Self::prepare_required_member(self, key)
     }
 }

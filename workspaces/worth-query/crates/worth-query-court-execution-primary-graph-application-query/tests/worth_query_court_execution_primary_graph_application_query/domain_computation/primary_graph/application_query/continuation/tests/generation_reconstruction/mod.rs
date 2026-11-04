@@ -39,19 +39,21 @@ fn discarded_ordered_generation_rebuilds_without_reviving_old_query_cursors() {
             context.issue(&host_custody)
         })
         .expect("the fixture read owns its installed host call");
-    assert_eq!((*old_cursor.index_generation_for_test()), (*cold_cursor.index_generation_for_test()));
+    assert_eq!(
+        (*old_cursor.index_generation_for_test()),
+        (*cold_cursor.index_generation_for_test())
+    );
     let index_id = (*old_cursor.index_id_for_test());
-    let basis = (*old_cursor.product_for_test()).relational_basis_for_test().clone();
+    let basis = (*old_cursor.product_for_test())
+        .relational_basis_for_test()
+        .clone();
     let graph = &(*(*context.world.application.primary_provider_for_test()).graph_for_test());
-    let child_kind = (*(*context
-        .world
-        .application
-        .runtime_for_test())
+    let child_kind = (*(*context.world.application.runtime_for_test())
         .primary_graph()
         .unwrap()
         .layout_for_test())
-        .entity_kind_for_test(Activity::reference().name())
-        .unwrap();
+    .entity_kind_for_test(Activity::reference().name())
+    .unwrap();
     let original = context
         .world
         .application
@@ -67,7 +69,10 @@ fn discarded_ordered_generation_rebuilds_without_reviving_old_query_cursors() {
                     )
                     .unwrap()
                     .unwrap();
-                assert_eq!(original.generation_id, (*old_cursor.index_generation_for_test()));
+                assert_eq!(
+                    original.generation_id,
+                    (*old_cursor.index_generation_for_test())
+                );
                 let definitions = runtime
                     .index_access()
                     .definition_lookup_snapshot()

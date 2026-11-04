@@ -40,7 +40,13 @@ fn a_queued_member_failure_does_not_withhold_its_independent_sibling() {
             };
             let succeeding = OwnerPlan::new_for_test(
                 vec![PreparedCompute::declared_test_request_for_test(1, false)],
-                |mut slots| Ok(slots.pop().unwrap().into_value_for_test::<(usize, bool)>().0),
+                |mut slots| {
+                    Ok(slots
+                        .pop()
+                        .unwrap()
+                        .into_value_for_test::<(usize, bool)>()
+                        .0)
+                },
             );
             let mut held = Vec::new();
             let mut applied = Vec::new();
@@ -104,10 +110,19 @@ fn a_completion_that_catches_a_compute_denial_applies_the_whole_wave() {
             .enumerate()
             .map(|(rank, _)| {
                 OwnerPlan::new_for_test(
-                    vec![PreparedCompute::declared_test_request_for_test(rank, rank == 0)],
+                    vec![PreparedCompute::declared_test_request_for_test(
+                        rank,
+                        rank == 0,
+                    )],
                     |mut slots| {
                         // The handler catches the transported denial and supplies its decision.
-                        Ok::<_, ()>(slots.pop().unwrap().into_value_for_test::<(usize, bool)>().0)
+                        Ok::<_, ()>(
+                            slots
+                                .pop()
+                                .unwrap()
+                                .into_value_for_test::<(usize, bool)>()
+                                .0,
+                        )
                     },
                 )
             })

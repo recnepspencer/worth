@@ -90,7 +90,10 @@ fn cancelled_field_acquisition_contributes_no_field_observation() {
         .application
         .select_product_branch_for_test(
             &execution,
-            world.application.product_runtime().default_branch_for_test(),
+            world
+                .application
+                .product_runtime()
+                .default_branch_for_test(),
         )
         .unwrap();
     let product = selected.product().publication_binding_for_test();
@@ -98,7 +101,11 @@ fn cancelled_field_acquisition_contributes_no_field_observation() {
     let denied = world.invariant.project_with_work_limit_for_test(
         &execution,
         None,
-        product.observation_for_test().basis().relational_basis().clone(),
+        product
+            .observation_for_test()
+            .basis()
+            .relational_basis()
+            .clone(),
         |reader| {
             let account = reader
                 .resolve_entity(AccountIdentity::reference(), "account-1".to_owned())
@@ -110,8 +117,7 @@ fn cancelled_field_acquisition_contributes_no_field_observation() {
             let before = (*reader.work_for_test()).field_reads();
             assert_eq!(reader.field(&account, AccountNote::reference()), None);
             let field = AccountNote::reference();
-            let locator = (*reader
-                .layout_for_test())
+            let locator = (*reader.layout_for_test())
                 .field_locator_for_test(field.entity(), field.aspect(), field.field())
                 .unwrap()
                 .clone();
@@ -119,7 +125,10 @@ fn cancelled_field_acquisition_contributes_no_field_observation() {
                 panic!("the cancelled request cannot acquire the body scalar")
             });
             assert!(body.is_err());
-            observed.set(Some((acquired, (*reader.work_for_test()).field_reads() - before)));
+            observed.set(Some((
+                acquired,
+                (*reader.work_for_test()).field_reads() - before,
+            )));
         },
         None,
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,

@@ -75,8 +75,10 @@ fn inbound_publication_consumers_keep_real_execution_refusals_and_retry_posture(
                     .unwrap();
                 let completed = dispatch_external_effect(&CompletingTransport, admitted).unwrap();
                 let evidence = Arc::new(
-                    InstalledTransportCompletion::from_observed_dispatch_for_test(owner, &completed)
-                        .unwrap(),
+                    InstalledTransportCompletion::from_observed_dispatch_for_test(
+                        owner, &completed,
+                    )
+                    .unwrap(),
                 );
                 let source = CancellationSource::new();
                 source.cancel();
@@ -118,8 +120,8 @@ fn inbound_publication_consumers_keep_real_execution_refusals_and_retry_posture(
                             );
                         };
                         assert_eq!(observed, expected_preparation);
-                        let observed =
-                            PublicationDenial::CompletionPreparation(observed).retry_denial_for_test();
+                        let observed = PublicationDenial::CompletionPreparation(observed)
+                            .retry_denial_for_test();
                         match (expected, observed.pending_reason_for_test()) {
                             (
                                 Ok(kind),

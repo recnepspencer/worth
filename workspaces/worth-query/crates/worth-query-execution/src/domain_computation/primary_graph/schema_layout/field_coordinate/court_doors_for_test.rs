@@ -4,7 +4,12 @@ use super::*;
 impl WorthQueryPrimaryGraphLayout {
     #[doc(hidden)]
     pub fn resolve_field_coordinate_for_test<'a>(
-        &'a self, contracts: &'a WorthQueryInstalledApplicationSchemaContractCatalog, entity: &str, descriptor: &AspectFieldLocator, admit: impl FnMut(u64) -> Result<(), MapKernelStop>) -> Result<Option<InstalledFieldCoordinate<'a>>, MapKernelStop> {
+        &'a self,
+        contracts: &'a WorthQueryInstalledApplicationSchemaContractCatalog,
+        entity: &str,
+        descriptor: &AspectFieldLocator,
+        admit: impl FnMut(u64) -> Result<(), MapKernelStop>,
+    ) -> Result<Option<InstalledFieldCoordinate<'a>>, MapKernelStop> {
         Self::resolve_field_coordinate(self, contracts, entity, descriptor, admit)
     }
 }
@@ -26,7 +31,13 @@ impl InstalledFieldCoordinate<'_> {
 impl WorthQueryPrimaryGraphLayout {
     #[doc(hidden)]
     pub fn resolve_declared_field_coordinate_for_test<'a>(
-        &'a self, contracts: &'a WorthQueryInstalledApplicationSchemaContractCatalog, entity: &str, aspect: &AspectKey, field: &FieldKey, admit: impl FnMut(u64) -> Result<(), MapKernelStop>) -> Result<Option<InstalledFieldCoordinate<'a>>, MapKernelStop> {
+        &'a self,
+        contracts: &'a WorthQueryInstalledApplicationSchemaContractCatalog,
+        entity: &str,
+        aspect: &AspectKey,
+        field: &FieldKey,
+        admit: impl FnMut(u64) -> Result<(), MapKernelStop>,
+    ) -> Result<Option<InstalledFieldCoordinate<'a>>, MapKernelStop> {
         Self::resolve_declared_field_coordinate(self, contracts, entity, aspect, field, admit)
     }
 }
@@ -40,8 +51,7 @@ impl InstalledFieldCoordinate<'_> {
 
 impl InstalledFieldCoordinate<'_> {
     #[doc(hidden)]
-    pub fn native_for_test(
-        &self) -> &WorthQueryInstalledApplicationAspectContract {
+    pub fn native_for_test(&self) -> &WorthQueryInstalledApplicationAspectContract {
         Self::native(self)
     }
 }

@@ -59,15 +59,18 @@ fn erased_postures_map_without_lower_runtime_evidence() {
         WorthQueryConditionalClockObservationOutcome::Duplicate(_)
     ));
     assert!(matches!(
-        ErasedClockObservationOutcome::Stale.typed_for_test::<TestClock>(granular_installation(), None),
+        ErasedClockObservationOutcome::Stale
+            .typed_for_test::<TestClock>(granular_installation(), None),
         WorthQueryConditionalClockObservationOutcome::Stale
     ));
     assert!(matches!(
-        ErasedClockObservationOutcome::Reordered.typed_for_test::<TestClock>(granular_installation(), None),
+        ErasedClockObservationOutcome::Reordered
+            .typed_for_test::<TestClock>(granular_installation(), None),
         WorthQueryConditionalClockObservationOutcome::Reordered
     ));
     assert!(matches!(
-        ErasedClockObservationOutcome::Closed.typed_for_test::<TestClock>(granular_installation(), None),
+        ErasedClockObservationOutcome::Closed
+            .typed_for_test::<TestClock>(granular_installation(), None),
         WorthQueryConditionalClockObservationOutcome::Closed
     ));
     let failed = ErasedClockObservationOutcome::Failed {

@@ -331,7 +331,10 @@ impl InboundWorld {
             .expect("the fixture preparation owns its host call");
         self.application.compare_and_commit_application(
             program,
-            WorthQueryApplicationIdempotencyBinding::new_for_test([seed; 32], [seed.wrapping_add(1); 32]),
+            WorthQueryApplicationIdempotencyBinding::new_for_test(
+                [seed; 32],
+                [seed.wrapping_add(1); 32],
+            ),
             ExecutionAllocationPolicy::SystemAllocation,
         )
     }

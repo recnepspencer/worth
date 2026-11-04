@@ -125,7 +125,8 @@ fn cancellation_and_deadline_terminalize_all_live_resources() {
             let host_custody = phase.test_host_request_for_test();
             assert!(matches!(
                 {
-                    let installed_fixture_phase = deadline_lease.fixture_phase_for_test(&host_custody);
+                    let installed_fixture_phase =
+                        deadline_lease.fixture_phase_for_test(&host_custody);
                     deadline_lease.next(
                         &installed_fixture_phase,
                         &deadline_context.principal,
@@ -175,8 +176,7 @@ fn read_stops_survive_a_failed_live_lease_termination() {
         });
         // Hold the real owned read work away from finalization: Bridge can end,
         // but the managed read cannot finish without this completion evidence.
-        let _held_work = (*lease
-            .initial_read_work_mut_for_test())
+        let _held_work = (*lease.initial_read_work_mut_for_test())
             .take()
             .expect("an open lease owns read work");
         let expired = context.already_expired_request();

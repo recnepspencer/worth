@@ -48,10 +48,8 @@ pub struct AuthorizationWorld {
 }
 
 impl AuthorizationWorld {
-    pub fn declare_output_contract<Contract: 'static>(&self, identity: &str) {(*
-        (*self.application
-            .primary_provider_for_test())
-            .graph_for_test())
+    pub fn declare_output_contract<Contract: 'static>(&self, identity: &str) {
+        (*(*self.application.primary_provider_for_test()).graph_for_test())
             .output_lineage
             .lock()
             .unwrap()

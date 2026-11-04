@@ -18,7 +18,9 @@ fn local_full_verification_requirement_overrides_a_clean_actor_row() {
     let world = installed_authorization_world(true);
     let selected = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
+        .with_host_advancement(|phase| {
+            world.selected_product(&(phase).test_host_request_for_test())
+        })
         .expect("the fixture read owns its installed host call");
     let entity = world
         .application
@@ -37,7 +39,9 @@ fn local_full_verification_requirement_overrides_a_clean_actor_row() {
         .expect("the fixture read owns its installed host call");
     let (_, product, _) = selected.into_parts_for_test();
     let observation = product.observation_for_test();
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
     let handle = graph.integration_handle_for_test();
     let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
     let status_ref = AccountStatus::reference();
@@ -72,7 +76,9 @@ fn local_full_verification_requirement_overrides_a_clean_actor_row() {
         "local-requirement".to_owned().into(),
         vec![(TypeId::of_for_test::<StatusOutput>(), "output".to_owned())],
     )]));
-    let runtime_authority = (*world.application.runtime_for_test()).authority_identity().as_u64();
+    let runtime_authority = (*world.application.runtime_for_test())
+        .authority_identity()
+        .as_u64();
     let schema = (*world.application.installed_schema_for_test()).binding_identity();
     let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity);
     lineage.record_restoration_for_test(
@@ -104,9 +110,9 @@ fn local_full_verification_requirement_overrides_a_clean_actor_row() {
             )
             .unwrap()
             .candidates_mut_for_test())
-            .pop()
-            .expect("the lineage owner selects its retained output")
-            .settlement_identity_for_test()),
+        .pop()
+        .expect("the lineage owner selects its retained output")
+        .settlement_identity_for_test()),
     );
     // The old actor row has no posting for this source field. A failed
     // post-effect registration leaves it Clean while lineage retains the
@@ -143,8 +149,8 @@ fn local_full_verification_requirement_overrides_a_clean_actor_row() {
         )
         .unwrap()
         .candidates_mut_for_test())
-        .pop()
-        .expect("the local requirement stays on the selected owner row");
+    .pop()
+    .expect("the local requirement stays on the selected owner row");
     assert_eq!(
         (*candidate.verification_requirement_for_test()),
         Some(FullVerificationReason::NativeRevisionUnavailable)
@@ -158,7 +164,9 @@ fn local_full_verification_requirement_overrides_a_clean_actor_row() {
                 ConsumedOutputEvidence::verify_candidate_with_admission_for_test(
                     &host_custody.borrowed_request_for_test(),
                     &(*candidate.settlement_identity_for_test()),
-                    &(*candidate.observed_source_facts_for_test()).for_comparison().unwrap(),
+                    &(*candidate.observed_source_facts_for_test())
+                        .for_comparison()
+                        .unwrap(),
                     &(*candidate.consumed_outputs_for_test()),
                     (*candidate.verification_requirement_for_test()),
                     &before,

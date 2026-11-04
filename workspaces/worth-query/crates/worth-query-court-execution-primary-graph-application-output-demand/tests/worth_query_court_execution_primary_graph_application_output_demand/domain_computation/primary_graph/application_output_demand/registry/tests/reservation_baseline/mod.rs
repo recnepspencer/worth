@@ -24,7 +24,10 @@ pub fn install(
     // The receipt is real; this local lifetime fixture declares an interested
     // checkpoint and its already funded performed obligation directly.
     let mut row = record(occurrence(), DemandState::Output(output), 1);
-    (*row.performed_obligations_mut_for_test()).push(PerformedOutputObligation::new_for_test(commit, (*key.source_for_test()).clone()));
+    (*row.performed_obligations_mut_for_test()).push(PerformedOutputObligation::new_for_test(
+        commit,
+        (*key.source_for_test()).clone(),
+    ));
     (*state.records_mut_for_test()).insert_for_test(key.clone(), row);
     let member = state.prepare_required_member_for_test(&key).unwrap();
     state.install_required_member_for_test(member);

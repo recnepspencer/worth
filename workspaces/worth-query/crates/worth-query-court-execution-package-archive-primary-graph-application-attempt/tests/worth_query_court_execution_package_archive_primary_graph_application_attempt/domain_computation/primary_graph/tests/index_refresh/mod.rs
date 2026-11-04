@@ -22,7 +22,9 @@ fn bootstrap_seeds_exact_workflow_transition_lookup_before_any_settlement() {
         "workflow-transition-seed",
         WorthQueryPrincipalMappingStatus::Enabled,
     )]);
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
     let handle = graph.integration_handle_for_test();
     let transition = &(*(*graph.layout_for_test()).workflow().transition_for_test());
     let host_request = worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request();
@@ -48,9 +50,7 @@ fn bootstrap_seeds_exact_workflow_transition_lookup_before_any_settlement() {
 #[test]
 fn mutation_refreshes_every_exact_performed_commit_across_branches() {
     let world = installed_world(&[("index-refresh", WorthQueryPrincipalMappingStatus::Enabled)]);
-    let graph = (*world
-        .application
-        .runtime_for_test())
+    let graph = (*world.application.runtime_for_test())
         .primary_graph()
         .expect("fixture publishes its primary graph");
     let handle = graph.integration_handle_for_test();
@@ -110,9 +110,7 @@ fn multi_commit_callback_reconstructs_each_retained_generation_with_cold_budget(
         "index-refresh-cold",
         WorthQueryPrincipalMappingStatus::Enabled,
     )]);
-    let graph = (*world
-        .application
-        .runtime_for_test())
+    let graph = (*world.application.runtime_for_test())
         .primary_graph()
         .expect("published graph");
     let handle = graph.integration_handle_for_test();
@@ -147,9 +145,7 @@ fn captured_before_root_with_missing_generation_uses_explicit_cold_fallback() {
         "index-refresh-missing",
         WorthQueryPrincipalMappingStatus::Enabled,
     )]);
-    let graph = (*world
-        .application
-        .runtime_for_test())
+    let graph = (*world.application.runtime_for_test())
         .primary_graph()
         .expect("published graph");
     let handle = graph.integration_handle_for_test();

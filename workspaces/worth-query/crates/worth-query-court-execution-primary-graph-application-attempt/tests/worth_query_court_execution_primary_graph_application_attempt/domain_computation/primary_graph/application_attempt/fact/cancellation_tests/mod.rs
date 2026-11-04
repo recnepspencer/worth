@@ -188,14 +188,14 @@ pub fn with_indexed_fact<R>(
         .with_host_advancement(|phase| world.selected_product(&phase.test_host_request_for_test()))
         .unwrap();
     let snapshot = selected.application_basis_for_test().snapshot_handle();
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
     let field = AccountStatus::reference();
-    let layout = (*graph
-        .layout_for_test())
+    let layout = (*graph.layout_for_test())
         .equality_field_for_test(field.entity(), field.aspect(), field.field())
         .unwrap();
-    let relation_kind = (*(*graph
-        .layout_for_test())
+    let relation_kind = (*(*graph.layout_for_test())
         .relation(AccountOwner::reference().name())
         .unwrap()
         .kind_for_test());

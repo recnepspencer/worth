@@ -36,14 +36,20 @@ fn evidence_and_each_dependency_charge_their_field_widths_and_nothing_else_does(
     let primary = installed_layout();
     let layout = primary.workflow();
     let evidence = BTreeMap::from([
-        ((*layout.assessment_evidence.identity_for_test()).clone(), text("abcd")),
+        (
+            (*layout.assessment_evidence.identity_for_test()).clone(),
+            text("abcd"),
+        ),
         (
             (*layout.assessment_evidence.retained_bytes_for_test()).clone(),
             AspectValue::UInt64(u64::MAX),
         ),
     ]);
     let dependency = BTreeMap::from([
-        ((*layout.evidence_dependency.fact_kind_for_test()).clone(), text("field")),
+        (
+            (*layout.evidence_dependency.fact_kind_for_test()).clone(),
+            text("field"),
+        ),
         (
             (*layout.evidence_dependency.native_revision_for_test()).clone(),
             AspectValue::UInt64(3),
@@ -63,10 +69,19 @@ fn evidence_and_each_dependency_charge_their_field_widths_and_nothing_else_does(
         5 + 9
     );
     assert_eq!(
-        charge(created((*layout.evidence_dependency.entity_kind_for_test()), dependency)),
+        charge(created(
+            (*layout.evidence_dependency.entity_kind_for_test()),
+            dependency
+        )),
         6 + 9 + 2
     );
-    assert_eq!(charge(created((*(*layout.transition_for_test()).entity_kind_for_test()), evidence)), 0);
+    assert_eq!(
+        charge(created(
+            (*(*layout.transition_for_test()).entity_kind_for_test()),
+            evidence
+        )),
+        0
+    );
     assert_eq!(
         charge(WorthQueryApplicationRealizedEffect::CreateRelation {
             fields: Default::default(),
@@ -87,7 +102,27 @@ fn performed_entity_kind_dependency_uses_a_distinct_durable_shape() {
     let layout = primary.workflow();
     let dependent = entity(7);
     let kind = worth_relational::facade::identity::KindId::new(19);
-    let make_meaning = |fact| WorkflowAssessmentEvidenceMeaning::new_for_test(String::new(), String::new(), String::new(), String::new(), String::new(), String::new(), String::new(), dependent, String::new(), String::new(), String::new(), true, String::new(), String::new(), String::new(), 0, std::sync::Arc::from([fact]));
+    let make_meaning = |fact| {
+        WorkflowAssessmentEvidenceMeaning::new_for_test(
+            String::new(),
+            String::new(),
+            String::new(),
+            String::new(),
+            String::new(),
+            String::new(),
+            String::new(),
+            dependent,
+            String::new(),
+            String::new(),
+            String::new(),
+            true,
+            String::new(),
+            String::new(),
+            String::new(),
+            0,
+            std::sync::Arc::from([fact]),
+        )
+    };
     let evidence = CreatedEntityRef {
         partition_id: worth_relational::facade::identity::PartitionId::main(),
         kind_id: (*layout.assessment_evidence.entity_kind_for_test()),

@@ -20,8 +20,7 @@ impl PrincipalStalenessWorthQueryPrimaryGraphProviderForTest for WorthQueryPrima
     ) {
         let _listener =
             worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation::install_on_this_thread();
-        let (facts, _) = (*self
-            .attempts_for_test())
+        let (facts, _) = (*self.attempts_for_test())
             .lock()
             .unwrap()
             .shared_observed_facts_for_test(authority.session_for_test())

@@ -70,12 +70,13 @@ pub fn preserved<Schema: BirthSchema>(
         .as_ref()
         .expect("the original own-publication continuation retains its actual producing evidence");
     assert_eq!(
-        (*producing.changes_for_test()).commit_reference().version_id,
+        (*producing.changes_for_test())
+            .commit_reference()
+            .version_id,
         original.1.version()
     );
     assert!(!(*producing.changes_for_test()).shares_original_for_test(changes));
-    assert!((*producing
-        .correspondence_for_test())
+    assert!((*producing.correspondence_for_test())
         .native_witness_roles_for_test()
         .any(|(_, _, _, output)| output == original.0));
     drop(selected);
@@ -99,8 +100,7 @@ pub fn observe<Schema: BirthSchema>(
         "one actual output of this installed kind"
     );
     let graph = &(*(*runtime.primary_provider_for_test()).graph_for_test());
-    let locator = (*graph
-        .layout_for_test())
+    let locator = (*graph.layout_for_test())
         .field_locator_for_test(field.entity(), field.aspect(), field.field())
         .unwrap();
     let execution = phase

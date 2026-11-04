@@ -222,7 +222,8 @@ pub fn execute_repeated_yield_world(
                 };
                 let active = {
                     let fixture_phase_result = {
-                        let installed_fixture_phase = yielded.fixture_phase_for_test(active_request);
+                        let installed_fixture_phase =
+                            yielded.fixture_phase_for_test(active_request);
                         yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
                     };
                     match fixture_phase_result {

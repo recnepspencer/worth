@@ -105,7 +105,10 @@ fn whole_structural_retirement_requires_complete_correspondence_and_keeps_extern
             })
             .collect();
         for (old, new) in owned.iter().zip(&rebased) {
-            assert_eq!(old.locator_identity_for_test(), new.locator_identity_for_test());
+            assert_eq!(
+                old.locator_identity_for_test(),
+                new.locator_identity_for_test()
+            );
             assert!(matches!(new, Fact::RetiredOutputEntity { .. }));
             assert_eq!(
                 new.source_currentness_in_for_test(runtime, &execution, snapshot)

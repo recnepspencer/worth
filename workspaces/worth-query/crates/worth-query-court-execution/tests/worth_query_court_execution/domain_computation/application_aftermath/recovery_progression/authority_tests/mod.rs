@@ -30,7 +30,9 @@ fn concurrent_force_termination_cannot_be_reported_as_a_consumed_transition() {
     let handle = probe_handle_with_runtime_instance(91);
     let registry = handle.registry_arc_for_test();
     let slot = handle.registry_slot_for_test();
-    assert!(registry.mark_terminal_for_test(slot, WorthQueryRecoveryResourceTerminal::ForceTerminated));
+    assert!(
+        registry.mark_terminal_for_test(slot, WorthQueryRecoveryResourceTerminal::ForceTerminated)
+    );
 
     let denied = handle
         .consume_for_test(WorthQueryRecoveryResourceTerminal::Consumed)
@@ -210,7 +212,10 @@ fn admission_time_foreignness_and_proof_use_foreignness_are_different_causes() {
         .expect("our own handle admits");
 
     // Proof use: the authority *is* ours, but it is not this handle's.
-    let authority_a = WorthQueryRecoveryEffectAuthority::mint_for_test(owner, handle_a.authority_identity_for_test());
+    let authority_a = WorthQueryRecoveryEffectAuthority::mint_for_test(
+        owner,
+        handle_a.authority_identity_for_test(),
+    );
     let use_denial = require_fresh_effect_authority(&handle_b, &authority_a)
         .expect_err("our authority does not carry to another handle");
     assert_eq!(
@@ -231,7 +236,10 @@ pub fn colliding_slot_handles() -> (WorthQueryRecoveryHandle, WorthQueryRecovery
     let handle_b = probe_handle_with_runtime_instance(22);
     assert_eq!(handle_a.registry_slot_for_test().as_u64_for_test(), 1);
     assert_eq!(handle_b.registry_slot_for_test().as_u64_for_test(), 1);
-    assert_ne!(handle_a.runtime_authority_for_test(), handle_b.runtime_authority_for_test());
+    assert_ne!(
+        handle_a.runtime_authority_for_test(),
+        handle_b.runtime_authority_for_test()
+    );
     (handle_a, handle_b)
 }
 
@@ -244,10 +252,18 @@ pub fn same_runtime_handles() -> (WorthQueryRecoveryHandle, WorthQueryRecoveryHa
     let binding = seed.binding().clone();
     drop(seed);
     let registry = Arc::new(WorthQueryRecoveryHandleRegistry::new_for_test());
-    let handle_a =
-        WorthQueryRecoveryHandle::axis_probe_in_registry_for_test(binding.clone(), Arc::clone(&registry));
+    let handle_a = WorthQueryRecoveryHandle::axis_probe_in_registry_for_test(
+        binding.clone(),
+        Arc::clone(&registry),
+    );
     let handle_b = WorthQueryRecoveryHandle::axis_probe_in_registry_for_test(binding, registry);
-    assert_eq!(handle_a.runtime_authority_for_test(), handle_b.runtime_authority_for_test());
-    assert_ne!(handle_a.registry_slot_for_test(), handle_b.registry_slot_for_test());
+    assert_eq!(
+        handle_a.runtime_authority_for_test(),
+        handle_b.runtime_authority_for_test()
+    );
+    assert_ne!(
+        handle_a.registry_slot_for_test(),
+        handle_b.registry_slot_for_test()
+    );
     (handle_a, handle_b)
 }

@@ -294,8 +294,7 @@ pub fn prior_of(first: Attempt, moved: bool) -> ComputationPrior {
         .expect("a producer's run retains")
         .state_into_for_test();
     if moved {
-        let (key, fact) = (*state
-            .facts_for_test())
+        let (key, fact) = (*state.facts_for_test())
             .facts_for_test()
             .find(|(_, _, readers)| {
                 let partitioner = readers
@@ -319,7 +318,11 @@ pub fn first_run(world: &AuthorizationWorld, installed: &Installed) -> Attempt {
     let first = attempt(
         world,
         installed,
-        Some(ComputationPrior::new_for_test(edition(), Err(Cause::FirstRun), None)),
+        Some(ComputationPrior::new_for_test(
+            edition(),
+            Err(Cause::FirstRun),
+            None,
+        )),
     );
     assert!(matches!(
         first.runs.as_slice(),

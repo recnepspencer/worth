@@ -20,13 +20,14 @@ pub fn add_third_root(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &AuthorizationWorld,
 ) {
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
     macro_rules! declared_field {
         ($marker:ty, $value:expr) => {{
             let field = <$marker>::reference();
             (
-                (*graph
-                    .layout_for_test())
+                (*graph.layout_for_test())
                     .field_locator_for_test(field.entity(), field.aspect(), field.field())
                     .unwrap()
                     .clone(),
@@ -46,8 +47,7 @@ pub fn add_third_root(
         WorkerIntentBatch::new("third-reconstruction-root").push(MutationIntent::Create(
             CreateIntent::Entity(EntitySpec {
                 partition_id: PartitionId::main(),
-                kind_id: (*graph
-                    .layout_for_test())
+                kind_id: (*graph.layout_for_test())
                     .entity_kind_for_test(Account::reference().name())
                     .unwrap(),
                 client_key: ClientKey::raw("account-3"),
@@ -81,9 +81,10 @@ pub fn add_primary_reads(
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap();
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-    let kind = (*(*graph
-        .layout_for_test())
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
+    let kind = (*(*graph.layout_for_test())
         .relation(AccountPrimaryActivity::reference().name())
         .unwrap()
         .kind_for_test());
@@ -95,7 +96,10 @@ pub fn add_primary_reads(
                 .visible_relations_of_kind(
                     execution,
                     kind,
-                    selected.application_basis_for_test().snapshot_handle().version_id(),
+                    selected
+                        .application_basis_for_test()
+                        .snapshot_handle()
+                        .version_id(),
                 )
                 .expect("fixture read request remains live")
                 .into_iter()

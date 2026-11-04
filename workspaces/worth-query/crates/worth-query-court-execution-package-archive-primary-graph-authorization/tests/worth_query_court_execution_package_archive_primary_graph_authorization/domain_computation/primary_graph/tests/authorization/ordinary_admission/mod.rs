@@ -21,7 +21,6 @@ pub use worth_query_declaration::facade::application_schema::OperationExpectsFac
 pub use worth_query_declaration::facade::application_schema::StringApplicationValueBinding;
 pub use worth_query_declaration::facade::application_schema::TypedMutationPreconditions;
 
-
 #[test]
 fn current_installed_membership_mints_exact_operation_admission() {
     let world = installed_authorization_world(true);
@@ -35,7 +34,10 @@ fn current_installed_membership_mints_exact_operation_admission() {
                 .application
                 .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch_for_test(),
+                    world
+                        .application
+                        .product_runtime()
+                        .default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_authenticated_principal(
@@ -56,7 +58,10 @@ fn current_installed_membership_mints_exact_operation_admission() {
                 .application
                 .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch_for_test(),
+                    world
+                        .application
+                        .product_runtime()
+                        .default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
@@ -164,7 +169,10 @@ fn caller_marker_cannot_widen_the_installed_precondition_contract() {
                 .application
                 .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch_for_test(),
+                    world
+                        .application
+                        .product_runtime()
+                        .default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_authenticated_principal(
@@ -185,7 +193,10 @@ fn caller_marker_cannot_widen_the_installed_precondition_contract() {
                 .application
                 .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch_for_test(),
+                    world
+                        .application
+                        .product_runtime()
+                        .default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
@@ -249,7 +260,10 @@ fn missing_membership_and_crossed_runtime_scope_open_no_operation_authority() {
                 .application
                 .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    denied_world.application.product_runtime().default_branch_for_test(),
+                    denied_world
+                        .application
+                        .product_runtime()
+                        .default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_authenticated_principal(
@@ -270,7 +284,10 @@ fn missing_membership_and_crossed_runtime_scope_open_no_operation_authority() {
                 .application
                 .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    denied_world.application.product_runtime().default_branch_for_test(),
+                    denied_world
+                        .application
+                        .product_runtime()
+                        .default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
@@ -319,7 +336,10 @@ fn missing_membership_and_crossed_runtime_scope_open_no_operation_authority() {
                 .application
                 .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    foreign.application.product_runtime().default_branch_for_test(),
+                    foreign
+                        .application
+                        .product_runtime()
+                        .default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(

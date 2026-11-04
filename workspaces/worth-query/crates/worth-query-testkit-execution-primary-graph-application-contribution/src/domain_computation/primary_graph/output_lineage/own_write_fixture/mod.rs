@@ -64,8 +64,11 @@ pub fn commit_own_write(
         .application
         .with_host_advancement(|phase| {
             let phase_custody = &phase;
-            let principal =
-                authenticated_principal(&(phase_custody).test_host_request_for_test(), &world, &request);
+            let principal = authenticated_principal(
+                &(phase_custody).test_host_request_for_test(),
+                &world,
+                &request,
+            );
             let account = resolved_account(
                 &(phase_custody).test_host_request_for_test(),
                 &world,
@@ -191,7 +194,9 @@ pub fn commit_own_write(
 
         effects.finish().unwrap().with_output_demand_observation()
     }).expect("the fixture host admits its own-write preparation");
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
     let handle = graph.integration_handle_for_test();
     let (key, dependency) = world
         .application
@@ -243,19 +248,23 @@ pub fn commit_own_write(
         // prepared-input metadata; Native facts, own-effect evidence and output
         // witness remain the actual commit's. These identities are not under test.
         let mut lineage = handle.output_lineage.lock().unwrap();
-        let cell = (*lineage
-            .by_source_mut_for_test())
+        let cell = (*lineage.by_source_mut_for_test())
             .values_mut()
             .flat_map(|branches| branches.values_mut())
             .flat_map(|history| history.values_mut())
             .flat_map(|rows| rows.iter_mut())
-            .rfind(|cell| (*cell.get().unwrap().source_partition_identity_for_test()) == Some([7; 32]))
+            .rfind(|cell| {
+                (*cell.get().unwrap().source_partition_identity_for_test()) == Some([7; 32])
+            })
             .unwrap();
         let recorded = Arc::get_mut(cell)
             .expect("performed cell has only lineage custody")
             .get_mut()
             .unwrap();
-        let count = recorded.observed_source_facts_for_test().unwrap().len_for_test();
+        let count = recorded
+            .observed_source_facts_for_test()
+            .unwrap()
+            .len_for_test();
         let boundary = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::handler_fact_boundary::CompletedHandlerFactBoundary::completed_for_test(count);
         let context = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::decision_reuse::PreparedDecisionReuseContext::new_for_test(
             worth_query_execution::facade::application_contribution::WorthQueryProducerInputReuseContract::canonical_bitwise(
@@ -269,11 +278,7 @@ pub fn commit_own_write(
             worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::membership::WorthQueryObservedSourceSelection::selecting_for_test(u64::try_from(count).unwrap()),
             [11;32], worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::registry::semantic_edition::InstalledProducerEdition::for_test_for_test([12;32])));
     }
-    let cell = (*handle
-        .output_lineage
-        .lock()
-        .unwrap()
-        .by_source_for_test())
+    let cell = (*handle.output_lineage.lock().unwrap().by_source_for_test())
         .values()
         .flat_map(|branches| branches.values())
         .flat_map(|history| history.values())
@@ -281,9 +286,7 @@ pub fn commit_own_write(
         .rfind(|cell| (*cell.get().unwrap().source_partition_identity_for_test()) == Some([7; 32]))
         .cloned()
         .expect("the committed output has a retained cell");
-    let completed = (*world
-        .application
-        .primary_provider_for_test())
+    let completed = (*world.application.primary_provider_for_test())
         .observe_completed_application_for_test(receipt.commit_reference())
         .unwrap();
     assert!(

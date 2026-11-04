@@ -30,9 +30,12 @@ pub fn colliding(
     kept: PartitionItemId,
     key: &Parity,
 ) -> ComputationPrior {
-    let typed = std::mem::replace(&mut (*(*sealed.state_mut_for_test()).typed_mut_for_test()), Arc::new(()))
-        .downcast::<RetainedPartitions<Parity, Number, u64>>()
-        .expect("the run retains its partitions");
+    let typed = std::mem::replace(
+        &mut (*(*sealed.state_mut_for_test()).typed_mut_for_test()),
+        Arc::new(()),
+    )
+    .downcast::<RetainedPartitions<Parity, Number, u64>>()
+    .expect("the run retains its partitions");
     let mut typed = Arc::try_unwrap(typed)
         .ok()
         .expect("the sealed run holds its partitions alone");
@@ -65,15 +68,23 @@ fn a_collision_met_routing_again_makes_the_run_in_full() {
         Rerouted::default(),
         ComputationRetention::ProducerOperation,
     );
-    let fresh = || Some(ComputationPrior::new_for_test(edition(), Err(Cause::FirstRun), None));
-    *(*installed.owner_for_test()).entries.lock().unwrap() = BTreeMap::from([(1, (0, 10)), (2, (1, 20))]);
+    let fresh = || {
+        Some(ComputationPrior::new_for_test(
+            edition(),
+            Err(Cause::FirstRun),
+            None,
+        ))
+    };
+    *(*installed.owner_for_test()).entries.lock().unwrap() =
+        BTreeMap::from([(1, (0, 10)), (2, (1, 20))]);
     let first = attempt(&world, &installed, fresh())
         .sealed
         .unwrap()
         .unwrap();
     // Item 1 moves to key 2, where the prior holds item 2 under a foreign
     // digest; item 2 keeps its route.
-    *(*installed.owner_for_test()).entries.lock().unwrap() = BTreeMap::from([(1, (2, 10)), (2, (1, 20))]);
+    *(*installed.owner_for_test()).entries.lock().unwrap() =
+        BTreeMap::from([(1, (2, 10)), (2, (1, 20))]);
     let prior = colliding(first, PartitionItemId(2), &Parity(2));
     let next = attempt(&world, &installed, Some(prior));
     let full = attempt(&world, &installed, fresh());
@@ -104,22 +115,35 @@ fn replacing_a_sole_member_key_with_a_prefix_collision_matches_a_fresh_run() {
     );
     *(*installed.owner_for_test()).key_only.lock().unwrap() = true;
     *(*installed.owner_for_test()).entries.lock().unwrap() = BTreeMap::from([(1, (0, 10))]);
-    let fresh = || Some(ComputationPrior::new_for_test(edition(), Err(Cause::FirstRun), None));
+    let fresh = || {
+        Some(ComputationPrior::new_for_test(
+            edition(),
+            Err(Cause::FirstRun),
+            None,
+        ))
+    };
     let mut sealed = attempt(&world, &installed, fresh())
         .sealed
         .unwrap()
         .unwrap();
-    let typed = std::mem::replace(&mut (*(*sealed.state_mut_for_test()).typed_mut_for_test()), Arc::new(()))
-        .downcast::<RetainedPartitions<Parity, Number, u64>>()
-        .unwrap();
+    let typed = std::mem::replace(
+        &mut (*(*sealed.state_mut_for_test()).typed_mut_for_test()),
+        Arc::new(()),
+    )
+    .downcast::<RetainedPartitions<Parity, Number, u64>>()
+    .unwrap();
     let mut typed = Arc::try_unwrap(typed).ok().unwrap();
-    let identity = (*typed.routing_for_test()).partition_of_for_test(PartitionItemId(1)).unwrap();
+    let identity = (*typed.routing_for_test())
+        .partition_of_for_test(PartitionItemId(1))
+        .unwrap();
     let b_digest = digest_of(&Parity(0));
     let mut a_digest = b_digest;
     a_digest[31] ^= 1;
     assert_eq!(&a_digest[..8], &b_digest[..8]);
     assert_ne!(a_digest, b_digest);
-    let partition = (*typed.partitions_for_test()).get_for_test(&identity).unwrap();
+    let partition = (*typed.partitions_for_test())
+        .get_for_test(&identity)
+        .unwrap();
     let replacement = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::retained::RetainedPartition::new_for_test(Arc::new(Parity(42)), (*partition.gather_for_test()).clone());
     let request = live_scope();
     let execution = QueryRequestExecution::open_for_test(
@@ -130,8 +154,7 @@ fn replacing_a_sole_member_key_with_a_prefix_collision_matches_a_fresh_run() {
         ),
         &request,
     );
-    (*typed
-        .partitions_mut_for_test())
+    (*typed.partitions_mut_for_test())
         .put_for_test(
             identity,
             replacement,
@@ -140,9 +163,9 @@ fn replacing_a_sole_member_key_with_a_prefix_collision_matches_a_fresh_run() {
         .unwrap();
     execution
         .with_native_lease_for_test(|lease| {
-            (*typed
-                .tree_mut_for_test())
-                .update_native(identity, 62, Some(lease), || execution.checkpoint_for_test())
+            (*typed.tree_mut_for_test()).update_native(identity, 62, Some(lease), || {
+                execution.checkpoint_for_test()
+            })
         })
         .unwrap()
         .unwrap();
@@ -154,9 +177,7 @@ fn replacing_a_sole_member_key_with_a_prefix_collision_matches_a_fresh_run() {
     (*(*sealed.state_mut_for_test()).typed_mut_for_test()) = Arc::new(typed);
     // Only the key call read this fact. Membership, item value and gathering
     // stayed unchanged, so a compact-identity-only test would carry A's leaf.
-    let (key, fact) = (*(*sealed
-        .state_for_test())
-        .facts_for_test())
+    let (key, fact) = (*(*sealed.state_for_test()).facts_for_test())
         .facts_for_test()
         .find(|(_, _, readers)| {
             readers
@@ -172,7 +193,11 @@ fn replacing_a_sole_member_key_with_a_prefix_collision_matches_a_fresh_run() {
         &key,
         WorthQueryApplicationObservedFact::SourceEntity { entity_id },
     );
-    let prior = ComputationPrior::new_for_test(edition(), Ok(std::sync::Arc::new(sealed.state_into_for_test())), None);
+    let prior = ComputationPrior::new_for_test(
+        edition(),
+        Ok(std::sync::Arc::new(sealed.state_into_for_test())),
+        None,
+    );
     let next = attempt(&world, &installed, Some(prior));
     let full = attempt(&world, &installed, fresh());
     assert_eq!(next.outcome, full.outcome, "B must not carry A's result");
@@ -180,15 +205,13 @@ fn replacing_a_sole_member_key_with_a_prefix_collision_matches_a_fresh_run() {
     let next = next.sealed.unwrap().unwrap();
     let full = full.sealed.unwrap().unwrap();
     let keys = |sealed: &SealedComputationRun| {
-        (*(*(*sealed
-            .state_for_test())
-            .typed_for_test())
+        (*(*(*sealed.state_for_test()).typed_for_test())
             .downcast_ref::<RetainedPartitions<Parity, Number, u64>>()
             .unwrap()
             .partitions_for_test())
-            .values_for_test()
-            .map(|partition| (*partition.key_for_test()).0)
-            .collect::<Vec<_>>()
+        .values_for_test()
+        .map(|partition| (*partition.key_for_test()).0)
+        .collect::<Vec<_>>()
     };
     assert_eq!(keys(&next), keys(&full), "retained typed keys agree");
 }

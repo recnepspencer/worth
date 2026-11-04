@@ -22,9 +22,7 @@ pub fn court() -> Court {
         WorthQueryApplicationOutputPosture::Create,
         false,
     );
-    let cell = (*court
-        .lineage
-        .by_source_mut_for_test())
+    let cell = (*court.lineage.by_source_mut_for_test())
         .get_mut(&court.source)
         .unwrap()
         .get_mut(&(*court.coordinate.occurrence_for_test()))
@@ -33,10 +31,11 @@ pub fn court() -> Court {
         .unwrap();
     let recorded = Arc::get_mut(&mut cell[0]).unwrap().get_mut().unwrap();
     (*recorded.producing_implementation_mut_for_test()) = Some(original_implementation());
-    (*recorded.native_prior_checkpoint_mut_for_test()) = Some(NativePriorCheckpointLocator::Performed {
-        producer: "fixture-producer".into(),
-        source: [11; 32],
-    });
+    (*recorded.native_prior_checkpoint_mut_for_test()) =
+        Some(NativePriorCheckpointLocator::Performed {
+            producer: "fixture-producer".into(),
+            source: [11; 32],
+        });
     (*recorded.correspondence_mut_for_test()) = Arc::new(
         WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles_for_test(
             TypeId::of_for_test::<Initial>(),
@@ -59,8 +58,18 @@ pub fn court() -> Court {
 
 pub fn expected_roles() -> Vec<WorthQueryCheckpointOutputRole> {
     vec![
-        WorthQueryCheckpointOutputRole::new_for_test("auxiliary".into(), WorthQueryApplicationOutputPosture::Preserve, "auxiliary-entity".into(), entity(3)),
-        WorthQueryCheckpointOutputRole::new_for_test("output".into(), WorthQueryApplicationOutputPosture::Create, "fixture".into(), entity(2)),
+        WorthQueryCheckpointOutputRole::new_for_test(
+            "auxiliary".into(),
+            WorthQueryApplicationOutputPosture::Preserve,
+            "auxiliary-entity".into(),
+            entity(3),
+        ),
+        WorthQueryCheckpointOutputRole::new_for_test(
+            "output".into(),
+            WorthQueryApplicationOutputPosture::Create,
+            "fixture".into(),
+            entity(2),
+        ),
     ]
 }
 
@@ -69,7 +78,20 @@ pub fn original_implementation() -> Implementation {
 }
 
 pub fn expected(court: &Court) -> Identity {
-    Identity::new_for_test(original_implementation(), "fixture-producer".to_owned().into(), Posture::Performed, [11; 32], court.source.scope, [7; 32], None, [2; 32], expected_roles().into(), None, 0, None)
+    Identity::new_for_test(
+        original_implementation(),
+        "fixture-producer".to_owned().into(),
+        Posture::Performed,
+        [11; 32],
+        court.source.scope,
+        [7; 32],
+        None,
+        [2; 32],
+        expected_roles().into(),
+        None,
+        0,
+        None,
+    )
 }
 
 pub fn select<'a>(
@@ -98,7 +120,11 @@ fn accepted_native_head_skips_only_the_discarded_full_locator_copy() {
     (*accepted.producer_fact_wire_version_mut_for_test()) = 4;
     let merged = merge_native_checkpoint_priors(
         &court.lineage,
-        vec![(accepted.clone(), None, Some(TypeId::of_for_test::<Initial>()))],
+        vec![(
+            accepted.clone(),
+            None,
+            Some(TypeId::of_for_test::<Initial>()),
+        )],
         std::iter::empty(),
         priors,
     )
@@ -142,7 +168,10 @@ fn absent_or_rejected_accepted_rows_preserve_the_complete_native_locator() {
                 2 => (*candidate.idempotency_key_mut_for_test()) = [3; 32],
                 3 => (*candidate.source_mut_for_test()) = [12; 32],
                 4 => (*candidate.producer_mut_for_test()) = Arc::new("other-producer".to_owned()),
-                5 => (*Arc::make_mut(&mut (*candidate.roles_mut_for_test()))[1].entity_mut_for_test()) = entity(4),
+                5 => {
+                    (*Arc::make_mut(&mut (*candidate.roles_mut_for_test()))[1]
+                        .entity_mut_for_test()) = entity(4)
+                }
                 6 => {
                     (*candidate.implementation_mut_for_test()) =
                         Implementation::from_checkpoint([0x33; 16], [0x22; 32]).unwrap()
@@ -200,9 +229,7 @@ fn required_native_locator_materializes_the_complete_identity() {
     assert_eq!(merged[0].0, expected(&court));
 
     let mut missing = crate::domain_computation::primary_graph::output_lineage::tests::family_publications::checkpoint_locator_copy::court();
-    let cell = (*missing
-        .lineage
-        .by_source_mut_for_test())
+    let cell = (*missing.lineage.by_source_mut_for_test())
         .get_mut(&missing.source)
         .unwrap()
         .get_mut(&(*missing.coordinate.occurrence_for_test()))
@@ -232,9 +259,7 @@ fn missing_locator_still_checks_the_recorded_pair_before_retaining_accepted_data
         for drift in 0..4 {
             let mut court = court();
             let expected = expected(&court);
-            let cell = (*court
-                .lineage
-                .by_source_mut_for_test())
+            let cell = (*court.lineage.by_source_mut_for_test())
                 .get_mut(&court.source)
                 .unwrap()
                 .get_mut(&(*court.coordinate.occurrence_for_test()))
@@ -262,7 +287,10 @@ fn missing_locator_still_checks_the_recorded_pair_before_retaining_accepted_data
             assert!((*priors[0].identity_for_test()).is_none());
             assert!(priors[0].materialize_identity_for_test().unwrap().is_none());
             let (current, recovered_rows) = if recovered {
-                (Vec::new(), vec![(candidate, Some(TypeId::of_for_test::<Initial>()))])
+                (
+                    Vec::new(),
+                    vec![(candidate, Some(TypeId::of_for_test::<Initial>()))],
+                )
             } else {
                 (
                     vec![(candidate, None, Some(TypeId::of_for_test::<Initial>()))],

@@ -47,8 +47,9 @@ fn nested_framing_preserves_descendants_and_declared_empty_collections() {
     assert_eq!(reference, encode(same, true));
     let mut different = shape(&key);
     (*(*different.relations_mut_for_test())[0].rows_mut_for_test())[0] = shape(&key);
-    (*(*(*(*different.relations_mut_for_test())[0].rows_mut_for_test())[0].fields_mut_for_test())[0].value_mut_for_test()) =
-        AspectValue::String("changed descendant".into());
+    (*(*(*(*different.relations_mut_for_test())[0].rows_mut_for_test())[0]
+        .fields_mut_for_test())[0]
+        .value_mut_for_test()) = AspectValue::String("changed descendant".into());
     assert_ne!(reference, encode(different, true));
     let mut empty = shape(&key);
     (*(*empty.relations_mut_for_test())[0].rows_mut_for_test()).clear();
@@ -61,10 +62,14 @@ fn nested_framing_preserves_descendants_and_declared_empty_collections() {
     );
     let mut empty = shape(&key);
     (*(*empty.relations_mut_for_test())[0].rows_mut_for_test())[0] = shape(&key);
-    (*(*(*(*empty.relations_mut_for_test())[0].rows_mut_for_test())[0].relations_mut_for_test())[0].rows_mut_for_test()).clear();
+    (*(*(*(*empty.relations_mut_for_test())[0].rows_mut_for_test())[0].relations_mut_for_test())
+        [0]
+    .rows_mut_for_test())
+    .clear();
     let mut absent = shape(&key);
     (*(*absent.relations_mut_for_test())[0].rows_mut_for_test())[0] = shape(&key);
-    (*(*(*absent.relations_mut_for_test())[0].rows_mut_for_test())[0].relations_mut_for_test()).clear();
+    (*(*(*absent.relations_mut_for_test())[0].rows_mut_for_test())[0].relations_mut_for_test())
+        .clear();
     assert_ne!(encode(empty, true), encode(absent, true));
 }
 #[test]

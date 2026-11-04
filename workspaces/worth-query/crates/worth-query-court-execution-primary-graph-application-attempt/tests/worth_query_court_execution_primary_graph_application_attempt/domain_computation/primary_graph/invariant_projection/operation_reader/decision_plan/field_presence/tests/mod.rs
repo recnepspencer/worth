@@ -15,13 +15,14 @@ fn optional_aspect_initialization_presence_follows_exact_installed_write_members
     let nonwriter = schema
         .installed_operation(WrongFieldRetentionOperation::reference())
         .unwrap();
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
     for field in [
         AccountNote::reference().field(),
         AccountScore::reference().field(),
     ] {
-        let locator = (*graph
-            .layout_for_test())
+        let locator = (*graph.layout_for_test())
             .field_locator_for_test("Account", "AccountPolicy", field)
             .unwrap();
         assert!(may_write(writer.contracts().touches(), "Account", locator));

@@ -42,23 +42,19 @@ pub fn claim_on_superseded(
     let wake = Arc::clone(&(*dependent_record.wake_for_test()));
     {
         let mut state = (*registry.state_for_test()).lock().unwrap();
-        (*state.records_mut_for_test()).insert_for_test(
-            old.clone(),
-            {
-                let mut base = record(
-                    occurrence(),
-                    DemandState::Failed(WorthQueryOutputDemandDenial::new_for_test(
-                        WorthQueryOutputDemandDenialKind::Superseded,
-                        "",
-                    )),
-                    0,
-                );
-                *base.framework_required_count_mut_for_test() = 1;
-                base
-            },
-        );
-        (*state
-            .records_mut_for_test())
+        (*state.records_mut_for_test()).insert_for_test(old.clone(), {
+            let mut base = record(
+                occurrence(),
+                DemandState::Failed(WorthQueryOutputDemandDenial::new_for_test(
+                    WorthQueryOutputDemandDenialKind::Superseded,
+                    "",
+                )),
+                0,
+            );
+            *base.framework_required_count_mut_for_test() = 1;
+            base
+        });
+        (*state.records_mut_for_test())
             .insert_for_test(newest.clone(), record(occurrence(), newest_state, 1));
         (*state.required_keys_mut_for_test()).insert(Arc::new(newest.clone()));
         (*state.records_mut_for_test()).insert_for_test(dependent.clone(), dependent_record);
@@ -68,8 +64,7 @@ pub fn claim_on_superseded(
     (registry, interest, old, newest)
 }
 pub fn claims(record: &DemandRecord) -> Vec<WorthQueryOutputDemandKey> {
-    (*record
-        .prerequisites_for_test())
+    (*record.prerequisites_for_test())
         .iter()
         .map(|claimed| claimed.as_ref().clone())
         .collect()

@@ -20,8 +20,7 @@ pub enum WorthQueryApplicationReadExecutionDenialKind {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct WorthQueryApplicationReadExecutionDenial
-{
+pub struct WorthQueryApplicationReadExecutionDenial {
     kind: WorthQueryApplicationReadExecutionDenialKind,
     subject: String,
 }

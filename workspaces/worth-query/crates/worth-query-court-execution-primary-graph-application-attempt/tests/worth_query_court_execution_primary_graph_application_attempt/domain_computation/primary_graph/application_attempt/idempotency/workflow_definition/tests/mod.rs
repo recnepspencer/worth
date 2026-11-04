@@ -49,6 +49,9 @@ fn workflow_identity_survives_combined_composition() {
         combined.bind_governed_proposal_for_test(Some(&[7; 32])),
         combined.bind_workflow_definition(&[7; 32]),
     ] {
-        assert_ne!(combined.intent_text_for_test(), drift.intent_text_for_test());
+        assert_ne!(
+            combined.intent_text_for_test(),
+            drift.intent_text_for_test()
+        );
     }
 }

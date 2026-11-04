@@ -53,7 +53,10 @@ fn observed_reads_seal_every_key() {
         ))
         .ok()
         .unwrap();
-    assert_eq!(keys.iter_for_test().cloned().collect::<Vec<_>>(), [adjacency(1)]);
+    assert_eq!(
+        keys.iter_for_test().cloned().collect::<Vec<_>>(),
+        [adjacency(1)]
+    );
 }
 
 #[test]

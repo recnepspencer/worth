@@ -17,16 +17,27 @@ fn full_key_run_lookup_preserves_endpoints_and_interior_matches() {
 
     let mut run = Run::empty(3, policy).unwrap();
     for (ordinal, limit) in [2, 4, 6].into_iter().enumerate() {
-        *(*run.slots_for_test())[ordinal].borrow_mut() = Some(RetainedFact::new_for_test(key(b"same", Some((b"predicate", limit)), policy), Body {
+        *(*run.slots_for_test())[ordinal].borrow_mut() = Some(RetainedFact::new_for_test(
+            key(b"same", Some((b"predicate", limit)), policy),
+            Body {
                 scalar: limit as u64,
                 roles: 1,
-            }, ordinal));
+            },
+            ordinal,
+        ));
         (*run.used_mut_for_test()) += 1;
     }
     for limit in [2, 4, 6] {
         let probe = key(b"same", Some((b"predicate", limit)), policy);
-        let found = run.locate_for_test(&probe, policy).unwrap().unwrap().borrow();
-        assert_eq!((*found.as_ref().unwrap().value_for_test()).scalar, limit as u64);
+        let found = run
+            .locate_for_test(&probe, policy)
+            .unwrap()
+            .unwrap()
+            .borrow();
+        assert_eq!(
+            (*found.as_ref().unwrap().value_for_test()).scalar,
+            limit as u64
+        );
     }
     for (locator, predicate) in [
         (b"sama".as_slice(), Some((b"predicate".as_slice(), 4))),

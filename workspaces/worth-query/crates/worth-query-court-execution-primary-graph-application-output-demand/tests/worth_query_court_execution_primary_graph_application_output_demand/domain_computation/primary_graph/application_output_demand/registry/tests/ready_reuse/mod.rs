@@ -56,8 +56,16 @@ fn ready_output_reopens_and_only_its_exact_restored_predecessor_refreshes_it() {
             ); *__base.source_scope_mut_for_test() = __source_scope; *__base.wake_mut_for_test() = __wake; __base },
     );
     drop(interest(&registry, output_key.clone(), wake));
-    assert!((*(*registry.state_for_test()).lock().unwrap().records_for_test())[&output_key].has_cached_ready_for_test());
-    assert!(!(*(*registry.state_for_test()).lock().unwrap().records_for_test())[&output_key].is_required_for_test());
+    assert!((*(*registry.state_for_test())
+        .lock()
+        .unwrap()
+        .records_for_test())[&output_key]
+        .has_cached_ready_for_test());
+    assert!(!(*(*registry.state_for_test())
+        .lock()
+        .unwrap()
+        .records_for_test())[&output_key]
+        .is_required_for_test());
     let reopened = registry
         .admit_for_test(
             output_key.clone(),
@@ -141,10 +149,9 @@ fn ready_output_reopens_and_only_its_exact_restored_predecessor_refreshes_it() {
     drop(refreshed);
     drop(reopened);
     registry.release_product_occurrence_for_test(product_occurrence);
-    assert!(!(*(*registry
-        .state_for_test())
+    assert!(!(*(*registry.state_for_test())
         .lock()
         .unwrap()
         .records_for_test())
-        .contains_key_for_test(&output_key));
+    .contains_key_for_test(&output_key));
 }

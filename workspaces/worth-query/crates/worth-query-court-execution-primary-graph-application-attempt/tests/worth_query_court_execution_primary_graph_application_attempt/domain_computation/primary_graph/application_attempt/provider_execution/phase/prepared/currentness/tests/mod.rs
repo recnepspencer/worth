@@ -69,7 +69,9 @@ fn current_commit_basis_reclaims_an_abandoned_performed_observation() {
     registry.release_prepared_token_for_test(&commit);
     drop(preparation);
     let runtime = world.application.product_runtime();
-    let retained = runtime.admit_product_occurrence_for_test(occurrence).unwrap();
+    let retained = runtime
+        .admit_product_occurrence_for_test(occurrence)
+        .unwrap();
     let mut held = Vec::new();
     loop {
         match runtime.admit_product_occurrence_for_test(occurrence) {

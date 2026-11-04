@@ -19,7 +19,10 @@ fn refused_comparison_preserves_ordinal_and_live_coordinate_for_retry() {
     let first = registry
         .intern_for_test(&[7; 32], &[8; 32], footprint(root, true), &selection)
         .unwrap();
-    let ordinal = (*(*registry.state_for_test()).lock().unwrap().next_ordinal_for_test());
+    let ordinal = (*(*registry.state_for_test())
+        .lock()
+        .unwrap()
+        .next_ordinal_for_test());
     let refusal = worth_relational::facade::transactions::RelationalExecutionDenialCause::PolicyMemoryExhausted {
         requested: 97,
         admitted: 53,
@@ -44,7 +47,11 @@ fn refused_comparison_preserves_ordinal_and_live_coordinate_for_retry() {
     assert!(Arc::ptr_eq(&first, &retry));
     drop(first);
     drop(retry);
-    assert!((*registry.state_for_test()).lock().unwrap().meanings.is_empty());
+    assert!((*registry.state_for_test())
+        .lock()
+        .unwrap()
+        .meanings
+        .is_empty());
 }
 
 #[test]
@@ -89,7 +96,10 @@ fn result_set_membership_is_not_a_row_source_with_the_same_footprint() {
         .intern_result_set_for_test(&[7; 32], &[8; 32], footprint(root, true), &selection)
         .unwrap();
     assert_ne!(row.identity_for_test(), set.identity_for_test());
-    assert_ne!(row.checkpoint_identity_for_test(), set.checkpoint_identity_for_test());
+    assert_ne!(
+        row.checkpoint_identity_for_test(),
+        set.checkpoint_identity_for_test()
+    );
 }
 
 #[test]
@@ -122,9 +132,15 @@ fn released_meaning_removes_only_its_fixed_coordinate() {
     let second = registry
         .intern_for_test(&[7; 32], &[8; 32], footprint(second_root, true), &selection)
         .unwrap();
-    assert_eq!((*registry.state_for_test()).lock().unwrap().meanings.len(), 2);
+    assert_eq!(
+        (*registry.state_for_test()).lock().unwrap().meanings.len(),
+        2
+    );
     drop(first);
-    assert_eq!((*registry.state_for_test()).lock().unwrap().meanings.len(), 1);
+    assert_eq!(
+        (*registry.state_for_test()).lock().unwrap().meanings.len(),
+        1
+    );
     assert_eq!((*second.footprint().root_for_test()), second_root);
 }
 
@@ -147,8 +163,14 @@ fn reinterned_source_retains_checkpoint_identity_without_reusing_runtime_idempot
         .intern_for_test(&[7; 32], &[8; 32], footprint(root, true), &selection)
         .unwrap();
     assert_ne!(*reinterned.identity_for_test(), first_runtime_identity);
-    assert_eq!(reinterned.runtime_idempotency_identity_for_test(), first_commitment);
-    assert_eq!(reinterned.checkpoint_identity_for_test(), checkpoint_identity);
+    assert_eq!(
+        reinterned.runtime_idempotency_identity_for_test(),
+        first_commitment
+    );
+    assert_eq!(
+        reinterned.checkpoint_identity_for_test(),
+        checkpoint_identity
+    );
 }
 
 #[test]
@@ -250,7 +272,14 @@ fn parameter_partitions_are_distinct_source_occurrences() {
 }
 
 pub fn footprint(root: EntityId, complete: bool) -> WorthQueryObservedSourceFootprint {
-    WorthQueryObservedSourceFootprint::new_for_test(root, complete, vec![root], Vec::new(), None, Vec::new())
+    WorthQueryObservedSourceFootprint::new_for_test(
+        root,
+        complete,
+        vec![root],
+        Vec::new(),
+        None,
+        Vec::new(),
+    )
 }
 
 pub fn product_selection() -> WorthQueryApplicationBasisSelectionIdentity {
@@ -261,7 +290,12 @@ pub fn product_selection() -> WorthQueryApplicationBasisSelectionIdentity {
     let product = world
         .application
         .product_runtime()
-        .admit_product_branch_for_test(world.application.product_runtime().default_branch_for_test())
+        .admit_product_branch_for_test(
+            world
+                .application
+                .product_runtime()
+                .default_branch_for_test(),
+        )
         .expect("the fixture product occurrence is live");
     WorthQueryApplicationBasisSelectionIdentity::Product(
         worth_query_execution::facade::domain_computation::WorthQueryProductBranchReadIdentity::from_observation_for_test(product.observation_for_test()),

@@ -99,9 +99,9 @@ fn preparation_control_stops_retry_at_provider_commit() {
     use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::outcome::WorthQueryProviderProgressionOutcome as Progression;
     use worth_query_execution::facade::domain_computation::WorthQueryProviderSessionCommitControlStopped as Stopped;
     for kind in [Control::Cancelled, Control::TimedOut] {
-        let Progression::Denied(denial) =
-            control_stopped_outcome(Stopped::execution_preparation_for_test(kind, "owner control stop"))
-        else {
+        let Progression::Denied(denial) = control_stopped_outcome(
+            Stopped::execution_preparation_for_test(kind, "owner control stop"),
+        ) else {
             panic!("preparation control lost its denial");
         };
         assert_eq!(denial.stage(), Stage::ProviderCommit);

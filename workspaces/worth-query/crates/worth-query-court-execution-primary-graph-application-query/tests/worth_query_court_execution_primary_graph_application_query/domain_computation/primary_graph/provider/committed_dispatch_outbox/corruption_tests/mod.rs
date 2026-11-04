@@ -227,7 +227,9 @@ pub fn committed_substituted_row(
     let world = installed_authorization_world(true);
     let provider = (*world.application.primary_provider_for_test()).clone();
     let record = record();
-    let layout = (*(*provider.graph_for_test()).layout_for_test()).provider_dispatch_outbox_for_test().clone();
+    let layout = (*(*provider.graph_for_test()).layout_for_test())
+        .provider_dispatch_outbox_for_test()
+        .clone();
     let branch = primary_relational_branch_id();
     let (binding, commit, runtime_id) = (*provider.graph_for_test()).with_runtime_mut_for_test(request_execution, |runtime| {
         let (intent, pending) =

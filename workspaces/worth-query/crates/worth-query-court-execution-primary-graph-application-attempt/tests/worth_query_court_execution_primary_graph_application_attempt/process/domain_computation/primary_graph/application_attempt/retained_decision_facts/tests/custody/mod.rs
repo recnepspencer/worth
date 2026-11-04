@@ -99,10 +99,14 @@ fn before_growth_refusal_and_merge_replacement_coexistence_release_exact_backing
     let mut right = Run::empty(1, policy).unwrap();
     for (run, locator, ordinal) in [(&mut left, b"a", 0), (&mut right, b"b", 1)] {
         // Explicit system key bytes excluded in this inline merge proof.
-        *(*run.slots_for_test())[0].borrow_mut() = Some(RetainedFact::new_for_test(key(locator, None, control(Policy::SystemAllocation)), Body {
+        *(*run.slots_for_test())[0].borrow_mut() = Some(RetainedFact::new_for_test(
+            key(locator, None, control(Policy::SystemAllocation)),
+            Body {
                 scalar: ordinal as u64,
                 roles: 1,
-            }, ordinal));
+            },
+            ordinal,
+        ));
         (*run.used_mut_for_test()) = 1;
     }
     let denied = match Run::merge_for_test(left, right, policy) {
@@ -190,7 +194,10 @@ fn final_array_and_key_charges_survive_child_drop_and_exhausted_iterator() {
     ));
     drop(parent.reserve_memory(budget - final_quote - 3).unwrap());
     let mut records = records.into_iter();
-    assert_eq!((*records.next().unwrap().key_for_test()).locator_for_test(), b"a");
+    assert_eq!(
+        (*records.next().unwrap().key_for_test()).locator_for_test(),
+        b"a"
+    );
     for record in records.by_ref() {
         drop(record);
     }

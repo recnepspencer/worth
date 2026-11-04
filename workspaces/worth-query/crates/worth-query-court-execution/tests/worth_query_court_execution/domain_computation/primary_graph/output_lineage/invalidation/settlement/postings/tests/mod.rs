@@ -35,12 +35,18 @@ fn equal_fingerprints_keep_distinct_exact_keys_and_merge_only_equal_keys() {
     assert_eq!(groups.len(), 2);
     assert_eq!((*groups[0].key_for_test()).as_ref(), first.as_ref());
     assert_eq!(
-        (*groups[0].ordinals_for_test()).iter().copied().collect::<Vec<_>>(),
+        (*groups[0].ordinals_for_test())
+            .iter()
+            .copied()
+            .collect::<Vec<_>>(),
         vec![0, 2]
     );
     assert_eq!((*groups[1].key_for_test()).as_ref(), second.as_ref());
     assert_eq!(
-        (*groups[1].ordinals_for_test()).iter().copied().collect::<Vec<_>>(),
+        (*groups[1].ordinals_for_test())
+            .iter()
+            .copied()
+            .collect::<Vec<_>>(),
         vec![1]
     );
 }
@@ -55,7 +61,8 @@ fn source_and_output_facts_share_one_key_but_keep_both_composite_ordinals() {
         kind: KindId::new(9),
     }];
 
-    let prepared = PreparedPostingOrdinals::prepare_for_test(&source, Some(&output), &mut None).unwrap();
+    let prepared =
+        PreparedPostingOrdinals::prepare_for_test(&source, Some(&output), &mut None).unwrap();
     let mut state = MarkState::initial_for_test();
     let projection = prepared.into_projection_for_test(0, source.len(), output.len(), None);
     worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::settlement::posting_bindings::bind(&mut state, &projection, &identity).unwrap();
@@ -87,8 +94,7 @@ fn final_posting_storage_keeps_all_ordinals_without_retaining_grouping_scratch()
 
         let prepared = PreparedPostingOrdinals::prepare_for_test(&facts, None, &mut None).unwrap();
         assert_eq!((*prepared.ordinals_for_test()).len(), keys);
-        assert!((*prepared
-            .ordinals_for_test())
+        assert!((*prepared.ordinals_for_test())
             .values()
             .all(|ordinals| ordinals.len() == copies));
 
@@ -101,10 +107,11 @@ fn final_posting_storage_keeps_all_ordinals_without_retaining_grouping_scratch()
         assert!(prior.is_empty());
         assert_eq!((*state.posting_count_for_test()), keys);
         assert_eq!((*state.postings_for_test()).len(), keys);
-        assert!((*state
-            .postings_for_test())
-            .values()
-            .all(|groups| groups.iter().copied().collect::<Vec<_>>() == vec![0]));
+        assert!((*state.postings_for_test()).values().all(|groups| groups
+            .iter()
+            .copied()
+            .collect::<Vec<_>>()
+            == vec![0]));
         drop(state);
 
         drop(projection);

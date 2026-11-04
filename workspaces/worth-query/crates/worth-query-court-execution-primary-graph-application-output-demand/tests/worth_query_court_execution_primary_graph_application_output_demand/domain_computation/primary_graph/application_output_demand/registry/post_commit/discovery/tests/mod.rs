@@ -25,7 +25,8 @@ fn registry_completed_discovery_body_keeps_its_occurrence_bound() {
                 &receipts[..entries],
                 neighbors,
             );
-        let _published = SupersededSettlements::new_for_test(registry.clone(), Arc::new(selected.clone()));
+        let _published =
+            SupersededSettlements::new_for_test(registry.clone(), Arc::new(selected.clone()));
         let before = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::record_map::occurrence_rows_visited();
         assert!(after_publication(&state, &selected).is_empty());
         contacts.push(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::record_map::occurrence_rows_visited() - before);

@@ -26,22 +26,33 @@ pub fn fixture(
         .composite_commit()
         .clone();
     let mut state = (*registry.state_for_test()).lock().unwrap();
-    let mut next = record(receipt.product_branch().occurrence_for_test(), copy_ready(ready), 1);
+    let mut next = record(
+        receipt.product_branch().occurrence_for_test(),
+        copy_ready(ready),
+        1,
+    );
     (*next.source_commits_mut_for_test()).push(commit.clone());
     let next_wake = Arc::clone(&(*next.wake_for_test()));
     (*state.records_mut_for_test()).insert_for_test(newest.clone(), next);
-    (*state.records_mut_for_test()).insert_for_test(
-        old.clone(),
-        { let __framework_required_count = 1; let mut __base = record(
-                occurrence(),
-                DemandState::Failed(WorthQueryOutputDemandDenial::new_for_test(
-                    WorthQueryOutputDemandDenialKind::Superseded,
-                    "newer row",
-                )),
-                0,
-            ); *__base.framework_required_count_mut_for_test() = __framework_required_count; __base },
-    );
-    let row = { let __prerequisites = vec![Arc::new(old)]; let mut __base = record(occurrence(), copy_ready(ready), 1); *__base.prerequisites_mut_for_test() = __prerequisites; __base };
+    (*state.records_mut_for_test()).insert_for_test(old.clone(), {
+        let __framework_required_count = 1;
+        let mut __base = record(
+            occurrence(),
+            DemandState::Failed(WorthQueryOutputDemandDenial::new_for_test(
+                WorthQueryOutputDemandDenialKind::Superseded,
+                "newer row",
+            )),
+            0,
+        );
+        *__base.framework_required_count_mut_for_test() = __framework_required_count;
+        __base
+    });
+    let row = {
+        let __prerequisites = vec![Arc::new(old)];
+        let mut __base = record(occurrence(), copy_ready(ready), 1);
+        *__base.prerequisites_mut_for_test() = __prerequisites;
+        __base
+    };
     let mut row = row;
     (*row.required_interests_mut_for_test()) = 1;
 
@@ -49,14 +60,50 @@ pub fn fixture(
     (*state.records_mut_for_test()).insert_for_test(dependent.clone(), row);
     let member = state.prepare_required_member_for_test(&newest).unwrap();
     state.install_required_member_for_test(member);
-    state.source_custody.insert(
-        commit,
-        {
-// Bound in the original literal order, passed in the door's.
-let (occurrence, root_kind, source, discovery, bound_sources, consumed_sources, retired_sources, retired, token_count, cleanup, completed) = (receipt.product_branch().occurrence_for_test(), PreparedOutputRootKind::Discovered(EqualityTypeId::of_for_test::<()>()), None, None, Some(vec![BoundOutputSource::new_for_test(scope, (*newest.source_for_test()).clone())]), vec![(*newest.source_for_test()).clone()], Vec::new(), None, 0, Default::default(), true);
-SourceCustody::new_for_test(occurrence, root_kind, source, discovery, consumed_sources, retired_sources, bound_sources, retired, token_count, cleanup, completed)
-},
-    );
+    state.source_custody.insert(commit, {
+        // Bound in the original literal order, passed in the door's.
+        let (
+            occurrence,
+            root_kind,
+            source,
+            discovery,
+            bound_sources,
+            consumed_sources,
+            retired_sources,
+            retired,
+            token_count,
+            cleanup,
+            completed,
+        ) = (
+            receipt.product_branch().occurrence_for_test(),
+            PreparedOutputRootKind::Discovered(EqualityTypeId::of_for_test::<()>()),
+            None,
+            None,
+            Some(vec![BoundOutputSource::new_for_test(
+                scope,
+                (*newest.source_for_test()).clone(),
+            )]),
+            vec![(*newest.source_for_test()).clone()],
+            Vec::new(),
+            None,
+            0,
+            Default::default(),
+            true,
+        );
+        SourceCustody::new_for_test(
+            occurrence,
+            root_kind,
+            source,
+            discovery,
+            consumed_sources,
+            retired_sources,
+            bound_sources,
+            retired,
+            token_count,
+            cleanup,
+            completed,
+        )
+    });
     retain_owned_key(&mut state, &dependent);
     retain_owned_key(&mut state, &newest);
     drop(state);
@@ -78,7 +125,10 @@ fn registry_custody_note_survives_a_held_drain_and_claim_transfer() {
     );
     let commit = receipt.committed_product_publication().composite_commit();
     drop(owner);
-    (*registry.state_for_test()).lock().unwrap().drain_next_foreign_custody_for_test();
+    (*registry.state_for_test())
+        .lock()
+        .unwrap()
+        .drain_next_foreign_custody_for_test();
     {
         let state = (*registry.state_for_test()).lock().unwrap();
         assert!(
@@ -93,7 +143,10 @@ fn registry_custody_note_survives_a_held_drain_and_claim_transfer() {
     drop(dependent);
     registry.drain_closed_cleanup_admitted().unwrap();
     let mut state = (*registry.state_for_test()).lock().unwrap();
-    assert_eq!((*(*state.records_for_test())[&newest].framework_required_count_for_test()), 1);
+    assert_eq!(
+        (*(*state.records_for_test())[&newest].framework_required_count_for_test()),
+        1
+    );
     state.drain_next_foreign_custody_for_test();
     assert!(!state.source_custody.contains_key(commit));
     worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::post_commit::custody_reader::resolve_before_binding(&mut state, &receipt);

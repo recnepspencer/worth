@@ -41,7 +41,10 @@ pub fn read(world: &World, key: u64, execution: &ExecutionRequest<'_, '_>) -> Re
         .application
         .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch_for_test(),
+            world
+                .application
+                .product_runtime()
+                .default_branch_for_test(),
         )
         .unwrap();
     let completed = world
@@ -65,8 +68,8 @@ pub fn read(world: &World, key: u64, execution: &ExecutionRequest<'_, '_>) -> Re
         })
         .unwrap();
     let (body, snapshot, _) = completed.into_parts();
-    let (lease, _, _, _) =
-        snapshot.into_lease_and_realized_scope_for_test(selected.product().retained_clone_for_test());
+    let (lease, _, _, _) = snapshot
+        .into_lease_and_realized_scope_for_test(selected.product().retained_clone_for_test());
     Read { body, lease }
 }
 impl Read {
@@ -75,9 +78,11 @@ impl Read {
         old: &AggregateObservation,
         execution: &ExecutionRequest<'_, '_>,
     ) -> bool {
-        self.lease.handle_for_test().with_runtime(execution, |runtime| {
-            old.remains_equal_for_test(runtime, execution, self.lease.snapshot_for_test(), None)
-                .unwrap()
-        })
+        self.lease
+            .handle_for_test()
+            .with_runtime(execution, |runtime| {
+                old.remains_equal_for_test(runtime, execution, self.lease.snapshot_for_test(), None)
+                    .unwrap()
+            })
     }
 }

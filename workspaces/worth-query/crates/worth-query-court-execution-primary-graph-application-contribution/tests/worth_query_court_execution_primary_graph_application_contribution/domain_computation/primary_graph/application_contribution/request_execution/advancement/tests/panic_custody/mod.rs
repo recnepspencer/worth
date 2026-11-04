@@ -89,7 +89,10 @@ fn native_late_refusal_contains_result_drop_panic_and_preserves_cancellation() {
     let records = worth_query_execution::facade::domain_computation::advancement_observations_on_this_thread_for_test();
     assert_eq!(records.len(), 1);
     assert_eq!(records[0].refusal, refused);
-    assert_eq!(request().run_advancement_for_test(None, None, |_| 19), Ok(19));
+    assert_eq!(
+        request().run_advancement_for_test(None, None, |_| 19),
+        Ok(19)
+    );
     assert_eq!(
         worth_query_execution::facade::domain_computation::advancement_observations_on_this_thread_for_test().len(),
         1

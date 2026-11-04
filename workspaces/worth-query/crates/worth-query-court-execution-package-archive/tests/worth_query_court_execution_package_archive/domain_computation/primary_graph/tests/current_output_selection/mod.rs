@@ -254,7 +254,10 @@ pub fn admitted_touch_parts(
         .application
         .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch_for_test(),
+            world
+                .application
+                .product_runtime()
+                .default_branch_for_test(),
         )
         .unwrap()
         .resolve_authenticated_principal(
@@ -269,7 +272,10 @@ pub fn admitted_touch_parts(
         .application
         .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch_for_test(),
+            world
+                .application
+                .product_runtime()
+                .default_branch_for_test(),
         )
         .unwrap()
         .resolve_entity(

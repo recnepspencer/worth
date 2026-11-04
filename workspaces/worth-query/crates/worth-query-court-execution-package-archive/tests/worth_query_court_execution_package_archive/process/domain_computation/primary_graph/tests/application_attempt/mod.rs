@@ -37,7 +37,12 @@ fn concurrent_equivalent_attempts_publish_one_transaction() {
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
+            resolved_account(
+                &(phase).test_host_request_for_test(),
+                &world,
+                "open",
+                &request,
+            )
         })
         .expect("the fixture read owns its installed host call");
     let first = world
@@ -99,10 +104,16 @@ fn preparation_commit_recovery_and_retry_perform_no_execution_digest_derivation(
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
+            resolved_account(
+                &(phase).test_host_request_for_test(),
+                &world,
+                "open",
+                &request,
+            )
         })
         .expect("the fixture read owns its installed host call");
-    let before = worth_query_execution::court_doors_for_test::execution_digest::test_hash_parts_call_count();
+    let before =
+        worth_query_execution::court_doors_for_test::execution_digest::test_hash_parts_call_count();
     let first = world
         .application
         .with_host_advancement(|phase| {
@@ -139,7 +150,8 @@ fn preparation_commit_recovery_and_retry_perform_no_execution_digest_derivation(
         ),
         WorthQueryApplicationCommitOutcome::Committed(_)
     ));
-    let after_commit = worth_query_execution::court_doors_for_test::execution_digest::test_hash_parts_call_count();
+    let after_commit =
+        worth_query_execution::court_doors_for_test::execution_digest::test_hash_parts_call_count();
     assert_eq!(
         after_commit,
         before,

@@ -22,9 +22,7 @@ fn retained_output_liveness_door_preserves_stops_at_every_consult() {
                 .unwrap()
                 .is_some());
             let selected = world.selected_product(&phase.test_host_request_for_test());
-            (*world
-                .application
-                .runtime_for_test())
+            (*world.application.runtime_for_test())
                 .primary_graph()
                 .unwrap()
                 .integration_handle_for_test()

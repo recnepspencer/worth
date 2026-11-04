@@ -19,7 +19,9 @@ fn certified_alias_chain_discharge_is_exact_and_later_native_change_repends() {
     let world = installed_authorization_world(true);
     let selected = world
         .application
-        .with_host_advancement(|host_phase| world.selected_product(&host_phase.test_host_request_for_test()))
+        .with_host_advancement(|host_phase| {
+            world.selected_product(&host_phase.test_host_request_for_test())
+        })
         .expect("installed host call opens");
     let entity = world
         .application
@@ -37,8 +39,13 @@ fn certified_alias_chain_discharge_is_exact_and_later_native_change_repends() {
         })
         .expect("installed host call opens");
     let (_, product, _) = selected.into_parts_for_test();
-    let coordinate = ProductCoordinate::new_for_test(product.observation_for_test().lifecycle_incarnation(), product.observation_for_test().reference_generation().get());
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let coordinate = ProductCoordinate::new_for_test(
+        product.observation_for_test().lifecycle_incarnation(),
+        product.observation_for_test().reference_generation().get(),
+    );
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
     let handle = graph.integration_handle_for_test();
     let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
     let status_ref = AccountStatus::reference();
@@ -148,7 +155,9 @@ fn unchanged_own_evidence_waits_for_a_pending_equal_successor() {
     let world = installed_authorization_world(true);
     let selected = world
         .application
-        .with_host_advancement(|host_phase| world.selected_product(&host_phase.test_host_request_for_test()))
+        .with_host_advancement(|host_phase| {
+            world.selected_product(&host_phase.test_host_request_for_test())
+        })
         .expect("installed host call opens");
     let entity = world
         .application
@@ -166,8 +175,13 @@ fn unchanged_own_evidence_waits_for_a_pending_equal_successor() {
         })
         .expect("installed host call opens");
     let (_, product, _) = selected.into_parts_for_test();
-    let coordinate = ProductCoordinate::new_for_test(product.observation_for_test().lifecycle_incarnation(), product.observation_for_test().reference_generation().get());
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let coordinate = ProductCoordinate::new_for_test(
+        product.observation_for_test().lifecycle_incarnation(),
+        product.observation_for_test().reference_generation().get(),
+    );
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
     let handle = graph.integration_handle_for_test();
     let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
     let status_ref = AccountStatus::reference();
@@ -229,10 +243,20 @@ pub fn register_alias(
     );
     let prepared = owner
         .prepare_current_stable_settlement_for_test(
-            SettlementRegistration::new_for_test(None, None, Arc::clone(successor), RetainedSourceFacts::for_test_for_test(
+            SettlementRegistration::new_for_test(
+                None,
+                None,
+                Arc::clone(successor),
+                RetainedSourceFacts::for_test_for_test(
                     false,
                     Arc::from([field_fact(execution, runtime, handle, entity, locator)]),
-                ), None, selected.clone(), OrdSet::new(), None, OrdSet::new()),
+                ),
+                None,
+                selected.clone(),
+                OrdSet::new(),
+                None,
+                OrdSet::new(),
+            ),
             selected,
             relation,
         )

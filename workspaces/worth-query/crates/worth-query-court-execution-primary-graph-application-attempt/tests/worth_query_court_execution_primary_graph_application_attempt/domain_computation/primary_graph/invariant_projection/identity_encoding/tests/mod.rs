@@ -12,7 +12,13 @@ fn projection_authority_encoding_has_equal_work_across_varint_boundaries() {
     let mut previous = None;
     for authority in [0, 127, 128, 16383, 16384, u64::MAX] {
         // A private serialization value, never issued read authority.
-        let value = WorthQueryInvariantEntityIdentity::<(), ()>::new_for_test(EntityId::new(PartitionId::main(), 1, 1), KindId(1), Arc::from("Entry"), authority, PhantomData);
+        let value = WorthQueryInvariantEntityIdentity::<(), ()>::new_for_test(
+            EntityId::new(PartitionId::main(), 1, 1),
+            KindId(1),
+            Arc::from("Entry"),
+            authority,
+            PhantomData,
+        );
         let identity =
             application_computation_partition_identity(&value, &mut |_| Ok::<(), ()>(())).unwrap();
         if let Some(previous) = previous {

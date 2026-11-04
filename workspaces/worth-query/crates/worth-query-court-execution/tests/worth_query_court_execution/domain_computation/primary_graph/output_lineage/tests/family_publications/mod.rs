@@ -48,7 +48,12 @@ impl Court {
         let product = world
             .application
             .product_runtime()
-            .admit_product_branch_for_test(world.application.product_runtime().default_branch_for_test())
+            .admit_product_branch_for_test(
+                world
+                    .application
+                    .product_runtime()
+                    .default_branch_for_test(),
+            )
             .unwrap();
         let observation = product.observation_for_test();
         use worth_runtime_world::facade::*;
@@ -105,10 +110,15 @@ impl Court {
         posture: WorthQueryApplicationOutputPosture,
         facts: bool,
     ) -> Arc<WorthQueryApplicationOutputCorrespondence> {
-        let source = { let __output_binding = self
+        let source = {
+            let __output_binding = self
                 .lineage
                 .binding_identity_for_test(TypeId::of_for_test::<Binding>())
-                .unwrap(); let mut __base = self.source.clone(); *__base.output_binding_mut_for_test() = __output_binding; __base };
+                .unwrap();
+            let mut __base = self.source.clone();
+            *__base.output_binding_mut_for_test() = __output_binding;
+            __base
+        };
         let role = if TypeId::of_for_test::<Binding>() == TypeId::of_for_test::<OtherRole>() {
             "other"
         } else {
@@ -119,16 +129,24 @@ impl Court {
                 TypeId::of_for_test::<Binding>(),
                 TypeId::of_for_test::<()>(),
                 std::iter::empty(),
-                &[WorthQueryCheckpointOutputRole::new_for_test(role.to_owned(), posture, "fixture".to_owned(), entity(output))],
+                &[WorthQueryCheckpointOutputRole::new_for_test(
+                    role.to_owned(),
+                    posture,
+                    "fixture".to_owned(),
+                    entity(output),
+                )],
                 |_| Some(TypeId::of_for_test::<()>()),
                 &worth_execution::ExecutionRequest::serial(&self.request),
             )
             .unwrap(),
         );
-        let coordinate = { let __generation = generation; let mut __base = self.coordinate; *__base.generation_mut_for_test() = __generation; __base };
-        let records = (*self
-            .lineage
-            .by_source_mut_for_test())
+        let coordinate = {
+            let __generation = generation;
+            let mut __base = self.coordinate;
+            *__base.generation_mut_for_test() = __generation;
+            __base
+        };
+        let records = (*self.lineage.by_source_mut_for_test())
             .entry(source.clone())
             .or_default()
             .entry((*coordinate.occurrence_for_test()))
@@ -185,17 +203,16 @@ impl Court {
             (*source.output_binding_mut_for_test()) = output_binding;
             source
         };
-        let origin = (*(*self.lineage.by_source_for_test())[&source(TypeId::of_for_test::<Origin>())]
-            [&(*self.coordinate.occurrence_for_test())][&origin_generation][0]
+        let origin = (*(*self.lineage.by_source_for_test())
+            [&source(TypeId::of_for_test::<Origin>())][&(*self.coordinate.occurrence_for_test())]
+            [&origin_generation][0]
             .get()
             .unwrap()
             .settlement_identity_for_test())
-            .clone();
+        .clone();
         // The key reads the bindings before the lineage is borrowed mutably.
         let target_source = source(TypeId::of_for_test::<Target>());
-        let cell = &mut (*self
-            .lineage
-            .by_source_mut_for_test())
+        let cell = &mut (*self.lineage.by_source_mut_for_test())
             .get_mut(&target_source)
             .unwrap()
             .get_mut(&(*self.coordinate.occurrence_for_test()))

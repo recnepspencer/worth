@@ -145,8 +145,14 @@ fn every_fact_keeps_the_calls_that_read_it_and_its_sealed_content() {
                 key(2),
                 ComputationFactReaders::read_by_for_test(false, [], partitions(&[7, 9]))
             ),
-            (key(3), ComputationFactReaders::read_by_for_test(true, [], [])),
-            (key(4), ComputationFactReaders::read_by_for_test(false, [11, 12], [])),
+            (
+                key(3),
+                ComputationFactReaders::read_by_for_test(true, [], [])
+            ),
+            (
+                key(4),
+                ComputationFactReaders::read_by_for_test(false, [11, 12], [])
+            ),
         ]
     );
 }
@@ -166,7 +172,10 @@ fn a_key_read_again_by_the_same_call_names_the_call_once() {
                 key(1),
                 ComputationFactReaders::read_by_for_test(false, [], partitions(&[7]))
             ),
-            (key(2), ComputationFactReaders::read_by_for_test(false, [3], [])),
+            (
+                key(2),
+                ComputationFactReaders::read_by_for_test(false, [3], [])
+            ),
         ]
     );
 }
@@ -192,7 +201,8 @@ fn a_key_read_in_several_classes_belongs_to_every_one_of_them() {
     attribution.record(key(7), item(5));
     attribution.record(key(7), ComputationRead::Membership);
 
-    let membership_and_partition = ComputationFactReaders::read_by_for_test(true, [], partitions(&[7]));
+    let membership_and_partition =
+        ComputationFactReaders::read_by_for_test(true, [], partitions(&[7]));
     let item_and_partition = ComputationFactReaders::read_by_for_test(false, [4], partitions(&[7]));
     let membership_and_item = ComputationFactReaders::read_by_for_test(true, [4], []);
     assert_eq!(
@@ -240,11 +250,17 @@ fn ordinal_alignment_includes_handler_gaps_and_retains_shared_call_keys() {
     assert_eq!(sealed.at_ordinal_for_test(3).unwrap().0, &key(4));
     assert!(sealed.at_ordinal_for_test(4).is_none());
     assert_eq!(
-        sealed.call_index().keys_for_test(partition(7)).collect::<Vec<_>>(),
+        sealed
+            .call_index()
+            .keys_for_test(partition(7))
+            .collect::<Vec<_>>(),
         [&key(2)]
     );
     assert_eq!(
-        sealed.call_index().keys_for_test(partition(9)).collect::<Vec<_>>(),
+        sealed
+            .call_index()
+            .keys_for_test(partition(9))
+            .collect::<Vec<_>>(),
         [&key(2)]
     );
     assert_eq!(sealed.observation_work_bound(), Some(2));
@@ -297,10 +313,19 @@ fn completion_metadata_retains_the_exact_original_pre_effect_payload() {
         body.get(3).unwrap(),
         sealed.at_ordinal_for_test(3).unwrap().1
     ));
-    assert!(sealed.at_ordinal_for_test(0).is_none(), "handler gap remains exact");
+    assert!(
+        sealed.at_ordinal_for_test(0).is_none(),
+        "handler gap remains exact"
+    );
     let cloned = sealed.clone();
-    assert!(std::sync::Arc::ptr_eq(&(*sealed.index_for_test()), &(*cloned.index_for_test())));
-    assert!(std::sync::Arc::ptr_eq(&(*sealed.metadata_for_test()), &(*cloned.metadata_for_test())));
+    assert!(std::sync::Arc::ptr_eq(
+        &(*sealed.index_for_test()),
+        &(*cloned.index_for_test())
+    ));
+    assert!(std::sync::Arc::ptr_eq(
+        &(*sealed.metadata_for_test()),
+        &(*cloned.metadata_for_test())
+    ));
     assert!(sealed.original.same_backing_for_test(&cloned.original));
     let replacement = WorthQueryApplicationObservedFact::Entity {
         entity_id: entity(2),
@@ -347,7 +372,10 @@ fn native_fact_index_preserves_ordinals_and_readers_without_an_observation_bill(
     assert_eq!(sealed.observation_work_bound(), None);
     assert_eq!(sealed.at_ordinal_for_test(0).unwrap().0, &key(1));
     assert_eq!(
-        sealed.call_index().keys_for_test(partition(7)).collect::<Vec<_>>(),
+        sealed
+            .call_index()
+            .keys_for_test(partition(7))
+            .collect::<Vec<_>>(),
         [&key(1)]
     );
 }

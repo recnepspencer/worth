@@ -22,10 +22,17 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
     let product = world
         .application
         .product_runtime()
-        .admit_product_branch_for_test(world.application.product_runtime().default_branch_for_test())
+        .admit_product_branch_for_test(
+            world
+                .application
+                .product_runtime()
+                .default_branch_for_test(),
+        )
         .expect("the fixture's default product occurrence is live");
     let observation = product.observation_for_test();
-    let runtime_authority = (*world.application.runtime_for_test()).authority_identity().as_u64();
+    let runtime_authority = (*world.application.runtime_for_test())
+        .authority_identity()
+        .as_u64();
     let schema = (*world.application.installed_schema_for_test()).binding_identity();
     let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(
         worth_relational::facade::identity::EntityId::new(
@@ -93,10 +100,16 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
         None,
     );
 
-    let source = SemanticSource::new_for_test(runtime_authority, schema, scope, OutputBindingIdentity::declared_for_test("RestoredOutputBinding"));
+    let source = SemanticSource::new_for_test(
+        runtime_authority,
+        schema,
+        scope,
+        OutputBindingIdentity::declared_for_test("RestoredOutputBinding"),
+    );
     let history = &(*lineage.by_source_for_test())[&source][&observation.lifecycle_incarnation()];
     let maximum_generation = observation.reference_generation().get();
-    let coordinate = ProductCoordinate::new_for_test(observation.lifecycle_incarnation(), maximum_generation);
+    let coordinate =
+        ProductCoordinate::new_for_test(observation.lifecycle_incarnation(), maximum_generation);
     let selected_first = lineage
         .latest_output_in_partition_for_test(&source, coordinate, first_partition)
         .unwrap();
@@ -108,14 +121,26 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
     })
     .unwrap();
 
-    assert!(Arc::ptr_eq(&(*selected_first.correspondence_for_test()), &first));
-    assert!(Arc::ptr_eq(&(*selected_sibling.correspondence_for_test()), &sibling));
-    assert!(Arc::ptr_eq(&(*matching_sibling.correspondence_for_test()), &sibling));
+    assert!(Arc::ptr_eq(
+        &(*selected_first.correspondence_for_test()),
+        &first
+    ));
+    assert!(Arc::ptr_eq(
+        &(*selected_sibling.correspondence_for_test()),
+        &sibling
+    ));
+    assert!(Arc::ptr_eq(
+        &(*matching_sibling.correspondence_for_test()),
+        &sibling
+    ));
     assert_eq!(history[&maximum_generation].len(), 2);
 
     lineage.install_output_families_for_test(std::collections::BTreeMap::from([(
         "partitioned-family".to_owned().into(),
-        vec![(TypeId::of_for_test::<RestoredOutputBinding>(), "output".to_owned())],
+        vec![(
+            TypeId::of_for_test::<RestoredOutputBinding>(),
+            "output".to_owned(),
+        )],
     )]));
     let resolve = || {
         lineage.resolve_current_family_for_test(
@@ -131,8 +156,14 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
     let family = resolve().expect("binding, partition heads, and bounded publication selection");
 
     assert_eq!((*family.candidates_for_test()).len(), 2);
-    assert!(Arc::ptr_eq(&(*(*family.candidates_for_test())[0].correspondence_for_test()), &first));
-    assert!(Arc::ptr_eq(&(*(*family.candidates_for_test())[1].correspondence_for_test()), &sibling));
+    assert!(Arc::ptr_eq(
+        &(*(*family.candidates_for_test())[0].correspondence_for_test()),
+        &first
+    ));
+    assert!(Arc::ptr_eq(
+        &(*(*family.candidates_for_test())[1].correspondence_for_test()),
+        &sibling
+    ));
 
     let current_checkpoint =
         worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryCheckpointSourceIdentity::new_for_test([0x31; 32]);
@@ -183,10 +214,17 @@ fn recovered_prior_correspondence_is_not_currentness_evidence_until_exact_readmi
     let product = world
         .application
         .product_runtime()
-        .admit_product_branch_for_test(world.application.product_runtime().default_branch_for_test())
+        .admit_product_branch_for_test(
+            world
+                .application
+                .product_runtime()
+                .default_branch_for_test(),
+        )
         .expect("the fixture's default product occurrence is live");
     let observation = product.observation_for_test();
-    let runtime_authority = (*world.application.runtime_for_test()).authority_identity().as_u64();
+    let runtime_authority = (*world.application.runtime_for_test())
+        .authority_identity()
+        .as_u64();
     let schema = (*world.application.installed_schema_for_test()).binding_identity();
     let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(
         worth_relational::facade::identity::EntityId::new(
@@ -250,9 +288,15 @@ fn recovered_prior_correspondence_is_not_currentness_evidence_until_exact_readmi
         [0x41; 32],
         None,
     );
-    let semantic_source = SemanticSource::new_for_test(runtime_authority, schema.clone(), scope, OutputBindingIdentity::declared_for_test("RestoredOutputBinding"));
+    let semantic_source = SemanticSource::new_for_test(
+        runtime_authority,
+        schema.clone(),
+        scope,
+        OutputBindingIdentity::declared_for_test("RestoredOutputBinding"),
+    );
     assert_eq!(
-        (*lineage.by_source_for_test())[&semantic_source][&observation.lifecycle_incarnation()].len(),
+        (*lineage.by_source_for_test())[&semantic_source][&observation.lifecycle_incarnation()]
+            .len(),
         1,
         "repeated recovery must not become a newer output"
     );
@@ -364,8 +408,7 @@ fn family_inventory_visits_follow_declared_names() {
             }
             let mut lineage = WorthQueryApplicationOutputLineage::default();
             lineage.install_output_families_for_test(BTreeMap::from(declarations));
-            let visits: Vec<_> = (*lineage
-                .output_families_for_test())
+            let visits: Vec<_> = (*lineage.output_families_for_test())
                 .keys()
                 .map(|family| family.as_str_for_test())
                 .collect();

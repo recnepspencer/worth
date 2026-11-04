@@ -29,8 +29,7 @@ pub struct WorthQueryCommittedDispatchOutboxResolution {
 ///
 /// The wrapped binding still distinguishes exact `Some` from honest `None`.
 /// No receipt path can manufacture this seal from a denied resolution.
-pub struct WorthQueryCommittedDispatchOutboxReceiptSeal
-{
+pub struct WorthQueryCommittedDispatchOutboxReceiptSeal {
     binding: Option<WorthQueryCommittedDispatchOutboxBinding>,
 }
 

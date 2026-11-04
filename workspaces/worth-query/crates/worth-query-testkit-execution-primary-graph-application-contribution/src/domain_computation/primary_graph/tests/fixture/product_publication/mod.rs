@@ -77,7 +77,10 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
     worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::resource_lifecycle::basis_registry::lease::WorthQueryApplicationBasisLease,
 ){
     let selected = application
-        .select_product_branch_for_test(execution, application.product_runtime().default_branch_for_test())
+        .select_product_branch_for_test(
+            execution,
+            application.product_runtime().default_branch_for_test(),
+        )
         .expect("the fixture product branch remains admitted");
     let (_, product, application_basis) = selected.into_parts_for_test();
     let graph = (*application.runtime_for_test()).primary_graph().unwrap();

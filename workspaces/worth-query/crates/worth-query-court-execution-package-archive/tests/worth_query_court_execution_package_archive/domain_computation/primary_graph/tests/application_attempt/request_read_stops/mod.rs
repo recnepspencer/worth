@@ -25,8 +25,9 @@ fn authorization_fact_keeps_the_stop_at_every_consult() {
 #[test]
 fn retained_activation_keeps_the_stop_at_every_consult() {
     with_admitted_facts(|admission, runtime, execution, snapshot, source| {
-        admission
-            .assert_retained_activation_read_at_every_consult_for_test(runtime, execution, snapshot, source)
+        admission.assert_retained_activation_read_at_every_consult_for_test(
+            runtime, execution, snapshot, source,
+        )
     });
 }
 #[test]
@@ -51,8 +52,14 @@ pub fn with_admitted_facts(
     let (admission, selected) = world
         .application
         .with_host_advancement(|phase| {
-            let principal = authenticated_principal(&phase.test_host_request_for_test(), &world, &request);
-            let account = resolved_account(&phase.test_host_request_for_test(), &world, "open", &request);
+            let principal =
+                authenticated_principal(&phase.test_host_request_for_test(), &world, &request);
+            let account = resolved_account(
+                &phase.test_host_request_for_test(),
+                &world,
+                "open",
+                &request,
+            );
             let admission = admitted_operation(&phase, &world, &principal, &account, &request);
             let selected = world.selected_product(&phase.test_host_request_for_test());
             (admission, selected)
@@ -61,10 +68,7 @@ pub fn with_admitted_facts(
     let source = CancellationSource::new();
     let serial = SerialRequest::from_memory(SerialMemoryBudget::new(None), source.token(), None);
     let execution = ExecutionRequest::serial(&serial);
-    let outcome = (*(*world
-        .application
-        .primary_provider_for_test())
-        .graph_for_test())
+    let outcome = (*(*world.application.primary_provider_for_test()).graph_for_test())
         .with_runtime(&execution, |runtime| {
             std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                 body(
@@ -84,6 +88,8 @@ pub fn with_admitted_facts(
 #[test]
 fn cancelled_retained_activation_native_read_keeps_the_stop() {
     with_admitted_facts(|admission, runtime, execution, snapshot, source| {
-        admission.assert_cancelled_retained_activation_read_for_test(runtime, execution, snapshot, source)
+        admission.assert_cancelled_retained_activation_read_for_test(
+            runtime, execution, snapshot, source,
+        )
     });
 }

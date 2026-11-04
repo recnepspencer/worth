@@ -17,15 +17,18 @@ fn current_output_source_adjacency_tracks_actual_anchor_retirement() {
             admitted_touch_parts(&phase, &(phase).borrowed_request_for_test(), &world)
         })
         .expect("the fixture read owns its installed host call");
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-    let kind = (*(*graph
-        .layout_for_test())
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
+    let kind = (*(*graph.layout_for_test())
         .relation(AccountOwner::reference().name())
         .unwrap()
         .kind_for_test());
     let original = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
+        .with_host_advancement(|phase| {
+            world.selected_product(&(phase).test_host_request_for_test())
+        })
         .expect("the fixture read owns its installed host call");
     let fact = world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request_for_test(); graph.integration_handle_for_test().with_runtime(request_execution, |runtime| {
         let revision = runtime
@@ -59,7 +62,9 @@ fn current_output_source_adjacency_tracks_actual_anchor_retirement() {
     retire_open_account(&world);
     let retired = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
+        .with_host_advancement(|phase| {
+            world.selected_product(&(phase).test_host_request_for_test())
+        })
         .expect("the fixture read owns its installed host call");
     world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request_for_test(); graph.integration_handle_for_test().with_runtime(request_execution, |runtime| {
         let snapshot = retired.application_basis_for_test().snapshot_handle();

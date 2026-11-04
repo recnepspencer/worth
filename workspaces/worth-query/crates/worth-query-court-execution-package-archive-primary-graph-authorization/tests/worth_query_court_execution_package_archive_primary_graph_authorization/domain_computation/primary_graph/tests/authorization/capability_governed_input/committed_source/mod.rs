@@ -38,9 +38,7 @@ fn original_governed_input_is_owned_by_the_committed_occurrence() {
     drop(receipt);
     drop(copy);
 
-    let occurrence = (*world
-        .application
-        .primary_provider_for_test())
+    let occurrence = (*world.application.primary_provider_for_test())
         .observe_completed_application_for_test(&source_commit)
         .expect("the provider retains the performed source independently of receipts");
     assert_eq!(
@@ -58,7 +56,9 @@ fn original_governed_input_is_owned_by_the_committed_occurrence() {
     assert_eq!(input.account, "account-1");
     assert_eq!(input.amount, 50);
     assert_eq!(input.caller_time, 100);
-    assert!(original.retained_governed_input_for_test::<String>().is_none());
+    assert!(original
+        .retained_governed_input_for_test::<String>()
+        .is_none());
     assert!(original
         .retained_governed_input_carrier_for_test()
         .expect("the input retains its canonical association")

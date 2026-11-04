@@ -17,7 +17,10 @@ fn admitted_projection_budget_exhaustion_mints_no_snapshot_authority() {
                 .application
                 .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch_for_test(),
+                    world
+                        .application
+                        .product_runtime()
+                        .default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_authenticated_principal(
@@ -38,7 +41,10 @@ fn admitted_projection_budget_exhaustion_mints_no_snapshot_authority() {
                 .application
                 .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch_for_test(),
+                    world
+                        .application
+                        .product_runtime()
+                        .default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
@@ -73,7 +79,9 @@ fn admitted_projection_budget_exhaustion_mints_no_snapshot_authority() {
                 .unwrap()
         })
         .expect("the fixture read owns its installed host call");
-    let baseline = world.invariant.active_snapshot_count_for_test(request_execution);
+    let baseline = world
+        .invariant
+        .active_snapshot_count_for_test(request_execution);
 
     let denial = world
         .application
@@ -110,7 +118,9 @@ fn admitted_projection_budget_exhaustion_mints_no_snapshot_authority() {
     assert_eq!(work.field_reads(), 30);
     assert_eq!(work.provider_work_units(), 32);
     assert_eq!(
-        world.invariant.active_snapshot_count_for_test(request_execution),
+        world
+            .invariant
+            .active_snapshot_count_for_test(request_execution),
         baseline
     );
 }

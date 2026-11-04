@@ -124,7 +124,12 @@ pub fn correspondence(
         TypeId::of_for_test::<()>(),
         TypeId::of_for_test::<()>(),
         std::iter::empty(),
-        &[WorthQueryCheckpointOutputRole::new_for_test("retired".into(), WorthQueryApplicationOutputPosture::Retire, "Account".into(), entity)],
+        &[WorthQueryCheckpointOutputRole::new_for_test(
+            "retired".into(),
+            WorthQueryApplicationOutputPosture::Retire,
+            "Account".into(),
+            entity,
+        )],
         |_| Some(TypeId::of_for_test::<()>()),
         execution,
     )

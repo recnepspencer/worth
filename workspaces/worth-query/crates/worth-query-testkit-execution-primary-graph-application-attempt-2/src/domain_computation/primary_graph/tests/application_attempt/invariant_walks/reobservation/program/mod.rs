@@ -63,7 +63,10 @@ pub fn change_node(
                 .application
                 .select_product_branch_for_test(
                     &execution,
-                    world.application.product_runtime().default_branch_for_test(),
+                    world
+                        .application
+                        .product_runtime()
+                        .default_branch_for_test(),
                 )
                 .unwrap();
             let member = match change {

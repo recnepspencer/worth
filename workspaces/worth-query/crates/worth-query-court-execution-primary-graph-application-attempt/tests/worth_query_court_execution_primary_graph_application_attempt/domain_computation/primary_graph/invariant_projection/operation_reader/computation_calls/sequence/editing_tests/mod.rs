@@ -59,7 +59,10 @@ fn insert_retire_changes_only_paths_preserving_order_history_range_and_fresh_clo
     assert!(next.contains_in(entity, &(2..3)));
     assert!(!next.contains_in(entity, &(3..4)));
     let expected = vec![read(0), read(2), read(3), read(4), read(5), read(8)];
-    assert_eq!((*next.shape_for_test()).calls().collect::<Vec<_>>(), expected);
+    assert_eq!(
+        (*next.shape_for_test()).calls().collect::<Vec<_>>(),
+        expected
+    );
     for (ordinal, read) in expected.iter().enumerate() {
         assert_eq!((*next.shape_for_test()).ordinal(*read), Some(ordinal));
         assert_eq!((*next.shape_for_test()).call_at(ordinal), Some(*read));
@@ -95,10 +98,14 @@ fn insert_retire_changes_only_paths_preserving_order_history_range_and_fresh_clo
                 )
             );
             assert_eq!(
-                (*(*summary.accounting_for_test()).unwrap().consumed_for_test()),
+                (*(*summary.accounting_for_test())
+                    .unwrap()
+                    .consumed_for_test()),
                 truth[start..end]
                     .iter()
-                    .map(|(_, (charge, _))| (*(*charge.accounting_for_test()).unwrap().consumed_for_test()))
+                    .map(|(_, (charge, _))| (*(*charge.accounting_for_test())
+                        .unwrap()
+                        .consumed_for_test()))
                     .sum::<usize>()
             );
         }
@@ -126,7 +133,8 @@ fn insert_retire_changes_only_paths_preserving_order_history_range_and_fresh_clo
                 match visit {
                     CallVisit::Range(_, sum) => {
                         let cost = (*sum.accounting_for_test()).unwrap();
-                        Ok(ranged.carry_for_test((*cost.demand_for_test()), (*cost.consumed_for_test())))
+                        Ok(ranged
+                            .carry_for_test((*cost.demand_for_test()), (*cost.consumed_for_test())))
                     }
                     CallVisit::Leaf(at, _, charge, _) => {
                         let charge = (*charge.accounting_for_test()).unwrap();
@@ -160,10 +168,18 @@ fn insert_retire_changes_only_paths_preserving_order_history_range_and_fresh_clo
             &execution,
         )
         .unwrap();
-    assert!((*returned.shape_for_test()).calls().eq((*prior.shape_for_test()).calls()));
+    assert!((*returned.shape_for_test())
+        .calls()
+        .eq((*prior.shape_for_test()).calls()));
     assert_eq!(
-        (*returned.summary(0..calls.len(), true).unwrap().declared_for_test()),
-        (*prior.summary(0..calls.len(), true).unwrap().declared_for_test())
+        (*returned
+            .summary(0..calls.len(), true)
+            .unwrap()
+            .declared_for_test()),
+        (*prior
+            .summary(0..calls.len(), true)
+            .unwrap()
+            .declared_for_test())
     );
 }
 #[test]
@@ -215,7 +231,9 @@ fn refused_shape_edit_leaves_original_and_shape_views_usable() {
         .prepare_transition_for_test(&BTreeSet::from([read(8)]), &BTreeSet::new(), &execution)
         .unwrap();
     assert!(
-        prior.edited_for_test(&edit, std::iter::empty(), &execution).is_err(),
+        prior
+            .edited_for_test(&edit, std::iter::empty(), &execution)
+            .is_err(),
         "inserted call needs an actual measured charge"
     );
     assert!(prior

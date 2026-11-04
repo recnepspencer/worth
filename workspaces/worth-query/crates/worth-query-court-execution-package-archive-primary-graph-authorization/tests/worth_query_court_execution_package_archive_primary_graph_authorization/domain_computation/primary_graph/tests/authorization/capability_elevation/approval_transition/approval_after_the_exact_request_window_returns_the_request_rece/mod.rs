@@ -24,7 +24,13 @@ fn approval_after_the_exact_request_window_returns_the_request_receipt() {
     let access = world
         .application
         .with_host_advancement(|phase| {
-            approval_access(&(phase).test_host_request_for_test(), &world, &approver, &request).unwrap()
+            approval_access(
+                &(phase).test_host_request_for_test(),
+                &world,
+                &approver,
+                &request,
+            )
+            .unwrap()
         })
         .expect("the fixture read owns its installed host call");
     let denial = world

@@ -15,16 +15,14 @@ pub fn unhold(
         worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::owner::SourceInvalidationOwner::new(
             WorthQueryInvalidationResources::new(),
             1,
-        );(*(*(*
-    (*interest
-        .owner_for_test())
-        .state_for_test())
+        );
+    (*(*(*(*interest.owner_for_test()).state_for_test())
         .lock()
         .unwrap()
         .records_mut_for_test())
-        .get_mut(&(*interest.key_for_test()))
-        .unwrap()
-        .state_mut_for_test()) = DemandState::Running;
+    .get_mut(&(*interest.key_for_test()))
+    .unwrap()
+    .state_mut_for_test()) = DemandState::Running;
 
     let context = interest
         .required_context_for_test("registry-fixture-family", &owner)
@@ -35,18 +33,23 @@ pub fn unhold(
     if cancel {
         // The admitted edge's vector and credit change owners, not capacity.
         // This fixture models a claim still held by its unpublished ticket.
-        let mut state =(* (*interest.owner_for_test()).state_for_test()).lock().unwrap();
-        (*claims.claim_batch_mut_for_test()) =(* (*state
-            .records_mut_for_test())
+        let mut state = (*(*interest.owner_for_test()).state_for_test())
+            .lock()
+            .unwrap();
+        (*claims.claim_batch_mut_for_test()) = (*(*state.records_mut_for_test())
             .get_mut(&(*interest.key_for_test()))
             .unwrap()
             .claim_batch_mut_for_test())
-            .take();
+        .take();
         if let Some(batch) = &(*claims.claim_batch_for_test()) {
             batch.deactivate_for_test();
         }
-        (*claims.predecessors_mut_for_test()) =
-            std::mem::take(&mut(* (*state.records_mut_for_test()).get_mut(&(*interest.key_for_test())).unwrap().prerequisites_mut_for_test()));
+        (*claims.predecessors_mut_for_test()) = std::mem::take(
+            &mut (*(*state.records_mut_for_test())
+                .get_mut(&(*interest.key_for_test()))
+                .unwrap()
+                .prerequisites_mut_for_test()),
+        );
         drop(state);
         drop(claims);
     } else {

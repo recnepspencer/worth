@@ -54,8 +54,10 @@ fn current_control_stays_caller_local_while_intrinsic_managed_refusals_do_not() 
         use worth_query_execution::facade::domain_computation::WorthQueryManagedIndexRefusal as Refusal;
         use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandDenial;
         use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandRecoveryPosture as Posture;
-    let original =
-        WorthQueryOutputDemandDenial::new_for_test(DemandKind::CurrentControlBusy, "current control");
+    let original = WorthQueryOutputDemandDenial::new_for_test(
+        DemandKind::CurrentControlBusy,
+        "current control",
+    );
     assert!(managed_authority_rejection(Cause::CurrentControl(
         &original
     )));
@@ -115,7 +117,8 @@ fn carried_native_read_stop_survives_producer_admission_and_body_receivers() {
         (NativeStop::Cancelled, DemandKind::Cancelled),
         (NativeStop::DeadlineElapsed, DemandKind::TimedOut),
     ] {
-        let attempt = WorthQueryApplicationAttemptDenial::relational_read_stopped_for_test(cause, "body");
+        let attempt =
+            WorthQueryApplicationAttemptDenial::relational_read_stopped_for_test(cause, "body");
         let ProducerExecutionStop::RequestAdmissionDenied(rejected) =
                 worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::execution::denial::execution_failed(
                     "producer",

@@ -75,7 +75,31 @@ pub fn record(
     state: DemandState,
     interests: usize,
 ) -> DemandRecord {
-    DemandRecord::new_for_test(None, interests, 0, Vec::new(), 0, Vec::new(), None, None, 0, None, false, Default::default(), Vec::new(), occurrence, None, Vec::new(), state, None, None, None, None, None, Arc::new(DemandWake::new_for_test(Mutex::new(0), Condvar::new())))
+    DemandRecord::new_for_test(
+        None,
+        interests,
+        0,
+        Vec::new(),
+        0,
+        Vec::new(),
+        None,
+        None,
+        0,
+        None,
+        false,
+        Default::default(),
+        Vec::new(),
+        occurrence,
+        None,
+        Vec::new(),
+        state,
+        None,
+        None,
+        None,
+        None,
+        None,
+        Arc::new(DemandWake::new_for_test(Mutex::new(0), Condvar::new())),
+    )
 }
 
 pub fn interest(
@@ -100,12 +124,17 @@ pub fn interest_with_requirement(
     wake: Arc<DemandWake>,
     requires_output: bool,
 ) -> WorthQueryOutputDemandInterest {
-    WorthQueryOutputDemandInterest::new_for_test(key, requires_output, WorthQueryOutputDemandNotifications::new_for_test(Arc::clone(&wake)), registry.clone())
+    WorthQueryOutputDemandInterest::new_for_test(
+        key,
+        requires_output,
+        WorthQueryOutputDemandNotifications::new_for_test(Arc::clone(&wake)),
+        registry.clone(),
+    )
 }
 
 /// Retain the owned key exactly as prepare_new_record does, without activating work.
 pub fn retain_owned_key(state: &mut DemandRegistryState, key: &WorthQueryOutputDemandKey) {
-    if(* (*state.records_for_test())[key].work_membership_for_test()).is_some() {
+    if (*(*state.records_for_test())[key].work_membership_for_test()).is_some() {
         return;
     }
     let queue = (*state
@@ -114,6 +143,9 @@ pub fn retain_owned_key(state: &mut DemandRegistryState, key: &WorthQueryOutputD
     let member = Arc::new(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::required_work::RequiredWorkMembership::new_for_test(
         Arc::new(key.clone()),
         queue,
-    ));(*
-    (*state.records_mut_for_test()).get_mut(key).unwrap().work_membership_mut_for_test()) = Some(member);
+    ));
+    (*(*state.records_mut_for_test())
+        .get_mut(key)
+        .unwrap()
+        .work_membership_mut_for_test()) = Some(member);
 }

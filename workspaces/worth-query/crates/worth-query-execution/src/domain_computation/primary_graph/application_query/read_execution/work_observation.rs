@@ -3,9 +3,7 @@
 use std::cell::Cell;
 
 /// Root and tree observations include a refused read's completed prefix.
-pub struct OneShotReadWorkObservation<
-    'charge,
-> {
+pub struct OneShotReadWorkObservation<'charge> {
     charge: Option<
         &'charge dyn Fn(usize, &str) -> Result<(), super::WorthQueryApplicationReadExecutionDenial>,
     >,

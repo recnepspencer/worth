@@ -43,7 +43,11 @@ pub struct EmissionObservation {
 
 pub fn observe(prepared: WorthQueryPreparedApplicationProviderAttempt) -> LoweringObservation {
     let effects = prepared.effects_into_for_test();
-    let steps = effects.expected_steps_for_test().iter().map(observe_step).collect();
+    let steps = effects
+        .expected_steps_for_test()
+        .iter()
+        .map(observe_step)
+        .collect();
     let intents = effects.batch_for_test().intents.clone();
     let emissions = effects.into_emissions_for_test();
     let emissions = emissions.into_emissions();

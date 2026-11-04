@@ -4,7 +4,8 @@ use super::*;
 impl ApplicationFactTable {
     #[doc(hidden)]
     pub fn closed_prefix_for_test(
-        &self) -> Option<(&Arc<CompletedFactProjection>, &Arc<CompletedOriginalRead>)> {
+        &self,
+    ) -> Option<(&Arc<CompletedFactProjection>, &Arc<CompletedOriginalRead>)> {
         Self::closed_prefix(self)
     }
 }
@@ -33,7 +34,8 @@ impl ApplicationFactTable {
 impl ApplicationFactTable {
     #[doc(hidden)]
     pub fn requests_for_test(
-        &self) -> impl Iterator<Item = crate::domain_computation::WorthQueryDecisionFactRequest> + '_ {
+        &self,
+    ) -> impl Iterator<Item = crate::domain_computation::WorthQueryDecisionFactRequest> + '_ {
         Self::requests(self)
     }
 }

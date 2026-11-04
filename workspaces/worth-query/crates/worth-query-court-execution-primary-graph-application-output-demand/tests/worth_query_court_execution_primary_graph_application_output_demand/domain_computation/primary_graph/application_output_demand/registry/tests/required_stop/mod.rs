@@ -42,7 +42,10 @@ fn only_a_stop_intrinsic_to_the_head_row_fails_its_dependents() {
     );
 
     let mut recorded = failed(WorthQueryOutputDemandDenialKind::Cancelled);
-    (*recorded.get_mut(&head).unwrap().required_stop_mut_for_test()) =
+    (*recorded
+        .get_mut(&head)
+        .unwrap()
+        .required_stop_mut_for_test()) =
         Some(WorthQueryOutputDemandDenialKind::MissingApplicableProducer);
     assert_eq!(
         worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::required_stop::head_stop(&recorded, &head).map(|denial| denial.kind()),

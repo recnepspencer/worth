@@ -206,8 +206,7 @@ pub fn missing_door_index(live: bool, predicate_missing: bool) {
             // Keep all installed bindings except the precise missing index.
             let mut layout = installed_layout();
             for (key, field) in layout.equality_fields_mut_for_test() {
-                (*field.equality_index_id_mut_for_test()) = (*(*graph
-                    .layout_for_test())
+                (*field.equality_index_id_mut_for_test()) = (*(*graph.layout_for_test())
                     .equality_field_for_test(&key.0, &key.1, &key.2)
                     .unwrap()
                     .equality_index_id_for_test());

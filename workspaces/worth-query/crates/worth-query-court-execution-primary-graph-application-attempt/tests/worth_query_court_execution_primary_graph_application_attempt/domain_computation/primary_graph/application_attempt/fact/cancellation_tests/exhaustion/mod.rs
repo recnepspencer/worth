@@ -101,10 +101,9 @@ fn exhausted_native_fact_reads_preserve_the_request_stop() {
                                 Err(WorkCeilingDenial::Stopped(MapKernelStop::WorkCeiling))
                             );
                             for fact in &facts {
-                                results
-                                    .lock()
-                                    .unwrap()
-                                    .push(fact.remains_equal_in_for_test(runtime, execution, snapshot));
+                                results.lock().unwrap().push(
+                                    fact.remains_equal_in_for_test(runtime, execution, snapshot),
+                                );
                             }
                             Ok(0)
                         },

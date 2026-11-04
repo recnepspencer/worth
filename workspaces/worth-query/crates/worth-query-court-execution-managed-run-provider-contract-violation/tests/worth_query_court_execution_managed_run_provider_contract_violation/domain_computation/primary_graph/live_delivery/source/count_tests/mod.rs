@@ -32,20 +32,34 @@ fn subscription_count_exhaustion_refuses_without_panicking() {
                 .begin_predicate_preparation_for_test(&execution, product.observation_for_test())
                 .unwrap();
             assert!(source
-                .join_predicate_opening_for_test(&execution, &pinned, product.observation_for_test())
+                .join_predicate_opening_for_test(
+                    &execution,
+                    &pinned,
+                    product.observation_for_test()
+                )
                 .is_err());
             drop(first);
             assert!(source
-                .join_predicate_opening_for_test(&execution, &pinned, product.observation_for_test())
+                .join_predicate_opening_for_test(
+                    &execution,
+                    &pinned,
+                    product.observation_for_test()
+                )
                 .is_err());
             drop(second);
             let opening = source
-                .join_predicate_opening_for_test(&execution, &pinned, product.observation_for_test())
+                .join_predicate_opening_for_test(
+                    &execution,
+                    &pinned,
+                    product.observation_for_test(),
+                )
                 .unwrap();
             assert!(source
                 .begin_predicate_preparation_for_test(&execution, product.observation_for_test())
                 .is_err());
-            assert!(source.reserve_for_test(&execution, product.observation_for_test()).is_err());
+            assert!(source
+                .reserve_for_test(&execution, product.observation_for_test())
+                .is_err());
             drop(opening);
             let preparation = source
                 .begin_predicate_preparation_for_test(&execution, product.observation_for_test())
@@ -63,17 +77,30 @@ fn subscription_count_exhaustion_refuses_without_panicking() {
                 .unwrap();
             source.invalidate_predicates(product.observation_for_test());
             assert!(source
-                .join_predicate_opening_for_test(&execution, &pinned, product.observation_for_test())
+                .join_predicate_opening_for_test(
+                    &execution,
+                    &pinned,
+                    product.observation_for_test()
+                )
                 .is_err());
             assert!(source
-                .validate_predicate_progress_for_test(&execution, &pinned, product.observation_for_test())
+                .validate_predicate_progress_for_test(
+                    &execution,
+                    &pinned,
+                    product.observation_for_test()
+                )
                 .is_err());
             drop(pinned);
             assert_eq!(source.active_partition_count_for_test(), 0);
         })
         .unwrap();
-    (*(*source.state_for_test()).lock().unwrap().subscriber_count_mut_for_test()) = usize::MAX;
-    let attempt = catch_unwind(AssertUnwindSafe(|| source.open_for_test(product.observation_for_test())));
+    (*(*source.state_for_test())
+        .lock()
+        .unwrap()
+        .subscriber_count_mut_for_test()) = usize::MAX;
+    let attempt = catch_unwind(AssertUnwindSafe(|| {
+        source.open_for_test(product.observation_for_test())
+    }));
     assert!(
         attempt.is_ok(),
         "exhaustion must return a refusal, not panic"
@@ -98,12 +125,18 @@ fn subscription_drop_saturates_underflow_without_panicking() {
         .admit_product_branch_for_test(runtime.default_branch_for_test())
         .unwrap();
     let source = WorthQueryLiveDeliverySource::default();
-    let subscription = source.open_for_test(product.observation_for_test()).unwrap();
+    let subscription = source
+        .open_for_test(product.observation_for_test())
+        .unwrap();
     {
         let mut state = (*source.state_for_test()).lock().unwrap();
         (*state.subscriber_count_mut_for_test()) = 0;
-        let key = WorthQueryLiveProductKey::from_observation_for_test(product.observation_for_test());
-        (*(*state.partitions_mut_for_test()).get_mut(&key).unwrap().subscriber_count_mut_for_test()) = 0;
+        let key =
+            WorthQueryLiveProductKey::from_observation_for_test(product.observation_for_test());
+        (*(*state.partitions_mut_for_test())
+            .get_mut(&key)
+            .unwrap()
+            .subscriber_count_mut_for_test()) = 0;
     }
     assert!(
         catch_unwind(AssertUnwindSafe(|| drop(subscription))).is_ok(),

@@ -14,11 +14,11 @@ fn typed_emission_is_published_with_the_exact_provider_commit() {
     let world = installed_authorization_world(true);
     let selected = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
+        .with_host_advancement(|phase| {
+            world.selected_product(&(phase).test_host_request_for_test())
+        })
         .expect("the fixture read owns its installed host call");
-    let _live = (*world
-        .application
-        .primary_provider_for_test())
+    let _live = (*world.application.primary_provider_for_test())
         .observe_application_commit_causality_for_test(selected.product());
     let request = live_scope();
     let principal = world
@@ -30,7 +30,12 @@ fn typed_emission_is_published_with_the_exact_provider_commit() {
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
+            resolved_account(
+                &(phase).test_host_request_for_test(),
+                &world,
+                "open",
+                &request,
+            )
         })
         .expect("the fixture read owns its installed host call");
     let program = world
@@ -58,14 +63,14 @@ fn typed_emission_is_published_with_the_exact_provider_commit() {
         panic!("typed emission attempt must commit");
     };
     assert_eq!(receipt.emitted_effect_count(), 1);
-    let emissions = (*world
-        .application
-        .primary_provider_for_test())
+    let emissions = (*world.application.primary_provider_for_test())
         .committed_application_emissions_for_test(receipt.committed_product_publication());
     assert_eq!(emissions.len(), 1);
     assert_eq!(emissions[0].effect_for_test(), "AccountActivityEffect");
     assert_eq!(
-        emissions[0].payload_for_test::<String>().map(String::as_str),
+        emissions[0]
+            .payload_for_test::<String>()
+            .map(String::as_str),
         Some("account-activity")
     );
 }
@@ -83,7 +88,12 @@ fn response_loss_recovers_emit_receipt_without_duplicate_publication() {
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
+            resolved_account(
+                &(phase).test_host_request_for_test(),
+                &world,
+                "open",
+                &request,
+            )
         })
         .expect("the fixture read owns its installed host call");
     let first = world
@@ -145,9 +155,7 @@ fn response_loss_recovers_emit_receipt_without_duplicate_publication() {
     );
     assert_eq!(recovered.emitted_effect_count(), 1);
     assert_eq!(
-        (*world
-            .application
-            .primary_provider_for_test())
+        (*world.application.primary_provider_for_test())
             .published_application_commit_count_for_test(),
         1
     );
@@ -166,7 +174,12 @@ fn in_window_receipt_admits_its_exact_historical_basis() {
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
+            resolved_account(
+                &(phase).test_host_request_for_test(),
+                &world,
+                "open",
+                &request,
+            )
         })
         .expect("the fixture read owns its installed host call");
     let first = world
@@ -198,7 +211,12 @@ fn in_window_receipt_admits_its_exact_historical_basis() {
     let current_account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request_for_test(), &world, "historical", &request)
+            resolved_account(
+                &(phase).test_host_request_for_test(),
+                &world,
+                "historical",
+                &request,
+            )
         })
         .expect("the fixture read owns its installed host call");
     let advanced = world

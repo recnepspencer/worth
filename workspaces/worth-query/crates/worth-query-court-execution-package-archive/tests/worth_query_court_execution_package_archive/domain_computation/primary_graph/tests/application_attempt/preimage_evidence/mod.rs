@@ -45,13 +45,23 @@ fn later_commit_recovery_selects_exact_evidence_and_rejects_foreign_reference_ax
     let first_account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
+            resolved_account(
+                &(phase).test_host_request_for_test(),
+                &world,
+                "open",
+                &request,
+            )
         })
         .expect("the fixture read owns its installed host call");
     let later_account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request_for_test(), &world, "unrelated", &request)
+            resolved_account(
+                &(phase).test_host_request_for_test(),
+                &world,
+                "unrelated",
+                &request,
+            )
         })
         .expect("the fixture read owns its installed host call");
     let first = world

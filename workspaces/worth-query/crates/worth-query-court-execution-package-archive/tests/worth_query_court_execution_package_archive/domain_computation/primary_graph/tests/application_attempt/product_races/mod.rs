@@ -22,24 +22,33 @@ fn unrelated_product_drift_preserves_the_prepared_attempt_and_changed_facts_stal
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
+            resolved_account(
+                &(phase).test_host_request_for_test(),
+                &world,
+                "open",
+                &request,
+            )
         })
         .expect("the fixture read owns its installed host call");
     let unrelated = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request_for_test(), &world, "unrelated", &request)
+            resolved_account(
+                &(phase).test_host_request_for_test(),
+                &world,
+                "unrelated",
+                &request,
+            )
         })
         .expect("the fixture read owns its installed host call");
     let selected = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
+        .with_host_advancement(|phase| {
+            world.selected_product(&(phase).test_host_request_for_test())
+        })
         .expect("the fixture read owns its installed host call");
     let commit_count = || {
-        (*(*world
-            .application
-            .primary_provider_for_test())
-            .graph_for_test())
+        (*(*world.application.primary_provider_for_test()).graph_for_test())
             .with_runtime(request_execution, |runtime| {
                 runtime.history().immutable_commit_count()
             })
@@ -92,7 +101,9 @@ fn unrelated_product_drift_preserves_the_prepared_attempt_and_changed_facts_stal
     );
     let current = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
+        .with_host_advancement(|phase| {
+            world.selected_product(&(phase).test_host_request_for_test())
+        })
         .expect("the fixture read owns its installed host call");
     assert_ne!(
         selected.product().selected_commit(),

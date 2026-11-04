@@ -12,11 +12,23 @@ pub fn entity(slot: u64) -> EntityId {
 }
 
 pub fn populated(count: u64) -> WorkflowInstanceProgress {
-    let mut progress = WorkflowInstanceProgress::new_for_test(None, entity(count + 1), count, OrdMap::new(), 0, OrdMap::new(), false, OrdMap::new(), OrdMap::new(), OrdMap::new(), OrdMap::new(), 0);
+    let mut progress = WorkflowInstanceProgress::new_for_test(
+        None,
+        entity(count + 1),
+        count,
+        OrdMap::new(),
+        0,
+        OrdMap::new(),
+        false,
+        OrdMap::new(),
+        OrdMap::new(),
+        OrdMap::new(),
+        OrdMap::new(),
+        0,
+    );
     for occurrence in 0..count {
         let node = entity(occurrence);
-        (*progress
-            .retry_counts_mut_for_test())
+        (*progress.retry_counts_mut_for_test())
             .insert((node, ApplicationWorkflowControlOutcome::Completed), 1);
         progress.retain_observation_for_test(WorkflowTransitionProgressObservation::new_for_test(
             WorkflowTransitionLocator::new_for_test(
@@ -36,8 +48,7 @@ pub fn populated(count: u64) -> WorkflowInstanceProgress {
 
 pub fn update_last(progress: &mut WorkflowInstanceProgress, count: u64) {
     let node = entity(count - 1);
-    (*progress
-        .retry_counts_mut_for_test())
+    (*progress.retry_counts_mut_for_test())
         .insert((node, ApplicationWorkflowControlOutcome::Completed), 2);
     progress.retain_observation_for_test(WorkflowTransitionProgressObservation::new_for_test(
         WorkflowTransitionLocator::new_for_test(
@@ -59,11 +70,9 @@ fn progress_snapshots_share_maps_and_preserve_isolated_values() {
         let source = populated(count);
         let mut advanced = source.clone();
         assert!((*source.retry_counts_for_test()).ptr_eq(&(*advanced.retry_counts_for_test())));
-        assert!((*source
-            .latest_transitions_for_test())
+        assert!((*source.latest_transitions_for_test())
             .ptr_eq(&(*advanced.latest_transitions_for_test())));
-        assert!((*source
-            .latest_assessment_evidence_for_test())
+        assert!((*source.latest_assessment_evidence_for_test())
             .ptr_eq(&(*advanced.latest_assessment_evidence_for_test())));
         update_last(&mut advanced, count);
         assert_eq!(
@@ -128,8 +137,7 @@ fn ten_thousand_back_settlements_keep_warm_navigation_state_bounded() {
         Some(&10_000)
     );
     let snapshot = progress.clone();
-    assert!((*snapshot
-        .back_edge_iterations_for_test())
+    assert!((*snapshot.back_edge_iterations_for_test())
         .ptr_eq(&(*progress.back_edge_iterations_for_test())));
 }
 

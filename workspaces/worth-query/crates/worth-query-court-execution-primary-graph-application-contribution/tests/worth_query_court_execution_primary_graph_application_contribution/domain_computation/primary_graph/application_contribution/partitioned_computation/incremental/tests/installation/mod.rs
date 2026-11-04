@@ -99,7 +99,10 @@ fn another_owner_with_the_same_types_runs_in_full() {
         (1..=4).sum::<u64>() * 2,
         "its own total"
     );
-    assert_eq!(*(*doubling.owner_for_test()).0.calls.lock().unwrap(), full_call_law());
+    assert_eq!(
+        *(*doubling.owner_for_test()).0.calls.lock().unwrap(),
+        full_call_law()
+    );
 }
 
 #[test]
@@ -117,7 +120,10 @@ fn a_reinstalled_owner_runs_in_full() {
     ));
     assert_eq!(next.gathered, [0, 1], "every partition is gathered");
     assert_eq!(next.outcome.unwrap().0, (1..=4).sum::<u64>());
-    assert_eq!(*(*reinstalled.owner_for_test()).calls.lock().unwrap(), full_call_law());
+    assert_eq!(
+        *(*reinstalled.owner_for_test()).calls.lock().unwrap(),
+        full_call_law()
+    );
 }
 
 #[test]
@@ -161,7 +167,8 @@ fn retained_reads_require_the_actual_installed_value_catalogue() {
     ] {
         let first = first_run(&world, &installed);
         let mut state = first.sealed.unwrap().unwrap().state_into_for_test();
-        (*state.basis_mut_for_test()) = (*state.basis_for_test()).with_value_bindings_for_test(catalogue);
+        (*state.basis_mut_for_test()) =
+            (*state.basis_for_test()).with_value_bindings_for_test(catalogue);
         let prior = ComputationPrior::new_for_test(edition(), Ok(std::sync::Arc::new(state)), None);
         *(*installed.owner_for_test()).calls.lock().unwrap() = [0; 4];
         let next = attempt(&world, &installed, Some(prior));
@@ -175,7 +182,10 @@ fn retained_reads_require_the_actual_installed_value_catalogue() {
                 [(Run::Full(Cause::OtherInstallation), Some(_))]
             ));
             assert_eq!(next.gathered, [0, 1]);
-            assert_eq!(*(*installed.owner_for_test()).calls.lock().unwrap(), full_call_law());
+            assert_eq!(
+                *(*installed.owner_for_test()).calls.lock().unwrap(),
+                full_call_law()
+            );
         }
         assert_eq!(next.outcome.unwrap().0, (1..=4).sum::<u64>());
     }
@@ -199,7 +209,10 @@ fn a_reinstalled_reducer_runs_in_full_with_its_own_reduction() {
     ));
     assert_eq!(next.gathered, [0, 1]);
     assert_eq!(next.outcome.unwrap().0, expected);
-    assert_eq!(*(*reinstalled.owner_for_test()).calls.lock().unwrap(), full_call_law());
+    assert_eq!(
+        *(*reinstalled.owner_for_test()).calls.lock().unwrap(),
+        full_call_law()
+    );
 }
 
 /// A new installation meets each item and computes every distinct model key.

@@ -15,7 +15,8 @@ fn governed_query_cannot_open_a_persistent_view_without_read_reauthorization() {
             let host_custody = phase.test_host_request_for_test();
 
             let selected = world.selected_product(
-                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
+                &(host_custody.phase_for_application_for_test(&world.application))
+                    .test_host_request_for_test(),
             );
             let denial = world
                 .application

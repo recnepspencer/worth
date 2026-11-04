@@ -51,9 +51,7 @@ pub fn installed_field(
     aspect: &str,
     field: &str,
 ) -> AspectFieldLocator {
-    (*world
-        .application
-        .runtime_for_test())
+    (*world.application.runtime_for_test())
         .primary_graph()
         .unwrap()
         .layout_for_test()
@@ -72,7 +70,10 @@ pub fn grant(
         .application
         .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch_for_test(),
+            world
+                .application
+                .product_runtime()
+                .default_branch_for_test(),
         )
         .expect("the selected product branch remains admitted")
         .resolve_entity(
@@ -96,7 +97,10 @@ pub fn account(
         .application
         .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch_for_test(),
+            world
+                .application
+                .product_runtime()
+                .default_branch_for_test(),
         )
         .expect("the selected product branch remains admitted")
         .resolve_entity(
@@ -197,9 +201,7 @@ pub fn replace_parent(
 }
 
 pub fn relation_kind(world: &AuthorizationWorld, name: &str) -> KindId {
-    (*(*world
-        .application
-        .runtime_for_test())
+    (*(*world.application.runtime_for_test())
         .primary_graph()
         .unwrap()
         .layout_for_test()
@@ -215,7 +217,9 @@ pub fn relation_source(
     kind: KindId,
     target: EntityId,
 ) -> EntityId {
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
     let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
     graph
         .integration_handle_for_test()
@@ -310,7 +314,9 @@ pub fn current_relation(
     source: EntityId,
     target: EntityId,
 ) -> RelationId {
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
     let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
     graph
         .integration_handle_for_test()

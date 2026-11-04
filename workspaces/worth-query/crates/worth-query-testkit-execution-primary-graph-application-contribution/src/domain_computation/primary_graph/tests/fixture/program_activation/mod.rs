@@ -20,13 +20,10 @@ pub fn seed_program_activation(
     world: &AuthorizationWorld,
     revision: &ApplicationProgramRevision,
 ) {
-    let layout =(*(* (*world
-        .application
-        .primary_provider_for_test())
-        .graph_for_test())
+    let layout = (*(*(*world.application.primary_provider_for_test()).graph_for_test())
         .layout_for_test())
-        .program_activation()
-        .clone();
+    .program_activation()
+    .clone();
     let created = CreatedEntityRef {
         partition_id: PartitionId::main(),
         kind_id: (*layout.entity_kind_for_test()),
@@ -57,22 +54,16 @@ pub fn seed_program_activation(
         .created_entity(&created)
         .unwrap();
     let basis = performed.commit().basis().relational_basis().clone();
-    drop(performed.consume());(*
-    (*world
-        .application
-        .primary_provider_for_test())
-        .graph_for_test())
-        .with_runtime_mut_for_test(execution, |runtime| {(*
-            (*world
-                .application
-                .primary_provider_for_test())
-                .graph_for_test())
+    drop(performed.consume());
+    (*(*world.application.primary_provider_for_test()).graph_for_test()).with_runtime_mut_for_test(
+        execution,
+        |runtime| {
+            (*(*world.application.primary_provider_for_test()).graph_for_test())
                 .ensure_primary_indexes_for_basis_for_test(execution, runtime, &basis)
                 .unwrap();
-        });
-    (*world
-        .application
-        .program_support_for_test())
+        },
+    );
+    (*world.application.program_support_for_test())
         .as_ref()
         .unwrap()
         .activation()

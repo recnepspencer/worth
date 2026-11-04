@@ -1,8 +1,11 @@
 //! Sealed test doors over this module's private members.
 use super::*;
 
-impl<Schema, Operation> WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation> where
-    Schema: ApplicationSchema, {
+impl<Schema, Operation>
+    WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>
+where
+    Schema: ApplicationSchema,
+{
     #[doc(hidden)]
     pub fn decision_field_with_predecode_admission_for_test<
         Entity,
@@ -27,7 +30,8 @@ impl<Schema, Operation> WorthQueryApplicationOperationInvariantProjectionReader<
         Field: OperationReads<Operation> + DeclaredApplicationFieldValue<Value = Value>,
         Field::Binding: ApplicationReadableScalarValueBinding,
         Write: WritePosture,
-        Unit: ApplicationFieldUnit, {
+        Unit: ApplicationFieldUnit,
+    {
         Self::decision_field_with_predecode_admission(self, identity, field, admit, checkpoint)
     }
 }

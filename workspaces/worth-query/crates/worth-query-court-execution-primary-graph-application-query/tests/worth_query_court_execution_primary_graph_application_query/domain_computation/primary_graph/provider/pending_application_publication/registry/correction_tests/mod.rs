@@ -23,9 +23,12 @@ fn reserved_command_is_visible_across_branches_and_released_with_its_slot() {
     ));
     let key = [0xD3; 32];
     let binding = binding.bind_correction_command(&key, &[0xD4; 32]);
-    let reservation =
-        WorthQueryPendingApplicationPublicationRegistry::reserve_for_test(&registry, first, Some(binding))
-            .unwrap();
+    let reservation = WorthQueryPendingApplicationPublicationRegistry::reserve_for_test(
+        &registry,
+        first,
+        Some(binding),
+    )
+    .unwrap();
     let slot = registry
         .lock()
         .unwrap()
@@ -36,17 +39,32 @@ fn reserved_command_is_visible_across_branches_and_released_with_its_slot() {
         matches!(slot.inspect_idempotency_for_test(), Some(WorthQueryPendingApplicationIdempotency::Pending(recorded)) if recorded == binding)
     );
     assert!(
-        WorthQueryPendingApplicationPublicationRegistry::reserve_for_test(&registry, second, Some(binding))
-            .is_err(),
+        WorthQueryPendingApplicationPublicationRegistry::reserve_for_test(
+            &registry,
+            second,
+            Some(binding)
+        )
+        .is_err(),
         "a second target cannot reserve the same command while the original slot owns it"
     );
     drop(reservation);
-    assert!(registry.lock().unwrap().correction_slot_for_test(&key).is_none());
-    let reservation =
-        WorthQueryPendingApplicationPublicationRegistry::reserve_for_test(&registry, second, Some(binding))
-            .expect("unwind released both indexes");
+    assert!(registry
+        .lock()
+        .unwrap()
+        .correction_slot_for_test(&key)
+        .is_none());
+    let reservation = WorthQueryPendingApplicationPublicationRegistry::reserve_for_test(
+        &registry,
+        second,
+        Some(binding),
+    )
+    .expect("unwind released both indexes");
     assert!(Arc::ptr_eq(
-        &registry.lock().unwrap().correction_slot_for_test(&key).unwrap(),
+        &registry
+            .lock()
+            .unwrap()
+            .correction_slot_for_test(&key)
+            .unwrap(),
         &(*reservation.slot_for_test())
     ));
     drop(reservation);

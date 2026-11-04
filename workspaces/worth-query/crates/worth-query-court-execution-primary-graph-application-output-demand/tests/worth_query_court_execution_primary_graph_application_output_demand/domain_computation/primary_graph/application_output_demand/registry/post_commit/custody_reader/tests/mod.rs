@@ -12,10 +12,11 @@ fn binding_reader_drains_only_its_named_queued_custody() {
     worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::walk_bounds::add_custody(&mut state, &receipts[..4], 1);
     for mut row in (*state.records_mut_for_test()).values_mut_for_test() {
         (*row.interests_mut_for_test()) = 0;
-        (*row.state_mut_for_test()) = DemandState::Failed(WorthQueryOutputDemandDenial::new_for_test(
-            WorthQueryOutputDemandDenialKind::NoEffect,
-            "completed reader row",
-        ));
+        (*row.state_mut_for_test()) =
+            DemandState::Failed(WorthQueryOutputDemandDenial::new_for_test(
+                WorthQueryOutputDemandDenialKind::NoEffect,
+                "completed reader row",
+            ));
     }
     for generation in 1..=64 {
         (*state.records_mut_for_test()).insert_for_test(
@@ -47,12 +48,12 @@ fn binding_reader_drains_only_its_named_queued_custody() {
         assert!((*state.source_custody[commit(i)].cleanup_for_test()).queued);
     }
     assert_eq!(
-        (*state.custody_cleanup_for_test()).len, 3,
+        (*state.custody_cleanup_for_test()).len,
+        3,
         "only the named middle entry was drained"
     );
     assert_eq!(
-        (*state
-            .records_for_test())
+        (*state.records_for_test())
             .values_for_test()
             .filter(|row| (*row.interests_for_test()) == 1)
             .count(),

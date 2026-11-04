@@ -13,7 +13,9 @@ fn parallel_read_request_exhaustion_keeps_a_canonical_prefix_and_releases_memory
     let scope = live_scope();
     let selected = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
+        .with_host_advancement(|phase| {
+            world.selected_product(&(phase).test_host_request_for_test())
+        })
         .expect("the fixture read owns its installed host call");
     let external = world.authenticate("alice", Duration::from_secs(60), &scope);
     let principal = world

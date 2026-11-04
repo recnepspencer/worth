@@ -50,8 +50,10 @@ pub fn run(
             std::num::NonZeroUsize::MIN,
         )
     };
-    let execution =
-        QueryRequestExecution::open_for_test(RuntimeWorldExecutionPlacement::Serial(policy), &request);
+    let execution = QueryRequestExecution::open_for_test(
+        RuntimeWorldExecutionPlacement::Serial(policy),
+        &request,
+    );
     assert_eq!(
         execution.has_accounting_for_test(),
         accounted,
@@ -68,7 +70,9 @@ pub fn run(
             &native,
             &admission,
             |reader, root| {
-                let prepared = installed.prepare_through_for_test(reader, &execution, root).unwrap();
+                let prepared = installed
+                    .prepare_through_for_test(reader, &execution, root)
+                    .unwrap();
                 let computed = prepared
                     .compute(WorthQueryManagedComputationExecution::new(&execution))
                     .unwrap();
@@ -101,7 +105,8 @@ pub fn run(
         matches!(runs.as_slice(),[(Run::Full(actual),_)] if *actual==cause),
         "the actual comparator chose the required full cause: {runs:?}"
     );
-    SealedComputationRun::kept_in_test_for_test().expect("the real completed read sealed the owner run")
+    SealedComputationRun::kept_in_test_for_test()
+        .expect("the real completed read sealed the owner run")
 }
 
 pub fn run_aggregate(
@@ -139,8 +144,10 @@ pub fn run_aggregate(
             std::num::NonZeroUsize::MIN,
         )
     };
-    let execution =
-        QueryRequestExecution::open_for_test(RuntimeWorldExecutionPlacement::Serial(policy), &request);
+    let execution = QueryRequestExecution::open_for_test(
+        RuntimeWorldExecutionPlacement::Serial(policy),
+        &request,
+    );
     assert_eq!(
         execution.has_accounting_for_test(),
         accounted,
@@ -157,7 +164,9 @@ pub fn run_aggregate(
             &native,
             &admission,
             |reader, root| {
-                let prepared = installed.prepare_through_for_test(reader, &execution, root).unwrap();
+                let prepared = installed
+                    .prepare_through_for_test(reader, &execution, root)
+                    .unwrap();
                 let computed = prepared
                     .compute(WorthQueryManagedComputationExecution::new(&execution))
                     .unwrap();
@@ -190,5 +199,6 @@ pub fn run_aggregate(
         matches!(runs.as_slice(),[(Run::Full(actual),_)] if *actual==cause),
         "the actual comparator chose the required full cause: {runs:?}"
     );
-    SealedComputationRun::kept_in_test_for_test().expect("the real completed read sealed the owner run")
+    SealedComputationRun::kept_in_test_for_test()
+        .expect("the real completed read sealed the owner run")
 }

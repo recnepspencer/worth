@@ -32,7 +32,10 @@ fn borrowed_predicate_writer_matches_independent_historical_scalar_bytes() {
             control(Policy::SystemAllocation),
         )
         .unwrap();
-        assert_eq!(key.locator_for_test(), b"application-indexed-entity-selection:41");
+        assert_eq!(
+            key.locator_for_test(),
+            b"application-indexed-entity-selection:41"
+        );
         assert_eq!(key.predicate_material(), Some((expected.as_bytes(), 2)));
     }
 }

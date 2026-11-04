@@ -202,9 +202,10 @@ pub fn change_principal_identity(
     principal_id: worth_relational::facade::identity::EntityId,
     identity: u64,
 ) {
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-    let layout = (*graph
-        .layout_for_test())
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
+    let layout = (*graph.layout_for_test())
         .principal_binding_for_test(world.binding.binding())
         .unwrap()
         .clone();
@@ -229,9 +230,10 @@ pub fn disable_mapping(
     world: &worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::IdentityWorld,
     mapping_id: worth_relational::facade::identity::EntityId,
 ) {
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-    let layout = (*graph
-        .layout_for_test())
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
+    let layout = (*graph.layout_for_test())
         .principal_binding_for_test(world.binding.binding())
         .unwrap()
         .clone();
@@ -259,9 +261,10 @@ pub fn append_duplicate_mapping(
     world: &worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::IdentityWorld,
     subject: &str,
 ) {
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-    let layout = (*graph
-        .layout_for_test())
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
+    let layout = (*graph.layout_for_test())
         .principal_binding_for_test(world.binding.binding())
         .unwrap()
         .clone();

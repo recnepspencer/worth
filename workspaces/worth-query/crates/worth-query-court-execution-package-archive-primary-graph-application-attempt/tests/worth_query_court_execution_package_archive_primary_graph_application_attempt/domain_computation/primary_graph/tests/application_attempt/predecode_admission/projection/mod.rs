@@ -48,8 +48,17 @@ pub fn try_with_reader<Output>(
     Output,
     worth_query_execution::facade::domain_computation::WorthQueryOperationProjectionDenial,
 > {
-    let principal = authenticated_principal(&(phase_custody).test_host_request_for_test(), world, request);
-    let account = resolved_account(&(phase_custody).test_host_request_for_test(), world, "open", request);
+    let principal = authenticated_principal(
+        &(phase_custody).test_host_request_for_test(),
+        world,
+        request,
+    );
+    let account = resolved_account(
+        &(phase_custody).test_host_request_for_test(),
+        world,
+        "open",
+        request,
+    );
     let operation = world
         .application
         .installed_schema()

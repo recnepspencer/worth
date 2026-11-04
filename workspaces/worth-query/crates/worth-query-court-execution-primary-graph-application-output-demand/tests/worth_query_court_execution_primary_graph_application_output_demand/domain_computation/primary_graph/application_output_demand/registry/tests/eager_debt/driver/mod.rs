@@ -18,9 +18,7 @@ pub fn run(
             ));
             // A caught dangling-note panic poisoned the mutex. Do not let teardown
             // counterfeit another failure by panicking inside an owner's Drop.
-            (*(*world
-                .registry
-                .state_for_test())
+            (*(*world.registry.state_for_test())
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner)
                 .closed_cleanup_mut_for_test()) = Default::default();
@@ -96,7 +94,11 @@ pub fn run(
             &mut world,
             "C supersede published claimed predecessor",
             &mut |w| {
-                supersede_predecessors(&mut (*w.registry.state_mut_for_test()).lock().unwrap(), &w.keys[1]).unwrap();
+                supersede_predecessors(
+                    &mut (*w.registry.state_mut_for_test()).lock().unwrap(),
+                    &w.keys[1],
+                )
+                .unwrap();
                 w.model.supersede(1);
             },
         );
@@ -130,7 +132,8 @@ pub fn run(
     }
     if seed & 4 != 0 {
         apply(&mut world, "prepared token release", &mut |w| {
-            w.registry.release_prepared_token_for_test(&context.commit(1));
+            w.registry
+                .release_prepared_token_for_test(&context.commit(1));
             if let Some(entry) = w.model.custody.get_mut(&1) {
                 entry.tokens -= 1;
             }
@@ -155,7 +158,8 @@ pub fn run(
         &mut |w| w.bind(),
     );
     apply(&mut world, "unused program source owner closes", &mut |w| {
-        w.registry.discard_prepared_source_for_test(&context.commit(0));
+        w.registry
+            .discard_prepared_source_for_test(&context.commit(0));
         w.model.custody.remove(&0);
     });
     crate::domain_computation::primary_graph::application_output_demand::registry::tests::eager_debt::observe::compare(&world, seed, step + 1, "quiescent value", divergences, true);

@@ -8,8 +8,7 @@ use super::selection::SelectedReadyReadmission;
 use super::*;
 
 /// Each node funds its own Box and interest key. No source is reconstructed.
-pub struct RequestedOutputReadClaim
-{
+pub struct RequestedOutputReadClaim {
     node: Box<RequestedReadNode>,
     // Refund after the interest key and physical node backing leave custody.
 }

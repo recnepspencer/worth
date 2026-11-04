@@ -17,8 +17,10 @@ fn storage_refusal_keeps_its_category_subject_and_original_cause() {
             subject: RelationalStorageSubject::Region(PartitionId(7)),
             cause,
         };
-        let denied =
-            WorthQueryApplicationAttemptDenial::native_storage_unavailable_for_test(native, "account owner");
+        let denied = WorthQueryApplicationAttemptDenial::native_storage_unavailable_for_test(
+            native,
+            "account owner",
+        );
         assert_eq!(
             denied.kind(),
             WorthQueryApplicationAttemptDenialKind::StorageUnavailable

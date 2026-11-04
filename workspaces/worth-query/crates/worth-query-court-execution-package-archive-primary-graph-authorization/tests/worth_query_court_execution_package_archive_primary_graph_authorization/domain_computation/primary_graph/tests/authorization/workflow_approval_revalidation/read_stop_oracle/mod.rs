@@ -57,8 +57,14 @@ pub fn run(
     let admission = world
         .application
         .with_host_advancement(|phase| {
-            let principal = authenticated_principal(&phase.test_host_request_for_test(), &world, &request);
-            admitted_capability_operation(&phase.test_host_request_for_test(), &world, &principal, &request)
+            let principal =
+                authenticated_principal(&phase.test_host_request_for_test(), &world, &request);
+            admitted_capability_operation(
+                &phase.test_host_request_for_test(),
+                &world,
+                &principal,
+                &request,
+            )
         })
         .unwrap();
     let basis = world

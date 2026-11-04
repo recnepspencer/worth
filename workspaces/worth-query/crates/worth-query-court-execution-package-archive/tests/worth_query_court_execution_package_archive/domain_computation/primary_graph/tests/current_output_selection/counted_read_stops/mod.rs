@@ -22,9 +22,7 @@ fn current_output_door_preserves_stops_at_every_consult() {
                 .unwrap()
         })
         .unwrap();
-    (*world
-        .application
-        .runtime_for_test())
+    (*world.application.runtime_for_test())
         .primary_graph()
         .unwrap()
         .integration_handle_for_test()

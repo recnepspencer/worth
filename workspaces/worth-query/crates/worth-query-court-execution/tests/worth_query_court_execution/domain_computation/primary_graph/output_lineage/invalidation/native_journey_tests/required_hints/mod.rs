@@ -76,7 +76,8 @@ impl RelationalPublicationCompanion for TwoCellHints {
         if index == 1 {
             self.gate.main_linked.wait()?;
         }
-        let branch = RequiredWorkMembership::prepared_native_branch_for_test(context.branch_id().clone());
+        let branch =
+            RequiredWorkMembership::prepared_native_branch_for_test(context.branch_id().clone());
         self.member
             .prepare_hint_for_test(RequiredWorkMembership::prepared_native_hint_for_test(
                 observer, branch,
@@ -126,8 +127,9 @@ fn two_branch_cells_preserve_prepared_fences_and_selected_branch_identity() {
                 })
                 .expect("the fixture source read owns its host call");
             let registry = WorthQueryOutputDemandRegistry::default();
-            let (interest, member) = registry
-                .fixture_admitted_work_membership(product.observation_for_test().lifecycle_incarnation());
+            let (interest, member) = registry.fixture_admitted_work_membership(
+                product.observation_for_test().lifecycle_incarnation(),
+            );
             world
                 .application
                 .with_host_advancement(|phase| {

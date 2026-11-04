@@ -32,12 +32,18 @@ pub fn check(search: usize) {
         add_custody(&mut state, &receipts[..entries], neighbors);
         let before = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::record_map::occurrence_rows_visited();
         match search {
-            0 => assert_eq!(occurrence_rows(&(*state.records_for_test()), &selected).count(), 3),
+            0 => assert_eq!(
+                occurrence_rows(&(*state.records_for_test()), &selected).count(),
+                3
+            ),
             1 => assert_eq!(
                 newest_of_occurrence(&(*state.records_for_test()), &selected),
                 Some(key("own", 3, 1))
             ),
-            2 => assert!(!awaited_by_stale_owner(&(*state.records_for_test()), &selected)),
+            2 => assert!(!awaited_by_stale_owner(
+                &(*state.records_for_test()),
+                &selected
+            )),
             _ => panic!("unknown occurrence search"),
         }
         contacts.push(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::record_map::occurrence_rows_visited() - before);

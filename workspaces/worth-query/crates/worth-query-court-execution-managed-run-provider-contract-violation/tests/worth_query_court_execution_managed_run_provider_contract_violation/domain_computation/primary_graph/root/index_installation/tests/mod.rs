@@ -15,7 +15,10 @@ fn recovered_index_binding_stays_exact_as_unrelated_definition_inventory_grows()
             .build()
             .expect("valid native runtime configuration");
         let mut source_layout = installed_layout();
-        let unrelated_locator = (*source_layout.provider_idempotency_for_test().key_locator_for_test()).clone();
+        let unrelated_locator = (*source_layout
+            .provider_idempotency_for_test()
+            .key_locator_for_test())
+        .clone();
         for ordinal in 0..unrelated {
             runtime
                 .index_authority()
@@ -85,7 +88,9 @@ fn recovered_index_name_without_matching_kind_cannot_bind() {
     let name = format!("application-principal.{binding}");
     assert_ne!(
         (*principal.identity_locator_for_test()),
-        (*expected.provider_idempotency_for_test().key_locator_for_test())
+        (*expected
+            .provider_idempotency_for_test()
+            .key_locator_for_test())
     );
     runtime
         .index_authority()
@@ -93,7 +98,10 @@ fn recovered_index_name_without_matching_kind_cannot_bind() {
             index_id: DerivedIndexId(0),
             name: name.clone(),
             kind: DerivedIndexKind::EntityField {
-                field_locator: (*expected.provider_idempotency_for_test().key_locator_for_test()).clone(),
+                field_locator: (*expected
+                    .provider_idempotency_for_test()
+                    .key_locator_for_test())
+                .clone(),
             },
             branch_scoped: false,
         })

@@ -10,8 +10,12 @@ pub fn with_standalone_provider_test_advancement<R>(
 ) -> Result<R, WorthQueryAdvancementDenial> {
     // These internal provider fixtures have no installed product World.
     let _custody = OpeningCustody::enter_for_test()?;
-    QueryRequestExecution::open_control_for_test(placement, worth_execution::CancellationToken::new(), None)
-        .run_advancement_for_test(None, None, body)
+    QueryRequestExecution::open_control_for_test(
+        placement,
+        worth_execution::CancellationToken::new(),
+        None,
+    )
+    .run_advancement_for_test(None, None, body)
 }
 
 impl crate::domain_computation::primary_graph::tests::fixture::advancement_host::AdvancementHost {

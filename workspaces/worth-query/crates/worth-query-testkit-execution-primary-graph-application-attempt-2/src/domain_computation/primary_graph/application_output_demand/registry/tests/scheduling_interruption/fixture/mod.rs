@@ -50,11 +50,12 @@ impl Fixture {
             // These are published dependency claims, as in caller_chain's
             // registry fixtures; their physical Vec backings are accounted.
             for (reader, input) in [(&interest, &upstream), (&dependent, &interest)] {
-                let claims = vec![Arc::new((*input.key_for_test()).clone())];(*
-
-                (*state.records_mut_for_test()).get_mut(&(*reader.key_for_test())).unwrap().prerequisites_mut_for_test()) = claims;(*
-                (*state
-                    .records_mut_for_test())
+                let claims = vec![Arc::new((*input.key_for_test()).clone())];
+                (*(*state.records_mut_for_test())
+                    .get_mut(&(*reader.key_for_test()))
+                    .unwrap()
+                    .prerequisites_mut_for_test()) = claims;
+                (*(*state.records_mut_for_test())
                     .get_mut(&(*input.key_for_test()))
                     .unwrap()
                     .framework_required_count_mut_for_test()) += 1;
@@ -64,13 +65,22 @@ impl Fixture {
             } else {
                 vec![&upstream]
             } {
-                let ready = PreparedReadyBacking::new_for_test().complete(WorthQueryCompletedOutputDemand::new_for_test(WorthQueryAcceptedOutputAuthority::Committed(receipt.clone()), WorthQueryOutputReadinessDeliveryEvidence::for_test_for_test()));
+                let ready = PreparedReadyBacking::new_for_test().complete(
+                    WorthQueryCompletedOutputDemand::new_for_test(
+                        WorthQueryAcceptedOutputAuthority::Committed(receipt.clone()),
+                        WorthQueryOutputReadinessDeliveryEvidence::for_test_for_test(),
+                    ),
+                );
                 if (*input.key_for_test()) == (*interest.key_for_test()) {
                     ready_identity = std::ptr::from_ref(&*ready).cast::<()>();
-                }(*
-                (*state.records_mut_for_test()).get_mut(&(*input.key_for_test())).unwrap().state_mut_for_test()) = DemandState::Output(
-                    WorthQueryOutputProgress::new_for_test(WorthQueryOutputCheckpoint::Ready(ready)),
-                );
+                }
+                (*(*state.records_mut_for_test())
+                    .get_mut(&(*input.key_for_test()))
+                    .unwrap()
+                    .state_mut_for_test()) =
+                    DemandState::Output(WorthQueryOutputProgress::new_for_test(
+                        WorthQueryOutputCheckpoint::Ready(ready),
+                    ));
             }
         }
         if reopened {
@@ -79,7 +89,8 @@ impl Fixture {
                 1,
                 Some(OutputRefreshPredecessor::Committed(&receipt)),
             );
-        } else {(*(*
+        } else {
+            (*(*
             (*registry
                 .state_for_test())
                 .lock()
@@ -93,8 +104,16 @@ impl Fixture {
         }
         {
             let mut state = (*registry.state_for_test()).lock().unwrap();
-            let mut row = (*state.records_mut_for_test()).get_mut(&(*interest.key_for_test())).unwrap();
-            (*row.performed_source_mut_for_test()) = Some(WorthQueryPerformedOutputDemandSource::new_for_test(receipt.clone(), change, observation, None));
+            let mut row = (*state.records_mut_for_test())
+                .get_mut(&(*interest.key_for_test()))
+                .unwrap();
+            (*row.performed_source_mut_for_test()) =
+                Some(WorthQueryPerformedOutputDemandSource::new_for_test(
+                    receipt.clone(),
+                    change,
+                    observation,
+                    None,
+                ));
             (*row.performed_obligations_mut_for_test()) = vec![worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::PerformedOutputObligation::new_for_test(commit.clone(), (* (*interest.key_for_test()).source_for_test()).clone())];
 
             row.finish_for_test();

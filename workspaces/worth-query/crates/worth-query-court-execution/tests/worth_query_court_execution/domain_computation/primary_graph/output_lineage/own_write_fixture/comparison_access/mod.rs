@@ -7,7 +7,10 @@ fn own_write_cutoff_cannot_project_retained_facts_for_comparison() {
         let candidate =
             worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::input_cutoff::RetainedInputCutoffCandidate::from_exact_cell_for_test(cell);
         assert!(
-            candidate.observed_source_facts_for_test().unwrap().is_none(),
+            candidate
+                .observed_source_facts_for_test()
+                .unwrap()
+                .is_none(),
             "postconditions of a stale computation are not comparable input facts"
         );
     });
@@ -19,9 +22,7 @@ fn own_write_dirty_marks_cannot_be_cleared_by_postcondition_comparison() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     with_committed_own_write(|world, _, cell, _| {
-        let handle = (*world
-            .application
-            .runtime_for_test())
+        let handle = (*world.application.runtime_for_test())
             .primary_graph()
             .unwrap()
             .integration_handle_for_test();

@@ -24,7 +24,10 @@ pub fn revoke_current_capability(
         .application
         .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch_for_test(),
+            world
+                .application
+                .product_runtime()
+                .default_branch_for_test(),
         )
         .expect("the selected product branch remains admitted")
         .resolve_entity(
@@ -62,9 +65,7 @@ pub fn installed_field(
     aspect: &str,
     field: &str,
 ) -> AspectFieldLocator {
-    (*world
-        .application
-        .runtime_for_test())
+    (*world.application.runtime_for_test())
         .primary_graph()
         .unwrap()
         .layout_for_test()

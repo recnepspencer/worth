@@ -74,7 +74,9 @@ fn empty_indexed_root_set_stales_when_its_scoped_guard_becomes_a_match() {
     };
     let initial = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
+        .with_host_advancement(|phase| {
+            world.selected_product(&(phase).test_host_request_for_test())
+        })
         .expect("the fixture read owns its installed host call");
     let empty = world
         .application
@@ -125,16 +127,20 @@ fn empty_indexed_root_set_stales_when_its_scoped_guard_becomes_a_match() {
         .expect("the fixture read owns its installed host call");
     let current = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
+        .with_host_advancement(|phase| {
+            world.selected_product(&(phase).test_host_request_for_test())
+        })
         .expect("the fixture read owns its installed host call");
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
     world
         .application
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request_for_test();
-            assert!(!graph
-                .integration_handle_for_test()
-                .with_runtime(request_execution, |runtime| {
+            assert!(!graph.integration_handle_for_test().with_runtime(
+                request_execution,
+                |runtime| {
                     fact.source_currentness_in_for_test(
                         runtime,
                         &host_custody.borrowed_request_for_test(),
@@ -144,7 +150,8 @@ fn empty_indexed_root_set_stales_when_its_scoped_guard_becomes_a_match() {
                     .unwrap()
                     .movement_for_test()
                         == Movement::Unmoved
-                }))
+                }
+            ))
         })
         .expect("the fixture read owns its installed host call");
     let matching = world
@@ -169,8 +176,12 @@ fn empty_indexed_root_set_stales_when_its_scoped_guard_becomes_a_match() {
         .expect("the fixture read owns its installed host call");
     assert_eq!(matching.rows().len(), 1);
     assert_ne!(
-        empty.result_set_observation().idempotency_identity_for_test(),
-        matching.result_set_observation().idempotency_identity_for_test()
+        empty
+            .result_set_observation()
+            .idempotency_identity_for_test(),
+        matching
+            .result_set_observation()
+            .idempotency_identity_for_test()
     );
     world
         .application
@@ -186,15 +197,17 @@ fn empty_indexed_root_set_stales_when_its_scoped_guard_becomes_a_match() {
         .expect("the fixture read owns its installed host call");
     let reopened = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
+        .with_host_advancement(|phase| {
+            world.selected_product(&(phase).test_host_request_for_test())
+        })
         .expect("the fixture read owns its installed host call");
     world
         .application
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request_for_test();
-            assert!(!graph
-                .integration_handle_for_test()
-                .with_runtime(request_execution, |runtime| {
+            assert!(!graph.integration_handle_for_test().with_runtime(
+                request_execution,
+                |runtime| {
                     fact.source_currentness_in_for_test(
                         runtime,
                         &host_custody.borrowed_request_for_test(),
@@ -204,7 +217,8 @@ fn empty_indexed_root_set_stales_when_its_scoped_guard_becomes_a_match() {
                     .unwrap()
                     .movement_for_test()
                         == Movement::Unmoved
-                }))
+                }
+            ))
         })
         .expect("the fixture read owns its installed host call");
     let reopened_result = world
@@ -237,10 +251,11 @@ pub fn change_account_status(
     account: worth_relational::facade::identity::EntityId,
     status: &str,
 ) {
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
     let field = AccountStatus::reference();
-    let locator = (*graph
-        .layout_for_test())
+    let locator = (*graph.layout_for_test())
         .field_locator_for_test(field.entity(), field.aspect(), field.field())
         .unwrap()
         .clone();

@@ -131,25 +131,31 @@ pub fn catalog(contracts: Vec<Contract>) -> Catalog {
         // runtime installation is covered separately by the existing owner11.
         (*catalog.conditionals_mut_for_test()).insert(
             format!("conditional-{ordinal}"),
-            DeclaredConditionalBinding::new_for_test(Schema::OWNER.to_owned(), contract, vec![format!("producer-{ordinal}")], match ordinal {
+            DeclaredConditionalBinding::new_for_test(
+                Schema::OWNER.to_owned(),
+                contract,
+                vec![format!("producer-{ordinal}")],
+                match ordinal {
                     0 => TypeId::of_for_test::<TouchAccountOperation>(),
                     1 => TypeId::of_for_test::<PatchAccountDraftOperation>(),
                     _ => TypeId::of_for_test::<TouchAccountInput>(),
-                }, match ordinal {
+                },
+                match ordinal {
                     1 => TypeId::of_for_test::<PatchAccountDraftOperation>(),
                     _ => TypeId::of_for_test::<TouchAccountOperation>(),
-                }, match ordinal {
+                },
+                match ordinal {
                     0 => TypeId::of_for_test::<TouchAccountInput>(),
                     _ => TypeId::of_for_test::<PatchAccountDraftInput>(),
-                }),
+                },
+            ),
         );
     }
     catalog
 }
 
 pub fn snapshot(catalog: &Catalog) -> Vec<(String, String, Contract, Vec<String>, TypeId, TypeId)> {
-    (*catalog
-        .conditionals_for_test())
+    (*catalog.conditionals_for_test())
         .iter()
         .map(|(identity, declaration)| {
             (

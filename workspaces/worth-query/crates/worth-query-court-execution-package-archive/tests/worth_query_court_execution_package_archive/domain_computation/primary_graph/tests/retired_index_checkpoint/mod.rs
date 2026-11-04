@@ -44,7 +44,9 @@ fn a_store_holding_the_retired_correlation_index_opens_and_runs() {
     let world = installed_world(&[("alice", WorthQueryPrincipalMappingStatus::Enabled)]);
     let principal = world
         .application
-        .with_host_advancement(|phase| resolve_alice(&(phase).test_host_request_for_test(), &world, 1))
+        .with_host_advancement(|phase| {
+            resolve_alice(&(phase).test_host_request_for_test(), &world, 1)
+        })
         .expect("the fixture read owns its installed host call");
     world
         .application
@@ -146,9 +148,10 @@ pub fn persist_as_the_retired_code_did(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &IdentityWorld,
 ) -> DerivedIndexId {
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-    let correlation = (*graph
-        .layout_for_test())
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
+    let correlation = (*graph.layout_for_test())
         .provider_inbound_completion()
         .correlation
         .clone();
@@ -185,7 +188,9 @@ pub fn assert_retired_index_is_inert(
     world: &IdentityWorld,
     retired: DerivedIndexId,
 ) {
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
     let handle = graph.integration_handle_for_test();
     assert!(!(*handle.primary_index_ids_for_test()).contains(&retired));
     handle.with_runtime(request_execution, |runtime| {
@@ -225,13 +230,14 @@ pub fn set_principal_identity(
     principal: EntityId,
     identity: u64,
 ) {
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-    let locator = (*(*graph
-        .layout_for_test())
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
+    let locator = (*(*graph.layout_for_test())
         .principal_binding_for_test(world.binding.binding())
         .unwrap()
         .principal_identity_locator_for_test())
-        .clone();
+    .clone();
     publish_relational_mutation_on_application(
         execution,
         &world.application,
@@ -252,7 +258,9 @@ pub fn with_runtime<T>(
     world: &IdentityWorld,
     read: impl FnOnce(&RelationalRuntime) -> T,
 ) -> T {
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
     graph
         .integration_handle_for_test()
         .with_runtime(request_execution, read)

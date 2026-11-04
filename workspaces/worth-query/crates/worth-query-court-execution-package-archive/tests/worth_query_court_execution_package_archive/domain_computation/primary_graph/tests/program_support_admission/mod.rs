@@ -19,11 +19,15 @@ fn a_host_presents_only_the_program_revisions_it_admitted() {
     let world = installed_authorization_world(true);
     let support = installed_program_support(&(*world.application.installed_schema_for_test()));
     assert!(
-        support.present_for_test(&rostered_program_revision()).is_some(),
+        support
+            .present_for_test(&rostered_program_revision())
+            .is_some(),
         "the rostered revision is presentable meaning on this host"
     );
     assert!(
-        support.present_for_test(&unadmitted_program_revision()).is_none(),
+        support
+            .present_for_test(&unadmitted_program_revision())
+            .is_none(),
         "a revision this host never admitted must not be presentable"
     );
 }
@@ -34,13 +38,17 @@ fn an_activation_rendering_no_rostered_program_answers_to_resolves_to_nothing() 
     let support = installed_program_support(&(*world.application.installed_schema_for_test()));
     assert!(
         support
-            .rostered_for_rendering_for_test(&program_revision_rendering(&rostered_program_revision()))
+            .rostered_for_rendering_for_test(&program_revision_rendering(
+                &rostered_program_revision()
+            ))
             .is_some(),
         "the rostered program answers to its own stored rendering"
     );
     assert!(
         support
-            .rostered_for_rendering_for_test(&program_revision_rendering(&unadmitted_program_revision()))
+            .rostered_for_rendering_for_test(&program_revision_rendering(
+                &unadmitted_program_revision()
+            ))
             .is_none(),
         "an unattributable activation rendering must resolve to no program"
     );
@@ -67,10 +75,15 @@ fn retained_program_meaning_does_not_authorize_an_inactive_or_replaced_support()
     assert!(prior.same_support_as(&current));
 
     let replacement = installed_program_support(&(*world.application.installed_schema_for_test()));
-    let replacement_pin = replacement.retain_interpretation_for_test(&revision).unwrap();
+    let replacement_pin = replacement
+        .retain_interpretation_for_test(&revision)
+        .unwrap();
     assert!(!prior.same_support_as(&replacement_pin));
 
-    let retirement = support.lifecycle().begin_retirement_for_test(&revision).unwrap();
+    let retirement = support
+        .lifecycle()
+        .begin_retirement_for_test(&revision)
+        .unwrap();
     assert!(support.retain_interpretation_for_test(&revision).is_none());
     drop(retirement);
     assert!(support.retain_interpretation_for_test(&revision).is_some());
@@ -91,7 +104,10 @@ fn a_commit_names_why_it_cannot_present_a_retiring_or_unadmitted_revision() {
         WorthQueryApplicationCommitDenialKind::ApplicationProgramRequired
     );
 
-    let retirement = support.lifecycle().begin_retirement_for_test(&revision).unwrap();
+    let retirement = support
+        .lifecycle()
+        .begin_retirement_for_test(&revision)
+        .unwrap();
     let retiring = support
         .present_for_commit_for_test(&revision)
         .err()

@@ -14,7 +14,12 @@ fn equivalent_retry_recovers_original_receipt_while_intent_drift_is_denied() {
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
+            resolved_account(
+                &(phase).test_host_request_for_test(),
+                &world,
+                "open",
+                &request,
+            )
         })
         .expect("the fixture read owns its installed host call");
     let first = world
@@ -53,7 +58,12 @@ fn equivalent_retry_recovers_original_receipt_while_intent_drift_is_denied() {
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request_for_test(), &world, "committed", &request)
+            resolved_account(
+                &(phase).test_host_request_for_test(),
+                &world,
+                "committed",
+                &request,
+            )
         })
         .expect("the fixture read owns its installed host call");
     let retry = world
@@ -138,7 +148,12 @@ fn equivalent_retry_recovers_original_receipt_while_intent_drift_is_denied() {
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request_for_test(), &world, "committed", &request)
+            resolved_account(
+                &(phase).test_host_request_for_test(),
+                &world,
+                "committed",
+                &request,
+            )
         })
         .expect("the fixture read owns its installed host call");
     let drift = world

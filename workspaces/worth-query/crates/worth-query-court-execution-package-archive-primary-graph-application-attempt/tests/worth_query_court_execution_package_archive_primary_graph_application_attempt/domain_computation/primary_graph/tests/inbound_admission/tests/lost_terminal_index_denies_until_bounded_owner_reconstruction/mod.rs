@@ -40,7 +40,9 @@ fn lost_terminal_index_denies_until_bounded_owner_reconstruction() {
         )).expect("installed host call opens"),
         Err(worth_query_execution::facade::domain_computation::WorthQueryInboundIndexRepairDenial::ReconstructionWorkExhausted)
     ));
-    assert!(provider.lookup_completed_inbound_for_test(&correlation).is_err());
+    assert!(provider
+        .lookup_completed_inbound_for_test(&correlation)
+        .is_err());
     let mut pages = 0;
     loop {
         pages += 1;
@@ -60,7 +62,9 @@ fn lost_terminal_index_denies_until_bounded_owner_reconstruction() {
         if complete {
             break;
         }
-        assert!(provider.lookup_completed_inbound_for_test(&correlation).is_err());
+        assert!(provider
+            .lookup_completed_inbound_for_test(&correlation)
+            .is_err());
         assert!(
             pages < 32,
             "small fixture must complete within finite page budget"
@@ -71,7 +75,9 @@ fn lost_terminal_index_denies_until_bounded_owner_reconstruction() {
         "one slot cannot silently scan the whole World history"
     );
     assert_eq!(
-        provider.lookup_completed_inbound_for_test(&correlation).unwrap(),
+        provider
+            .lookup_completed_inbound_for_test(&correlation)
+            .unwrap(),
         Some(sealed)
     );
 }

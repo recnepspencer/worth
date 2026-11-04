@@ -144,7 +144,10 @@ pub fn add_approver_conflict(
         .application
         .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch_for_test(),
+            world
+                .application
+                .product_runtime()
+                .default_branch_for_test(),
         )
         .expect("the selected product branch remains admitted")
         .resolve_entity(
@@ -159,7 +162,10 @@ pub fn add_approver_conflict(
         .application
         .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch_for_test(),
+            world
+                .application
+                .product_runtime()
+                .default_branch_for_test(),
         )
         .expect("the selected product branch remains admitted")
         .resolve_entity(
@@ -170,7 +176,9 @@ pub fn add_approver_conflict(
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap();
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
     let relation_kind = (*graph
         .layout_for_test()
         .relation(CapabilityConflictingBeneficiary::reference().name())

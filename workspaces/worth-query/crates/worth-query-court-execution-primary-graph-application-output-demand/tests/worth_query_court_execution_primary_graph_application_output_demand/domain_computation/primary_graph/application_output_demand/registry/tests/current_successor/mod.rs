@@ -40,13 +40,27 @@ fn registry_current_successor_pin_acknowledges_only_its_native_current_proof() {
                 state.install_required_member_for_test(member);
             }
             (
-                Arc::clone((*(*state.records_for_test())[&old].work_membership_for_test()).as_ref().unwrap()),
-                Arc::clone((*(*state.records_for_test())[&newest].work_membership_for_test()).as_ref().unwrap()),
-                Arc::clone((*(*state.records_for_test())[&other].work_membership_for_test()).as_ref().unwrap()),
+                Arc::clone(
+                    (*(*state.records_for_test())[&old].work_membership_for_test())
+                        .as_ref()
+                        .unwrap(),
+                ),
+                Arc::clone(
+                    (*(*state.records_for_test())[&newest].work_membership_for_test())
+                        .as_ref()
+                        .unwrap(),
+                ),
+                Arc::clone(
+                    (*(*state.records_for_test())[&other].work_membership_for_test())
+                        .as_ref()
+                        .unwrap(),
+                ),
             )
         };
         let mut work = old_member.fixture_selected_work();
-        registry.pin_current_required_successor_for_test(&mut work).unwrap();
+        registry
+            .pin_current_required_successor_for_test(&mut work)
+            .unwrap();
         // The cause stays on the predecessor even though its answer is newer.
         assert_eq!(work.key_for_test(), &old);
         CurrentProof::with_current_fixture_basis(

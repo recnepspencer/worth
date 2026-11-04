@@ -39,18 +39,18 @@ fn isolated_brand_check_allocation_probe() {
     );
     let runtime = (*world.application.runtime_for_test()).authority_identity();
     let binding = (*world.application.installed_schema_for_test()).binding_identity();
-    let descriptor = (*world
-        .application
-        .installed_schema_for_test())
+    let descriptor = (*world.application.installed_schema_for_test())
         .installed_mutation_binding_descriptor(ProgramRequiredMutationBinding::IDENTITY);
 
     let region = stats_alloc::Region::new(&stats_alloc::INSTRUMENTED_SYSTEM);
     for _ in 0..64 {
-        std::hint::black_box(admission.validate_runtime_ownership_for_test(runtime, &binding)).unwrap();
+        std::hint::black_box(admission.validate_runtime_ownership_for_test(runtime, &binding))
+            .unwrap();
         assert!(std::hint::black_box(
             admission.belongs_to_for_test(runtime, &binding)
         ));
-        std::hint::black_box(admission.validate_installed_mutation_binding_for_test(descriptor)).unwrap();
+        std::hint::black_box(admission.validate_installed_mutation_binding_for_test(descriptor))
+            .unwrap();
         std::hint::black_box(admission.capability_input());
     }
     let change = region.change();

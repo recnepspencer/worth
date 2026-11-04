@@ -35,16 +35,13 @@ impl ComparisonTestsWorthQueryRegisteredProviderAttemptForTest
         request: &WorthQueryRequestScope,
         cancellation: &WorthQueryCancellationSource,
     ) {
-        (*world
-            .application
-            .primary_provider_for_test())
-            .assert_comparison_scope_lifecycle(
-                execution,
-                &(*self.staged_for_test()).read_authority(),
-                request,
-                cancellation,
-                &(*foreign.application.primary_provider_for_test()),
-            );
+        (*world.application.primary_provider_for_test()).assert_comparison_scope_lifecycle(
+            execution,
+            &(*self.staged_for_test()).read_authority(),
+            request,
+            cancellation,
+            &(*foreign.application.primary_provider_for_test()),
+        );
         let _ = self.staged_into_for_test().abort();
         assert_eq!(
             world.application.provider_session_resource_count_for_test(),
@@ -59,15 +56,12 @@ impl ComparisonTestsWorthQueryRegisteredProviderAttemptForTest
         request: &WorthQueryRequestScope,
         relation: worth_relational::facade::identity::RelationId,
     ) {
-        (*world
-            .application
-            .primary_provider_for_test())
-            .assert_principal_stale_and_stopped(
-                execution,
-                &(*self.staged_for_test()).read_authority(),
-                request,
-                relation,
-            );
+        (*world.application.primary_provider_for_test()).assert_principal_stale_and_stopped(
+            execution,
+            &(*self.staged_for_test()).read_authority(),
+            request,
+            relation,
+        );
         let _ = self.staged_into_for_test().abort();
     }
 }

@@ -31,8 +31,7 @@ fn an_unobservable_key_gathers_its_partition_again_and_denies_nothing() {
     let first = first_run(&world, &installed);
     let outcome = *first.outcome.as_ref().unwrap();
     let mut state = first.sealed.unwrap().unwrap().state_into_for_test();
-    let key = (*state
-        .facts_for_test())
+    let key = (*state.facts_for_test())
         .facts_for_test()
         .find(|(_, _, readers)| readers.partitions_for_test().len() == 1)
         .map(|(key, _, _)| key.clone())
@@ -72,8 +71,7 @@ fn more_retained_keys_than_the_request_work_runs_in_full_uncompared() {
     let first = first_run(&world, &installed);
     let outcome = *first.outcome.as_ref().unwrap();
     let mut state = first.sealed.unwrap().unwrap().state_into_for_test();
-    let key = (*state
-        .facts_for_test())
+    let key = (*state.facts_for_test())
         .facts_for_test()
         .find(|(_, _, readers)| readers.partitions_for_test().len() == 1)
         .map(|(key, _, _)| key.clone())
@@ -125,8 +123,7 @@ fn a_few_adjacency_keys_whose_worst_case_passes_the_request_work_run_in_full() {
     let first = first_run(&world, &installed);
     let outcome = *first.outcome.as_ref().unwrap();
     let mut state = first.sealed.unwrap().unwrap().state_into_for_test();
-    let key = (*state
-        .facts_for_test())
+    let key = (*state.facts_for_test())
         .facts_for_test()
         .find(|(_, _, readers)| readers.partitions_for_test().len() == 1)
         .map(|(key, _, _)| key.clone())

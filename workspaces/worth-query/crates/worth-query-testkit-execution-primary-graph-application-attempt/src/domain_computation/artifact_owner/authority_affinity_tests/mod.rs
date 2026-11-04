@@ -136,15 +136,28 @@ pub fn authority(
     contract: Arc<WorthQueryInstalledArtifactContractAuthority>,
     domain_authority: Arc<WorthQueryInstalledDomainExecutionAuthority>,
 ) -> Arc<WorthQueryArtifactProductionAuthority> {
-    WorthQueryArtifactProductionAuthority::mint_for_test(authority_parts(contract, domain_authority))
+    WorthQueryArtifactProductionAuthority::mint_for_test(authority_parts(
+        contract,
+        domain_authority,
+    ))
 }
 pub fn authority_parts(
     contract: Arc<WorthQueryInstalledArtifactContractAuthority>,
     domain_authority: Arc<WorthQueryInstalledDomainExecutionAuthority>,
 ) -> WorthQueryArtifactProductionAuthorityParts {
-    WorthQueryArtifactProductionAuthorityParts::new_for_test(contract, domain_authority, "installed-operation".into(), "installed-binding".into(), "installed-run".into(), "producer".into(), "installed-basis".into(), Arc::new(WorthQueryWorkflowArtifactRegistry::new_for_test(
+    WorthQueryArtifactProductionAuthorityParts::new_for_test(
+        contract,
+        domain_authority,
+        "installed-operation".into(),
+        "installed-binding".into(),
+        "installed-run".into(),
+        "producer".into(),
+        "installed-basis".into(),
+        Arc::new(WorthQueryWorkflowArtifactRegistry::new_for_test(
             "installed-run".into(),
-        )), WorthQueryArtifactProductionGeneration::initial_for_test())
+        )),
+        WorthQueryArtifactProductionGeneration::initial_for_test(),
+    )
 }
 pub fn runtime() -> WorthQueryExecutionRuntime {
     WorthQueryExecutionRuntimeInstaller::new()

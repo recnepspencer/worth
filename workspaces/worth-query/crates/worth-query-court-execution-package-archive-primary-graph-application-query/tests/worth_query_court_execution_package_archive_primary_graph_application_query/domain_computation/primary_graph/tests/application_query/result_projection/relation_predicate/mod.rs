@@ -25,7 +25,10 @@ fn filters_siblings_before_child_projection() {
                 .application
                 .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch_for_test(),
+                    world
+                        .application
+                        .product_runtime()
+                        .default_branch_for_test(),
                 )
                 .unwrap()
                 .resolve_authenticated_principal(
@@ -46,7 +49,10 @@ fn filters_siblings_before_child_projection() {
                 .application
                 .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch_for_test(),
+                    world
+                        .application
+                        .product_runtime()
+                        .default_branch_for_test(),
                 )
                 .unwrap()
                 .resolve_entity(

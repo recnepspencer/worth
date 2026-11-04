@@ -50,9 +50,7 @@ fn performed_correction_capture_preserves_original_payer_and_preclone_refusal() 
                     )
                     .unwrap()
             });
-            let captured = (*world
-                .application
-                .primary_provider_for_test())
+            let captured = (*world.application.primary_provider_for_test())
                 .capture_correction_witness_for_test(execution, receipt);
             if saturate {
                 match captured {
@@ -91,7 +89,10 @@ fn performed_correction_capture_preserves_original_payer_and_preclone_refusal() 
                 held > copied_backing,
                 "the same original payer also retains the witness Arc"
             );
-            assert_eq!(held, (*witness._memory_for_test()).as_ref().unwrap().bytes());
+            assert_eq!(
+                held,
+                (*witness._memory_for_test()).as_ref().unwrap().bytes()
+            );
             let sibling = Arc::clone(&witness);
             drop(witness);
             assert_eq!(budget.charged_memory_bytes(), held);
@@ -104,9 +105,7 @@ fn performed_correction_capture_preserves_original_payer_and_preclone_refusal() 
         CancellationSource::new().token(),
         None,
     );
-    let witness = (*world
-        .application
-        .primary_provider_for_test())
+    let witness = (*world.application.primary_provider_for_test())
         .capture_correction_witness_for_test(ExecutionRequest::serial(&retry), receipt)
         .unwrap()
         .unwrap();

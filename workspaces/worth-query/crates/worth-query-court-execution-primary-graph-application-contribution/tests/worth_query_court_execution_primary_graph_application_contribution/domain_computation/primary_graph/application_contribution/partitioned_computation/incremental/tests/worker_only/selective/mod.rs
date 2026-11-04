@@ -92,10 +92,7 @@ fn native_value_key_and_membership_edits_carry_unaffected_partitions() {
         &installed,
         ComputationPrior::new_for_test(edition(), Err(Cause::FirstRun), None),
     );
-    let subject = (*(*previous
-        .sealed
-        .state_for_test())
-        .facts_for_test())
+    let subject = (*(*previous.sealed.state_for_test()).facts_for_test())
         .facts_for_test()
         .find_map(|(_, fact, _)| {
             if let WorthQueryApplicationObservedFact::Field { entity_id, .. } = fact {
@@ -114,14 +111,11 @@ fn native_value_key_and_membership_edits_carry_unaffected_partitions() {
         ("urimar", vec![1]),     // remove an odd member
     ] {
         let field = AccountLabel::reference();
-        let locator = (*(*(*world
-            .application
-            .primary_provider_for_test())
-            .graph_for_test())
+        let locator = (*(*(*world.application.primary_provider_for_test()).graph_for_test())
             .layout_for_test())
-            .field_locator_for_test(field.entity(), field.aspect(), field.field())
-            .unwrap()
-            .clone();
+        .field_locator_for_test(field.entity(), field.aspect(), field.field())
+        .unwrap()
+        .clone();
         let request = live_scope();
         world.application.with_application_advancement(&request, |phase| {
             let active = phase.execution_for_for_test(&(*world.application.product_runtime_for_test())).unwrap();
@@ -158,7 +152,10 @@ fn native_value_key_and_membership_edits_carry_unaffected_partitions() {
             )
             .unwrap();
         assert_eq!(
-            (*retained.items_for_test()).keys().map(|id| id.0).collect::<Vec<_>>(),
+            (*retained.items_for_test())
+                .keys()
+                .map(|id| id.0)
+                .collect::<Vec<_>>(),
             (1..=source.len() as u64).collect::<Vec<_>>()
         );
         let warm = native_attempt(&world, &installed, retained_prior(edited.sealed));

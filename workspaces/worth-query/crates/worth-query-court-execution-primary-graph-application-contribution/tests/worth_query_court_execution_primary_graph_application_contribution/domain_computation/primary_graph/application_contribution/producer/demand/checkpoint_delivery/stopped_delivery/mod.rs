@@ -48,7 +48,12 @@ fn a_terminal_delivery_stop_releases_the_head_with_a_peer_still_present() {
     let branch = world
         .application
         .product_runtime()
-        .admit_product_branch_for_test(world.application.product_runtime().default_branch_for_test())
+        .admit_product_branch_for_test(
+            world
+                .application
+                .product_runtime()
+                .default_branch_for_test(),
+        )
         .unwrap();
     let occurrence = branch.observation_for_test().lifecycle_incarnation();
     let root = worth_relational::facade::identity::EntityId::new(
@@ -65,7 +70,9 @@ fn a_terminal_delivery_stop_releases_the_head_with_a_peer_still_present() {
     // Build a genuine lowering, with no dependencies. The foreign root is
     // refused before this lowering or its compute can be used.
     let mut builder = BridgeConditionalRuntimeBuilder::with_owned_signal_graph(
-        (*world.application.bridge_for_test()).ordinary_for_test().clone(),
+        (*world.application.bridge_for_test())
+            .ordinary_for_test()
+            .clone(),
         worth_signal::facade::runtime::SignalConditionalEvaluationBudget::development(),
     )
     .unwrap();

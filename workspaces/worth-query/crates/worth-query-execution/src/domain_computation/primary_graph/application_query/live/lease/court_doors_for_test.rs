@@ -2,17 +2,17 @@
 use super::*;
 
 impl<
-    'runtime,
-    Schema,
-    Query,
-    Parameters,
-    QueryResult,
-    Principal,
-    PrincipalIdentity,
-    Scope,
-    Target,
-    Binding,
->
+        'runtime,
+        Schema,
+        Query,
+        Parameters,
+        QueryResult,
+        Principal,
+        PrincipalIdentity,
+        Scope,
+        Target,
+        Binding,
+    >
     WorthQueryApplicationLiveLease<
         'runtime,
         Schema,
@@ -35,17 +35,17 @@ where
 }
 
 impl<
-    'runtime,
-    Schema,
-    Query,
-    Parameters,
-    QueryResult,
-    Principal,
-    PrincipalIdentity,
-    Scope,
-    Target,
-    Binding,
->
+        'runtime,
+        Schema,
+        Query,
+        Parameters,
+        QueryResult,
+        Principal,
+        PrincipalIdentity,
+        Scope,
+        Target,
+        Binding,
+    >
     WorthQueryApplicationLiveLease<
         'runtime,
         Schema,
@@ -68,17 +68,17 @@ where
 }
 
 impl<
-    'runtime,
-    Schema,
-    Query,
-    Parameters,
-    QueryResult,
-    Principal,
-    PrincipalIdentity,
-    Scope,
-    Target,
-    Binding,
->
+        'runtime,
+        Schema,
+        Query,
+        Parameters,
+        QueryResult,
+        Principal,
+        PrincipalIdentity,
+        Scope,
+        Target,
+        Binding,
+    >
     WorthQueryApplicationLiveLease<
         'runtime,
         Schema,
@@ -103,17 +103,17 @@ where
 }
 
 impl<
-    'runtime,
-    Schema,
-    Query,
-    Parameters,
-    QueryResult,
-    Principal,
-    PrincipalIdentity,
-    Scope,
-    Target,
-    Binding,
->
+        'runtime,
+        Schema,
+        Query,
+        Parameters,
+        QueryResult,
+        Principal,
+        PrincipalIdentity,
+        Scope,
+        Target,
+        Binding,
+    >
     WorthQueryApplicationLiveLease<
         'runtime,
         Schema,
@@ -139,7 +139,17 @@ where
     }
 }
 
-impl<Schema, Query, Parameters, QueryResult, Principal, PrincipalIdentity, Scope, Target, Binding>
+impl<
+        Schema,
+        Query,
+        Parameters,
+        QueryResult,
+        Principal,
+        PrincipalIdentity,
+        Scope,
+        Target,
+        Binding,
+    >
     WorthQueryApplicationLiveLease<
         '_,
         Schema,
@@ -167,17 +177,17 @@ where
 }
 
 impl<
-    'runtime,
-    Schema,
-    Query,
-    Parameters,
-    QueryResult,
-    Principal,
-    PrincipalIdentity,
-    Scope,
-    Target,
-    Binding,
->
+        'runtime,
+        Schema,
+        Query,
+        Parameters,
+        QueryResult,
+        Principal,
+        PrincipalIdentity,
+        Scope,
+        Target,
+        Binding,
+    >
     WorthQueryApplicationLiveLease<
         'runtime,
         Schema,
@@ -203,17 +213,17 @@ where
 }
 
 impl<
-    'runtime,
-    Schema,
-    Query,
-    Parameters,
-    QueryResult,
-    Principal,
-    PrincipalIdentity,
-    Scope,
-    Target,
-    Binding,
->
+        'runtime,
+        Schema,
+        Query,
+        Parameters,
+        QueryResult,
+        Principal,
+        PrincipalIdentity,
+        Scope,
+        Target,
+        Binding,
+    >
     WorthQueryApplicationLiveLease<
         'runtime,
         Schema,
@@ -240,17 +250,17 @@ where
 }
 
 impl<
-    'runtime,
-    Schema,
-    Query,
-    Parameters,
-    QueryResult,
-    Principal,
-    PrincipalIdentity,
-    Scope,
-    Target,
-    Binding,
->
+        'runtime,
+        Schema,
+        Query,
+        Parameters,
+        QueryResult,
+        Principal,
+        PrincipalIdentity,
+        Scope,
+        Target,
+        Binding,
+    >
     WorthQueryApplicationLiveLease<
         'runtime,
         Schema,
@@ -273,17 +283,17 @@ where
 }
 
 impl<
-    'runtime,
-    Schema,
-    Query,
-    Parameters,
-    QueryResult,
-    Principal,
-    PrincipalIdentity,
-    Scope,
-    Target,
-    Binding,
->
+        'runtime,
+        Schema,
+        Query,
+        Parameters,
+        QueryResult,
+        Principal,
+        PrincipalIdentity,
+        Scope,
+        Target,
+        Binding,
+    >
     WorthQueryApplicationLiveLease<
         'runtime,
         Schema,

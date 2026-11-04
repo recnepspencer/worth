@@ -13,7 +13,10 @@ pub fn body<Q>(
     source: &WorthQueryObservedSource<Q>,
     request: &WorthQueryRequestScope,
 ) -> Arc<ComponentSelection> {
-    let layout = (*world.application.runtime_for_test()).primary_graph().unwrap().layout_for_test();
+    let layout = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap()
+        .layout_for_test();
     let facts = source
         .retained_checkpoint_facts_for_test(layout, Some(request), Allocation::SystemAllocation)
         .unwrap();
@@ -202,9 +205,11 @@ fn empty_query_census_retains_negative_guard_and_ignores_unrelated_field_changes
         ));
         let lease = crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::declared_queries::currentness::snapshot(&world, &execution);
         assert_eq!(
-            lease.handle_for_test().with_runtime(&execution, |runtime| original
-                .remains_equal_for_test(runtime, &execution, lease.snapshot_for_test(), None)
-                .unwrap()),
+            lease
+                .handle_for_test()
+                .with_runtime(&execution, |runtime| original
+                    .remains_equal_for_test(runtime, &execution, lease.snapshot_for_test(), None)
+                    .unwrap()),
             expected
         );
     }

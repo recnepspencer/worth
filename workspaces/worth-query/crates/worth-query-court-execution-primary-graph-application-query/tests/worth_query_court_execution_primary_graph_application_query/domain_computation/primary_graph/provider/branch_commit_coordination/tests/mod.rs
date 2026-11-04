@@ -25,7 +25,9 @@ fn expired_weak_replacement_keeps_the_entry_claim_until_retirement() {
     let world = installed_capability_authorization_world();
     let selected = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
+        .with_host_advancement(|phase| {
+            world.selected_product(&(phase).test_host_request_for_test())
+        })
         .expect("the fixture read owns its installed host call");
     let observation = selected.product().observation_for_test();
     let owner = Coordinator::new_for_test();

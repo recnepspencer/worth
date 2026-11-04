@@ -32,7 +32,11 @@ fn earlier_completion_failure_wins_over_later_compute_panic() {
                     PreparedCompute::declared_test_request_for_test(rank, false)
                 };
                 OwnerPlan::new_for_test(vec![compute], move |mut slots| {
-                    let rank = slots.pop().unwrap().into_value_for_test::<(usize, bool)>().0;
+                    let rank = slots
+                        .pop()
+                        .unwrap()
+                        .into_value_for_test::<(usize, bool)>()
+                        .0;
                     if rank == 0 {
                         Err(rank)
                     } else {

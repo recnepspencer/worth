@@ -23,7 +23,8 @@ fn scoped_indexed_comparison_preserves_pinned_absence_limits_and_foreign_affinit
     let world = installed_authorization_world(true);
     let foreign = installed_authorization_world(true);
     let request = live_scope();
-    let control = StorageControl::new_for_test(ExecutionAllocationPolicy::SystemAllocation, Some(&request));
+    let control =
+        StorageControl::new_for_test(ExecutionAllocationPolicy::SystemAllocation, Some(&request));
     world
         .application
         .with_host_advancement(|phase| {
@@ -31,13 +32,15 @@ fn scoped_indexed_comparison_preserves_pinned_absence_limits_and_foreign_affinit
             let borrowed_execution = host_custody.borrowed_request_for_test();
             let execution = &borrowed_execution;
             let selected = world.selected_product(
-                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
+                &(host_custody.phase_for_application_for_test(&world.application))
+                    .test_host_request_for_test(),
             );
             let snapshot = selected.application_basis_for_test().snapshot_handle();
-            let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+            let graph = (*world.application.runtime_for_test())
+                .primary_graph()
+                .unwrap();
             let field = AccountStatus::reference();
-            let layout = (*graph
-                .layout_for_test())
+            let layout = (*graph.layout_for_test())
                 .equality_field_for_test(field.entity(), field.aspect(), field.field())
                 .unwrap();
             let index = (*layout.equality_index_id_for_test()).unwrap();
@@ -82,7 +85,9 @@ fn scoped_indexed_comparison_preserves_pinned_absence_limits_and_foreign_affinit
                 graph
                     .integration_handle_for_test()
                     .with_runtime(&borrowed_execution, |runtime| {
-                        assert!(fact.remains_equal_in_for_test(runtime, execution, snapshot).unwrap());
+                        assert!(fact
+                            .remains_equal_in_for_test(runtime, execution, snapshot)
+                            .unwrap());
                         assert!(selectors
                             .remains_equal_for_test(execution, fact, runtime, snapshot, control)
                             .unwrap());
@@ -123,7 +128,8 @@ fn scoped_indexed_comparison_preserves_pinned_absence_limits_and_foreign_affinit
                         .unwrap())
                 });
             let current = world.selected_product(
-                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
+                &(host_custody.phase_for_application_for_test(&world.application))
+                    .test_host_request_for_test(),
             );
             let current_snapshot = current.application_basis_for_test().snapshot_handle();
             let mut current_selectors = PreparedSelections::new_for_test();
@@ -131,7 +137,13 @@ fn scoped_indexed_comparison_preserves_pinned_absence_limits_and_foreign_affinit
                 .integration_handle_for_test()
                 .with_runtime(&borrowed_execution, |runtime| {
                     assert!(!current_selectors
-                        .remains_equal_for_test(execution, &present, runtime, current_snapshot, control)
+                        .remains_equal_for_test(
+                            execution,
+                            &present,
+                            runtime,
+                            current_snapshot,
+                            control
+                        )
                         .unwrap());
                     let complete = observe_indexed_entity_selection(
                         runtime,
@@ -149,7 +161,13 @@ fn scoped_indexed_comparison_preserves_pinned_absence_limits_and_foreign_affinit
                     };
                     assert_eq!(candidates.len(), 2);
                     assert!(current_selectors
-                        .remains_equal_for_test(execution, &complete, runtime, current_snapshot, control)
+                        .remains_equal_for_test(
+                            execution,
+                            &complete,
+                            runtime,
+                            current_snapshot,
+                            control
+                        )
                         .unwrap());
                     for limit in [0, 1, usize::MAX] {
                         let mut narrowed = complete.clone();

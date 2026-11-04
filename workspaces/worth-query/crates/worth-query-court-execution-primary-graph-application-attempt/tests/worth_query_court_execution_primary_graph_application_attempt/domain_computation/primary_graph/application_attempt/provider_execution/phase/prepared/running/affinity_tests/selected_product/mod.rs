@@ -24,7 +24,19 @@ fn an_exact_sibling_product_cannot_substitute_at_provider_plan_binding() {
                 ),
                 idempotency(193, 194),
             );
-            let (_admission, lease, _provider_attempt, _outcome_identity, _workflow_settlement_publication, _authorization, _idempotency, mut direct_run, mutation_run, _attempt_basis, _aftermath_causality,) = running.into_parts_for_test();
+            let (
+                _admission,
+                lease,
+                _provider_attempt,
+                _outcome_identity,
+                _workflow_settlement_publication,
+                _authorization,
+                _idempotency,
+                mut direct_run,
+                mutation_run,
+                _attempt_basis,
+                _aftermath_causality,
+            ) = running.into_parts_for_test();
             let sibling = fork_product(&world, lease.product());
             let sibling = world
                 .application
@@ -34,7 +46,9 @@ fn an_exact_sibling_product_cannot_substitute_at_provider_plan_binding() {
             drop(sibling_application_basis);
 
             let result = direct_run
-                .admit_provider_execution_plan(&(*world.application.primary_graph_authority_for_test()))
+                .admit_provider_execution_plan(
+                    &(*world.application.primary_graph_authority_for_test()),
+                )
                 .expect("the application authorities admit the provider plan")
                 .bind_application_product_for_test(sibling_product);
             assert!(result.is_err());
@@ -67,9 +81,23 @@ fn the_exact_selected_product_binds_at_provider_plan_boundary() {
                 ),
                 idempotency(195, 196),
             );
-            let (_admission, lease, _provider_attempt, _outcome_identity, _workflow_settlement_publication, _authorization, _idempotency, mut direct_run, mutation_run, _attempt_basis, _aftermath_causality,) = running.into_parts_for_test();
+            let (
+                _admission,
+                lease,
+                _provider_attempt,
+                _outcome_identity,
+                _workflow_settlement_publication,
+                _authorization,
+                _idempotency,
+                mut direct_run,
+                mutation_run,
+                _attempt_basis,
+                _aftermath_causality,
+            ) = running.into_parts_for_test();
             let result = direct_run
-                .admit_provider_execution_plan(&(*world.application.primary_graph_authority_for_test()))
+                .admit_provider_execution_plan(
+                    &(*world.application.primary_graph_authority_for_test()),
+                )
                 .expect("the application authorities admit the provider plan")
                 .bind_application_product_for_test(lease.product().retained_clone_for_test());
             assert!(result.is_ok());
@@ -157,12 +185,8 @@ fn foreign_installed_phase_refuses_provider_readmission_before_read_or_charge() 
                 let before = reads();
                 // Read before the running run is borrowed mutably.
                 let product = (*arun.lease_for_test()).product().retained_clone_for_test();
-                let session = real_terminal_session(
-                    &phase,
-                    &a,
-                    &mut (*arun.running_mut_for_test()),
-                    product,
-                );
+                let session =
+                    real_terminal_session(&phase, &a, &mut (*arun.running_mut_for_test()), product);
                 assert_eq!(session.counters().provider_calls(), 2);
                 // The primary provider's readmission and preparation only mint and
                 // check session tokens (provider/session_lifecycle.rs:12-36).
@@ -171,11 +195,33 @@ fn foreign_installed_phase_refuses_provider_readmission_before_read_or_charge() 
                 let _ = session.abort();
             })
             .unwrap();
-        let (_a_admission, a_lease, _a_attempt, _a_outcome, _a_settlement, _a_authorization, _a_idempotency, a_running,
-            a_mutation_run, _a_basis, _a_causality) = arun.into_parts_for_test();
+        let (
+            _a_admission,
+            a_lease,
+            _a_attempt,
+            _a_outcome,
+            _a_settlement,
+            _a_authorization,
+            _a_idempotency,
+            a_running,
+            a_mutation_run,
+            _a_basis,
+            _a_causality,
+        ) = arun.into_parts_for_test();
         finish_uncommitted(a_mutation_run, a_running, a_lease);
-        let (_b_admission, b_lease, _b_attempt, _b_outcome, _b_settlement, _b_authorization, _b_idempotency, b_running,
-            b_mutation_run, _b_basis, _b_causality) = brun.into_parts_for_test();
+        let (
+            _b_admission,
+            b_lease,
+            _b_attempt,
+            _b_outcome,
+            _b_settlement,
+            _b_authorization,
+            _b_idempotency,
+            b_running,
+            b_mutation_run,
+            _b_basis,
+            _b_causality,
+        ) = brun.into_parts_for_test();
         finish_uncommitted(b_mutation_run, b_running, b_lease);
         place(previous);
     }

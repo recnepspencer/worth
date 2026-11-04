@@ -99,7 +99,11 @@ fn another_input_or_edition_or_an_evicted_state_runs_in_full() {
             Cause::InputChanged,
         ),
         (
-            ComputationPrior::new_for_test(InstalledProducerEdition::for_test_for_test([8; 32]), Ok(state), None),
+            ComputationPrior::new_for_test(
+                InstalledProducerEdition::for_test_for_test([8; 32]),
+                Ok(state),
+                None,
+            ),
             Cause::OtherEdition,
         ),
         (
@@ -141,13 +145,13 @@ fn growing_past_the_ceiling_is_denied_as_a_full_run_is_denied() {
             .as_ref()
             .unwrap()
             .state_for_test())
-            .facts_for_test())
-            .facts_for_test()
-            .find_map(|(_, _, readers)| match readers.partitions_for_test() {
-                [partition] => Some(*partition),
-                _ => None,
-            })
-            .expect("one gather reads the status");
+        .facts_for_test())
+        .facts_for_test()
+        .find_map(|(_, _, readers)| match readers.partitions_for_test() {
+            [partition] => Some(*partition),
+            _ => None,
+        })
+        .expect("one gather reads the status");
         // Exceed the declared full-run charge by the tree work plus one,
         // putting the stop inside a kernel in either identity ordering.
         let grown = WORK_CEILING + KERNEL_WORK + usize::try_from(full_tree_work).unwrap() + 1

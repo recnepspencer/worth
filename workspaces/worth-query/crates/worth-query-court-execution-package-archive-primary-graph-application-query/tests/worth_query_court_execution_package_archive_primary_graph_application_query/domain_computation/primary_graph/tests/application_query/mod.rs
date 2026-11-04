@@ -42,7 +42,10 @@ fn execution_runtime_mints_plan_from_exact_mapped_principal_and_typed_scope() {
                 .application
                 .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch_for_test(),
+                    world
+                        .application
+                        .product_runtime()
+                        .default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_authenticated_principal(
@@ -63,7 +66,10 @@ fn execution_runtime_mints_plan_from_exact_mapped_principal_and_typed_scope() {
                 .application
                 .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch_for_test(),
+                    world
+                        .application
+                        .product_runtime()
+                        .default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
@@ -105,7 +111,10 @@ fn execution_runtime_mints_plan_from_exact_mapped_principal_and_typed_scope() {
         plan.graph_work_principal_entity_id(),
         principal.principal_entity_id_for_test()
     );
-    assert_eq!(plan.graph_work_scope_entity_id(), Some(account.entity_id_for_test()));
+    assert_eq!(
+        plan.graph_work_scope_entity_id(),
+        Some(account.entity_id_for_test())
+    );
     assert!(plan.graph_work_runtime_ordinal() > 0);
     assert!(plan.graph_work_managed_run_identity().as_u64() > 0);
     assert!(plan.graph_work_decision_fact_count() > 0);
@@ -155,7 +164,10 @@ fn mapped_stranger_cannot_admit_a_valid_foreign_account_scope() {
                 .application
                 .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch_for_test(),
+                    world
+                        .application
+                        .product_runtime()
+                        .default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_authenticated_principal(
@@ -176,7 +188,10 @@ fn mapped_stranger_cannot_admit_a_valid_foreign_account_scope() {
                 .application
                 .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch_for_test(),
+                    world
+                        .application
+                        .product_runtime()
+                        .default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(

@@ -22,7 +22,10 @@ pub fn owner_path_fixture() -> (
                 .application
                 .select_product_branch_for_test(
                     execution,
-                    world.application.product_runtime().default_branch_for_test(),
+                    world
+                        .application
+                        .product_runtime()
+                        .default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
@@ -37,8 +40,7 @@ pub fn owner_path_fixture() -> (
         .expect("the fixture read owns its installed host call");
     let field = AccountStatus::reference();
     let graph = (*(*world.application.primary_provider_for_test()).graph_for_test()).clone();
-    let locator = (*graph
-        .layout_for_test())
+    let locator = (*graph.layout_for_test())
         .field_locator_for_test(field.entity(), field.aspect(), field.field())
         .unwrap()
         .clone();

@@ -42,10 +42,17 @@ pub fn recorded_settlements(
     let product = world
         .application
         .product_runtime()
-        .admit_product_branch_for_test(world.application.product_runtime().default_branch_for_test())
+        .admit_product_branch_for_test(
+            world
+                .application
+                .product_runtime()
+                .default_branch_for_test(),
+        )
         .expect("fixture product occurrence is live");
     let observation = product.observation_for_test();
-    let runtime_authority = (*world.application.runtime_for_test()).authority_identity().as_u64();
+    let runtime_authority = (*world.application.runtime_for_test())
+        .authority_identity()
+        .as_u64();
     let schema = (*world.application.installed_schema_for_test()).binding_identity();
     let entity = worth_relational::facade::identity::EntityId::new(
         worth_relational::facade::identity::PartitionId::main(),
@@ -81,12 +88,21 @@ pub fn recorded_settlements(
          None,
      );
     }
-    let source = SemanticSource::new_for_test(runtime_authority, schema, scope, OutputBindingIdentity::declared_for_test("RegistryRestoredOutput"));
-    let coordinate = ProductCoordinate::new_for_test(observation.lifecycle_incarnation(), observation.reference_generation().get());
+    let source = SemanticSource::new_for_test(
+        runtime_authority,
+        schema,
+        scope,
+        OutputBindingIdentity::declared_for_test("RegistryRestoredOutput"),
+    );
+    let coordinate = ProductCoordinate::new_for_test(
+        observation.lifecycle_incarnation(),
+        observation.reference_generation().get(),
+    );
     let identities = partitions
         .iter()
         .map(|partition| {
-            let recorded = lineage.latest_output_in_partition_for_test(&source, coordinate, *partition);
+            let recorded =
+                lineage.latest_output_in_partition_for_test(&source, coordinate, *partition);
             Arc::clone(
                 &(*recorded
                     .expect("restored output has one actual lineage slot")

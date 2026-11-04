@@ -13,9 +13,7 @@ pub use std::sync::Arc;
 pub fn body(
     run: &SealedComputationRun,
 ) -> Arc<worth_query_execution::court_doors_for_test::domain_computation::primary_graph::structural_walk::StructuralWalkObservation>{
-    let bodies: Vec<_> = (*(*run
-        .state_for_test())
-        .facts_for_test())
+    let bodies: Vec<_> = (*(*run.state_for_test()).facts_for_test())
         .facts_for_test()
         .filter_map(|(_, fact, _)| match fact {
             Fact::StructuralWalk { observation } => Some(Arc::clone(observation)),
@@ -58,7 +56,9 @@ fn actual_retained_walk_runs_fresh_before_incremental_shortcuts_in_both_postures
             Cause::StructuralWalkRead,
         );
         assert_eq!(
-            (*installed.owner_for_test()).gathers.load(Ordering::Relaxed),
+            (*installed.owner_for_test())
+                .gathers
+                .load(Ordering::Relaxed),
             2,
             "the real gather ran again"
         );

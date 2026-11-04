@@ -89,8 +89,10 @@ fn native_preparation_control_stop_keeps_failed_cleanup_evidence_at_the_commit_d
         let program = world
             .application
             .with_host_advancement(|phase| {
-                let principal = authenticated_principal(&phase.test_host_request_for_test(), &world, &setup);
-                let account = resolved_account(&phase.test_host_request_for_test(), &world, "open", &setup);
+                let principal =
+                    authenticated_principal(&phase.test_host_request_for_test(), &world, &setup);
+                let account =
+                    resolved_account(&phase.test_host_request_for_test(), &world, "open", &setup);
                 admitted_program(
                     &phase,
                     &world,
@@ -144,8 +146,11 @@ fn native_preparation_control_stop_keeps_failed_cleanup_evidence_at_the_commit_d
             );
         assert_eq!(
             evidence,
-            Evidence::from_provider_session_failure_for_test(Recovery::CommitRecoveryRequired, &failure)
-                .with_cleanup_failure_for_test()
+            Evidence::from_provider_session_failure_for_test(
+                Recovery::CommitRecoveryRequired,
+                &failure
+            )
+            .with_cleanup_failure_for_test()
         );
     }
 }

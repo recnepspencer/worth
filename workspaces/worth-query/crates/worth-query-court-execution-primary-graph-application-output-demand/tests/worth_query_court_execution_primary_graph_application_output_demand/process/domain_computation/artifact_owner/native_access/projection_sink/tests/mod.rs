@@ -40,8 +40,7 @@ fn allocated_capacity_includes_nested_variable_width_buffers() {
     ])
     .unwrap();
 
-    let outer = (*sink
-        .values_for_test())
+    let outer = (*sink.values_for_test())
         .capacity()
         .saturating_add((*sink.pending_row_for_test()).capacity())
         .saturating_mul(std::mem::size_of::<AspectValue>());

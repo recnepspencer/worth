@@ -46,7 +46,10 @@ fn registration_memory_refusal_preserves_old_pair_and_funded_retry_releases_back
             let key = |purpose| {
                 Key::storage_key_for_test(
                     (*world.application.runtime_for_test()).authority_identity(),
-                    selected.product().observation_for_test().lifecycle_incarnation(),
+                    selected
+                        .product()
+                        .observation_for_test()
+                        .lifecycle_incarnation(),
                     scope.entity_id_for_test(),
                     purpose,
                 )
@@ -64,7 +67,8 @@ fn registration_memory_refusal_preserves_old_pair_and_funded_retry_releases_back
     let mut directory = ManagedIndexDirectory::default();
     directory.insert_for_test(
         1,
-        RegisteredIndex::prepare_for_test(&execution, keys[0], first.clone(), cleanup.clone()).unwrap(),
+        RegisteredIndex::prepare_for_test(&execution, keys[0], first.clone(), cleanup.clone())
+            .unwrap(),
     );
     let before = memory.charged_memory_bytes();
     assert!(
@@ -96,7 +100,8 @@ fn registration_memory_refusal_preserves_old_pair_and_funded_retry_releases_back
     assert_eq!(denied_memory.charged_memory_bytes(), 0);
     directory.insert_for_test(
         2,
-        RegisteredIndex::prepare_for_test(&execution, keys[1], second.clone(), cleanup.clone()).unwrap(),
+        RegisteredIndex::prepare_for_test(&execution, keys[1], second.clone(), cleanup.clone())
+            .unwrap(),
     );
     cleanup.dispose(); // The public close receiver disposes before unregistering.
     drop(directory.remove_for_test(1));

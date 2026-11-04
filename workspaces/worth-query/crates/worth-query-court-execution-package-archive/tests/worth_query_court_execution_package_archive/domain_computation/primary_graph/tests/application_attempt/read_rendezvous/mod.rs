@@ -16,8 +16,14 @@ fn cancellation_inside_a_native_read_stops_the_public_commit_door() {
     let program = world
         .application
         .with_host_advancement(|phase| {
-            let principal = authenticated_principal(&phase.test_host_request_for_test(), &world, &request);
-            let account = resolved_account(&phase.test_host_request_for_test(), &world, "open", &request);
+            let principal =
+                authenticated_principal(&phase.test_host_request_for_test(), &world, &request);
+            let account = resolved_account(
+                &phase.test_host_request_for_test(),
+                &world,
+                "open",
+                &request,
+            );
             admitted_program(
                 &phase,
                 &world,
@@ -59,9 +65,7 @@ fn cancellation_inside_a_native_read_stops_the_public_commit_door() {
         "the read must stop before publication as the request's cancellation: {outcome:?}"
     );
     assert_eq!(
-        (*world
-            .application
-            .primary_provider_for_test())
+        (*world.application.primary_provider_for_test())
             .published_application_commit_count_for_test(),
         0
     );

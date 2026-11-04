@@ -8,8 +8,7 @@ pub enum PostingBindings {
     QueryRead(super::super::query_coverage::QueryReadBinding),
 }
 #[derive(Clone, Debug)]
-pub struct SettlementPostingBindings
-{
+pub struct SettlementPostingBindings {
     pub(in crate::domain_computation::primary_graph::output_lineage::invalidation) projection:
         Arc<PostingProjection>,
     pub(in crate::domain_computation::primary_graph::output_lineage::invalidation) settlements:

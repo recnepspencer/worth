@@ -44,9 +44,7 @@ pub fn publish_definition(
     builder.start(&terminal);
     let definition = builder.finish().unwrap().validate().unwrap();
     let before = selected(world, execution);
-    let handle = (*world
-        .application
-        .runtime_for_test())
+    let handle = (*world.application.runtime_for_test())
         .primary_graph()
         .unwrap()
         .integration_handle_for_test();
@@ -97,7 +95,12 @@ pub fn publish_definition(
         (*(*layout.definition_for_test()).entity_kind_for_test()),
         &inventories[1],
     );
-    let node = only_new_entity(world, execution, (*(*layout.node_for_test()).entity_kind_for_test()), &inventories[2]);
+    let node = only_new_entity(
+        world,
+        execution,
+        (*(*layout.node_for_test()).entity_kind_for_test()),
+        &inventories[2],
+    );
     let retained = selected(world, execution);
     let compiled_node = handle.with_runtime(execution, |runtime| {
         let mut observed = Vec::new();
@@ -111,8 +114,17 @@ pub fn publish_definition(
         )
         .unwrap()
     });
-    let (semantic, binding) = separate_compiled_definition(ColdCompiledWorkflowDefinition::new_for_test(lineage, entity, node, vec![compiled_node].into_boxed_slice(), Box::new([]), Box::new([]), WorkflowDefinitionPublicationRevisions::new_for_test(None, None, None)))
-    .unwrap();
+    let (semantic, binding) =
+        separate_compiled_definition(ColdCompiledWorkflowDefinition::new_for_test(
+            lineage,
+            entity,
+            node,
+            vec![compiled_node].into_boxed_slice(),
+            Box::new([]),
+            Box::new([]),
+            WorkflowDefinitionPublicationRevisions::new_for_test(None, None, None),
+        ))
+        .unwrap();
     binding
         .bind_for_test(semantic, definition.content_identity().clone(), revision)
         .unwrap()

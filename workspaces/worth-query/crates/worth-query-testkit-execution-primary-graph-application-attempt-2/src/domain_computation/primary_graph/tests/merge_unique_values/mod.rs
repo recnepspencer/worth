@@ -43,15 +43,12 @@ pub struct MergeWorld {
 impl MergeWorld {
     pub fn new() -> Self {
         let world = installed_world(&[("merge-unique", WorthQueryPrincipalMappingStatus::Enabled)]);
-        let handle = (*world
-            .application
-            .runtime_for_test())
+        let handle = (*world.application.runtime_for_test())
             .primary_graph()
             .expect("the fixture publishes its graph")
             .integration_handle_for_test();
         let field = |aspect: &str, name: &str| {
-            (*handle
-                .layout_for_test())
+            (*handle.layout_for_test())
                 .field_for_test("Account", aspect, name)
                 .expect("the schema declares the field")
                 .clone()
@@ -65,9 +62,7 @@ impl MergeWorld {
         ];
         Self {
             kind: (*label.entity_kind_for_test()),
-            index: (*label
-                .equality_index_id_for_test())
-                .expect("the label is equality-indexed"),
+            index: (*label.equality_index_id_for_test()).expect("the label is equality-indexed"),
             label: label.locator_into_for_test(),
             status: status.locator_into_for_test(),
             required,

@@ -35,13 +35,16 @@ impl BridgeDeferralWorthQueryOutputDemandRegistryForTest for WorthQueryOutputDem
                 WorthQueryOutputDemandAdvanceAdmission::Failed(_)
             ));
             let state = (*fixture.registry.state_for_test()).lock().unwrap();
-            assert!(matches!((*
-                (*state.records_for_test())[&(*fixture.interest.key_for_test())].state_for_test()),
+            assert!(matches!(
+                (*(*state.records_for_test())[&(*fixture.interest.key_for_test())]
+                    .state_for_test()),
                 DemandState::Failed(_)
             ));
-            assert!((*(*state.records_for_test())[&(*fixture.interest.key_for_test())]
-                .performed_obligations_for_test())
-                .is_empty());
+            assert!(
+                (*(*state.records_for_test())[&(*fixture.interest.key_for_test())]
+                    .performed_obligations_for_test())
+                .is_empty()
+            );
 
             return;
         }
@@ -79,7 +82,10 @@ impl BridgeDeferralWorthQueryOutputDemandRegistryForTest for WorthQueryOutputDem
             fixture.registry.begin_for_test(&fixture.interest),
             WorthQueryOutputDemandAdvanceAdmission::Execute { .. }
         ));
-        let completion = WorthQueryCompletedOutputDemand::new_for_test(WorthQueryAcceptedOutputAuthority::Committed(fixture.receipt.clone()), WorthQueryOutputReadinessDeliveryEvidence::for_test_for_test());
+        let completion = WorthQueryCompletedOutputDemand::new_for_test(
+            WorthQueryAcceptedOutputAuthority::Committed(fixture.receipt.clone()),
+            WorthQueryOutputReadinessDeliveryEvidence::for_test_for_test(),
+        );
         assert!(finish
             .publish_for_test(WorthQueryOutputCheckpoint::Ready(
                 worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::ready_backing::ReadyCompletion::for_test(completion)

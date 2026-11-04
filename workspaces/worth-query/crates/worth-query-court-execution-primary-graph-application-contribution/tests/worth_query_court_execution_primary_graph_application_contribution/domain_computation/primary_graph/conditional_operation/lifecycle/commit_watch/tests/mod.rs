@@ -52,7 +52,11 @@ fn original_watch_backing_is_shared_and_successor_allocation_refuses_without_rel
     );
     assert!(matches!(denied, Err(ref cause) if cause.kind() == Kind::RetentionCapacityExhausted));
     assert_eq!(
-        original.entities_for_test().iter().copied().collect::<Vec<_>>(),
+        original
+            .entities_for_test()
+            .iter()
+            .copied()
+            .collect::<Vec<_>>(),
         [entity(1)]
     );
     assert_eq!(lease.charged_memory_bytes(), held);
@@ -83,7 +87,10 @@ fn original_watch_backing_is_shared_and_successor_allocation_refuses_without_rel
     )
     .unwrap();
     assert_eq!(
-        (*successor.entities_for_test()).iter().copied().collect::<Vec<_>>(),
+        (*successor.entities_for_test())
+            .iter()
+            .copied()
+            .collect::<Vec<_>>(),
         [entity(1), entity(2)]
     );
     assert!(lease.charged_memory_bytes() > held);

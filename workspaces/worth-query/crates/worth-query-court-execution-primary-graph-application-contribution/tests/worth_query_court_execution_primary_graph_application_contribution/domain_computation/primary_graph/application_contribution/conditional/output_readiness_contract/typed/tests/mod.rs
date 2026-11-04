@@ -179,7 +179,8 @@ fn typed_field_uses_complete_optional_aspect_and_real_nested_codec() {
         FieldExpectation::declared_for_test(changed.erased(), crate::domain_computation::primary_graph::application_contribution::conditional::output_readiness_contract::typed::tests::changed::Record::reference::<Changed>())
             .unwrap();
     assert_ne!(
-        (*field.aspect_for_test()), (*changed_field.aspect_for_test()),
+        (*field.aspect_for_test()),
+        (*changed_field.aspect_for_test()),
         "nested rename changes consumed readiness contract"
     );
     let value = Payload {
@@ -206,7 +207,8 @@ fn actual_missing_changed_and_wrong_concrete_bindings_refuse_at_field_locus() {
         Changed::declaration().unwrap().into_erased(),
     ] {
         let denial =
-            FieldExpectation::declared_for_test(&declaration, Record::reference::<Actual>()).unwrap_err();
+            FieldExpectation::declared_for_test(&declaration, Record::reference::<Actual>())
+                .unwrap_err();
         assert_eq!(
             denial.field_locus_for_test(),
             Some(&schema::ApplicationFieldBindingLocus::new(
@@ -247,7 +249,10 @@ fn canonical_order_and_distinct_delivery_eligibility_are_preserved() {
         .build_typed::<(), (), ()>()
         .unwrap();
     assert_eq!((*first.fields_for_test()), (*reversed.fields_for_test()));
-    assert_eq!((*first.delivery_fields_for_test()), (*reversed.delivery_fields_for_test()));
+    assert_eq!(
+        (*first.delivery_fields_for_test()),
+        (*reversed.delivery_fields_for_test())
+    );
     assert_eq!(
         first.definition().clone().into_portable(),
         reversed.definition().clone().into_portable()

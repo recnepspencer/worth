@@ -24,7 +24,11 @@ impl SealedComputationRun {
 
 impl ComputationPrior {
     #[doc(hidden)]
-    pub fn new_for_test( edition: InstalledProducerEdition, retained: Result<Arc<RetainedComputation>, WorthQueryPartitionedComputationFullCause>, record: Option<PriorComputationRecord>) -> Self {
+    pub fn new_for_test(
+        edition: InstalledProducerEdition,
+        retained: Result<Arc<RetainedComputation>, WorthQueryPartitionedComputationFullCause>,
+        record: Option<PriorComputationRecord>,
+    ) -> Self {
         Self::new(edition, retained, record)
     }
 }

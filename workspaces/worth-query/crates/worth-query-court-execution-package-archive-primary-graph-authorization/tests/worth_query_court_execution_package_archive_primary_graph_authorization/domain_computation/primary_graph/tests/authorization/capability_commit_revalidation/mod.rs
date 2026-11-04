@@ -223,7 +223,9 @@ pub fn disable_mapping(
     world: &World,
     mapping: EntityId,
 ) {
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
     let layout = graph
         .layout_for_test()
         .principal_binding_for_test(world.binding.binding())
@@ -246,7 +248,9 @@ pub fn enable_mapping(
     world: &World,
     mapping: EntityId,
 ) {
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
     let layout = graph
         .layout_for_test()
         .principal_binding_for_test(world.binding.binding())
@@ -332,9 +336,7 @@ pub fn installed_field(
     aspect: &str,
     field: &str,
 ) -> AspectFieldLocator {
-    (*world
-        .application
-        .runtime_for_test())
+    (*world.application.runtime_for_test())
         .primary_graph()
         .unwrap()
         .layout_for_test()

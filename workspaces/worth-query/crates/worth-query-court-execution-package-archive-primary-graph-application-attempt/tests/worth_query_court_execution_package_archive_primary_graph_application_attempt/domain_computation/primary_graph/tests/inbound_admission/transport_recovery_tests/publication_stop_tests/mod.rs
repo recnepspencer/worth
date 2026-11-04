@@ -22,15 +22,14 @@ fn publication_stop_transport_completion_remains_ready_without_redispatch() {
         .application
         .admit_external_dispatch_attempt_for_test(owner.clone())
         .unwrap();
-    let in_flight = (*world
-        .application
-        .primary_provider_for_test())
+    let in_flight = (*world.application.primary_provider_for_test())
         .begin_external_dispatch_in_flight_for_test(&owner)
         .unwrap()
         .unwrap();
     let transport = CompletingTransport(AtomicUsize::new(0));
     let completed = dispatch_external_effect(&transport, admitted).unwrap();
-    let evidence = InstalledTransportCompletion::from_observed_dispatch_for_test(owner, &completed).unwrap();
+    let evidence =
+        InstalledTransportCompletion::from_observed_dispatch_for_test(owner, &completed).unwrap();
     world
         .application
         .record_installed_transport_completion_for_test(evidence, in_flight)
@@ -41,12 +40,14 @@ fn publication_stop_transport_completion_remains_ready_without_redispatch() {
     let result = world
         .application
         .with_host_advancement(|phase| {
-            world.application.resume_installed_transport_completion_for_test(
-                &phase.borrowed_request_for_test(),
-                &phase,
-                &correlation,
-                &request,
-            )
+            world
+                .application
+                .resume_installed_transport_completion_for_test(
+                    &phase.borrowed_request_for_test(),
+                    &phase,
+                    &correlation,
+                    &request,
+                )
         })
         .unwrap();
     assert_eq!(
@@ -64,14 +65,14 @@ fn publication_stop_transport_completion_remains_ready_without_redispatch() {
     assert_eq!(
         world
             .application
-            .with_host_advancement(
-                |phase| world.application.resume_installed_transport_completion_for_test(
+            .with_host_advancement(|phase| world
+                .application
+                .resume_installed_transport_completion_for_test(
                     &phase.borrowed_request_for_test(),
                     &phase,
                     &correlation,
                     &live
-                )
-            )
+                ))
             .unwrap(),
         InstalledTransportResumeOutcome::Performed
     );

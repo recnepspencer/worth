@@ -190,9 +190,12 @@ fn a_retired_entity_changes_each_revision_fact_read_without_its_entity_fact() {
             assert_eq!(revisions.len(), 3);
             let probe = |fact: &Fact| {
                 let selected = world.selected_product(
-                    &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
+                    &(host_custody.phase_for_application_for_test(&world.application))
+                        .test_host_request_for_test(),
                 );
-                let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+                let graph = (*world.application.runtime_for_test())
+                    .primary_graph()
+                    .unwrap();
                 graph.integration_handle_for_test().with_runtime(
                     &phase.borrowed_request_for_test(),
                     |runtime| {

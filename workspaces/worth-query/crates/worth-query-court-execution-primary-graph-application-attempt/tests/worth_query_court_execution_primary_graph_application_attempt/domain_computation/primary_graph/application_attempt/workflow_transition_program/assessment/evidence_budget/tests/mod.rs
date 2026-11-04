@@ -40,7 +40,10 @@ pub fn evidence_effects(
         entity(
             (*layout.evidence_dependency.entity_kind_for_test()),
             BTreeMap::from([
-                ((*layout.evidence_dependency.fact_kind_for_test()).clone(), text("field")),
+                (
+                    (*layout.evidence_dependency.fact_kind_for_test()).clone(),
+                    text("field"),
+                ),
                 (
                     (*layout.evidence_dependency.native_revision_for_test()).clone(),
                     AspectValue::UInt64(3),

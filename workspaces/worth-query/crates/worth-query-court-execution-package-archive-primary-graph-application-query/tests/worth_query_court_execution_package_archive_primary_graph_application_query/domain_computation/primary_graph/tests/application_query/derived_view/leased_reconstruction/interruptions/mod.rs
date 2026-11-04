@@ -70,7 +70,13 @@ fn query_scope_interruption_at_finalization_does_not_interrupt_worker_reads() {
                 "a prepared worker has no Query scope safe point or clock"
             );
             assert_eq!(ignored_scope.map.1, count);
-            assert!((*ignored_scope.interruption_point.as_ref().unwrap().fresh_for_test()));
+            assert!(
+                (*ignored_scope
+                    .interruption_point
+                    .as_ref()
+                    .unwrap()
+                    .fresh_for_test())
+            );
             assert!(ignored_scope.values.is_empty());
             // Owner finalization validates its admitted Query scope, separately
             // from interruption of the caller's worker request.

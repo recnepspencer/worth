@@ -7,7 +7,7 @@ impl WorthQueryPrimaryGraphApplicationAttemptStore {
         &self, session: WorthQueryProviderSessionView<'_>) -> Option<(
         Arc<crate::domain_computation::primary_graph::ApplicationFactTable>,
         crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
-    )> {
+    )>{
         Self::shared_observed_facts(self, session)
     }
 }

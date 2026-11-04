@@ -30,11 +30,17 @@ fn a_marked_fact_is_reverified_at_the_real_native_snapshot() {
                 )
                 .unwrap()
                 .entity_id_for_test();
-            let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+            let graph = (*world.application.runtime_for_test())
+                .primary_graph()
+                .unwrap();
             let status_ref = AccountStatus::reference();
             let status = graph
                 .layout_for_test()
-                .field_locator_for_test(status_ref.entity(), status_ref.aspect(), status_ref.field())
+                .field_locator_for_test(
+                    status_ref.entity(),
+                    status_ref.aspect(),
+                    status_ref.field(),
+                )
                 .unwrap()
                 .clone();
             let locator = AspectFieldLocator::new(
@@ -43,11 +49,9 @@ fn a_marked_fact_is_reverified_at_the_real_native_snapshot() {
                 status.field_path().clone(),
             );
 
-            (*(*world
-                .application
-                .primary_provider_for_test())
-                .graph_for_test())
-                .with_runtime(&execution, |runtime| {
+            (*(*world.application.primary_provider_for_test()).graph_for_test()).with_runtime(
+                &execution,
+                |runtime| {
                     let basis = runtime
                         .admit_branch_basis(&runtime.main_branch_identity())
                         .unwrap();
@@ -77,7 +81,8 @@ fn a_marked_fact_is_reverified_at_the_real_native_snapshot() {
                     ));
 
                     runtime.snapshots().release_snapshot(&snapshot).unwrap();
-                });
+                },
+            );
         })
         .expect("the fixture borrows its installed host phase");
 }

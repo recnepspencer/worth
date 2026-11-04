@@ -50,7 +50,10 @@ fn retirement_releases_in_branch_then_incarnation_order() {
     let (zulu, zulu_report) = child("zulu");
     let (alpha_first, first_report) = child("alpha");
     let (alpha_second, second_report) = child("alpha");
-    assert_eq!(alpha_first.branch_for_test(), alpha_second.branch_for_test());
+    assert_eq!(
+        alpha_first.branch_for_test(),
+        alpha_second.branch_for_test()
+    );
     assert!(alpha_first.incarnation() < alpha_second.incarnation());
     let registry = WorthQueryProductBranchOwnerCleanupRegistry::new_for_test(Some(3));
     for (occurrence, report) in [
@@ -66,13 +69,24 @@ fn retirement_releases_in_branch_then_incarnation_order() {
     let actual = registry
         .pending_application_retired_product_occurrences_for_test()
         .into_iter()
-        .map(|occurrence| (occurrence.branch_for_test().clone(), occurrence.incarnation()))
+        .map(|occurrence| {
+            (
+                occurrence.branch_for_test().clone(),
+                occurrence.incarnation(),
+            )
+        })
         .collect::<Vec<_>>();
     assert_eq!(
         actual,
         [
-            (alpha_first.branch_for_test().clone(), alpha_first.incarnation()),
-            (alpha_second.branch_for_test().clone(), alpha_second.incarnation()),
+            (
+                alpha_first.branch_for_test().clone(),
+                alpha_first.incarnation()
+            ),
+            (
+                alpha_second.branch_for_test().clone(),
+                alpha_second.incarnation()
+            ),
             (zulu.branch_for_test().clone(), zulu.incarnation()),
         ]
     );

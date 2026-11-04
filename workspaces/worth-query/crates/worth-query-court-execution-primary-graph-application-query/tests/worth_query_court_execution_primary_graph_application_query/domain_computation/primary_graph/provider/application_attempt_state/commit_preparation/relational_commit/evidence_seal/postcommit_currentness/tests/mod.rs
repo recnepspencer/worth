@@ -53,14 +53,12 @@ fn a_source_revision_the_effect_moved_is_kept_and_reported_superseded() {
                 &world,
                 vec![WorthQueryApplicationObservedFact::AbsentField {
                     entity_id: entity,
-                    kind: (*(*world
-                        .application
-                        .runtime_for_test())
+                    kind: (*(*world.application.runtime_for_test())
                         .primary_graph()
                         .unwrap()
                         .layout_for_test())
-                        .entity_kind_for_test(AccountIdentity::reference().entity())
-                        .unwrap(),
+                    .entity_kind_for_test(AccountIdentity::reference().entity())
+                    .unwrap(),
                     locator: planned(&locator),
                 }],
             )
@@ -139,14 +137,12 @@ fn unavailable_native_revision_never_authorizes_output_reuse() {
                 &world,
                 vec![WorthQueryApplicationObservedFact::AbsentField {
                     entity_id: entity,
-                    kind: (*(*world
-                        .application
-                        .runtime_for_test())
+                    kind: (*(*world.application.runtime_for_test())
                         .primary_graph()
                         .unwrap()
                         .layout_for_test())
-                        .entity_kind_for_test(AccountIdentity::reference().entity())
-                        .unwrap(),
+                    .entity_kind_for_test(AccountIdentity::reference().entity())
+                    .unwrap(),
                     locator: undeclared,
                 }],
             )
@@ -183,15 +179,13 @@ pub fn account_note(
         .unwrap()
         .entity_id_for_test();
     let note = AccountNote::reference();
-    let locator = (*(*world
-        .application
-        .runtime_for_test())
+    let locator = (*(*world.application.runtime_for_test())
         .primary_graph()
         .unwrap()
         .layout_for_test())
-        .field_locator_for_test(note.entity(), note.aspect(), note.field())
-        .unwrap()
-        .clone();
+    .field_locator_for_test(note.entity(), note.aspect(), note.field())
+    .unwrap()
+    .clone();
     (entity, locator)
 }
 
@@ -234,9 +228,7 @@ pub fn output_selection(
     facts: &(impl FactSequence + ?Sized),
 ) -> OutputDependencySelection {
     let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
-    (*world
-        .application
-        .runtime_for_test())
+    (*world.application.runtime_for_test())
         .primary_graph()
         .unwrap()
         .integration_handle_for_test()
@@ -259,9 +251,7 @@ pub fn currentness(
     fact: &WorthQueryApplicationObservedFact,
 ) -> Result<FactMovement, WorthQuerySourceCurrentnessFailure> {
     let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
-    (*world
-        .application
-        .runtime_for_test())
+    (*world.application.runtime_for_test())
         .primary_graph()
         .unwrap()
         .integration_handle_for_test()

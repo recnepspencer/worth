@@ -15,7 +15,10 @@ pub fn record_restore() {
 pub fn restores() -> usize {
     RESTORES.with(std::cell::Cell::get)
 }
-pub struct Restore(pub Placement, pub Option<worth_foundational::ExecutionBudget>);
+pub struct Restore(
+    pub Placement,
+    pub Option<worth_foundational::ExecutionBudget>,
+);
 impl Drop for Restore {
     fn drop(&mut self) {
         place(self.0);

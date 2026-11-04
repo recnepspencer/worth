@@ -41,8 +41,7 @@ fn distinct_family_types_cannot_share_one_declared_identity_at_installation() {
     catalog
         .validate_for_test()
         .expect("one family may have two lifecycle bindings");
-    (*(*catalog
-        .producers_mut_for_test())
+    (*(*catalog.producers_mut_for_test())
         .get_mut("preserve")
         .unwrap()
         .output_family_type_mut_for_test()) = TypeId::of_for_test::<SecondFamily>();
@@ -95,8 +94,7 @@ fn output_family_meaning_cannot_change_with_source_binding() {
 fn a_producer_role_naming_a_family_member_is_denied() {
     for output_role in ["created.primary", "created."] {
         let mut catalog = WorthQueryApplicationContractCatalog::<TestSchema>::default();
-        (*catalog
-            .producers_mut_for_test())
+        (*catalog.producers_mut_for_test())
             .insert("initial".to_owned(), family_producer(output_role));
 
         let denial = catalog.validate_for_test().unwrap_err();
@@ -132,9 +130,34 @@ pub fn producer(
     source: &str,
     supported: &[WorthQueryProducerApplicability],
 ) -> DeclaredProducerBinding {
-    DeclaredProducerBinding::new_for_test(worth_foundational::facade::ProducerPublicationOwnership::Independent, None, "owner".to_owned(), identity.to_owned(), source.to_owned(), "family".to_owned(), TypeId::of_for_test::<()>(), vec![
-            <Output as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR,
-        ], Vec::new(), "output".to_owned(), "operation".to_owned(), "handler".to_owned(), format!("{identity}-provider"), supported.to_vec(), supported.to_vec(), Vec::new(), "exact-source".to_owned(), None, None, None, TypeId::of_for_test::<()>(), TypeId::of_for_test::<()>(), TypeId::of_for_test::<()>(), TypeId::of_for_test::<()>(), TypeId::of_for_test::<()>(), TypeId::of_for_test::<()>())
+    DeclaredProducerBinding::new_for_test(
+        worth_foundational::facade::ProducerPublicationOwnership::Independent,
+        None,
+        "owner".to_owned(),
+        identity.to_owned(),
+        source.to_owned(),
+        "family".to_owned(),
+        TypeId::of_for_test::<()>(),
+        vec![<Output as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR],
+        Vec::new(),
+        "output".to_owned(),
+        "operation".to_owned(),
+        "handler".to_owned(),
+        format!("{identity}-provider"),
+        supported.to_vec(),
+        supported.to_vec(),
+        Vec::new(),
+        "exact-source".to_owned(),
+        None,
+        None,
+        None,
+        TypeId::of_for_test::<()>(),
+        TypeId::of_for_test::<()>(),
+        TypeId::of_for_test::<()>(),
+        TypeId::of_for_test::<()>(),
+        TypeId::of_for_test::<()>(),
+        TypeId::of_for_test::<()>(),
+    )
 }
 
 pub struct Output;

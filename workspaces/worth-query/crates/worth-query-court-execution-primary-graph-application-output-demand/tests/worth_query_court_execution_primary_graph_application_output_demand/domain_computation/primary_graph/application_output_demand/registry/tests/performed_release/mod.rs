@@ -27,25 +27,68 @@ fn unheld_performed_sources_release_the_oldest_in_commit_order() {
             .committed_product_publication()
             .take_output_demand_observation_for_test()
             .unwrap();
-        sources.push(WorthQueryPerformedOutputDemandSource::new_for_test(receipt, change, observation, None));
+        sources.push(WorthQueryPerformedOutputDemandSource::new_for_test(
+            receipt,
+            change,
+            observation,
+            None,
+        ));
         current = replacement;
     }
     let oldest = (*sources[0].change_for_test()).product_commit().clone();
-    let occurrence = (*sources[0].receipt_for_test()).product_branch().occurrence_for_test();
+    let occurrence = (*sources[0].receipt_for_test())
+        .product_branch()
+        .occurrence_for_test();
     assert!(sources
         .windows(2)
-        .all(|pair| (*pair[0].change_for_test()).product_commit() < (*pair[1].change_for_test()).product_commit()));
+        .all(|pair| (*pair[0].change_for_test()).product_commit()
+            < (*pair[1].change_for_test()).product_commit()));
     let mut state = DemandRegistryState::default();
     for index in [7, 3, 5, 1, 6, 2, 4, 0] {
         let source = sources[index].clone();
-        state.source_custody.insert(
-            (*source.change_for_test()).product_commit().clone(),
-            {
-// Bound in the original literal order, passed in the door's.
-let (occurrence, root_kind, source, discovery, bound_sources, consumed_sources, retired_sources, retired, token_count, cleanup, completed) = (occurrence, PreparedOutputRootKind::Required(TypeId::of_for_test::<()>()), Some(source), None, None, Vec::new(), Vec::new(), None, 0, Default::default(), false);
-SourceCustody::new_for_test(occurrence, root_kind, source, discovery, consumed_sources, retired_sources, bound_sources, retired, token_count, cleanup, completed)
-},
-        );
+        state
+            .source_custody
+            .insert((*source.change_for_test()).product_commit().clone(), {
+                // Bound in the original literal order, passed in the door's.
+                let (
+                    occurrence,
+                    root_kind,
+                    source,
+                    discovery,
+                    bound_sources,
+                    consumed_sources,
+                    retired_sources,
+                    retired,
+                    token_count,
+                    cleanup,
+                    completed,
+                ) = (
+                    occurrence,
+                    PreparedOutputRootKind::Required(TypeId::of_for_test::<()>()),
+                    Some(source),
+                    None,
+                    None,
+                    Vec::new(),
+                    Vec::new(),
+                    None,
+                    0,
+                    Default::default(),
+                    false,
+                );
+                SourceCustody::new_for_test(
+                    occurrence,
+                    root_kind,
+                    source,
+                    discovery,
+                    consumed_sources,
+                    retired_sources,
+                    bound_sources,
+                    retired,
+                    token_count,
+                    cleanup,
+                    completed,
+                )
+            });
     }
     for slot in 1..=3 {
         let mut row = record(occurrence, DemandState::Admitted, 0);
@@ -57,8 +100,7 @@ SourceCustody::new_for_test(occurrence, root_kind, source, discovery, consumed_s
     assert!(released.is_some());
     assert!(!state.source_custody.contains_key(&oldest));
     assert_eq!(state.source_custody.len(), 7);
-    assert!((*state
-        .records_for_test())
+    assert!((*state.records_for_test())
         .values_for_test()
         .all(|row| !(*row.source_commits_for_test()).contains(&oldest)));
 }

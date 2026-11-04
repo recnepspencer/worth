@@ -93,8 +93,7 @@ pub fn retain_commit_basis(
     let retention = runtime
         .retain_component_basis(&basis)
         .expect("the committed fixture's native basis remains available");
-    (*provider
-        .receipt_basis_retention_for_test())
+    (*provider.receipt_basis_retention_for_test())
         .lock()
         .unwrap_or_else(|poisoned| poisoned.into_inner())
         .retain_for_test(committed.commit.commit_id, retention, false);

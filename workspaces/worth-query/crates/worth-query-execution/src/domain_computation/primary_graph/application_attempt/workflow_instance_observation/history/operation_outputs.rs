@@ -16,8 +16,7 @@ use worth_relational::facade::{
     snapshots::SnapshotHandle,
 };
 
-pub struct ObservedOperationOutputs
-{
+pub struct ObservedOperationOutputs {
     pub(in crate::domain_computation::primary_graph::application_attempt) binding: String,
     pub(in crate::domain_computation::primary_graph::application_attempt) entries:
         BTreeMap<String, ObservedOperationOutput>,

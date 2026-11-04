@@ -18,8 +18,7 @@ pub struct WorthQueryPendingApplicationPublicationRegistry {
     corrections: BTreeMap<[u8; 32], ProductBranchIncarnation>,
 }
 
-pub struct WorthQueryApplicationPublicationRecoveryReservation
-{
+pub struct WorthQueryApplicationPublicationRecoveryReservation {
     registry: Arc<Mutex<WorthQueryPendingApplicationPublicationRegistry>>,
     occurrence: ProductBranchIncarnation,
     slot: Arc<WorthQueryApplicationPublicationRecoverySlot>,

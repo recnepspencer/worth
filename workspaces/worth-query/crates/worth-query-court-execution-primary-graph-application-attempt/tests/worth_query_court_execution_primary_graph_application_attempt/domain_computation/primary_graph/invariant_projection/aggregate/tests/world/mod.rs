@@ -223,13 +223,20 @@ impl AggregateWorld {
         let work = Cell::new(WorthQueryInvariantProjectionWork::default());
         let selected = self
             ._runtime
-            .select_product_branch_for_test(execution, self._runtime.product_runtime().default_branch_for_test())
+            .select_product_branch_for_test(
+                execution,
+                self._runtime.product_runtime().default_branch_for_test(),
+            )
             .expect("aggregate product basis");
         let product = selected.product().publication_binding_for_test();
         let completed = self.authority.project_with_work_limit_for_test(
             execution,
             Some(maximum_work),
-            product.observation_for_test().basis().relational_basis().clone(),
+            product
+                .observation_for_test()
+                .basis()
+                .relational_basis()
+                .clone(),
             |reader| {
                 let result = reader.summarize_exclusive_incoming(
                     AggregateContribution::reference(),
@@ -273,9 +280,7 @@ impl AggregateWorld {
         source: worth_relational::facade::identity::EntityId,
         amount: i64,
     ) {
-        let locator = (*self
-            .authority
-            .layout_for_test())
+        let locator = (*self.authority.layout_for_test())
             .field_locator_for_test("AggregateSource", "SourceFacts", "SourceAmount")
             .expect("amount field is installed")
             .clone();

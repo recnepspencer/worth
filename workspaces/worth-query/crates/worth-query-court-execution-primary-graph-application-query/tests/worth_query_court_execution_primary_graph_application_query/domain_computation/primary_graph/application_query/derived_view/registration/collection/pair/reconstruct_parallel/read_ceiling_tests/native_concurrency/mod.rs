@@ -16,7 +16,9 @@ fn two_distinct_roots_hold_the_whole_native_read_without_the_owner_lock() {
     let scope = live_scope();
     let selected = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
+        .with_host_advancement(|phase| {
+            world.selected_product(&(phase).test_host_request_for_test())
+        })
         .expect("the fixture read owns its installed host call");
     let external = world.authenticate("alice", Duration::from_secs(60), &scope);
     let principal = world
@@ -54,12 +56,9 @@ fn two_distinct_roots_hold_the_whole_native_read_without_the_owner_lock() {
         .installed_schema()
         .certification_query(PublicScopedAccountSummaryQuery::reference())
         .unwrap();
-    let owner_probe = (*(*(*world
-        .application
-        .primary_provider_for_test())
-        .graph_for_test())
+    let owner_probe = (*(*(*world.application.primary_provider_for_test()).graph_for_test())
         .source_owner_for_test())
-        .read_lock_probe_for_test();
+    .read_lock_probe_for_test();
     assert!(!owner_probe.is_locked_for_test());
     world.application.with_host_advancement(|phase| {
         let host_custody = phase.test_host_request_for_test();

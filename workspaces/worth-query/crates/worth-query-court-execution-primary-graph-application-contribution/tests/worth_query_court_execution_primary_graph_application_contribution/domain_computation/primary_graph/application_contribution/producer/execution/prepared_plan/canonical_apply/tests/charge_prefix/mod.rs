@@ -30,7 +30,8 @@ fn completion_failure_publishes_no_member_or_suffix() {
                 OwnerPlan::new_for_test(
                     vec![PreparedCompute::declared_test_request_for_test(rank, false)],
                     move |mut slots| {
-                        let (actual_rank, _) = slots.pop().unwrap().into_value_for_test::<(usize, bool)>();
+                        let (actual_rank, _) =
+                            slots.pop().unwrap().into_value_for_test::<(usize, bool)>();
                         if actual_rank == FAILURE {
                             Err(actual_rank)
                         } else {

@@ -35,13 +35,10 @@ fn program_activation_changed_after_preparation_cannot_readmit_the_old_program()
     (*world.application.program_support_mut_for_test()) = Some(installed_program_support(
         &(*world.application.installed_schema_for_test()),
     ));
-    let layout = (*(*(*world
-        .application
-        .primary_provider_for_test())
-        .graph_for_test())
+    let layout = (*(*(*world.application.primary_provider_for_test()).graph_for_test())
         .layout_for_test())
-        .program_activation()
-        .clone();
+    .program_activation()
+    .clone();
     world
         .application
         .with_host_advancement(|phase| {
@@ -54,7 +51,9 @@ fn program_activation_changed_after_preparation_cannot_readmit_the_old_program()
         })
         .expect("the fixture read owns its installed host call");
     let request = live_scope();
-    let support = (*world.application.program_support_for_test()).as_ref().unwrap();
+    let support = (*world.application.program_support_for_test())
+        .as_ref()
+        .unwrap();
     let activation = support.activation().published_for_test().unwrap();
     let principal = world
         .application
@@ -65,7 +64,12 @@ fn program_activation_changed_after_preparation_cannot_readmit_the_old_program()
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
+            resolved_account(
+                &(phase).test_host_request_for_test(),
+                &world,
+                "open",
+                &request,
+            )
         })
         .expect("the fixture read owns its installed host call");
     let program = world
@@ -81,7 +85,9 @@ fn program_activation_changed_after_preparation_cannot_readmit_the_old_program()
             )
         })
         .expect("the fixture read owns its installed host call");
-    let presented = support.present_for_test(&rostered_program_revision()).unwrap();
+    let presented = support
+        .present_for_test(&rostered_program_revision())
+        .unwrap();
     world
         .application
         .with_host_advancement(|phase| {
@@ -160,7 +166,12 @@ fn a_program_action_on_an_unseeded_occurrence_names_the_unresolved_activation() 
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
+            resolved_account(
+                &(phase).test_host_request_for_test(),
+                &world,
+                "open",
+                &request,
+            )
         })
         .expect("the fixture read owns its installed host call");
     let predecessor = world
@@ -186,9 +197,7 @@ fn a_program_action_on_an_unseeded_occurrence_names_the_unresolved_activation() 
             )
         })
         .expect("the fixture read owns its installed host call");
-    let support = (*world
-        .application
-        .program_support_for_test())
+    let support = (*world.application.program_support_for_test())
         .as_ref()
         .expect("the fixture host retains its admitted program support");
     let presented = support
@@ -242,7 +251,12 @@ fn a_required_output_source_on_an_unseeded_occurrence_is_gated_like_its_siblings
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
+            resolved_account(
+                &(phase).test_host_request_for_test(),
+                &world,
+                "open",
+                &request,
+            )
         })
         .expect("the fixture read owns its installed host call");
     let predecessor = world
@@ -268,9 +282,7 @@ fn a_required_output_source_on_an_unseeded_occurrence_is_gated_like_its_siblings
             )
         })
         .expect("the fixture read owns its installed host call");
-    let support = (*world
-        .application
-        .program_support_for_test())
+    let support = (*world.application.program_support_for_test())
         .as_ref()
         .expect("the fixture host retains its admitted program support");
     let presented = support

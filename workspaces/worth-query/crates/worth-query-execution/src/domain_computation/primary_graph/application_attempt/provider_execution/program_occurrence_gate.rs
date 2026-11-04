@@ -24,9 +24,7 @@ use super::super::{
 
 /// The rostered program one occurrence resolved to, together with the exact
 /// stored rendering the attempt observed.
-pub struct WorthQueryOccurrenceProgram<
-    'support,
-> {
+pub struct WorthQueryOccurrenceProgram<'support> {
     entry: &'support WorthQueryProgramSupportEntry,
     rendering: AspectValue,
 }

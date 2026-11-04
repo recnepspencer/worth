@@ -27,7 +27,10 @@ pub fn elevation_status(
         .application
         .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch_for_test(),
+            world
+                .application
+                .product_runtime()
+                .default_branch_for_test(),
         )
         .expect("the selected product branch remains admitted")
         .resolve_entity(
@@ -39,9 +42,7 @@ pub fn elevation_status(
         )
         .unwrap();
     let field = CapabilityElevationStatusField::reference();
-    let locator = (*world
-        .application
-        .runtime_for_test())
+    let locator = (*world.application.runtime_for_test())
         .primary_graph()
         .unwrap()
         .layout_for_test()
@@ -65,9 +66,7 @@ pub fn review_status(
 ) -> CapabilityReviewStatus {
     let (review, kind) = resolved_review(phase_custody, execution, world);
     let field = CapabilityReviewStatusField::reference();
-    let locator = (*world
-        .application
-        .runtime_for_test())
+    let locator = (*world.application.runtime_for_test())
         .primary_graph()
         .unwrap()
         .layout_for_test()
@@ -85,7 +84,9 @@ pub fn has_exact_reviewer(
     reviewer: EntityId,
 ) -> bool {
     let (review, _) = resolved_review(phase_custody, execution, world);
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
     let relation_kind = (*graph
         .layout_for_test()
         .relation(CapabilityReviewer::reference().name())
@@ -126,7 +127,10 @@ pub fn has_exact_approver(
         .application
         .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch_for_test(),
+            world
+                .application
+                .product_runtime()
+                .default_branch_for_test(),
         )
         .expect("the selected product branch remains admitted")
         .resolve_entity(
@@ -137,7 +141,9 @@ pub fn has_exact_approver(
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap();
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
     let relation_kind = (*graph
         .layout_for_test()
         .relation(CapabilityElevationApprover::reference().name())
@@ -177,7 +183,10 @@ pub fn resolved_review(
         .application
         .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch_for_test(),
+            world
+                .application
+                .product_runtime()
+                .default_branch_for_test(),
         )
         .expect("the selected product branch remains admitted")
         .resolve_entity(
@@ -188,7 +197,10 @@ pub fn resolved_review(
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap();
-    (identity.entity_id_for_test(), identity.entity_kind_for_test())
+    (
+        identity.entity_id_for_test(),
+        identity.entity_kind_for_test(),
+    )
 }
 
 pub fn observed_field<Schema>(
@@ -203,7 +215,10 @@ where
 {
     let graph = (*runtime.runtime_for_test()).primary_graph().unwrap();
     let selected = runtime
-        .select_product_branch_for_test(execution, runtime.product_runtime().default_branch_for_test())
+        .select_product_branch_for_test(
+            execution,
+            runtime.product_runtime().default_branch_for_test(),
+        )
         .expect("the selected product branch remains admitted");
     graph
         .integration_handle_for_test()

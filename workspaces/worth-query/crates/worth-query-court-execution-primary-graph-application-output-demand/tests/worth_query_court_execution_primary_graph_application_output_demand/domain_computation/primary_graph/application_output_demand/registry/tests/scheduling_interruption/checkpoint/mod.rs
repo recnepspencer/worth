@@ -62,7 +62,9 @@ fn checkpoint_finishes_keep_caller_stops_off_the_shared_row() {
             );
             (*denial.readmission_failure_mut_for_test()) = Some("original delivery refusal");
             if let Some(prepared) = prepared {
-                assert!(prepared.finish_for_test(claim, checkpoint, Some(&denial)).is_ok());
+                assert!(prepared
+                    .finish_for_test(claim, checkpoint, Some(&denial))
+                    .is_ok());
             } else {
                 fixture
                     .registry
@@ -71,7 +73,9 @@ fn checkpoint_finishes_keep_caller_stops_off_the_shared_row() {
             }
             {
                 let state = (*fixture.registry.state_for_test()).lock().unwrap();
-                let DemandState::Output(output) = &(*(*state.records_for_test())[&(*fixture.interest.key_for_test())].state_for_test())
+                let DemandState::Output(output) = &(*(*state.records_for_test())
+                    [&(*fixture.interest.key_for_test())]
+                    .state_for_test())
                 else {
                     panic!("publication remains retained");
                 };
@@ -100,23 +104,32 @@ fn checkpoint_finishes_keep_caller_stops_off_the_shared_row() {
                     let state = (*fixture.registry.state_for_test()).lock().unwrap();
                     let row = &(*state.records_for_test())[&(*fixture.interest.key_for_test())];
                     assert_eq!((*row.prerequisites_for_test()).len(), 1);
-                    assert_eq!((*row.prerequisites_for_test())[0].as_ref(), &(*fixture.upstream.key_for_test()));
+                    assert_eq!(
+                        (*row.prerequisites_for_test())[0].as_ref(),
+                        &(*fixture.upstream.key_for_test())
+                    );
                     assert_eq!((*row.framework_required_count_for_test()), 1);
                     assert_eq!(
-                        (*(*state.records_for_test())[&(*fixture.upstream.key_for_test())].framework_required_count_for_test()),
+                        (*(*state.records_for_test())[&(*fixture.upstream.key_for_test())]
+                            .framework_required_count_for_test()),
                         1
                     );
                     assert_eq!((*row.performed_obligations_for_test()).len(), 1);
-                    assert_eq!((*(*row.performed_obligations_for_test())[0].source_commit_for_test()), fixture.commit);
+                    assert_eq!(
+                        (*(*row.performed_obligations_for_test())[0].source_commit_for_test()),
+                        fixture.commit
+                    );
                     assert_eq!(
                         (*(*row.performed_obligations_for_test())[0].source_for_test()),
                         (*(*fixture.interest.key_for_test()).source_for_test())
                     );
-                    let source = (*row
-                        .performed_source_for_test())
+                    let source = (*row.performed_source_for_test())
                         .as_ref()
                         .expect("original source retained");
-                    assert_eq!(Arc::as_ptr(&(*source.change_for_test())).cast::<()>(), fixture.change);
+                    assert_eq!(
+                        Arc::as_ptr(&(*source.change_for_test())).cast::<()>(),
+                        fixture.change
+                    );
                     assert!(!(*row.pending_cleanup_queued_for_test()));
                 }
                 assert!(matches!(

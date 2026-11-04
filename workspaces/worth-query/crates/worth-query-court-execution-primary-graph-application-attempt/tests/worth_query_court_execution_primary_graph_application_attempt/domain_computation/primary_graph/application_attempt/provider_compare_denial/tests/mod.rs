@@ -176,9 +176,9 @@ fn preparation_control_refusal_and_ordinary_interruption_keep_different_head_pos
     use worth_query_execution::facade::domain_computation::WorthQueryProviderSessionCommitControlStopped as Stopped;
     use worth_query_execution::facade::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
     for kind in [Control::Cancelled, Control::TimedOut] {
-        let Progression::Denied(denial) =
-            control_stopped_outcome(Stopped::execution_preparation_for_test(kind, "owner control stop"))
-        else {
+        let Progression::Denied(denial) = control_stopped_outcome(
+            Stopped::execution_preparation_for_test(kind, "owner control stop"),
+        ) else {
             panic!("preparation control refusal lost HEAD retry route");
         };
         assert_eq!(denial.stage(), Stage::ProviderCommit);
@@ -261,8 +261,9 @@ fn nonallocation_session_evidence_preserves_the_mapped_detail_and_read_set_stage
         "native session detail",
         Default::default(),
     );
-    let application = Denial::provider_rejected_with_detail_for_test(Stage::ProviderCommit, "mapped detail")
-        .with_provider_session_failure_for_test(failure);
+    let application =
+        Denial::provider_rejected_with_detail_for_test(Stage::ProviderCommit, "mapped detail")
+            .with_provider_session_failure_for_test(failure);
     assert_eq!(application.detail(), Some("mapped detail"));
     assert!(application.allocation_denial().is_none());
     let read = denied(Compare::DecisionReadSet(
@@ -336,8 +337,10 @@ fn native_cause_context_and_commit_log_survive_application_kind_mapping() {
         worth_query_execution::facade::domain_computation::WorthQueryInvariantExecutionDenialKind::ExecutionDenied(cause),
         error.detail(),
     );
-    let invariant =
-        Denial::invariant_execution_denied_for_test(Stage::InvariantExecution, invariant_failure.clone());
+    let invariant = Denial::invariant_execution_denied_for_test(
+        Stage::InvariantExecution,
+        invariant_failure.clone(),
+    );
     assert_eq!(invariant.kind(), denial.kind());
     assert_eq!(
         invariant.execution_denial_cause(),
@@ -358,8 +361,11 @@ fn read_fold_checked_session_read_stop_is_the_commit_denial_cause() {
     use worth_query_execution::facade::domain_computation::WorthQueryProviderSessionFailure as Failure;
     use worth_query_execution::facade::domain_computation::WorthQueryProviderSessionProtocolStage as Protocol;
     for stop in [Control::Cancelled, Control::TimedOut] {
-        let failure =
-            Failure::checked_read_stopped_for_test(Err(stop), Protocol::Commit, "native read stopped");
+        let failure = Failure::checked_read_stopped_for_test(
+            Err(stop),
+            Protocol::Commit,
+            "native read stopped",
+        );
         let denial = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_compare_denial::provider_session_denied(failure);
         assert_eq!(denial.execution_denial_cause(), Some(Err(stop)));
         assert_eq!(denial.stage(), Stage::ProviderCommit);

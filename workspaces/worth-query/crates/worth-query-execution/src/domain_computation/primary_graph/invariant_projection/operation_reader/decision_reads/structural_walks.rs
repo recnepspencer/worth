@@ -17,8 +17,7 @@ struct Issued {
     contracts: Arc<Contracts>,
     cookie: u64,
 }
-pub enum WalkRecordDenial
-{
+pub enum WalkRecordDenial {
     Execution(Cause),
     Conflict,
 }

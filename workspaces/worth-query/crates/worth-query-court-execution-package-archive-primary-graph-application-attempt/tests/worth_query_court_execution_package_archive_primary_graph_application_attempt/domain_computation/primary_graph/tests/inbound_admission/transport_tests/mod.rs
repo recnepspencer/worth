@@ -38,13 +38,14 @@ fn synchronous_completed_and_later_signed_callback_share_one_world_terminal() {
     let receipt = { world.commit_dispatch(91, "synchronous-rail-completed") };
     assert_eq!(transport.0.load(Ordering::Acquire), 1);
     let record = receipt.dispatch_outbox().expect("co-committed dispatch");
-    let terminal = (*world
-        .application
-        .primary_provider_for_test())
+    let terminal = (*world.application.primary_provider_for_test())
         .lookup_completed_inbound_for_test(record.correlation())
         .expect("complete derived index")
         .expect("Completed enters World terminal owner");
-    assert_eq!(terminal.operation_for_test(), record.operation_slot().unwrap());
+    assert_eq!(
+        terminal.operation_for_test(),
+        record.operation_slot().unwrap()
+    );
     assert!(terminal.authenticated_message_identity_for_test().is_none());
     assert_eq!(
         terminal.original_world_commit_for_test(),
@@ -78,9 +79,7 @@ fn synchronous_completed_and_later_signed_callback_share_one_world_terminal() {
     ));
     assert_eq!(transport.0.load(Ordering::Acquire), 1);
     assert_eq!(
-        (*world
-            .application
-            .primary_provider_for_test())
+        (*world.application.primary_provider_for_test())
             .lookup_completed_inbound_for_test(record.correlation())
             .unwrap()
             .unwrap()
@@ -156,12 +155,12 @@ fn transport_candidate_rejects_another_owner_and_terminal_matches_later_attempt(
         Err(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::inbound_completion::WorthQueryInboundCompletionPreparationDenial::DispatchOwnerMismatch)
     )) }).expect("the fixture read owns its installed host call");
 
-    let evidence =
-        InstalledTransportCompletion::from_observed_dispatch_for_test(first_owner.clone(), &completed)
-            .unwrap();
-    let in_flight = (*world
-        .application
-        .primary_provider_for_test())
+    let evidence = InstalledTransportCompletion::from_observed_dispatch_for_test(
+        first_owner.clone(),
+        &completed,
+    )
+    .unwrap();
+    let in_flight = (*world.application.primary_provider_for_test())
         .begin_external_dispatch_in_flight_for_test(&first_owner)
         .unwrap()
         .unwrap();
@@ -175,20 +174,20 @@ fn transport_candidate_rejects_another_owner_and_terminal_matches_later_attempt(
         .with_host_advancement(|active_phase| {
             let phase = &active_phase;
             assert!(matches!(
-                world.application.resume_installed_transport_completion_for_test(
-                    &phase.borrowed_request_for_test(),
-                    phase,
-                    first_owner.record().correlation(),
-                    &request
-                ),
+                world
+                    .application
+                    .resume_installed_transport_completion_for_test(
+                        &phase.borrowed_request_for_test(),
+                        phase,
+                        first_owner.record().correlation(),
+                        &request
+                    ),
                 InstalledTransportResumeOutcome::Performed,
             ));
         })
         .expect("fixture owner admits its advancement");
 
-    let terminal = (*world
-        .application
-        .primary_provider_for_test())
+    let terminal = (*world.application.primary_provider_for_test())
         .lookup_completed_inbound_for_test(first_owner.record().correlation())
         .unwrap()
         .unwrap();
@@ -219,15 +218,11 @@ fn two_real_completed_attempts_share_the_first_world_terminal() {
         .application
         .admit_external_dispatch_attempt_for_test(owner.clone())
         .unwrap();
-    let first_lease = (*world
-        .application
-        .primary_provider_for_test())
+    let first_lease = (*world.application.primary_provider_for_test())
         .begin_external_dispatch_in_flight_for_test(&owner)
         .unwrap()
         .unwrap();
-    let second_lease = (*world
-        .application
-        .primary_provider_for_test())
+    let second_lease = (*world.application.primary_provider_for_test())
         .begin_external_dispatch_in_flight_for_test(&owner)
         .unwrap()
         .unwrap();
@@ -245,7 +240,8 @@ fn two_real_completed_attempts_share_the_first_world_terminal() {
     );
 
     let first_evidence =
-        InstalledTransportCompletion::from_observed_dispatch_for_test(owner.clone(), &first).unwrap();
+        InstalledTransportCompletion::from_observed_dispatch_for_test(owner.clone(), &first)
+            .unwrap();
     world
         .application
         .record_installed_transport_completion_for_test(first_evidence, first_lease)
@@ -256,20 +252,20 @@ fn two_real_completed_attempts_share_the_first_world_terminal() {
         .with_host_advancement(|active_phase| {
             let phase = &active_phase;
             assert!(matches!(
-                world.application.resume_installed_transport_completion_for_test(
-                    &phase.borrowed_request_for_test(),
-                    phase,
-                    owner.record().correlation(),
-                    &request
-                ),
+                world
+                    .application
+                    .resume_installed_transport_completion_for_test(
+                        &phase.borrowed_request_for_test(),
+                        phase,
+                        owner.record().correlation(),
+                        &request
+                    ),
                 InstalledTransportResumeOutcome::Performed,
             ));
         })
         .expect("fixture owner admits its advancement");
 
-    let winner = (*world
-        .application
-        .primary_provider_for_test())
+    let winner = (*world.application.primary_provider_for_test())
         .lookup_completed_inbound_for_test(owner.record().correlation())
         .unwrap()
         .unwrap();
@@ -284,7 +280,8 @@ fn two_real_completed_attempts_share_the_first_world_terminal() {
         "a physical attempt after the World terminal names completion, not a mismatch"
     );
     let late_evidence =
-        InstalledTransportCompletion::from_observed_dispatch_for_test(owner.clone(), &later).unwrap();
+        InstalledTransportCompletion::from_observed_dispatch_for_test(owner.clone(), &later)
+            .unwrap();
     world
         .application
         .record_installed_transport_completion_for_test(late_evidence, second_lease)
@@ -294,12 +291,14 @@ fn two_real_completed_attempts_share_the_first_world_terminal() {
         .with_host_advancement(|active_phase| {
             let phase = &active_phase;
             assert!(matches!(
-                world.application.resume_installed_transport_completion_for_test(
-                    &phase.borrowed_request_for_test(),
-                    phase,
-                    owner.record().correlation(),
-                    &request
-                ),
+                world
+                    .application
+                    .resume_installed_transport_completion_for_test(
+                        &phase.borrowed_request_for_test(),
+                        phase,
+                        owner.record().correlation(),
+                        &request
+                    ),
                 InstalledTransportResumeOutcome::Performed,
             ));
         })
@@ -308,9 +307,7 @@ fn two_real_completed_attempts_share_the_first_world_terminal() {
     assert!(!world
         .application
         .has_retained_installed_transport_completion_for_test(owner.record().correlation()));
-    let after = (*world
-        .application
-        .primary_provider_for_test())
+    let after = (*world.application.primary_provider_for_test())
         .lookup_completed_inbound_for_test(owner.record().correlation())
         .unwrap()
         .unwrap();

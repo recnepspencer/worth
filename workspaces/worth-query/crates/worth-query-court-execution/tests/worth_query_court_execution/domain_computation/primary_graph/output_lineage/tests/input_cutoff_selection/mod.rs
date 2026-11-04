@@ -28,7 +28,12 @@ fn cutoff_candidate_pins_the_selected_ancestor_partition() {
     let product = world
         .application
         .product_runtime()
-        .admit_product_branch_for_test(world.application.product_runtime().default_branch_for_test())
+        .admit_product_branch_for_test(
+            world
+                .application
+                .product_runtime()
+                .default_branch_for_test(),
+        )
         .expect("a real product occurrence is live");
     let parent = product.observation_for_test();
     let intent = ProductBranchCreationIntent::from_source(
@@ -54,7 +59,9 @@ fn cutoff_candidate_pins_the_selected_ancestor_partition() {
         panic!("the product owner must create the fork");
     };
 
-    let runtime_authority = (*world.application.runtime_for_test()).authority_identity().as_u64();
+    let runtime_authority = (*world.application.runtime_for_test())
+        .authority_identity()
+        .as_u64();
     let schema = (*world.application.installed_schema_for_test()).binding_identity();
     let scope_entity = worth_relational::facade::identity::EntityId::new(
         worth_relational::facade::identity::PartitionId::main(),
@@ -72,7 +79,12 @@ fn cutoff_candidate_pins_the_selected_ancestor_partition() {
         scope_entity.local_slot_value(),
         scope_entity.generation_value(),
     );
-    let source = SemanticSource::new_for_test(runtime_authority, schema.clone(), scope.scope(), OutputBindingIdentity::declared_for_test("RestoredOutputBinding"));
+    let source = SemanticSource::new_for_test(
+        runtime_authority,
+        schema.clone(),
+        scope.scope(),
+        OutputBindingIdentity::declared_for_test("RestoredOutputBinding"),
+    );
     let target_partition = [0x11; 32];
     let sibling_partition = [0x22; 32];
     let target = Arc::new(WorthQueryApplicationOutputCorrespondence::default());
@@ -143,8 +155,7 @@ fn cutoff_candidate_pins_the_selected_ancestor_partition() {
         ProductCoordinate::new_for_test(parent.lifecycle_incarnation(), next_generation),
         Some(target_partition),
     );
-    let prior = (*lineage
-        .partition_index_for_test())
+    let prior = (*lineage.partition_index_for_test())
         .latest_admitted_for_test(
             execution,
             &source,

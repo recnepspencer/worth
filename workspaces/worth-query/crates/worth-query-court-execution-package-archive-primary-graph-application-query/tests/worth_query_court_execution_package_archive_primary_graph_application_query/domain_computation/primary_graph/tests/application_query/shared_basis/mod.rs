@@ -15,9 +15,14 @@ fn shared_basis_keeps_one_exact_native_owner_until_last_explicit_release() {
 
     let selected = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
+        .with_host_advancement(|phase| {
+            world.selected_product(&(phase).test_host_request_for_test())
+        })
         .expect("the fixture read owns its installed host call");
-    let snapshot = selected.application_basis_for_test().snapshot_handle().clone();
+    let snapshot = selected
+        .application_basis_for_test()
+        .snapshot_handle()
+        .clone();
     let identity = selected.application_basis_for_test().identity().clone();
     let shared = match selected.prepare_shared_query_basis_for_test() {
         Ok(shared) => shared,
@@ -48,10 +53,12 @@ fn shared_basis_keeps_one_exact_native_owner_until_last_explicit_release() {
     world
         .application
         .with_host_advancement(|_phase| {
-            assert!((*(*world.application.primary_provider_for_test()).graph_for_test()).with_runtime(
-                request_execution,
-                |runtime| runtime.read_truth().project_snapshot(&snapshot).is_some()
-            ))
+            assert!(
+                (*(*world.application.primary_provider_for_test()).graph_for_test()).with_runtime(
+                    request_execution,
+                    |runtime| runtime.read_truth().project_snapshot(&snapshot).is_some()
+                )
+            )
         })
         .expect("the fixture read owns its installed host call");
     drop(product_b);
@@ -62,10 +69,12 @@ fn shared_basis_keeps_one_exact_native_owner_until_last_explicit_release() {
     world
         .application
         .with_host_advancement(|_phase| {
-            assert!((*(*world.application.primary_provider_for_test()).graph_for_test()).with_runtime(
-                request_execution,
-                |runtime| runtime.read_truth().project_snapshot(&snapshot).is_none()
-            ))
+            assert!(
+                (*(*world.application.primary_provider_for_test()).graph_for_test()).with_runtime(
+                    request_execution,
+                    |runtime| runtime.read_truth().project_snapshot(&snapshot).is_none()
+                )
+            )
         })
         .expect("the fixture read owns its installed host call");
 }
@@ -76,7 +85,9 @@ fn exclusive_basis_refuses_identity_copy_and_releases_its_sole_owner() {
     let observer = world.application.application_query_basis_observer();
     let selected = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
+        .with_host_advancement(|phase| {
+            world.selected_product(&(phase).test_host_request_for_test())
+        })
         .expect("the fixture read owns its installed host call");
     let identity = selected.application_basis_for_test().identity().clone();
     // ee07da2b0e removed the work/byte forecast from promotion, so promotion
@@ -173,9 +184,14 @@ fn shared_basis_drop_releases_the_final_native_owner() {
 
     let selected = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
+        .with_host_advancement(|phase| {
+            world.selected_product(&(phase).test_host_request_for_test())
+        })
         .expect("the fixture read owns its installed host call");
-    let snapshot = selected.application_basis_for_test().snapshot_handle().clone();
+    let snapshot = selected
+        .application_basis_for_test()
+        .snapshot_handle()
+        .clone();
     let shared = match selected.prepare_shared_query_basis_for_test() {
         Ok(shared) => shared,
         Err((_, stop)) => panic!("funded sharing must prepare: {stop:?}"),
@@ -191,10 +207,12 @@ fn shared_basis_drop_releases_the_final_native_owner() {
     world
         .application
         .with_host_advancement(|_phase| {
-            assert!((*(*world.application.primary_provider_for_test()).graph_for_test()).with_runtime(
-                request_execution,
-                |runtime| runtime.read_truth().project_snapshot(&snapshot).is_none()
-            ))
+            assert!(
+                (*(*world.application.primary_provider_for_test()).graph_for_test()).with_runtime(
+                    request_execution,
+                    |runtime| runtime.read_truth().project_snapshot(&snapshot).is_none()
+                )
+            )
         })
         .expect("the fixture read owns its installed host call");
 }

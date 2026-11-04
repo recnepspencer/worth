@@ -49,7 +49,10 @@ fn measured_call_sequence_refuses_before_copy_and_holds_its_view_until_final_dro
         .unwrap();
     let sequence = &(*prior.call_sequence_for_test());
     let before = sequence.bytes_for_test();
-    let (identity, partition) = (*prior.partitions_for_test()).iter_for_test().next().unwrap();
+    let (identity, partition) = (*prior.partitions_for_test())
+        .iter_for_test()
+        .next()
+        .unwrap();
     let change = || {
         std::iter::once((
             ComputationRead::Partition(*identity),
@@ -75,7 +78,10 @@ fn measured_call_sequence_refuses_before_copy_and_holds_its_view_until_final_dro
         &request,
     );
     let view = sequence.patched_for_test(change(), &fresh).unwrap();
-    assert!(Arc::ptr_eq(sequence.shape_for_test(), view.shape_for_test()));
+    assert!(Arc::ptr_eq(
+        sequence.shape_for_test(),
+        view.shape_for_test()
+    ));
     let clone = Arc::clone(&view);
     assert!(fresh.reserve(1 << 30).is_err());
     drop(view);
@@ -96,9 +102,7 @@ fn measured_call_scope_index_requires_a_reaching_call_inside_the_carried_range()
         .typed_for_test())
         .downcast_ref::<worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::retained::RetainedPartitions<Parity, Number, u64>>()
         .unwrap();
-    let entity = (*(*sealed
-        .state_for_test())
-        .facts_for_test())
+    let entity = (*(*sealed.state_for_test()).facts_for_test())
         .facts_for_test()
         .find_map(|(_, fact, _)| match fact {
             WorthQueryApplicationObservedFact::Field { entity_id, .. } => Some(*entity_id),
@@ -106,10 +110,16 @@ fn measured_call_scope_index_requires_a_reaching_call_inside_the_carried_range()
         })
         .unwrap();
     let sequence = &(*prior.call_sequence_for_test());
-    assert!(sequence.contains_in(entity, &(sequence.prefix_for_test()..sequence.shape_for_test().len_for_test())));
+    assert!(sequence.contains_in(
+        entity,
+        &(sequence.prefix_for_test()..sequence.shape_for_test().len_for_test())
+    ));
     assert!(
         !sequence.contains_in(entity, &(0..sequence.prefix_for_test())),
         "naming the same old sequence grants no reach without the reaching call"
     );
-    assert!(!sequence.contains_in(entity, &(sequence.prefix_for_test()..sequence.prefix_for_test())));
+    assert!(!sequence.contains_in(
+        entity,
+        &(sequence.prefix_for_test()..sequence.prefix_for_test())
+    ));
 }

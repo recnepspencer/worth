@@ -31,10 +31,11 @@ impl TestsWorthQueryPrimaryGraphProviderForTest for WorthQueryPrimaryGraphProvid
         cancellation: &WorthQueryCancellationSource,
         foreign: &WorthQueryPrimaryGraphProvider,
     ) {
-        let control =
-            StorageControl::new_for_test(ExecutionAllocationPolicy::SystemAllocation, Some(request));
-        let (table, _) = (*self
-            .attempts_for_test())
+        let control = StorageControl::new_for_test(
+            ExecutionAllocationPolicy::SystemAllocation,
+            Some(request),
+        );
+        let (table, _) = (*self.attempts_for_test())
             .lock()
             .unwrap()
             .shared_observed_facts_for_test(authority.session_for_test())
@@ -137,7 +138,13 @@ impl TestsWorthQueryPrimaryGraphProviderForTest for WorthQueryPrimaryGraphProvid
         cancellation.cancel();
         let denied = authority
             .compare_decision_read_set_with_for_test(receipt, |evidence, admission| {
-                comparison.compare_for_test(execution, authority.session_for_test(), evidence, admission, control)
+                comparison.compare_for_test(
+                    execution,
+                    authority.session_for_test(),
+                    evidence,
+                    admission,
+                    control,
+                )
             })
             .err()
             .unwrap();

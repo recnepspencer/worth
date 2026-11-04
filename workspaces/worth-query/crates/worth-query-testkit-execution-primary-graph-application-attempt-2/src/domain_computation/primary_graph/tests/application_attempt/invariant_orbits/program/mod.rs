@@ -37,7 +37,10 @@ pub fn swap_successors<const O: bool>(
                 .application
                 .select_product_branch_for_test(
                     &execution,
-                    world.application.product_runtime().default_branch_for_test(),
+                    world
+                        .application
+                        .product_runtime()
+                        .default_branch_for_test(),
                 )
                 .unwrap();
             let entities = pairs.map(|(from, to)| {
@@ -143,7 +146,10 @@ where
         .application
         .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch_for_test(),
+            world
+                .application
+                .product_runtime()
+                .default_branch_for_test(),
         )
         .unwrap();
     let external = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::authentication::authenticate_external(

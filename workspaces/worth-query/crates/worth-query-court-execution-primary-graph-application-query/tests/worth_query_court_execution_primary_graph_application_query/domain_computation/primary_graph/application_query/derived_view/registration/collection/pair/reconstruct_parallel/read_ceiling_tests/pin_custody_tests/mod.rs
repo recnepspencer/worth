@@ -163,8 +163,7 @@ pub fn check(case: usize) {
             }
             let graph = &(*(*world.application.primary_provider_for_test()).graph_for_test());
             let label = AccountLabel::reference();
-            let locator = (*graph
-                .layout_for_test())
+            let locator = (*graph.layout_for_test())
                 .field_locator_for_test(label.entity(), label.aspect(), label.field())
                 .unwrap()
                 .clone();
@@ -246,7 +245,10 @@ pub fn check(case: usize) {
             let (actual, _) = rebound
                 .execute_for_test(&execution, |native, _| native.snapshot().version_id())
                 .unwrap();
-            assert_eq!(actual, (*later.basis_for_test()).snapshot_handle().version_id());
+            assert_eq!(
+                actual,
+                (*later.basis_for_test()).snapshot_handle().version_id()
+            );
         })
         .unwrap();
 }

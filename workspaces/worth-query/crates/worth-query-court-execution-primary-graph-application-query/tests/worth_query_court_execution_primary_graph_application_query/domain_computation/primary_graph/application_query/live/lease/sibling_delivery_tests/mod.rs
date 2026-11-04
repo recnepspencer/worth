@@ -38,7 +38,12 @@ fn sibling_commit_wakes_only_its_exact_product_partition() {
     let source = world
         .application
         .product_runtime()
-        .admit_product_branch_for_test(world.application.product_runtime().default_branch_for_test())
+        .admit_product_branch_for_test(
+            world
+                .application
+                .product_runtime()
+                .default_branch_for_test(),
+        )
         .unwrap();
     let intent = worth_runtime_world::facade::ProductBranchCreationIntent::from_source(
         "live-delivery-sibling",

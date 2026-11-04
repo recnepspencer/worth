@@ -47,9 +47,7 @@ struct CompletedPostingRebase {
     after: PositionedRelationalSnapshot,
 }
 #[derive(Clone, Debug)]
-pub struct PostingContinuation(
-    Arc<CompletedPostingRebase>,
-);
+pub struct PostingContinuation(Arc<CompletedPostingRebase>);
 impl PartialEq for PostingContinuation {
     fn eq(&self, other: &Self) -> bool {
         Arc::ptr_eq(&self.0, &other.0)

@@ -14,13 +14,18 @@ fn birth_subject_provenance_and_start_actor_remain_readable() {
     let (support, revision, _) = installed_provenance_support(world.application.installed_schema());
     let payer = payer();
     let execution = ExecutionRequest::leased(&payer);
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
     let layout = (*graph.layout_for_test()).workflow().clone();
     let (_, product, _lease) = world
         .application
         .select_product_branch_for_test(
             &execution,
-            world.application.product_runtime().default_branch_for_test(),
+            world
+                .application
+                .product_runtime()
+                .default_branch_for_test(),
         )
         .unwrap()
         .into_parts_for_test();
@@ -34,12 +39,18 @@ fn birth_subject_provenance_and_start_actor_remain_readable() {
         "birth-read",
         actor.entity_for_test().partition_id,
     );
-    let subject_kind = (*graph.layout_for_test()).entity_kind_for_test(Account::IDENTIFIER).unwrap();
+    let subject_kind = (*graph.layout_for_test())
+        .entity_kind_for_test(Account::IDENTIFIER)
+        .unwrap();
     let before = selected(&world, &execution);
     let inventories = graph
         .integration_handle_for_test()
         .with_runtime(&execution, |runtime| {
-            [subject_kind, (*(*layout.instance_for_test()).entity_kind_for_test())].map(|kind| {
+            [
+                subject_kind,
+                (*(*layout.instance_for_test()).entity_kind_for_test()),
+            ]
+            .map(|kind| {
                 runtime
                     .read_truth()
                     .visible_entities_of_kind(

@@ -75,7 +75,9 @@ pub fn installation() -> (
     use worth_signal::facade::SignalConditionalVersionComparator;
     let world = installed_authorization_world(true);
     let bridge = RuntimeBridge::builder()
-        .with_relational_source((*(*world.application.product_runtime_for_test()).source_for_test()).clone())
+        .with_relational_source(
+            (*(*world.application.product_runtime_for_test()).source_for_test()).clone(),
+        )
         .with_signal_sink(UnusedSink)
         .register_mapping(BridgeMappingRegistration::new(
             BridgeMappingId::from_stable_name("scheduling-busy"),

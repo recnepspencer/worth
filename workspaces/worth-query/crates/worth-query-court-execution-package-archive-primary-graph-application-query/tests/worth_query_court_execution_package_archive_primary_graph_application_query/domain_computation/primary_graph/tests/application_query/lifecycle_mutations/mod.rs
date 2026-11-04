@@ -20,13 +20,10 @@ pub fn disable_mapping(
     world: &AuthorizationWorld,
     mapping_id: EntityId,
 ) {
-    let graph = (*world
-        .application
-        .runtime_for_test())
+    let graph = (*world.application.runtime_for_test())
         .primary_graph()
         .expect("test world publishes a primary graph");
-    let layout = (*graph
-        .layout_for_test())
+    let layout = (*graph.layout_for_test())
         .principal_binding_for_test(world.binding.binding())
         .expect("test binding is installed")
         .clone();
@@ -55,13 +52,10 @@ pub fn revoke_account_ownership(
     world: &AuthorizationWorld,
     account: EntityId,
 ) {
-    let graph = (*world
-        .application
-        .runtime_for_test())
+    let graph = (*world.application.runtime_for_test())
         .primary_graph()
         .expect("test world publishes a primary graph");
-    let relation_kind = (*(*graph
-        .layout_for_test())
+    let relation_kind = (*(*graph.layout_for_test())
         .relation(AccountOwner::reference().name())
         .expect("account ownership is installed")
         .kind_for_test());

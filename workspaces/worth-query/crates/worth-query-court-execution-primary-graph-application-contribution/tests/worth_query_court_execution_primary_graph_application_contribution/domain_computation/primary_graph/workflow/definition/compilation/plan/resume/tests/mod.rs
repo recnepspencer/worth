@@ -104,27 +104,62 @@ pub fn definition(definition_slot: u64) -> CompiledWorkflowDefinition {
         .into_iter()
         .zip(kinds)
         .enumerate()
-        .map(|(ordinal, (path, kind))| CompiledWorkflowNode::new_for_test(entity(node_slot + ordinal as u64), Arc::new(CompiledWorkflowNodeMeaning::new_for_test(path.to_owned(), kind))))
+        .map(|(ordinal, (path, kind))| {
+            CompiledWorkflowNode::new_for_test(
+                entity(node_slot + ordinal as u64),
+                Arc::new(CompiledWorkflowNodeMeaning::new_for_test(
+                    path.to_owned(),
+                    kind,
+                )),
+            )
+        })
         .collect::<Vec<_>>();
     let semantic_connections = (0..2)
-        .map(|source| CompiledWorkflowSemanticConnection::new_for_test(source, source + 1, Arc::new(CompiledWorkflowConnectionKind::Control(
-                ApplicationWorkflowControlOutcome::Completed,
-            ))))
+        .map(|source| {
+            CompiledWorkflowSemanticConnection::new_for_test(
+                source,
+                source + 1,
+                Arc::new(CompiledWorkflowConnectionKind::Control(
+                    ApplicationWorkflowControlOutcome::Completed,
+                )),
+            )
+        })
         .collect::<Vec<_>>();
     let connections = semantic_connections
         .iter()
         .enumerate()
-        .map(|(ordinal, semantic)| CompiledWorkflowConnection::new_for_test(entity(definition_slot + ordinal as u64 + 1), nodes[(*semantic.source_for_test())].entity_for_test(), nodes[(*semantic.target_for_test())].entity_for_test(), Arc::clone(&(*semantic.kind_for_test()))))
+        .map(|(ordinal, semantic)| {
+            CompiledWorkflowConnection::new_for_test(
+                entity(definition_slot + ordinal as u64 + 1),
+                nodes[(*semantic.source_for_test())].entity_for_test(),
+                nodes[(*semantic.target_for_test())].entity_for_test(),
+                Arc::clone(&(*semantic.kind_for_test())),
+            )
+        })
         .collect::<Vec<_>>();
-    CompiledWorkflowDefinition::new_for_test(Arc::new(CompiledWorkflowPublicationPlan::new_for_test(entity(1), entity(definition_slot), 0, Arc::from(
+    CompiledWorkflowDefinition::new_for_test(
+        Arc::new(CompiledWorkflowPublicationPlan::new_for_test(
+            entity(1),
+            entity(definition_slot),
+            0,
+            Arc::from(
                 nodes
                     .iter()
                     .enumerate()
                     .map(|(ordinal, node)| (node.entity_for_test(), ordinal))
                     .collect::<Vec<_>>()
                     .into_boxed_slice(),
-            ), nodes.into_boxed_slice(), connections.into_boxed_slice(), Arc::from([]), Arc::new(CompiledWorkflowDispatch::build_for_test(3, &semantic_connections)))), ApplicationWorkflowDefinitionContentIdentity::from_recorded(
-            &"00".repeat(32),
-        )
-        .unwrap(), rostered_program_revision(), None)
+            ),
+            nodes.into_boxed_slice(),
+            connections.into_boxed_slice(),
+            Arc::from([]),
+            Arc::new(CompiledWorkflowDispatch::build_for_test(
+                3,
+                &semantic_connections,
+            )),
+        )),
+        ApplicationWorkflowDefinitionContentIdentity::from_recorded(&"00".repeat(32)).unwrap(),
+        rostered_program_revision(),
+        None,
+    )
 }

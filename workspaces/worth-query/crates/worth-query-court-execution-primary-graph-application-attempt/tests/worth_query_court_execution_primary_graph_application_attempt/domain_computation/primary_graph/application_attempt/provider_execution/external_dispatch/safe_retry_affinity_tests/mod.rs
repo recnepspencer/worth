@@ -123,7 +123,11 @@ pub fn performed_redispatch(
                 .application
                 .redispatch_admitted_external_effect(&phase, handle, authority, admission)
         })
-        .unwrap_or_else(|cause| Err(WorthQueryExternalRedispatchDenial::advancement_for_test(cause)))
+        .unwrap_or_else(|cause| {
+            Err(WorthQueryExternalRedispatchDenial::advancement_for_test(
+                cause,
+            ))
+        })
         .expect("the public redispatch route performs the exact bound outbox")
 }
 
@@ -182,7 +186,11 @@ fn redispatch_without_an_installed_transport_names_the_missing_transport() {
                 .application
                 .redispatch_admitted_external_effect(&phase, &handle, &authority, &admission)
         })
-        .unwrap_or_else(|cause| Err(WorthQueryExternalRedispatchDenial::advancement_for_test(cause)))
+        .unwrap_or_else(|cause| {
+            Err(WorthQueryExternalRedispatchDenial::advancement_for_test(
+                cause,
+            ))
+        })
         .expect_err("no installed transport means no physical attempt");
     assert_eq!(
         denied,
@@ -243,7 +251,11 @@ fn redispatch_names_fresh_authority_and_current_admission_failures_apart() {
                     .application
                     .redispatch_admitted_external_effect(&phase, &handle, authority, admission)
             })
-            .unwrap_or_else(|cause| Err(WorthQueryExternalRedispatchDenial::advancement_for_test(cause)))
+            .unwrap_or_else(|cause| {
+                Err(WorthQueryExternalRedispatchDenial::advancement_for_test(
+                    cause,
+                ))
+            })
             .expect_err("each presented failure refuses before transport")
     };
 

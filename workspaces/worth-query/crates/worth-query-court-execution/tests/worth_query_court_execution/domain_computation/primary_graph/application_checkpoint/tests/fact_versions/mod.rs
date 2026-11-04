@@ -72,10 +72,11 @@ fn current_facts_roundtrip_and_hostile_lengths_fail_before_allocation() {
     ];
     let bytes = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::encode(&expected).unwrap();
     let body = body_with_facts(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::FORMAT_VERSION, WIRE_VERSION, &bytes);
-    let decoded = checkpoint_from_body(body.clone()).decode_for_test().unwrap();
+    let decoded = checkpoint_from_body(body.clone())
+        .decode_for_test()
+        .unwrap();
     assert_eq!(
-        (*(*decoded.accepted_outputs_for_test())[0]
-            .producer_facts_for_test())
+        (*(*decoded.accepted_outputs_for_test())[0].producer_facts_for_test())
             .as_ref()
             .map(|bytes| bytes.as_slice()),
         Some(bytes.as_slice())
@@ -84,7 +85,10 @@ fn current_facts_roundtrip_and_hostile_lengths_fail_before_allocation() {
         (*(*decoded.accepted_outputs_for_test())[0].producer_fact_wire_version_for_test()),
         WIRE_VERSION
     );
-    assert_eq!((*(*decoded.accepted_outputs_for_test())[0].posture_for_test()), Posture::Performed);
+    assert_eq!(
+        (*(*decoded.accepted_outputs_for_test())[0].posture_for_test()),
+        Posture::Performed
+    );
     assert_eq!(
         worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::decode(
             &bytes,
@@ -144,7 +148,10 @@ fn unsupported_fact_wire_refuses_before_interpreting_its_payload() {
         ));
         let retained = checkpoint.clone();
         let original = checkpoint.bytes().to_vec();
-        let denial = checkpoint.decode_for_test().err().expect("unsupported inner wire");
+        let denial = checkpoint
+            .decode_for_test()
+            .err()
+            .expect("unsupported inner wire");
         assert_eq!(
             denial.into_installation_denial_for_test().kind(),
             Kind::UnsupportedCheckpointProducerFactVersion {

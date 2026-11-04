@@ -50,11 +50,15 @@ fn foreign_runtime_phase_refuses_query_and_commit_before_source_read() {
                 .expect("installed host call opens");
             let a_product = a
                 .application
-                .with_host_advancement(|phase| a.selected_product(&phase.test_host_request_for_test()))
+                .with_host_advancement(|phase| {
+                    a.selected_product(&phase.test_host_request_for_test())
+                })
                 .expect("installed host call opens");
             let b_product = b
                 .application
-                .with_host_advancement(|phase| b.selected_product(&phase.test_host_request_for_test()))
+                .with_host_advancement(|phase| {
+                    b.selected_product(&phase.test_host_request_for_test())
+                })
                 .expect("installed host call opens");
             reports();
             a.application.with_application_advancement(&request, |phase| {

@@ -19,14 +19,12 @@ fn a_failed_rebase_carries_out_what_its_effect_did_to_its_source_reads() {
             );
             let absent = |locator| WorthQueryApplicationObservedFact::AbsentField {
                 entity_id: entity,
-                kind: (*(*world
-                    .application
-                    .runtime_for_test())
+                kind: (*(*world.application.runtime_for_test())
                     .primary_graph()
                     .unwrap()
                     .layout_for_test())
-                    .entity_kind_for_test(AccountIdentity::reference().entity())
-                    .unwrap(),
+                .entity_kind_for_test(AccountIdentity::reference().entity())
+                .unwrap(),
                 locator,
             };
             let source_read = rebase_at_current(

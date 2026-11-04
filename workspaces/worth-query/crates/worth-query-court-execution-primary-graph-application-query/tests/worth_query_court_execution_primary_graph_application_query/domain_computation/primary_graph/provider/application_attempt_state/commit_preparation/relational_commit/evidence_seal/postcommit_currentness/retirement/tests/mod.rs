@@ -106,12 +106,15 @@ pub fn reads(
         )
         .unwrap()
         .entity_id_for_test();
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
     let identity = AccountIdentity::reference();
     let note = AccountNote::reference();
-    let kind = (*graph.layout_for_test()).entity_kind_for_test(identity.entity()).unwrap();
-    let locator = (*graph
-        .layout_for_test())
+    let kind = (*graph.layout_for_test())
+        .entity_kind_for_test(identity.entity())
+        .unwrap();
+    let locator = (*graph.layout_for_test())
         .field_locator_for_test(identity.entity(), identity.aspect(), identity.field())
         .unwrap()
         .clone();
@@ -120,13 +123,11 @@ pub fn reads(
         locator.aspect().aspect_key().clone(),
         locator.field_path().clone(),
     );
-    let absent = (*graph
-        .layout_for_test())
+    let absent = (*graph.layout_for_test())
         .field_locator_for_test(note.entity(), note.aspect(), note.field())
         .unwrap()
         .clone();
-    let relation = (*(*graph
-        .layout_for_test())
+    let relation = (*(*graph.layout_for_test())
         .relation(AccountAllActivity::reference().name())
         .unwrap()
         .kind_for_test());
@@ -253,9 +254,7 @@ pub fn rebase_current(
     retired: &BTreeSet<EntityId>,
 ) -> Option<Vec<Fact>> {
     let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
-    (*world
-        .application
-        .runtime_for_test())
+    (*world.application.runtime_for_test())
         .primary_graph()
         .unwrap()
         .integration_handle_for_test()
@@ -303,9 +302,7 @@ pub fn selection(
     facts: &(impl FactSequence + ?Sized),
 ) -> bool {
     let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
-    (*world
-        .application
-        .runtime_for_test())
+    (*world.application.runtime_for_test())
         .primary_graph()
         .unwrap()
         .integration_handle_for_test()

@@ -35,7 +35,10 @@ fn a_queue_refusal_uses_its_advance_custody_not_the_rows_caller_tag() {
             custody: RefusalCustody::Queue(&mut custody),
         }
         .end_for_test(
-            WorthQueryOutputDemandDenial::new_for_test(kind.clone(), "the queued member's own stop"),
+            WorthQueryOutputDemandDenial::new_for_test(
+                kind.clone(),
+                "the queued member's own stop",
+            ),
             StopRecording::member_for_test(),
             &mut queue,
         );

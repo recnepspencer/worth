@@ -75,10 +75,12 @@ fn approval_request_round_trip_preserves_every_authorization_axis() {
     let encoded = request
         .encode_workflow_approval_request_for_test(&execution)
         .unwrap();
-    let restored =
-        WorthQueryRetainedCapabilityRequest::decode_workflow_approval_request_for_test(&execution, &encoded)
-            .unwrap();
-    assert!(request.matches_elevated_request_for_test(&restored, (*request.elevation_for_test()).unwrap()));
+    let restored = WorthQueryRetainedCapabilityRequest::decode_workflow_approval_request_for_test(
+        &execution, &encoded,
+    )
+    .unwrap();
+    assert!(request
+        .matches_elevated_request_for_test(&restored, (*request.elevation_for_test()).unwrap()));
     assert!(
         request.matches_use_for_test(&restored),
         "Native and decoded context have the same use semantics"
@@ -112,11 +114,12 @@ fn approval_request_round_trip_preserves_every_authorization_axis() {
     ] {
         let mut changed = metadata.clone();
         changed[field] = replacement;
-        let changed = WorthQueryRetainedCapabilityRequest::decode_workflow_approval_request_for_test(
-            &execution,
-            &changed.to_string(),
-        )
-        .unwrap();
+        let changed =
+            WorthQueryRetainedCapabilityRequest::decode_workflow_approval_request_for_test(
+                &execution,
+                &changed.to_string(),
+            )
+            .unwrap();
         assert!(
             !request.matches_use_for_test(&changed),
             "{field} belongs to exact capability-use correspondence"
@@ -129,11 +132,12 @@ fn approval_request_round_trip_preserves_every_authorization_axis() {
         2,
     ))
     .unwrap();
-    let changed_context = WorthQueryRetainedCapabilityRequest::decode_workflow_approval_request_for_test(
-        &execution,
-        &changed_context.to_string(),
-    )
-    .unwrap();
+    let changed_context =
+        WorthQueryRetainedCapabilityRequest::decode_workflow_approval_request_for_test(
+            &execution,
+            &changed_context.to_string(),
+        )
+        .unwrap();
     assert!(
         !request.matches_use_for_test(&changed_context),
         "context membership is part of the original use"
@@ -141,11 +145,12 @@ fn approval_request_round_trip_preserves_every_authorization_axis() {
     drop(changed_context);
     let mut changed_relation = metadata.clone();
     changed_relation["related_relation"]["relation"] = serde_json::json!("different-relation");
-    let changed_relation = WorthQueryRetainedCapabilityRequest::decode_workflow_approval_request_for_test(
-        &execution,
-        &changed_relation.to_string(),
-    )
-    .unwrap();
+    let changed_relation =
+        WorthQueryRetainedCapabilityRequest::decode_workflow_approval_request_for_test(
+            &execution,
+            &changed_relation.to_string(),
+        )
+        .unwrap();
     assert!(
         !request.matches_use_for_test(&changed_relation),
         "the actual relation binding is part of the original use"
@@ -158,11 +163,12 @@ fn approval_request_round_trip_preserves_every_authorization_axis() {
     );
     let mut changed_elevation = metadata.clone();
     changed_elevation["elevation"] = serde_json::to_value(elevation).unwrap();
-    let changed_elevation = WorthQueryRetainedCapabilityRequest::decode_workflow_approval_request_for_test(
-        &execution,
-        &changed_elevation.to_string(),
-    )
-    .unwrap();
+    let changed_elevation =
+        WorthQueryRetainedCapabilityRequest::decode_workflow_approval_request_for_test(
+            &execution,
+            &changed_elevation.to_string(),
+        )
+        .unwrap();
     assert!(!request.matches_use_for_test(&changed_elevation));
     assert!(
         request.matches_elevated_request_for_test(&changed_elevation, elevation),
@@ -199,9 +205,13 @@ fn approval_request_round_trip_preserves_every_authorization_axis() {
     drop(retained);
     assert_eq!(lease.charged_memory_bytes(), encoded.len() as u64);
     let mut inconsistent =
-        WorthQueryRetainedCapabilityRequest::decode_workflow_approval_request_for_test(&execution, &encoded)
-            .unwrap();
-    (*Arc::get_mut(&mut (*inconsistent.data_mut_for_test())).unwrap().related_mut_for_test()) = None;
+        WorthQueryRetainedCapabilityRequest::decode_workflow_approval_request_for_test(
+            &execution, &encoded,
+        )
+        .unwrap();
+    (*Arc::get_mut(&mut (*inconsistent.data_mut_for_test()))
+        .unwrap()
+        .related_mut_for_test()) = None;
     assert!(matches!(
         inconsistent.encode_workflow_approval_request_for_test(&execution),
         Err(WorkflowApprovalRequestEncodingDenial::InvalidRequest)
@@ -218,9 +228,11 @@ fn approval_request_round_trip_preserves_every_authorization_axis() {
         .is_err()
     );
     let mut nonportable = request;
-    (*Arc::get_mut(&mut (*nonportable.data_mut_for_test())).unwrap().action_mut_for_test()) = AspectValue::String(
-        InternedString::Symbol(worth_foundational::facade::Symbol(1)),
-    );
+    (*Arc::get_mut(&mut (*nonportable.data_mut_for_test()))
+        .unwrap()
+        .action_mut_for_test()) = AspectValue::String(InternedString::Symbol(
+        worth_foundational::facade::Symbol(1),
+    ));
     assert!(nonportable
         .encode_workflow_approval_request_for_test(&execution)
         .is_err());
@@ -241,8 +253,10 @@ fn approval_request_rejects_unknown_or_oversized_forms() {
     let policy = worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&policy);
     assert!(
-        WorthQueryRetainedCapabilityRequest::decode_workflow_approval_request_for_test(&execution, "{}")
-            .is_err()
+        WorthQueryRetainedCapabilityRequest::decode_workflow_approval_request_for_test(
+            &execution, "{}"
+        )
+        .is_err()
     );
     assert!(
         WorthQueryRetainedCapabilityRequest::decode_workflow_approval_request_for_test(

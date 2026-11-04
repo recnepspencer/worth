@@ -104,9 +104,7 @@ pub fn run_case(
         opening,
         work,
         contacts: std::array::from_fn(|index| after[index] - before[index]),
-        publications: (*world
-            .application
-            .primary_provider_for_test())
+        publications: (*world.application.primary_provider_for_test())
             .published_application_commit_count_for_test(),
     }
 }

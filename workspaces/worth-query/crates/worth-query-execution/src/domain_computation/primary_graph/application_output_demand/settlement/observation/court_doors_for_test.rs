@@ -38,7 +38,21 @@ impl OriginalSettledProducerObservation {
 
 impl OriginalSettledProducerObservation {
     #[doc(hidden)]
-    pub fn new_for_test(runtime_authority: u64, schema: ApplicationSchemaBindingIdentity, read: WorthQueryProductBranchReadIdentity, source: OriginalSettledProducerSource, correspondence: Arc<WorthQueryApplicationOutputCorrespondence>, _memory: Option<worth_execution::ExecutionMemoryReservation>) -> Self {
-        Self { runtime_authority, schema, read, source, correspondence, _memory }
+    pub fn new_for_test(
+        runtime_authority: u64,
+        schema: ApplicationSchemaBindingIdentity,
+        read: WorthQueryProductBranchReadIdentity,
+        source: OriginalSettledProducerSource,
+        correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
+        _memory: Option<worth_execution::ExecutionMemoryReservation>,
+    ) -> Self {
+        Self {
+            runtime_authority,
+            schema,
+            read,
+            source,
+            correspondence,
+            _memory,
+        }
     }
 }

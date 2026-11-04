@@ -28,12 +28,11 @@ fn an_open_ordinary_interest_is_required_until_its_last_handle_closes() {
     let first = admit();
     let second = admit();
     drop(first);
-    assert!((*(*registry
-        .state_for_test())
+    assert!((*(*registry.state_for_test())
         .lock()
         .unwrap()
         .required_keys_for_test())
-        .contains(&output));
+    .contains(&output));
     drop(second);
     let state = (*registry.state_for_test()).lock().unwrap();
     assert!(!(*state.records_for_test()).contains_key_for_test(&output));
@@ -57,13 +56,16 @@ fn closing_a_required_interest_removes_it_from_the_required_set() {
         )
         .expect("a source-backed required interest admits")
         .0;
-    assert!((*(*registry.state_for_test()).lock().unwrap().records_for_test())[&output].is_required_for_test());
-    assert!((*(*registry
-        .state_for_test())
+    assert!((*(*registry.state_for_test())
+        .lock()
+        .unwrap()
+        .records_for_test())[&output]
+        .is_required_for_test());
+    assert!((*(*registry.state_for_test())
         .lock()
         .unwrap()
         .required_keys_for_test())
-        .contains(&output));
+    .contains(&output));
     drop(first);
     {
         let state = (*registry.state_for_test()).lock().unwrap();
@@ -83,15 +85,22 @@ fn closing_a_required_interest_removes_it_from_the_required_set() {
         )
         .expect("closing an interest permits exact reopening")
         .0;
-    assert!((*(*registry.state_for_test()).lock().unwrap().records_for_test())[&output].is_required_for_test());
-    assert!((*(*registry
-        .state_for_test())
+    assert!((*(*registry.state_for_test())
+        .lock()
+        .unwrap()
+        .records_for_test())[&output]
+        .is_required_for_test());
+    assert!((*(*registry.state_for_test())
         .lock()
         .unwrap()
         .required_keys_for_test())
-        .contains(&output));
+    .contains(&output));
     drop(reopened);
-    assert!(!(*(*registry.state_for_test()).lock().unwrap().records_for_test()).contains_key_for_test(&output));
+    assert!(!(*(*registry.state_for_test())
+        .lock()
+        .unwrap()
+        .records_for_test())
+    .contains_key_for_test(&output));
 }
 
 #[test]
@@ -114,7 +123,12 @@ fn performed_source_obligation_survives_handle_close_until_occurrence_retirement
     let preparation = registry.begin_source_preparation_for_test(occurrence);
     registry
         .retain_performed_source_for_test(
-            WorthQueryPerformedOutputDemandSource::new_for_test(receipt, Arc::new(change), observation, None),
+            WorthQueryPerformedOutputDemandSource::new_for_test(
+                receipt,
+                Arc::new(change),
+                observation,
+                None,
+            ),
             &preparation,
             PreparedOutputRootKind::Required(TypeId::of_for_test::<()>()),
             None,
@@ -131,9 +145,12 @@ fn performed_source_obligation_survives_handle_close_until_occurrence_retirement
         .admit_performed_for_test(output.clone(), &commit, scope, occurrence)
         .expect("the bound performed source admits one output obligation");
     assert_eq!(
-        (*(*(*registry.state_for_test()).lock().unwrap().records_for_test())[&output]
+        (*(*(*registry.state_for_test())
+            .lock()
+            .unwrap()
+            .records_for_test())[&output]
             .performed_obligations_for_test())
-            .len(),
+        .len(),
         1
     );
     drop(interest);
@@ -145,7 +162,10 @@ fn performed_source_obligation_survives_handle_close_until_occurrence_retirement
             record.is_required_for_test(),
             "the performed operation still requires its output"
         );
-        assert_eq!((*(*record.performed_obligations_for_test())[0].source_commit_for_test()), commit);
+        assert_eq!(
+            (*(*record.performed_obligations_for_test())[0].source_commit_for_test()),
+            commit
+        );
         assert!((*state.required_keys_for_test()).contains(&output));
     }
     registry.release_product_occurrence_for_test(occurrence);
@@ -189,9 +209,12 @@ fn settlement_releases_only_the_ready_authority_it_accepted() {
         .expect_err("a replaced Ready authority cannot discharge its performed source");
     assert_eq!(denial.kind(), WorthQueryOutputDemandDenialKind::Superseded);
     assert_eq!(
-        (*(*(*registry.state_for_test()).lock().unwrap().records_for_test())[&output]
+        (*(*(*registry.state_for_test())
+            .lock()
+            .unwrap()
+            .records_for_test())[&output]
             .performed_obligations_for_test())
-            .len(),
+        .len(),
         1
     );
     registry

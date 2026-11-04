@@ -65,9 +65,17 @@ fn stale_ready_successor_admission_forces_a_new_execution_cycle() {
         .expect("the real performed application retains its read basis");
     {
         let mut state = (*registry.state_for_test()).lock().unwrap();
-        let mut record = (*state.records_mut_for_test()).get_mut(&demand_key).unwrap();
+        let mut record = (*state.records_mut_for_test())
+            .get_mut(&demand_key)
+            .unwrap();
         (*record.state_mut_for_test()) = DemandState::Running;
-        (*record.performed_source_mut_for_test()) = Some(WorthQueryPerformedOutputDemandSource::new_for_test(performed, Arc::new(change), observation, None));
+        (*record.performed_source_mut_for_test()) =
+            Some(WorthQueryPerformedOutputDemandSource::new_for_test(
+                performed,
+                Arc::new(change),
+                observation,
+                None,
+            ));
     }
     registry.relinquish_execution(&replacement);
     let state = (*registry.state_for_test()).lock().unwrap();
@@ -94,10 +102,16 @@ fn stopped_ready_record_rejects_successor_without_reviving_custody() {
         WorthQueryOutputDemandDenialKind::Superseded,
         "newer source owns the cycle",
     ));
-    (*(*registry.state_for_test()).lock().unwrap().records_mut_for_test()).insert_for_test(
-        demand_key.clone(),
-        { let __source_scope = Some(scope); let mut __base = record(occurrence, DemandState::Output(output), 1); *__base.source_scope_mut_for_test() = __source_scope; __base },
-    );
+    (*(*registry.state_for_test())
+        .lock()
+        .unwrap()
+        .records_mut_for_test())
+    .insert_for_test(demand_key.clone(), {
+        let __source_scope = Some(scope);
+        let mut __base = record(occurrence, DemandState::Output(output), 1);
+        *__base.source_scope_mut_for_test() = __source_scope;
+        __base
+    });
 
     let denial = match registry.admit_for_test(
         demand_key.clone(),

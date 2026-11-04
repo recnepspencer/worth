@@ -88,7 +88,10 @@ fn producer_meaning_rejects_a_distinct_rust_binding_type_reusing_the_identity() 
     let installed = declared(TypeId::of_for_test::<InstalledProducer>());
     let substituted = declared(TypeId::of_for_test::<SubstitutedProducer>());
 
-    assert_eq!((*installed.identity_for_test()), (*substituted.identity_for_test()));
+    assert_eq!(
+        (*installed.identity_for_test()),
+        (*substituted.identity_for_test())
+    );
     assert!(!installed.has_same_meaning_as_for_test(&substituted));
 }
 
@@ -141,7 +144,8 @@ fn checkpoint_producer_must_be_installed() {
 #[test]
 fn checkpoint_cannot_omit_an_exact_installed_role() {
     let mut installed = declared(TypeId::of_for_test::<InstalledProducer>());
-    (*installed.output_role_descriptors_mut_for_test()) = vec![<Required as DeclaredRole>::DESCRIPTOR];
+    (*installed.output_role_descriptors_mut_for_test()) =
+        vec![<Required as DeclaredRole>::DESCRIPTOR];
 
     assert!(
         validate_checkpoint_output_meaning(&installed, &checkpoint(Vec::new()))
@@ -159,7 +163,9 @@ fn checkpoint_may_omit_only_an_at_most_one_installed_role() {
     ];
     let checkpoint_of = |names: &[&str]| {
         let mut checkpoint = checkpoint(names.iter().map(|name| role(name)).collect());
-        for role in std::sync::Arc::get_mut(&mut (*checkpoint.roles_mut_for_test())).expect("unique fixture roles") {
+        for role in std::sync::Arc::get_mut(&mut (*checkpoint.roles_mut_for_test()))
+            .expect("unique fixture roles")
+        {
             (*role.entity_name_mut_for_test()) = Account::IDENTIFIER.into();
         }
         checkpoint
@@ -185,8 +191,9 @@ fn checkpoint_cannot_underfill_an_installed_role_family() {
     let mut installed = declared(TypeId::of_for_test::<InstalledProducer>());
     (*installed.output_role_families_mut_for_test()) = vec![<Member as DeclaredFamily>::DESCRIPTOR];
     let mut checkpoint = checkpoint(vec![role("member.one")]);
-    (*std::sync::Arc::get_mut(&mut (*checkpoint.roles_mut_for_test())).expect("unique fixture roles")[0].entity_name_mut_for_test()) =
-        Account::IDENTIFIER.into();
+    (*std::sync::Arc::get_mut(&mut (*checkpoint.roles_mut_for_test()))
+        .expect("unique fixture roles")[0]
+        .entity_name_mut_for_test()) = Account::IDENTIFIER.into();
 
     assert!(validate_checkpoint_output_meaning(&installed, &checkpoint)
         .unwrap_err()
@@ -216,7 +223,34 @@ pub fn role(
 }
 
 pub fn declared(binding_type: TypeId) -> DeclaredProducerBinding {
-    DeclaredProducerBinding::new_for_test(worth_foundational::facade::ProducerPublicationOwnership::Independent, None, "owner".into(), "producer".into(), "source".into(), "family".into(), TypeId::of_for_test::<()>(), Vec::new(), Vec::new(), "output".into(), "operation".into(), "handler".into(), "provider".into(), Vec::new(), Vec::new(), Vec::new(), "exact".into(), None, None, None, binding_type, TypeId::of_for_test::<()>(), TypeId::of_for_test::<()>(), TypeId::of_for_test::<()>(), TypeId::of_for_test::<()>(), TypeId::of_for_test::<()>())
+    DeclaredProducerBinding::new_for_test(
+        worth_foundational::facade::ProducerPublicationOwnership::Independent,
+        None,
+        "owner".into(),
+        "producer".into(),
+        "source".into(),
+        "family".into(),
+        TypeId::of_for_test::<()>(),
+        Vec::new(),
+        Vec::new(),
+        "output".into(),
+        "operation".into(),
+        "handler".into(),
+        "provider".into(),
+        Vec::new(),
+        Vec::new(),
+        Vec::new(),
+        "exact".into(),
+        None,
+        None,
+        None,
+        binding_type,
+        TypeId::of_for_test::<()>(),
+        TypeId::of_for_test::<()>(),
+        TypeId::of_for_test::<()>(),
+        TypeId::of_for_test::<()>(),
+        TypeId::of_for_test::<()>(),
+    )
 }
 
 pub struct InstalledProducer;

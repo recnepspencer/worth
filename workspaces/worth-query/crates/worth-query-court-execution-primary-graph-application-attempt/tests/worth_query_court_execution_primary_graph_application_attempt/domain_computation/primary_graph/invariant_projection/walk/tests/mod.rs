@@ -64,12 +64,22 @@ fn snapshot_walks_mint_local_identities_without_rereading_metadata() {
                             .closure(Next::reference(), RelationDirection::Forward, &[])
                             .unwrap();
                         assert!(empty.is_empty());
-                        assert!(empty.issued_at_for_test((*reader.snapshot_for_test()), (*reader.authority_identity_for_test())));
-                        assert!(!empty
-                            .issued_at_for_test((*reader.snapshot_for_test()), (*reader.authority_identity_for_test()).wrapping_add(1)));
-                        assert!(walk.issued_at_for_test((*reader.snapshot_for_test()), (*reader.authority_identity_for_test())));
-                        assert!(!walk
-                            .issued_at_for_test((*reader.snapshot_for_test()), (*reader.authority_identity_for_test()).wrapping_add(1)));
+                        assert!(empty.issued_at_for_test(
+                            (*reader.snapshot_for_test()),
+                            (*reader.authority_identity_for_test())
+                        ));
+                        assert!(!empty.issued_at_for_test(
+                            (*reader.snapshot_for_test()),
+                            (*reader.authority_identity_for_test()).wrapping_add(1)
+                        ));
+                        assert!(walk.issued_at_for_test(
+                            (*reader.snapshot_for_test()),
+                            (*reader.authority_identity_for_test())
+                        ));
+                        assert!(!walk.issued_at_for_test(
+                            (*reader.snapshot_for_test()),
+                            (*reader.authority_identity_for_test()).wrapping_add(1)
+                        ));
                         let closure = reader
                             .closure(
                                 Next::reference(),
@@ -108,7 +118,10 @@ pub fn basis(
         .application
         .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch_for_test(),
+            world
+                .application
+                .product_runtime()
+                .default_branch_for_test(),
         )
         .unwrap()
         .product()

@@ -8,9 +8,7 @@ use crate::domain_computation::primary_graph::{
 use worth_execution::MapKernelFailure;
 use worth_query_installation::facade::ApplicationSchema;
 
-pub struct InspectionTerminal<
-    'storage,
-> {
+pub struct InspectionTerminal<'storage> {
     session: WorthQueryManagedGraphWorkSession,
     proof: WorthQuerySessionInspectionReadProof,
     basis: WorthQueryApplicationBasisIdentity,

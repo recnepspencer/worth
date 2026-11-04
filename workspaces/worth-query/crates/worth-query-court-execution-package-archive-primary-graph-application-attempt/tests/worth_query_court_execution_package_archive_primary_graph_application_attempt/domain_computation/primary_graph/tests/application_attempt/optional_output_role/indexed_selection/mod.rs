@@ -112,10 +112,7 @@ fn handler_predicate_rebases_and_its_codec_compares_against_the_reopened_world()
     let WorthQueryApplicationCommitOutcome::Committed(receipt) = outcome else {
         panic!("the indexed handler publishes through the production commit lane: {outcome:?}");
     };
-    let facts = (*(*world
-        .application
-        .primary_provider_for_test())
-        .graph_for_test())
+    let facts = (*(*world.application.primary_provider_for_test()).graph_for_test())
         .output_lineage
         .lock()
         .unwrap()
@@ -215,12 +212,14 @@ pub fn selection(
     facts: &(impl FactSequence + ?Sized),
 ) -> OutputDependencySelection {
     let selected = application
-        .select_product_branch_for_test(execution, application.product_runtime().default_branch_for_test())
+        .select_product_branch_for_test(
+            execution,
+            application.product_runtime().default_branch_for_test(),
+        )
         .unwrap();
-    (*(*application
-        .primary_provider_for_test())
-        .graph_for_test())
-        .with_runtime(execution, |runtime| {
+    (*(*application.primary_provider_for_test()).graph_for_test()).with_runtime(
+        execution,
+        |runtime| {
             compare_retained_output_dependencies(
                 execution,
                 runtime,
@@ -229,7 +228,8 @@ pub fn selection(
                 Some(facts),
             )
             .unwrap()
-        })
+        },
+    )
 }
 
 pub fn change_status(
@@ -239,14 +239,13 @@ pub fn change_status(
     value: &str,
 ) {
     let field = AccountStatus::reference();
-    let locator = (*(*application
-        .runtime_for_test())
+    let locator = (*(*application.runtime_for_test())
         .primary_graph()
         .unwrap()
         .layout_for_test())
-        .field_locator_for_test(field.entity(), field.aspect(), field.field())
-        .unwrap()
-        .clone();
+    .field_locator_for_test(field.entity(), field.aspect(), field.field())
+    .unwrap()
+    .clone();
     publish_relational_mutation_on_application(
         execution,
         application,

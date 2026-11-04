@@ -9,9 +9,7 @@ pub fn compare(
     divergences: &mut Vec<String>,
     quiescent: bool,
 ) {
-    let state = (*world
-        .registry
-        .state_for_test())
+    let state = (*world.registry.state_for_test())
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner);
     let mut differences = Vec::new();
@@ -38,7 +36,10 @@ pub fn compare(
             ));
         }
         if !world.model.rows.contains_key(&id)
-            && physical.is_some_and(|r| !(*r.closed_cleanup_for_test()).queued_for_test() && !(*r.pending_cleanup_queued_for_test()))
+            && physical.is_some_and(|r| {
+                !(*r.closed_cleanup_for_test()).queued_for_test()
+                    && !(*r.pending_cleanup_queued_for_test())
+            })
         {
             differences.push(format!("removed row {id} unnoted"));
         }
@@ -80,7 +81,8 @@ pub fn compare(
                     Phase::Pending
                 };
                 if phase != model.phase
-                    || (*row.source_commits_for_test()).contains(&world.context.commit(1)) != model.source
+                    || (*row.source_commits_for_test()).contains(&world.context.commit(1))
+                        != model.source
                 {
                     differences.push(format!("final row {id} phase/source differs"));
                 }
@@ -114,8 +116,7 @@ pub fn compare(
                         .source_for_test())
                         .clone())]
             });
-            let denied = (*actual
-                .retired_sources_for_test())
+            let denied = (*actual.retired_sources_for_test())
                 .iter()
                 .map(|(source, cause)| (source.clone(), cause.kind()))
                 .collect::<Vec<_>>();
@@ -168,7 +169,10 @@ pub fn compare(
             differences.push("final member set differs".into());
         }
     }
-    if quiescent && ((*state.closed_cleanup_for_test()).len_for_test() != 0 || (*state.custody_cleanup_for_test()).len != 0) {
+    if quiescent
+        && ((*state.closed_cleanup_for_test()).len_for_test() != 0
+            || (*state.custody_cleanup_for_test()).len != 0)
+    {
         differences.push("final note orders nonempty".into());
     }
     if !differences.is_empty() {
@@ -180,9 +184,7 @@ pub fn compare(
 }
 
 pub fn dangling(world: &World<'_>) -> Option<WorthQueryOutputDemandKey> {
-    let state = (*world
-        .registry
-        .state_for_test())
+    let state = (*world.registry.state_for_test())
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner);
     (!(*state.closed_cleanup_for_test()).valid_order_for_test()).then(|| world.keys[2].clone())

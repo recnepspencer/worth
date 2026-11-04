@@ -20,7 +20,10 @@ pub fn calls() -> Vec<(ComputationRead, Call)> {
             (
                 ComputationRead::ItemKey(worth_execution::PartitionItemId(i as u64)),
                 (
-                    ComputationCallCharge::new_for_test(Some(ComputationCallAccounting::new_for_test(demand, consumed)), Arc::from([])),
+                    ComputationCallCharge::new_for_test(
+                        Some(ComputationCallAccounting::new_for_test(demand, consumed)),
+                        Arc::from([]),
+                    ),
                     Some(i as u64 + 1),
                 ),
             )
@@ -38,7 +41,8 @@ fn call_range_demand_and_consumption_match_independent_sequential_prefixes() {
                 let mut sequential = Budget::bounded_for_test(remaining);
                 let fits = calls[start..end].iter().all(|(_, (charge, _))| {
                     let cost = (*charge.accounting_for_test()).unwrap();
-                    sequential.carry_for_test((*cost.demand_for_test()), (*cost.consumed_for_test()))
+                    sequential
+                        .carry_for_test((*cost.demand_for_test()), (*cost.consumed_for_test()))
                 });
                 let sum = summary(&tree, &(start..end)).unwrap();
                 let mut ranged = Budget::bounded_for_test(remaining);
@@ -91,7 +95,8 @@ fn call_range_refusal_descends_to_the_first_actual_unfitting_call() {
                 match entry {
                     CallVisit::Range(_, sum) => {
                         let cost = (*sum.accounting_for_test()).unwrap();
-                        Ok(ranged.carry_for_test((*cost.demand_for_test()), (*cost.consumed_for_test())))
+                        Ok(ranged
+                            .carry_for_test((*cost.demand_for_test()), (*cost.consumed_for_test())))
                     }
                     CallVisit::Leaf(at, _, charge, _) => {
                         let charge = (*charge.accounting_for_test()).unwrap();

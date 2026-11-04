@@ -46,7 +46,12 @@ impl Context {
                 let request = live_scope();
                 let principal =
                     authenticated_principal(&phase.test_host_request_for_test(), &world, &request);
-                let scope = resolved_account(&phase.test_host_request_for_test(), &world, "open", &request);
+                let scope = resolved_account(
+                    &phase.test_host_request_for_test(),
+                    &world,
+                    "open",
+                    &request,
+                );
                 let admitted = admitted_operation(&phase, &world, &principal, &scope, &request);
                 (
                     admitted.scope_entity_id(),
@@ -54,9 +59,13 @@ impl Context {
                 )
             })
             .unwrap();
-        let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+        let graph = (*world.application.runtime_for_test())
+            .primary_graph()
+            .unwrap();
         let layout = (*graph.layout_for_test()).workflow().clone();
-        let account_kind = (*graph.layout_for_test()).entity_kind_for_test("Account").unwrap();
+        let account_kind = (*graph.layout_for_test())
+            .entity_kind_for_test("Account")
+            .unwrap();
         let before = inventory(&world, &execution, account_kind);
         let batch = crate::domain_computation::primary_graph::application_attempt::workflow_instance_observation::history::operation_outputs::tests::fixture::publication::batch(&layout, source, actor, account_kind, retire_source, defect);
         publish_relational_mutation(&execution, &world, batch);
@@ -64,9 +73,13 @@ impl Context {
             .into_iter()
             .find(|id| !before.contains(id))
             .unwrap();
-        let transition = inventory(&world, &execution, (*(*layout.transition_for_test()).entity_kind_for_test()))
-            .pop()
-            .unwrap();
+        let transition = inventory(
+            &world,
+            &execution,
+            (*(*layout.transition_for_test()).entity_kind_for_test()),
+        )
+        .pop()
+        .unwrap();
         Self {
             world,
             source,
@@ -120,11 +133,16 @@ impl Context {
             .application
             .select_product_branch_for_test(
                 &execution,
-                self.world.application.product_runtime().default_branch_for_test(),
+                self.world
+                    .application
+                    .product_runtime()
+                    .default_branch_for_test(),
             )
             .unwrap()
             .into_parts_for_test();
-        let graph = (*self.world.application.runtime_for_test()).primary_graph().unwrap();
+        let graph = (*self.world.application.runtime_for_test())
+            .primary_graph()
+            .unwrap();
         graph
             .integration_handle_for_test()
             .with_runtime(&execution, |runtime| {
@@ -147,13 +165,14 @@ pub fn inventory(
         .application
         .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch_for_test(),
+            world
+                .application
+                .product_runtime()
+                .default_branch_for_test(),
         )
         .unwrap()
         .into_parts_for_test();
-    (*world
-        .application
-        .runtime_for_test())
+    (*world.application.runtime_for_test())
         .primary_graph()
         .unwrap()
         .integration_handle_for_test()

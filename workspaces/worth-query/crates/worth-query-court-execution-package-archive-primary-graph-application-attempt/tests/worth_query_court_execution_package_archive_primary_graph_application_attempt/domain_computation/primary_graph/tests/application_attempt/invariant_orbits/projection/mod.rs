@@ -38,7 +38,10 @@ fn projection_orbits_preserve_successor_order_name_and_all_member_scope() {
         .application
         .select_product_branch_for_test(
             &execution,
-            world.application.product_runtime().default_branch_for_test(),
+            world
+                .application
+                .product_runtime()
+                .default_branch_for_test(),
         )
         .unwrap();
     let completed = world
@@ -104,8 +107,8 @@ fn projection_orbits_preserve_successor_order_name_and_all_member_scope() {
             .copied()
             .collect::<Vec<_>>()
     );
-    let (_lease, scope, _, _) =
-        snapshot.into_lease_and_realized_scope_for_test(selected.product().retained_clone_for_test());
+    let (_lease, scope, _, _) = snapshot
+        .into_lease_and_realized_scope_for_test(selected.product().retained_clone_for_test());
     for member in orbit.members() {
         assert!(
             scope.contains_for_test(member.entity_id()),
@@ -178,7 +181,10 @@ fn retained_selected_basis_keeps_its_orbit_after_an_actual_split() {
         .application
         .select_product_branch_for_test(
             &execution,
-            world.application.product_runtime().default_branch_for_test(),
+            world
+                .application
+                .product_runtime()
+                .default_branch_for_test(),
         )
         .unwrap();
     let before = inspect(&world, &execution, original.product(), 0);
@@ -193,7 +199,10 @@ fn retained_selected_basis_keeps_its_orbit_after_an_actual_split() {
         .application
         .select_product_branch_for_test(
             &execution,
-            world.application.product_runtime().default_branch_for_test(),
+            world
+                .application
+                .product_runtime()
+                .default_branch_for_test(),
         )
         .unwrap();
     let left = inspect(&world, &execution, after.product(), 0);

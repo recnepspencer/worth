@@ -54,7 +54,10 @@ pub fn selected(
         .application
         .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch_for_test(),
+            world
+                .application
+                .product_runtime()
+                .default_branch_for_test(),
         )
         .unwrap()
         .into_parts_for_test();
@@ -180,9 +183,7 @@ pub fn only_new_entity(
     before: &[EntityId],
 ) -> EntityId {
     let selected = selected(world, execution);
-    let handle = (*world
-        .application
-        .runtime_for_test())
+    let handle = (*world.application.runtime_for_test())
         .primary_graph()
         .unwrap()
         .integration_handle_for_test();
@@ -241,9 +242,7 @@ pub fn publish_instance_value(
         actor.entity_for_test().partition_id,
     );
     let basis = selected(world, execution);
-    let handle = (*world
-        .application
-        .runtime_for_test())
+    let handle = (*world.application.runtime_for_test())
         .primary_graph()
         .unwrap()
         .integration_handle_for_test();
@@ -288,5 +287,10 @@ pub fn publish_instance_value(
         compiled.definition_for_test().partition_id,
         effects,
     );
-    only_new_entity(world, execution, (*(*layout.instance_for_test()).entity_kind_for_test()), &before)
+    only_new_entity(
+        world,
+        execution,
+        (*(*layout.instance_for_test()).entity_kind_for_test()),
+        &before,
+    )
 }

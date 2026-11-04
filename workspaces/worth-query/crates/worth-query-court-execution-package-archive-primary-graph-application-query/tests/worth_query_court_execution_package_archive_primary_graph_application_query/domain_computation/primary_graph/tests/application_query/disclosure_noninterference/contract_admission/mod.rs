@@ -55,10 +55,7 @@ fn contract_incompatible_projection_mask_denies_before_result_construction() {
         )]),
         diagnostic_mask: AspectMask::<DiagnosticMask>::new([CanonicalFieldPath::single(field_key)]),
     };
-    let layout = (*context
-        .world
-        .application
-        .runtime_for_test())
+    let layout = (*context.world.application.runtime_for_test())
         .primary_graph()
         .unwrap()
         .layout_for_test();
@@ -343,7 +340,10 @@ pub fn admission_context() -> AdmissionContext {
                 .application
                 .select_product_branch_for_test(
                     execution,
-                    world.application.product_runtime().default_branch_for_test(),
+                    world
+                        .application
+                        .product_runtime()
+                        .default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_authenticated_principal(
@@ -358,7 +358,10 @@ pub fn admission_context() -> AdmissionContext {
                 .application
                 .select_product_branch_for_test(
                     execution,
-                    world.application.product_runtime().default_branch_for_test(),
+                    world
+                        .application
+                        .product_runtime()
+                        .default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(

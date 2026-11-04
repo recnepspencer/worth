@@ -75,18 +75,17 @@ pub fn checkpoint(
         .application
         .with_host_advancement(|phase| {
             let execution = phase.borrowed_request_for_test();
-            (*(*world
-                .application
-                .primary_provider_for_test())
-                .graph_for_test())
-                .with_runtime(&execution, |runtime| {
+            (*(*world.application.primary_provider_for_test()).graph_for_test()).with_runtime(
+                &execution,
+                |runtime| {
                     runtime
                         .durability_authority()
                         .native_checkpoint(&execution, execution.allocation_policy())
                         .unwrap()
                         .bytes()
                         .to_vec()
-                })
+                },
+            )
         })
         .unwrap()
 }

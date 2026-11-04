@@ -70,11 +70,11 @@ impl WorthQueryApplicationOutputCorrespondence {
         &self,
     ) -> Result<
         impl Iterator<
-            Item = Result<
-                (&str, WorthQueryApplicationOutputPosture, EntityId),
-                WorthQueryApplicationOutputProjectionDenial,
-            >,
-        > + '_,
+                Item = Result<
+                    (&str, WorthQueryApplicationOutputPosture, EntityId),
+                    WorthQueryApplicationOutputProjectionDenial,
+                >,
+            > + '_,
         WorthQueryApplicationOutputProjectionDenial,
     >
     where

@@ -14,7 +14,11 @@ fn a_carried_stop_after_a_recomputed_slot_has_the_full_runs_bill() {
             worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tests::projected_attempt::attempt_billed(&world, &installed, prior, &request, RuntimeWorldExecutionPlacement::Leased { authority: worth_query_execution::facade::domain_computation::query_test_execution_authority_for_test(), policy }, Some(ceiling))
         };
         let first = billed(
-            Some(ComputationPrior::new_for_test(edition(), Err(Cause::FirstRun), None)),
+            Some(ComputationPrior::new_for_test(
+                edition(),
+                Err(Cause::FirstRun),
+                None,
+            )),
             u64::MAX,
         );
         let prior = prior_of(first, true);
@@ -26,8 +30,7 @@ fn a_carried_stop_after_a_recomputed_slot_has_the_full_runs_bill() {
             .downcast_ref::<worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::retained::RetainedPartitions<Parity, Number, u64>>()
             .unwrap();
         assert_eq!(
-            (*typed
-                .partitions_for_test())
+            (*typed.partitions_for_test())
                 .values_for_test()
                 .map(|p| (*p.key_for_test()).0)
                 .collect::<Vec<_>>(),
@@ -67,8 +70,7 @@ fn a_public_nested_map_cost_cannot_be_retained_as_owner_steps() {
         )
     };
     let plain = billed();
-    (*installed
-        .owner_for_test())
+    (*installed.owner_for_test())
         .nested
         .store(true, std::sync::atomic::Ordering::Relaxed);
     let nested = billed();
@@ -113,7 +115,11 @@ fn carrying_every_partition_has_the_full_bill_and_the_same_one_unit_short_stop()
         )
     };
     let full = billed(
-        Some(ComputationPrior::new_for_test(edition(), Err(Cause::FirstRun), None)),
+        Some(ComputationPrior::new_for_test(
+            edition(),
+            Err(Cause::FirstRun),
+            None,
+        )),
         u64::MAX,
     );
     let full_cost = (
@@ -185,7 +191,11 @@ fn a_ceiling_inside_carried_checkpoint_steps_has_the_full_runs_exact_stop() {
                 )
             };
             let first = billed(
-                Some(ComputationPrior::new_for_test(edition(), Err(Cause::FirstRun), None)),
+                Some(ComputationPrior::new_for_test(
+                    edition(),
+                    Err(Cause::FirstRun),
+                    None,
+                )),
                 u64::MAX,
             );
             let retained = billed(Some(prior_of(first, true)), 16);

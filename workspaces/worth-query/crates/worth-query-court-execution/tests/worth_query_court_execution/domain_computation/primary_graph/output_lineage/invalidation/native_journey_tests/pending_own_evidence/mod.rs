@@ -14,7 +14,9 @@ fn pending_candidate_rejects_changed_own_evidence_without_certifying_upstream() 
     let world = installed_authorization_world(true);
     let selected = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
+        .with_host_advancement(|phase| {
+            world.selected_product(&(phase).test_host_request_for_test())
+        })
         .expect("the fixture read owns its installed host call");
     let entity = world
         .application
@@ -32,8 +34,13 @@ fn pending_candidate_rejects_changed_own_evidence_without_certifying_upstream() 
         })
         .expect("the fixture read owns its installed host call");
     let (_, product, _) = selected.into_parts_for_test();
-    let coordinate = ProductCoordinate::new_for_test(product.observation_for_test().lifecycle_incarnation(), product.observation_for_test().reference_generation().get());
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let coordinate = ProductCoordinate::new_for_test(
+        product.observation_for_test().lifecycle_incarnation(),
+        product.observation_for_test().reference_generation().get(),
+    );
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
     let layout = graph.layout_for_test();
     let handle = graph.integration_handle_for_test();
     let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
@@ -64,7 +71,12 @@ fn pending_candidate_rejects_changed_own_evidence_without_certifying_upstream() 
         TypeId::of_for_test::<()>(),
         TypeId::of_for_test::<()>(),
         std::iter::empty(),
-        &[WorthQueryCheckpointOutputRole::new_for_test("account".into(), WorthQueryApplicationOutputPosture::Preserve, "Account".into(), entity)],
+        &[WorthQueryCheckpointOutputRole::new_for_test(
+            "account".into(),
+            WorthQueryApplicationOutputPosture::Preserve,
+            "Account".into(),
+            entity,
+        )],
         |_| Some(TypeId::of_for_test::<()>()),
         &worth_execution::ExecutionRequest::serial(&worth_execution::SerialRequest::from_memory(
             worth_execution::SerialMemoryBudget::new(None),

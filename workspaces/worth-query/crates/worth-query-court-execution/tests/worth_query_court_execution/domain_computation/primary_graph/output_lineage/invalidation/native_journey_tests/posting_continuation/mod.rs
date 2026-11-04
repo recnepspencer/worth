@@ -11,7 +11,9 @@ fn native_projection_continuation_keeps_exact_bindings_and_rejects_source_races(
     let world = installed_authorization_world(true);
     let selected = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
+        .with_host_advancement(|phase| {
+            world.selected_product(&(phase).test_host_request_for_test())
+        })
         .expect("the fixture read owns its installed host call");
     let entity = world
         .application
@@ -30,9 +32,14 @@ fn native_projection_continuation_keeps_exact_bindings_and_rejects_source_races(
         .expect("the fixture read owns its installed host call");
     let (_, product, _) = selected.into_parts_for_test();
     let observation = product.observation_for_test();
-    let coordinate = ProductCoordinate::new_for_test(observation.lifecycle_incarnation(), observation.reference_generation().get());
+    let coordinate = ProductCoordinate::new_for_test(
+        observation.lifecycle_incarnation(),
+        observation.reference_generation().get(),
+    );
     let source = SemanticSource::new_for_test((*world.application.runtime_for_test()).authority_identity().as_u64(), (*world.application.installed_schema_for_test()).binding_identity(), worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity), OutputBindingIdentity::declared_for_test("StatusOutput"));
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
     let handle = graph.integration_handle_for_test();
     let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
     let status_ref = AccountStatus::reference();
@@ -77,7 +84,7 @@ fn native_projection_continuation_keeps_exact_bindings_and_rejects_source_races(
 
     let original = (*(*(*historical.payload().current_for_test()).settlements_for_test())[&first]
         .facts_for_test())
-        .clone();
+    .clone();
     let original_body = original.postconditions_for_test().clone();
     let continuation = handle.with_runtime_mut_for_test(request_execution, |runtime| {
         let changes = owner
@@ -136,13 +143,27 @@ fn native_projection_continuation_keeps_exact_bindings_and_rejects_source_races(
         drop(candidate);
         // This owner proof seals unchanged revisions at the same live image;
         // it does not claim a performed producer or original-read permission.
-        selection.basis_into_for_test()
+        selection
+            .basis_into_for_test()
             .seal_for_test(original_body.clone(), before.clone(), control)
             .unwrap()
     });
 
     let second = RecordedSettlementIdentity::retain_for_test(&source, coordinate, 1);
-    let registration = |identity, body, continuation| SettlementRegistration::new_for_test(None, None, identity, RetainedSourceFacts::for_test_for_test(false, body).with_posting_continuation_for_test(continuation), None, before.clone(), OrdSet::new(), None, OrdSet::new());
+    let registration = |identity, body, continuation| {
+        SettlementRegistration::new_for_test(
+            None,
+            None,
+            identity,
+            RetainedSourceFacts::for_test_for_test(false, body)
+                .with_posting_continuation_for_test(continuation),
+            None,
+            before.clone(),
+            OrdSet::new(),
+            None,
+            OrdSet::new(),
+        )
+    };
     // Exact completed-body correspondence, not data equality, permits sharing.
     owner
         .register_settlement_for_test(registration(
@@ -152,16 +173,26 @@ fn native_projection_continuation_keeps_exact_bindings_and_rejects_source_races(
         ))
         .unwrap();
     let installed = cell.read_image();
-    let a = Arc::clone(&(*(*(*installed.payload().current_for_test()).settlements_for_test())[&first].posting_projection_for_test()));
-    let b = Arc::clone(&(*(*(*installed.payload().current_for_test()).settlements_for_test())[&second].posting_projection_for_test()));
+    let a = Arc::clone(
+        &(*(*(*installed.payload().current_for_test()).settlements_for_test())[&first]
+            .posting_projection_for_test()),
+    );
+    let b = Arc::clone(
+        &(*(*(*installed.payload().current_for_test()).settlements_for_test())[&second]
+            .posting_projection_for_test()),
+    );
     assert!(Arc::ptr_eq(&a, &b));
-    assert_eq!((*(*installed.payload().current_for_test()).posting_bindings_for_test()).len(), 1);
     assert_eq!(
-        (*(*(*installed.payload().current_for_test()).posting_bindings_for_test())[&(*a.id_for_test())]
+        (*(*installed.payload().current_for_test()).posting_bindings_for_test()).len(),
+        1
+    );
+    assert_eq!(
+        (*(*(*installed.payload().current_for_test()).posting_bindings_for_test())
+            [&(*a.id_for_test())]
             .settlements_for_test()
             .unwrap()
             .settlements_for_test())
-            .len(),
+        .len(),
         2
     );
     let unrelated = Arc::from(facts.to_vec().into_boxed_slice());
@@ -176,7 +207,8 @@ fn native_projection_continuation_keeps_exact_bindings_and_rejects_source_races(
     let reconstructed = cell.read_image();
     assert!(
         !Arc::ptr_eq(
-            &(*(*(*reconstructed.payload().current_for_test()).settlements_for_test())[&third].posting_projection_for_test()),
+            &(*(*(*reconstructed.payload().current_for_test()).settlements_for_test())[&third]
+                .posting_projection_for_test()),
             &a
         ),
         "equal unrelated backing reconstructs"
@@ -184,26 +216,24 @@ fn native_projection_continuation_keeps_exact_bindings_and_rejects_source_races(
     let retired = owner.retire_settlements_for_test(std::slice::from_ref(&first));
     assert!(retired.contains(&first));
     let retired_image = cell.read_image();
-    assert!(!(*(*retired_image
-        .payload()
-        .current_for_test())
-        .settlements_for_test())
-        .contains_key(&first));
-    assert!((*(*(*retired_image.payload().current_for_test()).posting_bindings_for_test())[&(*a.id_for_test())]
-        .settlements_for_test()
-        .unwrap()
-        .settlements_for_test())
-        .contains(&second));
-    assert!((*(*historical
-        .payload()
-        .current_for_test())
-        .settlements_for_test())
-        .contains_key(&first));
-    assert!(!(*(*historical
-        .payload()
-        .current_for_test())
-        .settlements_for_test())
-        .contains_key(&second));
+    assert!(
+        !(*(*retired_image.payload().current_for_test()).settlements_for_test())
+            .contains_key(&first)
+    );
+    assert!(
+        (*(*(*retired_image.payload().current_for_test()).posting_bindings_for_test())
+            [&(*a.id_for_test())]
+            .settlements_for_test()
+            .unwrap()
+            .settlements_for_test())
+        .contains(&second)
+    );
+    assert!(
+        (*(*historical.payload().current_for_test()).settlements_for_test()).contains_key(&first)
+    );
+    assert!(
+        !(*(*historical.payload().current_for_test()).settlements_for_test()).contains_key(&second)
+    );
     // A prepared current image may not overwrite a real intervening native edit.
     let fourth = RecordedSettlementIdentity::retain_for_test(&source, coordinate, 3);
     let prepared = owner

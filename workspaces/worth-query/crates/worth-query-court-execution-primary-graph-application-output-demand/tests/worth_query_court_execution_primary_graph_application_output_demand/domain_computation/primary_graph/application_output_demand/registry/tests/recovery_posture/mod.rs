@@ -28,10 +28,18 @@ fn retryable_publication_stale_does_not_keep_a_closed_required_interest() {
     let occurrence = occurrence();
     let demand_key = key("required", 6, 1);
     let wake = Arc::new(DemandWake::new_for_test(Mutex::new(0), Condvar::new()));
-    (*(*registry.state_for_test()).lock().unwrap().records_mut_for_test()).insert_for_test(
-        demand_key.clone(),
-        { let __required_interests = 1; let __wake = Arc::clone(&wake); let mut __base = record(occurrence, DemandState::Running, 1); *__base.required_interests_mut_for_test() = __required_interests; *__base.wake_mut_for_test() = __wake; __base },
-    );
+    (*(*registry.state_for_test())
+        .lock()
+        .unwrap()
+        .records_mut_for_test())
+    .insert_for_test(demand_key.clone(), {
+        let __required_interests = 1;
+        let __wake = Arc::clone(&wake);
+        let mut __base = record(occurrence, DemandState::Running, 1);
+        *__base.required_interests_mut_for_test() = __required_interests;
+        *__base.wake_mut_for_test() = __wake;
+        __base
+    });
     let demand_interest = required_interest(&registry, demand_key.clone(), wake);
     let mut denial = WorthQueryOutputDemandDenial::new_for_test(
         WorthQueryOutputDemandDenialKind::PublicationStale,
@@ -44,27 +52,38 @@ fn retryable_publication_stale_does_not_keep_a_closed_required_interest() {
         WorthQueryOutputDemandRecoveryPosture::Retryable
     );
     assert!(matches!(
-        (*(*(*registry.state_for_test()).lock().unwrap().records_for_test())[&demand_key].state_for_test()),
+        (*(*(*registry.state_for_test())
+            .lock()
+            .unwrap()
+            .records_for_test())[&demand_key]
+            .state_for_test()),
         DemandState::Scheduled
     ));
     drop(demand_interest);
 
-    assert!(!(*(*registry
-        .state_for_test())
+    assert!(!(*(*registry.state_for_test())
         .lock()
         .unwrap()
         .records_for_test())
-        .contains_key_for_test(&demand_key));
+    .contains_key_for_test(&demand_key));
 }
 #[test]
 fn running_budget_failure_stays_with_its_request_and_leaves_the_row_claimable() {
     let registry = WorthQueryOutputDemandRegistry::default();
     let demand_key = key("required", 7, 1);
     let wake = Arc::new(DemandWake::new_for_test(Mutex::new(0), Condvar::new()));
-    (*(*registry.state_for_test()).lock().unwrap().records_mut_for_test()).insert_for_test(
-        demand_key.clone(),
-        { let __required_interests = 1; let __wake = Arc::clone(&wake); let mut __base = record(occurrence(), DemandState::Running, 1); *__base.required_interests_mut_for_test() = __required_interests; *__base.wake_mut_for_test() = __wake; __base },
-    );
+    (*(*registry.state_for_test())
+        .lock()
+        .unwrap()
+        .records_mut_for_test())
+    .insert_for_test(demand_key.clone(), {
+        let __required_interests = 1;
+        let __wake = Arc::clone(&wake);
+        let mut __base = record(occurrence(), DemandState::Running, 1);
+        *__base.required_interests_mut_for_test() = __required_interests;
+        *__base.wake_mut_for_test() = __wake;
+        __base
+    });
     let demand_interest = required_interest(&registry, demand_key.clone(), wake);
     let mut denial = WorthQueryOutputDemandDenial::new_for_test(
         WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
@@ -185,19 +204,18 @@ fn closed_occurrence_stops_a_claim_without_losing_published_identity() {
         .expect_err("branch close must win over the claimed completion");
     assert_eq!(cause.kind(), WorthQueryOutputDemandDenialKind::Closed);
     let state = (*registry.state_for_test()).lock().unwrap();
-    let DemandState::Output(output) = &(*(*state.records_for_test())[&demand_key].state_for_test()) else {
+    let DemandState::Output(output) = &(*(*state.records_for_test())[&demand_key].state_for_test())
+    else {
         panic!("published identity must survive the terminal denial while interest remains")
     };
     assert_eq!(
-        (*output
-            .published_commit_for_test())
+        (*output.published_commit_for_test())
             .as_ref()
             .expect("ordinary published commit"),
         &commit,
     );
     assert_eq!(
-        (*output
-            .checkpoint_for_test())
+        (*output.checkpoint_for_test())
             .as_ref()
             .expect("stopped output retains its checkpoint")
             .receipt()

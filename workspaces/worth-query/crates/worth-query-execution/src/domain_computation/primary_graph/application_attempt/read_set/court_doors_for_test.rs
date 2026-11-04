@@ -1,7 +1,8 @@
 //! Sealed test doors over this module's private members.
 use super::*;
 
-impl<'request, 'authority, Schema, Operation, Input, Scope, Phase,> WorthQueryApplicationReadAttempt<'request, 'authority, Schema, Operation, Input, Scope, Phase>
+impl<'request, 'authority, Schema, Operation, Input, Scope, Phase>
+    WorthQueryApplicationReadAttempt<'request, 'authority, Schema, Operation, Input, Scope, Phase>
 {
     #[doc(hidden)]
     pub fn admission_for_test(
@@ -11,7 +12,8 @@ impl<'request, 'authority, Schema, Operation, Input, Scope, Phase,> WorthQueryAp
     }
 }
 
-impl<'request, 'authority, Schema, Operation, Input, Scope, Phase,> WorthQueryApplicationReadAttempt<'request, 'authority, Schema, Operation, Input, Scope, Phase>
+impl<'request, 'authority, Schema, Operation, Input, Scope, Phase>
+    WorthQueryApplicationReadAttempt<'request, 'authority, Schema, Operation, Input, Scope, Phase>
 {
     #[doc(hidden)]
     pub fn expected_facts_for_test(
@@ -31,7 +33,8 @@ impl<Schema, Operation, Input, Scope, Phase>
     }
 }
 
-impl<'request, 'authority, Schema, Operation, Input, Scope, Phase,> WorthQueryApplicationReadAttempt<'request, 'authority, Schema, Operation, Input, Scope, Phase>
+impl<'request, 'authority, Schema, Operation, Input, Scope, Phase>
+    WorthQueryApplicationReadAttempt<'request, 'authority, Schema, Operation, Input, Scope, Phase>
 {
     #[doc(hidden)]
     pub fn lease_for_test(&self) -> &WorthQueryApplicationSnapshotLease {
@@ -39,7 +42,8 @@ impl<'request, 'authority, Schema, Operation, Input, Scope, Phase,> WorthQueryAp
     }
 }
 
-impl<'request, 'authority, Schema, Operation, Input, Scope, Phase,> WorthQueryApplicationReadAttempt<'request, 'authority, Schema, Operation, Input, Scope, Phase>
+impl<'request, 'authority, Schema, Operation, Input, Scope, Phase>
+    WorthQueryApplicationReadAttempt<'request, 'authority, Schema, Operation, Input, Scope, Phase>
 {
     #[doc(hidden)]
     pub fn read_scope_for_test(&self) -> &WorthQueryApplicationReadScope {

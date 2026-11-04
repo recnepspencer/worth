@@ -31,9 +31,7 @@ fn principal_target_retarget_aba_does_not_revive_older_approval() {
             durable_approval_basis(&host.borrowed_request_for_test(), &admission)
         })
         .expect("the fixture envelope owns its installed host call");
-    let binding = (*world
-        .application
-        .runtime_for_test())
+    let binding = (*world.application.runtime_for_test())
         .primary_graph()
         .unwrap()
         .layout_for_test()

@@ -84,14 +84,16 @@ fn governance_matches_only_the_managed_session_that_minted_it() {
                 second.graph_work_managed_run_identity()
             );
 
-            assert!(!(*first.governance_for_test()).computation_matches_for_test(
-                &foreign_plan.graph_work,
-                (*foreign_plan.runtime_authority_for_test()),
-                (*first.query_for_test()).identity(),
-                (*first.parameters_for_test()).identity(),
-                first.principal.principal_entity_id_for_test(),
-                (*first.scope_for_test()).entity_id_for_test(),
-            ));
+            assert!(
+                !(*first.governance_for_test()).computation_matches_for_test(
+                    &foreign_plan.graph_work,
+                    (*foreign_plan.runtime_authority_for_test()),
+                    (*first.query_for_test()).identity(),
+                    (*first.parameters_for_test()).identity(),
+                    first.principal.principal_entity_id_for_test(),
+                    (*first.scope_for_test()).entity_id_for_test(),
+                )
+            );
         })
         .expect("the fixture block owns its installed host call")
 }
@@ -142,7 +144,11 @@ fn governance_rejects_real_query_parameter_principal_and_scope_substitution() {
                 .application
                 .select_product_branch_for_test(
                     execution,
-                    context.world.application.product_runtime().default_branch_for_test(),
+                    context
+                        .world
+                        .application
+                        .product_runtime()
+                        .default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
@@ -254,7 +260,10 @@ pub fn governance_context(label: &str) -> GovernanceContext {
                 .application
                 .select_product_branch_for_test(
                     execution,
-                    world.application.product_runtime().default_branch_for_test(),
+                    world
+                        .application
+                        .product_runtime()
+                        .default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
@@ -289,7 +298,10 @@ pub fn resolve_principal(
         .application
         .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch_for_test(),
+            world
+                .application
+                .product_runtime()
+                .default_branch_for_test(),
         )
         .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(

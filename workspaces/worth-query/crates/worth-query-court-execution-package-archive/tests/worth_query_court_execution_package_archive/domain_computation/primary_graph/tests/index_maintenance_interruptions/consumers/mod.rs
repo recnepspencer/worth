@@ -9,9 +9,7 @@ pub fn currency_consumer(consumer: u8) {
         "counted-currency",
         WorthQueryPrincipalMappingStatus::Enabled,
     )]);
-    let handle = (*world
-        .application
-        .runtime_for_test())
+    let handle = (*world.application.runtime_for_test())
         .primary_graph()
         .unwrap()
         .integration_handle_for_test();

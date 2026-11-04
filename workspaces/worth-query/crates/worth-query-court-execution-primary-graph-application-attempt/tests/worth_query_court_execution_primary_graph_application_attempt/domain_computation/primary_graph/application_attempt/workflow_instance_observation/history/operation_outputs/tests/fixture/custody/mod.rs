@@ -5,7 +5,9 @@ impl Context {
     pub fn assert_protected_context(&self) {
         let host = payer();
         let execution = worth_execution::ExecutionRequest::serial(&host);
-        let graph = (*self.world.application.runtime_for_test()).primary_graph().unwrap();
+        let graph = (*self.world.application.runtime_for_test())
+            .primary_graph()
+            .unwrap();
         let layout = (*graph.layout_for_test()).workflow();
         let edge = self.read(|execution, runtime, snapshot, layout| {
             let entry = (*observe_adjacency(
@@ -66,7 +68,10 @@ impl Context {
                 .application
                 .select_product_branch_for_test(
                     &execution,
-                    self.world.application.product_runtime().default_branch_for_test(),
+                    self.world
+                        .application
+                        .product_runtime()
+                        .default_branch_for_test(),
                 )
                 .unwrap()
                 .into_parts_for_test();

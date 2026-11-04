@@ -35,7 +35,10 @@ pub fn complete_review_out_of_band(
         .application
         .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch_for_test(),
+            world
+                .application
+                .product_runtime()
+                .default_branch_for_test(),
         )
         .expect("the selected product branch remains admitted")
         .resolve_entity(
@@ -47,7 +50,9 @@ pub fn complete_review_out_of_band(
         )
         .unwrap();
     let field = CapabilityReviewStatusField::reference();
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
     let locator = graph
         .layout_for_test()
         .field_locator_for_test(field.entity(), field.aspect(), field.field())
@@ -98,7 +103,10 @@ pub fn replace_support_grantor_with_custodian(
         .application
         .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch_for_test(),
+            world
+                .application
+                .product_runtime()
+                .default_branch_for_test(),
         )
         .expect("the selected product branch remains admitted")
         .resolve_entity(
@@ -109,7 +117,9 @@ pub fn replace_support_grantor_with_custodian(
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap();
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
     let grantor_kind = (*graph
         .layout_for_test()
         .relation(CapabilityGrantor::reference().name())
@@ -130,7 +140,9 @@ pub fn replace_support_grantor_with_custodian(
             .visible_relations_of_kind(execution, grantor_kind, snapshot.version_id())
             .expect("fixture read request remains live")
             .into_iter()
-            .find(|record| record.source == principal && record.target == grant.entity_id_for_test())
+            .find(|record| {
+                record.source == principal && record.target == grant.entity_id_for_test()
+            })
             .expect("the request support has one current grantor path")
             .relation_id
     });

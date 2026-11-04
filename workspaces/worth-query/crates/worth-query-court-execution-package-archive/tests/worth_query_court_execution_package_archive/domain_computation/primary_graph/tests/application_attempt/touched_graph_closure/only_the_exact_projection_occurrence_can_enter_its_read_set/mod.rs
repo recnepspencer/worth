@@ -14,13 +14,23 @@ fn only_the_exact_projection_occurrence_can_enter_its_read_set() {
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
+            resolved_account(
+                &(phase).test_host_request_for_test(),
+                &world,
+                "open",
+                &request,
+            )
         })
         .expect("the fixture read owns its installed host call");
     let other_account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request_for_test(), &world, "unrelated", &request)
+            resolved_account(
+                &(phase).test_host_request_for_test(),
+                &world,
+                "unrelated",
+                &request,
+            )
         })
         .expect("the fixture read owns its installed host call");
     let operation = world

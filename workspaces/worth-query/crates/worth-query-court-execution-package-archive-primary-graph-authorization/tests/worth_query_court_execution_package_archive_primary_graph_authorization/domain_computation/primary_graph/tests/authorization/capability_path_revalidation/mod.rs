@@ -47,7 +47,9 @@ fn final_commit_rejects_a_replacement_policy_path_for_the_same_grant() {
         })
         .expect("the fixture read owns its installed host call");
     let commit_authorization = admission
-        .take_authorization_dependencies_for_test((*world.application.authorization_for_test()).bridge_for_test())
+        .take_authorization_dependencies_for_test(
+            (*world.application.authorization_for_test()).bridge_for_test(),
+        )
         .unwrap();
 
     world
@@ -63,9 +65,7 @@ fn final_commit_rejects_a_replacement_policy_path_for_the_same_grant() {
         })
         .expect("the fixture read owns its installed host call");
 
-    let commit_lane = (*world
-        .application
-        .primary_provider_for_test())
+    let commit_lane = (*world.application.primary_provider_for_test())
         .application_branch_commit_lane_for_test(
             admission
                 .graph_work_for_test()
@@ -108,7 +108,10 @@ pub fn replace_grantor_with_custodian(
         .application
         .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch_for_test(),
+            world
+                .application
+                .product_runtime()
+                .default_branch_for_test(),
         )
         .expect("the selected product branch remains admitted")
         .resolve_entity(
@@ -119,7 +122,9 @@ pub fn replace_grantor_with_custodian(
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap();
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
     let grantor_kind = (*graph
         .layout_for_test()
         .relation(CapabilityGrantor::reference().name())
@@ -139,7 +144,9 @@ pub fn replace_grantor_with_custodian(
             .visible_relations_of_kind(execution, grantor_kind, snapshot.version_id())
             .expect("fixture read request remains live")
             .into_iter()
-            .find(|record| record.source == principal && record.target == grant.entity_id_for_test())
+            .find(|record| {
+                record.source == principal && record.target == grant.entity_id_for_test()
+            })
             .expect("the admitted capability has one current grantor path")
             .relation_id
     });

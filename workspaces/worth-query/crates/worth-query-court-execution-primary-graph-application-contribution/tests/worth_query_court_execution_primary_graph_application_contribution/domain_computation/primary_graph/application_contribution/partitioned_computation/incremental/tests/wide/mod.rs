@@ -133,7 +133,11 @@ fn ten_thousand_partitions_gather_and_compute_only_the_one_whose_fact_moved() {
     let first = attempt(
         &world,
         &installed,
-        Some(ComputationPrior::new_for_test(edition(), Err(Cause::FirstRun), None)),
+        Some(ComputationPrior::new_for_test(
+            edition(),
+            Err(Cause::FirstRun),
+            None,
+        )),
     );
     assert!(matches!(
         first.runs.as_slice(),
@@ -141,16 +145,19 @@ fn ten_thousand_partitions_gather_and_compute_only_the_one_whose_fact_moved() {
     ));
     let partitions = usize::try_from(PARTITIONS).unwrap();
     assert_eq!(first.gathered.len(), partitions);
-    assert_eq!((*installed.owner_for_test()).take_calls(), [1, partitions, partitions]);
+    assert_eq!(
+        (*installed.owner_for_test()).take_calls(),
+        [1, partitions, partitions]
+    );
     let outcome = *first.outcome.as_ref().unwrap();
     assert_eq!(outcome.0, PARTITIONS * (PARTITIONS + 1) / 2);
 
     let mut state = first
         .sealed
         .unwrap()
-        .expect("a producer's run retains").state_into_for_test();
-    let (key, entity_id) = (*state
-        .facts_for_test())
+        .expect("a producer's run retains")
+        .state_into_for_test();
+    let (key, entity_id) = (*state.facts_for_test())
         .facts_for_test()
         .find_map(|(key, fact, _)| match fact {
             WorthQueryApplicationObservedFact::Field { entity_id, .. } => {

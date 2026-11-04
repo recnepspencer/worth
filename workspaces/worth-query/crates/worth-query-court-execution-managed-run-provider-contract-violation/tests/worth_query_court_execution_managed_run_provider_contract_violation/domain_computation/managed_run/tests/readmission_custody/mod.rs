@@ -49,7 +49,8 @@ fn bounded_provider_fixture_opener_refuses_before_direct_and_workflow_readmissio
             let direct_stop = host
                 .run_provider_fixture(|phase| {
                     let yielded = direct.take().unwrap();
-                    let installed = yielded.fixture_phase_for_test(&phase.test_host_request_for_test());
+                    let installed =
+                        yielded.fixture_phase_for_test(&phase.test_host_request_for_test());
                     yielded.readmit_same_runtime(&installed, &runtime, &bridge)
                 })
                 .err()
@@ -57,7 +58,8 @@ fn bounded_provider_fixture_opener_refuses_before_direct_and_workflow_readmissio
             let workflow_stop = host
                 .run_provider_fixture(|phase| {
                     let yielded = workflow.take().unwrap();
-                    let installed = yielded.fixture_phase_for_test(&phase.test_host_request_for_test());
+                    let installed =
+                        yielded.fixture_phase_for_test(&phase.test_host_request_for_test());
                     yielded.readmit_same_runtime(&installed, &workflow_runtime, &workflow_bridge)
                 })
                 .err()

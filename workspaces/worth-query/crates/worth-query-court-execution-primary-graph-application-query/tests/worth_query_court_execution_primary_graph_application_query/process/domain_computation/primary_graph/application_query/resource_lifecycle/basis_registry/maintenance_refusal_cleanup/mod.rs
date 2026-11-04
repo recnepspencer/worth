@@ -37,9 +37,7 @@ fn refused_maintenance_cleanup_probe() {
     let _observation =
         worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation::install_on_this_thread();
     let world = installed_authorization_world(true);
-    let graph = (*world
-        .application
-        .runtime_for_test())
+    let graph = (*world.application.runtime_for_test())
         .primary_graph()
         .unwrap()
         .integration_handle_for_test();

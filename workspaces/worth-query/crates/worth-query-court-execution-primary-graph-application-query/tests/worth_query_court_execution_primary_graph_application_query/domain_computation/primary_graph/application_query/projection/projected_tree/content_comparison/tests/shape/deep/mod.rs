@@ -27,23 +27,37 @@ fn descendant_provenance_and_empty_support_cannot_be_omitted() {
         let mut hostile = deep(&key);
         let child = &mut (*(*hostile.relations_mut_for_test())[0].rows_mut_for_test())[0];
         match axis {
-            0 => (*(*child.fields_mut_for_test())[0].value_mut_for_test()) = AspectValue::String("changed".into()),
+            0 => {
+                (*(*child.fields_mut_for_test())[0].value_mut_for_test()) =
+                    AspectValue::String("changed".into())
+            }
             1 => (*(*child.fields_mut_for_test())[0].slot_key_mut_for_test()) = slot("deep"), // same text, foreign namespace
-            2 => (*(*child.fields_mut_for_test())[0].result_path_mut_for_test()) = "elsewhere.name".into(),
+            2 => {
+                (*(*child.fields_mut_for_test())[0].result_path_mut_for_test()) =
+                    "elsewhere.name".into()
+            }
             3 => (*(*child.fields_mut_for_test())[0].slot_type_mut_for_test()) = "other".into(),
             4 => (*child.source_dependencies_complete_mut_for_test()) = false,
             5 => (*(*child.relations_mut_for_test())[0].slot_key_mut_for_test()) = slot("deep"),
-            6 => (*(*child.relations_mut_for_test())[0].cardinality_mut_for_test()) = ApplicationQueryCardinality::ExactlyOne,
+            6 => {
+                (*(*child.relations_mut_for_test())[0].cardinality_mut_for_test()) =
+                    ApplicationQueryCardinality::ExactlyOne
+            }
             7 => {
-                (*(*child.relations_mut_for_test())[0].predicate_sources_mut_for_test())[0] = EntityId::new(PartitionId::main(), 10, 2)
+                (*(*child.relations_mut_for_test())[0].predicate_sources_mut_for_test())[0] =
+                    EntityId::new(PartitionId::main(), 10, 2)
             }
             8 => (*(*child.relations_mut_for_test())[0].predicate_sources_mut_for_test()).reverse(),
             9 => (*(*child.relations_mut_for_test())[0].rows_mut_for_test()).reverse(),
             10 => {
-                (*(*(*child.relations_mut_for_test())[0].rows_mut_for_test())[0].incoming_relation_mut_for_test()) =
+                (*(*(*child.relations_mut_for_test())[0].rows_mut_for_test())[0]
+                    .incoming_relation_mut_for_test()) =
                     Some(RelationId::new(PartitionId::main(), 20, 2))
             }
-            11 => (*(*child.relations_mut_for_test())[0].result_path_mut_for_test()) = "root.other".into(),
+            11 => {
+                (*(*child.relations_mut_for_test())[0].result_path_mut_for_test()) =
+                    "root.other".into()
+            }
             12 => (*(*child.relations_mut_for_test())[0].slot_type_mut_for_test()) = "other".into(),
             13 => (*(*child.relations_mut_for_test())[0].rows_mut_for_test()).clear(),
             14 => (*child.relations_mut_for_test()).clear(),
@@ -54,9 +68,15 @@ fn descendant_provenance_and_empty_support_cannot_be_omitted() {
         assert_eq!(compare(deep(&key), hostile), Ok(false), "axis {axis}");
     }
     let mut empty = deep(&key);
-    (*(*(*(*empty.relations_mut_for_test())[0].rows_mut_for_test())[0].relations_mut_for_test())[0].rows_mut_for_test()).clear();
+    (*(*(*(*empty.relations_mut_for_test())[0].rows_mut_for_test())[0].relations_mut_for_test())
+        [0]
+    .rows_mut_for_test())
+    .clear();
     let mut same_empty = deep(&key);
-    (*(*(*(*same_empty.relations_mut_for_test())[0].rows_mut_for_test())[0].relations_mut_for_test())[0].rows_mut_for_test()).clear();
+    (*(*(*(*same_empty.relations_mut_for_test())[0].rows_mut_for_test())[0]
+        .relations_mut_for_test())[0]
+        .rows_mut_for_test())
+    .clear();
     assert_eq!(compare(empty, same_empty), Ok(true));
 }
 #[test]
@@ -104,9 +124,13 @@ fn finite_stack_refuses_before_unfunded_or_undeclared_growth() {
         Err("original-work")
     );
     let mut deeper = deep(&key);
-    (*(*(*(*deeper.relations_mut_for_test())[0].rows_mut_for_test())[0].relations_mut_for_test())[0].rows_mut_for_test())[0] = deep(&key);
+    (*(*(*(*deeper.relations_mut_for_test())[0].rows_mut_for_test())[0]
+        .relations_mut_for_test())[0]
+        .rows_mut_for_test())[0] = deep(&key);
     let mut same = deep(&key);
-    (*(*(*(*same.relations_mut_for_test())[0].rows_mut_for_test())[0].relations_mut_for_test())[0].rows_mut_for_test())[0] = deep(&key);
+    (*(*(*(*same.relations_mut_for_test())[0].rows_mut_for_test())[0].relations_mut_for_test())
+        [0]
+    .rows_mut_for_test())[0] = deep(&key);
     assert_eq!(
         tree(deeper).same_source_content(
             &tree(same),

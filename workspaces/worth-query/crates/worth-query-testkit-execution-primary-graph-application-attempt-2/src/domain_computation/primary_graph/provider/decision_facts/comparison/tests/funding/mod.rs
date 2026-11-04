@@ -20,7 +20,10 @@ pub fn assert_full_capture_funding(
         .capture_application_read_set_for_test(
             execution,
             authority,
-            StorageControl::new_for_test(ExecutionAllocationPolicy::Execution(&tight), Some(request)),
+            StorageControl::new_for_test(
+                ExecutionAllocationPolicy::Execution(&tight),
+                Some(request),
+            ),
         )
         .err()
         .expect("original-fact capture must admit its full copy quote first");
@@ -39,7 +42,10 @@ pub fn assert_full_capture_funding(
         .capture_application_read_set_for_test(
             execution,
             authority,
-            StorageControl::new_for_test(ExecutionAllocationPolicy::Execution(&funded), Some(request)),
+            StorageControl::new_for_test(
+                ExecutionAllocationPolicy::Execution(&funded),
+                Some(request),
+            ),
         )
         .unwrap();
     assert_eq!(receipt.fact_count(), table.len_for_test());

@@ -46,22 +46,39 @@ fn moved_readers_replace_old_edges_preserving_shared_roles_original_ordinals_and
         .unwrap()
         .unwrap();
     assert_eq!(
-        (*(*next.metadata_for_test())[&one].readers_for_test()).reads().collect::<Vec<_>>(),
+        (*(*next.metadata_for_test())[&one].readers_for_test())
+            .reads()
+            .collect::<Vec<_>>(),
         [ComputationRead::Membership, partition(9)]
     );
     assert_eq!(
-        (*(*next.metadata_for_test())[&two].readers_for_test()).reads().collect::<Vec<_>>(),
+        (*(*next.metadata_for_test())[&two].readers_for_test())
+            .reads()
+            .collect::<Vec<_>>(),
         [partition(7)]
     );
     assert_eq!(
         (*(*prior.metadata_for_test())[&one].readers_for_test()).partitions_for_test(),
         [PartitionIdentity::new(7)]
     );
-    assert_eq!((*next.index_for_test()).keys_for_test(partition(7)).collect::<Vec<_>>(), [&two]);
-    assert_eq!((*next.index_for_test()).keys_for_test(partition(9)).collect::<Vec<_>>(), [&one]);
+    assert_eq!(
+        (*next.index_for_test())
+            .keys_for_test(partition(7))
+            .collect::<Vec<_>>(),
+        [&two]
+    );
+    assert_eq!(
+        (*next.index_for_test())
+            .keys_for_test(partition(9))
+            .collect::<Vec<_>>(),
+        [&one]
+    );
     assert!(next.original.same_backing_for_test(&prior.original));
     assert_eq!((*next.layout_for_test()), (*prior.layout_for_test()));
-    assert_eq!((*(*next.metadata_for_test())[&one].ordinal_for_test()), (*(*prior.metadata_for_test())[&one].ordinal_for_test()));
+    assert_eq!(
+        (*(*next.metadata_for_test())[&one].ordinal_for_test()),
+        (*(*prior.metadata_for_test())[&one].ordinal_for_test())
+    );
 }
 #[test]
 fn same_count_substitution_and_lost_last_reader_require_the_full_path() {
@@ -80,7 +97,9 @@ fn same_count_substitution_and_lost_last_reader_require_the_full_path() {
         .unwrap()
         .is_none());
     assert_eq!(
-        (*prior.index_for_test()).keys_for_test(partition(9)).collect::<Vec<_>>(),
+        (*prior.index_for_test())
+            .keys_for_test(partition(9))
+            .collect::<Vec<_>>(),
         [&key(2)]
     );
 }
@@ -95,18 +114,34 @@ fn retired_and_inserted_calls_transfer_exact_keys_without_replacing_original_ord
         .reattribute_for_test(&calls, &fresh, control())
         .unwrap()
         .unwrap();
-    assert!((*next.index_for_test()).keys_for_test(partition(9)).next().is_none());
+    assert!((*next.index_for_test())
+        .keys_for_test(partition(9))
+        .next()
+        .is_none());
     assert!(!(*(*next.index_for_test()).calls_for_test()).contains_key(&partition(9)));
-    assert_eq!((*next.index_for_test()).keys_for_test(partition(11)).collect::<Vec<_>>(), [&two]);
+    assert_eq!(
+        (*next.index_for_test())
+            .keys_for_test(partition(11))
+            .collect::<Vec<_>>(),
+        [&two]
+    );
     for key in [&one, &two] {
-        assert_eq!((*(*next.metadata_for_test())[key].ordinal_for_test()), (*(*prior.metadata_for_test())[key].ordinal_for_test()));
+        assert_eq!(
+            (*(*next.metadata_for_test())[key].ordinal_for_test()),
+            (*(*prior.metadata_for_test())[key].ordinal_for_test())
+        );
     }
     assert_eq!(
         (*(*next.metadata_for_test())[&two].readers_for_test()).partitions_for_test(),
         [PartitionIdentity::new(11)]
     );
     assert!(next.original.same_backing_for_test(&prior.original));
-    assert_eq!((*prior.index_for_test()).keys_for_test(partition(9)).collect::<Vec<_>>(), [&two]);
+    assert_eq!(
+        (*prior.index_for_test())
+            .keys_for_test(partition(9))
+            .collect::<Vec<_>>(),
+        [&two]
+    );
     let wrong = key(3);
     let substituted = BTreeMap::from([(partition(7), vec![&one]), (partition(11), vec![&wrong])]);
     assert!(prior

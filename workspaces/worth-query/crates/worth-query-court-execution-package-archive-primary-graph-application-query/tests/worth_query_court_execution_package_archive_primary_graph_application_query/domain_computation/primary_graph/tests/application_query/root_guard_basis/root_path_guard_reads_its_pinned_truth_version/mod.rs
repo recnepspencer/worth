@@ -17,7 +17,10 @@ fn root_path_guard_reads_its_pinned_truth_version() {
                 .application
                 .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch_for_test(),
+                    world
+                        .application
+                        .product_runtime()
+                        .default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_authenticated_principal(
@@ -38,7 +41,10 @@ fn root_path_guard_reads_its_pinned_truth_version() {
                 .application
                 .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch_for_test(),
+                    world
+                        .application
+                        .product_runtime()
+                        .default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
@@ -58,7 +64,9 @@ fn root_path_guard_reads_its_pinned_truth_version() {
         .unwrap();
     let pinned = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
+        .with_host_advancement(|phase| {
+            world.selected_product(&(phase).test_host_request_for_test())
+        })
         .expect("the fixture read owns its installed host call");
     world
         .application
@@ -128,14 +136,16 @@ fn root_path_guard_reads_its_pinned_truth_version() {
     assert!(current_result.rows().is_empty());
     let empty_selection = current_result.result_set_observation().selection_for_test();
     assert_eq!((*empty_selection.aspects_for_test()).len(), 1);
-    assert_eq!((*empty_selection.entities_for_test()), [account.entity_id_for_test()]);
+    assert_eq!(
+        (*empty_selection.entities_for_test()),
+        [account.entity_id_for_test()]
+    );
     let selection = pinned_result.observed_sources()[0]
         .footprint_for_test()
         .root_selection
         .as_ref()
         .expect("pinned path result retains the guard source");
-    let guard = (*selection
-        .aspects_for_test())
+    let guard = (*selection.aspects_for_test())
         .iter()
         .find(|aspect| (*aspect.entity_for_test()) == account.entity_id_for_test())
         .unwrap();
@@ -150,9 +160,13 @@ fn root_path_guard_reads_its_pinned_truth_version() {
     };
     let current = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
+        .with_host_advancement(|phase| {
+            world.selected_product(&(phase).test_host_request_for_test())
+        })
         .expect("the fixture read owns its installed host call");
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
     let unavailable = WorthQueryApplicationObservedFact::SourceFieldRevision {
         entity_id: (*guard.entity_for_test()),
         locator: AspectFieldLocator::new(
@@ -231,7 +245,9 @@ fn root_path_guard_reads_its_pinned_truth_version() {
         .expect("the fixture read owns its installed host call");
     let reopened = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
+        .with_host_advancement(|phase| {
+            world.selected_product(&(phase).test_host_request_for_test())
+        })
         .expect("the fixture read owns its installed host call");
     world
         .application

@@ -9,11 +9,23 @@ use worth_query_testkit_execution_primary_graph_application_attempt::domain_comp
 fn read_only_roles_receive_no_effect_authority() {
     let effects = vec!["mutation".to_owned()];
     let invariants = vec!["closed-loop".to_owned()];
-    let mut read_only = { let __read = vec!["read-only:observe".to_owned()]; let mut __base = WorthQueryProviderPlanDeclaredClosure::default(); *__base.read_mut_for_test() = __read; __base };
+    let mut read_only = {
+        let __read = vec!["read-only:observe".to_owned()];
+        let mut __base = WorthQueryProviderPlanDeclaredClosure::default();
+        *__base.read_mut_for_test() = __read;
+        __base
+    };
     bind_direct_role_closure(&mut read_only, &effects, &invariants);
     assert!((*read_only.effect_for_test()).is_empty());
 
-    let mut touched = { let __read = vec!["owner:observe".to_owned()]; let __touch = vec!["owner".to_owned()]; let mut __base = WorthQueryProviderPlanDeclaredClosure::default(); *__base.read_mut_for_test() = __read; *__base.touch_mut_for_test() = __touch; __base };
+    let mut touched = {
+        let __read = vec!["owner:observe".to_owned()];
+        let __touch = vec!["owner".to_owned()];
+        let mut __base = WorthQueryProviderPlanDeclaredClosure::default();
+        *__base.read_mut_for_test() = __read;
+        *__base.touch_mut_for_test() = __touch;
+        __base
+    };
     bind_direct_role_closure(&mut touched, &effects, &invariants);
     assert_eq!((*touched.effect_for_test()), effects);
 }

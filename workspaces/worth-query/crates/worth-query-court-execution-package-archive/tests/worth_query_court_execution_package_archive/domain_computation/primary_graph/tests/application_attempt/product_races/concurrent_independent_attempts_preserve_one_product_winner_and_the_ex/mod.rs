@@ -11,7 +11,8 @@ fn concurrent_independent_attempts_preserve_one_product_winner_and_the_exact_los
             .with_host_advancement(|phase| {
                 let host_custody = phase.test_host_request_for_test();
                 authenticated_principal(
-                    &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
+                    &(host_custody.phase_for_application_for_test(&world.application))
+                        .test_host_request_for_test(),
                     &world,
                     &request,
                 )
@@ -46,7 +47,8 @@ fn concurrent_independent_attempts_preserve_one_product_winner_and_the_exact_los
             .with_host_advancement(|phase| {
                 let host_custody = phase.test_host_request_for_test();
                 world.selected_product(
-                    &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
+                    &(host_custody.phase_for_application_for_test(&world.application))
+                        .test_host_request_for_test(),
                 )
             })
             .expect("the fixture read owns its installed host call");
@@ -55,10 +57,7 @@ fn concurrent_independent_attempts_preserve_one_product_winner_and_the_exact_los
                 .application
                 .with_host_advancement(|phase| {
                     let host_custody = phase.test_host_request_for_test();
-                    (*(*world
-                        .application
-                        .primary_provider_for_test())
-                        .graph_for_test())
+                    (*(*world.application.primary_provider_for_test()).graph_for_test())
                         .with_runtime(&host_custody.borrowed_request_for_test(), |runtime| {
                             runtime.history().immutable_commit_count()
                         })
@@ -149,7 +148,8 @@ fn concurrent_independent_attempts_preserve_one_product_winner_and_the_exact_los
             .with_host_advancement(|phase| {
                 let host_custody = phase.test_host_request_for_test();
                 world.selected_product(
-                    &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
+                    &(host_custody.phase_for_application_for_test(&world.application))
+                        .test_host_request_for_test(),
                 )
             })
             .expect("the fixture read owns its installed host call");

@@ -19,9 +19,7 @@ fn full_compiler_preserves_every_named_composition_rule_and_path() {
             ComposedCapabilityTouchOperation::reference(),
         )
         .expect("composed capability is installed");
-    let plan = (*world
-        .application
-        .authorization_for_test())
+    let plan = (*world.application.authorization_for_test())
         .capability_plan_for_test(&capability)
         .expect("the compiler retained the typed capability plan");
 
@@ -43,12 +41,8 @@ fn full_compiler_preserves_every_named_composition_rule_and_path() {
         (*plan.decision_rules().allow_for_test()),
         (*plan.decision_rules().deny_for_test()).expect("deny rule"),
         (*plan.decision_rules().conflict_for_test()).expect("conflict rule"),
-        (*plan.decision_rules()
-            .separation_of_duty_for_test())
-            .expect("separation-of-duty rule"),
-        (*plan.decision_rules()
-            .distinct_actor_for_test())
-            .expect("distinct-actor rule"),
+        (*plan.decision_rules().separation_of_duty_for_test()).expect("separation-of-duty rule"),
+        (*plan.decision_rules().distinct_actor_for_test()).expect("distinct-actor rule"),
     ];
     for ((name, effect, expected_index, expected_paths), actual_index) in
         expected.iter().zip(decision_indices)
@@ -56,7 +50,11 @@ fn full_compiler_preserves_every_named_composition_rule_and_path() {
         assert_eq!(actual_index, *expected_index, "{name} index");
         let binding = &plan.rules()[actual_index];
         assert_eq!(binding.bridge().effect(), *effect, "{name} effect");
-        assert_eq!(binding.path_requirements_for_test(), expected_paths, "{name} paths");
+        assert_eq!(
+            binding.path_requirements_for_test(),
+            expected_paths,
+            "{name} paths"
+        );
         let bridge_paths = binding
             .bridge()
             .requirements()

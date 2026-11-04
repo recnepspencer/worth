@@ -34,7 +34,12 @@ fn product_transaction_refuses_zero_budgets_before_revalidation() {
         let account = control
             .application
             .with_host_advancement(|phase| {
-                resolved_account(&phase.test_host_request_for_test(), &control, "open", &scope)
+                resolved_account(
+                    &phase.test_host_request_for_test(),
+                    &control,
+                    "open",
+                    &scope,
+                )
             })
             .expect("installed host call opens");
         let candidate = control
@@ -76,7 +81,12 @@ fn product_transaction_refuses_zero_budgets_before_revalidation() {
             let account = world
                 .application
                 .with_host_advancement(|phase| {
-                    resolved_account(&phase.test_host_request_for_test(), &world, "open", &request)
+                    resolved_account(
+                        &phase.test_host_request_for_test(),
+                        &world,
+                        "open",
+                        &request,
+                    )
                 })
                 .expect("installed host call opens");
             let program = world
@@ -87,7 +97,9 @@ fn product_transaction_refuses_zero_budgets_before_revalidation() {
                 .expect("installed host call opens");
             let before_commit = world
                 .application
-                .with_host_advancement(|phase| world.selected_product(&phase.test_host_request_for_test()))
+                .with_host_advancement(|phase| {
+                    world.selected_product(&phase.test_host_request_for_test())
+                })
                 .expect("installed host call opens")
                 .product()
                 .selected_commit()
@@ -160,7 +172,10 @@ fn product_transaction_refuses_zero_budgets_before_revalidation() {
                     .application
                     .product_runtime()
                     .with_product_observation_for_test(
-                        world.application.product_runtime().default_branch_for_test(),
+                        world
+                            .application
+                            .product_runtime()
+                            .default_branch_for_test(),
                         |observation| Ok(observation.selected_commit().clone()),
                     )
                     .expect("the owner returns the current fixed-size commit identity"),

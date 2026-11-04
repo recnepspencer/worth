@@ -48,7 +48,8 @@ pub fn install(world: &mut AuthorizationWorld) {
         &roster,
     )
     .unwrap();
-    let record = WorthQuerySupportedProgramRecord::installed_for_test(Arc::new(installed), &[], &[]);
+    let record =
+        WorthQuerySupportedProgramRecord::installed_for_test(Arc::new(installed), &[], &[]);
     let mut support = WorthQueryInstalledProgramSupport::installed_for_test(
         Arc::new(roster),
         WorthQueryProgramActivationCell::unpublished_for_test(),

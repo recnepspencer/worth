@@ -109,7 +109,10 @@ pub fn assert_commit_affinity_substitutions(
             .push_batch(
                 WorkerIntentBatch::new("feature-outbox-head").push(
                     dispatch_outbox_create_intent(
-                        Some((*(*provider.graph_for_test()).layout_for_test()).provider_dispatch_outbox_for_test()),
+                        Some(
+                            (*(*provider.graph_for_test()).layout_for_test())
+                                .provider_dispatch_outbox_for_test(),
+                        ),
                         Some(&feature_record),
                     )
                     .unwrap(),
@@ -173,8 +176,11 @@ fn every_later_valid_field_substitution_leaves_exact_commit_truth_unchanged() {
             panic!("dispatch outbox is an entity record");
         };
         (*provider.graph_for_test()).with_runtime_mut_for_test(execution, |runtime| {
-            let locator =
-                outbox_field_locator((*(*provider.graph_for_test()).layout_for_test()).provider_dispatch_outbox_for_test(), field);
+            let locator = outbox_field_locator(
+                (*(*provider.graph_for_test()).layout_for_test())
+                    .provider_dispatch_outbox_for_test(),
+                field,
+            );
             let mut transaction = {
                 let transaction_validation_input = runtime
                     .admit_branch_basis(&runtime.main_branch_identity())

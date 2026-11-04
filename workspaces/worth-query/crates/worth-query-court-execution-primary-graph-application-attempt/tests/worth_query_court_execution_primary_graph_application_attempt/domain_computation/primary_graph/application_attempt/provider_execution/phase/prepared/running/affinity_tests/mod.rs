@@ -50,14 +50,28 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
                 retained_program(phase, &world, "axis-owner"),
                 idempotency(187, 188),
             );
-            let (admission, lease, _provider_attempt, _outcome_identity, _workflow_settlement_publication, _authorization, _idempotency, mut running, mutation_run, attempt_basis, _aftermath_causality,) = running.into_parts_for_test();
+            let (
+                admission,
+                lease,
+                _provider_attempt,
+                _outcome_identity,
+                _workflow_settlement_publication,
+                _authorization,
+                _idempotency,
+                mut running,
+                mutation_run,
+                attempt_basis,
+                _aftermath_causality,
+            ) = running.into_parts_for_test();
             let staged = real_terminal_session(
                 execution,
                 &world,
                 &mut running,
                 lease.product().retained_clone_for_test(),
             );
-            assert!(staged.bind_application_attempt_for_test(attempt_basis).is_ok());
+            assert!(staged
+                .bind_application_attempt_for_test(attempt_basis)
+                .is_ok());
 
             assert!(WorthQueryApplicationAttemptBasis::capture(
                 &foreign_world.application,
@@ -69,14 +83,19 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
 
             let substitute_lease = WorthQueryApplicationSnapshotLease::acquire_for_test(
                 &phase
-                    .execution_request_for_for_test(&(*world.application.product_runtime_for_test()))
+                    .execution_request_for_for_test(
+                        &(*world.application.product_runtime_for_test()),
+                    )
                     .expect("fixture issuer"),
                 lease.handle_for_test().clone(),
                 std::sync::Arc::clone(&(*lease.layout_for_test())),
                 lease.product().retained_clone_for_test(),
             )
             .expect("the real branch must issue a second exact snapshot handle");
-            assert_ne!(substitute_lease.snapshot_for_test(), lease.snapshot_for_test());
+            assert_ne!(
+                substitute_lease.snapshot_for_test(),
+                lease.snapshot_for_test()
+            );
             let substitute_snapshot_basis = WorthQueryApplicationAttemptBasis::capture(
                 &world.application,
                 &admission,
@@ -91,7 +110,9 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
 
             let foreign_branch_snapshot = lease.handle_for_test().with_runtime_mut_for_test(
                 &phase
-                    .execution_request_for_for_test(&(*world.application.product_runtime_for_test()))
+                    .execution_request_for_for_test(
+                        &(*world.application.product_runtime_for_test()),
+                    )
                     .expect("fixture issuer"),
                 |runtime| {
                     let foreign = worth_relational::facade::history::BranchId(
@@ -103,7 +124,9 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
                     runtime
                         .fork_branch(
                             &phase
-                                .execution_request_for_for_test(&(*world.application.product_runtime_for_test()))
+                                .execution_request_for_for_test(
+                                    &(*world.application.product_runtime_for_test()),
+                                )
                                 .expect("fixture issuer"),
                             foreign.clone(),
                             fork_basis,
@@ -126,7 +149,9 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
             .is_err());
             assert!(lease.handle_for_test().with_runtime_mut_for_test(
                 &phase
-                    .execution_request_for_for_test(&(*world.application.product_runtime_for_test()))
+                    .execution_request_for_for_test(
+                        &(*world.application.product_runtime_for_test())
+                    )
                     .expect("fixture issuer"),
                 |runtime| {
                     runtime
@@ -165,8 +190,32 @@ fn a_real_peer_plan_and_session_cannot_substitute_for_the_captured_attempt() {
                 retained_program(phase, &world, "plan-peer"),
                 idempotency(191, 192),
             );
-            let (_first_admission, first_lease, _first_provider_attempt, _first_outcome_identity, _first_workflow_settlement_publication, _first_authorization, _first_idempotency, mut first_running, first_mutation_run, first_basis, _first_aftermath,) = first.into_parts_for_test();
-            let (_second_admission, second_lease, _second_provider_attempt, _second_outcome_identity, _second_workflow_settlement_publication, _second_authorization, _second_idempotency, mut second_running, second_mutation_run, second_basis, _second_aftermath,) = second.into_parts_for_test();
+            let (
+                _first_admission,
+                first_lease,
+                _first_provider_attempt,
+                _first_outcome_identity,
+                _first_workflow_settlement_publication,
+                _first_authorization,
+                _first_idempotency,
+                mut first_running,
+                first_mutation_run,
+                first_basis,
+                _first_aftermath,
+            ) = first.into_parts_for_test();
+            let (
+                _second_admission,
+                second_lease,
+                _second_provider_attempt,
+                _second_outcome_identity,
+                _second_workflow_settlement_publication,
+                _second_authorization,
+                _second_idempotency,
+                mut second_running,
+                second_mutation_run,
+                second_basis,
+                _second_aftermath,
+            ) = second.into_parts_for_test();
             let first_staged = real_terminal_session(
                 execution,
                 &world,
@@ -195,8 +244,12 @@ fn a_real_peer_plan_and_session_cannot_substitute_for_the_captured_attempt() {
                 .into_iter()
                 .collect()
             );
-            assert!(second_staged.bind_application_attempt_for_test(first_basis).is_err());
-            assert!(first_staged.bind_application_attempt_for_test(second_basis).is_err());
+            assert!(second_staged
+                .bind_application_attempt_for_test(first_basis)
+                .is_err());
+            assert!(first_staged
+                .bind_application_attempt_for_test(second_basis)
+                .is_err());
             let _ = first_staged.abort();
             let _ = second_staged.abort();
             finish_uncommitted(first_mutation_run, first_running, first_lease);
@@ -289,7 +342,12 @@ pub fn start(
         &phase.borrowed_request_for_test(),
         phase,
         &world.application,
-        WorthQueryApplicationCommitPreparationRequest::new_for_test(program, idempotency, None, None),
+        WorthQueryApplicationCommitPreparationRequest::new_for_test(
+            program,
+            idempotency,
+            None,
+            None,
+        ),
     );
     let WorthQueryApplicationCommitPreparation::Ready(prepared) = prepared else {
         panic!("affinity fixture must reach ordinary prepared posture")
@@ -304,7 +362,11 @@ pub fn retained_program(
     replacement: &str,
 ) -> RetainedProgram {
     let request = live_scope();
-    let principal = authenticated_principal(&(phase_custody).test_host_request_for_test(), world, &request);
+    let principal = authenticated_principal(
+        &(phase_custody).test_host_request_for_test(),
+        world,
+        &request,
+    );
     let account = resolved_account(
         &(phase_custody).test_host_request_for_test(),
         world,

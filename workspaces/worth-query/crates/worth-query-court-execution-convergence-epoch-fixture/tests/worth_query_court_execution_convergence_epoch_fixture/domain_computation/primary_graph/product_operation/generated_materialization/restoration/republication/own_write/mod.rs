@@ -74,7 +74,9 @@ pub fn suspend_restore_and_read() {
             .application
             .with_host_advancement(|phase| {
                 let borrowed_execution = phase
-                    .execution_request_for_for_test(&(*world.application.product_runtime_for_test()))
+                    .execution_request_for_for_test(
+                        &(*world.application.product_runtime_for_test()),
+                    )
                     .expect("fixture borrows its runtime request");
                 let execution = &borrowed_execution;
 
@@ -138,7 +140,9 @@ pub fn suspend_restore_and_read() {
             .application
             .with_host_advancement(|phase| {
                 let borrowed_execution = phase
-                    .execution_request_for_for_test(&(*world.application.product_runtime_for_test()))
+                    .execution_request_for_for_test(
+                        &(*world.application.product_runtime_for_test()),
+                    )
                     .expect("fixture borrows its runtime request");
                 let execution = &borrowed_execution;
 
@@ -166,7 +170,9 @@ pub fn suspend_restore_and_read() {
                     .unwrap()
                     .execute_for_test(
                         phase
-                            .execution_request_for_for_test(&(*application.product_runtime_for_test()))
+                            .execution_request_for_for_test(
+                                &(*application.product_runtime_for_test()),
+                            )
                             .expect("publication uses its runtime phase"),
                     )
             })
@@ -195,7 +201,9 @@ pub fn suspend_restore_and_read() {
             .application
             .with_host_advancement(|phase| {
                 let borrowed_execution = phase
-                    .execution_request_for_for_test(&(*world.application.product_runtime_for_test()))
+                    .execution_request_for_for_test(
+                        &(*world.application.product_runtime_for_test()),
+                    )
                     .expect("fixture borrows its runtime request");
                 let execution = &borrowed_execution;
 
@@ -229,7 +237,9 @@ pub fn suspend_restore_and_read() {
                     .unwrap()
                     .execute_for_test(
                         phase
-                            .execution_request_for_for_test(&(*application.product_runtime_for_test()))
+                            .execution_request_for_for_test(
+                                &(*application.product_runtime_for_test()),
+                            )
                             .expect("publication uses its runtime phase"),
                     )
             })
@@ -248,7 +258,9 @@ pub fn suspend_restore_and_read() {
             .application
             .with_host_advancement(|phase| {
                 let borrowed_execution = phase
-                    .execution_request_for_for_test(&(*world.application.product_runtime_for_test()))
+                    .execution_request_for_for_test(
+                        &(*world.application.product_runtime_for_test()),
+                    )
                     .expect("fixture borrows its runtime request");
                 let execution = &borrowed_execution;
 
@@ -289,7 +301,9 @@ pub fn suspend_restore_and_read() {
                     .unwrap()
                     .resolve_current_family_for_test(
                         &execution,
-                        (*application.runtime_for_test()).authority_identity().as_u64(),
+                        (*application.runtime_for_test())
+                            .authority_identity()
+                            .as_u64(),
                         &(*application.installed_schema_for_test()).binding_identity(),
                         receipt.principal_scope().scope(),
                         "test.retained-account-capacity",
@@ -303,7 +317,8 @@ pub fn suspend_restore_and_read() {
         assert_eq!((*family.candidates_for_test()).len(), 1);
         let candidate = &(*family.candidates_for_test())[0];
         assert_eq!(
-            (*candidate.verification_requirement_for_test()), None,
+            (*candidate.verification_requirement_for_test()),
+            None,
             "the actual performed republication registered at its selected native image"
         );
         drop(restored_product);
@@ -312,7 +327,11 @@ pub fn suspend_restore_and_read() {
             .with_host_advancement(|phase| {
                 let phase_custody = &phase.test_host_request_for_test();
 
-                authenticated_principal(&(phase_custody).test_host_request_for_test(), world, &request)
+                authenticated_principal(
+                    &(phase_custody).test_host_request_for_test(),
+                    world,
+                    &request,
+                )
             })
             .expect("the fixture read owns its installed host call");
         let account = world
@@ -320,7 +339,12 @@ pub fn suspend_restore_and_read() {
             .with_host_advancement(|phase| {
                 let phase_custody = &phase.test_host_request_for_test();
 
-                resolved_account(&(phase_custody).test_host_request_for_test(), world, "2", &request)
+                resolved_account(
+                    &(phase_custody).test_host_request_for_test(),
+                    world,
+                    "2",
+                    &request,
+                )
             })
             .expect("the fixture read owns its installed host call");
         let operation = application
@@ -374,7 +398,9 @@ pub fn suspend_restore_and_read() {
             "restored output still contains the computation from x=1, while x=2"
         );
         assert!(
-            (*candidate.observed_source_facts_for_test()).for_comparison().is_none(),
+            (*candidate.observed_source_facts_for_test())
+                .for_comparison()
+                .is_none(),
             "deriving a restored record must retain the actual own-write evidence"
         );
     });

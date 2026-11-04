@@ -10,7 +10,8 @@ pub fn assert_one_pass_reconstruction(
     unrelated: &Fact,
 ) {
     let reconstruct = |facts: &[Fact]| {
-        SealedNativeOutputWitness::from_checkpoint_facts_for_test(correspondence, layout, facts).unwrap()
+        SealedNativeOutputWitness::from_checkpoint_facts_for_test(correspondence, layout, facts)
+            .unwrap()
     };
     let forward = reconstruct(facts).expect("the complete original facts reconstruct");
     let reversed: Vec<_> = facts.iter().rev().cloned().collect();

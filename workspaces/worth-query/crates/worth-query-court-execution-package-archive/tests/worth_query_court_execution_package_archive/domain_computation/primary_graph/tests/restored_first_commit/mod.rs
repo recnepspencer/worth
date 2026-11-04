@@ -235,7 +235,9 @@ pub fn captured_and_restored(with_retired_index: bool) -> (IdentityWorld, Option
             .application
             .with_host_advancement(|phase| {
                 let borrowed_execution = phase
-                    .execution_request_for_for_test(&(*restored.application.product_runtime_for_test()))
+                    .execution_request_for_for_test(
+                        &(*restored.application.product_runtime_for_test()),
+                    )
                     .expect("fixture borrows its runtime request");
                 let execution = &borrowed_execution;
 
@@ -252,7 +254,9 @@ pub fn raw_commit(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &IdentityWorld,
 ) -> RelationalCommitReceipt {
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
     graph
         .integration_handle_for_test()
         .execute_mutation_with_index_refresh(execution, |runtime| {
@@ -268,7 +272,9 @@ pub fn assert_every_installed_index_current(
     commit: &RelationalCommitReceipt,
     retired: Option<DerivedIndexId>,
 ) {
-    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph()
+        .unwrap();
     let handle = graph.integration_handle_for_test();
     with_runtime(request_execution, world, |runtime| {
         for index_id in (*handle.primary_index_ids_for_test()).iter() {

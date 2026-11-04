@@ -83,7 +83,11 @@ fn redispatch_refuses_before_outbox_reads_and_transport_at_both_placements() {
                     .application
                     .redispatch_admitted_external_effect(&phase, &handle, &authority, &admission)
             })
-            .unwrap_or_else(|cause| Err(WorthQueryExternalRedispatchDenial::advancement_for_test(cause)))
+            .unwrap_or_else(|cause| {
+                Err(WorthQueryExternalRedispatchDenial::advancement_for_test(
+                    cause,
+                ))
+            })
             .unwrap();
         assert!(
             reads() > before,
