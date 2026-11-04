@@ -81,6 +81,13 @@ class CourtDoorTests(unittest.TestCase):
             self.assertEqual(data['authority_member_doors'], ['a/court_doors_for_test.rs: impl RunAuthority :: mint_for_test (method)'])
             self.assertEqual(data['authority_item_doors'], ['crate::a::RunAuthority'])
 
+    def test_repeated_file_scope_imports_are_dropped_once(self):
+        from src_door_uses import without_repeats
+        text = ('use a::X;\nuse b::Y;\nuse a::X;\n#[cfg(test)]\nuse b::Y;\nmod m {\n    use a::X;\n}\n'
+                'pub(crate) use c::Z;\npub(crate) use c::Z;\n')
+        self.assertEqual(without_repeats(text),
+                         'use a::X;\nuse b::Y;\n#[cfg(test)]\nuse b::Y;\nmod m {\n    use a::X;\n}\npub(crate) use c::Z;\n')
+
 
 if __name__ == '__main__':
     unittest.main()
