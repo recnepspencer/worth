@@ -78,6 +78,17 @@ where
                 ),
             )
         }
+        Ok(Ok(WorthQueryProviderIdempotencyResolution::RecoveredUnpublished { handle })) => Some(
+            match application
+                .primary_provider
+                .recovered_unpublished_application(&product, handle)
+            {
+                Ok(effects) => WorthQueryApplicationCommitOutcome::ProductUnpublished(effects),
+                Err(_) => WorthQueryApplicationCommitOutcome::Denied(
+                    WorthQueryApplicationCommitDenial::idempotency_preparation_busy(),
+                ),
+            },
+        ),
         Ok(Ok(WorthQueryProviderIdempotencyResolution::Unpublished)) => {
             Some(denied(DenialStage::Idempotency))
         }

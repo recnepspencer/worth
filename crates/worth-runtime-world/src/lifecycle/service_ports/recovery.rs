@@ -45,6 +45,19 @@ impl RuntimeWorldRecoveryPort {
         self.service()?.inspect_recovered_effects(handle)
     }
 
+    pub fn continue_recovered_effects(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        effects: crate::recovery::WorldRecoveredUnpublishedEffects,
+    ) -> crate::recovery::WorldRecoveredContinuationOutcome {
+        match self.service() {
+            Ok(owner) => owner.continue_recovered_effects(execution, effects),
+            Err(cause) => crate::recovery::WorldRecoveredContinuationOutcome::Refused {
+                cause: crate::recovery::WorldRecoveredContinuationDenial::Admission(cause.into()),
+                custody: effects,
+            },
+        }
+    }
     pub fn release_recovered_effects(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

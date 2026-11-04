@@ -197,6 +197,19 @@ where
                     .preparation_pending(&authority.product.publication_binding(), handle, stage),
             )
         }
+        Ok(WorthQueryProviderIdempotencyResolution::RecoveredUnpublished { handle }) => {
+            candidate.discard();
+            match authority
+                .application()
+                .primary_provider
+                .recovered_unpublished_application(&authority.product.publication_binding(), handle)
+            {
+                Ok(effects) => WorthQueryProviderProgressionOutcome::ProductUnpublished(effects),
+                Err(_) => WorthQueryProviderProgressionOutcome::Denied(
+                    WorthQueryApplicationCommitDenial::idempotency_preparation_busy(),
+                ),
+            }
+        }
         Ok(WorthQueryProviderIdempotencyResolution::Unpublished) => {
             candidate.discard();
             progression_denied(DenialStage::Idempotency)

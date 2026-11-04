@@ -48,7 +48,7 @@ impl WorldPendingOpenAttempt {
     pub fn advance(mut self, execution: &ExecutionRequest<'_, '_>) -> WorldOpenAttemptOutcome {
         match self.binding.publish(&self.subject, execution) {
             Ok(committed) => {
-                self.durable_custody.acknowledge(committed);
+                self.durable_custody.acknowledge(committed.into_witness());
                 WorldOpenAttemptOutcome::Opened(WorldOpenedPublicationAttempt { original: self })
             }
             Err(WorldDurablePublicationStop::Pending | WorldDurablePublicationStop::Busy) => {

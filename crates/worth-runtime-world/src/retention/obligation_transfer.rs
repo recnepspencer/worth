@@ -43,7 +43,7 @@ impl ComponentBasisObligationTransferDestination {
 
 /// Why an owner-issued obligation could not change semantic custody.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum RetentionTransferDenial {
+pub enum RetentionTransferDenial {
     BasisMismatch,
     #[cfg(test)]
     ReleaseDestination,

@@ -38,7 +38,7 @@ pub use product_publication::{
     WorthQueryProductStaleApplication, WorthQueryProductUnpublishedApplication,
     WorthQueryProductUnpublishedRecovery, WorthQueryProductUnpublishedRecoveryFailure,
     WorthQueryProductUnpublishedRecoveryReleaseDenial,
-    WorthQueryProductUnpublishedRecoveryReleaseFailure,
+    WorthQueryProductUnpublishedRecoveryReleaseFailure, WorthQueryRecoveredProductReleaseDenial,
 };
 pub use provider_session::*;
 

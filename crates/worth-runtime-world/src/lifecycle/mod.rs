@@ -45,6 +45,7 @@ pub(crate) mod operation_control_for_test;
 pub use operation_control_for_test::{
     RuntimeWorldOperationControlForTest, RuntimeWorldPerformedPublicationObservationForTest,
     RuntimeWorldProductComparePauseForTest, RuntimeWorldProductCurrentnessPauseForTest,
+    RuntimeWorldRecoveredDispositionObservationForTest,
 };
 
 #[cfg(test)]

@@ -5,10 +5,10 @@ mod lookup_key;
 mod product_affinity;
 pub(in crate::domain_computation::primary_graph) use lookup_key::WorthQueryIdempotencyLookupKey;
 pub(in crate::domain_computation::primary_graph) use product_affinity::WorthQueryProductIdempotencyAffinity;
-mod recorded_origin;
+pub(super) mod recorded_origin;
 mod registration;
 pub(super) use registration::idempotency_create_intent;
-mod snapshot_resolution;
+pub(super) mod snapshot_resolution;
 use snapshot_resolution::resolve_at_snapshot;
 pub use snapshot_resolution::{
     WorthQueryRecoveredAftermathCausality, WorthQueryRecoveredApplicationCommitReceipt,
@@ -18,6 +18,9 @@ pub use snapshot_resolution::{
 #[derive(Debug)]
 pub(in crate::domain_computation::primary_graph) enum WorthQueryProviderIdempotencyResolution {
     PreparationBusy,
+    RecoveredUnpublished {
+        handle: worth_runtime_world::facade::ProductUnpublishedRecoveryHandle,
+    },
     Absent,
     Readmitted(WorthQueryRecoveredApplicationCommitReceipt),
     Drift,
@@ -126,6 +129,9 @@ impl WorthQueryPrimaryGraphProvider {
             Ok(WorthQueryProviderIdempotencyResolution::PreparationPending { .. }) => {
                 Custody::PublicationPending
             }
+            Ok(WorthQueryProviderIdempotencyResolution::RecoveredUnpublished { handle }) => {
+                Custody::ProductUnpublished(handle)
+            }
             Ok(WorthQueryProviderIdempotencyResolution::Unpublished) => {
                 Custody::Indeterminate(WorthQueryProviderIdempotencyResolutionDenial::Unavailable)
             }
@@ -143,6 +149,13 @@ impl WorthQueryPrimaryGraphProvider {
         WorthQueryProviderIdempotencyResolutionDenial,
     > {
         self.application_attempt_work.observe_retained_resolution();
+        if let Some(resolution) = self.resolve_recovered_application_idempotency(
+            &WorthQueryProductIdempotencyAffinity::from_observation(product.observation()),
+            binding,
+        )? {
+            return Ok(resolution);
+        }
+
         let layout = self.graph.layout.provider_idempotency().clone();
         let product_affinity =
             WorthQueryProductIdempotencyAffinity::from_observation(product.observation());

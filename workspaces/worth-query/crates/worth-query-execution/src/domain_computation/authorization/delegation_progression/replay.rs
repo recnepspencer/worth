@@ -180,6 +180,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             )?
             .into_resolution();
         Ok(match resolution {
+            WorthQueryApplicationIdempotencyResolution::ProductUnpublished(effects) => Some(
+                WorthQueryApplicationCommitOutcome::ProductUnpublished(effects),
+            ),
             WorthQueryApplicationIdempotencyResolution::ProductPreparationPending(pending) => {
                 Some(WorthQueryApplicationCommitOutcome::ProductPreparationPending(pending))
             }

@@ -36,6 +36,11 @@ impl WorldReleasedRecoveredEffects {
     pub fn reserved_commit_identity(&self) -> &CompositeCommitIdentity {
         &self.commit
     }
+    pub fn into_cleanup(self) -> crate::recovery::ProductUnpublishedCleanup {
+        // Recovered application opens retain Native custody, never forked component branches.
+        // This is reachable only from this SAME original durable Released result.
+        crate::recovery::ProductUnpublishedCleanup::new(Vec::new(), Vec::new())
+    }
     pub fn native_effect(&self) -> Option<&ReadmittedRelationalAssociatedEffect> {
         self.effect.as_ref()
     }
@@ -44,9 +49,27 @@ impl WorldReleasedRecoveredEffects {
 impl WorldRecoveredUnpublishedEffects {
     /// Reached only through the current World's recovery service and admission.
     pub(crate) fn release_original(
-        self,
+        mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> WorldRecoveredReleaseOutcome {
+        if self.continuation_already_committed() {
+            return WorldRecoveredReleaseOutcome::AdmissionRefused {
+                cause: crate::recovery::RuntimeWorldRecoveryDenial::ContinuationAlreadyCommitted,
+                custody: self,
+            };
+        }
+        let preparing = self
+            .record
+            .continuation
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .is_some();
+        if preparing {
+            return WorldRecoveredReleaseOutcome::AdmissionRefused {
+                cause: crate::recovery::RuntimeWorldRecoveryDenial::ContinuationAlreadyStarted,
+                custody: self,
+            };
+        }
         let subject = {
             let existing = self
                 .record
@@ -57,23 +80,18 @@ impl WorldRecoveredUnpublishedEffects {
             match existing {
                 Some(subject) => subject,
                 None => {
-                    let relational =
-                        match &*self.record.native.lock().unwrap_or_else(|e| e.into_inner()) {
-                            RecoveredNativeCustody::OpenOnly => Ok(None),
-                            RecoveredNativeCustody::Relational(native) => {
-                                let actual = native.custody().effect().subject();
-                                crate::durability::WorldRelationalReleaseEvidence::from_original(
-                                    execution,
-                                    actual.receipt(),
-                                    actual.position().0,
-                                    *actual.artifact_digest(),
-                                )
-                                .map(Some)
-                            }
-                            RecoveredNativeCustody::Released => {
-                                unreachable!("same unreleased claim")
-                            }
-                        };
+                    let relational = self
+                        .native_effect()
+                        .map(|effect| {
+                            let actual = effect.subject();
+                            crate::durability::WorldRelationalReleaseEvidence::from_original(
+                                execution,
+                                actual.receipt(),
+                                actual.position().0,
+                                *actual.artifact_digest(),
+                            )
+                        })
+                        .transpose();
                     let relational = match relational {
                         Ok(relational) => relational,
                         Err(cause) => {
@@ -108,16 +126,30 @@ impl WorldRecoveredUnpublishedEffects {
                 }
             }
         };
-        match self.record.binding.publish(&subject, execution) {
-            Ok(committed) => {
-                // Preserve the exact sealed witness before catalog mutation or
-                // dropping any genuine Native predecessor/successor lease.
-                *self
-                    .record
-                    .committed_release
-                    .lock()
-                    .unwrap_or_else(|e| e.into_inner()) = Some(committed);
-                self.catalog.remove_recovered(&self.record);
+        let already_committed = self
+            .record
+            .committed_release
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .is_some();
+        let publication = if already_committed {
+            Ok(())
+        } else {
+            self.record
+                .binding
+                .publish(&subject, execution)
+                .map(|committed| {
+                    *self
+                        .record
+                        .committed_release
+                        .lock()
+                        .unwrap_or_else(|e| e.into_inner()) = Some(committed.into_witness());
+                })
+        };
+        match publication {
+            Ok(()) => {
+                // End the immutable view before transferring the SAME Native proof.
+                self.source = None;
                 let native = std::mem::replace(
                     &mut *self.record.native.lock().unwrap_or_else(|e| e.into_inner()),
                     RecoveredNativeCustody::Released,
@@ -125,13 +157,26 @@ impl WorldRecoveredUnpublishedEffects {
                 let effect = match native {
                     RecoveredNativeCustody::OpenOnly => None,
                     RecoveredNativeCustody::Relational(native) => {
+                        let native = match Arc::try_unwrap(native) {
+                            Ok(native) => native,
+                            Err(native) => {
+                                *self.record.native.lock().unwrap_or_else(|e| e.into_inner()) =
+                                    RecoveredNativeCustody::Relational(native);
+                                self.refresh_source();
+                                return WorldRecoveredReleaseOutcome::Pending(self);
+                            }
+                        };
                         let (effect, before, before_lease, after, after_lease) =
                             native.consume(|native| native.into_retained_parts());
                         drop((before, before_lease, after, after_lease));
                         Some(effect)
                     }
+                    RecoveredNativeCustody::Prepared(_) => {
+                        unreachable!("continuation cannot release")
+                    }
                     RecoveredNativeCustody::Released => unreachable!("released exactly once"),
                 };
+                self.catalog.remove_recovered(&self.record);
                 WorldRecoveredReleaseOutcome::Released(WorldReleasedRecoveredEffects {
                     identity: self.record.identity.clone(),
                     attempt: self.record.attempt.clone(),

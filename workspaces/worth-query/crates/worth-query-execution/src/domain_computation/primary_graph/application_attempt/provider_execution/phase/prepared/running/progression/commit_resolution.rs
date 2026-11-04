@@ -220,6 +220,17 @@ fn resolve_indeterminate_commit(
                     .preparation_pending(&context.product, handle, stage),
             )
         }
+        Ok(WorthQueryProviderIdempotencyResolution::RecoveredUnpublished { handle }) => {
+            match context
+                .provider
+                .recovered_unpublished_application(&context.product, handle)
+            {
+                Ok(effects) => WorthQueryProviderProgressionOutcome::ProductUnpublished(effects),
+                Err(_) => WorthQueryProviderProgressionOutcome::Indeterminate(
+                    evidence.with_preparation_busy(),
+                ),
+            }
+        }
         Ok(WorthQueryProviderIdempotencyResolution::PreparationBusy) => {
             WorthQueryProviderProgressionOutcome::Indeterminate(evidence.with_preparation_busy())
         }

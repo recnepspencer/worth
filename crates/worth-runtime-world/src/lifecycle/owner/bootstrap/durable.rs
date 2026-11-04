@@ -232,7 +232,8 @@ where
         if !acknowledged && !selected {
             match pending.binding.publish(&pending.subject, execution) {
                 Ok(witness) => {
-                    *pending.committed.lock().unwrap_or_else(|e| e.into_inner()) = Some(witness)
+                    *pending.committed.lock().unwrap_or_else(|e| e.into_inner()) =
+                        Some(witness.into_witness())
                 }
                 Err(WorldDurablePublicationStop::Pending | WorldDurablePublicationStop::Busy) => {
                     return Outcome::Pending

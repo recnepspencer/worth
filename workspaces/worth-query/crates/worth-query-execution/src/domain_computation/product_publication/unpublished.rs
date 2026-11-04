@@ -5,16 +5,8 @@ use worth_runtime_world::facade::{
 
 enum WorthQueryProductUnpublishedOwnerEffects {
     Application(ProductUnpublishedOwnerEffects),
+    Recovered(worth_runtime_world::facade::WorldRecoveredUnpublishedEffects),
     ConditionalDefinition(RuntimeWorldUnpublishedConditionalDefinition),
-}
-
-impl WorthQueryProductUnpublishedOwnerEffects {
-    fn effects(&self) -> &ProductUnpublishedOwnerEffects {
-        match self {
-            Self::Application(effects) => effects,
-            Self::ConditionalDefinition(unpublished) => unpublished.effects(),
-        }
-    }
 }
 
 /// Owner effects retained by World after an application attempt failed to
@@ -39,7 +31,17 @@ impl WorthQueryProductUnpublishedApplication {
     pub(in crate::domain_computation) fn recovery_handle(
         &self,
     ) -> ProductUnpublishedRecoveryHandle {
-        self.effects.effects().recovery_handle()
+        match &self.effects {
+            WorthQueryProductUnpublishedOwnerEffects::Application(effects) => {
+                effects.recovery_handle()
+            }
+            WorthQueryProductUnpublishedOwnerEffects::ConditionalDefinition(value) => {
+                value.effects().recovery_handle()
+            }
+            WorthQueryProductUnpublishedOwnerEffects::Recovered(effects) => {
+                effects.recovery_handle()
+            }
+        }
     }
     pub(in crate::domain_computation) fn prepare_settled_relational_adoption(
         &self,
@@ -49,13 +51,32 @@ impl WorthQueryProductUnpublishedApplication {
         worth_runtime_world::facade::PreparedCompositePublicationWithoutSignal,
         worth_runtime_world::facade::RuntimeWorldSettledRelationalAdoptionDenial,
     > {
-        self.recovery.prepare_settled_relational_adoption(
-            self.effects.effects(),
-            cancellation,
-            deadline,
-        )
+        match &self.effects {
+            WorthQueryProductUnpublishedOwnerEffects::Application(effects) => self
+                .recovery
+                .prepare_settled_relational_adoption(effects, cancellation, deadline),
+            WorthQueryProductUnpublishedOwnerEffects::ConditionalDefinition(value) => self
+                .recovery
+                .prepare_settled_relational_adoption(value.effects(), cancellation, deadline),
+            WorthQueryProductUnpublishedOwnerEffects::Recovered(_) => Err(
+                worth_runtime_world::facade::RuntimeWorldSettledRelationalAdoptionDenial::Recovery(
+                    RuntimeWorldRecoveryDenial::RecoveredCustodyRequired,
+                ),
+            ),
+        }
     }
 
+    pub(in crate::domain_computation) fn new_recovered(
+        effects: worth_runtime_world::facade::WorldRecoveredUnpublishedEffects,
+        recovery: RuntimeWorldRecoveryPort,
+        disposition: crate::domain_computation::primary_graph::WorthQueryUnpublishedIdempotencyDisposition,
+    ) -> Self {
+        Self {
+            effects: WorthQueryProductUnpublishedOwnerEffects::Recovered(effects),
+            recovery,
+            disposition,
+        }
+    }
     pub(in crate::domain_computation) fn new(
         effects: ProductUnpublishedOwnerEffects,
         recovery: RuntimeWorldRecoveryPort,
@@ -81,18 +102,53 @@ impl WorthQueryProductUnpublishedApplication {
     }
 
     pub fn cause(&self) -> worth_runtime_world::facade::ProductUnpublishedCause {
-        self.effects.effects().cause()
+        match &self.effects {
+            WorthQueryProductUnpublishedOwnerEffects::Application(effects) => effects.cause(),
+            WorthQueryProductUnpublishedOwnerEffects::ConditionalDefinition(value) => {
+                let effects = value.effects();
+                effects.cause()
+            }
+            WorthQueryProductUnpublishedOwnerEffects::Recovered(effects) => {
+                if effects.native_effect().is_some() {
+                    worth_runtime_world::facade::ProductUnpublishedCause::RecoveredWithoutProductMovement
+                } else {
+                    worth_runtime_world::facade::ProductUnpublishedCause::OpenAttemptRetained
+                }
+            }
+        }
     }
 
     pub fn owner_effect_count(&self) -> usize {
-        self.effects.effects().owner_effect_count()
+        match &self.effects {
+            WorthQueryProductUnpublishedOwnerEffects::Application(effects) => {
+                effects.owner_effect_count()
+            }
+            WorthQueryProductUnpublishedOwnerEffects::ConditionalDefinition(value) => {
+                let effects = value.effects();
+                effects.owner_effect_count()
+            }
+            WorthQueryProductUnpublishedOwnerEffects::Recovered(effects) => {
+                usize::from(effects.native_effect().is_some())
+            }
+        }
     }
 
     /// Original correlation data, never permission to publish another attempt.
     pub fn attempt_identity(
         &self,
     ) -> &worth_runtime_world::facade::CompositePublicationAttemptIdentity {
-        self.effects.effects().attempt_identity()
+        match &self.effects {
+            WorthQueryProductUnpublishedOwnerEffects::Application(effects) => {
+                effects.attempt_identity()
+            }
+            WorthQueryProductUnpublishedOwnerEffects::ConditionalDefinition(value) => {
+                let effects = value.effects();
+                effects.attempt_identity()
+            }
+            WorthQueryProductUnpublishedOwnerEffects::Recovered(effects) => {
+                effects.attempt_identity()
+            }
+        }
     }
 
     /// Immutable original Native meaning, when this record retains a full result.
@@ -100,34 +156,80 @@ impl WorthQueryProductUnpublishedApplication {
     pub fn native_semantic_result(
         &self,
     ) -> Option<&worth_relational::facade::transactions::RelationalCommitSemanticResult> {
-        self.effects
-            .effects()
-            .component_results()
-            .relational_commit_result()
-            .map(|result| result.semantic_result())
+        match &self.effects {
+            WorthQueryProductUnpublishedOwnerEffects::Application(effects) => effects
+                .component_results()
+                .relational_commit_result()
+                .map(|result| result.semantic_result()),
+            WorthQueryProductUnpublishedOwnerEffects::ConditionalDefinition(value) => {
+                let effects = value.effects();
+                effects
+                    .component_results()
+                    .relational_commit_result()
+                    .map(|result| result.semantic_result())
+            }
+            WorthQueryProductUnpublishedOwnerEffects::Recovered(effects) => effects
+                .native_effect()
+                .map(|effect| effect.semantic_result()),
+        }
     }
 
     pub fn live_obligation_count(&self) -> usize {
-        self.effects.effects().live_obligation_count()
+        match &self.effects {
+            WorthQueryProductUnpublishedOwnerEffects::Application(effects) => {
+                effects.live_obligation_count()
+            }
+            WorthQueryProductUnpublishedOwnerEffects::ConditionalDefinition(value) => {
+                let effects = value.effects();
+                effects.live_obligation_count()
+            }
+            WorthQueryProductUnpublishedOwnerEffects::Recovered(effects) => {
+                usize::from(effects.native_effect().is_some())
+            }
+        }
     }
 
     pub fn expected_product(&self) -> &worth_runtime_world::facade::ProductBranchObservation {
-        self.effects.effects().expected_head()
+        match &self.effects {
+            WorthQueryProductUnpublishedOwnerEffects::Application(effects) => {
+                effects.expected_head()
+            }
+            WorthQueryProductUnpublishedOwnerEffects::ConditionalDefinition(value) => {
+                let effects = value.effects();
+                effects.expected_head()
+            }
+            WorthQueryProductUnpublishedOwnerEffects::Recovered(effects) => effects.expected_head(),
+        }
     }
 
     pub fn next_actions(&self) -> &[worth_runtime_world::facade::ProductUnpublishedNextAction] {
-        self.effects.effects().next_actions()
+        match &self.effects {
+            WorthQueryProductUnpublishedOwnerEffects::Application(effects) => {
+                effects.next_actions()
+            }
+            WorthQueryProductUnpublishedOwnerEffects::ConditionalDefinition(value) => {
+                let effects = value.effects();
+                effects.next_actions()
+            }
+            WorthQueryProductUnpublishedOwnerEffects::Recovered(effects) => effects.next_actions(),
+        }
     }
 
     pub fn relational_requires_settlement(&self) -> bool {
-        self.effects
-            .effects()
-            .progress()
-            .relational_requires_settlement()
+        match &self.effects {
+            WorthQueryProductUnpublishedOwnerEffects::Application(effects) => {
+                effects.progress().relational_requires_settlement()
+            }
+            WorthQueryProductUnpublishedOwnerEffects::ConditionalDefinition(value) => {
+                let effects = value.effects();
+                effects.progress().relational_requires_settlement()
+            }
+            WorthQueryProductUnpublishedOwnerEffects::Recovered(_) => false,
+        }
     }
 
     pub fn into_recovery(self) -> super::WorthQueryProductUnpublishedRecovery {
-        let handle = self.effects.effects().recovery_handle();
+        let handle = self.recovery_handle();
         drop(self.effects);
         super::WorthQueryProductUnpublishedRecovery::new(handle, self.recovery, self.disposition)
     }
@@ -135,14 +237,17 @@ impl WorthQueryProductUnpublishedApplication {
     /// Refresh descriptive recovery facts through the same owning catalog.
     /// Inspection cannot publish, rerun effects, or promote this to a commit.
     pub fn inspect(&self) -> Result<Self, RuntimeWorldRecoveryDenial> {
-        let effects = self
-            .recovery
-            .inspect_effects(&self.effects.effects().recovery_handle())?;
-        Ok(Self::new(
-            effects,
-            self.recovery.clone(),
-            self.disposition.clone(),
-        ))
+        match self.recovery.inspect_effects(&self.recovery_handle()) {
+            Ok(effects) => Ok(Self::new(
+                effects,
+                self.recovery.clone(),
+                self.disposition.clone(),
+            )),
+            Err(RuntimeWorldRecoveryDenial::RecoveredCustodyRequired) => {
+                Err(RuntimeWorldRecoveryDenial::CallerCapabilityLive)
+            }
+            Err(cause) => Err(cause),
+        }
     }
 }
 
@@ -150,7 +255,7 @@ impl std::fmt::Debug for WorthQueryProductUnpublishedApplication {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         formatter
             .debug_struct("WorthQueryProductUnpublishedApplication")
-            .field("effects", self.effects.effects())
+            .field("handle", &self.recovery_handle())
             .finish_non_exhaustive()
     }
 }

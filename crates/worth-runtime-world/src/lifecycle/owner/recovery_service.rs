@@ -5,6 +5,7 @@ use crate::recovery::{
 };
 
 use super::RuntimeWorldOwnerRoot;
+mod recovered_continuation;
 mod recovered_publication;
 
 #[cfg(test)]
@@ -178,6 +179,13 @@ where
         self.state.recovery.claim_recovered(handle)
     }
 
+    fn continue_recovered_effects(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        effects: crate::recovery::WorldRecoveredUnpublishedEffects,
+    ) -> crate::recovery::WorldRecoveredContinuationOutcome {
+        self.continue_recovered_publication(execution, effects)
+    }
     fn release_recovered_effects(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

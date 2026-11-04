@@ -48,4 +48,6 @@ pub use worth_runtime_world::facade::{
     CompositeComponentChangePosture, RuntimeWorldCancellationSource, RuntimeWorldCancellationToken,
 };
 
-pub use crate::domain_computation::WorthQueryProductUnpublishedRecoveryReleaseDenial;
+pub use crate::domain_computation::{
+    WorthQueryProductUnpublishedRecoveryReleaseDenial, WorthQueryRecoveredProductReleaseDenial,
+};

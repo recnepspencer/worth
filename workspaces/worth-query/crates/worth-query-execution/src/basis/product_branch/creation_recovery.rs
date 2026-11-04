@@ -249,6 +249,9 @@ fn inspection(
 fn map_cause(cause: ProductUnpublishedCause) -> WorthQueryProductBranchCreationRecoveryCause {
     use ProductUnpublishedCause as Cause;
     match cause {
+        Cause::RecoveredWithoutProductMovement => {
+            unreachable!("cold original custody cannot construct live branch-creation effects")
+        }
         Cause::OriginalObservationStopped(stop) => {
             WorthQueryProductBranchCreationRecoveryCause::OriginalObservationStopped(stop)
         }
@@ -303,6 +306,9 @@ fn map_action(
 ) -> WorthQueryProductBranchCreationRecoveryNextAction {
     use ProductUnpublishedNextAction as Action;
     match action {
+        Action::ContinueOriginalPublication => {
+            unreachable!("cold original continuation is distinct from live branch creation")
+        }
         Action::SettleOwnerEffects => {
             WorthQueryProductBranchCreationRecoveryNextAction::SettleOwnerEffects
         }
@@ -323,6 +329,9 @@ pub(crate) fn map_recovery_denial(
 ) -> WorthQueryProductBranchRecoveryDenial {
     use RuntimeWorldRecoveryDenial as Denial;
     match denial {
+        Denial::ContinuationAlreadyCommitted
+        | Denial::ContinuationAlreadyStarted
+        | Denial::ReleaseAlreadyStarted => WorthQueryProductBranchRecoveryDenial::NotBranchCreation,
         Denial::RecoveredCustodyRequired => {
             WorthQueryProductBranchRecoveryDenial::RecoveredCustodyRequired
         }

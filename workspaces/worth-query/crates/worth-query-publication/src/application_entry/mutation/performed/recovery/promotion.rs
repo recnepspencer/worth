@@ -254,6 +254,7 @@ where
         self.check_recovery_liveness()?;
         match read.into_resolution() {
             WorthQueryApplicationIdempotencyResolution::RecoveredCommitted(receipt) => Err(WorthQueryApplicationRecoveryRequestDenial::RecoveredCommitted(receipt)),
+            WorthQueryApplicationIdempotencyResolution::ProductUnpublished(effects) => Err(WorthQueryApplicationRecoveryRequestDenial::ProductUnpublished(effects)),
             WorthQueryApplicationIdempotencyResolution::ProductPreparationPending(owner) => Err(WorthQueryApplicationRecoveryRequestDenial::ProductPreparationPending(owner)),
             WorthQueryApplicationIdempotencyResolution::Unseen
             | WorthQueryApplicationIdempotencyResolution::IntentDrift => Err(binding_mismatch()),

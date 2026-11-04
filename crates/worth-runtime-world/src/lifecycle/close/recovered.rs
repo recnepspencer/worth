@@ -81,12 +81,15 @@ impl OriginalRecoveredClose {
             attempt,
             commit,
             open,
+            continued: _,
+            native_identity: _,
             expected,
             binding,
             native,
             claimed,
             release,
             committed_release,
+            continuation,
             metadata_bytes: _,
         } = original;
         let native = match native
@@ -94,8 +97,20 @@ impl OriginalRecoveredClose {
             .unwrap_or_else(|cause| cause.into_inner())
         {
             RecoveredNativeCustody::OpenOnly => None,
-            RecoveredNativeCustody::Relational(original) => {
-                Some(original.consume(RecoveredNativeRetirement::new))
+            RecoveredNativeCustody::Relational(original) => Some(
+                Arc::try_unwrap(original)
+                    .expect("exclusive original Native custody")
+                    .consume(RecoveredNativeRetirement::new),
+            ),
+            RecoveredNativeCustody::Prepared(view) => {
+                drop(view);
+                let prepared = continuation
+                    .into_inner()
+                    .unwrap_or_else(|e| e.into_inner())
+                    .expect("same prepared continuation");
+                Some(RecoveredNativeRetirement::Publication(
+                    (*prepared).into_home_retirement(),
+                ))
             }
             RecoveredNativeCustody::Released => {
                 unreachable!("the exclusive recovered record passed final sealed validation")
@@ -125,7 +140,7 @@ impl OriginalRecoveredClose {
         native_owner: &worth_relational::facade::runtime::RelationalRuntime,
     ) -> Result<bool, Denial> {
         if let Some(native) = self.native.take() {
-            let (native, progress) = native.advance(request);
+            let (native, progress) = native.advance(request, native_owner);
             self.native = Some(native);
             if !progress? {
                 return Ok(false);

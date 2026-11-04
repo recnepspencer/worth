@@ -33,7 +33,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         handle: &ProductUnpublishedRecoveryHandle,
     ) -> Result<WorthQueryProductUnpublishedRecovery, RuntimeWorldRecoveryDenial> {
         let recovery = self.product_runtime.owner.recovery_port();
-        drop(recovery.inspect_effects(handle)?);
+        match recovery.inspect_effects(handle) {
+            Ok(effects) => drop(effects),
+            Err(RuntimeWorldRecoveryDenial::RecoveredCustodyRequired) => {
+                drop(recovery.inspect_recovered_effects(handle)?)
+            }
+            Err(cause) => return Err(cause),
+        }
         Ok(WorthQueryProductUnpublishedRecovery::new(
             handle.clone(),
             recovery,
@@ -112,6 +118,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                             )
                         })?;
                         self.prepare_product_publication_recovery_release(
+                            execution,
                             retained.take().expect("one admitted record release"),
                             minimum_age_ticks,
                         )?
@@ -138,6 +145,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 
     fn prepare_product_publication_recovery_release(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         recovery: WorthQueryProductUnpublishedRecovery,
         minimum_age_ticks: u64,
     ) -> Result<crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanup, WorthQueryProductUnpublishedRecoveryReleaseFailure>{
@@ -162,6 +170,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .inspect_effects(&handle)
         {
             Ok(effects) => effects,
+            Err(RuntimeWorldRecoveryDenial::RecoveredCustodyRequired) => {
+                return self.prepare_recovered_product_release(execution, recovery)
+            }
             Err(denial) => return Err(recovery_failure(recovery, denial.into())),
         };
         let reservation = if effects.destination_branch().is_some() {

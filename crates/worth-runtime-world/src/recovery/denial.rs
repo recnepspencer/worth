@@ -2,6 +2,9 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RuntimeWorldRecoveryDenial {
     RecoveredCustodyRequired,
+    ContinuationAlreadyCommitted,
+    ContinuationAlreadyStarted,
+    ReleaseAlreadyStarted,
     ReopenRequired,
     OwnerUnavailable(crate::lifecycle::RuntimeWorldOwnerUnavailable),
     ForeignHandle,

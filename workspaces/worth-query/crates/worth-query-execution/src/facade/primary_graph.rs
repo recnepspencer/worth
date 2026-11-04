@@ -30,7 +30,7 @@ pub use crate::domain_computation::{
     WorthQueryInvariantExecutionFailurePosture, WorthQueryProductUnpublishedRecoveryFailure,
     WorthQueryProductUnpublishedRecoveryReleaseDenial,
     WorthQueryProductUnpublishedRecoveryReleaseFailure, WorthQueryProviderSessionFailure,
-    WorthQueryRelationLawDenial,
+    WorthQueryRecoveredProductReleaseDenial, WorthQueryRelationLawDenial,
 };
 
 pub use crate::domain_computation::primary_graph::{
@@ -355,7 +355,8 @@ pub use worth_runtime_world::facade::{
     ProductUnpublishedNextAction, ProductUnpublishedRecoveryHandle, RecoveryContinuationContract,
     RuntimeWorldBranchAdmissionDenial, RuntimeWorldRecoveryCursor, RuntimeWorldRecoveryDenial,
     RuntimeWorldRecoveryPage, RuntimeWorldServiceDenial,
-    RuntimeWorldSettledRelationalAdoptionDenial,
+    RuntimeWorldSettledRelationalAdoptionDenial, WorldRecoveredContinuationDenial,
+    WorldRecoveredContinuationOutcome,
 };
 pub use worth_signal::facade::runtime::SignalConditionalEvaluationBudget;
 

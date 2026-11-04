@@ -9,6 +9,7 @@ use worth_runtime_world::facade::ProductUnpublishedRecoveryHandle;
 mod before_world;
 mod handle_slots;
 mod managed_recovery;
+pub(super) mod recovered;
 pub(in crate::domain_computation::primary_graph::provider) use before_world::BeforeWorldQueryReservation;
 mod preparation;
 mod release;
@@ -46,6 +47,7 @@ struct WorthQueryUnpublishedIdempotencyEntry {
 /// are bound before owner effects begin.
 pub(super) struct WorthQueryUnpublishedIdempotencyStore {
     maximum_entries: Option<usize>,
+    recovered: BTreeMap<WorthQueryUnpublishedIdempotencyKey, recovered::RecoveredIdempotencyEntry>,
     by_key: BTreeMap<
         WorthQueryUnpublishedIdempotencyKey,
         Arc<Mutex<WorthQueryUnpublishedIdempotencyEntry>>,
@@ -72,6 +74,7 @@ impl WorthQueryUnpublishedIdempotencyStore {
         );
         Self {
             maximum_entries,
+            recovered: BTreeMap::new(),
             by_key: BTreeMap::new(),
             by_recovery: Vec::new(),
         }
@@ -115,10 +118,11 @@ impl WorthQueryUnpublishedIdempotencyStore {
         (),
     > {
         let key = WorthQueryUnpublishedIdempotencyKey::for_binding(&product, &binding);
-        if self.by_key.contains_key(&key)
+        if self.recovered.contains_key(&key)
+            || self.by_key.contains_key(&key)
             || self
                 .maximum_entries
-                .is_some_and(|maximum| self.by_key.len() >= maximum)
+                .is_some_and(|maximum| self.by_key.len() + self.recovered.len() >= maximum)
             || match self.maximum_entries {
                 Some(_) => self.by_recovery.len() >= self.maximum_recovery_mappings().ok_or(())?,
                 None => false,

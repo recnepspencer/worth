@@ -126,6 +126,17 @@ where
             } else {
                 None
             };
+            if admitted.is_none()
+                && matches!(
+                    recovered
+                        .dispositions
+                        .get(&open.association.attempt())
+                        .map(|row| row.disposition()),
+                    Some(RecoveredCustodyDisposition::Continued)
+                )
+            {
+                return Err(Denial::OccurrenceEvidenceMismatch);
+            }
             let index = custody.publications.len();
             custody.publications.push(admitted);
             let ids = (
@@ -201,9 +212,24 @@ where
                     identity: identity.clone(),
                     attempt: attempt.clone(),
                     commit: commit.clone(),
+                    continued: recovered
+                        .dispositions
+                        .get(&open.association.attempt())
+                        .cloned(),
                     open: open.clone(),
                     expected,
                     binding: binding.clone(),
+                    native_identity: custody.publications[*index]
+                        .as_ref()
+                        .map(|publication| {
+                            native
+                                .history()
+                                .immutable_commit_identity(
+                                    publication.custody().effect().subject().receipt().commit_id,
+                                )
+                                .ok_or(Denial::OccurrenceEvidenceMismatch)
+                        })
+                        .transpose()?,
                     native: custody.publications[*index].take(),
                 });
         }

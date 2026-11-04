@@ -154,6 +154,31 @@ impl WorldProductMovementPermit {
         result
     }
 
+    pub(crate) fn publish_readmitted(
+        mut self,
+        expected: &ProductBranchObservation,
+        successor: &mut Option<ProductBranchHeadProtection>,
+        record: &crate::history::ReadmittedPublicationRecord,
+    ) -> Result<ProductBranchReferenceMovement, ProductBranchReferenceLoss> {
+        assert_eq!(&record.before, expected.snapshot());
+        assert_eq!(
+            successor.as_ref().expect("retained successor").snapshot(),
+            &record.after
+        );
+        let _actual_location = record.location();
+        let result = self.cell.replace_expected_permitted(
+            expected,
+            successor,
+            |slot| slot,
+            None,
+            Some(&self),
+        );
+        if result.is_ok() {
+            self.armed = false;
+        }
+        result
+    }
+
     pub(super) fn admits(&self, phase: &ProductMovementPhase) -> bool {
         matches!(phase, ProductMovementPhase::MovementInFlight { subject, committed: Some(_) }
             if subject.same_subject(&self.subject))

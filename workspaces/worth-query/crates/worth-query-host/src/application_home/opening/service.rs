@@ -33,38 +33,11 @@ pub(super) fn finish_service<Schema: ApplicationSchemaComposition, Program: 'sta
         ApplicationHomeOpeningStage::Custody,
         ApplicationHomeOpeningEdge::Before,
     );
-    let readmit = (|| {
-        phase
-            .execution_request()
-            .consult()
-            .map_err(HomeCustodyReadmissionDenial::Execution)?;
-        let held = home
-            .world()
-            .inspection_port()
-            .recovery_snapshot()
-            .map_err(HomeCustodyReadmissionDenial::WorldUnavailable)?;
-        if held.installed() != 0
-            || held.reserved() != 0
-            || held.abandoned() != 0
-            || held.updating() != 0
-        {
-            return Err(HomeCustodyReadmissionDenial::RetainedWorldCustody {
-                installed: held.installed(),
-                reserved: held.reserved(),
-                abandoned: held.abandoned(),
-                updating: held.updating(),
-            });
-        }
-        Ok(())
-    })();
-    if let Err(cause) = readmit {
-        return Err(WorthQueryApplicationHomeOpenRefused::CustodyReadmission {
-            query,
-            home,
-            cause,
-        });
-    }
-    let custody = CustodyReadmitted::from_owner(HomeServiceCustody { query, home });
+    let custody = super::custody::readmit(phase, query, home)?.consume(
+        |super::custody::AdmittedHomeCustody { query, home }| {
+            CustodyReadmitted::from_owner(HomeServiceCustody { query, home })
+        },
+    );
     observation.arrive_for_test(
         ApplicationHomeOpeningStage::Custody,
         ApplicationHomeOpeningEdge::After,

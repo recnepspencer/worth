@@ -48,6 +48,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             WorthQueryApplicationIdempotencyResolution::RecoveredCommitted(receipt) => {
                 WorthQueryApplicationCommitOutcome::RecoveredCommitted(receipt)
             }
+            WorthQueryApplicationIdempotencyResolution::ProductUnpublished(owner) => {
+                WorthQueryApplicationCommitOutcome::ProductUnpublished(owner)
+            }
             WorthQueryApplicationIdempotencyResolution::ProductPreparationPending(owner) => {
                 WorthQueryApplicationCommitOutcome::ProductPreparationPending(owner)
             }

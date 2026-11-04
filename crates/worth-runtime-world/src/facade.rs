@@ -123,7 +123,8 @@ pub use crate::recovery::{
     PerformedPublicationRecoveryDenial, ProductUnpublishedCause, ProductUnpublishedCleanup,
     ProductUnpublishedNextAction, ProductUnpublishedOwnerEffects, ProductUnpublishedRecoveryHandle,
     ProductUnpublishedRetentionPosture, RecoveryContinuationContract, RuntimeWorldRecoveryDenial,
-    RuntimeWorldSettledRelationalAdoptionDenial, WorldRecoveredReleaseOutcome,
+    RuntimeWorldSettledRelationalAdoptionDenial, WorldRecoveredContinuationDenial,
+    WorldRecoveredContinuationOutcome, WorldRecoveredReleaseOutcome,
     WorldRecoveredUnpublishedEffects, WorldReleasedRecoveredEffects,
 };
 
@@ -136,7 +137,7 @@ pub use crate::inspection::{
 
 pub use crate::retention::{
     ComponentBasisDependencyClass, ComponentBasisDependencyCounts, RetentionCostSnapshot,
-    RetentionReclamationReport,
+    RetentionObligationDenial, RetentionReclamationReport, RetentionTransferDenial,
 };
 
 pub use worth_relational::facade::transactions::CommitResult;
@@ -144,6 +145,7 @@ pub use worth_relational::facade::transactions::CommitResult;
 pub use crate::lifecycle::{
     RuntimeWorldOperationControlForTest, RuntimeWorldPerformedPublicationObservationForTest,
     RuntimeWorldProductComparePauseForTest, RuntimeWorldProductCurrentnessPauseForTest,
+    RuntimeWorldRecoveredDispositionObservationForTest,
 };
 
 pub use crate::lifecycle::{

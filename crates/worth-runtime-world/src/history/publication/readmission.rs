@@ -4,7 +4,7 @@ use crate::{
     branch::ProductBranchReferenceSnapshot, identity::CompositePublicationAttemptIdentity,
 };
 pub(crate) use retirement::ReadmittedPublicationRetirement;
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 use worth_proof::RelationalPublicationReadmitted;
 use worth_relational::facade::{
     durability::RelationalRecoveredPublicationCustody, transactions::RelationalCommitSemanticResult,
@@ -15,7 +15,7 @@ pub(crate) struct ReadmittedPublicationRecord {
     pub(crate) before: ProductBranchReferenceSnapshot,
     pub(crate) after: ProductBranchReferenceSnapshot,
     pub(crate) attempt: CompositePublicationAttemptIdentity,
-    pub(crate) location: crate::durability::AdmittedWorldOccurrenceLocation,
+    location: OnceLock<crate::durability::AdmittedWorldOccurrenceLocation>,
     pub(crate) incarnation: worth_foundational::facade::HomeIncarnation,
     native: Option<NativePublicationMeaning>,
 }
@@ -36,24 +36,49 @@ impl NativePublicationMeaning {
         }
     }
 }
+/// This unpublished phase exposes Native meaning, never serving history.
+#[derive(Debug)]
+pub(crate) struct PreparedReadmittedPublicationRecord {
+    record: Arc<ReadmittedPublicationRecord>,
+}
+impl PreparedReadmittedPublicationRecord {
+    pub(crate) fn effect(
+        &self,
+    ) -> &worth_relational::facade::durability::ReadmittedRelationalAssociatedEffect {
+        self.record.effect()
+    }
+    pub(crate) fn into_retirement(self: Arc<Self>) -> ReadmittedPublicationRetirement {
+        let original =
+            Arc::try_unwrap(self).expect("sealed close exclusively owns the prepared source view");
+        ReadmittedPublicationRetirement::new(original.record)
+    }
+    pub(crate) fn seal(
+        &self,
+        occurrence: &crate::durability::AdmittedWorldOccurrence,
+    ) -> Arc<ReadmittedPublicationRecord> {
+        self.record.seal_occurrence(occurrence);
+        self.record.clone()
+    }
+}
 impl ReadmittedPublicationRecord {
-    pub(crate) fn new(
+    pub(crate) fn prepare_original(
         before: ProductBranchReferenceSnapshot,
         after: ProductBranchReferenceSnapshot,
         attempt: CompositePublicationAttemptIdentity,
-        location: crate::durability::AdmittedWorldOccurrenceLocation,
         incarnation: worth_foundational::facade::HomeIncarnation,
         native: RelationalPublicationReadmitted<RelationalRecoveredPublicationCustody>,
-    ) -> Arc<Self> {
-        Arc::new(Self {
-            before,
-            after,
-            attempt,
-            location,
-            incarnation,
-            native: Some(NativePublicationMeaning::Recovered(
-                native.consume(|native| native),
-            )),
+    ) -> Arc<PreparedReadmittedPublicationRecord> {
+        Arc::new(PreparedReadmittedPublicationRecord {
+            record: Arc::new(Self {
+                before,
+                after,
+                attempt,
+                incarnation,
+                location: OnceLock::new(),
+                native: Some(NativePublicationMeaning::Recovered(
+                    native.consume(|native| native),
+                )),
+            }),
         })
     }
     pub(crate) fn from_source(
@@ -67,10 +92,29 @@ impl ReadmittedPublicationRecord {
             before,
             after,
             attempt,
-            location: occurrence.location().clone(),
+            location: OnceLock::from(occurrence.location().clone()),
             incarnation: occurrence.publishing_incarnation(),
             native: Some(NativePublicationMeaning::Source(native)),
         })
+    }
+    pub(crate) fn location(&self) -> &crate::durability::AdmittedWorldOccurrenceLocation {
+        self.location
+            .get()
+            .expect("only sealed records enter serving history")
+    }
+    pub(crate) fn effect(
+        &self,
+    ) -> &worth_relational::facade::durability::ReadmittedRelationalAssociatedEffect {
+        self.native().effect()
+    }
+    fn seal_occurrence(&self, occurrence: &crate::durability::AdmittedWorldOccurrence) {
+        assert_eq!(
+            self.after.selected_commit().ordinal(),
+            occurrence.open().commit.ordinal()
+        );
+        self.location
+            .set(occurrence.location().clone())
+            .expect("one actual occurrence location");
     }
     fn native(&self) -> &NativePublicationMeaning {
         self.native
@@ -171,10 +215,10 @@ impl WorldReadmittedPublication {
         self.semantic_result().receipt()
     }
     pub fn journal_position(&self) -> u64 {
-        self.record.location.position()
+        self.record.location().position()
     }
     pub fn artifact_digest(&self) -> &[u8; 32] {
-        self.record.location.digest()
+        self.record.location().digest()
     }
     pub fn native_patch_position(
         &self,

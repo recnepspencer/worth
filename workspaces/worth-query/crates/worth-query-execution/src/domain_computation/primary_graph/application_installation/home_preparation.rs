@@ -18,7 +18,10 @@ use worth_relational::facade::runtime::{
 };
 mod binding;
 mod world;
-pub use world::{QueryHomeWorldAttachmentRefused, ReadmittedHomeQueryService};
+pub use world::{
+    QueryHomeCustodyReadmissionDenial, QueryHomeCustodyReadmissionRefused,
+    QueryHomeWorldAttachmentRefused, ReadmittedHomeQueryService,
+};
 mod existing;
 mod native;
 pub use existing::{

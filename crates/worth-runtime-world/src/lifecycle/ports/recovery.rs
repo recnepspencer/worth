@@ -23,6 +23,11 @@ pub(crate) trait RuntimeWorldRecoveryService:
         crate::recovery::WorldRecoveredUnpublishedEffects,
         crate::recovery::RuntimeWorldRecoveryDenial,
     >;
+    fn continue_recovered_effects(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        effects: crate::recovery::WorldRecoveredUnpublishedEffects,
+    ) -> crate::recovery::WorldRecoveredContinuationOutcome;
     fn release_recovered_effects(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

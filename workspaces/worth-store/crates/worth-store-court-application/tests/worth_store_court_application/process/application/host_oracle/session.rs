@@ -36,11 +36,14 @@ impl Session {
         (session, opening)
     }
     pub fn send(&mut self, request: Request) -> Response {
+        self.dispatch(request);
+        self.receive()
+    }
+    pub fn dispatch(&self, request: Request) {
         crate::killed_child::announce(
             &self.channel.join("request"),
             &serde_json::to_vec(&request).unwrap(),
         );
-        self.receive()
     }
     fn receive(&mut self) -> Response {
         let deadline = Instant::now() + Duration::from_secs(240);
@@ -128,6 +131,31 @@ fn host_oracle_service_child() {
         let mut closed = false;
         match command {
             Request::Observe => (),
+            Request::ContinueOriginal {
+                key,
+                value,
+                pause_after_disposition,
+            } => {
+                disposition = Some(super::recovered_custody::continue_original(
+                    home.as_ref().unwrap(),
+                    key,
+                    value,
+                    pause_after_disposition.then(|| channel.clone()),
+                    &execution,
+                ));
+            }
+            Request::ReleaseOriginal {
+                key,
+                value,
+                expect_continued,
+            } => {
+                disposition = Some(super::recovered_custody::release_original(
+                    home.as_ref().unwrap(),
+                    key,
+                    value,
+                    expect_continued,
+                ));
+            }
             Request::Step(index) => {
                 let command = &script.commands()[index];
                 assert_eq!(command.activation(), OperationActivation::Current);

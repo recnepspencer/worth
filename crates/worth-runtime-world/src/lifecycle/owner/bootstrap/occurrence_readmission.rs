@@ -24,16 +24,66 @@ where
             Denial,
         ),
     > {
-        let open = occurrence.open();
+        if Some(occurrence.location().owner()) != self.owner_identity().durable()
+            || occurrence.location().attempt() != occurrence.open().association.attempt()
+            || occurrence.location().commit() != occurrence.open().commit
+        {
+            return Err((native, Denial::OccurrenceEvidenceMismatch));
+        }
+        let record = self.prepare_original_recovered_publication(
+            before,
+            occurrence.admitted_open(),
+            occurrence.publishing_incarnation(),
+            native,
+            identity,
+        )?;
+        Ok(record.seal(occurrence))
+    }
+
+    pub(crate) fn prepare_original_recovered_publication(
+        &self,
+        before: &ProductBranchObservation,
+        admitted_open: &crate::durability::AdmittedWorldOpenAttempt,
+        incarnation: worth_foundational::facade::HomeIncarnation,
+        native: RelationalPublicationReadmitted<RelationalRecoveredPublicationCustody>,
+        identity: worth_relational::facade::history::RelationalCommitIdentity,
+    ) -> Result<
+        std::sync::Arc<crate::history::PreparedReadmittedPublicationRecord>,
+        (
+            RelationalPublicationReadmitted<RelationalRecoveredPublicationCustody>,
+            Denial,
+        ),
+    > {
+        let prepared =
+            self.prepare_original_recovered_image(before, admitted_open, &native, identity);
+        match prepared {
+            Err(cause) => Err((native, cause)),
+            Ok((after, attempt)) => Ok(ReadmittedPublicationRecord::prepare_original(
+                before.snapshot().clone(),
+                after,
+                attempt,
+                incarnation,
+                native,
+            )),
+        }
+    }
+
+    pub(crate) fn prepare_original_recovered_image(
+        &self,
+        before: &ProductBranchObservation,
+        admitted_open: &crate::durability::AdmittedWorldOpenAttempt,
+        native: &RelationalPublicationReadmitted<RelationalRecoveredPublicationCustody>,
+        identity: worth_relational::facade::history::RelationalCommitIdentity,
+    ) -> Result<
+        (
+            ProductBranchReferenceSnapshot,
+            crate::identity::CompositePublicationAttemptIdentity,
+        ),
+        Denial,
+    > {
+        let open = admitted_open.open();
         let owner = self.owner_identity();
-        let prepared = (|| {
-            let location = occurrence.location();
-            if Some(location.owner()) != owner.durable()
-                || location.attempt() != open.association.attempt()
-                || location.commit() != open.commit
-            {
-                return Err(Denial::OccurrenceEvidenceMismatch);
-            }
+        (|| {
             if native.custody().predecessor().admission_identity()
                 != before.basis().relational_basis().admission_identity()
             {
@@ -82,18 +132,7 @@ where
             )
             .map_err(|_| Denial::BranchLineage)?;
             Ok((after, attempt))
-        })();
-        match prepared {
-            Err(cause) => Err((native, cause)),
-            Ok((after, attempt)) => Ok(ReadmittedPublicationRecord::new(
-                before.snapshot().clone(),
-                after,
-                attempt,
-                occurrence.location().clone(),
-                occurrence.publishing_incarnation(),
-                native,
-            )),
-        }
+        })()
     }
 
     pub(crate) fn install_readmitted_occurrence(

@@ -328,6 +328,11 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationRequest<'_, '_, '_, Schema>
                     return Ok(NativeCommandResult::Resolved(read));
                 }
                 match read.into_resolution() {
+                    WorthQueryApplicationIdempotencyResolution::ProductUnpublished(effects) => {
+                        return Ok(NativeCommandResult::Commit(
+                            WorthQueryApplicationCommitOutcome::ProductUnpublished(effects),
+                        ));
+                    }
                     WorthQueryApplicationIdempotencyResolution::ProductPreparationPending(
                         pending,
                     ) => {

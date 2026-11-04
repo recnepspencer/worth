@@ -58,13 +58,25 @@ pub fn release_custody(
 ) -> Result<usize, worth_runtime_world::facade::RuntimeWorldRecoveryDenial> {
     let handles = handles(runtime);
     for handle in &handles {
-        let recovery = runtime
+        let mut recovery = runtime
             .runtime()
             .readmit_product_publication_recovery(handle)?;
-        runtime
-            .runtime()
-            .release_product_publication_recovery(recovery, 0)
-            .unwrap_or_else(|failure| panic!("original custody release: {failure:?}"));
+        loop {
+            use worth_query_host::facade::primary_graph::{
+                WorthQueryProductUnpublishedRecoveryReleaseDenial as Denial,
+                WorthQueryProductUnpublishedRecoveryReleaseFailure as Failure,
+            };
+            match runtime
+                .runtime()
+                .release_product_publication_recovery(recovery, 0)
+            {
+                Ok(_) => break,
+                Err(Failure::Recovery(failure)) if failure.denial() == Denial::RecoveredPending => {
+                    recovery = failure.into_recovery()
+                }
+                Err(other) => panic!("original custody release: {other:?}"),
+            }
+        }
     }
     Ok(handles.len())
 }

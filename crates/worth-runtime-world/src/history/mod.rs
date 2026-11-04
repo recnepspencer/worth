@@ -34,7 +34,9 @@ pub(crate) use publication::{
     CanonicalPublicationEnvelope, PerformedPublicationFacts, PreparedPublicationRecord,
     PublicationDeliveryClaim, PublicationRevision,
 };
-pub(crate) use publication::{PublicationEvidence, ReadmittedPublicationRecord};
+pub(crate) use publication::{
+    PreparedReadmittedPublicationRecord, PublicationEvidence, ReadmittedPublicationRecord,
+};
 pub use publication::{
     WorldObservedMemoryPublication, WorldReadmittedPublication, WorldReadmittedPublicationDenial,
 };

@@ -13,7 +13,9 @@ use crate::domain_computation::primary_graph::application_attempt::{
 };
 use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider;
 use crate::domain_computation::primary_graph::schema_layout::WorthQueryProviderIdempotencyLayout;
+pub(in crate::domain_computation::primary_graph::provider) mod original_binding;
 mod original_receipt;
+pub(in crate::domain_computation::primary_graph::provider) use original_receipt::RecordedOriginalBinding;
 mod source_denial;
 mod source_receipt;
 pub use original_receipt::{

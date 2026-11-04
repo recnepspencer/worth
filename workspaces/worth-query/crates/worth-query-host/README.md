@@ -88,10 +88,15 @@ successful close. The old Home's lease blocks concurrent opening, and old
 recovery handles cannot cross incarnations: obtain claims from the newly
 readmitted Home. Neither zero observed effects nor this diagnostic proves
 release, restores a proposal, or permits resubmission.
-Existing service requires zero actual retained World recovery custody. A Native
-effect beyond the published World head remains an owning refusal until recovered
-Query custody can be admitted. Original business-result readmission remains open
-work. Persisted workflow, outbox, inbound-completion and aftermath rows also
+Reopen admits actual recovered World custody and its original source-backed Query
+key before service. The original key returns `ProductUnpublished` with
+`RecoveredWithoutProductMovement`; its Native semantic result and predecessor
+remain original, without a reconstructed Rust return value. Obtain a fresh
+recovery claim from this Home. `continue_original_in_request` publishes that
+original occurrence without handler/effect replay; release records the durable
+disposition before removing live custody. Pending and refused actions retain the
+same catalog owner. An acknowledged `Continued` permits continuation, never
+release, including after another reopen. Persisted workflow, outbox, inbound-completion and aftermath rows also
 refuse cold service; compiled workflow declarations alone remain allowed.
 
 Before Directory service escapes, Store also inspects its actual reserved

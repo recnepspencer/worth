@@ -6810,10 +6810,16 @@ concurrent open. Old recovery handles are incarnation-fenced, so obtain claims
 from the newly readmitted Home. Do not loop live release, reconstruct the old
 proposal, or resubmit the handler.
 Zero observed effects are descriptive and do not issue a no-effect authority.
-Existing Query service requires zero actual retained World recovery custody.
-A performed Native effect beyond the published World head remains owned and
-refused before service until recovered Query custody is supported. Lower World
-recovery does not reconstruct an application's Rust return value. Persisted
+Reopen validates each recovered World open against its actual Native association
+and original Query key/intent/affinity before admitting service. Untypable or
+inconsistent original evidence still returns an owning typed opening refusal.
+Retrying the original key returns distinct recovered `ProductUnpublished`
+custody, with the original Native meaning and predecessor, and no reconstructed
+Rust return value. Its `ContinueOriginalPublication` action is executed through
+`continue_original_in_request` on the fresh recovery claim: it publishes the
+original occurrence without handler or effect replay. Release first commits its
+original durable disposition. Pending/refused outcomes retain the same owner.
+A durable `Continued` disposition excludes release across every subsequent open. Persisted
 workflow, outbox, inbound-completion and aftermath rows refuse cold service;
 compiled workflow declarations alone remain allowed. Missing or incompatible
 completion artifacts keep their existing origin and never regain initialization.

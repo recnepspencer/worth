@@ -5,6 +5,16 @@ use host_observation::{projection::StateProjection, receipts::MutationProjection
 pub(super) enum Request {
     Step(usize),
     Observe,
+    ContinueOriginal {
+        key: u64,
+        value: u64,
+        pause_after_disposition: bool,
+    },
+    ReleaseOriginal {
+        key: u64,
+        value: u64,
+        expect_continued: bool,
+    },
 }
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub(super) struct Response {
@@ -19,4 +29,5 @@ pub(super) struct Response {
 pub(super) enum Disposition {
     Continued(MutationProjection),
     Released(usize),
+    ContinuedReleaseRefused,
 }

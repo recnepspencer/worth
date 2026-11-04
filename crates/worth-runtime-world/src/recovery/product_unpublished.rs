@@ -124,8 +124,16 @@ impl ProductUnpublishedOwnerEffects {
     pub(crate) const fn metadata_charge_hint() -> usize {
         let retained = std::mem::size_of::<ProductUnpublishedOwnerEffectsRecord>();
         let active = crate::publication::ActiveAttemptRecord::metadata_charge_hint();
-        (if active > retained { active } else { retained })
-            + std::mem::size_of::<crate::publication::ConditionalDefinitionAttemptCustody>()
+        let live = (if active > retained { active } else { retained })
+            + std::mem::size_of::<crate::publication::ConditionalDefinitionAttemptCustody>();
+        let recovered = std::mem::size_of::<super::RecoveredWorldPublicationRecord>()
+            + std::mem::size_of::<
+                worth_proof::RelationalPublicationReadmitted<
+                    worth_relational::facade::durability::RelationalRecoveredPublicationCustody,
+                >,
+            >()
+            + 4 * std::mem::size_of::<usize>();
+        (if live > recovered { live } else { recovered })
             + super::catalog::ProductUnpublishedRecoveryCatalog::slot_metadata_charge_hint()
     }
 

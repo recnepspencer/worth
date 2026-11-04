@@ -1,4 +1,5 @@
 use std::sync::{Arc, Mutex};
+mod recovered;
 
 use super::denial::CompositeHistoryCatalogDenial;
 use super::entry::CompositeHistoryCatalogEntry;
@@ -168,48 +169,6 @@ impl ReservedCompositeCommitCapacity {
     /// Install and protect under the same history-owner lock. Denial preserves
     /// this reservation; a successful result already owns the new entry's
     /// first direct protection, so reclamation cannot enter an unprotected gap.
-    pub(crate) fn try_install_product_head(
-        &mut self,
-        commit: Arc<CompositeRuntimeWorldCommit>,
-        pins: crate::retention::HistoryRetentionObligation,
-    ) -> Result<crate::history::ProductHeadHistoryProtectionObligation, CompositeHistoryCatalogDenial>
-    {
-        use crate::history::retention::{
-            CompositeHistoryProtectionObligation, HistoryProtectionClass,
-            ProductHeadHistoryProtectionObligation,
-        };
-        let mut state = lock_state(&self.state);
-        self.validate_installation(&state, &commit, &pins)?;
-        let identity = self.identity.clone();
-        let reachability = Arc::clone(&state.reachability);
-        promote_reserved_commit(
-            &mut state,
-            &self.identity,
-            self.slots.as_ref().expect("live reserved slots"),
-            commit,
-            self.publication
-                .clone()
-                .map(crate::history::PublicationEvidence::Live),
-            pins,
-        );
-        super::lock_index(&reachability).protect_reserved_slot(
-            &self
-                .slots
-                .as_ref()
-                .expect("live reserved slots")
-                .reachability,
-        );
-        self.armed = false;
-        self.slots = None;
-        Ok(ProductHeadHistoryProtectionObligation::issued(
-            CompositeHistoryProtectionObligation::new(
-                reachability,
-                identity,
-                HistoryProtectionClass::ProductHead,
-            ),
-        ))
-    }
-
     /// Install the publisher's delivery protection in the same transaction as
     /// the new head protection. Both counts are fixed for this fresh entry;
     /// no protection capacity is acquired after a successful product CAS.

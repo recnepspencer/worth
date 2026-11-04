@@ -42,6 +42,9 @@ where
     I: Copy + Ord + Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
+    if owner.state.recovery.has_recovered() {
+        return Err(NoEffectCause::OwnerDeniedBeforeEffect);
+    }
     let mut identities = owner
         .state
         .identities

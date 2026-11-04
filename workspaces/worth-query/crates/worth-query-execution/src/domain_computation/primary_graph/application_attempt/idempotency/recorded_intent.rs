@@ -38,6 +38,15 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryRecordedIntentMa
 }
 
 impl WorthQueryApplicationIdempotencyBinding {
+    /// Select only the derived lookup namespace from the validated original grammar.
+    pub(in crate::domain_computation::primary_graph) fn recorded_correction_scope(
+        recorded: &str,
+    ) -> Result<bool, &'static str> {
+        validate(recorded)?;
+        Ok(recorded
+            .split(':')
+            .any(|slot| slot.starts_with("correction=")))
+    }
     /// The intent this binding records under its key.
     pub(in crate::domain_computation::primary_graph) fn intent_text(self) -> String {
         format!("{DURABLE_ENCODING}{}", self.intent_slots())

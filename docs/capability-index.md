@@ -1420,8 +1420,14 @@ recipe supplies the actual Native recovery authority to World's complete
 associated inventory admission before reconciliation, including empty World
 journals. That authority checks its exact runtime; it is historical recovery
 evidence, not a live publication fence. Recovered custody keeps its distinct
-durable-before-live disposition operations. Full public recovered Query service
-and cold retry remain separate acceptance work.
+durable-before-live disposition operations. Query admits its actual original
+key/intent/affinity before service; retry returns distinct recovered
+`ProductUnpublished` custody. Inspect its original Native meaning and predecessor,
+then use the fresh recovery claim's `continue_original_in_request` for the
+original occurrence, or the existing release route for durable release. Neither
+runs the handler again. Pending/refused outcomes retain that same owner. A
+committed `Continued` permits original continuation and forbids release after
+reopen; it is never appended twice.
 
 World lifecycle `close(request, &actual_owner)` uses the caller's original request, nonwaiting
 admission, and the existing publication frontier. Before sealing, contention or

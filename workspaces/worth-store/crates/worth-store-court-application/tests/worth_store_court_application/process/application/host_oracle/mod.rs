@@ -11,5 +11,6 @@ mod opening;
 mod original_source;
 mod partition_reopen;
 mod protocol;
+mod recovered_custody;
 mod semantic_links;
 mod session;

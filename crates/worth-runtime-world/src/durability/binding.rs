@@ -4,9 +4,11 @@ use super::{
 };
 use std::sync::{Arc, Mutex};
 use worth_execution::ExecutionRequest;
-use worth_foundational::facade::{DurablePublicationFate, WorldDurableJournal};
-use worth_proof::{AuthorityMarker, DurablyCommitted};
+use worth_foundational::facade::WorldDurableJournal;
+use worth_proof::AuthorityMarker;
 mod capture_reservation;
+mod committed;
+pub(crate) use committed::WorldCommittedPublication;
 
 /// The exact subject acknowledged by the attached medium. Its constructor is
 /// private to this binding's actual Committed branch.
@@ -143,7 +145,7 @@ impl WorldDurableMediumBinding {
         self: &Arc<Self>,
         subject: &WorldDurableArtifact,
         execution: &ExecutionRequest<'_, '_>,
-    ) -> Result<DurablyCommitted<ActualWorldPublication>, WorldDurablePublicationStop> {
+    ) -> Result<WorldCommittedPublication, WorldDurablePublicationStop> {
         {
             let mut gates = self.gates.lock().unwrap_or_else(|e| e.into_inner());
             if gates.capture_reserved {
@@ -189,24 +191,39 @@ impl WorldDurableMediumBinding {
                     flight.barrier = Some(PublicationBarrier::EvidenceRequired);
                     Err(WorldDurablePublicationStop::EvidenceRequired)
                 }
-                WorldPublicationObservation::Finished(DurablePublicationFate::Committed) => {
-                    let original = flight
-                        .subject
-                        .take()
-                        .expect("registered original publication");
-                    Ok(DurablyCommitted::from_owner(ActualWorldPublication {
-                        subject: original,
-                    }))
+                WorldPublicationObservation::Committed {
+                    journal,
+                    position,
+                    digest,
+                } => {
+                    if journal != subject.journal() || position == 0 {
+                        flight.barrier = Some(PublicationBarrier::PhysicalIndeterminate);
+                        Err(WorldDurablePublicationStop::Unresolved)
+                    } else {
+                        match committed::matches_digest(subject, digest, execution) {
+                            Ok(true) => {
+                                let original = flight
+                                    .subject
+                                    .take()
+                                    .expect("registered original publication");
+                                Ok(WorldCommittedPublication::new(original, position, digest))
+                            }
+                            Ok(false) => {
+                                flight.barrier = Some(PublicationBarrier::PhysicalIndeterminate);
+                                Err(WorldDurablePublicationStop::Unresolved)
+                            }
+                            Err(_) => {
+                                flight.barrier = Some(PublicationBarrier::EvidenceRequired);
+                                Err(WorldDurablePublicationStop::EvidenceRequired)
+                            }
+                        }
+                    }
                 }
-                WorldPublicationObservation::Finished(DurablePublicationFate::ProvenNoEffect {
-                    detail,
-                }) => {
+                WorldPublicationObservation::ProvenNoEffect { detail } => {
                     flight.subject = None;
                     Err(WorldDurablePublicationStop::Refused(detail))
                 }
-                WorldPublicationObservation::Finished(DurablePublicationFate::Indeterminate {
-                    detail: _,
-                }) => {
+                WorldPublicationObservation::Indeterminate { detail: _ } => {
                     flight.barrier = Some(PublicationBarrier::PhysicalIndeterminate);
                     Err(WorldDurablePublicationStop::Unresolved)
                 }

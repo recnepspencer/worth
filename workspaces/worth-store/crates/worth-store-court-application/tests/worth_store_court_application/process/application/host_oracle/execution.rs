@@ -82,6 +82,9 @@ pub(super) fn disposition(home: &OracleHome, command: &HostCommand) -> Option<Di
                 Resolution::RecoveredCommitted(receipt) => Some(Disposition::Continued(
                     host_observation::receipts::observe_original(&receipt),
                 )),
+                Resolution::ProductUnpublished(effects) => {
+                    panic!("original remains unpublished: {effects:?}")
+                }
                 Resolution::ProductPreparationPending(pending) => {
                     panic!("original remains pending: {pending:?}")
                 }

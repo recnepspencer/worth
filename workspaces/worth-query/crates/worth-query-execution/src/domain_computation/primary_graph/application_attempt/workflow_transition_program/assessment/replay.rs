@@ -144,6 +144,11 @@ where
         .into_resolution();
     Ok(match resolution {
         WorthQueryApplicationIdempotencyResolution::Unseen => None,
+        WorthQueryApplicationIdempotencyResolution::ProductUnpublished(owner) => {
+            Some(WorkflowProgressOutcome::Application(
+                WorthQueryApplicationUncommitted::ProductUnpublished(owner),
+            ))
+        }
         WorthQueryApplicationIdempotencyResolution::ProductPreparationPending(owner) => {
             Some(WorkflowProgressOutcome::Application(
                 WorthQueryApplicationUncommitted::ProductPreparationPending(owner),

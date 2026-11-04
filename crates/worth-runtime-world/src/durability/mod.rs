@@ -40,7 +40,8 @@ pub use artifact::{
 pub(crate) use association::is_world_association;
 pub(crate) use association::{decode_association, encode_association};
 pub(crate) use binding::{
-    ActualWorldPublication, WorldDurableMediumBinding, WorldDurablePublicationStop,
+    ActualWorldPublication, WorldCommittedPublication, WorldDurableMediumBinding,
+    WorldDurablePublicationStop,
 };
 pub(crate) use frontiers::WorldIdentityFrontiers;
 pub use medium::{

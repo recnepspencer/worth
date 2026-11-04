@@ -33,7 +33,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     claimed, terminal,
                 )))
             }
-            WorthQueryApplicationIdempotencyResolution::ProductPreparationPending(_)
+            WorthQueryApplicationIdempotencyResolution::ProductUnpublished(_)
+            | WorthQueryApplicationIdempotencyResolution::ProductPreparationPending(_)
             | WorthQueryApplicationIdempotencyResolution::Unseen
             | WorthQueryApplicationIdempotencyResolution::IntentDrift => Ok(None),
         }

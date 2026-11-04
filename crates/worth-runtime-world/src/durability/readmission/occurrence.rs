@@ -63,6 +63,32 @@ impl AdmittedWorldOccurrence {
             location,
         }
     }
+    pub(crate) fn admitted_open(&self) -> &AdmittedWorldOpenAttempt {
+        &self.open
+    }
+    pub(crate) fn from_committed(
+        open: &AdmittedWorldOpenAttempt,
+        committed: &crate::durability::WorldCommittedPublication,
+    ) -> Result<Self, super::WorldReadmissionDenial> {
+        let crate::durability::WorldRecord::Occurrence {
+            open: actual,
+            relational,
+            publishing_incarnation,
+        } = &committed.subject().record
+        else {
+            return Err(super::WorldReadmissionDenial::OccurrenceEvidenceMismatch);
+        };
+        if actual != open.open() {
+            return Err(super::WorldReadmissionDenial::OccurrenceEvidenceMismatch);
+        }
+        Ok(Self::from_validated_source(
+            open.clone(),
+            relational.clone(),
+            *publishing_incarnation,
+            committed.position(),
+            *committed.digest().bytes(),
+        ))
+    }
     pub(crate) fn open(&self) -> &WorldOpenAttemptRecord {
         self.open.open()
     }

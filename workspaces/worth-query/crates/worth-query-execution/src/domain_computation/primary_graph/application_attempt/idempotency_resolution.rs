@@ -24,6 +24,7 @@ use crate::domain_computation::primary_graph::{
 /// anything.
 #[derive(Debug)]
 pub enum WorthQueryApplicationIdempotencyResolution {
+    ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
     ProductPreparationPending(crate::domain_computation::WorthQueryProductPreparationPending),
     /// No commit is recorded under this key.
     Unseen,
@@ -307,6 +308,11 @@ where
                         read_for,
                         WorthQueryApplicationIdempotencyResolution::IntentDrift,
                     ))
+                }
+                Ok(WorthQueryProviderIdempotencyResolution::RecoveredUnpublished { handle }) => {
+                    let value = self.primary_provider.recovered_unpublished_application(&product, handle)
+                        .map_err(|_| WorthQueryApplicationIdempotencyResolutionDenial::provider_unavailable())?;
+                    Ok(WorthQueryAdmittedIdempotencyRead::mint(read_for, WorthQueryApplicationIdempotencyResolution::ProductUnpublished(value)))
                 }
                 Ok(WorthQueryProviderIdempotencyResolution::PreparationPending {
                     handle,

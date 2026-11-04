@@ -16,6 +16,7 @@ pub struct OriginalOwnerEffect {
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub enum CustodyCause {
     OpenAttemptRetained,
+    RecoveredWithoutProductMovement,
     WorldOccurrencePending,
     OriginalObservationStopped(
         worth_relational::facade::transactions::RelationalExecutionDenialCause,
@@ -41,6 +42,7 @@ impl CustodyCause {
         use worth_runtime_world::facade::ProductUnpublishedCause as C;
         match cause {
             C::OpenAttemptRetained => Self::OpenAttemptRetained,
+            C::RecoveredWithoutProductMovement => Self::RecoveredWithoutProductMovement,
             C::WorldOccurrencePending => Self::WorldOccurrencePending,
             C::OriginalObservationStopped(cause) => Self::OriginalObservationStopped(cause),
             C::OriginalObservationUnavailable => Self::OriginalObservationUnavailable,
@@ -64,6 +66,7 @@ impl CustodyCause {
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub enum CustodyAction {
     SettleOwnerEffects,
+    ContinueOriginalPublication,
     ReleaseObligations,
     Inspect,
     ReopenRequired,
@@ -75,6 +78,7 @@ impl CustodyAction {
         use worth_runtime_world::facade::ProductUnpublishedNextAction as A;
         match action {
             A::SettleOwnerEffects => Self::SettleOwnerEffects,
+            A::ContinueOriginalPublication => Self::ContinueOriginalPublication,
             A::ReleaseObligations => Self::ReleaseObligations,
             A::Inspect => Self::Inspect,
             A::ReopenRequired => Self::ReopenRequired,
@@ -99,10 +103,10 @@ pub fn compare(
             part: ProjectionPart::CustodyState,
             index,
         };
-        if h.effects != r.effects || h.settlement != r.settlement || h.cause != r.cause {
+        if h.effects != r.effects || h.settlement != r.settlement {
             return Err(bad());
         }
-        compare_actions(h, r).map_err(|()| bad())?;
+
         match (&h.expected, &r.expected) {
             (None, None) => (),
             (Some(h), Some(r)) => compare_head(map, h, r)?,
@@ -125,6 +129,7 @@ pub fn compare(
             }
             (None, Some(_)) | (Some(_), None) => return Err(bad()),
         }
+        CustodyMeaningCorrespondence::admit(h, r).map_err(|()| bad())?;
         map.admit(Id::WorldOwner(h.owner), Id::WorldOwner(r.owner))?;
         map.admit(
             Id::WorldCustody {
@@ -138,6 +143,50 @@ pub fn compare(
         )?;
     }
     Ok(())
+}
+
+/// D5: RecoveredWithoutProductMovement retains the same abandoned original effect.
+/// Phase 4 custody/fates and caller abandonment compare its actual meaning;
+/// a directory's durable original continuation does not grant a live Memory open.
+enum CustodyMeaningCorrespondence {
+    Live,
+    RecoveredAbandonment,
+}
+impl CustodyMeaningCorrespondence {
+    fn admit(h: &CustodyProjection, r: &CustodyProjection) -> Result<Self, ()> {
+        if h.cause == r.cause {
+            compare_actions(h, r)?;
+            return Ok(Self::Live);
+        }
+        use worth_foundational::facade::WorldOwnerCoordinate as Owner;
+        if matches!(h.owner, Owner::Home { .. })
+            && matches!(r.owner, Owner::MemoryOnly { .. })
+            && h.cause == Some(CustodyCause::RecoveredWithoutProductMovement)
+            && r.cause == Some(CustodyCause::CallerAbandoned)
+            && h.settlement == Some(false)
+            && r.settlement == Some(false)
+            && h.original_effect.is_some()
+            && r.original_effect.is_some()
+            && h.expected.is_some()
+            && r.expected.is_some()
+            && h.actions.as_deref()
+                == Some(&[
+                    CustodyAction::Inspect,
+                    CustodyAction::ContinueOriginalPublication,
+                    CustodyAction::ReleaseObligations,
+                    CustodyAction::CloseOwner,
+                ])
+            && r.actions.as_deref()
+                == Some(&[
+                    CustodyAction::StartFreshCompositePublication,
+                    CustodyAction::ReleaseObligations,
+                    CustodyAction::Inspect,
+                ])
+        {
+            return Ok(Self::RecoveredAbandonment);
+        }
+        Err(())
+    }
 }
 
 fn compare_actions(h: &CustodyProjection, r: &CustodyProjection) -> Result<(), ()> {

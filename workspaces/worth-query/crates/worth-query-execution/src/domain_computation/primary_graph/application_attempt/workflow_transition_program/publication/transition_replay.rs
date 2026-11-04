@@ -89,6 +89,11 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
             )?;
             match probe.into_resolution() {
                 WorthQueryApplicationIdempotencyResolution::Unseen => return Ok(None),
+                WorthQueryApplicationIdempotencyResolution::ProductUnpublished(owner) => {
+                    return Ok(Some(WorkflowProgressOutcome::Application(
+                        WorthQueryApplicationUncommitted::ProductUnpublished(owner),
+                    )))
+                }
                 WorthQueryApplicationIdempotencyResolution::ProductPreparationPending(owner) => {
                     return Ok(Some(WorkflowProgressOutcome::Application(
                         WorthQueryApplicationUncommitted::ProductPreparationPending(owner),
@@ -117,6 +122,11 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
         for resolution in resolutions {
             match resolution.into_resolution() {
                 WorthQueryApplicationIdempotencyResolution::Unseen => {}
+                WorthQueryApplicationIdempotencyResolution::ProductUnpublished(owner) => {
+                    return Ok(Some(WorkflowProgressOutcome::Application(
+                        WorthQueryApplicationUncommitted::ProductUnpublished(owner),
+                    )))
+                }
                 WorthQueryApplicationIdempotencyResolution::ProductPreparationPending(owner) => {
                     return Ok(Some(WorkflowProgressOutcome::Application(
                         WorthQueryApplicationUncommitted::ProductPreparationPending(owner),
@@ -301,6 +311,11 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
                 } else {
                     None
                 }
+            }
+            WorthQueryApplicationIdempotencyResolution::ProductUnpublished(owner) => {
+                Some(WorkflowProgressOutcome::Application(
+                    WorthQueryApplicationUncommitted::ProductUnpublished(owner),
+                ))
             }
             WorthQueryApplicationIdempotencyResolution::ProductPreparationPending(owner) => {
                 Some(WorkflowProgressOutcome::Application(

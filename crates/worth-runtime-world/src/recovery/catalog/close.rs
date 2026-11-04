@@ -83,6 +83,12 @@ impl ProductUnpublishedRecoveryCatalog {
                     let receipt = native.custody().effect().subject().receipt();
                     Some(RecoveredCloseReceipt::copy_for_request(request, receipt)?)
                 }
+                RecoveredNativeCustody::Prepared(record) => {
+                    Some(RecoveredCloseReceipt::copy_for_request(
+                        request,
+                        record.effect().subject().receipt(),
+                    )?)
+                }
                 RecoveredNativeCustody::Released => return Err(Denial::CloseProgressInvariant),
             };
             rows.push(RuntimeWorldRecoveredCustodyReport {
@@ -126,6 +132,9 @@ impl ProductUnpublishedRecoveryCatalog {
                 RecoveredNativeCustody::OpenOnly => None,
                 RecoveredNativeCustody::Relational(native) => {
                     Some(native.custody().effect().subject().receipt())
+                }
+                RecoveredNativeCustody::Prepared(record) => {
+                    Some(record.effect().subject().receipt())
                 }
                 RecoveredNativeCustody::Released => return Err(Denial::PublicationFrontierChanged),
             };

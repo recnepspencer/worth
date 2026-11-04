@@ -1,7 +1,7 @@
 //! Original subject and actual journal recovery live outside disposable calls.
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
-use worth_foundational::facade::{DurablePublicationFate, WorldDurableJournal};
+use worth_foundational::facade::WorldDurableJournal;
 use worth_runtime_world::facade::{
     WorldDurableArtifact, WorldDurableMediumDenial as Denial, WorldPublicationObservation,
 };
@@ -258,27 +258,21 @@ impl WorldPublicationTask {
         let endpoint = self.take_endpoint()?;
         let invalid = self.state.lock().unwrap_or_else(|e| e.into_inner()).invalid;
         let result = if invalid {
-            Some(WorldPublicationObservation::Finished(
-                DurablePublicationFate::Indeterminate {
-                    detail: Denial::PublicationUnresolved,
-                },
-            ))
+            Some(WorldPublicationObservation::Indeterminate {
+                detail: Denial::PublicationUnresolved,
+            })
         } else {
             match &endpoint {
                 Endpoint::Committed(committed) => {
                     Some(super::publication_fate::committed(committed))
                 }
                 Endpoint::Terminal(terminal) => Some(super::publication_fate::terminal(terminal)),
-                Endpoint::NoEffect => Some(WorldPublicationObservation::Finished(
-                    DurablePublicationFate::ProvenNoEffect {
-                        detail: Denial::Unavailable,
-                    },
-                )),
-                Endpoint::Unresolved => Some(WorldPublicationObservation::Finished(
-                    DurablePublicationFate::Indeterminate {
-                        detail: Denial::PublicationUnresolved,
-                    },
-                )),
+                Endpoint::NoEffect => Some(WorldPublicationObservation::ProvenNoEffect {
+                    detail: Denial::Unavailable,
+                }),
+                Endpoint::Unresolved => Some(WorldPublicationObservation::Indeterminate {
+                    detail: Denial::PublicationUnresolved,
+                }),
                 Endpoint::Ready(_) | Endpoint::Stopped(_) => None,
             }
         };

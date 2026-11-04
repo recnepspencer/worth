@@ -104,6 +104,11 @@ where
                 WorkflowProposalOutcome::RecoveredCommitted(receipt)
             }
             WorthQueryApplicationIdempotencyResolution::Unseen => return Ok(None),
+            WorthQueryApplicationIdempotencyResolution::ProductUnpublished(owner) => {
+                WorkflowProposalOutcome::Application(
+                    WorthQueryApplicationUncommitted::ProductUnpublished(owner),
+                )
+            }
             WorthQueryApplicationIdempotencyResolution::ProductPreparationPending(owner) => {
                 WorkflowProposalOutcome::Application(
                     WorthQueryApplicationUncommitted::ProductPreparationPending(owner),
