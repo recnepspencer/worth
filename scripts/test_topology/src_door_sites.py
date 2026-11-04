@@ -37,6 +37,26 @@ class Source:
         return self.text[self.stream[first].start:self.stream[last].end]
 
 
+def turbofish_start(source, j):
+    """The callee token before a `::<..>` turbofish ending at token `j`, else `j`."""
+    if source.value(j) != '>':
+        return j
+    depth, k = 0, j
+    while k >= 0:
+        value = source.value(k)
+        arrow = value == '>' and k and source.value(k - 1) == '-' and source.adjacent(k - 1, k)
+        if value == '>' and not arrow:
+            depth += 1
+        elif value == '<':
+            depth -= 1
+            if depth == 0:
+                break
+        k -= 1
+    if k >= 3 and source.value(k - 1) == ':' and source.value(k - 2) == ':':
+        return k - 3
+    return j
+
+
 def postfix_start(source, dot):
     """Index of the first token of the postfix expression whose `.` is token `dot`."""
     j, start = dot - 1, dot
@@ -44,7 +64,7 @@ def postfix_start(source, dot):
         value = source.value(j)
         if value in (')', ']') and j in source.open:
             start = source.open[j]
-            j = start - 1
+            j = turbofish_start(source, start - 1)
             if source.value(j) in (')', ']', '?') or (source.stream[j].kind == 'ident'
                                                     and source.value(j) not in KEYWORDS):
                 continue  # a call or index: its callee comes next

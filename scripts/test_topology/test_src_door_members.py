@@ -57,6 +57,9 @@ class MemberDoorTests(unittest.TestCase):
         source = Source('let s = result.0.state.lock();')
         dot = [k for k, tok in enumerate(source.stream) if tok.value == 'state'][0] - 1
         self.assertEqual(source.value(postfix_start(source, dot)), 'result')
+        source = Source('let p = any.downcast_ref::<Set<u8, Box<dyn Fn() -> u8>>>().unwrap().partitions;')
+        dot = [k for k, tok in enumerate(source.stream) if tok.value == 'partitions'][0] - 1
+        self.assertEqual(source.value(postfix_start(source, dot)), 'any')
 
     def test_assignment_and_mutable_borrow(self):
         for text, expected in (('a.f = 1;', True), ('a.g == 2;', False), ('a.h += 3;', True),
