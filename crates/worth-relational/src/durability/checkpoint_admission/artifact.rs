@@ -38,6 +38,24 @@ impl RelationalCheckpointAdmissionArtifact {
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<Self, Refusal> {
         let decoded = wire::read(&bytes, region.clone(), request)?;
+        Self::from_directory(bytes, region, decoded, request)
+    }
+
+    pub(super) fn from_emission(
+        bytes: ExecutionImmutableBytes,
+        directory: wire::DecodedDirectory,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<Self, Refusal> {
+        let region = 0..bytes.len();
+        Self::from_directory(bytes, region, directory, request)
+    }
+
+    fn from_directory(
+        bytes: ExecutionImmutableBytes,
+        region: Range<usize>,
+        decoded: wire::DecodedDirectory,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<Self, Refusal> {
         let size = std::alloc::Layout::new::<[usize; 2]>()
             .extend(std::alloc::Layout::new::<ArtifactBacking>())
             .map_err(|_| Refusal::CapacityOverflow)?
@@ -66,7 +84,34 @@ impl RelationalCheckpointAdmissionArtifact {
         &self.0.cut
     }
 
+    pub(crate) fn require_manifest(
+        &self,
+        manifest: &crate::durability::data::RelationalCheckpointManifest,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<(), Refusal> {
+        crate::durability::authority::checkpoint_complete::admission_projection::root_directory::validate_manifest(
+            self.group(&self.0.roots), manifest, request,
+        )
+    }
+
     pub(super) fn group(&self, range: &Range<usize>) -> &[u8] {
         &self.0.bytes[range.clone()]
+    }
+
+    pub(super) fn row(
+        &self,
+        commit: crate::history::data::CommitId,
+    ) -> Option<&wire::AdmissionRowIndex> {
+        self.0
+            .commits
+            .get(&commit.0)
+            .and_then(|ordinal| self.0.rows.get(*ordinal))
+    }
+
+    pub(super) fn positions(
+        &self,
+        commit: crate::history::data::CommitId,
+    ) -> Option<&crate::history::data::RequiredOutputPublicationPositions> {
+        self.0.positions.get(&commit)
     }
 }

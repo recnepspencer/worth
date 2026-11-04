@@ -27,11 +27,11 @@ mod decoded_quote;
 pub(crate) use decoded_quote::schema_image::{
     prepare as prepare_schema_image_decode, SchemaImageDecodeAdmission,
 };
+pub(crate) use decoded_quote::{decode_checkpoint_effect, CheckpointEffectData};
+mod commitment_writer;
 mod encode_denial;
 mod encoding;
 mod frame;
-pub(crate) use frame::validate_frame_version;
-mod commitment_writer;
 mod frame_refusal;
 pub(crate) mod input_commitment;
 mod memory_publication;

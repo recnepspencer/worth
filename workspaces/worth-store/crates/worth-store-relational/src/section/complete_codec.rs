@@ -1,13 +1,7 @@
 //! Complete Home sections have an additive envelope; ordinary section v3 is unchanged.
-use super::{
-    RelationalSectionCheckpointDenial as Capture, RelationalSectionReadmissionDenial as Read,
-};
-use worth_execution::{ExecutionImmutableBytes, ExecutionRequest};
-use worth_foundational::facade::{BoundaryProtocolCompatibilityWindow, BoundaryProtocolVersion};
-use worth_relational::facade::durability::{
-    CompleteRelationalNativeCheckpoint, RelationalCompleteSourceArtifact,
-    RelationalDurableCheckpointSource,
-};
+use super::RelationalSectionCheckpointDenial as Capture;
+use worth_foundational::facade::BoundaryProtocolVersion;
+use worth_relational::facade::durability::CompleteRelationalNativeCheckpoint;
 
 const MAGIC: &[u8; 8] = b"WSRCSRC1";
 const VERSION: BoundaryProtocolVersion = BoundaryProtocolVersion::new(1);
@@ -31,49 +25,6 @@ pub(super) fn encode(complete: &CompleteRelationalNativeCheckpoint) -> Result<Ve
     Ok(bytes)
 }
 
-pub(super) fn decode(
-    backing: ExecutionImmutableBytes,
-    region: std::ops::Range<usize>,
-    request: &ExecutionRequest<'_, '_>,
-) -> Result<RelationalDurableCheckpointSource, Read> {
-    let raw = backing.get(region.clone()).ok_or(Read::MalformedSection)?;
-    if raw.get(..8) == Some(b"WSRCKPT1".as_slice()) {
-        return Err(Read::InitialInputs(
-            worth_relational::facade::durability::RelationalInitialInputsRefusal::Missing,
-        ));
-    }
-    if raw.get(..8) != Some(MAGIC.as_slice()) {
-        return Err(Read::MalformedSection);
-    }
-    let produced = BoundaryProtocolVersion::try_new(u32::from(u16::from_le_bytes(
-        raw.get(8..10)
-            .ok_or(Read::MalformedSection)?
-            .try_into()
-            .map_err(|_| Read::MalformedSection)?,
-    )))
-    .map_err(|_| Read::MalformedSection)?;
-    BoundaryProtocolCompatibilityWindow::inclusive(VERSION, VERSION)
-        .admit(produced)
-        .map_err(Read::UnsupportedCompleteSectionVersion)?;
-    let coordinates = coordinates(raw).ok_or(Read::MalformedSection)?;
-    let source = RelationalCompleteSourceArtifact::from_untrusted_region(
-        backing,
-        region
-            .start
-            .checked_add(HEADER)
-            .ok_or(Read::MalformedSection)?..region.end,
-        request,
-    )
-    .map_err(Read::InitialInputs)?;
-    if source.covered().0 != coordinates.covered
-        || source.covered_transitions().0 != coordinates.through
-        || source.initial_coordinate() != (coordinates.revision, coordinates.digest)
-    {
-        return Err(Read::MalformedSection);
-    }
-    RelationalDurableCheckpointSource::from_complete_artifact(source).map_err(Read::InitialInputs)
-}
-
 pub(super) struct CompleteSectionCoordinates {
     pub(super) covered: u64,
     pub(super) through: u64,
@@ -81,6 +32,9 @@ pub(super) struct CompleteSectionCoordinates {
     pub(super) digest: [u8; 32],
 }
 pub(super) fn coordinates(bytes: &[u8]) -> Option<CompleteSectionCoordinates> {
+    if let Some(coordinates) = super::admission_section::coordinates(bytes) {
+        return Some(coordinates);
+    }
     if bytes.get(..8)? != MAGIC
         || u16::from_le_bytes(bytes.get(8..10)?.try_into().ok()?) != VERSION.get() as u16
     {

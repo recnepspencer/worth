@@ -56,10 +56,19 @@ impl RelationalCanonicalPublicationRoutes {
     ) -> Result<R, CanonicalCheckpointAdmissionError> {
         let _admission = self.enter_checkpoint_selection()?;
         self.reject_unsettled()?;
-        Ok(capture(
-            self.performed_stream
-                .checkpoint_selection(self.branch_transition_head()),
-        ))
+        // The admitted checkpoint catalog owns receipt/position facts even
+        // when no covered original envelope has ever become resident. This
+        // does not create a performed route or settle a recovered effect.
+        let indexed_head = self
+            .checkpoint_catalog
+            .read()
+            .unwrap_or_else(|error| error.into_inner())
+            .head
+            .clone();
+        Ok(capture(self.performed_stream.checkpoint_selection(
+            self.branch_transition_head(),
+            indexed_head,
+        )))
     }
 
     pub(crate) fn validate_checkpoint_selection(

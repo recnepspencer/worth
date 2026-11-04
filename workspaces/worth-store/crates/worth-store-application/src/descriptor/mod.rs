@@ -49,6 +49,11 @@ pub(crate) struct PreparedDescriptor {
     payload: crate::frame_encoding::EncodedHomeFrame,
     generation: u64,
 }
+impl PreparedDescriptor {
+    pub(crate) fn home_identity(&self) -> HomeIdentity {
+        self.descriptor.identity
+    }
+}
 
 pub(crate) fn prepare_admission(
     serving: &ServingPhysicalRuntime,

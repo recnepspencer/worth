@@ -10,6 +10,13 @@ pub(in super::super::super) fn prepare_canonical_readmission(
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<(ValidationReadmissionMemory, u64), Refusal> {
     let semantic = field(canonical, "semantic_result", request)?;
+    prepare_semantic_readmission(semantic, request)
+}
+
+pub(in super::super::super) fn prepare_semantic_readmission(
+    semantic: BorrowedPayload<'_>,
+    request: &ExecutionRequest<'_, '_>,
+) -> Result<(ValidationReadmissionMemory, u64), Refusal> {
     let validation = field(semantic, "validation", request)?;
     let (mut rules, mut touched, mut projected) = (0usize, 0usize, 0usize);
     let (mut rule_bytes_total, mut touched_bytes_total, mut projected_bytes_total) =
@@ -77,19 +84,12 @@ pub(in super::super::super) fn prepare_canonical_readmission(
         &mut |value| {
             let coordinate = field(value, "Projected", request)?;
             let domain = field(coordinate, "domain", request)?;
+            let case_length = field(coordinate, "case", request)?.text(request)?.len();
             let length = field(domain, "schema", request)?
                 .text(request)?
                 .len()
                 .checked_add(field(domain, "name", request)?.text(request)?.len())
-                .and_then(|n| {
-                    n.checked_add(
-                        field(coordinate, "case", request)
-                            .ok()?
-                            .text(request)
-                            .ok()?
-                            .len(),
-                    )
-                })
+                .and_then(|n| n.checked_add(case_length))
                 .ok_or_else(malformed)?;
             projected.push(leaf(length, member(value, request)?.retained, request)?);
             Ok(())

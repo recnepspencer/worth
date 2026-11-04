@@ -26,6 +26,7 @@ pub enum RelationalSectionReadmissionDenial {
     RuntimeSharedBeforeReadmission,
     MalformedSection,
     PreparedHomeSourceRequired,
+    AdmissionImage(worth_relational::facade::durability::RelationalCheckpointAdmissionRefusal),
     UnsupportedCompleteSectionVersion(
         worth_foundational::facade::BoundaryProtocolUnsupportedVersion,
     ),
@@ -96,14 +97,27 @@ pub(super) fn prepare_home_source(
         &AnchoredRecordReadMembership,
     )>,
     execution: &ExecutionRequest<'_, '_>,
-) -> Result<Option<RelationalDurableCheckpointSource>, RelationalSectionReadmissionDenial> {
+) -> Result<
+    Option<super::admission_section::DecodedHomeAdmission>,
+    RelationalSectionReadmissionDenial,
+> {
     selected
         .map(|(backing, region, membership)| {
-            let checkpoint = super::complete_codec::decode(backing, region, execution)?;
             cold_source
                 .select_initial_members_from_read(membership, execution)
                 .map_err(RelationalSectionReadmissionDenial::MemberSelection)?;
-            Ok(checkpoint)
+            let version = membership.membership().version();
+            if version.payload_bytes() != backing.len() as u64
+                || super::admission_section::digest(backing.bytes(), execution)
+                    .map_err(RelationalSectionReadmissionDenial::AdmissionImage)? != version.payload_sha256()
+            {
+                return Err(RelationalSectionReadmissionDenial::AdmissionImage(
+                    worth_relational::facade::durability::RelationalCheckpointAdmissionRefusal::BindingMismatch(
+                        worth_relational::facade::durability::CheckpointAdmissionBindingMismatch::Source,
+                    ),
+                ));
+            }
+            super::admission_section::decode(backing, region, execution)
         })
         .transpose()
 }

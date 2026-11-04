@@ -76,9 +76,9 @@ impl<'a> Grouped<'a> {
                 || observed.descriptor() != folded.root.descriptor()
                 || observed.axes() != folded.root.axes()
                 || !observed
-                    .canonical_envelope()
-                    .zip(folded.root.canonical_envelope())
-                    .is_some_and(|(observed, derived)| observed.commit == derived.commit)
+                    .commit_receipt()
+                    .zip(folded.root.commit_receipt())
+                    .is_some_and(|(observed, derived)| observed == derived)
             {
                 return Err(Denial::OriginalAuthorityUnavailable);
             }

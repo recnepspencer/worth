@@ -52,7 +52,12 @@ impl ReadmittedRelationalAssociatedEffect {
         read_created_entity(
             execution,
             self.semantic_result(),
-            self.source_envelope(),
+            match &self.origin {
+                super::ReadmittedEffectOrigin::Original(positioned) => {
+                    &positioned.envelope().patch.authoritative_record_patches
+                }
+                super::ReadmittedEffectOrigin::Checkpoint { data, .. } => &data.creations,
+            },
             entity,
         )
     }
@@ -61,7 +66,7 @@ impl ReadmittedRelationalAssociatedEffect {
 pub(super) fn read_created_entity<'original>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     semantic: &crate::transactions::data::RelationalCommitSemanticResult,
-    envelope: &'original crate::history::data::CanonicalCommitEnvelope,
+    patches: &'original [PublishedAuthoritativeRecordPatch],
     entity: EntityId,
 ) -> Result<Option<ReadmittedRelationalCreatedEntity<'original>>, Refusal> {
     crate::execution::request_stage::optional_stage(
@@ -82,7 +87,7 @@ pub(super) fn read_created_entity<'original>(
                 return Ok(None);
             };
             let mut found = None;
-            for patch in &envelope.patch.authoritative_record_patches {
+            for patch in patches {
                 crate::execution::request_stage::checkpoint(context, 1).map_err(|cause| {
                     Refusal::Recovery(crate::durability::data::RelationalRecoveryStop::Request(
                         cause.into(),

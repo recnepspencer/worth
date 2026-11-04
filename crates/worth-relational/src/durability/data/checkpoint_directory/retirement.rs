@@ -15,6 +15,11 @@ pub(crate) struct CheckpointDirectoryRetirement {
     payload: Box<DirectoryRetirementPayload>,
 }
 struct DirectoryRetirementPayload {
+    _admission_owner: std::sync::OnceLock<
+        std::sync::Weak<crate::durability::checkpoint_admission::AdmissionCustody>,
+    >,
+    _admission_image:
+        Option<crate::durability::checkpoint_admission::RelationalCheckpointAdmissionArtifact>,
     _source_schemas: std::sync::OnceLock<
         Arc<
             crate::durability::source_initial_inputs::schema_catalog::ReadmittedSourceSchemaCatalog,
@@ -47,6 +52,8 @@ impl PreparedCheckpointDirectoryRetirement {
 impl RelationalCheckpointDirectory {
     pub(crate) fn into_retirement(self) -> CheckpointDirectoryRetirement {
         let Self {
+            admission_owner,
+            admission_image,
             source_schemas,
             manifest,
             source,
@@ -56,6 +63,8 @@ impl RelationalCheckpointDirectory {
             retirement,
         } = self;
         let payload = DirectoryRetirementPayload {
+            _admission_owner: admission_owner,
+            _admission_image: admission_image,
             _source_schemas: source_schemas,
             manifest,
             source: Some(source),

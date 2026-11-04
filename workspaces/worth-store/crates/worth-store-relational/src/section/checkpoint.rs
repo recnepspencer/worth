@@ -8,16 +8,20 @@ use worth_relational::facade::durability::{
 use worth_store::physical_runtime::{AnchoredRecordMember, AnchoredRecordMemberLocator};
 
 mod complete;
+mod home_capture;
 mod members;
 mod publication;
+mod selection_custody;
 pub use complete::{
     PreparedCompleteRelationalSection, RelationalSectionCompleteCheckpointPreparation,
 };
+pub use home_capture::CapturedHomeRelationalSection;
 use publication::SectionPublication;
 
 #[derive(Debug)]
 pub enum RelationalSectionCheckpointDenial {
     OwnerUnavailable,
+    AdmissionImage(worth_relational::facade::durability::RelationalCheckpointAdmissionRefusal),
     Capture(RelationalNativeCheckpointCaptureDenial),
     Execution(WorkCeilingDenial),
     MalformedSection,
@@ -91,7 +95,7 @@ impl RelationalStoreSection {
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<PreparedRelationalSection, RelationalSectionCheckpointDenial> {
         let mut prepared = prepare(&self.runtime, &self.cold_source, execution)?;
-        prepared.publication.selection = Some(self.checkpoint_selection.clone());
+        prepared.publication.custody.selection = Some(self.checkpoint_selection.clone());
         Ok(prepared)
     }
 }
@@ -183,7 +187,7 @@ impl PreparedRelationalSection {
         mut self,
         selection: std::sync::Arc<dyn super::RelationalCheckpointSelectionSource>,
     ) -> Self {
-        self.publication.selection = Some(selection);
+        self.publication.custody.selection = Some(selection);
         self
     }
     pub fn acknowledge_selected(

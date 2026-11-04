@@ -3,13 +3,13 @@ use super::RelationalSectionReadmissionDenial as Denial;
 use std::sync::Arc;
 use worth_execution::{ExecutionArray, ExecutionImmutableBytes, ExecutionRequest};
 use worth_relational::facade::durability::{
-    RelationalDurableCheckpointSource, RelationalDurableReadBounds, RelationalDurableRecoverySource,
+    RelationalDurableReadBounds, RelationalDurableRecoverySource,
 };
 use worth_store::physical_runtime::{AnchoredRecordReadMembership, ServingPhysicalRuntime};
 
 pub struct RelationalHomeSourcePreparation {
     source: Arc<crate::cold_source::StoreColdSource>,
-    checkpoint: Option<RelationalDurableCheckpointSource>,
+    selected: Option<super::admission_section::DecodedHomeAdmission>,
 }
 pub struct PreparedFreshRelationalHomeSource {
     pub(super) source: Arc<crate::cold_source::StoreColdSource>,
@@ -91,13 +91,27 @@ impl RelationalHomeSourcePreparation {
         )>,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<Self, Denial> {
-        let checkpoint = super::readmission::prepare_home_source(&source, selected, request)?;
-        Ok(Self { source, checkpoint })
+        let selected = super::readmission::prepare_home_source(&source, selected, request)?;
+        Ok(Self { source, selected })
+    }
+    /// DATA from this same selected package; World owns its companion admission.
+    pub fn admission_image(
+        &self,
+    ) -> Option<&worth_relational::facade::durability::RelationalCheckpointAdmissionArtifact> {
+        self.selected.as_ref().map(|selected| &selected.image)
+    }
+    pub fn world_admission_companion(&self) -> Option<&[u8]> {
+        self.selected
+            .as_ref()
+            .map(|selected| &selected.backing[selected.companion.clone()])
     }
     pub fn coverage(&self) -> [u64; 2] {
-        self.checkpoint.as_ref().map_or([0, 0], |source| {
-            [source.covered().0, source.covered_transitions().0]
-        })
+        self.selected
+            .as_ref()
+            .map(|selected| &selected.checkpoint)
+            .map_or([0, 0], |source| {
+                [source.covered().0, source.covered_transitions().0]
+            })
     }
     pub fn finish(
         self,
@@ -121,7 +135,7 @@ impl RelationalHomeSourcePreparation {
         let original = request
             .in_scope(|_| {
                 RelationalDurableRecoverySource::from_home_original_bytes(
-                    self.checkpoint,
+                    self.selected.map(|selected| selected.checkpoint),
                     initial,
                     canonical,
                     transitions,

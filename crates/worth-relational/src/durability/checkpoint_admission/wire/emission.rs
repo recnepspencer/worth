@@ -6,7 +6,11 @@ pub(in super::super) fn encode(
     roots: &ExecutionImmutableBytes,
     rows: &[EncodedAdmissionRow],
     request: &ExecutionRequest<'_, '_>,
-) -> Result<ExecutionImmutableBytes, Refusal> {
+) -> Result<(ExecutionImmutableBytes, DecodedDirectory), Refusal> {
+    if rows.len() as u64 != cut.canonical_through() {
+        return Err(Refusal::InvalidProjectedMeaning);
+    }
+    let description = cut.clone();
     let cut = crate::durability::artifact_payload_emission::request::encode_named_charged(
         &[],
         &super::super::binary_encoding::BinaryFixedArrays(cut),
@@ -43,6 +47,10 @@ pub(in super::super) fn encode(
     header[16..24].copy_from_slice(&(rows.len() as u64).to_le_bytes());
     header[24..32].copy_from_slice(&(roots.len() as u64).to_le_bytes());
     let mut directory = authentication::directory(&header[..32], cut.bytes(), request)?;
+    let mut output =
+        ExecutionRequestArrayBuilder::allocate(*request, size).map_err(Refusal::Buffer)?;
+    append(&mut output, &header, request)?;
+    append(&mut output, cut.bytes(), request)?;
     let root_key = AdmissionRowKey {
         position: 0,
         commit: 0,
@@ -55,31 +63,73 @@ pub(in super::super) fn encode(
         request,
     )?;
     authentication::update(&mut directory, &root_header, request)?;
-    for row in rows {
+    append(&mut output, &root_header, request)?;
+    let root_start = output.len();
+    append(&mut output, roots.bytes(), request)?;
+    let root_range = root_start..output.len();
+    let mut indexes =
+        ExecutionRequestArrayBuilder::allocate(*request, rows.len()).map_err(Refusal::Buffer)?;
+    let mut commits = ExecutionOrderedMap::default();
+    let mut previous = 0;
+    for (ordinal, row) in rows.iter().enumerate() {
+        if row.key.position == 0
+            || row.key.commit == 0
+            || row.key.position <= previous
+            || row.key.position > description.canonical_through()
+            || commits.contains_key(&row.key.commit)
+        {
+            return Err(Refusal::InvalidProjectedMeaning);
+        }
+        commits
+            .insert_cloned_native_for_request(&row.key.commit, &ordinal, *request)
+            .map_err(|cause| {
+                super::super::refusal::native_stop(
+                    crate::durability::checkpoint_history::capture::map_stop(cause),
+                )
+            })?;
         authentication::update(&mut directory, &row.key.position.to_le_bytes(), request)?;
         authentication::update(&mut directory, &row.key.commit.to_le_bytes(), request)?;
-        for (meaning, payload) in CANONICAL_MEANINGS.into_iter().zip(&row.groups) {
-            let group = group_header(cut.bytes(), row.key, meaning, payload.bytes(), request)?;
-            authentication::update(&mut directory, &group, request)?;
-        }
-    }
-    header[32..].copy_from_slice(&directory.finalize());
-    let mut output =
-        ExecutionRequestArrayBuilder::allocate(*request, size).map_err(Refusal::Buffer)?;
-    append(&mut output, &header, request)?;
-    append(&mut output, cut.bytes(), request)?;
-    append(&mut output, &root_header, request)?;
-    append(&mut output, roots.bytes(), request)?;
-    for row in rows {
         append(&mut output, &row.key.position.to_le_bytes(), request)?;
         append(&mut output, &row.key.commit.to_le_bytes(), request)?;
-        for (meaning, payload) in CANONICAL_MEANINGS.into_iter().zip(&row.groups) {
+        let mut groups = std::array::from_fn(|_| 0..0);
+        for (index, (meaning, payload)) in
+            CANONICAL_MEANINGS.into_iter().zip(&row.groups).enumerate()
+        {
             let group = group_header(cut.bytes(), row.key, meaning, payload.bytes(), request)?;
+            authentication::update(&mut directory, &group, request)?;
             append(&mut output, &group, request)?;
+            let start = output.len();
             append(&mut output, payload.bytes(), request)?;
+            groups[index] = start..output.len();
         }
+        indexes
+            .push(AdmissionRowIndex {
+                key: row.key,
+                groups,
+            })
+            .map_err(Refusal::Buffer)?;
+        previous = row.key.position;
     }
-    output.seal_immutable_bytes().map_err(Refusal::Buffer)
+    let digest = directory.finalize();
+    account(request, digest.len() as u64)?;
+    for (index, byte) in digest.iter().copied().enumerate() {
+        output
+            .replace_initialized(32 + index, byte)
+            .map_err(Refusal::Buffer)?;
+    }
+    let positions = super::super::root_positions::read(roots.bytes(), &commits, request)?;
+    let indexes = indexes.seal().map_err(Refusal::Buffer)?;
+    let bytes = output.seal_immutable_bytes().map_err(Refusal::Buffer)?;
+    Ok((
+        bytes,
+        DecodedDirectory {
+            cut: description,
+            roots: root_range,
+            rows: indexes,
+            commits,
+            positions,
+        },
+    ))
 }
 
 fn group_header(

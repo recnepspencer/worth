@@ -11,6 +11,8 @@ use diagnostics::{
     emit_schema_continuity_failure_diagnostic, schema_continuity_conflict_from_issue,
     FailureTransitionView,
 };
+mod prior;
+use prior::SchemaContinuityPrior;
 
 #[derive(Debug, Clone)]
 pub(crate) struct SchemaContinuityPlan {
@@ -86,11 +88,13 @@ pub(crate) fn resolve_schema_continuity(
     let current_schema_version = authority_input.target_schema_version();
     let current_schema_authority = authority_input.target_schema_authority().clone();
     let current_schema_basis = authority_input.target_schema_basis();
-    let previous_envelope = runtime
+    let previous_root = runtime
         .history
         .branch_cell(branch_id)
-        .and_then(|cell| cell.root())
-        .and_then(|root| root.canonical_envelope().cloned());
+        .and_then(|cell| cell.root());
+    let previous_envelope = previous_root
+        .as_deref()
+        .and_then(SchemaContinuityPrior::from_root);
     let Some(previous_envelope) = previous_envelope.as_ref() else {
         if let Some(proposed_transition) = options.proposed_schema_transition() {
             return materialize_declared_transition(
@@ -126,7 +130,9 @@ pub(crate) fn resolve_schema_continuity(
     }
 
     let drift_detected = previous_envelope.schema_version != current_schema_version
-        || previous_envelope.schema_authority != current_schema_authority;
+        || !previous_envelope
+            .authority
+            .matches(&current_schema_authority);
     match options.proposed_schema_transition() {
         Some(proposed_transition) => materialize_declared_transition(
             runtime,
@@ -164,7 +170,7 @@ fn materialize_declared_transition(
     descriptor_semantics_version: DescriptorSemanticsVersion,
     descriptor_canonical_basis_version: crate::schema::data::DescriptorCanonicalBasisVersion,
     branch_id: &crate::history::data::BranchId,
-    previous_envelope: Option<&crate::history::data::CanonicalCommitEnvelope>,
+    previous_envelope: Option<&SchemaContinuityPrior<'_>>,
     current_schema_basis: Option<(
         crate::schema::data::SchemaId,
         crate::schema::data::SchemaVersionId,
@@ -174,10 +180,11 @@ fn materialize_declared_transition(
 ) -> Result<SchemaContinuityPlan, TransactionCommitError> {
     if let Some(previous_envelope) = previous_envelope {
         let previous_schema_basis = previous_envelope
-            .schema_authority
-            .primary_schema_id
-            .clone()
-            .zip(previous_envelope.schema_authority.primary_schema_version_id);
+            .authority
+            .registry()
+            .authoritative_schema_basis()
+            .ok()
+            .flatten();
         let Some((previous_schema_id, previous_schema_version_id)) = previous_schema_basis else {
             return Err(schema_continuity_conflict(
                 runtime,
@@ -345,7 +352,7 @@ fn schema_continuity_conflict(
     runtime: &crate::runtime::RelationalPreparationRuntime,
     branch_id: &crate::history::data::BranchId,
     proposed_transition: Option<&crate::schema::data::ProposedSchemaTransition>,
-    previous_envelope: Option<&crate::history::data::CanonicalCommitEnvelope>,
+    previous_envelope: Option<&SchemaContinuityPrior<'_>>,
     class: ConflictClass,
 ) -> TransactionCommitError {
     let conflict = CommitConflict::new(class);

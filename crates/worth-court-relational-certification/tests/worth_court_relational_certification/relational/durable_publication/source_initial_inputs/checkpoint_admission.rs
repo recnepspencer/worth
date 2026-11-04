@@ -4,9 +4,14 @@ use sha2::{Digest, Sha256};
 use worth_execution::ExecutionRequestArrayBuilder;
 use worth_foundational::facade::{CheckpointAdmissionCut, CheckpointAdmissionScope, HomeIdentity};
 use RelationalCheckpointAdmissionRefusal as Refusal;
+mod indexes;
+mod operational;
 mod references;
+mod region_memory;
 mod required_outputs;
+mod retained_indexes;
 mod root_projection;
+mod selection_refusals;
 
 fn cut(capture: &CompleteRelationalNativeCheckpoint) -> CheckpointAdmissionCut {
     CheckpointAdmissionCut::new(
@@ -111,14 +116,19 @@ fn original_checkpoint_capture_seals_each_projected_role_independently() {
         + 41
         + 16
         + 8 * 41;
-    let minimum_work = 4 * (cut_end - 64)
+    // Count the actual single-emission work: two serializer traversals of
+    // the cut, one directory hash, each meaning hash, every output copy,
+    // the nine-entry size scan, and replacement of the directory digest.
+    let minimum_work = 2 * (cut_end - 64)
         + 9
         + raw.len()
-        + 2 * directory_work
-        + 2 * (meaning_prefix + root_length)
-        + 3 * row_hash_work;
+        + directory_work
+        + meaning_prefix
+        + root_length
+        + row_hash_work
+        + 32;
     assert!(report.charged_work() >= minimum_work as u64,
-        "both cut encodings, directory scans and every output copy must be charged in addition to hashing: {} < {minimum_work}", report.charged_work());
+        "both cut traversals, the directory scan and every output copy must be charged in addition to hashing: {} < {minimum_work}", report.charged_work());
     assert_eq!(parse(raw, request).unwrap().as_bytes(), raw);
     for (position, meaning, payload) in projected {
         let mut changed = raw.to_vec();

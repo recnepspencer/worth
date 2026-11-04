@@ -46,26 +46,58 @@ impl DurabilityAuthority<'_> {
                 .is_some_and(|actual| Arc::ptr_eq(&actual, &residency)) => {}
             _ => return Err(Refusal::CatalogSubjectChanged),
         }
-        let positioned = residency
-            .readmit_original_positioned(execution)
-            .map_err(Refusal::Recovery)?;
-        if positioned.envelope().caller_association() != subject.association()
-            || subject.association().is_none()
-        {
+        if subject.association().is_none() {
             return Err(Refusal::SubjectMismatch);
         }
+        let admitted = self
+            .runtime
+            .durability
+            .checkpoint_selection()
+            .admitted_commit(&entry)
+            .map_err(|cause| Refusal::Recovery(RelationalRecoveryStop::AdmissionImage(cause)))?;
+        let (origin, semantic) = match admitted {
+            Some(commit) => {
+                if !self
+                    .runtime
+                    .durability
+                    .checkpoint_selection()
+                    .matches_admitted_source(&commit, &source)
+                {
+                    return Err(Refusal::CatalogSubjectChanged);
+                }
+                let data = commit.effect_data(execution).map_err(|cause| {
+                    Refusal::Recovery(RelationalRecoveryStop::AdmissionImage(cause))
+                })?;
+                let semantic = RecoveredRelationalSemanticResult {
+                    semantic: data.semantic.clone(),
+                };
+                (
+                    ReadmittedEffectOrigin::Checkpoint { commit, data },
+                    semantic,
+                )
+            }
+            None => {
+                let positioned = residency
+                    .readmit_original_positioned(execution)
+                    .map_err(Refusal::Recovery)?;
+                if positioned.envelope().caller_association() != subject.association() {
+                    return Err(Refusal::SubjectMismatch);
+                }
+                let semantic = RecoveredRelationalSemanticResult {
+                    semantic: positioned.envelope().semantic_result_arc(),
+                };
+                (ReadmittedEffectOrigin::Original(positioned), semantic)
+            }
+        };
         let settlement = self
             .runtime
             .history
             .associated_effect_settlement(&subject.entry, &residency)
             .ok_or(Refusal::MissingSettlementEvidence)?;
-        let semantic = RecoveredRelationalSemanticResult {
-            semantic: positioned.envelope().semantic_result_arc(),
-        };
         Ok(ReadmittedRelationalAssociatedEffect {
             subject: subject.clone(),
             semantic,
-            positioned,
+            origin,
             settlement,
         })
     }

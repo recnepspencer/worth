@@ -34,10 +34,12 @@ where
             &self.home.context.checkpoint,
             Some(&world),
             execution,
-            || {
+            |home, through, digest| {
                 self.home
                     .relational()
-                    .prepare_captured_complete_checkpoint_for_test(checkpoint, execution)
+                    .prepare_captured_complete_checkpoint_for_test(
+                        checkpoint, home, through, digest, execution,
+                    )
             },
             None,
             None,

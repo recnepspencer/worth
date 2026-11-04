@@ -38,6 +38,7 @@ pub(super) struct PerformedPublicationNode {
 #[derive(Clone)]
 pub(crate) struct PerformedCheckpointSelection {
     head: Option<Arc<PerformedPublicationNode>>,
+    indexed_head: Option<crate::history::RetainedCanonicalIndex>,
     /// The last branch transition the selection covers (D8).
     covered_transitions: crate::branch::RelationalBranchTransitionSequence,
 }
@@ -59,9 +60,11 @@ impl PerformedPublicationStream {
     pub(super) fn checkpoint_selection(
         &self,
         covered_transitions: crate::branch::RelationalBranchTransitionSequence,
+        indexed_head: Option<crate::history::RetainedCanonicalIndex>,
     ) -> PerformedCheckpointSelection {
         PerformedCheckpointSelection {
             head: self.head.load_full(),
+            indexed_head,
             covered_transitions,
         }
     }
@@ -322,12 +325,10 @@ impl PerformedCheckpointSelection {
             .as_ref()
             .filter(|head| head.route.is_performed())
             .map(|head| &head.route.commit)
+            .or_else(|| self.indexed_head.as_ref().map(|head| &head.commit))
     }
     pub(crate) fn latest_receipt(&self) -> Option<crate::history::data::RelationalCommitReceipt> {
-        self.head
-            .as_ref()
-            .filter(|head| head.route.is_performed())
-            .map(|head| head.route.commit.clone())
+        self.selected_receipt().cloned()
     }
     /// The last branch transition sequence the checkpoint covers.
     pub(crate) fn covered_transitions(&self) -> crate::branch::RelationalBranchTransitionSequence {

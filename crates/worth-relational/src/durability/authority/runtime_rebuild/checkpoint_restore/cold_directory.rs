@@ -16,23 +16,57 @@ pub(super) fn restore(
     work: &mut CheckpointRestoreWork,
 ) -> Result<(), RelationalRecoveryStop> {
     crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
+    if directory.admission_image.is_some() {
+        let owner = crate::durability::checkpoint_admission::CheckpointAdmissionOwner::bind(
+            &directory, execution,
+        )
+        .map_err(RelationalRecoveryStop::AdmissionImage)?;
+        runtime
+            .durability
+            .checkpoint_selection()
+            .install_admission_owner(owner)
+            .map_err(RelationalRecoveryStop::AdmissionImage)?;
+    }
     let mut history = runtime
         .history
         .detached_owner_snapshot()
         .map_err(|denial| corrupt(format!("cold history snapshot denied: {denial:?}")))?;
     let mut symbols = runtime.services.symbols.interner_snapshot();
     symbols.restore_snapshot(checkpoint.symbol_table.clone());
-    let paged_symbols = runtime.services.symbols.detached_owner_snapshot();
-    paged_symbols.replace(symbols);
-    paged_symbols
-        .install_cold_pages(&directory)
-        .map_err(crate::runtime::ColdSymbolDirectoryDenial::into_recovery_stop)?;
-    let mut regions = ReadmittedRegionDirectory::new(directory.clone(), paged_symbols.clone())?;
+    let paged_symbols = if directory.admission_image.is_some() {
+        runtime
+            .services
+            .symbols
+            .from_selected_directory_for_request(&directory, execution)?
+    } else {
+        let paged = runtime.services.symbols.detached_owner_snapshot();
+        paged.replace(symbols);
+        paged
+            .install_cold_pages(&directory)
+            .map_err(crate::runtime::ColdSymbolDirectoryDenial::into_recovery_stop)?;
+        paged
+    };
+    let mut regions =
+        ReadmittedRegionDirectory::new(directory.clone(), paged_symbols.clone(), execution)?;
     let heads = checkpoint
         .envelopes
         .iter()
         .map(|entry| (entry.commit.commit_id, Arc::clone(entry.canonical_arc())))
         .collect::<BTreeMap<_, _>>();
+    let mut head_ids = worth_execution::ExecutionOrderedMap::default();
+    for cell in &checkpoint.branch_cells {
+        crate::durability::artifact_payload_emission::request::account_work(execution, 1)?;
+        if let worth_foundational::FoundationalBranchTarget::Basis(target) =
+            cell.observation.target()
+        {
+            let id = crate::history::data::CommitId(target.selected_commit_id());
+            if !head_ids.contains_key(&id) {
+                head_ids
+                    .insert_cloned_native_for_request(&id, &(), *execution)
+                    .map_err(crate::durability::checkpoint_history::capture::map_stop)?;
+            }
+        }
+    }
     let positioned = checkpoint
         .envelopes
         .iter()
@@ -41,9 +75,9 @@ pub(super) fn restore(
     let catalog = super::selected_catalog::admit(execution, &directory, |entry| {
         positioned.get(&entry.commit.commit_id).cloned()
     })?;
-    let head_cells = heads
-        .keys()
-        .map(|id| {
+    let head_cells = head_ids
+        .iter()
+        .map(|(id, _)| {
             catalog
                 .get(*id)
                 .map(|artifact| (*id, artifact.envelope_residency()))
@@ -86,12 +120,8 @@ pub(super) fn restore(
         .manifest
         .roots
         .iter()
-        .filter(|image| heads.contains_key(&image.commit_id))
+        .filter(|image| head_ids.contains_key(&image.commit_id))
     {
-        let envelope = heads
-            .get(&image.commit_id)
-            .cloned()
-            .ok_or_else(|| corrupt("root has no admitted head envelope"))?;
         let schema = regions
             .schemas
             .get(&image.schema_carrier_digest)
@@ -102,12 +132,33 @@ pub(super) fn restore(
             .get(&image.commit_id)
             .cloned()
             .ok_or_else(|| corrupt("root has no commit descriptor"))?;
-        let leaves = regions.regions(image.schema_carrier_digest, &image.regions)?;
-        let root = history
-            .readmit_branch_region_directory(leaves, envelope, descriptor, schema.clone())
-            .map_err(|denial| {
-                corrupt(format!("branch region directory readmission: {denial:?}"))
-            })?;
+        let leaves = regions.regions(image.schema_carrier_digest, &image.regions, execution)?;
+        let root = if directory.admission_image.is_some() {
+            let artifact = history
+                .commit_artifact(image.commit_id)
+                .ok_or_else(|| corrupt("root has no actual selected canonical row"))?;
+            let (entry, source) = artifact
+                .envelope_residency()
+                .source_placement()
+                .ok_or_else(|| corrupt("root has no actual selected source placement"))?;
+            if !Arc::ptr_eq(&directory.source, &source) {
+                return Err(corrupt("root catalog source differs from selected directory").into());
+            }
+            let commit = runtime
+                .durability
+                .checkpoint_selection()
+                .admitted_commit(&entry)
+                .map_err(RelationalRecoveryStop::AdmissionImage)?
+                .ok_or_else(|| corrupt("root has no admitted checkpoint row"))?;
+            history.readmit_checkpoint_region_directory(leaves, commit, execution)
+        } else {
+            let envelope = heads
+                .get(&image.commit_id)
+                .cloned()
+                .ok_or_else(|| corrupt("root has no admitted head envelope"))?;
+            history.readmit_branch_region_directory(leaves, envelope, descriptor, schema.clone())
+        }
+        .map_err(super::super::original_inputs::root_stop)?;
         roots.insert(image.commit_id, root);
         authorities.insert(image.commit_id, schema);
         work.root_images_verified += 1;
@@ -137,8 +188,9 @@ pub(super) fn restore(
     work.branch_cells_readmitted += checkpoint.branch_cells.len();
     let mirror = match directory.manifest.mirror_schema {
         Some(schema) => regions
-            .regions(schema, &directory.manifest.mirror)?
-            .into_iter()
+            .regions(schema, &directory.manifest.mirror, execution)?
+            .iter()
+            .cloned()
             .map(|region| {
                 (
                     region.partition_id,

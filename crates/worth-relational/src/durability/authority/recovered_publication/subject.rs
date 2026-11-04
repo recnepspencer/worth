@@ -10,6 +10,7 @@ use crate::durability::authority::{
 use crate::runtime::RelationalRuntime;
 
 pub(super) fn validate(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     recovered: &RecoveredRelationalRuntimeAuthority,
     runtime: &RelationalRuntime,
     effect: &ReadmittedRelationalAssociatedEffect,
@@ -26,20 +27,33 @@ pub(super) fn validate(
         Some(Settlement::PerformedSettled | Settlement::CheckpointReadmitted) => {}
         None => return Err(Cause::MissingSettlementEvidence),
     }
-    let source = effect.source_envelope();
-    let original = source
-        .branch_cell_checkpoint
-        .as_ref()
-        .ok_or(Cause::MissingOriginalPredecessor)?;
-    let original = original
-        .in_canonical_frame()
-        .map_err(|_| Cause::SubjectMismatch)?;
-    if predecessor.descriptor().branch_id() != &original.branch_id
-        || predecessor.descriptor().reference() != &original.observation
-        || predecessor.descriptor().truth_version() != original.truth_version
-        || successor.descriptor().branch_id() != &source.branch_context
-    {
-        return Err(Cause::SubjectMismatch);
+    match effect.origin() {
+        super::super::associated_effects::ReadmittedEffectOrigin::Original(source) => {
+            let source = source.envelope();
+            let original = source
+                .branch_cell_checkpoint
+                .as_ref()
+                .ok_or(Cause::MissingOriginalPredecessor)?;
+            let original = original
+                .in_canonical_frame()
+                .map_err(|_| Cause::SubjectMismatch)?;
+            if predecessor.descriptor().branch_id() != &original.branch_id
+                || predecessor.descriptor().reference() != &original.observation
+                || predecessor.descriptor().truth_version() != original.truth_version
+                || successor.descriptor().branch_id() != &source.branch_context
+            {
+                return Err(Cause::SubjectMismatch);
+            }
+        }
+        super::super::associated_effects::ReadmittedEffectOrigin::Checkpoint { commit, .. } => {
+            commit
+                .require_publication_axes(
+                    predecessor.descriptor(),
+                    successor.descriptor(),
+                    execution,
+                )
+                .map_err(Cause::AdmissionImage)?;
+        }
     }
     let Target::Canonical(target) = successor.target() else {
         return Err(Cause::SubjectMismatch);

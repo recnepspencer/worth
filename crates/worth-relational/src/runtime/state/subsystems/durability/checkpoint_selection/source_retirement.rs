@@ -14,11 +14,19 @@ impl RelationalCheckpointManifestSelection {
         &self,
         source: &dyn RelationalDurableColdSource,
     ) -> Result<(), Ack> {
-        let original = self
-            .try_source_state()?
-            .directory
-            .as_ref()
-            .and_then(NativeCheckpointDirectoryEdge::snapshot);
+        let (original, admission) = {
+            let state = self.try_source_state()?;
+            (
+                state
+                    .directory
+                    .as_ref()
+                    .and_then(NativeCheckpointDirectoryEdge::snapshot),
+                state.admission.clone(),
+            )
+        };
+        if let Some(admission) = admission {
+            admission.preflight_retirement(source)?;
+        }
         if let Some(original) = original {
             original.preflight_retirement(source)?;
         }
@@ -28,7 +36,15 @@ impl RelationalCheckpointManifestSelection {
         &self,
         handoff: &mut Option<NativeDirectoryRetirementHandoff>,
     ) -> Result<bool, Ack> {
-        match &mut self.try_source_state()?.directory {
+        let mut state = self.try_source_state()?;
+        if let Some(admission) = &mut state.admission {
+            if !admission.loan_source_retirement(handoff)? {
+                state.admission_loan = true;
+                return Ok(false);
+            }
+        }
+        state.admission_loan = false;
+        match &mut state.directory {
             None => Ok(true),
             Some(original) => original.loan(handoff),
         }
@@ -37,7 +53,16 @@ impl RelationalCheckpointManifestSelection {
         &self,
         handoff: &mut Option<NativeDirectoryRetirementHandoff>,
     ) -> Result<bool, Ack> {
-        self.try_source_state()?
+        let mut state = self.try_source_state()?;
+        if state.admission_loan {
+            state
+                .admission
+                .as_mut()
+                .expect("original admission custody loan")
+                .return_source_retirement(handoff)?;
+            return Ok(false);
+        }
+        state
             .directory
             .as_mut()
             .expect("original selected directory loan")

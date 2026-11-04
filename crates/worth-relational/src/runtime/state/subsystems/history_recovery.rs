@@ -5,7 +5,8 @@ use crate::history::data::CommitId;
 use worth_foundational::FoundationalBranchTarget;
 
 use super::history_recovery_validation::{
-    validate_branch_target_envelope, validate_recovered_branch_cell,
+    validate_branch_target_artifact, validate_branch_target_envelope,
+    validate_recovered_branch_cell,
 };
 use super::HistorySubsystem;
 
@@ -37,14 +38,8 @@ impl HistorySubsystem {
                 }
                 FoundationalBranchTarget::Basis(target) => {
                     let commit_id = CommitId(target.selected_commit_id());
-                    let envelope = self.recorded_commit_envelope(commit_id).ok_or_else(|| {
-                        format!(
-                            "branch cell `{}` references missing commit artifact `{}`",
-                            checkpoint.branch_id.0, commit_id.0
-                        )
-                    })?;
-                    validate_branch_target_envelope(
-                        &envelope,
+                    validate_branch_target_artifact(
+                        self,
                         &checkpoint.branch_id,
                         checkpoint.observation.target(),
                     )?;
@@ -54,8 +49,29 @@ impl HistorySubsystem {
                             commit_id.0
                         )
                     })?;
-                    if root.descriptor() != Some(target.roots()) || !root.links_envelope(&envelope)
-                    {
+                    let linked = match root.commit_evidence() {
+                        Some(crate::branch::RelationalRootCommitEvidence::Original(_)) => {
+                            let envelope =
+                                self.recorded_commit_envelope(commit_id).ok_or_else(|| {
+                                    format!(
+                                        "branch cell `{}` references missing commit artifact `{}`",
+                                        checkpoint.branch_id.0, commit_id.0,
+                                    )
+                                })?;
+                            validate_branch_target_envelope(
+                                &envelope,
+                                &checkpoint.branch_id,
+                                checkpoint.observation.target(),
+                            )?;
+                            root.links_envelope(&envelope)
+                        }
+                        Some(crate::branch::RelationalRootCommitEvidence::Checkpoint(commit)) => {
+                            self.commit_artifact(commit_id)
+                                .is_some_and(|artifact| commit.links_artifact(&artifact))
+                        }
+                        None => false,
+                    };
+                    if root.descriptor() != Some(target.roots()) || !linked {
                         return Err(format!(
                             "durable branch-root directory does not match target `{}`",
                             commit_id.0

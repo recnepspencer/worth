@@ -83,7 +83,11 @@ impl crate::ReadmittedApplicationHome {
             &self.context.checkpoint,
             None,
             execution,
-            || self.relational.prepare_complete_checkpoint(execution),
+            |home, through, digest| {
+                self.relational
+                    .complete_checkpoint_preparation()
+                    .prepare_home(home, through, digest, execution)
+            },
             Some(&observer),
             None,
             None,
@@ -100,7 +104,11 @@ impl crate::ReadmittedApplicationHome {
             &self.context.checkpoint,
             None,
             execution,
-            || self.relational.prepare_complete_checkpoint(execution),
+            |home, through, digest| {
+                self.relational
+                    .complete_checkpoint_preparation()
+                    .prepare_home(home, through, digest, execution)
+            },
             None,
             None,
             Some(&observer),

@@ -1,4 +1,5 @@
 //! Relational's native section and journals; physical lifecycle belongs to Application.
+mod admission_section;
 mod attachment;
 pub(crate) mod checkpoint;
 mod close;
@@ -19,7 +20,7 @@ pub use selection::RelationalCheckpointSelectionSource;
 
 pub use attachment::RelationalStoreSection;
 pub use checkpoint::{
-    PreparedCompleteRelationalSection, PreparedRelationalSection,
+    CapturedHomeRelationalSection, PreparedCompleteRelationalSection, PreparedRelationalSection,
     RelationalCheckpointSelectionProtection, RelationalSectionCheckpointDenial,
     RelationalSectionCompleteCheckpointPreparation,
 };

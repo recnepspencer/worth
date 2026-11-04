@@ -3,7 +3,8 @@ use super::ApplicationHomeCheckpointDenial;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 use worth_store::physical_runtime::{AnchoredRecordMember, ServingPhysicalRuntime};
 use worth_store_relational::{
-    PreparedCompleteRelationalSection, RelationalSectionCheckpointDenial,
+    CapturedHomeRelationalSection, PreparedCompleteRelationalSection,
+    RelationalSectionCheckpointDenial,
 };
 
 pub(super) struct PreparedHomeCheckpoint {
@@ -51,8 +52,11 @@ pub(super) fn prepare_attempt(
     owner: &super::owner::HomeCheckpointOwner,
     execution: &ExecutionRequest<'_, '_>,
     world: &worth_runtime_world::facade::WorldCheckpointPort,
-    native: impl FnOnce()
-        -> Result<PreparedCompleteRelationalSection, RelationalSectionCheckpointDenial>,
+    native: impl FnOnce(
+        worth_foundational::facade::HomeIdentity,
+        [u64; 3],
+        [u8; 32],
+    ) -> Result<CapturedHomeRelationalSection, RelationalSectionCheckpointDenial>,
 ) -> Result<
     (
         std::sync::Arc<super::owner::HomeCheckpointAttempt>,
@@ -91,8 +95,11 @@ fn capture_in_scope(
     serving: &ServingPhysicalRuntime,
     execution: &ExecutionRequest<'_, '_>,
     world: &worth_runtime_world::facade::WorldCheckpointPort,
-    native: impl FnOnce()
-        -> Result<PreparedCompleteRelationalSection, RelationalSectionCheckpointDenial>,
+    native: impl FnOnce(
+        worth_foundational::facade::HomeIdentity,
+        [u64; 3],
+        [u8; 32],
+    ) -> Result<CapturedHomeRelationalSection, RelationalSectionCheckpointDenial>,
 ) -> Result<PreparedHomeCheckpoint, ApplicationHomeCheckpointDenial> {
     use ApplicationHomeCheckpointDenial as Denial;
     let world = world
@@ -105,11 +112,26 @@ fn capture_after_world(
     serving: &ServingPhysicalRuntime,
     execution: &ExecutionRequest<'_, '_>,
     world: worth_runtime_world::facade::PreparedWorldCheckpoint,
-    native: impl FnOnce()
-        -> Result<PreparedCompleteRelationalSection, RelationalSectionCheckpointDenial>,
+    native: impl FnOnce(
+        worth_foundational::facade::HomeIdentity,
+        [u64; 3],
+        [u8; 32],
+    ) -> Result<CapturedHomeRelationalSection, RelationalSectionCheckpointDenial>,
 ) -> Result<PreparedHomeCheckpoint, ApplicationHomeCheckpointDenial> {
     use ApplicationHomeCheckpointDenial as Denial;
-    let native = native().map_err(Denial::Native)?;
+    let image_denial =
+        |cause| Denial::Native(RelationalSectionCheckpointDenial::AdmissionImage(cause));
+    let (home, through, world_digest) = world
+        .home_admission_coordinates(execution)
+        .map_err(image_denial)?;
+    let native = native(home, through, world_digest).map_err(Denial::Native)?;
+    let image = native.admission_image();
+    let companion = world
+        .capture_home_admission_companion(image, execution)
+        .map_err(image_denial)?;
+    let native = native
+        .bind_home_admission_section(companion.bytes(), execution)
+        .map_err(Denial::Native)?;
     // Native owns the actual read-custody fence BEFORE reading the anchor.
     let previous = super::read(serving, execution)?;
     validate_previous(&native, &world, previous.as_ref(), execution)?;

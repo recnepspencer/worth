@@ -16,6 +16,7 @@ pub(crate) use persistent_allocation::{persistent_map_path_bytes, row_copy_bound
 mod preparation;
 mod publication;
 mod refresh_preparation;
+mod retained_projection;
 mod selected_field_request;
 use publication::PreparedRefresh;
 #[cfg(test)]
@@ -37,7 +38,7 @@ use work::MaintenanceWork;
 impl IndexAuthority<'_> {
     /// Explicit bounded reconstruction for a committed version that is no
     /// longer a live branch head. Retention selects its actual immutable root;
-    /// the root's envelope must match the requested commit and branch.
+    /// its admitted receipt and authoring facts must match the catalog artifact.
     pub fn reconstruct_for_commit(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -49,27 +50,45 @@ impl IndexAuthority<'_> {
             let recorded = self
                 .runtime
                 .history
-                .recorded_commit_envelope(request.source_commit_id)
+                .commit_artifact(request.source_commit_id)
                 .ok_or(DerivedIndexMaintenanceDenialKind::CommitMismatch)?;
-            if recorded.branch_context != request.branch_id {
+            let identity = recorded.identity();
+            let branch_bytes = request.branch_id.0.len();
+            // Compare the authoring name and copy the registry cell identity.
+            work.prepare(2 * branch_bytes as u64 + 2, branch_bytes as u64)?;
+            if identity.authoring_branch() != &request.branch_id {
                 return Err(DerivedIndexMaintenanceDenialKind::CommitMismatch);
             }
-            let projection = self
-                .runtime
-                .read_truth()
-                .try_project_retained_commit(
-                    request.source_commit_id,
-                    request.branch_id.clone(),
-                    recorded.commit.version_id,
-                )
-                .map_err(DerivedIndexMaintenanceDenialKind::Basis)?;
+            let projection = match self.project_registered_retained_commit(
+                execution,
+                &request,
+                identity.version_id(),
+                work,
+            )? {
+                Some(projection) => projection,
+                None => {
+                    work.prepare(branch_bytes as u64 + 1, branch_bytes as u64)?;
+                    self.runtime
+                        .read_truth()
+                        .try_project_retained_commit(
+                            request.source_commit_id,
+                            request.branch_id.clone(),
+                            identity.version_id(),
+                        )
+                        .map_err(DerivedIndexMaintenanceDenialKind::Basis)?
+                }
+            };
             let root = projection
                 .selected_root()
                 .ok_or(DerivedIndexMaintenanceDenialKind::CommitMismatch)?;
-            if root.commit_id() != Some(request.source_commit_id)
-                || root
-                    .canonical_envelope()
-                    .is_none_or(|envelope| envelope.branch_context != request.branch_id)
+            work.prepare(branch_bytes as u64 + 1, 0)?;
+            if root.commit_receipt().is_none_or(|receipt| {
+                receipt.commit_id != request.source_commit_id
+                    || receipt.version_id != identity.version_id()
+            }) || root
+                .commit_evidence()
+                .is_none_or(|evidence| evidence.authoring_branch() != &request.branch_id)
+                || root.descriptor() != Some(recorded.roots())
             {
                 return Err(DerivedIndexMaintenanceDenialKind::CommitMismatch);
             }
@@ -138,7 +157,7 @@ impl IndexAuthority<'_> {
             })
             .transpose()?;
         work.prepare(branch.0.len().min(request.branch_id.0.len()) as u64 + 1, 0)?;
-        basis::validate(request, &observation, before.as_ref(), &after)?;
+        basis::validate(request, &observation, before.as_ref(), &after, execution)?;
         self.prepare_refresh(execution, request, before.as_ref(), &after, work)
     }
 }

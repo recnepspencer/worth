@@ -41,7 +41,7 @@ fn cloned_complete_plan_retries_after_member_read_cancellation_without_directory
     );
     let later = create_entity_outcome(&request, &runtime, "tail-after-checkpoint");
     release_test_commit_snapshot(&runtime, &later);
-    let input = home_input(&medium, image.source_artifact().clone(), &request).unwrap();
+    let input = home_image_input(&medium, &image, &request).unwrap();
     let mut receiver = receiver(&medium);
     let before = receiver.runtime_instance_id();
     let plan = receiver

@@ -44,7 +44,7 @@ fn cold_complete_recapture_preserves_original_index_generations_and_live_tail() 
     let later = create_entity_outcome(&request, &runtime, "live-tail-index-value");
     let tail_commit = later.commit.commit_id.0;
     release_test_commit_snapshot(&runtime, &later);
-    let input = home_input(&medium, image.source_artifact().clone(), &request).unwrap();
+    let input = home_image_input(&medium, &image, &request).unwrap();
     drop((image, runtime));
     let mut recovered = receiver(&medium);
     let plan = recovered

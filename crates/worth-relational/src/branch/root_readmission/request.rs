@@ -148,7 +148,7 @@ fn bind_original(
         schema_authority: schema,
         committed: Some(RelationalCommittedBranchRoot {
             descriptor,
-            canonical_envelope: envelope,
+            evidence: super::super::RelationalRootCommitEvidence::Original(envelope),
             axes: RelationalBranchRootAxes {
                 storage_version,
                 storage_root,

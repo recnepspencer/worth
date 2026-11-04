@@ -12,6 +12,8 @@ use crate::publication::patch::data::PatchStreamPosition;
 /// checkpoint filed under the wrong coverage is refused, never reinterpreted.
 #[derive(Debug, Clone)]
 pub struct RelationalDurableCheckpointSource {
+    admission_image:
+        Option<crate::durability::checkpoint_admission::RelationalCheckpointAdmissionArtifact>,
     complete: Option<crate::durability::source_initial_inputs::RelationalCompleteSourceArtifact>,
     covered: PatchStreamPosition,
     covered_transitions: RelationalBranchTransitionSequence,
@@ -25,6 +27,7 @@ impl RelationalDurableCheckpointSource {
         checkpoint: RelationalNativeCheckpoint,
     ) -> Self {
         Self {
+            admission_image: None,
             complete: None,
             covered,
             covered_transitions,
@@ -37,6 +40,7 @@ impl RelationalDurableCheckpointSource {
     ) -> Result<Self, crate::durability::source_initial_inputs::RelationalInitialInputsRefusal>
     {
         Ok(Self {
+            admission_image: None,
             covered: artifact.covered(),
             covered_transitions: artifact.covered_transitions(),
             checkpoint: artifact.checkpoint()?,
@@ -49,6 +53,58 @@ impl RelationalDurableCheckpointSource {
         self.complete.as_ref()
     }
 
+    pub fn from_checkpoint_admission_image(
+        artifact: crate::durability::source_initial_inputs::RelationalCompleteSourceArtifact,
+        image: crate::durability::checkpoint_admission::RelationalCheckpointAdmissionArtifact,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Self, crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal>
+    {
+        use crate::durability::checkpoint_admission::{
+            CheckpointAdmissionBindingMismatch as Mismatch,
+            RelationalCheckpointAdmissionRefusal as Refusal,
+        };
+        let mut source =
+            Self::from_complete_artifact(artifact).map_err(|_| Refusal::InvalidProjectedMeaning)?;
+        let cut = image.cut();
+        let worth_foundational::facade::CheckpointAdmissionScope::Home {
+            native_origin,
+            complete_source_digest,
+            ..
+        } = cut.scope()
+        else {
+            return Err(Refusal::BindingMismatch(Mismatch::Scope));
+        };
+        let complete = source
+            .complete
+            .as_ref()
+            .expect("complete constructor retains its artifact");
+        if *native_origin != complete.initial_coordinate().1 {
+            return Err(Refusal::BindingMismatch(Mismatch::NativeOrigin));
+        }
+        let hash =
+            |bytes: &[u8]| crate::durability::checkpoint_admission::binding_digest(bytes, request);
+        if complete_source_digest != &hash(complete.as_bytes())? {
+            return Err(Refusal::BindingMismatch(Mismatch::Source));
+        }
+        if cut.checkpoint_digest() != &hash(source.checkpoint.bytes())? {
+            return Err(Refusal::BindingMismatch(Mismatch::Checkpoint));
+        }
+        if cut.canonical_through() != source.covered.0
+            || cut.transitions_through() != source.covered_transitions.0
+        {
+            return Err(Refusal::BindingMismatch(Mismatch::Cut));
+        }
+        source.admission_image = Some(image);
+        Ok(source)
+    }
+
+    pub(crate) fn admission_image(
+        &self,
+    ) -> Option<&crate::durability::checkpoint_admission::RelationalCheckpointAdmissionArtifact>
+    {
+        self.admission_image.as_ref()
+    }
+
     pub fn covered(&self) -> PatchStreamPosition {
         self.covered
     }
@@ -59,10 +115,6 @@ impl RelationalDurableCheckpointSource {
 
     pub fn checkpoint(&self) -> &RelationalNativeCheckpoint {
         &self.checkpoint
-    }
-
-    pub(crate) fn into_checkpoint(self) -> RelationalNativeCheckpoint {
-        self.checkpoint
     }
 }
 

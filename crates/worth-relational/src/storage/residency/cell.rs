@@ -11,6 +11,7 @@ use state::RegionState;
 mod resident_head;
 #[path = "cell/resident_leases.rs"]
 mod resident_leases;
+mod selected_readmission;
 mod weak;
 pub(super) use weak::RegionCellWeak;
 

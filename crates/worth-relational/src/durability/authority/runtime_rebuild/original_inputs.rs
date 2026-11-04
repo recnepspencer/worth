@@ -290,13 +290,15 @@ pub(super) fn bind_replayed_schema(
         .map_err(corrupt)?;
     Ok(())
 }
-fn root_stop(cause: crate::branch::RelationalBranchRootCaptureDenial) -> RelationalRecoveryStop {
+pub(super) fn root_stop(
+    cause: crate::branch::RelationalBranchRootCaptureDenial,
+) -> RelationalRecoveryStop {
     match cause {
         crate::branch::RelationalBranchRootCaptureDenial::Request(cause) => {
             RelationalRecoveryStop::Request(cause)
         }
         crate::branch::RelationalBranchRootCaptureDenial::StorageUnavailable(cause) => cause.into(),
-        cause => corrupt(format!("source schema root readmission: {cause:?}")).into(),
+        cause => corrupt(format!("root readmission: {cause:?}")).into(),
     }
 }
 

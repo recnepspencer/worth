@@ -223,12 +223,12 @@ impl AdmittedRelationalBranchBasis {
             worth_foundational::FoundationalBranchTarget::Empty => return None,
             worth_foundational::FoundationalBranchTarget::Basis(target) => target,
         };
-        let envelope = self.inner.root.canonical_envelope()?;
-        (envelope.commit.commit_id.0 == target.selected_commit_id()).then(|| {
+        let receipt = self.inner.root.commit_receipt()?;
+        (receipt.commit_id.0 == target.selected_commit_id()).then(|| {
             crate::history::RelationalCommitIdentity::new(
-                envelope.commit.commit_id,
-                envelope.commit.version_id,
-                envelope.branch_context.clone(),
+                receipt.commit_id,
+                receipt.version_id,
+                receipt.branch_id.clone(),
             )
         })
     }
