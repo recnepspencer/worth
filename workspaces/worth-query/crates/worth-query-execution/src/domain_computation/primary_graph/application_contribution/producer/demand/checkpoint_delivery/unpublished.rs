@@ -93,8 +93,8 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
         phase: &WorthQueryAdvancementPhase<'_>,
         interest: &WorthQueryOutputDemandInterest,
         returned: &mut Option<Checkpoint>,
-    ) -> Result<(), crate::domain_computation::primary_graph::WorthQueryOutputReadCloseDenial> {
-        use crate::domain_computation::primary_graph::WorthQueryOutputReadCloseDenial as Denial;
+    ) -> Result<(), crate::domain_computation::primary_graph::application_output_demand::denial::read_cleanup::WorthQueryOutputReadCloseDenial> {
+        use crate::domain_computation::primary_graph::application_output_demand::denial::read_cleanup::WorthQueryOutputReadCloseDenial as Denial;
         let Some((claim, checkpoint)) = self
             .runtime
             .output_demands

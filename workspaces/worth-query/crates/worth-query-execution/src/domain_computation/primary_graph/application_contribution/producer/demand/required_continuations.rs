@@ -77,7 +77,7 @@ trait ErasedRequiredSuccessor<Schema: ApplicationSchema>: Send + Sync {
         phase: &WorthQueryAdvancementPhase<'_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         branch: crate::basis::WorthQueryProductBranch,
-    ) -> Result<(), super::WorthQueryOutputReadCloseDenial>;
+    ) -> Result<(), crate::domain_computation::primary_graph::application_output_demand::denial::read_cleanup::WorthQueryOutputReadCloseDenial>;
 
     fn interest(&self) -> &WorthQueryOutputDemandInterest;
     fn producer_identity(&self) -> &str;
@@ -164,9 +164,9 @@ where
         phase: &WorthQueryAdvancementPhase<'_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         branch: crate::basis::WorthQueryProductBranch,
-    ) -> Result<(), super::WorthQueryOutputReadCloseDenial> {
+    ) -> Result<(), crate::domain_computation::primary_graph::application_output_demand::denial::read_cleanup::WorthQueryOutputReadCloseDenial> {
         if self.pending_claim.is_some() {
-            return Err(super::WorthQueryOutputReadCloseDenial::NativePublicationRetained);
+            return Err(crate::domain_computation::primary_graph::application_output_demand::denial::read_cleanup::WorthQueryOutputReadCloseDenial::NativePublicationRetained);
         }
         if let Some(demand) = self.demand.as_mut() {
             demand.close_read_request(phase, runtime, branch)?;

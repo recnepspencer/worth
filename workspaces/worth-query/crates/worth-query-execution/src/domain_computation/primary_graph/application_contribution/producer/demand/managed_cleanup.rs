@@ -1,5 +1,6 @@
 //! The admitted demand, never a diagnostic clone, owns failed producer cleanup.
 use super::*;
+use crate::domain_computation::primary_graph::application_output_demand::denial::read_cleanup::WorthQueryOutputReadCleanup;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
 use crate::domain_computation::primary_graph::{
     WorthQueryAdvancementPhase, WorthQueryApplicationCleanupRequired,
@@ -21,7 +22,7 @@ impl<S: ApplicationSchema, F: WorthQueryProducerOutputFamily<S>>
             .as_mut()
             .and_then(|stop| stop.take_managed_cleanup())
     }
-    pub fn take_read_cleanup(&mut self) -> Option<super::WorthQueryOutputReadCleanup> {
+    pub fn take_read_cleanup(&mut self) -> Option<crate::domain_computation::primary_graph::application_output_demand::denial::read_cleanup::WorthQueryOutputReadCleanup> {
         self.terminal_caller_denial
             .as_mut()
             .and_then(|stop| stop.take_read_cleanup())

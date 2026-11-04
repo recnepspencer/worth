@@ -1,0 +1,8 @@
+{
+ "move": "domain_computation::primary_graph::application_contribution::producer::demand::bridge_deferral -> domain_computation::primary_graph::application_output_demand::denial::bridge_deferral",
+ "files": 1,
+ "edited_files": 4,
+ "widenings": [],
+ "removed_reexports": [],
+ "problems": []
+}

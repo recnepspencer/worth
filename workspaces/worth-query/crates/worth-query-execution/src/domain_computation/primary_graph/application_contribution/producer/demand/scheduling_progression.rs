@@ -4,7 +4,7 @@ use crate::domain_computation::primary_graph::application_output_demand::denial:
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind;
 use super::super::WorthQuerySelectedApplicationProducer;
 use super::bridge_denial::bridge_denial;
-use super::bridge_deferral::is_temporarily_deferred;
+use crate::domain_computation::primary_graph::application_output_demand::denial::bridge_deferral::is_temporarily_deferred;
 use super::progression::denial;
 use crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputSchedulingResult;
 use crate::domain_computation::primary_graph::conditional_operation::WorthQuerySelectedSignalProjections;

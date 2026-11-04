@@ -16,7 +16,7 @@ trait CleanupOwner: std::fmt::Debug + Send + Sync {
         &mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
         release: &mut ReadRelease<'_>,
-    ) -> Result<(), crate::domain_computation::primary_graph::application_contribution::producer::demand::WorthQueryOutputReadCloseDenial>;
+    ) -> Result<(), crate::domain_computation::primary_graph::application_output_demand::denial::read_cleanup::WorthQueryOutputReadCloseDenial>;
     fn receipt(&mut self) -> Option<&Receipt>;
     fn outcome(&mut self) -> Option<&WorthQueryApplicationUncommitted>;
     fn retired_components(&mut self) -> usize;
@@ -41,8 +41,8 @@ impl CleanupOwner for NativeCleanupOwner {
         &mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
         release: &mut ReadRelease<'_>,
-    ) -> Result<(), crate::domain_computation::primary_graph::application_contribution::producer::demand::WorthQueryOutputReadCloseDenial> {
-        use crate::domain_computation::primary_graph::application_contribution::producer::demand::WorthQueryOutputReadCloseDenial as Denial;
+    ) -> Result<(), crate::domain_computation::primary_graph::application_output_demand::denial::read_cleanup::WorthQueryOutputReadCloseDenial> {
+        use crate::domain_computation::primary_graph::application_output_demand::denial::read_cleanup::WorthQueryOutputReadCloseDenial as Denial;
         self.release(phase).map_err(Denial::Cleanup)?;
         let state = self
             .0
@@ -216,7 +216,7 @@ impl DemandCleanupCustody {
         &mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
         release: &mut ReadRelease<'_>,
-    ) -> Result<(), crate::domain_computation::primary_graph::application_contribution::producer::demand::WorthQueryOutputReadCloseDenial> {
+    ) -> Result<(), crate::domain_computation::primary_graph::application_output_demand::denial::read_cleanup::WorthQueryOutputReadCloseDenial> {
         self.0.read_close(phase, release)
     }
     pub(in crate::domain_computation::primary_graph) fn receipt(

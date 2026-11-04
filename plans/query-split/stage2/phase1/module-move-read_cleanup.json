@@ -1,0 +1,26 @@
+{
+ "move": "domain_computation::primary_graph::application_contribution::producer::demand::read_cleanup -> domain_computation::primary_graph::application_output_demand::denial::read_cleanup",
+ "files": 1,
+ "edited_files": 17,
+ "widenings": [
+  {
+   "item": "domain_computation::primary_graph::application_contribution::producer::demand::read_cleanup @1215",
+   "from": "pub(super)",
+   "to": "pub(in crate::domain_computation::primary_graph)"
+  },
+  {
+   "item": "domain_computation::primary_graph::application_contribution::producer::demand::read_cleanup @1392",
+   "from": "pub(super)",
+   "to": "pub(in crate::domain_computation::primary_graph)"
+  }
+ ],
+ "removed_reexports": [
+  "domain_computation::primary_graph::application_contribution::WorthQueryOutputReadCleanup",
+  "domain_computation::primary_graph::application_contribution::WorthQueryOutputReadCloseDenial",
+  "domain_computation::primary_graph::application_contribution::producer::WorthQueryOutputReadCleanup",
+  "domain_computation::primary_graph::application_contribution::producer::WorthQueryOutputReadCloseDenial",
+  "domain_computation::primary_graph::application_contribution::producer::demand::WorthQueryOutputReadCleanup",
+  "domain_computation::primary_graph::application_contribution::producer::demand::WorthQueryOutputReadCloseDenial"
+ ],
+ "problems": []
+}

@@ -1,5 +1,5 @@
 //! A read request's transferred native cleanup custody and why it can remain undisposed.
-use super::*;
+use crate::domain_computation::primary_graph::application_contribution::producer::demand::*;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
 use crate::domain_computation::primary_graph::{
     WorthQueryAdvancementPhase, WorthQueryPrimaryGraphApplicationRuntime,
@@ -21,10 +21,10 @@ pub enum WorthQueryOutputReadCloseDenial {
 #[derive(Debug)]
 #[must_use = "native producer cleanup and recovery must remain owned until discharged"]
 pub struct WorthQueryOutputReadCleanup {
-    pub(super) custody: crate::domain_computation::primary_graph::application_output_demand::denial::cleanup_custody::DemandCleanupCustody,
+    pub(in crate::domain_computation::primary_graph) custody: crate::domain_computation::primary_graph::application_output_demand::denial::cleanup_custody::DemandCleanupCustody,
 }
 impl WorthQueryOutputReadCleanup {
-    pub(super) fn from_custody(custody: crate::domain_computation::primary_graph::application_output_demand::denial::cleanup_custody::DemandCleanupCustody) -> Self {
+    pub(in crate::domain_computation::primary_graph) fn from_custody(custody: crate::domain_computation::primary_graph::application_output_demand::denial::cleanup_custody::DemandCleanupCustody) -> Self {
         Self { custody }
     }
     pub fn producer_outcome(

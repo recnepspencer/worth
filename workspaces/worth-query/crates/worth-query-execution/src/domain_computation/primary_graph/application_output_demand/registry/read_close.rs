@@ -1,6 +1,6 @@
 //! Refuse orphaning this interest's unfinished native publication.
 use super::*;
-use crate::domain_computation::primary_graph::WorthQueryOutputReadCloseDenial;
+use crate::domain_computation::primary_graph::application_output_demand::denial::read_cleanup::WorthQueryOutputReadCloseDenial;
 impl WorthQueryOutputDemandRegistry {
     pub(in crate::domain_computation::primary_graph) fn begin_unpublished_close(
         &self,
