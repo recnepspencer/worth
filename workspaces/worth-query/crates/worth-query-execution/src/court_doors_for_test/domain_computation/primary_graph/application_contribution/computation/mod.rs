@@ -5,5 +5,3 @@ pub mod nested_failure;
 pub mod prepared_request;
 #[path = "wave_dispatch/mod.rs"]
 pub mod wave_dispatch;
-#[path = "worker_custody/mod.rs"]
-pub mod worker_custody;

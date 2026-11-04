@@ -1,4 +1,4 @@
-//! Doors under `domain_computation::primary_graph::application_contribution::request_execution`.
+//! Doors under `domain_computation::primary_graph::request_execution`.
 #[path = "advancement/mod.rs"]
 pub mod advancement;
 #[path = "test_placement/mod.rs"]

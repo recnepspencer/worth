@@ -9,5 +9,3 @@ pub mod native_field_contract;
 pub mod partitioned_computation;
 #[path = "producer/mod.rs"]
 pub mod producer;
-#[path = "request_execution/mod.rs"]
-pub mod request_execution;
