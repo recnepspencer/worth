@@ -5,6 +5,7 @@ use crate::{
     BlobReclaimDescriptorV3, BlobReclaimSourceBasisV1, BlobReclaimSourceKind, DropSetManifestV3,
     DropSetManifestV3View, OriginalDropReservedV1, PersistedRecordIdentity,
 };
+use worth_foundational::CanonicalDigestId;
 
 use super::{ReleaseCustodyHeadDenial, ReleaseCustodyHeadEntryV1, ReleaseCustodyHeadKeyV1};
 
@@ -13,11 +14,11 @@ use super::{ReleaseCustodyHeadDenial, ReleaseCustodyHeadEntryV1, ReleaseCustodyH
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ReleaseCustodyHeadControlIdentityV1 {
     descriptor_record: PersistedRecordIdentity,
-    descriptor_frame_sha256: [u8; 32],
+    descriptor_frame_sha256: CanonicalDigestId,
     reservation_record: PersistedRecordIdentity,
-    reservation_frame_sha256: [u8; 32],
+    reservation_frame_sha256: CanonicalDigestId,
     manifest_record: PersistedRecordIdentity,
-    manifest_frame_sha256: [u8; 32],
+    manifest_frame_sha256: CanonicalDigestId,
 }
 
 impl ReleaseCustodyHeadControlIdentityV1 {
@@ -43,11 +44,11 @@ impl ReleaseCustodyHeadControlIdentityV1 {
         }
         Ok(Self {
             descriptor_record,
-            descriptor_frame_sha256,
+            descriptor_frame_sha256: CanonicalDigestId::new(descriptor_frame_sha256),
             reservation_record,
-            reservation_frame_sha256,
+            reservation_frame_sha256: CanonicalDigestId::new(reservation_frame_sha256),
             manifest_record,
-            manifest_frame_sha256,
+            manifest_frame_sha256: CanonicalDigestId::new(manifest_frame_sha256),
         })
     }
 }
@@ -92,14 +93,14 @@ pub fn verify_release_custody_head_controls_view(
     {
         return Err(ReleaseCustodyHeadDenial::Identity);
     }
-    if frames.descriptor_frame_sha256 != entry.descriptor_frame_sha256()
-        || frames.reservation_frame_sha256 != entry.reservation_frame_sha256()
-        || frames.manifest_frame_sha256 != entry.manifest_frame_sha256()
-        || base.manifest_frame_sha256() != frames.manifest_frame_sha256
-        || reservation.manifest_frame_sha256() != frames.manifest_frame_sha256
-        || descriptor.canonical_frame_sha256() != frames.descriptor_frame_sha256
-        || reservation.canonical_frame_sha256() != frames.reservation_frame_sha256
-        || manifest.canonical_frame_sha256() != frames.manifest_frame_sha256
+    if *frames.descriptor_frame_sha256.bytes() != entry.descriptor_frame_sha256()
+        || *frames.reservation_frame_sha256.bytes() != entry.reservation_frame_sha256()
+        || *frames.manifest_frame_sha256.bytes() != entry.manifest_frame_sha256()
+        || base.manifest_frame_sha256() != *frames.manifest_frame_sha256.bytes()
+        || reservation.manifest_frame_sha256() != *frames.manifest_frame_sha256.bytes()
+        || descriptor.canonical_frame_sha256() != *frames.descriptor_frame_sha256.bytes()
+        || reservation.canonical_frame_sha256() != *frames.reservation_frame_sha256.bytes()
+        || manifest.canonical_frame_sha256() != *frames.manifest_frame_sha256.bytes()
     {
         return Err(ReleaseCustodyHeadDenial::Digest);
     }

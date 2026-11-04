@@ -1,4 +1,5 @@
 use sha2::{Digest, Sha256};
+use worth_foundational::CanonicalDigestId;
 
 use crate::PersistedRecordIdentity;
 
@@ -12,9 +13,9 @@ const SOURCE_BASIS_DOMAIN: &[u8] = b"store.physical.failed-ingest-reclaim-basis.
 pub struct FailedIngestReclaimBasisV1 {
     session: [u8; 16],
     declaration_record: PersistedRecordIdentity,
-    declaration_frame_sha256: [u8; 32],
+    declaration_frame_sha256: CanonicalDigestId,
     abandoned_record: PersistedRecordIdentity,
-    abandoned_frame_sha256: [u8; 32],
+    abandoned_frame_sha256: CanonicalDigestId,
 }
 
 impl FailedIngestReclaimBasisV1 {
@@ -31,9 +32,9 @@ impl FailedIngestReclaimBasisV1 {
         Ok(Self {
             session: nonzero_16(session)?,
             declaration_record,
-            declaration_frame_sha256: nonzero_32(declaration_frame_sha256)?,
+            declaration_frame_sha256: CanonicalDigestId::new(nonzero_32(declaration_frame_sha256)?),
             abandoned_record,
-            abandoned_frame_sha256: nonzero_32(abandoned_frame_sha256)?,
+            abandoned_frame_sha256: CanonicalDigestId::new(nonzero_32(abandoned_frame_sha256)?),
         })
     }
 
@@ -44,10 +45,10 @@ impl FailedIngestReclaimBasisV1 {
         hash.update(self.session);
         hash.update(self.declaration_record.allocation_epoch());
         hash.update(self.declaration_record.ordinal().to_le_bytes());
-        hash.update(self.declaration_frame_sha256);
+        hash.update(*self.declaration_frame_sha256.bytes());
         hash.update(self.abandoned_record.allocation_epoch());
         hash.update(self.abandoned_record.ordinal().to_le_bytes());
-        hash.update(self.abandoned_frame_sha256);
+        hash.update(*self.abandoned_frame_sha256.bytes());
         hash.finalize().into()
     }
 
@@ -58,13 +59,13 @@ impl FailedIngestReclaimBasisV1 {
         self.declaration_record
     }
     pub const fn declaration_frame_sha256(self) -> [u8; 32] {
-        self.declaration_frame_sha256
+        *self.declaration_frame_sha256.bytes()
     }
     pub const fn abandoned_record(self) -> PersistedRecordIdentity {
         self.abandoned_record
     }
     pub const fn abandoned_frame_sha256(self) -> [u8; 32] {
-        self.abandoned_frame_sha256
+        *self.abandoned_frame_sha256.bytes()
     }
 
     pub(super) fn encode_into(self, target: &mut Vec<u8>) {
@@ -75,10 +76,10 @@ impl FailedIngestReclaimBasisV1 {
         emit(&self.session);
         emit(&self.declaration_record.allocation_epoch());
         emit(&self.declaration_record.ordinal().to_le_bytes());
-        emit(&self.declaration_frame_sha256);
+        emit(self.declaration_frame_sha256.bytes());
         emit(&self.abandoned_record.allocation_epoch());
         emit(&self.abandoned_record.ordinal().to_le_bytes());
-        emit(&self.abandoned_frame_sha256);
+        emit(self.abandoned_frame_sha256.bytes());
     }
 
     pub(super) fn decode(bytes: &[u8]) -> Result<Self, BlobRecordDenial> {

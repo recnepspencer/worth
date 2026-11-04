@@ -41,7 +41,10 @@ impl ResumeRevalidation {
             completed,
             target_file_index: checkpoint.file_index,
             target_offset: checkpoint.offset,
-            partial_digest: checkpoint.partial_digest,
+            partial_digest: match checkpoint.partial_digest {
+                Some(digest) => Some(*digest.bytes()),
+                None => None,
+            },
         }))
     }
 
@@ -53,7 +56,10 @@ impl ResumeRevalidation {
             completed: checkpoint.completed,
             target_file_index: checkpoint.file_index,
             target_offset: checkpoint.offset,
-            partial_digest: checkpoint.partial_digest,
+            partial_digest: match checkpoint.partial_digest {
+                Some(digest) => Some(*digest.bytes()),
+                None => None,
+            },
         })
     }
 

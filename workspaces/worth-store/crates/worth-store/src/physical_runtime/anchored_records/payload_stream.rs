@@ -66,7 +66,7 @@ impl AnchoredRecords<'_> {
             name,
             generation: anchor.generation(),
             record: crate::physical_runtime::PhysicalRecordId::from_persisted(anchor.record()),
-            payload_sha256: stream.header.payload_sha256,
+            payload_sha256: *stream.header.payload_sha256.bytes(),
             payload_bytes: stream.header.payload_bytes,
         };
         Ok(Some(AnchoredRecordPayloadStream {

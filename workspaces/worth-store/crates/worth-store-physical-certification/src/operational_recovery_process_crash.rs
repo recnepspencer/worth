@@ -1,4 +1,5 @@
 use std::path::PathBuf;
+use worth_foundational::CanonicalDigestId;
 
 use worth_store_operations::{OperationalControlSessionObservation, OperationalControlStore};
 
@@ -26,7 +27,7 @@ pub const PROCESS_CRASH_YIELDPOINT_ENV: &str = "WORTH_STORE_S10_CRASH_YIELDPOINT
 pub struct OperationalRecoveryProcessCrashConfig {
     yieldpoint: OperationalRecoveryYieldpoint,
     report_path: PathBuf,
-    challenge: [u8; 32],
+    challenge: CanonicalDigestId,
     admission: AdmittedProcessProbe,
 }
 
@@ -82,7 +83,7 @@ impl OperationalRecoveryProcessCrashConfig {
         Ok(Some(Self {
             yieldpoint,
             report_path,
-            challenge,
+            challenge: CanonicalDigestId::new(challenge),
             admission,
         }))
     }
@@ -97,10 +98,10 @@ impl OperationalRecoveryProcessCrashConfig {
         trace: &OperationalRecoveryDriverTrace,
     ) -> ! {
         let report = ProcessObservationReport {
-            challenge: self.challenge,
+            challenge: CanonicalDigestId::new(*self.challenge.bytes()),
             yieldpoint: self.yieldpoint,
             observation,
-            trace_identity: trace.evidence_identity(),
+            trace_identity: CanonicalDigestId::new(trace.evidence_identity()),
             operations: trace.operation_identities().to_vec(),
         };
         write_report(&self.report_path, &report).expect("write durable S10 crash-cut report");
@@ -140,10 +141,10 @@ pub fn write_reopen_observation_from_environment(
     write_report(
         &report_path,
         &ProcessObservationReport {
-            challenge,
+            challenge: CanonicalDigestId::new(challenge),
             yieldpoint,
             observation,
-            trace_identity: [0; 32],
+            trace_identity: CanonicalDigestId::new([0; 32]),
             operations: Vec::new(),
         },
     )

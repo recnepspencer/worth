@@ -1,4 +1,5 @@
 use crate::{OriginalDropReservationRequestV1, PersistedRecordIdentity};
+use worth_foundational::CanonicalDigestId;
 
 use super::{
     read_record, write_record, Cursor, ReleaseCheckpointCertificateDenial,
@@ -13,13 +14,13 @@ pub const RELEASE_CHECKPOINT_TIP_WIRE_BYTES: usize = 24 + 32 + 24 + 32 + 80 + 80
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ReleasedDropTipProvenanceV1 {
     descriptor_record: PersistedRecordIdentity,
-    descriptor_frame_sha256: [u8; 32],
+    descriptor_frame_sha256: CanonicalDigestId,
     reservation_record: PersistedRecordIdentity,
-    reservation_frame_sha256: [u8; 32],
+    reservation_frame_sha256: CanonicalDigestId,
     request: OriginalDropReservationRequestV1,
     fate: ReleasedDropWalFateWitnessV1,
     candidate_root_generation: u64,
-    candidate_root_sha256: [u8; 32],
+    candidate_root_sha256: CanonicalDigestId,
 }
 
 impl ReleasedDropTipProvenanceV1 {
@@ -47,28 +48,28 @@ impl ReleasedDropTipProvenanceV1 {
         }
         Ok(Self {
             descriptor_record,
-            descriptor_frame_sha256,
+            descriptor_frame_sha256: CanonicalDigestId::new(descriptor_frame_sha256),
             reservation_record,
-            reservation_frame_sha256,
+            reservation_frame_sha256: CanonicalDigestId::new(reservation_frame_sha256),
             request,
             fate,
             candidate_root_generation,
-            candidate_root_sha256,
+            candidate_root_sha256: CanonicalDigestId::new(candidate_root_sha256),
         })
     }
 
     pub(super) fn write(self, out: &mut Vec<u8>) {
         write_record(out, self.descriptor_record);
-        out.extend_from_slice(&self.descriptor_frame_sha256);
+        out.extend_from_slice(self.descriptor_frame_sha256.bytes());
         write_record(out, self.reservation_record);
-        out.extend_from_slice(&self.reservation_frame_sha256);
+        out.extend_from_slice(self.reservation_frame_sha256.bytes());
         out.extend_from_slice(&self.request.idempotency());
         out.extend_from_slice(&self.request.fingerprint());
         out.extend_from_slice(&self.request.lease_issuance_generation().to_le_bytes());
         out.extend_from_slice(&self.request.lease_expiry_generation().to_le_bytes());
         self.fate.write(out);
         out.extend_from_slice(&self.candidate_root_generation.to_le_bytes());
-        out.extend_from_slice(&self.candidate_root_sha256);
+        out.extend_from_slice(self.candidate_root_sha256.bytes());
     }
 
     pub(super) fn read(
@@ -102,13 +103,13 @@ impl ReleasedDropTipProvenanceV1 {
         self.descriptor_record
     }
     pub const fn descriptor_frame_sha256(self) -> [u8; 32] {
-        self.descriptor_frame_sha256
+        *self.descriptor_frame_sha256.bytes()
     }
     pub const fn reservation_record(self) -> PersistedRecordIdentity {
         self.reservation_record
     }
     pub const fn reservation_frame_sha256(self) -> [u8; 32] {
-        self.reservation_frame_sha256
+        *self.reservation_frame_sha256.bytes()
     }
     pub const fn request(self) -> OriginalDropReservationRequestV1 {
         self.request
@@ -120,6 +121,6 @@ impl ReleasedDropTipProvenanceV1 {
         self.candidate_root_generation
     }
     pub const fn candidate_root_sha256(self) -> [u8; 32] {
-        self.candidate_root_sha256
+        *self.candidate_root_sha256.bytes()
     }
 }

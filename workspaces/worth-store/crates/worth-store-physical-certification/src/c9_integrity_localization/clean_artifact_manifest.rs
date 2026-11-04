@@ -1,6 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::ops::Range;
 use std::path::{Path, PathBuf};
+use worth_foundational::CanonicalDigestId;
 
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -27,8 +28,8 @@ pub(crate) struct CleanRootArtifactRecord {
     substitution_source_identity: RootArtifactIdentity,
     duplicate_path: PathBuf,
     exact_length: u64,
-    content_sha256: [u8; 32],
-    substitution_source_sha256: [u8; 32],
+    content_sha256: CanonicalDigestId,
+    substitution_source_sha256: CanonicalDigestId,
     substitution_changed_ranges: Vec<Range<u64>>,
     covered_ranges: [Range<u64>; 2],
     checksum_range: Range<u64>,
@@ -42,8 +43,8 @@ pub(crate) struct CleanRootArtifactRecord {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub(crate) struct CleanRootArtifactManifest {
     records: BTreeMap<RootArtifactIdentity, CleanRootArtifactRecord>,
-    supporting_artifacts: BTreeMap<PathBuf, [u8; 32]>,
-    manifest_identity: [u8; 32],
+    supporting_artifacts: BTreeMap<PathBuf, CanonicalDigestId>,
+    manifest_identity: CanonicalDigestId,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -146,8 +147,8 @@ impl CleanRootArtifactManifest {
                 substitution_source_identity: declaration.substitution_source_identity,
                 duplicate_path: declaration.duplicate_path,
                 exact_length: length,
-                content_sha256: Sha256::digest(&bytes).into(),
-                substitution_source_sha256: Sha256::digest(&donor).into(),
+                content_sha256: CanonicalDigestId::new(Sha256::digest(&bytes).into()),
+                substitution_source_sha256: CanonicalDigestId::new(Sha256::digest(&donor).into()),
                 substitution_changed_ranges: changed_byte_ranges(&bytes, &donor),
                 covered_ranges: [0..44, FRAME_HEADER_BYTES as u64..length],
                 checksum_range: usize_range_to_u64(FRAME_CHECKSUM_RANGE),
@@ -180,7 +181,10 @@ impl CleanRootArtifactManifest {
             }
             let path = store_root.join(&relative_path);
             let bytes = read_clean_frame(&path)?;
-            supporting_artifacts.insert(relative_path, Sha256::digest(bytes).into());
+            supporting_artifacts.insert(
+                relative_path,
+                CanonicalDigestId::new(Sha256::digest(bytes).into()),
+            );
         }
         let known_paths: BTreeSet<_> = records
             .values()
@@ -208,7 +212,7 @@ impl CleanRootArtifactManifest {
         Ok(Self {
             records,
             supporting_artifacts,
-            manifest_identity,
+            manifest_identity: CanonicalDigestId::new(manifest_identity),
         })
     }
 
@@ -234,11 +238,11 @@ impl CleanRootArtifactManifest {
     pub(crate) fn supporting_artifacts(&self) -> impl Iterator<Item = (&Path, [u8; 32])> {
         self.supporting_artifacts
             .iter()
-            .map(|(path, digest)| (path.as_path(), *digest))
+            .map(|(path, digest)| (path.as_path(), *digest.bytes()))
     }
 
     pub(crate) const fn identity(&self) -> [u8; 32] {
-        self.manifest_identity
+        *self.manifest_identity.bytes()
     }
 }
 
@@ -262,10 +266,10 @@ impl CleanRootArtifactRecord {
         self.exact_length
     }
     pub(crate) const fn content_sha256(&self) -> [u8; 32] {
-        self.content_sha256
+        *self.content_sha256.bytes()
     }
     pub(crate) const fn substitution_source_sha256(&self) -> [u8; 32] {
-        self.substitution_source_sha256
+        *self.substitution_source_sha256.bytes()
     }
     pub(crate) fn substitution_changed_ranges(&self) -> &[Range<u64>] {
         &self.substitution_changed_ranges

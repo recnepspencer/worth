@@ -4,6 +4,7 @@ use super::{
 };
 use worth_execution::{ExecutionImmutableBytes, ExecutionRequest};
 use worth_foundational::facade::{BoundaryProtocolCompatibilityWindow, BoundaryProtocolVersion};
+use worth_foundational::CanonicalDigestId;
 use worth_relational::facade::durability::{
     CompleteRelationalNativeCheckpoint, RelationalCompleteSourceArtifact,
     RelationalDurableCheckpointSource,
@@ -67,7 +68,7 @@ pub(super) fn decode(
     .map_err(Read::InitialInputs)?;
     if source.covered().0 != coordinates.covered
         || source.covered_transitions().0 != coordinates.through
-        || source.initial_coordinate() != (coordinates.revision, coordinates.digest)
+        || source.initial_coordinate() != (coordinates.revision, *coordinates.digest.bytes())
     {
         return Err(Read::MalformedSection);
     }
@@ -78,7 +79,7 @@ pub(super) struct CompleteSectionCoordinates {
     pub(super) covered: u64,
     pub(super) through: u64,
     pub(super) revision: u64,
-    pub(super) digest: [u8; 32],
+    pub(super) digest: CanonicalDigestId,
 }
 pub(super) fn coordinates(bytes: &[u8]) -> Option<CompleteSectionCoordinates> {
     if bytes.get(..8)? != MAGIC
@@ -95,6 +96,6 @@ pub(super) fn coordinates(bytes: &[u8]) -> Option<CompleteSectionCoordinates> {
         covered: integer(10)?,
         through: integer(18)?,
         revision: integer(26)?,
-        digest: bytes.get(34..HEADER)?.try_into().ok()?,
+        digest: CanonicalDigestId::new(bytes.get(34..HEADER)?.try_into().ok()?),
     })
 }

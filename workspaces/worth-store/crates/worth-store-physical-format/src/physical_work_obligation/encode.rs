@@ -6,6 +6,7 @@ use super::{
     PhysicalWorkObligationOperationCode, PhysicalWorkObligationTargetCode,
     PHYSICAL_WORK_OBLIGATION_V6_RECORD_BYTES, PHYSICAL_WORK_OBLIGATION_V6_VERSION,
 };
+use worth_foundational::CanonicalDigestId;
 
 const MAGIC: &[u8; 8] = b"WPEFFECT";
 
@@ -15,7 +16,7 @@ pub struct PhysicalWorkObligationV6 {
     identity: PhysicalWorkObligationIdentity,
     operation_code: PhysicalWorkObligationOperationCode,
     target: PhysicalWorkObligationTargetCode,
-    payload_digest: Option<[u8; 32]>,
+    payload_digest: Option<CanonicalDigestId>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -91,7 +92,10 @@ impl PhysicalWorkObligationV6 {
             identity,
             operation_code,
             target,
-            payload_digest,
+            payload_digest: match payload_digest {
+                Some(bytes) => Some(CanonicalDigestId::new(bytes)),
+                None => None,
+            },
         })
     }
     pub const fn identity(self) -> PhysicalWorkObligationIdentity {
@@ -116,7 +120,10 @@ impl PhysicalWorkObligationV6 {
         self.target
     }
     pub const fn payload_digest(self) -> Option<[u8; 32]> {
-        self.payload_digest
+        match self.payload_digest {
+            Some(digest) => Some(*digest.bytes()),
+            None => None,
+        }
     }
 }
 
@@ -134,7 +141,7 @@ pub fn encode_physical_work_obligation_v6(
     encode_target(value.target, &mut record);
     if let Some(digest) = value.payload_digest {
         record[105] = 1;
-        record[72..104].copy_from_slice(&digest);
+        record[72..104].copy_from_slice(digest.bytes());
     }
     let checksum = calculate(&record);
     record[128..].copy_from_slice(&checksum);

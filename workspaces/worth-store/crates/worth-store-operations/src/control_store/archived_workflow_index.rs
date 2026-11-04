@@ -2,6 +2,7 @@ use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom, Write};
+use worth_foundational::CanonicalDigestId;
 
 use sha2::{Digest, Sha256};
 use worth_store_physical_backend::ControlMediaFault;
@@ -19,7 +20,7 @@ pub(super) enum ArchivedWorkflowKind {
 }
 
 pub(super) struct ArchivedWorkflowIndex {
-    recent: HashMap<[u8; 32], ArchivedWorkflowKind>,
+    recent: HashMap<CanonicalDigestId, ArchivedWorkflowKind>,
     levels: [Option<ArchivedWorkflowSegment>; INDEX_LEVELS],
 }
 
@@ -96,7 +97,7 @@ impl ArchivedWorkflowIndex {
 
 impl ArchivedWorkflowSegment {
     fn from_sorted(
-        entries: &[([u8; 32], ArchivedWorkflowKind)],
+        entries: &[(CanonicalDigestId, ArchivedWorkflowKind)],
     ) -> Result<Self, ControlMediaFault> {
         let mut file = tempfile::tempfile()?;
         for (key, kind) in entries {
@@ -110,7 +111,10 @@ impl ArchivedWorkflowSegment {
         })
     }
 
-    fn lookup(&mut self, key: [u8; 32]) -> Result<Option<ArchivedWorkflowKind>, ControlMediaFault> {
+    fn lookup(
+        &mut self,
+        key: CanonicalDigestId,
+    ) -> Result<Option<ArchivedWorkflowKind>, ControlMediaFault> {
         let mut low = 0u64;
         let mut high = self.entries;
         while low < high {
@@ -169,7 +173,7 @@ impl ArchivedWorkflowSegment {
     fn read_at(
         &mut self,
         index: u64,
-    ) -> Result<([u8; 32], ArchivedWorkflowKind), ControlMediaFault> {
+    ) -> Result<(CanonicalDigestId, ArchivedWorkflowKind), ControlMediaFault> {
         let offset = index
             .checked_mul(ENTRY_BYTES as u64)
             .ok_or(ControlMediaFault::DerivedTransitionIndexCorrupt)?;
@@ -178,26 +182,26 @@ impl ArchivedWorkflowSegment {
     }
 }
 
-fn operation_key(operation: &OperationalOperationId) -> [u8; 32] {
+fn operation_key(operation: &OperationalOperationId) -> CanonicalDigestId {
     let mut digest = Sha256::new();
     digest.update(b"worth-store-archived-workflow-index-v1\0");
     digest.update(operation.as_str().as_bytes());
-    digest.finalize().into()
+    CanonicalDigestId::new(digest.finalize().into())
 }
 
 fn write_entry(
     file: &mut File,
-    key: [u8; 32],
+    key: CanonicalDigestId,
     kind: ArchivedWorkflowKind,
 ) -> Result<(), ControlMediaFault> {
-    file.write_all(&key)?;
+    file.write_all(key.bytes())?;
     file.write_all(&[encode_kind(kind)])?;
     Ok(())
 }
 
 fn read_next(
     file: &mut File,
-) -> Result<Option<([u8; 32], ArchivedWorkflowKind)>, ControlMediaFault> {
+) -> Result<Option<(CanonicalDigestId, ArchivedWorkflowKind)>, ControlMediaFault> {
     let mut bytes = [0; ENTRY_BYTES];
     let first = file.read(&mut bytes)?;
     if first == 0 {
@@ -207,7 +211,7 @@ fn read_next(
         .map_err(|_| ControlMediaFault::DerivedTransitionIndexCorrupt)?;
     let mut key = [0; 32];
     key.copy_from_slice(&bytes[..32]);
-    Ok(Some((key, decode_kind(bytes[32])?)))
+    Ok(Some((CanonicalDigestId::new(key), decode_kind(bytes[32])?)))
 }
 
 const fn encode_kind(kind: ArchivedWorkflowKind) -> u8 {

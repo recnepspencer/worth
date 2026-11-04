@@ -6,6 +6,7 @@ use super::{
     write_prefix_v2, Cursor, ReleaseCheckpointAccumulatorV1, ReleaseCheckpointCertificateDenial,
     ACCUMULATOR_KIND, RELEASE_CHECKPOINT_ACCUMULATOR_WIRE_BYTES,
 };
+use worth_foundational::CanonicalDigestId;
 
 pub const RELEASE_CHECKPOINT_ACCUMULATOR_V2_WIRE_BYTES: usize =
     RELEASE_CHECKPOINT_ACCUMULATOR_WIRE_BYTES + 8 + 32 + 8 + 32;
@@ -14,9 +15,9 @@ pub const RELEASE_CHECKPOINT_ACCUMULATOR_V2_WIRE_BYTES: usize =
 pub struct ReleaseCheckpointAccumulatorV2 {
     base: ReleaseCheckpointAccumulatorV1,
     head_count: u64,
-    head_roster_digest: [u8; 32],
+    head_roster_digest: CanonicalDigestId,
     prior_head_count: u64,
-    prior_head_roster_digest: [u8; 32],
+    prior_head_roster_digest: CanonicalDigestId,
 }
 
 impl ReleaseCheckpointAccumulatorV2 {
@@ -37,9 +38,9 @@ impl ReleaseCheckpointAccumulatorV2 {
         Ok(Self {
             base,
             head_count,
-            head_roster_digest,
+            head_roster_digest: CanonicalDigestId::new(head_roster_digest),
             prior_head_count,
-            prior_head_roster_digest,
+            prior_head_roster_digest: CanonicalDigestId::new(prior_head_roster_digest),
         })
     }
 
@@ -59,9 +60,9 @@ impl ReleaseCheckpointAccumulatorV2 {
         write_prefix_v2(&mut out, ACCUMULATOR_KIND);
         self.base.write_body(&mut out);
         out.extend_from_slice(&self.head_count.to_le_bytes());
-        out.extend_from_slice(&self.head_roster_digest);
+        out.extend_from_slice(self.head_roster_digest.bytes());
         out.extend_from_slice(&self.prior_head_count.to_le_bytes());
-        out.extend_from_slice(&self.prior_head_roster_digest);
+        out.extend_from_slice(self.prior_head_roster_digest.bytes());
         debug_assert_eq!(out.len(), RELEASE_CHECKPOINT_ACCUMULATOR_V2_WIRE_BYTES);
         Some(out)
     }
@@ -88,7 +89,7 @@ impl ReleaseCheckpointAccumulatorV2 {
     }
 
     pub const fn head_roster_digest(self) -> [u8; 32] {
-        self.head_roster_digest
+        *self.head_roster_digest.bytes()
     }
 
     pub const fn prior_head_count(self) -> u64 {
@@ -96,6 +97,6 @@ impl ReleaseCheckpointAccumulatorV2 {
     }
 
     pub const fn prior_head_roster_digest(self) -> [u8; 32] {
-        self.prior_head_roster_digest
+        *self.prior_head_roster_digest.bytes()
     }
 }

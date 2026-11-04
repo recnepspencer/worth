@@ -3,6 +3,7 @@ use super::{
     ReleaseCheckpointCertificateDenial, ReleasedDropTipProvenanceV1, ACCUMULATOR_KIND,
     PREFIX_BYTES, RELEASE_CHECKPOINT_TIP_WIRE_BYTES,
 };
+use worth_foundational::CanonicalDigestId;
 
 pub const RELEASE_CHECKPOINT_ACCUMULATOR_WIRE_BYTES: usize = PREFIX_BYTES
     + 24
@@ -27,17 +28,17 @@ pub const RELEASE_CHECKPOINT_ACCUMULATOR_WIRE_BYTES: usize = PREFIX_BYTES
 pub struct ReleaseCheckpointAccumulatorV1 {
     checkpoint: PhysicalCheckpointIdentity,
     root_generation: u64,
-    root_sha256: [u8; 32],
+    root_sha256: CanonicalDigestId,
     prior_checkpoint_sequence: u64,
-    prior_root_sha256: [u8; 32],
-    prior_accumulator_digest: [u8; 32],
+    prior_root_sha256: CanonicalDigestId,
+    prior_accumulator_digest: CanonicalDigestId,
     prior_cumulative_dropped: u64,
-    prior_cumulative_digest: [u8; 32],
+    prior_cumulative_digest: CanonicalDigestId,
     batch_count: u16,
-    batch_records_digest: [u8; 32],
+    batch_records_digest: CanonicalDigestId,
     tip: ReleasedDropTipProvenanceV1,
     cumulative_dropped: u64,
-    cumulative_digest: [u8; 32],
+    cumulative_digest: CanonicalDigestId,
     terminal: bool,
 }
 
@@ -83,17 +84,17 @@ impl ReleaseCheckpointAccumulatorV1 {
         Ok(Self {
             checkpoint,
             root_generation,
-            root_sha256,
+            root_sha256: CanonicalDigestId::new(root_sha256),
             prior_checkpoint_sequence,
-            prior_root_sha256,
-            prior_accumulator_digest,
+            prior_root_sha256: CanonicalDigestId::new(prior_root_sha256),
+            prior_accumulator_digest: CanonicalDigestId::new(prior_accumulator_digest),
             prior_cumulative_dropped,
-            prior_cumulative_digest,
+            prior_cumulative_digest: CanonicalDigestId::new(prior_cumulative_digest),
             batch_count,
-            batch_records_digest,
+            batch_records_digest: CanonicalDigestId::new(batch_records_digest),
             tip,
             cumulative_dropped,
-            cumulative_digest,
+            cumulative_digest: CanonicalDigestId::new(cumulative_digest),
             terminal,
         })
     }
@@ -109,17 +110,17 @@ impl ReleaseCheckpointAccumulatorV1 {
     pub(super) fn write_body(self, out: &mut Vec<u8>) {
         write_checkpoint(out, self.checkpoint);
         out.extend_from_slice(&self.root_generation.to_le_bytes());
-        out.extend_from_slice(&self.root_sha256);
+        out.extend_from_slice(self.root_sha256.bytes());
         out.extend_from_slice(&self.prior_checkpoint_sequence.to_le_bytes());
-        out.extend_from_slice(&self.prior_root_sha256);
-        out.extend_from_slice(&self.prior_accumulator_digest);
+        out.extend_from_slice(self.prior_root_sha256.bytes());
+        out.extend_from_slice(self.prior_accumulator_digest.bytes());
         out.extend_from_slice(&self.prior_cumulative_dropped.to_le_bytes());
-        out.extend_from_slice(&self.prior_cumulative_digest);
+        out.extend_from_slice(self.prior_cumulative_digest.bytes());
         out.extend_from_slice(&self.batch_count.to_le_bytes());
-        out.extend_from_slice(&self.batch_records_digest);
+        out.extend_from_slice(self.batch_records_digest.bytes());
         self.tip.write(out);
         out.extend_from_slice(&self.cumulative_dropped.to_le_bytes());
-        out.extend_from_slice(&self.cumulative_digest);
+        out.extend_from_slice(self.cumulative_digest.bytes());
         out.push(u8::from(self.terminal));
     }
 
@@ -169,28 +170,28 @@ impl ReleaseCheckpointAccumulatorV1 {
         self.root_generation
     }
     pub const fn root_sha256(self) -> [u8; 32] {
-        self.root_sha256
+        *self.root_sha256.bytes()
     }
     pub const fn prior_checkpoint_sequence(self) -> u64 {
         self.prior_checkpoint_sequence
     }
     pub const fn prior_root_sha256(self) -> [u8; 32] {
-        self.prior_root_sha256
+        *self.prior_root_sha256.bytes()
     }
     pub const fn prior_accumulator_digest(self) -> [u8; 32] {
-        self.prior_accumulator_digest
+        *self.prior_accumulator_digest.bytes()
     }
     pub const fn prior_cumulative_dropped(self) -> u64 {
         self.prior_cumulative_dropped
     }
     pub const fn prior_cumulative_digest(self) -> [u8; 32] {
-        self.prior_cumulative_digest
+        *self.prior_cumulative_digest.bytes()
     }
     pub const fn batch_count(self) -> u16 {
         self.batch_count
     }
     pub const fn batch_records_digest(self) -> [u8; 32] {
-        self.batch_records_digest
+        *self.batch_records_digest.bytes()
     }
     pub const fn tip(self) -> ReleasedDropTipProvenanceV1 {
         self.tip
@@ -205,7 +206,7 @@ impl ReleaseCheckpointAccumulatorV1 {
         self.cumulative_dropped
     }
     pub const fn cumulative_digest(self) -> [u8; 32] {
-        self.cumulative_digest
+        *self.cumulative_digest.bytes()
     }
     pub const fn terminal(self) -> bool {
         self.terminal

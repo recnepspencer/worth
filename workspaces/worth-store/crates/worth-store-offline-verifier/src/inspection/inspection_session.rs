@@ -1,5 +1,6 @@
 use crate::{classify_offline_artifact_family, OfflinePhysicalArtifactFamily};
 use sha2::{Digest, Sha256};
+use worth_foundational::CanonicalDigestId;
 use worth_store_physical_backend::{OfflineMediaReadDenial, ReadOnlyOfflineMediaCapability};
 
 use super::{
@@ -358,7 +359,12 @@ impl OfflineInspectionSession {
             elapsed,
             completed,
             partial_source,
-            partial_digest: (self.offset > 0).then(|| self.file_hasher.clone().finalize().into()),
+            partial_digest: match (self.offset > 0)
+                .then(|| self.file_hasher.clone().finalize().into())
+            {
+                Some(bytes) => Some(CanonicalDigestId::new(bytes)),
+                None => None,
+            },
         })
     }
 }

@@ -108,7 +108,7 @@ impl SectionPublication {
                 .publication_subject()
                 .and_then(|subject| subject.initial_inputs_coordinate())
                 != super::super::complete_codec::coordinates(&self.bytes)
-                    .map(|value| (value.revision, value.digest))
+                    .map(|value| (value.revision, *value.digest.bytes()))
         {
             return Err(RelationalSectionCheckpointDenial::MalformedSection);
         }
@@ -138,7 +138,7 @@ impl SectionPublication {
                     || next.revision == prior.revision && next.digest != prior.digest
                     || next.revision > prior.revision.saturating_add(1)
                     || next.revision > prior.revision
-                        && self.initial_predecessor != Some(Some(prior.digest))
+                        && self.initial_predecessor != Some(Some(*prior.digest.bytes()))
                 {
                     return Err(Denial::StaleCapture);
                 }

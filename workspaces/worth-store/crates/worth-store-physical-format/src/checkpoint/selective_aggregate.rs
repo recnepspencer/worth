@@ -1,4 +1,5 @@
 use sha2::{Digest, Sha256};
+use worth_foundational::CanonicalDigestId;
 
 use super::CheckpointStreamDecodeDenial;
 
@@ -14,7 +15,7 @@ pub struct CheckpointSelectiveRecordAggregate {
 pub struct CheckpointSelectiveRecordSummary {
     record_count: u64,
     encoded_bytes: u64,
-    digest: [u8; 32],
+    digest: CanonicalDigestId,
 }
 
 impl CheckpointSelectiveRecordAggregate {
@@ -43,7 +44,7 @@ impl CheckpointSelectiveRecordAggregate {
         CheckpointSelectiveRecordSummary {
             record_count: self.record_count,
             encoded_bytes: self.encoded_bytes,
-            digest: self.digest.clone().finalize().into(),
+            digest: CanonicalDigestId::new(self.digest.clone().finalize().into()),
         }
     }
 }
@@ -64,6 +65,6 @@ impl CheckpointSelectiveRecordSummary {
     }
 
     pub const fn digest(self) -> [u8; 32] {
-        self.digest
+        *self.digest.bytes()
     }
 }

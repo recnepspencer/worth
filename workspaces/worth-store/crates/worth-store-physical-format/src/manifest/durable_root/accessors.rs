@@ -50,7 +50,10 @@ impl DurablePhysicalRootManifest {
         self.latest_blob_quarantine
     }
     pub const fn tier_epoch_anchor(&self) -> Option<[u8; 32]> {
-        self.tier_epoch_anchor
+        match self.tier_epoch_anchor {
+            Some(digest) => Some(*digest.bytes()),
+            None => None,
+        }
     }
     pub const fn last_inline_record(&self) -> Option<PersistedRecordIdentity> {
         self.last_inline_record

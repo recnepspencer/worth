@@ -1,4 +1,5 @@
 use sha2::{Digest, Sha256};
+use worth_foundational::CanonicalDigestId;
 
 use super::observer_evidence::{
     RecoveryObserverCheckpointCoverageEvidence, RecoveryObserverManifestMembershipEvidence,
@@ -14,7 +15,7 @@ pub(super) fn encode(report: RecoveryObserverReport) -> Vec<u8> {
     report_protocol::encode_header(&mut bytes);
     bytes.extend_from_slice(&report.artifact_count.to_le_bytes());
     bytes.extend_from_slice(&report.bytes_read.to_le_bytes());
-    bytes.extend_from_slice(&report.artifact_set_digest);
+    bytes.extend_from_slice(report.artifact_set_digest.bytes());
     append_digest(&mut bytes, report.evidence.artifact_identities());
     append_digest(&mut bytes, report.evidence.generation_links());
     let selectors = report.evidence.durable_selectors();
@@ -124,7 +125,7 @@ pub(super) fn decode(
     Ok(RecoveryObserverReport {
         artifact_count,
         bytes_read,
-        artifact_set_digest,
+        artifact_set_digest: CanonicalDigestId::new(artifact_set_digest),
         evidence: RecoveryObserverEvidence::from_parts(
             artifact_identities,
             generation_links,

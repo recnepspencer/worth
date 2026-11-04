@@ -94,7 +94,7 @@ impl OrderedJournal<'_> {
         if actual != header
             || header.position != position
             || header.payload_bytes != entry.payload_bytes()
-            || header.payload_sha256 != entry.payload_sha256()
+            || *header.payload_sha256.bytes() != entry.payload_sha256()
         {
             return Err(Failure::Damaged);
         }

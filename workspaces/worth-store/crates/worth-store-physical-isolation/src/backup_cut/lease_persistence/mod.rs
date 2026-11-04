@@ -3,6 +3,7 @@ mod protected_owner;
 #[cfg(test)]
 mod tests;
 
+use worth_foundational::CanonicalDigestId;
 use worth_store_physical_format::PhysicalGenerationOwner;
 
 use self::binary_codec::{canonicalize_protected_owners, decode, encode};
@@ -12,7 +13,7 @@ pub(crate) use protected_owner::BackupProtectedPhysicalOwner;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BackupReachabilityLeasePersistenceRecord {
-    cut_identity: [u8; 32],
+    cut_identity: CanonicalDigestId,
     protected: Vec<BackupProtectedPhysicalOwner>,
     encoded: Vec<u8>,
 }
@@ -55,7 +56,7 @@ impl BackupReachabilityLeasePersistenceRecord {
         canonicalize_protected_owners(&mut protected)?;
         let encoded = encode(cut_identity, &protected)?;
         Ok(Self {
-            cut_identity,
+            cut_identity: CanonicalDigestId::new(cut_identity),
             protected,
             encoded,
         })
@@ -97,14 +98,14 @@ impl BackupReachabilityLeasePersistenceRecord {
             .map_err(|_| BackupReachabilityLeaseRecoveryDenial::AllocationFailed)?;
         durable_bytes.extend_from_slice(encoded);
         Ok(Self {
-            cut_identity,
+            cut_identity: CanonicalDigestId::new(cut_identity),
             protected,
             encoded: durable_bytes,
         })
     }
 
     pub const fn cut_identity(&self) -> [u8; 32] {
-        self.cut_identity
+        *self.cut_identity.bytes()
     }
 
     pub fn protected_artifacts(&self) -> usize {

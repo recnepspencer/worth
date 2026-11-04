@@ -1,4 +1,5 @@
 use super::*;
+use worth_foundational::CanonicalDigestId;
 
 impl DurablePhysicalRootManifestBuilder {
     pub const fn record_count(mut self, record_count: u64) -> Self {
@@ -64,7 +65,10 @@ impl DurablePhysicalRootManifestBuilder {
         self
     }
     pub const fn tier_epoch_anchor(mut self, anchor: Option<[u8; 32]>) -> Self {
-        self.tier_epoch_anchor = anchor;
+        self.tier_epoch_anchor = match anchor {
+            Some(bytes) => Some(CanonicalDigestId::new(bytes)),
+            None => None,
+        };
         self
     }
     pub const fn last_inline_record(
@@ -168,7 +172,7 @@ impl DurablePhysicalRootManifestBuilder {
             || !publication_shape_is_valid
             || !quarantine_shape_is_valid
             || !anchors_shape_are_valid
-            || tier_epoch_anchor == Some([0; 32])
+            || tier_epoch_anchor == Some(CanonicalDigestId::new([0; 32]))
         {
             return None;
         }

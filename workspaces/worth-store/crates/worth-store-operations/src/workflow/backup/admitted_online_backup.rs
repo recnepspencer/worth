@@ -108,7 +108,7 @@ impl AdmittedOnlineBackup {
         let manifest =
             BackupBundleManifest::canonical_checked(BackupBundleManifestDeclaration::new(
                 BackupBundleManifestIdentity {
-                    cut_identity: self.cut.identity(),
+                    cut_identity: worth_foundational::CanonicalDigestId::new(self.cut.identity()),
                     store_lineage: coordinates.store_lineage().to_owned(),
                     root_generation: coordinates.root_generation(),
                     manifest_generation: coordinates.manifest_generation(),
@@ -298,8 +298,10 @@ fn coverage(coverage: &BackupArtifactCoverage) -> BackupBundleArtifactCoverage {
             checkpoint_identity: checkpoint_identity.clone(),
             manifest_generation: *manifest_generation,
             durable_checkpoint_lsn: *durable_checkpoint_lsn,
-            authority_fingerprint: *authority_fingerprint,
-            frontier_digest: *frontier_digest,
+            authority_fingerprint: worth_foundational::CanonicalDigestId::new(
+                *authority_fingerprint,
+            ),
+            frontier_digest: worth_foundational::CanonicalDigestId::new(*frontier_digest),
         },
         BackupArtifactCoverage::WalSegment {
             start_lsn,

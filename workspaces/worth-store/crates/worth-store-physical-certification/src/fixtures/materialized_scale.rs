@@ -1,5 +1,6 @@
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::Path;
+use worth_foundational::CanonicalDigestId;
 
 use sha2::{Digest, Sha256};
 
@@ -15,7 +16,7 @@ pub struct MaterializedFixtureScaleEvidence {
     sampled_read_count: u64,
     sampled_bytes_read: u64,
     maximum_resident_buffer_bytes: u64,
-    evidence_identity: [u8; 32],
+    evidence_identity: CanonicalDigestId,
 }
 
 impl MaterializedFixtureScaleEvidence {
@@ -45,7 +46,7 @@ impl MaterializedFixtureScaleEvidence {
             digest.update(observed[index].to_be_bytes());
             digest.update(extent.sampled_read_count.to_be_bytes());
             digest.update(extent.sampled_bytes_read.to_be_bytes());
-            digest.update(extent.sample_digest);
+            digest.update(extent.sample_digest.bytes());
             digest.update(boundary_sentinel(tag, declared));
         }
         Ok(Self {
@@ -57,7 +58,7 @@ impl MaterializedFixtureScaleEvidence {
             sampled_read_count,
             sampled_bytes_read,
             maximum_resident_buffer_bytes: 32,
-            evidence_identity: digest.finalize().into(),
+            evidence_identity: CanonicalDigestId::new(digest.finalize().into()),
         })
     }
 
@@ -66,7 +67,7 @@ impl MaterializedFixtureScaleEvidence {
     }
 
     pub const fn evidence_identity(self) -> [u8; 32] {
-        self.evidence_identity
+        *self.evidence_identity.bytes()
     }
 
     pub const fn matches_declared_scale(self) -> bool {
@@ -96,7 +97,7 @@ struct MaterializedExtentObservation {
     observed_length: u64,
     sampled_read_count: u64,
     sampled_bytes_read: u64,
-    sample_digest: [u8; 32],
+    sample_digest: CanonicalDigestId,
 }
 
 fn materialize_sparse_extent(
@@ -143,7 +144,7 @@ fn materialize_sparse_extent(
         observed_length: observed,
         sampled_read_count,
         sampled_bytes_read,
-        sample_digest,
+        sample_digest: CanonicalDigestId::new(sample_digest),
     })
 }
 

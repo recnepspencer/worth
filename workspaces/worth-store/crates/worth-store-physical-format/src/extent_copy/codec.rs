@@ -35,7 +35,7 @@ impl PhysicalExtentCopyRecord {
         match self {
             Self::Intent(intent) => {
                 bytes.push(1);
-                bytes.extend_from_slice(&intent.operation);
+                bytes.extend_from_slice(intent.operation.bytes());
                 push_u64(&mut bytes, intent.source_root);
                 bytes.extend_from_slice(&intent.source.record().allocation_epoch());
                 push_u64(&mut bytes, intent.source.record().ordinal());
@@ -59,7 +59,7 @@ impl PhysicalExtentCopyRecord {
                 push_u64(&mut bytes, intent.alignment);
                 bytes.extend_from_slice(&intent.maximum_frame_bytes.to_le_bytes());
                 bytes.extend_from_slice(&intent.chunk_count.to_le_bytes());
-                bytes.extend_from_slice(&intent.source_digest);
+                bytes.extend_from_slice(intent.source_digest.bytes());
                 if !intent.source().route_metadata().is_legacy_unknown() {
                     bytes.extend_from_slice(&intent.source().route_metadata().encode());
                     bytes.extend_from_slice(&intent.destination().route_metadata().encode());
@@ -67,8 +67,8 @@ impl PhysicalExtentCopyRecord {
             }
             Self::Resolved(resolution) => {
                 bytes.push(2);
-                bytes.extend_from_slice(&resolution.operation);
-                bytes.extend_from_slice(&resolution.intent_digest);
+                bytes.extend_from_slice(resolution.operation.bytes());
+                bytes.extend_from_slice(resolution.intent_digest.bytes());
                 push_u64(&mut bytes, resolution.intent_lsn);
                 let (tag, root, publication) = match resolution.kind {
                     PhysicalExtentCopyResolutionKind::Cancelled => (0, 0, 0),

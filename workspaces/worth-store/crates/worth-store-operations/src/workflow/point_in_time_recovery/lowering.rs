@@ -243,7 +243,7 @@ fn exact_frontier_artifacts(
     }
     let exact = BackupBundleManifest::canonical_checked(BackupBundleManifestDeclaration::new(
         BackupBundleManifestIdentity {
-            cut_identity: manifest.cut_identity(),
+            cut_identity: worth_foundational::CanonicalDigestId::new(manifest.cut_identity()),
             store_lineage: format!("{}::pitr:{}", manifest.store_lineage(), target),
             root_generation: manifest.root_generation(),
             manifest_generation: manifest.manifest_generation(),

@@ -3,6 +3,7 @@
 //! selected V2 manifest custody and exclude every Reserved transition.
 
 use crate::PersistedRecordIdentity;
+use worth_foundational::CanonicalDigestId;
 
 pub const BLOB_MANIFEST_RESIDUE_CLEANUP_V2_DOMAIN: &[u8] =
     b"store.physical.blob-manifest-residue-cleanup.v2";
@@ -12,16 +13,16 @@ const WIRE_BYTES: usize = 8 + BLOB_MANIFEST_RESIDUE_CLEANUP_V2_DOMAIN.len() + BO
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OriginalDropProofV1 {
     ProvenNoEffect {
-        idempotency: [u8; 32],
-        fingerprint: [u8; 32],
+        idempotency: CanonicalDigestId,
+        fingerprint: CanonicalDigestId,
         reserved: Option<ReservedDropRecordV1>,
     },
     NeverReserved,
     /// A recovered, complete original-drop registry proved that the selected
     /// reservation never acquired a durable binding for this exact material.
     RecoveredNoBinding {
-        idempotency: [u8; 32],
-        fingerprint: [u8; 32],
+        idempotency: CanonicalDigestId,
+        fingerprint: CanonicalDigestId,
         reserved: ReservedDropRecordV1,
     },
 }
@@ -29,21 +30,21 @@ pub enum OriginalDropProofV1 {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ReservedDropRecordV1 {
     record: PersistedRecordIdentity,
-    frame_sha256: [u8; 32],
+    frame_sha256: CanonicalDigestId,
 }
 
 impl ReservedDropRecordV1 {
     pub fn new(record: PersistedRecordIdentity, frame_sha256: [u8; 32]) -> Option<Self> {
         (frame_sha256 != [0; 32]).then_some(Self {
             record,
-            frame_sha256,
+            frame_sha256: CanonicalDigestId::new(frame_sha256),
         })
     }
     pub const fn record(self) -> PersistedRecordIdentity {
         self.record
     }
     pub const fn frame_sha256(self) -> [u8; 32] {
-        self.frame_sha256
+        *self.frame_sha256.bytes()
     }
 }
 
@@ -105,8 +106,8 @@ impl BlobManifestResidueCleanup {
     pub const fn proof(self) -> OriginalDropProofV1 {
         match self {
             Self::V1(value) => OriginalDropProofV1::ProvenNoEffect {
-                idempotency: value.drop_idempotency_identity(),
-                fingerprint: value.drop_request_fingerprint(),
+                idempotency: CanonicalDigestId::new(value.drop_idempotency_identity()),
+                fingerprint: CanonicalDigestId::new(value.drop_request_fingerprint()),
                 reserved: None,
             },
             Self::V2(value) => value.proof(),
@@ -180,12 +181,12 @@ pub struct BlobManifestResidueCleanupV2 {
     store: [u8; 16],
     reclaim_attempt: [u8; 16],
     manifest_record: PersistedRecordIdentity,
-    manifest_frame_sha256: [u8; 32],
-    source_basis_digest: [u8; 32],
+    manifest_frame_sha256: CanonicalDigestId,
+    source_basis_digest: CanonicalDigestId,
     proof: OriginalDropProofV1,
     source_root_generation: u64,
     candidate_root_generation: u64,
-    candidate_root_sha256: [u8; 32],
+    candidate_root_sha256: CanonicalDigestId,
     retained_metadata_bytes: u64,
     publication: u64,
 }
@@ -216,10 +217,10 @@ impl BlobManifestResidueCleanupV2 {
             || retained_metadata_bytes == 0
             || publication == 0
             || matches!(proof, OriginalDropProofV1::ProvenNoEffect { idempotency, fingerprint, reserved }
-                if idempotency == [0; 32] || fingerprint == [0; 32]
+                if *idempotency.bytes() == [0; 32] || *fingerprint.bytes() == [0; 32]
                     || reserved.is_none_or(|value| value.record == manifest_record))
             || matches!(proof, OriginalDropProofV1::RecoveredNoBinding { idempotency, fingerprint, reserved }
-                if idempotency == [0; 32] || fingerprint == [0; 32]
+                if *idempotency.bytes() == [0; 32] || *fingerprint.bytes() == [0; 32]
                     || reserved.record == manifest_record)
         {
             return Err(InvalidBinding);
@@ -229,12 +230,12 @@ impl BlobManifestResidueCleanupV2 {
             store,
             reclaim_attempt,
             manifest_record,
-            manifest_frame_sha256,
-            source_basis_digest,
+            manifest_frame_sha256: CanonicalDigestId::new(manifest_frame_sha256),
+            source_basis_digest: CanonicalDigestId::new(source_basis_digest),
             proof,
             source_root_generation,
             candidate_root_generation,
-            candidate_root_sha256,
+            candidate_root_sha256: CanonicalDigestId::new(candidate_root_sha256),
             retained_metadata_bytes,
             publication,
         })
@@ -258,10 +259,10 @@ impl BlobManifestResidueCleanupV2 {
         self.manifest_record
     }
     pub const fn manifest_frame_sha256(self) -> [u8; 32] {
-        self.manifest_frame_sha256
+        *self.manifest_frame_sha256.bytes()
     }
     pub const fn source_basis_digest(self) -> [u8; 32] {
-        self.source_basis_digest
+        *self.source_basis_digest.bytes()
     }
     pub const fn proof(self) -> OriginalDropProofV1 {
         self.proof
@@ -273,7 +274,7 @@ impl BlobManifestResidueCleanupV2 {
         self.candidate_root_generation
     }
     pub const fn candidate_root_sha256(self) -> [u8; 32] {
-        self.candidate_root_sha256
+        *self.candidate_root_sha256.bytes()
     }
     pub const fn retained_metadata_bytes(self) -> u64 {
         self.retained_metadata_bytes

@@ -3,6 +3,7 @@
 //! a time; tree-block layout does not affect the resulting commitment.
 
 use sha2::{Digest, Sha256};
+use worth_foundational::CanonicalDigestId;
 
 use super::durable_root_entry;
 use super::{
@@ -31,14 +32,14 @@ pub enum PhysicalInventoryTranscriptDenial {
 /// actual admitted media into the same schema before a Serving seal.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PhysicalInventoryTranscriptV1 {
-    root_sha256: [u8; 32],
-    free_header_sha256: [u8; 32],
+    root_sha256: CanonicalDigestId,
+    free_header_sha256: CanonicalDigestId,
     route_count: u64,
-    routes_sha256: [u8; 32],
+    routes_sha256: CanonicalDigestId,
     segment_count: u64,
-    segments_sha256: [u8; 32],
+    segments_sha256: CanonicalDigestId,
     free_entry_count: u64,
-    free_entries_sha256: [u8; 32],
+    free_entries_sha256: CanonicalDigestId,
 }
 
 impl PhysicalInventoryTranscriptV1 {
@@ -61,35 +62,35 @@ impl PhysicalInventoryTranscriptV1 {
         root_bytes: &[u8],
         free_bytes: &[u8],
     ) -> bool {
-        self.root_sha256 == framed_digest(ROOT_DOMAIN, root_bytes)
-            && self.free_header_sha256 == framed_digest(FREE_HEADER_DOMAIN, free_bytes)
+        *self.root_sha256.bytes() == framed_digest(ROOT_DOMAIN, root_bytes)
+            && *self.free_header_sha256.bytes() == framed_digest(FREE_HEADER_DOMAIN, free_bytes)
             && self.route_count == root.record_count()
             && self.free_entry_count == free.entry_count()
     }
 
     pub const fn root_sha256(self) -> [u8; 32] {
-        self.root_sha256
+        *self.root_sha256.bytes()
     }
     pub const fn free_header_sha256(self) -> [u8; 32] {
-        self.free_header_sha256
+        *self.free_header_sha256.bytes()
     }
     pub const fn route_count(self) -> u64 {
         self.route_count
     }
     pub const fn routes_sha256(self) -> [u8; 32] {
-        self.routes_sha256
+        *self.routes_sha256.bytes()
     }
     pub const fn segment_count(self) -> u64 {
         self.segment_count
     }
     pub const fn segments_sha256(self) -> [u8; 32] {
-        self.segments_sha256
+        *self.segments_sha256.bytes()
     }
     pub const fn free_entry_count(self) -> u64 {
         self.free_entry_count
     }
     pub const fn free_entries_sha256(self) -> [u8; 32] {
-        self.free_entries_sha256
+        *self.free_entries_sha256.bytes()
     }
 }
 
@@ -106,8 +107,8 @@ pub struct PhysicalInventoryTranscriptBuilderV1 {
     last_route: Option<PersistedRecordIdentity>,
     last_segment: Option<SegmentPageKey>,
     last_free: Option<FreeSpaceKey>,
-    root_sha256: [u8; 32],
-    free_header_sha256: [u8; 32],
+    root_sha256: CanonicalDigestId,
+    free_header_sha256: CanonicalDigestId,
 }
 
 impl PhysicalInventoryTranscriptBuilderV1 {
@@ -169,8 +170,8 @@ impl PhysicalInventoryTranscriptBuilderV1 {
             last_route: None,
             last_segment: None,
             last_free: None,
-            root_sha256,
-            free_header_sha256,
+            root_sha256: CanonicalDigestId::new(root_sha256),
+            free_header_sha256: CanonicalDigestId::new(free_header_sha256),
         })
     }
 
@@ -252,14 +253,14 @@ impl PhysicalInventoryTranscriptBuilderV1 {
         self.free_entries
             .update(self.free_entry_count.to_le_bytes());
         Ok(PhysicalInventoryTranscriptV1 {
-            root_sha256: self.root_sha256,
-            free_header_sha256: self.free_header_sha256,
+            root_sha256: CanonicalDigestId::new(*self.root_sha256.bytes()),
+            free_header_sha256: CanonicalDigestId::new(*self.free_header_sha256.bytes()),
             route_count: self.route_count,
-            routes_sha256: self.routes.finalize().into(),
+            routes_sha256: CanonicalDigestId::new(self.routes.finalize().into()),
             segment_count: self.segment_count,
-            segments_sha256: self.segments.finalize().into(),
+            segments_sha256: CanonicalDigestId::new(self.segments.finalize().into()),
             free_entry_count: self.free_entry_count,
-            free_entries_sha256: self.free_entries.finalize().into(),
+            free_entries_sha256: CanonicalDigestId::new(self.free_entries.finalize().into()),
         })
     }
 }

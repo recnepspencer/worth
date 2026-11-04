@@ -1,6 +1,7 @@
 use super::envelope::{digest, encode, nonzero_16, nonzero_32};
 use super::{BlobRecordDenial, BlobRecordKind};
 use crate::PersistedRecordIdentity;
+use worth_foundational::CanonicalDigestId;
 
 const OCCURRENCE_BYTES: usize = 80;
 const CONTENT_PREFIX_BYTES: usize = 8;
@@ -25,7 +26,7 @@ pub struct BlobTreeOccurrenceV1 {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct BlobTreeEntryV1 {
-    digest: [u8; 32],
+    digest: CanonicalDigestId,
     record: PersistedRecordIdentity,
     covered_bytes: u64,
 }
@@ -34,7 +35,7 @@ pub struct BlobTreeEntryV1 {
 pub struct BlobTreeNodeV1 {
     occurrence: BlobTreeOccurrenceV1,
     covered_bytes: u64,
-    canonical_digest: [u8; 32],
+    canonical_digest: CanonicalDigestId,
     entries: Vec<BlobTreeEntryV1>,
 }
 
@@ -87,14 +88,14 @@ impl BlobTreeEntryV1 {
             return Err(BlobRecordDenial::InvalidTreeShape);
         }
         Ok(Self {
-            digest: nonzero_32(digest)?,
+            digest: CanonicalDigestId::new(nonzero_32(digest)?),
             record,
             covered_bytes,
         })
     }
 
     pub const fn digest(self) -> [u8; 32] {
-        self.digest
+        *self.digest.bytes()
     }
     pub const fn record(self) -> PersistedRecordIdentity {
         self.record
@@ -121,7 +122,7 @@ impl BlobTreeNodeV1 {
         Ok(Self {
             occurrence,
             covered_bytes,
-            canonical_digest,
+            canonical_digest: CanonicalDigestId::new(canonical_digest),
             entries,
         })
     }
@@ -134,7 +135,7 @@ impl BlobTreeNodeV1 {
         payload.extend_from_slice(&self.occurrence.session);
         payload.extend_from_slice(&self.occurrence.index.to_le_bytes());
         payload.extend_from_slice(&self.covered_bytes.to_le_bytes());
-        payload.extend_from_slice(&self.canonical_digest);
+        payload.extend_from_slice(self.canonical_digest.bytes());
         payload.extend_from_slice(&content);
         encode(BlobRecordKind::TreeNode, &payload).expect("bounded tree node fits frame ceiling")
     }
@@ -194,8 +195,8 @@ impl BlobTreeNodeV1 {
         let node = Self::new(occurrence, entries)?;
         if u64::from_le_bytes(payload[40..48].try_into().expect("fixed field"))
             != node.covered_bytes
-            || payload[48..80] != node.canonical_digest
-            || digest(&[content]) != node.canonical_digest
+            || payload[48..80] != *node.canonical_digest.bytes()
+            || digest(&[content]) != *node.canonical_digest.bytes()
         {
             return Err(BlobRecordDenial::IntegrityMismatch);
         }
@@ -209,7 +210,7 @@ impl BlobTreeNodeV1 {
         self.covered_bytes
     }
     pub const fn canonical_digest(&self) -> [u8; 32] {
-        self.canonical_digest
+        *self.canonical_digest.bytes()
     }
     /// Physical-layout root identity (D5): SHA-256 of the complete encoded
     /// node frame, including its separately authenticated occurrence claim.
@@ -239,7 +240,7 @@ fn validated_content(
         covered_bytes = covered_bytes
             .checked_add(entry.covered_bytes)
             .ok_or(BlobRecordDenial::InvalidTreeShape)?;
-        content.extend_from_slice(&entry.digest);
+        content.extend_from_slice(entry.digest.bytes());
         content.extend_from_slice(&entry.record.allocation_epoch());
         content.extend_from_slice(&entry.record.ordinal().to_le_bytes());
         content.extend_from_slice(&entry.covered_bytes.to_le_bytes());

@@ -1,6 +1,7 @@
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::{fs::OpenOptions, io::Write};
+use worth_foundational::CanonicalDigestId;
 
 use sha2::{Digest, Sha256};
 
@@ -14,9 +15,9 @@ static NEXT_PENDING_RECORD: AtomicU64 = AtomicU64::new(1);
 
 pub(super) struct PersistedRecoverySourceLease {
     pub(super) kind: RecoverySourceLeaseKind,
-    pub(super) operation_identity: [u8; 32],
-    pub(super) source_identity: [u8; 32],
-    pub(super) source_evidence_identity: [u8; 32],
+    pub(super) operation_identity: CanonicalDigestId,
+    pub(super) source_identity: CanonicalDigestId,
+    pub(super) source_evidence_identity: CanonicalDigestId,
     pub(super) source_root: PathBuf,
     pub(super) artifact_names: Vec<String>,
 }
@@ -109,9 +110,9 @@ pub(super) fn decode(
     }
     Ok(PersistedRecoverySourceLease {
         kind,
-        operation_identity,
-        source_identity,
-        source_evidence_identity,
+        operation_identity: CanonicalDigestId::new(operation_identity),
+        source_identity: CanonicalDigestId::new(source_identity),
+        source_evidence_identity: CanonicalDigestId::new(source_evidence_identity),
         source_root,
         artifact_names,
     })

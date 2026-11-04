@@ -5,6 +5,7 @@ use super::{
     BLOB_MANIFEST_RESIDUE_CLEANUP_V2_DOMAIN, WIRE_BYTES,
 };
 use crate::PersistedRecordIdentity;
+use worth_foundational::CanonicalDigestId;
 
 impl BlobManifestResidueCleanupV2 {
     pub fn encode(self) -> Vec<u8> {
@@ -26,20 +27,20 @@ impl BlobManifestResidueCleanupV2 {
         bytes.extend_from_slice(&self.reclaim_attempt);
         bytes.extend_from_slice(&self.manifest_record.allocation_epoch());
         bytes.extend_from_slice(&self.manifest_record.ordinal().to_le_bytes());
-        bytes.extend_from_slice(&self.manifest_frame_sha256);
-        bytes.extend_from_slice(&self.source_basis_digest);
+        bytes.extend_from_slice(self.manifest_frame_sha256.bytes());
+        bytes.extend_from_slice(self.source_basis_digest.bytes());
         match self.proof {
             OriginalDropProofV1::ProvenNoEffect {
                 idempotency,
                 fingerprint,
                 reserved,
             } => {
-                bytes.extend_from_slice(&idempotency);
-                bytes.extend_from_slice(&fingerprint);
+                bytes.extend_from_slice(idempotency.bytes());
+                bytes.extend_from_slice(fingerprint.bytes());
                 let reserved = reserved.expect("V2 positive proof admits an exact Reserved record");
                 bytes.extend_from_slice(&reserved.record.allocation_epoch());
                 bytes.extend_from_slice(&reserved.record.ordinal().to_le_bytes());
-                bytes.extend_from_slice(&reserved.frame_sha256);
+                bytes.extend_from_slice(reserved.frame_sha256.bytes());
             }
             OriginalDropProofV1::NeverReserved => bytes.extend_from_slice(&[0; 120]),
             OriginalDropProofV1::RecoveredNoBinding {
@@ -47,16 +48,16 @@ impl BlobManifestResidueCleanupV2 {
                 fingerprint,
                 reserved,
             } => {
-                bytes.extend_from_slice(&idempotency);
-                bytes.extend_from_slice(&fingerprint);
+                bytes.extend_from_slice(idempotency.bytes());
+                bytes.extend_from_slice(fingerprint.bytes());
                 bytes.extend_from_slice(&reserved.record.allocation_epoch());
                 bytes.extend_from_slice(&reserved.record.ordinal().to_le_bytes());
-                bytes.extend_from_slice(&reserved.frame_sha256);
+                bytes.extend_from_slice(reserved.frame_sha256.bytes());
             }
         }
         bytes.extend_from_slice(&self.source_root_generation.to_le_bytes());
         bytes.extend_from_slice(&self.candidate_root_generation.to_le_bytes());
-        bytes.extend_from_slice(&self.candidate_root_sha256);
+        bytes.extend_from_slice(self.candidate_root_sha256.bytes());
         bytes.extend_from_slice(&self.retained_metadata_bytes.to_le_bytes());
         bytes.extend_from_slice(&self.publication.to_le_bytes());
         debug_assert_eq!(bytes.len(), WIRE_BYTES);
@@ -93,8 +94,8 @@ impl BlobManifestResidueCleanupV2 {
         let reserved_sha = take::<32>(bytes, &mut cursor);
         let proof = match proof_tag {
             1 => OriginalDropProofV1::ProvenNoEffect {
-                idempotency,
-                fingerprint,
+                idempotency: CanonicalDigestId::new(idempotency),
+                fingerprint: CanonicalDigestId::new(fingerprint),
                 reserved: ReservedDropRecordV1::new(
                     PersistedRecordIdentity::new(reserved_epoch, reserved_ordinal)
                         .ok_or(InvalidBinding)?,
@@ -110,8 +111,8 @@ impl BlobManifestResidueCleanupV2 {
                 OriginalDropProofV1::NeverReserved
             }
             3 => OriginalDropProofV1::RecoveredNoBinding {
-                idempotency,
-                fingerprint,
+                idempotency: CanonicalDigestId::new(idempotency),
+                fingerprint: CanonicalDigestId::new(fingerprint),
                 reserved: ReservedDropRecordV1::new(
                     PersistedRecordIdentity::new(reserved_epoch, reserved_ordinal)
                         .ok_or(InvalidBinding)?,

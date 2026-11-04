@@ -14,6 +14,7 @@ use super::{
     MAX_CHECKPOINT_BINDING_RECORD_BYTES, MAX_CHECKPOINT_CERTIFICATE_BYTES,
     MAX_CHECKPOINT_CERTIFICATE_RECORDS,
 };
+use worth_foundational::CanonicalDigestId;
 
 #[cfg(test)]
 mod decoder;
@@ -268,16 +269,16 @@ impl CheckpointBindingCompactionEncoder {
         CheckpointStreamFooter {
             identity: self.source.identity(),
             dirty_record_count: dirty.record_count(),
-            dirty_records_digest: dirty.digest(),
+            dirty_records_digest: CanonicalDigestId::new(dirty.digest()),
             binding_compaction_header_offset: self.header_offset,
             binding_compaction_generation: self.header.generation(),
             binding_wal_cutoff_lsn_exclusive: self.header.wal_cutoff_lsn_exclusive(),
             binding_record_count: bindings.record_count(),
             binding_record_bytes: bindings.encoded_bytes(),
-            binding_records_digest: bindings.digest(),
+            binding_records_digest: CanonicalDigestId::new(bindings.digest()),
             certificate_record_count: certificates.record_count(),
             certificate_record_bytes: certificates.encoded_bytes(),
-            certificate_records_digest: certificates.digest(),
+            certificate_records_digest: CanonicalDigestId::new(certificates.digest()),
         }
     }
 }

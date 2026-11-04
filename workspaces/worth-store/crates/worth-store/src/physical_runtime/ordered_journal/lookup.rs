@@ -231,7 +231,7 @@ fn entry(record: PersistedRecordIdentity, header: &JournalRecordHeader) -> Order
     OrderedJournalEntry {
         position: header.position,
         record: PhysicalRecordId::from_persisted(record),
-        payload_sha256: header.payload_sha256,
+        payload_sha256: *header.payload_sha256.bytes(),
         payload_bytes: header.payload_bytes,
     }
 }

@@ -1,4 +1,5 @@
 use std::collections::BTreeSet;
+use worth_foundational::CanonicalDigestId;
 
 use worth_store_aspect_native::StoreAspectBoundaryFact;
 
@@ -57,7 +58,7 @@ impl PhysicalScenarioActorSet {
 }
 
 struct CanonicalFixtureEntry {
-    sort_key: [u8; 32],
+    sort_key: CanonicalDigestId,
     boundary_fact: StoreAspectBoundaryFact,
 }
 
@@ -69,7 +70,7 @@ fn canonical_fixture_entries(
         .map(|boundary_fact| {
             let sort_key = fixture_canonical_sort_key(&boundary_fact)?;
             Ok(CanonicalFixtureEntry {
-                sort_key,
+                sort_key: CanonicalDigestId::new(sort_key),
                 boundary_fact,
             })
         })

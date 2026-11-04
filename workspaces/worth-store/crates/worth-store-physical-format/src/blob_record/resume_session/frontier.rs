@@ -1,4 +1,5 @@
 use crate::PersistedRecordIdentity;
+use worth_foundational::CanonicalDigestId;
 
 use super::super::envelope::{encode, nonzero_16, nonzero_32};
 use super::super::{BlobRecordDenial, BlobRecordKind};
@@ -11,11 +12,11 @@ pub struct BlobSessionFrontierV1 {
     store: [u8; 16],
     session: [u8; 16],
     declaration_record: PersistedRecordIdentity,
-    declaration_digest: [u8; 32],
+    declaration_digest: CanonicalDigestId,
     next_chunk_ordinal: u64,
     durable_bytes: u64,
     last_chunk_record: PersistedRecordIdentity,
-    last_chunk_digest: [u8; 32],
+    last_chunk_digest: CanonicalDigestId,
 }
 
 impl BlobSessionFrontierV1 {
@@ -38,11 +39,11 @@ impl BlobSessionFrontierV1 {
             store: nonzero_16(store)?,
             session: nonzero_16(session)?,
             declaration_record,
-            declaration_digest: nonzero_32(declaration_digest)?,
+            declaration_digest: CanonicalDigestId::new(nonzero_32(declaration_digest)?),
             next_chunk_ordinal,
             durable_bytes,
             last_chunk_record,
-            last_chunk_digest: nonzero_32(last_chunk_digest)?,
+            last_chunk_digest: CanonicalDigestId::new(nonzero_32(last_chunk_digest)?),
         })
     }
 
@@ -51,11 +52,11 @@ impl BlobSessionFrontierV1 {
         payload.extend_from_slice(&self.store);
         payload.extend_from_slice(&self.session);
         write_record(&mut payload, self.declaration_record);
-        payload.extend_from_slice(&self.declaration_digest);
+        payload.extend_from_slice(self.declaration_digest.bytes());
         payload.extend_from_slice(&self.next_chunk_ordinal.to_le_bytes());
         payload.extend_from_slice(&self.durable_bytes.to_le_bytes());
         write_record(&mut payload, self.last_chunk_record);
-        payload.extend_from_slice(&self.last_chunk_digest);
+        payload.extend_from_slice(self.last_chunk_digest.bytes());
         encode(BlobRecordKind::SessionFrontier, &payload)
             .expect("fixed frontier fits control-frame ceiling")
     }
@@ -94,7 +95,7 @@ impl BlobSessionFrontierV1 {
         self.declaration_record
     }
     pub const fn declaration_digest(self) -> [u8; 32] {
-        self.declaration_digest
+        *self.declaration_digest.bytes()
     }
     pub const fn next_chunk_ordinal(self) -> u64 {
         self.next_chunk_ordinal
@@ -106,7 +107,7 @@ impl BlobSessionFrontierV1 {
         self.last_chunk_record
     }
     pub const fn last_chunk_digest(self) -> [u8; 32] {
-        self.last_chunk_digest
+        *self.last_chunk_digest.bytes()
     }
 }
 

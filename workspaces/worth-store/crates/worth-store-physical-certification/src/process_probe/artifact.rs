@@ -1,6 +1,7 @@
 use std::fs;
 use std::io::Read;
 use std::path::{Path, PathBuf};
+use worth_foundational::CanonicalDigestId;
 
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -11,10 +12,10 @@ use super::wire_encoding;
 pub enum ProcessArtifactObservation {
     Absent,
     File {
-        content_sha256: [u8; 32],
+        content_sha256: CanonicalDigestId,
     },
     Directory {
-        tree_sha256: [u8; 32],
+        tree_sha256: CanonicalDigestId,
         entry_count: usize,
     },
 }
@@ -148,7 +149,7 @@ fn observe(path: &Path) -> Result<ProcessArtifactObservation, String> {
     };
     if metadata.is_file() {
         return Ok(ProcessArtifactObservation::File {
-            content_sha256: file_digest(path)?,
+            content_sha256: CanonicalDigestId::new(file_digest(path)?),
         });
     }
     if !metadata.is_dir() {
@@ -169,7 +170,7 @@ fn observe(path: &Path) -> Result<ProcessArtifactObservation, String> {
         digest.update(identity);
     }
     Ok(ProcessArtifactObservation::Directory {
-        tree_sha256: digest.finalize().into(),
+        tree_sha256: CanonicalDigestId::new(digest.finalize().into()),
         entry_count: entries.len(),
     })
 }
