@@ -11,7 +11,7 @@ line this tree no longer has (its module moved to a court) needs nothing; a line
 once is reported.
 """
 import argparse
-import difflib
+from collections import Counter
 import json
 from pathlib import Path
 import re
@@ -31,16 +31,18 @@ def bare(line):
     return re.sub(r'^pub(?:\([^)]*\))?\s+', '', line.strip())
 
 
+def gated_lines(text):
+    """Multiset of stripped lines that `text` gates with #[cfg(test)]."""
+    lines = text.splitlines()
+    return Counter(bare(lines[i + 1]) for i in range(len(lines) - 1) if lines[i].strip() == GATE)
+
+
 def compiled_gates(original, compiled):
-    """Stripped lines that `original` gates with #[cfg(test)] and `compiled` no longer does."""
-    a, b = original.splitlines(), compiled.splitlines()
-    removed = []
-    for tag, i1, i2, j1, j2 in difflib.SequenceMatcher(a=a, b=b, autojunk=False).get_opcodes():
-        if tag in ('delete', 'replace'):
-            for i in range(i1, i2):
-                if a[i].strip() == GATE and i + 1 < len(a):
-                    removed.append(bare(a[i + 1]))
-    return removed
+    """Stripped lines that `original` gates with #[cfg(test)] more often than `compiled` does.
+
+    Counted per line, not read off a diff: a diff may pair one of several identical gates with
+    another, reporting a gate as removed that the compiled file still has."""
+    return list((gated_lines(original) - gated_lines(compiled)).elements())
 
 
 def port(root, later, codemod_root, codemod_rev):
