@@ -25,6 +25,8 @@ pub mod read_set;
 pub mod retained_decision_facts;
 #[path = "snapshot_lease/mod.rs"]
 pub mod snapshot_lease;
+#[path = "workflow/mod.rs"]
+pub mod workflow;
 #[path = "workflow_deadline/mod.rs"]
 pub mod workflow_deadline;
 #[path = "workflow_instance_observation/mod.rs"]

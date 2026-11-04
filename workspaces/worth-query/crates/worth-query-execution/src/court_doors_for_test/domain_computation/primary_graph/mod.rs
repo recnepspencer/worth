@@ -81,8 +81,6 @@ pub mod source_facts;
 pub mod structural_walk;
 #[path = "value_decode/mod.rs"]
 pub mod value_decode;
-#[path = "workflow/mod.rs"]
-pub mod workflow;
 pub use crate::domain_computation::primary_graph::application_attempt::compare_and_commit::commit_outcome::denial::WorthQueryApplicationCommitDenialKind;
 pub use crate::domain_computation::primary_graph::application_attempt::compare_and_commit::commit_outcome::WorthQueryApplicationCommitOutcome;
 pub use crate::domain_computation::primary_graph::entity_key::WorthQueryApplicationEntityKey;
