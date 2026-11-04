@@ -6205,6 +6205,13 @@ All children are design briefs; no implementation or qualification is claimed.
 | [10.3](milestone-10.3.md) | Disposal-only ownership, abandonment and honest shutdown. |
 | [10.4](milestone-10.4.md) | Installed lifecycle wiring for composite operations. |
 | [10.5](milestone-10.5.md) | Managed computation, output-demand and live lifetime integration. |
+| [10.6](milestone-10.6.md) | One carried request stop across owner refusals. |
+| [10.7](milestone-10.7.md) | Owner-issued, role-tagged shares and a typed close-custody census. |
+| [10.8](milestone-10.8.md) | Original-request funding leases and declared footprints for retained owners. |
+
+Order: 10.6, then 10.1; 10.7 beside 10.1/10.2 once database-foundation Milestone 3
+lands; then 10.2 and 10.3; 10.8 owner by owner beside 10.4/10.5. See
+[milestone-10.md](milestone-10.md#order-of-the-arc).
 
 The children depend on actual runtime contracts rather than every earlier
 numbered milestone. They strengthen the implemented ordinary operation API;

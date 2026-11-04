@@ -8,41 +8,30 @@ use crate::durability::artifact_payload_emission::{count_payload, emit_payload};
 use crate::history::data::PositionedCanonicalCommit;
 
 impl RelationalCanonicalCommitArtifact {
-    pub(crate) fn positioned_payload_digest_original(
+    /// Hash the journal payload inside the caller's checkpoint stage, charging
+    /// one unit per hashed byte on that stage's meter. Opens no scope.
+    pub(crate) fn positioned_payload_digest_in_stage(
         commit: &PositionedCanonicalCommit,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        context: &mut worth_execution::MapKernelContext<'_, '_>,
     ) -> Result<[u8; 32], RelationalCanonicalCommitArtifactEncodeDenial> {
         use sha2::{Digest, Sha256};
         use RelationalCanonicalCommitArtifactEncodeDenial as Denial;
-        struct OriginalHashWriter<'request, 'authority> {
-            request: worth_execution::ExecutionRequest<'request, 'authority>,
+        struct StageHashWriter<'c, 'scope, 'lease> {
+            context: &'c mut worth_execution::MapKernelContext<'scope, 'lease>,
             digest: Sha256,
             stop: Option<Denial>,
         }
-        impl std::io::Write for OriginalHashWriter<'_, '_> {
+        impl std::io::Write for StageHashWriter<'_, '_, '_> {
             fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
                 if self.stop.is_some() {
                     return Err(std::io::Error::other("original digest request stopped"));
                 }
                 for chunk in bytes.chunks(4096) {
-                    let mut stopped = None;
-                    let result = crate::execution::request_stage::optional_stage(
-                        &self.request,
-                        |context, _| {
-                            stopped = crate::execution::request_stage::checkpoint(
-                                context,
-                                chunk.len() as u64,
-                            )
-                            .err();
-                        },
-                        |_| 0,
-                    );
-                    let stop = match stopped {
-                        Some(cause) => Some(cause.into()),
-                        None => result.err(),
-                    };
-                    if let Some(cause) = stop {
-                        self.stop = Some(Denial::Request(cause));
+                    if let Err(cause) = crate::execution::request_stage::checkpoint(
+                        self.context,
+                        chunk.len() as u64,
+                    ) {
+                        self.stop = Some(Denial::Request(cause.into()));
                         return Err(std::io::Error::other("original digest request stopped"));
                     }
                     self.digest.update(chunk);
@@ -53,8 +42,8 @@ impl RelationalCanonicalCommitArtifact {
                 Ok(())
             }
         }
-        let mut writer = OriginalHashWriter {
-            request: *execution,
+        let mut writer = StageHashWriter {
+            context,
             digest: Sha256::new(),
             stop: None,
         };
@@ -68,7 +57,6 @@ impl RelationalCanonicalCommitArtifact {
         result.map_err(|error| Denial::PayloadEncoding {
             detail: error.to_string(),
         })?;
-        crate::execution::check_request(execution).map_err(Denial::Request)?;
         Ok(writer.digest.finalize().into())
     }
     /// The manifest index uses the journal's exact payload grammar. Hashing

@@ -3,18 +3,23 @@ use crate::durability::data::{
 };
 use std::io::{self, Write};
 mod control;
-use control::CheckpointEncodingBuffer;
 pub(crate) use control::CheckpointEncodingControl;
-use worth_execution::ExecutionImmutableBytes;
+use worth_execution::{ExecutionByteBuffer, ExecutionImmutableBytes};
 
-struct SizingWriter<'scope, 'authority> {
-    control: CheckpointEncodingControl<'scope, 'authority>,
+/// The writers charge through the capture's one control; see its work rate.
+type Control<'c, 'stage, 'scope, 'lease, 'request, 'authority> =
+    &'c mut CheckpointEncodingControl<'stage, 'scope, 'lease, 'request, 'authority>;
+
+struct SizingWriter<'c, 'stage, 'scope, 'lease, 'request, 'authority> {
+    control: Control<'c, 'stage, 'scope, 'lease, 'request, 'authority>,
     total: usize,
     failure: Option<Denial>,
 }
 
-impl<'scope, 'authority> SizingWriter<'scope, 'authority> {
-    pub fn new(control: CheckpointEncodingControl<'scope, 'authority>) -> Self {
+impl<'c, 'stage, 'scope, 'lease, 'request, 'authority>
+    SizingWriter<'c, 'stage, 'scope, 'lease, 'request, 'authority>
+{
+    pub fn new(control: Control<'c, 'stage, 'scope, 'lease, 'request, 'authority>) -> Self {
         Self {
             control,
             total: 0,
@@ -28,7 +33,7 @@ impl<'scope, 'authority> SizingWriter<'scope, 'authority> {
     }
 }
 
-impl Write for SizingWriter<'_, '_> {
+impl Write for SizingWriter<'_, '_, '_, '_, '_, '_> {
     fn write(&mut self, input: &[u8]) -> io::Result<usize> {
         if self.failure.is_some() {
             return Err(stopped());
@@ -65,16 +70,18 @@ impl Write for SizingWriter<'_, '_> {
     }
 }
 
-struct EmissionWriter<'a, 'request, 'authority> {
-    control: CheckpointEncodingControl<'request, 'authority>,
-    bytes: &'a mut CheckpointEncodingBuffer<'request, 'authority>,
+struct EmissionWriter<'a, 'c, 'stage, 'scope, 'lease, 'request, 'authority> {
+    control: Control<'c, 'stage, 'scope, 'lease, 'request, 'authority>,
+    bytes: &'a mut ExecutionByteBuffer,
     failure: Option<Denial>,
 }
 
-impl<'a, 'request, 'authority> EmissionWriter<'a, 'request, 'authority> {
+impl<'a, 'c, 'stage, 'scope, 'lease, 'request, 'authority>
+    EmissionWriter<'a, 'c, 'stage, 'scope, 'lease, 'request, 'authority>
+{
     pub fn new(
-        control: CheckpointEncodingControl<'request, 'authority>,
-        bytes: &'a mut CheckpointEncodingBuffer<'request, 'authority>,
+        control: Control<'c, 'stage, 'scope, 'lease, 'request, 'authority>,
+        bytes: &'a mut ExecutionByteBuffer,
     ) -> Self {
         Self {
             control,
@@ -89,16 +96,17 @@ impl<'a, 'request, 'authority> EmissionWriter<'a, 'request, 'authority> {
     }
 }
 
-impl Write for EmissionWriter<'_, '_, '_> {
+impl Write for EmissionWriter<'_, '_, '_, '_, '_, '_, '_> {
     fn write(&mut self, input: &[u8]) -> io::Result<usize> {
         if self.failure.is_some() {
             return Err(stopped());
         }
         for chunk in input.chunks(4096) {
-            let result = self
-                .control
-                .checkpoint(chunk.len() as u64)
-                .and_then(|()| self.bytes.append(chunk));
+            let result = self.control.checkpoint(chunk.len() as u64).and_then(|()| {
+                self.bytes
+                    .extend_from_slice(chunk)
+                    .map_err(Denial::Allocation)
+            });
             if let Err(error) = result {
                 self.failure = Some(error);
                 return Err(stopped());
@@ -139,7 +147,7 @@ fn stopped() -> io::Error {
 }
 
 pub(crate) fn count_value(
-    control: CheckpointEncodingControl<'_, '_>,
+    control: &mut CheckpointEncodingControl<'_, '_, '_, '_, '_>,
     value: &impl serde::Serialize,
 ) -> Result<usize, Denial> {
     let mut writer = SizingWriter::new(control);
@@ -148,14 +156,14 @@ pub(crate) fn count_value(
 }
 
 pub(crate) fn encode_value(
-    control: CheckpointEncodingControl<'_, '_>,
+    control: &mut CheckpointEncodingControl<'_, '_, '_, '_, '_>,
     prefix: &[u8],
     value: &impl serde::Serialize,
 ) -> Result<ExecutionImmutableBytes, Denial> {
     let total = count_value(control, value)?
         .checked_add(prefix.len())
         .ok_or_else(|| frame_mismatch("native checkpoint frame size overflow"))?;
-    let mut bytes = CheckpointEncodingBuffer::allocate(control, total)?;
+    let mut bytes = control.allocate(total)?;
     let mut writer = EmissionWriter::new(control, &mut bytes);
     let emitted = writer.write_all(prefix).and_then(|()| {
         rmp_serde::encode::write_named(&mut writer, value).map_err(io::Error::other)
@@ -166,18 +174,16 @@ pub(crate) fn encode_value(
             "native checkpoint count and emission lengths differ",
         ));
     }
-    control.checkpoint(0)?;
-    bytes.seal()
+    bytes.seal().map_err(Denial::Allocation)
 }
 
 pub(crate) fn copy_bytes(
-    control: CheckpointEncodingControl<'_, '_>,
+    control: &mut CheckpointEncodingControl<'_, '_, '_, '_, '_>,
     input: &[u8],
 ) -> Result<ExecutionImmutableBytes, Denial> {
-    let mut bytes = CheckpointEncodingBuffer::allocate(control, input.len())?;
+    let mut bytes = control.allocate(input.len())?;
     let mut writer = EmissionWriter::new(control, &mut bytes);
     let copied = writer.write_all(input);
     writer.finish(copied)?;
-    control.checkpoint(0)?;
-    bytes.seal()
+    bytes.seal().map_err(Denial::Allocation)
 }

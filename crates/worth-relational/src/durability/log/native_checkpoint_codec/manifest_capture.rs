@@ -2,7 +2,6 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use super::member_frame::{self, MemberKind};
-use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact;
 #[cfg(test)]
 use crate::durability::checkpoints::aspect_state_images::CheckpointAspectContractCatalog;
 #[cfg(test)]
@@ -40,7 +39,7 @@ impl CapturedManifest {
         prior: Option<&RelationalCheckpointManifest>,
         placement: &RelationalCheckpointArtifactPolicy<'_>,
         journal_index: Vec<crate::history::RelationalCommitIndexEntry>,
-        control: super::checkpoint_encoding::CheckpointEncodingControl<'_, '_>,
+        control: &mut super::checkpoint_encoding::CheckpointEncodingControl<'_, '_, '_, '_, '_>,
     ) -> Result<Self, RelationalNativeCheckpointCaptureDenial> {
         let mut members = BTreeMap::new();
         let mut commits = BTreeMap::new();
@@ -76,21 +75,7 @@ impl CapturedManifest {
                     );
                 }
             } else {
-                let payload_digest = match control {
-                    super::checkpoint_encoding::CheckpointEncodingControl::Original(execution) => {
-                        RelationalCanonicalCommitArtifact::positioned_payload_digest_original(
-                            positioned, &execution,
-                        )
-                        .map_err(RelationalNativeCheckpointCaptureDenial::from)?
-                    }
-                    #[cfg(test)]
-                    super::checkpoint_encoding::CheckpointEncodingControl::Policy(_) => {
-                        RelationalCanonicalCommitArtifact::positioned_payload_digest(positioned)
-                            .map_err(|error| {
-                                corrupt(format!("canonical checkpoint digest: {error}"))
-                            })?
-                    }
-                };
+                let payload_digest = control.payload_digest(positioned)?;
                 commits.insert(
                     positioned.position(),
                     crate::history::RelationalCommitIndexEntry {
@@ -205,7 +190,7 @@ impl CapturedManifest {
             None,
             &RelationalCheckpointArtifactPolicy::Embedded,
             Vec::new(),
-            super::checkpoint_encoding::CheckpointEncodingControl::Policy(policy),
+            &mut super::checkpoint_encoding::CheckpointEncodingControl::Policy(policy),
         )?;
         let rows = checkpoint
             .envelopes

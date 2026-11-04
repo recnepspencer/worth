@@ -12,6 +12,13 @@ impl CapturedCheckpointBasis {
         policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
         source: Option<std::sync::Arc<dyn crate::durability::medium::RelationalDurableColdSource>>,
         placement: &RelationalCheckpointArtifactPolicy<'_>,
+        control: &mut crate::durability::log::native_checkpoint_codec::CheckpointEncodingControl<
+            '_,
+            '_,
+            '_,
+            '_,
+            '_,
+        >,
     ) -> Result<CapturedManifest, RelationalNativeCheckpointCaptureDenial> {
         let mut symbols = crate::symbols::data::StringInterner::default();
         symbols.restore_snapshot(self.symbol_table.clone());
@@ -66,9 +73,7 @@ impl CapturedCheckpointBasis {
             prior.as_ref().map(|prior| &prior.manifest),
             placement,
             journal_index,
-            crate::durability::log::native_checkpoint_codec::CheckpointEncodingControl::Original(
-                *execution,
-            ),
+            control,
         )?;
         captured.append_lineage_events(event_rows, policy)?;
         captured.envelope_cells = envelope_cells
