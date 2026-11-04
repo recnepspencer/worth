@@ -18,7 +18,6 @@ use worth_query_host::facade::{
 pub mod balance_query;
 pub mod retirement;
 pub use retirement::{request_with_handler_retirement_refusal, RefusingHomeProgram};
-mod checkpoint_resources;
 mod native_contribution;
 pub mod schema;
 use schema::HomeIdentitySchema;
@@ -98,7 +97,7 @@ pub fn request_with_initializer(
         (contacts,),
         build,
         WorthQueryInMemoryApplicationLimits::new(
-            checkpoint_resources::resources(),
+            identity::world_resources(),
             WorthQueryApplicationQueryResourceProfile::default(),
             SignalConditionalEvaluationBudget::development(),
         ),

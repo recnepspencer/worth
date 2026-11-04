@@ -1,4 +1,4 @@
-//! One installed route keeps the business value and original meter through upkeep.
+//! Host upkeep is triggered independently of the completed business meter.
 use super::*;
 use crate::domain_computation::execution_runtime::product_world::{
     WorthQueryHomeMaintenance, WorthQueryProductRuntime,
@@ -29,11 +29,7 @@ pub(super) fn after_business(
     request: ExecutionRequest<'_, '_>,
     maintenance: &dyn WorthQueryHomeMaintenance,
 ) {
-    // A body can latch a joined or own stop without polling it. Only the
-    // execution owner's completion guard may decide whether upkeep enters.
-    // Its refusal never substitutes for the business callback's exact value.
-    let _ = request.run_native_completion(|lease| {
-        let invoking = lease.map(ExecutionRequest::leased).unwrap_or(request);
-        maintenance.after_advancement(&invoking);
-    });
+    // A completed caller may already be stopped. The closed Host owns upkeep's
+    // independent controls and must not lose its trigger to that caller stop.
+    maintenance.after_advancement(&request);
 }

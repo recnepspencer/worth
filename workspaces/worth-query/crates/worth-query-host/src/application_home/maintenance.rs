@@ -7,12 +7,15 @@ use worth_store_application::{
     ApplicationHomeCheckpointDenial as Denial, ApplicationHomeCheckpointLimits,
     ApplicationHomeCheckpointOperation,
 };
+mod panic_boundary;
+mod resources;
 
 #[derive(Debug)]
 pub(super) struct HomeMaintenance {
     pub(super) operation: Option<ApplicationHomeCheckpointOperation>,
     pub(super) retired_operation:
         Option<worth_store_application::RetiredApplicationHomeCheckpointOperation>,
+    resources: resources::HomeMaintenanceResources,
     _memory: Option<ExecutionMemoryReservation>,
 }
 impl WorthQueryHomeMaintenance for HomeMaintenance {
@@ -21,18 +24,26 @@ impl WorthQueryHomeMaintenance for HomeMaintenance {
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<(), worth_query_execution::facade::primary_graph::WorthQueryHomeRetirementDenial>
     {
+        if self.resources.is_active() {
+            use worth_query_execution::facade::primary_graph::{
+                WorthQueryHomeRetirementDenial, WorthQueryHomeRetirementOwner,
+            };
+            return Err(WorthQueryHomeRetirementDenial::Busy(
+                WorthQueryHomeRetirementOwner::HomeMaintenance,
+            ));
+        }
         request.consult().map_err(
             worth_query_execution::facade::primary_graph::WorthQueryHomeRetirementDenial::Execution,
         )
     }
-    fn after_advancement(&self, request: &ExecutionRequest<'_, '_>) {
+    fn after_advancement(&self, _: &ExecutionRequest<'_, '_>) {
         // Query retains the exact business value. Actual work/refusal stays in
         // this SAME Store operation's attempt/coverage; there is no error ledger.
-        let _ = self
-            .operation
-            .as_ref()
-            .expect("only serving Query invokes maintenance")
-            .after_advancement(request);
+        panic_boundary::contain(|| {
+            if let Some(operation) = self.operation.as_ref() {
+                self.resources.advance(operation);
+            }
+        });
     }
 }
 pub(super) fn prepare(
@@ -41,6 +52,7 @@ pub(super) fn prepare(
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<Arc<dyn WorthQueryHomeMaintenance>, Denial> {
     let operation = home.checkpoint_operation(limits)?;
+    let resources = resources::HomeMaintenanceResources::install(limits)?;
     let bytes = std::alloc::Layout::new::<(usize, usize)>()
         .extend(std::alloc::Layout::new::<HomeMaintenance>())
         .map_err(|_| Denial::SizeLimit)?
@@ -55,6 +67,7 @@ pub(super) fn prepare(
     Ok(Arc::new(HomeMaintenance {
         operation: Some(operation),
         retired_operation: None,
+        resources,
         _memory: memory,
     }))
 }

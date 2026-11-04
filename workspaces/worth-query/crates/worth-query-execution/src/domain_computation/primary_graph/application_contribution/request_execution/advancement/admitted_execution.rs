@@ -36,11 +36,11 @@ impl QueryRequestExecution<'_> {
                     source,
                     owner,
                 });
+                body_result = Some(result);
                 if let Some(maintenance) = maintenance {
                     let invoking = lease.map(ExecutionRequest::leased).unwrap_or(request);
                     directory_completion::after_business(invoking, maintenance);
                 }
-                body_result = Some(result);
             })) {
                 Ok(()) => (),
                 Err(payload) => {
