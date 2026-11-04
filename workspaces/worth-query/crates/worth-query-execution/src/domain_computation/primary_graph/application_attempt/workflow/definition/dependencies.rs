@@ -10,8 +10,11 @@ use worth_relational::facade::identity::EntityId;
 
 use super::codec::{WorkflowConnectionTag, WorkflowNodeTag};
 use super::CompiledWorkflowCondition;
-use {crate::domain_computation::primary_graph::application_attempt::workflow::adoption::WorkflowAdoptionReadDenial, crate::domain_computation::primary_graph::application_attempt::workflow::adoption::WorkflowAdoptionTruth};
 use crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout;
+use {
+    crate::domain_computation::primary_graph::application_attempt::workflow::adoption::WorkflowAdoptionReadDenial,
+    crate::domain_computation::primary_graph::application_attempt::workflow::adoption::WorkflowAdoptionTruth,
+};
 
 pub(in crate::domain_computation::primary_graph) struct WorkflowRetainedNode {
     pub(in crate::domain_computation::primary_graph) entity: EntityId,

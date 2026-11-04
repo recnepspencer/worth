@@ -51,7 +51,7 @@ impl WorkflowRecordedActorObservation {
     ) -> Result<
         crate::domain_computation::primary_graph::application_attempt::workflow::actor::encoding::FundedActorText,
         crate::domain_computation::authorization::WorkflowApprovalRequestEncodingDenial,
-    > {
+    >{
         #[derive(Serialize)]
         struct Role<'a> {
             version: u16,

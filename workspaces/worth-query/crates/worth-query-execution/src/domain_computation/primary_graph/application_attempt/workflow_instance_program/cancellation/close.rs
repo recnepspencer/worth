@@ -24,7 +24,13 @@ use super::super::super::{
 };
 use super::super::{performed, PublishedWorkflowInstanceRef};
 use super::HISTORY;
-use {crate::domain_computation::primary_graph::application_attempt::workflow::definition::reconstruct_compiled_definition, crate::domain_computation::primary_graph::application_attempt::workflow::definition::WorkflowDefinitionCompilationPosture, crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowInstanceState, crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowPerformedEffect, crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout};
+use {
+    crate::domain_computation::primary_graph::application_attempt::workflow::definition::reconstruct_compiled_definition,
+    crate::domain_computation::primary_graph::application_attempt::workflow::definition::WorkflowDefinitionCompilationPosture,
+    crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowInstanceState,
+    crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowPerformedEffect,
+    crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
+};
 
 /// The writes that end a live instance, what it performed, and the facts
 /// they rest on.

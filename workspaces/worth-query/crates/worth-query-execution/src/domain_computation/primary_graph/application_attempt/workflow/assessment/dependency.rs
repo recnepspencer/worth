@@ -5,7 +5,10 @@ use worth_relational::facade::symbols::ClientKey;
 use worth_relational::facade::transactions::{CreatedEntityRef, EntityReference};
 
 use super::*;
-use {crate::domain_computation::primary_graph::application_attempt::workflow::evidence_dependency::encode_direction, crate::domain_computation::primary_graph::application_attempt::workflow::evidence_dependency::WorkflowEvidenceDependencyKind};
+use {
+    crate::domain_computation::primary_graph::application_attempt::workflow::evidence_dependency::encode_direction,
+    crate::domain_computation::primary_graph::application_attempt::workflow::evidence_dependency::WorkflowEvidenceDependencyKind,
+};
 
 pub fn visit_dependency_facts<Error>(
     layout: &WorthQueryWorkflowLayout,

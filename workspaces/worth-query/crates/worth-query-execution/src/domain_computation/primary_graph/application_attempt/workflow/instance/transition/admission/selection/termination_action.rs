@@ -1,9 +1,8 @@
 //! A global action binds the current occurrence, not a manufactured graph edge.
 use super::{
-    denial, identity, select_current_node, CompiledWorkflowDefinition, EntityId,
-    SelectedWorkflowOperation, SelectedWorkflowTransition, SelectedWorkflowTransitionKind,
-    WorkflowTransitionProgressBasis, WorthQueryApplicationAttemptDenial,
-    WorthQueryApplicationAttemptDenialKind,
+    denial, select_current_node, CompiledWorkflowDefinition, EntityId, SelectedWorkflowOperation,
+    SelectedWorkflowTransition, SelectedWorkflowTransitionKind, WorkflowTransitionProgressBasis,
+    WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
 };
 use worth_query_installation::facade::WorthQueryWorkflowGlobalActionDependency;
 

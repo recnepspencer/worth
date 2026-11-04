@@ -1,6 +1,9 @@
 //! Cold inventory reconstruction reads actual graph membership before retention.
 use super::*;
-use {crate::domain_computation::primary_graph::application_attempt::workflow::captured_input::WorkflowCapturedInputSupport, crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition};
+use {
+    crate::domain_computation::primary_graph::application_attempt::workflow::captured_input::WorkflowCapturedInputSupport,
+    crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition,
+};
 pub(in crate::domain_computation::primary_graph) fn observe(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,

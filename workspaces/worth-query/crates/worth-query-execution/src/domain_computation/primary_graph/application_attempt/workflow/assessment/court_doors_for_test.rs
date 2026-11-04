@@ -20,7 +20,9 @@ impl WorkflowAssessmentEvidenceMeaning {
         output_content_identity: String,
         program_revision: String,
         retained_bytes: u64,
-        currentness_facts: std::sync::Arc<[crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact]>,
+        currentness_facts: std::sync::Arc<
+            [crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact],
+        >,
     ) -> Self {
         Self {
             identity,

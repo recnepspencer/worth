@@ -20,14 +20,15 @@ impl WorkflowDefinitionCompilationReuse {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph::application_attempt::workflow::definition::compilation) enum WorkflowDefinitionCompilationReuseDenial
-{
+pub(in crate::domain_computation::primary_graph::application_attempt::workflow::definition::compilation)
+enum WorkflowDefinitionCompilationReuseDenial {
     SemanticCollision,
     ByteBudgetExceeded,
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub(in crate::domain_computation::primary_graph::application_attempt::workflow::definition::compilation) struct WorkflowDefinitionSemanticReuseKey
+pub(in crate::domain_computation::primary_graph::application_attempt::workflow::definition::compilation)
+struct WorkflowDefinitionSemanticReuseKey
 {
     pub(in crate::domain_computation::primary_graph::application_attempt::workflow::definition::compilation) content_identity:
         String,
@@ -63,7 +64,8 @@ impl WorkflowDefinitionSemanticReuseKey {
 }
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub(in crate::domain_computation::primary_graph::application_attempt::workflow::definition::compilation) struct WorkflowDefinitionPublicationReuseKey
+pub(in crate::domain_computation::primary_graph::application_attempt::workflow::definition::compilation)
+struct WorkflowDefinitionPublicationReuseKey
 {
     pub(in crate::domain_computation::primary_graph::application_attempt::workflow::definition::compilation) branch_occurrence:
         u64,

@@ -1,7 +1,10 @@
 //! A selected ordinary occurrence may recover itself, never replace a different pending owner.
 use super::*;
-use {crate::domain_computation::primary_graph::application_attempt::workflow::instance::SelectedWorkflowTransition, crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle};
 use worth_relational::facade::snapshots::SnapshotHandle;
+use {
+    crate::domain_computation::primary_graph::application_attempt::workflow::instance::SelectedWorkflowTransition,
+    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle,
+};
 impl ObservedWorkflowInstance {
     /// Retains absence too: a custody commit after preparation must stale this candidate.
     /// Foreign custody pays existing bounded history reconstruction only when present.

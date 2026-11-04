@@ -262,7 +262,7 @@ impl RequiredWorkflowCondition {
     pub fn operands(
         &self,
     ) -> &[crate::domain_computation::primary_graph::application_attempt::workflow::definition::WorkflowConditionOperand]
-    {
+{
         &self.condition.operands
     }
 }

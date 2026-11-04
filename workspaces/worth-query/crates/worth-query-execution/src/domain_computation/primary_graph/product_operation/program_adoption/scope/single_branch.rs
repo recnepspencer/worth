@@ -6,8 +6,8 @@ use super::super::{
     preparation, WorthQueryBranchAdoptionPreparationDenial, WorthQueryPreparedBranchAdoption,
     WorthQueryPreparedProgramMigration,
 };
-use crate::domain_computation::primary_graph::product_operation::WorthQuerySelectedProductOperation;
 use crate::domain_computation::primary_graph::application_attempt::workflow::WorthQueryWorkflowDispositions;
+use crate::domain_computation::primary_graph::product_operation::WorthQuerySelectedProductOperation;
 
 impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     /// Describes the owner-computed requirements for moving this exact branch

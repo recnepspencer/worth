@@ -1,4 +1,7 @@
-use {crate::domain_computation::primary_graph::application_attempt::workflow::instance::SelectedWorkflowApproval, crate::domain_computation::primary_graph::application_attempt::workflow::instance::SelectedWorkflowTransition};
+use {
+    crate::domain_computation::primary_graph::application_attempt::workflow::instance::SelectedWorkflowApproval,
+    crate::domain_computation::primary_graph::application_attempt::workflow::instance::SelectedWorkflowTransition,
+};
 
 /// An approver's decision on a proposal. `Approve` and `Reject` record the approved and
 /// rejected control outcomes.

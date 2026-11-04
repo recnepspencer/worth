@@ -7,8 +7,8 @@ use super::{
     WorkflowTransitionLocator, WorkflowTransitionProgressObservation,
     WorkflowTransitionReplayProjection,
 };
-use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial;
 use crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition;
+use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial;
 
 #[derive(Clone)]
 pub(in crate::domain_computation::primary_graph) struct WorkflowTransitionProgressBasis {

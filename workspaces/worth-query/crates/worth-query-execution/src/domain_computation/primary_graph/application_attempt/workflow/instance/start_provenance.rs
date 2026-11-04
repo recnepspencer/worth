@@ -1,5 +1,4 @@
 //! Immutable original revision: native funded storage, never a permission or hash issuer.
-use {crate::domain_computation::primary_graph::application_attempt::observe_field_value_borrowed, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial as Attempt, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenialKind as Kind, crate::domain_computation::primary_graph::program_occurrence::WorthQueryInstalledProgramSupport, crate::domain_computation::primary_graph::application_attempt::workflow::schema::version::WORKFLOW_BIRTH_FACT_PROTOCOL_VERSION, crate::domain_computation::primary_graph::application_attempt::workflow::schema::version::WORKFLOW_INSTANCE_FACT_PROTOCOL_VERSION, crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout};
 use worth_execution::{ExecutionByteBuffer, ExecutionRequest};
 use worth_foundational::facade::{AspectValue, InternedString};
 use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
@@ -9,6 +8,15 @@ use worth_relational::facade::{
     snapshots::SnapshotHandle,
     symbols::{RelationalFieldTextAdmissionDenial, Symbol},
     transactions::RelationalExecutionDenialCause,
+};
+use {
+    crate::domain_computation::primary_graph::application_attempt::observe_field_value_borrowed,
+    crate::domain_computation::primary_graph::application_attempt::workflow::schema::version::WORKFLOW_BIRTH_FACT_PROTOCOL_VERSION,
+    crate::domain_computation::primary_graph::application_attempt::workflow::schema::version::WORKFLOW_INSTANCE_FACT_PROTOCOL_VERSION,
+    crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
+    crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial as Attempt,
+    crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenialKind as Kind,
+    crate::domain_computation::primary_graph::program_occurrence::WorthQueryInstalledProgramSupport,
 };
 
 pub fn admit(

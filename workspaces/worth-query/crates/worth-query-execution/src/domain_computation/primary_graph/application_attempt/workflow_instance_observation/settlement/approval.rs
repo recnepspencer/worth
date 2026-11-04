@@ -5,7 +5,10 @@ use super::{
     adjacency_with_kind, denial, exact, observed_text, observed_u64,
     WorthQueryApplicationObservedFact,
 };
-use {crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial, crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout};
+use {
+    crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
+    crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial,
+};
 
 #[allow(clippy::too_many_arguments)]
 pub(in crate::domain_computation::primary_graph::application_attempt) fn observe_retained_approval_binding(

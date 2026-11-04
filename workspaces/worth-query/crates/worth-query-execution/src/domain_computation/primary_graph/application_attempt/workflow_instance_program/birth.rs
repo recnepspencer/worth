@@ -4,7 +4,6 @@ use super::super::{
     WorthQueryApplicationObservedFact,
 };
 use crate::domain_computation::authorization::WorthQueryOperationScopeBinding;
-use {crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition, crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowLineageCarry};
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::sync::{Arc, Mutex};
 use worth_query_declaration::facade::application_operation::{
@@ -12,6 +11,10 @@ use worth_query_declaration::facade::application_operation::{
 };
 use worth_query_declaration::facade::application_program::ApplicationWorkflowSpec;
 use worth_query_installation::facade::ApplicationSchema;
+use {
+    crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition,
+    crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowLineageCarry,
+};
 
 mod binding;
 mod preparation;

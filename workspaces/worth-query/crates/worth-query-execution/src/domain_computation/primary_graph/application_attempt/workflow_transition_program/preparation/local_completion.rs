@@ -1,7 +1,10 @@
 //! The original local effect's binding-selected admission owns completion, not Advance.
 use super::super::{local_actions::VerifiedLocalActionCompletion, WorkflowLocalActionKind};
 use super::*;
-use {crate::domain_computation::primary_graph::application_attempt::workflow::instance::SelectedWorkflowOperation, crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt};
+use {
+    crate::domain_computation::primary_graph::application_attempt::workflow::instance::SelectedWorkflowOperation,
+    crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+};
 mod replay;
 use worth_query_declaration::facade::{
     application_operation::{ApplicationMutationAdmissionBinding, ApplicationMutationScopeBinding},

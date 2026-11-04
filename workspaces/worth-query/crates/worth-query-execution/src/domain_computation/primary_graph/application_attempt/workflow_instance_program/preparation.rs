@@ -14,10 +14,10 @@ use super::{
     PublishedWorkflowDefinitionRef, PublishedWorkflowInstanceRef,
     WorkflowInstanceCancellationOutcome, WorkflowInstanceStartOutcome,
 };
+use crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowSuccession;
 use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryCompleteApplicationReadSet, WorthQueryProjectedApplicationMutation,
 };
-use crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowSuccession;
 use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedApplicationOperation, WorthQueryApplicationAttemptDenial,
     WorthQueryApplicationIdempotencyBinding, WorthQueryOperationProjectionDenial,

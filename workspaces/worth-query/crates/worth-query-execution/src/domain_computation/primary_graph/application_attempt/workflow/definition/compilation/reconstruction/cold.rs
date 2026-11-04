@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use super::{
-    adjacency, connection, denial, exact_adjacent, node,
+    adjacency, denial, exact_adjacent,
     publication_header::{observe_publication_header, observe_publication_revisions},
     WorkflowDefinitionCompilationPosture,
 };

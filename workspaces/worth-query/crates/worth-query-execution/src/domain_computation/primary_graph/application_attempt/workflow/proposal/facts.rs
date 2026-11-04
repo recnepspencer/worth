@@ -9,7 +9,12 @@ use super::WorkflowProposalMeaning;
 use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryApplicationCreationPartition, WorthQueryApplicationRealizedEffect,
 };
-use {crate::domain_computation::primary_graph::application_attempt::workflow::instance::visit_workflow_transition_facts, crate::domain_computation::primary_graph::application_attempt::workflow::instance::AdmittedWorkflowTransition, crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowInstanceState, crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout};
+use {
+    crate::domain_computation::primary_graph::application_attempt::workflow::instance::visit_workflow_transition_facts,
+    crate::domain_computation::primary_graph::application_attempt::workflow::instance::AdmittedWorkflowTransition,
+    crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowInstanceState,
+    crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
+};
 
 pub(in crate::domain_computation::primary_graph) fn visit_workflow_proposal_facts<
     Schema,

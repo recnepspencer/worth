@@ -4,7 +4,10 @@ use worth_relational::facade::identity::EntityId;
 use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
 };
-use {crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition, crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowNode};
+use {
+    crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition,
+    crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowNode,
+};
 
 pub(super) fn unique_successor(
     compiled: &CompiledWorkflowDefinition,

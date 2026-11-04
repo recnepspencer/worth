@@ -190,7 +190,7 @@ impl RequiredWorkflowOperation {
     pub fn captured_input_contract(
         &self,
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
-    ) -> Option<&crate::domain_computation::primary_graph::application_attempt::workflow::captured_input::WorkflowCapturedInputContract> {
+    ) -> Option<&crate::domain_computation::primary_graph::application_attempt::workflow::captured_input::WorkflowCapturedInputContract>{
         self.captured_input.as_ref()
     }
 

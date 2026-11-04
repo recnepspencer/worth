@@ -1,9 +1,13 @@
 //! Borrowed native dependency descriptions; only recursive view nodes allocate.
 use super::*;
 use crate::domain_computation::authorization::WorkflowApprovalRequestEncodingDenial as Denial;
-use {crate::domain_computation::primary_graph::application_attempt::workflow::actor::encoding::FundedActorText, crate::domain_computation::primary_graph::application_attempt::workflow::actor::fund_actor_codec, crate::domain_computation::primary_graph::application_attempt::workflow::actor::ActorCodecFunding};
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
+use {
+    crate::domain_computation::primary_graph::application_attempt::workflow::actor::encoding::FundedActorText,
+    crate::domain_computation::primary_graph::application_attempt::workflow::actor::fund_actor_codec,
+    crate::domain_computation::primary_graph::application_attempt::workflow::actor::ActorCodecFunding,
+};
 
 #[derive(Serialize)]
 pub(in crate::domain_computation) struct DurableDependenciesView<'a> {

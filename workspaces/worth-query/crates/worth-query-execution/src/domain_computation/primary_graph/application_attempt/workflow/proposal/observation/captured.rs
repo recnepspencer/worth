@@ -1,6 +1,10 @@
 //! Native profile decoding and exact indexed target selection; no input recapture.
 use super::*;
-use {crate::domain_computation::primary_graph::application_attempt::observe_indexed_entity_selection, crate::domain_computation::primary_graph::application_attempt::workflow::captured_input::WorkflowCapturedInputContract, crate::domain_computation::primary_graph::application_attempt::workflow::schema::version::*};
+use {
+    crate::domain_computation::primary_graph::application_attempt::observe_indexed_entity_selection,
+    crate::domain_computation::primary_graph::application_attempt::workflow::captured_input::WorkflowCapturedInputContract,
+    crate::domain_computation::primary_graph::application_attempt::workflow::schema::version::*,
+};
 
 pub(super) fn profile(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

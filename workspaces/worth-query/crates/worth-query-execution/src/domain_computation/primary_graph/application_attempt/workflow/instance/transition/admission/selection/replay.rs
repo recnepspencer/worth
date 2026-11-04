@@ -4,7 +4,10 @@ use super::{denial, transition_identity, SettledWorkflowTransition};
 use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
 };
-use {crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition, crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowNodeKind};
+use {
+    crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition,
+    crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowNodeKind,
+};
 
 pub(in crate::domain_computation::primary_graph) struct SelectedWorkflowTransitionReplay {
     node_path: String,

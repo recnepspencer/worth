@@ -13,7 +13,10 @@ use super::{
     WorthQueryApplicationEffectProgram, WorthQueryCompleteApplicationReadSet,
     WorthQueryProjectedApplicationMutation,
 };
-use {crate::domain_computation::primary_graph::application_attempt::workflow::definition::visit_definition_facts, crate::domain_computation::primary_graph::application_attempt::workflow::definition::BoundWorkflowDefinitionContract};
+use {
+    crate::domain_computation::primary_graph::application_attempt::workflow::definition::visit_definition_facts,
+    crate::domain_computation::primary_graph::application_attempt::workflow::definition::BoundWorkflowDefinitionContract,
+};
 mod intent_identity;
 mod lineage;
 mod publication;

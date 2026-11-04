@@ -14,11 +14,10 @@ use super::super::definition::{read_definition_dependencies, WorkflowDefinitionD
 use super::super::instance::read_live_instances;
 use super::super::schema::WorthQueryWorkflowLayout;
 use super::{
-    legality, WorkflowAdoptionReadDenial, WorkflowAdoptionTruth,
-    WorkflowVocabularyCoverageRegistry, WorthQueryWorkflowAdoptionInventory,
-    WorthQueryWorkflowCompatibility, WorthQueryWorkflowDefinitionOccurrence,
-    WorthQueryWorkflowIncompatibility, WorthQueryWorkflowInstanceCustody,
-    WorthQueryWorkflowInstanceOccurrence,
+    WorkflowAdoptionReadDenial, WorkflowAdoptionTruth, WorkflowVocabularyCoverageRegistry,
+    WorthQueryWorkflowAdoptionInventory, WorthQueryWorkflowCompatibility,
+    WorthQueryWorkflowDefinitionOccurrence, WorthQueryWorkflowIncompatibility,
+    WorthQueryWorkflowInstanceCustody, WorthQueryWorkflowInstanceOccurrence,
 };
 
 const DIGEST_DOMAIN: &[u8] = b"worth-query/workflow-adoption-inventory/1\0";

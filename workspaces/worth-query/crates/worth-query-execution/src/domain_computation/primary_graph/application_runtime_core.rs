@@ -165,7 +165,7 @@ impl WorthQueryApplicationRuntimeCore {
 impl WorthQueryApplicationRuntimeCore {
     pub(in crate::domain_computation) fn workflow_compilation_reuse_counters(
         &self,
-    ) -> crate::domain_computation::primary_graph::application_attempt::workflow::definition::WorthQueryWorkflowCompilationReuseCounters {
+    ) -> crate::domain_computation::primary_graph::application_attempt::workflow::definition::WorthQueryWorkflowCompilationReuseCounters{
         self.retain_primary_graph_integration_handle()
             .expect("a published application runtime retains its primary graph")
             .workflow_compilation_reuse_counters()
@@ -175,7 +175,7 @@ impl WorthQueryApplicationRuntimeCore {
 impl WorthQueryApplicationRuntimeCore {
     pub(in crate::domain_computation) fn workflow_instance_progress_counters(
         &self,
-    ) -> crate::domain_computation::primary_graph::application_attempt::workflow::WorthQueryWorkflowInstanceProgressCounters {
+    ) -> crate::domain_computation::primary_graph::application_attempt::workflow::WorthQueryWorkflowInstanceProgressCounters{
         self.retain_primary_graph_integration_handle()
             .expect("a published application runtime retains its primary graph")
             .workflow_instance_progress_counters()

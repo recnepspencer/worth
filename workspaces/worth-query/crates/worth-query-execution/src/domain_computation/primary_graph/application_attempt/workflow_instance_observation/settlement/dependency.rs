@@ -9,12 +9,15 @@ use worth_relational::facade::identity::{EntityId, KindId, PartitionId, VersionI
 use super::{denial, observed_text, observed_u64};
 pub(crate) mod aspect_presence;
 mod traversal;
+use crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout;
 use crate::domain_computation::primary_graph::application_attempt::{
     observation::{observe_field, WorthQueryApplicationFieldObservation},
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationObservedFact,
 };
-use {crate::domain_computation::primary_graph::application_attempt::workflow::evidence_dependency::decode_direction, crate::domain_computation::primary_graph::application_attempt::workflow::evidence_dependency::WorkflowEvidenceDependencyKind};
-use crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout;
+use {
+    crate::domain_computation::primary_graph::application_attempt::workflow::evidence_dependency::decode_direction,
+    crate::domain_computation::primary_graph::application_attempt::workflow::evidence_dependency::WorkflowEvidenceDependencyKind,
+};
 
 pub(in crate::domain_computation::primary_graph::application_attempt) fn observe_evidence_dependencies(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

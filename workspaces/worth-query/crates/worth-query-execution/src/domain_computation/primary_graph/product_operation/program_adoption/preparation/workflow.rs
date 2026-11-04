@@ -3,7 +3,10 @@
 
 use super::WorthQueryBranchAdoptionPreparationDenial;
 use crate::domain_computation::primary_graph::application_attempt::workflow::adoption::WorkflowAdoptionReadDenial;
-use {crate::domain_computation::primary_graph::application_attempt::workflow::WorthQueryWorkflowAdoptionInventory, crate::domain_computation::primary_graph::application_attempt::workflow::WorthQueryWorkflowDispositions};
+use {
+    crate::domain_computation::primary_graph::application_attempt::workflow::WorthQueryWorkflowAdoptionInventory,
+    crate::domain_computation::primary_graph::application_attempt::workflow::WorthQueryWorkflowDispositions,
+};
 
 /// Resolve explicit intent against the complete fresh PRIVATE inventory.
 pub(super) fn admit_workflow_dispositions(
@@ -15,7 +18,7 @@ pub(super) fn admit_workflow_dispositions(
         crate::domain_computation::primary_graph::application_attempt::workflow::adoption::AdmittedWorkflowDispositions,
     >,
     WorthQueryBranchAdoptionPreparationDenial,
-> {
+>{
     let Some(choices) = choices else {
         return if inventory.is_empty() {
             Ok(None)

@@ -1,6 +1,5 @@
 //! Native original-intent lookup after command admission; no governed-read grant is borrowed.
 use super::*;
-use {crate::basis::WorthQueryProductBranch, crate::domain_computation::primary_graph::application_attempt::fact::observe_indexed_entity_selection, crate::domain_computation::primary_graph::application_attempt::fact::WorthQueryIndexedSelectionRefusal, crate::domain_computation::primary_graph::application_attempt::observe_adjacency, crate::domain_computation::primary_graph::application_attempt::observe_field_value, crate::domain_computation::primary_graph::application_attempt::workflow_instance_observation::observe_subject, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAdjacencyDirection as Direction, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenialKind as Kind, crate::domain_computation::primary_graph::application_attempt::WorthQueryWorkflowInstanceDiscoveryIntent, crate::domain_computation::primary_graph::application_attempt::workflow::instance::start_provenance, crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout};
 use worth_foundational::facade::{AspectFieldLocator, AspectValue, InternedString};
 use worth_query_declaration::facade::application_program::{
     ApplicationProgramRevision, ApplicationWorkflowDefinitionContentIdentity,
@@ -9,6 +8,18 @@ use worth_relational::facade::{
     identity::{EntityId, KindId},
     runtime::RelationalRuntime,
     snapshots::SnapshotHandle,
+};
+use {
+    crate::basis::WorthQueryProductBranch,
+    crate::domain_computation::primary_graph::application_attempt::fact::observe_indexed_entity_selection,
+    crate::domain_computation::primary_graph::application_attempt::fact::WorthQueryIndexedSelectionRefusal,
+    crate::domain_computation::primary_graph::application_attempt::observe_adjacency,
+    crate::domain_computation::primary_graph::application_attempt::observe_field_value,
+    crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
+    crate::domain_computation::primary_graph::application_attempt::workflow_instance_observation::observe_subject,
+    crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAdjacencyDirection as Direction,
+    crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenialKind as Kind,
+    crate::domain_computation::primary_graph::application_attempt::WorthQueryWorkflowInstanceDiscoveryIntent,
 };
 
 pub(super) struct OriginalPredecessor {

@@ -239,7 +239,7 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
     #[doc(hidden)]
     pub fn workflow_compilation_reuse_counters(
         &self,
-    ) -> crate::domain_computation::primary_graph::application_attempt::workflow::definition::WorthQueryWorkflowCompilationReuseCounters {
+    ) -> crate::domain_computation::primary_graph::application_attempt::workflow::definition::WorthQueryWorkflowCompilationReuseCounters{
         let reuse = self
             .workflow_compilation_reuse
             .lock()
@@ -261,7 +261,7 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
     #[doc(hidden)]
     pub fn workflow_instance_progress_counters(
         &self,
-    ) -> crate::domain_computation::primary_graph::application_attempt::workflow::WorthQueryWorkflowInstanceProgressCounters {
+    ) -> crate::domain_computation::primary_graph::application_attempt::workflow::WorthQueryWorkflowInstanceProgressCounters{
         let mut counters = crate::domain_computation::primary_graph::application_attempt::workflow::WorthQueryWorkflowInstanceProgressCounters::default();
         for shard in self.workflow_instance_progress_retention.iter() {
             let shard = shard

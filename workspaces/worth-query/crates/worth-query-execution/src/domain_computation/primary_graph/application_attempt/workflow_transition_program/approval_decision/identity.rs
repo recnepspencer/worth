@@ -76,7 +76,7 @@ pub(super) fn derive<Schema, Operation, Input, Scope>(
 ) -> Result<
     crate::domain_computation::primary_graph::application_attempt::workflow::WorkflowApprovalMeaning,
     WorthQueryApplicationAttemptDenial,
-> {
+>{
     let authority = admission
         .workflow_approval_authority()
         .ok_or_else(|| affinity("workflow approval lacks retained capability authorization"))?;

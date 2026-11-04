@@ -1,11 +1,16 @@
 //! One proposal's exact qualified target contracts, in canonical node order.
 use super::*;
-use {crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition, crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowNodeKind, crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation, crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding};
 use crate::domain_computation::{
     canonical_indexed_operation_material, canonical_operation_material,
 };
 use sha2::{Digest, Sha256};
 use worth_query_declaration::facade::application_program::ApplicationWorkflowNodeIdentity;
+use {
+    crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition,
+    crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowNodeKind,
+    crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation,
+    crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding,
+};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) struct WorkflowCapturedTarget {

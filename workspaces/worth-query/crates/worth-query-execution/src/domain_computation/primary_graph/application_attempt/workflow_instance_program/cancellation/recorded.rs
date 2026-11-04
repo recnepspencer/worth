@@ -14,7 +14,11 @@ use super::super::super::{
 };
 use super::super::performed;
 use super::HISTORY;
-use {crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowInstanceState, crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowPerformedEffect, crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout};
+use {
+    crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowInstanceState,
+    crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowPerformedEffect,
+    crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
+};
 
 /// What the recorded cancellation reports, or `None` when the instance
 /// records no cancellation under `identity`.

@@ -83,10 +83,10 @@ mod workflow_definition_program;
 pub(crate) mod workflow_instance_observation;
 pub(in crate::domain_computation::primary_graph) use workflow_instance_observation::decode_field_revision_fact;
 pub(in crate::domain_computation::primary_graph) use workflow_instance_observation::WorkflowStepAllowance;
+pub(crate) mod workflow;
 pub(crate) mod workflow_instance_program;
 mod workflow_proposal_program;
 pub(crate) mod workflow_transition_program;
-pub(crate) mod workflow;
 pub(in crate::domain_computation) use snapshot_lease::{
     WorthQueryApplicationSnapshotLease, WorthQueryApplicationSnapshotLeaseDenial,
     WorthQueryApplicationSnapshotRelease,

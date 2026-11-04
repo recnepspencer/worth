@@ -46,7 +46,8 @@ pub struct WorkflowApprovalMeaning {
     pub sampled_value: String,
     pub expiry: worth_foundational::facade::AspectValue,
     pub scope: EntityId,
-    pub decision: crate::domain_computation::primary_graph::application_attempt::WorkflowApprovalDecision,
+    pub decision:
+        crate::domain_computation::primary_graph::application_attempt::WorkflowApprovalDecision,
 }
 
 pub fn workflow_approval_fields(

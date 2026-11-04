@@ -36,8 +36,9 @@ pub struct WorkflowAssessmentEvidenceMeaning {
     pub(in crate::domain_computation::primary_graph) program_revision: String,
     /// What the evidence retains; see [`workflow_evidence_retained_bytes`].
     pub(in crate::domain_computation::primary_graph) retained_bytes: u64,
-    pub(in crate::domain_computation::primary_graph) currentness_facts:
-        std::sync::Arc<[crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact]>,
+    pub(in crate::domain_computation::primary_graph) currentness_facts: std::sync::Arc<
+        [crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact],
+    >,
 }
 
 pub(in crate::domain_computation::primary_graph) fn visit_workflow_assessment_facts<

@@ -25,8 +25,12 @@ use super::{
     WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationObservedFact,
 };
 use crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition;
-use {crate::domain_computation::primary_graph::application_attempt::workflow::instance::SettledWorkflowTransition, crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowInstanceState, crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowTransitionProgressBasis};
 use crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout;
+use {
+    crate::domain_computation::primary_graph::application_attempt::workflow::instance::SettledWorkflowTransition,
+    crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowInstanceState,
+    crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowTransitionProgressBasis,
+};
 
 mod completed_source;
 mod evidence_budget;

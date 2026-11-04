@@ -4,7 +4,10 @@ use super::{
     WorthQueryCompleteApplicationReadSet, WorthQueryProjectedApplicationMutation,
 };
 use crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout;
-use {crate::domain_computation::primary_graph::application_attempt::workflow_instance_observation::ObservedWorkflowInstance, crate::domain_computation::primary_graph::application_attempt::workflow::instance::SelectedWorkflowProposal};
+use {
+    crate::domain_computation::primary_graph::application_attempt::workflow::instance::SelectedWorkflowProposal,
+    crate::domain_computation::primary_graph::application_attempt::workflow_instance_observation::ObservedWorkflowInstance,
+};
 impl<Schema, Operation, Input, Scope>
     WorthQueryCompleteApplicationReadSet<
         Schema,

@@ -96,7 +96,7 @@ pub(super) fn unique<'a>(
 ) -> Result<
     &'a crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowNode,
     WorthQueryApplicationAttemptDenial,
-> {
+>{
     match (nodes.next(), nodes.next()) {
         (Some(node), None) => Ok(node),
         _ => Err(affinity(format!("approval {kind} input is not singular"))),

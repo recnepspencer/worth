@@ -1,5 +1,5 @@
 //! Migration preserves prior performed effects; lifecycle succession does not.
-use super::{register_relation, relations, WorthQueryPrimaryGraphInstallationDenial};
+use super::{register_relation, WorthQueryPrimaryGraphInstallationDenial};
 use worth_relational::facade::{
     identity::KindId,
     schema::{RelationalSchemaRegistry, SchemaId, SchemaVersionId},

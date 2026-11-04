@@ -4,9 +4,12 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 pub(crate) mod decoding;
 mod lineage_inventory;
-use {crate::domain_computation::primary_graph::application_attempt::workflow::actor::fund_actor_codec, crate::domain_computation::primary_graph::application_attempt::workflow::actor::ActorCodecFunding};
 use decoding::{DecodedApprovalLineage, DecodedApprovalPrincipal};
 use worth_relational::facade::identity::EntityId;
+use {
+    crate::domain_computation::primary_graph::application_attempt::workflow::actor::fund_actor_codec,
+    crate::domain_computation::primary_graph::application_attempt::workflow::actor::ActorCodecFunding,
+};
 
 use super::{
     delegation_admission::WorthQueryCapabilityObservationPosture,
@@ -105,7 +108,7 @@ pub(in crate::domain_computation) fn encode_workflow_approval_support(
 ) -> Result<
     crate::domain_computation::primary_graph::application_attempt::workflow::actor::encoding::FundedActorText,
     WorkflowApprovalRequestEncodingDenial,
-> {
+>{
     let request = authorization
         .supporting()
         .map(|support| {

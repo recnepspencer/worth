@@ -8,7 +8,12 @@ use worth_query_declaration::facade::{
 };
 use worth_query_installation::facade::ApplicationSchema;
 
-use {crate::domain_computation::primary_graph::application_attempt::workflow::definition::WorkflowConditionOperand, crate::domain_computation::primary_graph::RequiredWorkflowCondition, crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource, crate::domain_computation::primary_graph::WorthQueryObservedSource};
+use {
+    crate::domain_computation::primary_graph::application_attempt::workflow::definition::WorkflowConditionOperand,
+    crate::domain_computation::primary_graph::RequiredWorkflowCondition,
+    crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource,
+    crate::domain_computation::primary_graph::WorthQueryObservedSource,
+};
 
 /// The published query results a workflow condition reads, one per named
 /// operand. Each result must be exactly one row with its source; the

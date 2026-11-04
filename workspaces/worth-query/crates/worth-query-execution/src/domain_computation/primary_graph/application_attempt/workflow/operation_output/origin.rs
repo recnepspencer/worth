@@ -1,10 +1,13 @@
 //! Descriptive workflow occurrence retained by the operation that actually ran.
-use {crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowOperationSettlementBasis, crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout};
 use crate::domain_computation::primary_graph::{
     application_attempt::retained_decision_facts::{StorageControl, StoreDenial},
     application_checkpoint::facts::FactPayload,
 };
 use worth_relational::facade::identity::EntityId;
+use {
+    crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowOperationSettlementBasis,
+    crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
+};
 
 #[derive(Clone, Debug)]
 pub struct WorkflowOperationOrigin {

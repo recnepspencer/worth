@@ -2,7 +2,11 @@ use super::denial;
 use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
 };
-use {crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition, crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowNode, crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowNodeKind};
+use {
+    crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition,
+    crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowNode,
+    crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowNodeKind,
+};
 
 #[derive(Clone)]
 pub(in crate::domain_computation::primary_graph) struct SelectedWorkflowApproval {

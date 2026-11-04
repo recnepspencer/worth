@@ -16,7 +16,6 @@ mod update;
 use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
 };
-use {crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition, crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowNodeKind};
 pub(in crate::domain_computation::primary_graph) use locator::{
     WorkflowAssessmentEvidenceLocator, WorkflowTransitionLocator,
     WorkflowTransitionProgressObservation,
@@ -33,6 +32,10 @@ pub(in crate::domain_computation::primary_graph) use retention::{
 };
 pub(in crate::domain_computation::primary_graph) use update::{
     PreparedWorkflowProgressUpdate, WorkflowTransitionProgressBasis,
+};
+use {
+    crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition,
+    crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowNodeKind,
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

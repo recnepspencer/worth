@@ -265,7 +265,7 @@ where
     #[inline]
     pub fn workflow_compilation_reuse_counters(
         &self,
-    ) -> crate::domain_computation::primary_graph::application_attempt::workflow::definition::WorthQueryWorkflowCompilationReuseCounters {
+    ) -> crate::domain_computation::primary_graph::application_attempt::workflow::definition::WorthQueryWorkflowCompilationReuseCounters{
         self.runtime.workflow_compilation_reuse_counters()
     }
 
@@ -273,7 +273,7 @@ where
     #[inline]
     pub fn workflow_instance_progress_counters(
         &self,
-    ) -> crate::domain_computation::primary_graph::application_attempt::workflow::WorthQueryWorkflowInstanceProgressCounters {
+    ) -> crate::domain_computation::primary_graph::application_attempt::workflow::WorthQueryWorkflowInstanceProgressCounters{
         self.runtime.workflow_instance_progress_counters()
     }
 

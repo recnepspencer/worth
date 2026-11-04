@@ -1,9 +1,21 @@
 //! Resolve additional evidence without confusing its absence with unavailable
 //! approval authority. Common occurrence binding remains the operation owner's job.
 
-use {super::check_request_live, super::mismatch, super::observe_retained_transition, super::ApplicationOperationMarkerIdentity, super::ApplicationSchema, crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition, crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowNodeKind, crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowInstanceProgress, super::WorthQueryApplicationAttemptDenial, super::WorthQueryApplicationAttemptDenialKind, super::WorthQueryApplicationObservedFact, super::WorthQueryCompleteApplicationReadSet, super::WorthQueryProjectedApplicationMutation};
 use crate::domain_computation::authorization::WorthQueryWorkflowApprovalAuthorityBasis;
-use {crate::domain_computation::primary_graph::application_attempt::workflow::instance::SelectedWorkflowOperation, crate::domain_computation::primary_graph::application_attempt::workflow::instance::SelectedWorkflowTransition};
+use {
+    super::check_request_live, super::mismatch, super::observe_retained_transition,
+    super::ApplicationOperationMarkerIdentity, super::ApplicationSchema,
+    super::WorthQueryApplicationAttemptDenial, super::WorthQueryApplicationAttemptDenialKind,
+    super::WorthQueryApplicationObservedFact, super::WorthQueryCompleteApplicationReadSet,
+    super::WorthQueryProjectedApplicationMutation,
+    crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition,
+    crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowNodeKind,
+    crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowInstanceProgress,
+};
+use {
+    crate::domain_computation::primary_graph::application_attempt::workflow::instance::SelectedWorkflowOperation,
+    crate::domain_computation::primary_graph::application_attempt::workflow::instance::SelectedWorkflowTransition,
+};
 
 pub(super) enum WorkflowOperationEvidence {
     Satisfied(Option<WorthQueryWorkflowApprovalAuthorityBasis>),

@@ -13,7 +13,16 @@ use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
     WorthQueryApplicationObservedFact,
 };
-use {crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowAssessmentApplicability, crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition, crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowNode, crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowNodeKind, crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowInstanceProgress, crate::domain_computation::primary_graph::application_attempt::workflow::proposal::observe_workflow_proposal_coverages, crate::domain_computation::primary_graph::application_attempt::workflow::proposal::WorkflowProposalCoverageMeaning, crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout};
+use {
+    crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowAssessmentApplicability,
+    crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition,
+    crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowNode,
+    crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowNodeKind,
+    crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowInstanceProgress,
+    crate::domain_computation::primary_graph::application_attempt::workflow::proposal::observe_workflow_proposal_coverages,
+    crate::domain_computation::primary_graph::application_attempt::workflow::proposal::WorkflowProposalCoverageMeaning,
+    crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
+};
 
 pub(super) struct ObservedAssessmentSubject {
     pub(super) coverage: WorkflowProposalCoverageMeaning,

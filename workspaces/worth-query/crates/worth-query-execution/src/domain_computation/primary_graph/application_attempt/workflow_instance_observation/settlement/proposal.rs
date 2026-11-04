@@ -2,13 +2,13 @@ use crate::domain_computation::primary_graph::application_attempt::check_request
 use worth_foundational::facade::{AspectValue, InternedString};
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 
+use crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowTransitionLocator;
+use crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout;
 use crate::domain_computation::primary_graph::application_attempt::{
     observe_adjacency, observe_field_value, WorthQueryApplicationAdjacencyDirection,
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
     WorthQueryApplicationObservedFact,
 };
-use crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowTransitionLocator;
-use crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout;
 
 pub(in crate::domain_computation::primary_graph::application_attempt) fn observe_retained_workflow_proposal_identity(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

@@ -4,8 +4,17 @@ use worth_relational::facade::identity::EntityId;
 use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
 };
-use {crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition, crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowNode, crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowNodeKind};
-use {crate::domain_computation::primary_graph::application_attempt::workflow::instance::SettledWorkflowTransition, crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowInstanceProgress, crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowTransitionProgressBasis, crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowTransitionReplayProjection};
+use {
+    crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition,
+    crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowNode,
+    crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowNodeKind,
+};
+use {
+    crate::domain_computation::primary_graph::application_attempt::workflow::instance::SettledWorkflowTransition,
+    crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowInstanceProgress,
+    crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowTransitionProgressBasis,
+    crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowTransitionReplayProjection,
+};
 
 mod proposal_need;
 pub(in crate::domain_computation::primary_graph) use proposal_need::{

@@ -2,7 +2,18 @@ use worth_query_declaration::facade::application_program::ApplicationWorkflowCon
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::{PreparedWorkflowAdvance, PreparedWorkflowCondition};
-use {crate::domain_computation::primary_graph::expression::evaluate_condition, crate::domain_computation::primary_graph::expression::supplies, crate::domain_computation::primary_graph::expression::supporting_identity, crate::domain_computation::primary_graph::expression::WorthQueryWorkflowConditionSources, crate::domain_computation::primary_graph::application_attempt::workflow::instance::visit_workflow_transition_facts, crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowInstanceState, crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial, crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind, crate::domain_computation::primary_graph::WorthQueryApplicationEffectProgram, crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime};
+use {
+    crate::domain_computation::primary_graph::application_attempt::workflow::instance::visit_workflow_transition_facts,
+    crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowInstanceState,
+    crate::domain_computation::primary_graph::expression::evaluate_condition,
+    crate::domain_computation::primary_graph::expression::supplies,
+    crate::domain_computation::primary_graph::expression::supporting_identity,
+    crate::domain_computation::primary_graph::expression::WorthQueryWorkflowConditionSources,
+    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
+    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind,
+    crate::domain_computation::primary_graph::WorthQueryApplicationEffectProgram,
+    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime,
+};
 
 impl<Schema, Operation, Input, Scope> PreparedWorkflowCondition<Schema, Operation, Input, Scope>
 where
