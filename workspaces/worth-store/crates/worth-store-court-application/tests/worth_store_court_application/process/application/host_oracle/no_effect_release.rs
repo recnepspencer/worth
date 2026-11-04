@@ -58,7 +58,7 @@ fn recovered_no_effect_release_permits_one_fresh_execution_of_the_original_key()
     let [row] = page.rows() else {
         panic!("the actual durable Open is recovered");
     };
-    let original = home
+    let mut original = home
         .runtime()
         .runtime()
         .readmit_product_publication_recovery(row.handle())
@@ -68,10 +68,23 @@ fn recovered_no_effect_release_permits_one_fresh_execution_of_the_original_key()
         .unwrap()
         .native_semantic_result()
         .is_none());
-    home.runtime()
-        .runtime()
-        .release_product_publication_recovery(original, 0)
-        .unwrap();
+    loop {
+        use worth_query_host::facade::primary_graph::{
+            WorthQueryProductUnpublishedRecoveryReleaseDenial as Denial,
+            WorthQueryProductUnpublishedRecoveryReleaseFailure as Failure,
+        };
+        match home
+            .runtime()
+            .runtime()
+            .release_product_publication_recovery(original, 0)
+        {
+            Ok(_) => break,
+            Err(Failure::Recovery(refused)) if refused.denial() == Denial::RecoveredPending => {
+                original = refused.into_recovery();
+            }
+            Err(other) => panic!("actual no-effect disposition: {other:?}"),
+        }
+    }
     assert!(matches!(
         requests::resolve_original(home.runtime(), KEY, VALUE).unwrap(),
         Resolution::Unseen

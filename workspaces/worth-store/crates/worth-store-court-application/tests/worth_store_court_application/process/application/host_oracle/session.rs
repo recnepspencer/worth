@@ -156,6 +156,11 @@ fn host_oracle_service_child() {
                 let before = host_observation::projection::observe(home.runtime(), &execution);
                 let outcome =
                     host_interruption::publication::abandon_after_owner(home.runtime(), key, value);
+                if let worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome::Commit(
+                    worth_query_host::facade::primary_graph::WorthQueryApplicationUncommitted::Denied(cause)
+                ) = &outcome {
+                    panic!("original Native effect refused before abandonment: {cause:?}");
+                }
                 mutation = Some(host_observation::receipts::observe(&outcome, &before.head));
             }
             Request::ContinueOriginal {

@@ -22,7 +22,12 @@ fn originals(location: &Path, root: &Path) -> (Vec<ReleasedOriginalProjection>, 
         let (mut session, _) = Session::start(location, &root.join(format!("original-{index}")), 0);
         let actual = session.send(Request::AbandonOriginal { key, value: key });
         let state = actual.state.unwrap();
-        assert_eq!(state.custody.len(), 1);
+        assert_eq!(
+            state.custody.len(),
+            1,
+            "original {index}, key {key}: {:?}",
+            actual.mutation
+        );
         assert!(state.custody[0].original_effect.is_some());
         session.kill();
         let (mut session, _) = Session::start(location, &root.join(format!("release-{index}")), 0);

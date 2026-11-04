@@ -109,9 +109,20 @@ fn memory_release_preserves_original_key_and_refuses_handler_replay() {
         .unwrap()
         .rows()
         .is_empty());
-    drop((original, page));
-    home.close(&execution)
-        .unwrap_or_else(|cause| panic!("terminal data has no live owner share: {cause:?}"));
+    drop(page);
+    // Directory lifecycle only, as established by bed4f954f5d; a Memory Home
+    // cannot prove physical closure through this door (Host README).
+    let refused = home.close(&execution).unwrap_err();
+    assert!(refused.directory_denial().is_none());
+    assert!(refused.query_denial().is_none());
+    let home = refused.resume().unwrap();
+    let resumed = match requests::resolve_original(home.runtime(), 192, 90_991).unwrap() {
+        Resolution::ReleasedOriginal(original) => original,
+        other => panic!("Memory lifecycle refusal must retain terminal meaning: {other:?}"),
+    };
+    assert_eq!(resumed, original);
+    assert_retry_refused(&home, 192, 90_991);
+    assert_eq!(contacts.load(Ordering::SeqCst), count);
 }
 
 pub(super) fn assert_retry_refused(home: &OracleHome, key: u64, value: u64) {
