@@ -3,14 +3,13 @@ use super::authority_context::AuthoritativeCommitContext;
 use super::history_preparation::prepare_bound_history;
 use crate::transactions::data::TransactionCommitError;
 mod registration;
-mod stage_backing;
 mod stages;
-use stage_backing::CandidateStageBacking;
+use super::phase_backing::CommitPhaseBacking;
 
 struct HistoryPreparedCandidate<'scope, 'authority> {
     recovered_runtime: crate::runtime::RelationalPreparationRuntime,
     scope_control: crate::validation::engine::InvariantPreparationControl<'scope, 'authority>,
-    history_bound: super::history_binding::HistoryBoundCommitExecution,
+    history_bound: CommitPhaseBacking<super::history_binding::HistoryBoundCommitExecution>,
     runtime_instance_id: u64,
     publication_binding: crate::runtime::RelationalRuntimePublicationBinding,
     transaction_id: crate::transactions::data::TransactionId,
@@ -45,10 +44,8 @@ fn prepare_history<'scope, 'authority>(
     execution: &worth_execution::ExecutionRequest<'scope, 'authority>,
     runtime: &crate::runtime::RelationalPreparationRuntime,
     mut context: AuthoritativeCommitContext,
-) -> Result<
-    CandidateStageBacking<HistoryPreparedCandidate<'scope, 'authority>>,
-    TransactionCommitError,
-> {
+) -> Result<CommitPhaseBacking<HistoryPreparedCandidate<'scope, 'authority>>, TransactionCommitError>
+{
     let mut recovered_runtime = runtime.clone();
     if let Some(catalog) = context.recovered_index_catalog.take() {
         let (delta, authored) = catalog.original_for(runtime.runtime_instance_id())?;
@@ -101,7 +98,7 @@ fn prepare_history<'scope, 'authority>(
         .publication_cell();
     let diagnostic_capture = runtime.diagnostics.begin_operation_capture();
     let history_bound = prepare_bound_history(execution, runtime, context, &scope_control)?;
-    CandidateStageBacking::new(
+    CommitPhaseBacking::new(
         execution,
         HistoryPreparedCandidate {
             recovered_runtime,

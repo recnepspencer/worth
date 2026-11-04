@@ -1,7 +1,7 @@
 //! Consume one candidate phase before entering its successor's call frame.
 use super::super::{artifact_execution, publication_execution, snapshot_validation};
 use super::registration::CandidateRegistration;
-use super::{CandidateStageBacking, HistoryPreparedCandidate};
+use super::{CommitPhaseBacking, HistoryPreparedCandidate};
 use crate::runtime::RelationalPreparationRuntime;
 use crate::transactions::data::TransactionCommitError;
 use worth_execution::ExecutionRequest;
@@ -35,8 +35,8 @@ pub(super) struct PublishedCandidate {
 #[inline(never)]
 pub(super) fn validate(
     request: &ExecutionRequest<'_, '_>,
-    history: CandidateStageBacking<HistoryPreparedCandidate<'_, '_>>,
-) -> Result<CandidateStageBacking<ValidatedCandidate>, TransactionCommitError> {
+    history: CommitPhaseBacking<HistoryPreparedCandidate<'_, '_>>,
+) -> Result<CommitPhaseBacking<ValidatedCandidate>, TransactionCommitError> {
     let HistoryPreparedCandidate {
         recovered_runtime,
         scope_control,
@@ -55,6 +55,7 @@ pub(super) fn validate(
         caller_association,
         diagnostic_capture,
     } = history.into_inner();
+    let history_bound = history_bound.into_inner();
     let runtime = recovered_runtime.with_candidate_symbols(history_bound.candidate_symbols());
     let validated = snapshot_validation::validate_snapshot_publication(
         request,
@@ -62,7 +63,7 @@ pub(super) fn validate(
         history_bound,
         &scope_control,
     )?;
-    CandidateStageBacking::new(
+    CommitPhaseBacking::new(
         request,
         ValidatedCandidate {
             context: CandidateContext {
@@ -92,8 +93,8 @@ pub(super) fn validate(
 #[inline(never)]
 pub(super) fn assemble(
     request: &ExecutionRequest<'_, '_>,
-    checked: CandidateStageBacking<ValidatedCandidate>,
-) -> Result<CandidateStageBacking<AssembledCandidate>, TransactionCommitError> {
+    checked: CommitPhaseBacking<ValidatedCandidate>,
+) -> Result<CommitPhaseBacking<AssembledCandidate>, TransactionCommitError> {
     let ValidatedCandidate {
         context,
         inputs,
@@ -101,7 +102,7 @@ pub(super) fn assemble(
     } = checked.into_inner();
     let assembled =
         artifact_execution::assemble_commit_artifacts(request, &context.runtime, validated)?;
-    CandidateStageBacking::new(
+    CommitPhaseBacking::new(
         request,
         AssembledCandidate {
             context,
@@ -113,8 +114,8 @@ pub(super) fn assemble(
 #[inline(never)]
 pub(super) fn publish(
     request: &ExecutionRequest<'_, '_>,
-    source: CandidateStageBacking<AssembledCandidate>,
-) -> Result<CandidateStageBacking<PublishedCandidate>, TransactionCommitError> {
+    source: CommitPhaseBacking<AssembledCandidate>,
+) -> Result<CommitPhaseBacking<PublishedCandidate>, TransactionCommitError> {
     let AssembledCandidate {
         context,
         inputs,
@@ -129,7 +130,7 @@ pub(super) fn publish(
         inputs.caller,
     )?;
     prepared.append_diagnostics(context.diagnostic.finish());
-    CandidateStageBacking::new(
+    CommitPhaseBacking::new(
         request,
         PublishedCandidate {
             runtime: context.runtime,
@@ -141,7 +142,7 @@ pub(super) fn publish(
 #[inline(never)]
 pub(super) fn register(
     request: &ExecutionRequest<'_, '_>,
-    source: CandidateStageBacking<PublishedCandidate>,
+    source: CommitPhaseBacking<PublishedCandidate>,
 ) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
     let PublishedCandidate {
         runtime,

@@ -4,11 +4,11 @@ use crate::transactions::data::{
 };
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 
-pub(super) struct CandidateStageBacking<T> {
+pub(super) struct CommitPhaseBacking<T> {
     values: Vec<T>,
     _funding: Option<ExecutionMemoryReservation>,
 }
-impl<T> CandidateStageBacking<T> {
+impl<T> CommitPhaseBacking<T> {
     pub(super) fn new(
         request: &ExecutionRequest<'_, '_>,
         value: T,
@@ -30,6 +30,9 @@ impl<T> CandidateStageBacking<T> {
             _funding: funding,
         })
     }
+    pub(super) fn value(&self) -> &T {
+        &self.values[0]
+    }
     pub(super) fn into_inner(mut self) -> T {
         self.values.pop().expect("one actual candidate stage")
     }
@@ -44,5 +47,5 @@ fn allocation_failure() -> TransactionCommitError {
 }
 
 #[cfg(test)]
-#[path = "stage_backing_tests.rs"]
+#[path = "phase_backing_tests.rs"]
 mod tests;

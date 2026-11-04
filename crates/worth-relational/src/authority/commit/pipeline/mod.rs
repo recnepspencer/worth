@@ -13,6 +13,7 @@ mod history_resolution_phase;
 mod invariant_phase;
 mod merge_draft;
 mod mutation_execution;
+mod phase_backing;
 mod publication_execution;
 mod rejection;
 mod request_resources;
