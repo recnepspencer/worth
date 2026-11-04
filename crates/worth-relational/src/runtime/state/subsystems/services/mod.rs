@@ -84,3 +84,4 @@ impl RuntimeSubsystem for RuntimeServices {
         }
     }
 }
+pub use symbol_table::RelationalSymbolTableForTest;

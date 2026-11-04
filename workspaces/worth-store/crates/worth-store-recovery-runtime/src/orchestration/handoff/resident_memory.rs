@@ -5,8 +5,8 @@ use crate::handoff::RecoveryCleanupPosture;
 use crate::progression::ReopenedPhysicalRecovery;
 use worth_store_recovery_physics::VerifiedOrderedRootHistory;
 
-/// Heap-only retained bytes. The enclosing inline values are reported by
-/// `inline_bytes`; Coordination counts its charged checkpoint backing once,
+/// Heap-only retained bytes. The enclosing handoff owner counts inline storage.
+/// Coordination counts its charged checkpoint backing once,
 /// while shared history is deduplicated by pointer identity.
 pub(super) fn retained_bytes(
     reopened: &ReopenedPhysicalRecovery,
@@ -67,17 +67,6 @@ pub(super) fn retained_bytes(
     bytes.checked_add(shared_history_bytes(reopened)?)
 }
 
-/// Inline footprint is separate from the heap measure and must be added only
-/// once by the enclosing owner, not again for each nested typed field.
-pub(super) fn inline_bytes(
-    _: &ReopenedPhysicalRecovery,
-    _: &RecoveryCleanupPosture,
-) -> Option<u64> {
-    u64::try_from(std::mem::size_of::<ReopenedPhysicalRecovery>())
-        .ok()?
-        .checked_add(u64::try_from(std::mem::size_of::<RecoveryCleanupPosture>()).ok()?)
-}
-
 fn vector_bytes<T>(values: &Vec<T>) -> Option<u64> {
     u64::try_from(values.capacity())
         .ok()?
@@ -89,13 +78,19 @@ fn shared_history_bytes(reopened: &ReopenedPhysicalRecovery) -> Option<u64> {
     let histories: [Option<&VerifiedOrderedRootHistory>; 2] = [
         match &state.custody {
             crate::progression::CustodyState::Pending { claim, .. } => claim.ordered_history(),
-            _ => None,
+            crate::progression::CustodyState::NoCheckpoint
+            | crate::progression::CustodyState::NoRelease(_)
+            | crate::progression::CustodyState::SourceHeads(_)
+            | crate::progression::CustodyState::OrderedCompleted { .. } => None,
         },
         match &state.custody {
             crate::progression::CustodyState::OrderedCompleted { claim, .. } => {
                 Some(claim.history())
             }
-            _ => None,
+            crate::progression::CustodyState::NoCheckpoint
+            | crate::progression::CustodyState::NoRelease(_)
+            | crate::progression::CustodyState::SourceHeads(_)
+            | crate::progression::CustodyState::Pending { .. } => None,
         },
     ];
     let mut bytes = 0_u64;

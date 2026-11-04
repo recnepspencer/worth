@@ -18,7 +18,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt::provider_e
     phase: &WorthQueryAdvancementPhase<'_>,
 
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    progressed: WorthQueryProgressedApplicationCommit,
+    progressed: super::super::completion_storage::CompletedApplicationCommit,
 ) -> WorthQueryApplicationCommitOutcome
 where
     Schema: ApplicationSchema,
@@ -31,7 +31,7 @@ where
         running,
         cleanup,
         request,
-    } = progressed;
+    } = progressed.consume();
     let terminal = terminal_for(&outcome);
     let snapshot_release = lease.release_custody();
     application

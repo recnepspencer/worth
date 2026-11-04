@@ -130,4 +130,5 @@ pub use state::{
     RecordReservationObservation, RecordReservationObservationDenial, RecordReservationReport,
 };
 
+pub use state::RelationalSymbolTableForTest;
 pub(crate) use state::TryPartitionMutationDenied;

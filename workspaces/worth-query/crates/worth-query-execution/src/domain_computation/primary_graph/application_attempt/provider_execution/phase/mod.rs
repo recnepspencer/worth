@@ -19,3 +19,4 @@ pub(super) use prepared::running::{
     start_managed_application_commit,
 };
 pub(super) use prepared::running::WorthQueryRunningApplicationCommit;
+pub use prepared::WorthQueryManagedPhaseStorageForTest;

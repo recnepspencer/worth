@@ -21,7 +21,7 @@ pub(crate) use discovery::{
     discover_sources, AdmittedWalInventory, BootstrapDiscovery, CheckpointDiscovery,
     DiscoveryMaterial, WalDiscovery,
 };
-pub(crate) use handoff::finish_recovery_after_cleanup;
+pub(crate) use handoff::{finish_recovery_after_cleanup, RecoveryHandoffBacking};
 pub(crate) use manifest_facts::{ManifestFactsDiscovery, ManifestFactsState};
 pub(crate) use planning::{
     plan_recovery, ExceededManifestEntries, ValidatedManifestResidueCleanup,

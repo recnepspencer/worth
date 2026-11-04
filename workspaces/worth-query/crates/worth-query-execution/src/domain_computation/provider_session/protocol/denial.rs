@@ -199,7 +199,7 @@ impl WorthQueryProviderSessionFailure {
         let mut failure = Self::new(
             WorthQueryProviderSessionDenialKind::AllocationDenied,
             WorthQueryProviderSessionProtocolStage::Commit,
-            format!("completed touched-record backing allocation denied: {denial:?}"),
+            format!("execution backing allocation denied: {denial:?}"),
             WorthQueryProviderSessionProtocolCounters::default(),
         );
         failure.allocation = Some(denial);

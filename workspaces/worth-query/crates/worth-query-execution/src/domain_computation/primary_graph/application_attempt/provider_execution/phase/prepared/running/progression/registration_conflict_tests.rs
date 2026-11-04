@@ -84,6 +84,7 @@ fn reject_occupied_registration(
     let execution = phase;
 
     let WorthQueryRunningApplicationCommit {
+        completion_storage,
         admission,
         lease,
         provider_attempt,
@@ -168,7 +169,7 @@ fn reject_occupied_registration(
         &phase.borrowed_request_for_test(),
         phase,
         &world.application,
-        WorthQueryProgressedApplicationCommit {
+        completion_storage.complete(WorthQueryProgressedApplicationCommit {
             original_completion,
             workflow_settlement_publication: None,
             outcome,
@@ -176,7 +177,7 @@ fn reject_occupied_registration(
             running,
             cleanup,
             request: admission.publication_request().clone(),
-        },
+        }),
     )
 }
 
@@ -190,6 +191,7 @@ fn while_peer_is_registered(
     let execution = phase;
 
     let WorthQueryRunningApplicationCommit {
+        completion_storage,
         admission,
         lease,
         provider_attempt,
@@ -269,7 +271,7 @@ fn while_peer_is_registered(
         &phase.borrowed_request_for_test(),
         phase,
         &world.application,
-        registered
+        completion_storage.complete(registered
             .progress(
                 &phase.borrowed_request_for_test(),
                 &authority,
@@ -281,7 +283,7 @@ fn while_peer_is_registered(
                 None,
                 admission.publication_request().clone(),
                 original_completion,
-            ),
+            )),
     );
     assert!(matches!(
         peer,

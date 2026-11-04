@@ -33,7 +33,7 @@ pub(super) fn commit_owner_validated(
     crate::domain_computation::WorthQueryProviderSessionCommitStop,
 > {
     let request = prepared.attempt.affinity().publication_request().clone();
-    let mut committed = commit_execution::commit(
+    let committed = commit_execution::commit(
         execution,
         provider,
         prepared,
@@ -60,6 +60,18 @@ pub(super) fn commit_owner_validated(
             (stop, _) => stop,
         }
     })?;
+    finish_owner_validated(execution, provider, committed)
+}
+
+#[inline(never)]
+fn finish_owner_validated(
+    execution: worth_execution::ExecutionRequest<'_, '_>,
+    provider: &WorthQueryPrimaryGraphProvider,
+    mut committed: commit_execution::WorthQueryCommittedApplicationSession,
+) -> Result<
+    crate::domain_computation::WorthQueryProviderTerminalDescription,
+    crate::domain_computation::WorthQueryProviderSessionCommitStop,
+> {
     let evidence = evidence_seal::seal(&execution, provider, &mut committed);
     let mut predicate = committed.take_predicate_preparation();
     let mut retired = crate::domain_computation::primary_graph::application_query::derived_view::PredicatePreparationRetirement::default();

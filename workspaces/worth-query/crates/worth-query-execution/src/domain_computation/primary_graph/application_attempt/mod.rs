@@ -245,3 +245,4 @@ pub(in crate::domain_computation::primary_graph) use compare_and_commit::Materia
 pub(in crate::domain_computation) use compare_and_commit::WorthQueryPendingApplicationCommitReceipt;
 
 pub(in crate::domain_computation) use compare_and_commit::RetainedOriginalCleanupCommit;
+pub use provider_execution::WorthQueryManagedPhaseStorageForTest;

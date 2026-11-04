@@ -179,12 +179,13 @@ pub(in crate::domain_computation::primary_graph::application_attempt::provider_e
     >,
     running_commit: WorthQueryRunningApplicationCommit<Schema, Operation, Input, Scope>,
     allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
-) -> WorthQueryProgressedApplicationCommit
+) -> super::completion_storage::CompletedApplicationCommit
 where
     Schema: worth_query_installation::facade::ApplicationSchema,
     Input: Clone + Send + Sync + 'static,
 {
     let WorthQueryRunningApplicationCommit {
+        completion_storage,
         admission,
         lease,
         provider_attempt,
@@ -198,7 +199,7 @@ where
         aftermath_causality,
     } = running_commit;
     let original_completion = attempt_basis.take_original_completion();
-    progress_provider_application(
+    let actual = progress_provider_application(
         execution,
         phase,
         WorthQueryProviderProgression {
@@ -224,7 +225,8 @@ where
         workflow_settlement_publication,
         admission.publication_request().clone(),
         original_completion,
-    )
+    );
+    completion_storage.complete(actual)
 }
 
 fn progress_provider_application<Schema, Operation, Input, Scope>(

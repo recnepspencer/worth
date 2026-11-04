@@ -359,4 +359,5 @@ pub use authorization::*;
 pub use operation_body::*;
 
 mod checkpoint_inspection;
+pub use super::application_attempt::WorthQueryManagedPhaseStorageForTest;
 pub use checkpoint_inspection::*;

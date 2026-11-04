@@ -354,6 +354,7 @@ pub mod storage {
 }
 
 pub mod symbols {
+    pub use crate::runtime::RelationalSymbolTableForTest;
     pub use crate::symbols::data::RelationalSymbolExhausted;
     pub use crate::symbols::data::{
         ClientKey, ClientKeySymbolPolicy, InternedString, RelationalFieldText,

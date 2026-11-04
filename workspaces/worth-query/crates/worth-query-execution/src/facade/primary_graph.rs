@@ -389,4 +389,5 @@ mod managed_cleanup;
 pub use managed_cleanup::*;
 
 mod product;
+pub use crate::domain_computation::primary_graph::WorthQueryManagedPhaseStorageForTest;
 pub use product::*;

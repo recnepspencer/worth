@@ -583,3 +583,8 @@ workspaces/worth-query/crates/worth-query-execution/ crates/worth-court-server-c
 
 # Actual cleanup scheduling for the closed HTTP original-custody journey.
 workspaces/worth-query-bank-world/crates/bank-server/ workspaces/worth-query-bank-world/crates/bank-http-adapter/src/http/server/tests/closed_mutation_handoff/retained_effect.rs
+
+# Original-request storage and symbol custody are exercised in owned courts.
+crates/worth-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/process/commit_phase_backing.rs
+crates/worth-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/process/symbol_publication.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/process/certification/managed_phase_storage.rs

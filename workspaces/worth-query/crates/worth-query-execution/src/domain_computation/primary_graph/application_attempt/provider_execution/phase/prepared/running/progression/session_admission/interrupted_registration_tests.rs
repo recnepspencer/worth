@@ -45,6 +45,7 @@ fn cancellation_at_registration_binding_is_cancelled_not_denied() {
                 "interrupted-registration",
             );
             let WorthQueryRunningApplicationCommit {
+                completion_storage,
                 admission,
                 lease,
                 provider_attempt,
@@ -94,7 +95,7 @@ fn cancellation_at_registration_binding_is_cancelled_not_denied() {
                 &phase.borrowed_request_for_test(),
                 phase,
                 &world.application,
-                WorthQueryProgressedApplicationCommit {
+                completion_storage.complete(WorthQueryProgressedApplicationCommit {
                     original_completion,
                     workflow_settlement_publication: None,
                     outcome,
@@ -102,7 +103,7 @@ fn cancellation_at_registration_binding_is_cancelled_not_denied() {
                     running,
                     cleanup,
                     request: admission.publication_request().clone(),
-                },
+                }),
             );
             assert!(matches!(
                 finished,

@@ -17,43 +17,62 @@ pub(crate) struct ReopenedPayload {
     pub(crate) reopen_counters: PhysicalRecoveryReopenCounters,
 }
 
-pub(crate) struct ReopenedBacking(Vec<ReopenedPayload>);
+pub(crate) struct ReopenedBacking {
+    payload: Vec<ReopenedPayload>,
+    handoff: crate::orchestration::RecoveryHandoffBacking,
+}
 impl ReopenedBacking {
     pub(crate) fn prepare(
         allowance: &mut PlanningResidentAllowance,
     ) -> Result<Self, PlanningMemoryDenial> {
-        Ok(Self(allowance.reserve::<ReopenedPayload>(1)?))
+        Ok(Self {
+            payload: allowance.reserve::<ReopenedPayload>(1)?,
+            handoff: crate::orchestration::RecoveryHandoffBacking::prepare(allowance)?,
+        })
     }
     pub(crate) fn backing_bytes(&self) -> Result<u64, PlanningMemoryDenial> {
-        PlanningResidentAllowance::vector_bytes(&self.0)
+        PlanningResidentAllowance::vector_bytes(&self.payload)?
+            .checked_add(self.handoff.backing_bytes()?)
+            .ok_or(PlanningMemoryDenial::RecoveryMemoryBytes { observed: u64::MAX })
     }
     pub(crate) fn finish(mut self, payload: ReopenedPayload) -> ReopenedPhysicalRecovery {
-        assert!(self.0.is_empty() && self.0.capacity() >= 1);
-        self.0.push(payload);
+        assert!(self.payload.is_empty() && self.payload.capacity() >= 1);
+        self.payload.push(payload);
         ReopenedPhysicalRecovery { backing: self }
     }
     pub(super) const fn payload(&self) -> &ReopenedPayload {
-        &self.0.as_slice()[0]
+        &self.payload.as_slice()[0]
     }
-    pub(super) fn into_payload(mut self) -> ReopenedPayload {
-        assert_eq!(self.0.len(), 1, "sealed payload owner contains one value");
-        self.0.remove(0)
+    pub(super) fn payload_backing_bytes(&self) -> Result<u64, PlanningMemoryDenial> {
+        PlanningResidentAllowance::vector_bytes(&self.payload)
+    }
+    pub(super) fn into_handoff_parts(
+        mut self,
+    ) -> (
+        ReopenedPayload,
+        crate::orchestration::RecoveryHandoffBacking,
+    ) {
+        assert_eq!(self.payload.len(), 1, "one actual reopened payload");
+        (
+            self.payload.pop().expect("actual reopened payload"),
+            self.handoff,
+        )
     }
     pub(super) fn take_fresh_reopen(&mut self) -> CompletedPhysicalRecoveryFreshReopen {
-        self.0[0]
+        self.payload[0]
             .reopened
             .take()
             .expect("cleanup entry consumes fresh reopen exactly once")
     }
     #[cfg(feature = "certification-test-authority")]
     pub(super) fn retain_cleanup_media_handle_for_certification(&mut self) -> bool {
-        self.0[0]
+        self.payload[0]
             .state
             .authority
             .media
             .certification_retain_cleanup_media_handle()
     }
     pub(super) fn release_admitted_wal(&mut self) {
-        self.0[0].state.integrity.release_admitted_wal();
+        self.payload[0].state.integrity.release_admitted_wal();
     }
 }

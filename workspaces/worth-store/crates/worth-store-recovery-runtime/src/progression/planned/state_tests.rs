@@ -86,8 +86,9 @@ fn planned_backing_refuses_combined_construction_before_allocating() {
             .max(namespace + 2 * reopened + 2 * roster)
             .max(3 * namespace + 2 * roster)
             .max(publication_plan + 2 * expectation);
+        let handoff = crate::orchestration::RecoveryHandoffBacking::required_bytes().unwrap();
         let required =
-            17 + payload + staged + input + namespace + publication + reopened + movement;
+            17 + payload + staged + input + namespace + publication + reopened + handoff + movement;
         let mut allowance = PlanningResidentAllowance::new(17, required - 1).unwrap();
         assert!(matches!(
             PlannedStateBacking::prepare(&mut allowance, extraction),

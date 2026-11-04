@@ -69,7 +69,9 @@ impl PlannedStateBacking {
             crate::orchestration::PublicationPayload,
         >(1)?;
         let reopened_bytes =
-            super::PlanningResidentAllowance::slot_bytes::<crate::progression::ReopenedPayload>(1)?;
+            super::PlanningResidentAllowance::slot_bytes::<crate::progression::ReopenedPayload>(1)?
+                .checked_add(crate::orchestration::RecoveryHandoffBacking::required_bytes()?)
+                .ok_or_else(overflow)?;
         let backing = payload
             .checked_add(staged)
             .and_then(|bytes| bytes.checked_add(input_bytes))

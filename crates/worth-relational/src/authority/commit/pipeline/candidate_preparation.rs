@@ -1,16 +1,15 @@
 //! Move the original history proof into candidate registration after early frames expire.
-use super::artifact_execution::assemble_commit_artifacts;
 use super::authority_context::AuthoritativeCommitContext;
 use super::history_preparation::prepare_bound_history;
-use super::publication_execution::prepare_commit_publication_execution;
-use super::snapshot_validation::validate_snapshot_publication;
 use crate::transactions::data::TransactionCommitError;
 mod registration;
+mod stages;
+use super::phase_backing::CommitPhaseBacking;
 
 struct HistoryPreparedCandidate<'scope, 'authority> {
     recovered_runtime: crate::runtime::RelationalPreparationRuntime,
     scope_control: crate::validation::engine::InvariantPreparationControl<'scope, 'authority>,
-    history_bound: super::history_binding::HistoryBoundCommitExecution,
+    history_bound: CommitPhaseBacking<super::history_binding::HistoryBoundCommitExecution>,
     runtime_instance_id: u64,
     publication_binding: crate::runtime::RelationalRuntimePublicationBinding,
     transaction_id: crate::transactions::data::TransactionId,
@@ -33,7 +32,10 @@ pub(crate) fn prepare_consulted_authoritative_commit(
     context: AuthoritativeCommitContext,
 ) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
     let history = prepare_history(execution, runtime, context)?;
-    register_candidate(execution, history)
+    let validated = stages::validate(execution, history)?;
+    let assembled = stages::assemble(execution, validated)?;
+    let published = stages::publish(execution, assembled)?;
+    stages::register(execution, published)
 }
 
 // Later publication locals must not occupy the deep admission/draft call's frame.
@@ -42,7 +44,8 @@ fn prepare_history<'scope, 'authority>(
     execution: &worth_execution::ExecutionRequest<'scope, 'authority>,
     runtime: &crate::runtime::RelationalPreparationRuntime,
     mut context: AuthoritativeCommitContext,
-) -> Result<HistoryPreparedCandidate<'scope, 'authority>, TransactionCommitError> {
+) -> Result<CommitPhaseBacking<HistoryPreparedCandidate<'scope, 'authority>>, TransactionCommitError>
+{
     let mut recovered_runtime = runtime.clone();
     if let Some(catalog) = context.recovered_index_catalog.take() {
         let (delta, authored) = catalog.original_for(runtime.runtime_instance_id())?;
@@ -95,78 +98,27 @@ fn prepare_history<'scope, 'authority>(
         .publication_cell();
     let diagnostic_capture = runtime.diagnostics.begin_operation_capture();
     let history_bound = prepare_bound_history(execution, runtime, context, &scope_control)?;
-    Ok(HistoryPreparedCandidate {
-        recovered_runtime,
-        scope_control,
-        history_bound,
-        runtime_instance_id,
-        publication_binding,
-        transaction_id,
-        branch_id,
-        control,
-        retention_binding,
-        expected_basis,
-        expected_root,
-        publication_cell,
-        required_output_publication,
-        required_output_materialization,
-        caller_association,
-        diagnostic_capture,
-    })
-}
-
-#[inline(never)]
-fn register_candidate(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    history: HistoryPreparedCandidate<'_, '_>,
-) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
-    let HistoryPreparedCandidate {
-        recovered_runtime,
-        scope_control,
-        history_bound,
-        runtime_instance_id,
-        publication_binding,
-        transaction_id,
-        branch_id,
-        control,
-        retention_binding,
-        expected_basis,
-        expected_root,
-        publication_cell,
-        required_output_publication,
-        required_output_materialization,
-        caller_association,
-        diagnostic_capture,
-    } = history;
-    let runtime = &recovered_runtime;
-    let final_runtime = runtime.with_candidate_symbols(history_bound.candidate_symbols());
-    let runtime = &final_runtime;
-    let snapshot_validated =
-        validate_snapshot_publication(execution, runtime, history_bound, &scope_control)?;
-    let assembled = assemble_commit_artifacts(execution, runtime, snapshot_validated)?;
-    let mut prepared = prepare_commit_publication_execution(
+    CommitPhaseBacking::new(
         execution,
-        runtime,
-        assembled,
-        required_output_publication,
-        required_output_materialization,
-        caller_association,
-    )?;
-    prepared.append_diagnostics(diagnostic_capture.finish());
-    // Candidate registration owns counters, lifetime admission and final payload
-    // placement only after Native artifact assembly has returned.
-    registration::CandidateRegistration {
-        runtime_instance_id,
-        publication_binding,
-        transaction_id,
-        branch_id,
-        control,
-        retention_binding,
-        expected_basis,
-        expected_root,
-        publication_cell,
-    }
-    .register(execution, runtime, prepared)
+        HistoryPreparedCandidate {
+            recovered_runtime,
+            scope_control,
+            history_bound,
+            runtime_instance_id,
+            publication_binding,
+            transaction_id,
+            branch_id,
+            control,
+            retention_binding,
+            expected_basis,
+            expected_root,
+            publication_cell,
+            required_output_publication,
+            required_output_materialization,
+            caller_association,
+            diagnostic_capture,
+        },
+    )
 }
 
 fn require_parent_publication_settled(

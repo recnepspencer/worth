@@ -211,6 +211,7 @@ fn release(
     WorthQueryApplicationSnapshotLease,
 ){
     let WorthQueryRunningApplicationCommit {
+        completion_storage: _completion_storage,
         lease,
         running,
         mutation_run,

@@ -205,7 +205,9 @@ the required cost qualification must execute again. See
 Platform byte producers use `ExecutionRequestArrayBuilder<u8>::seal_immutable_bytes`
 to retain immutable output with both payload and actual shared control storage
 admitted through the original request. The byte owner keeps those admissions
-through its final clone; its payload charge remains separately observable. See
+through its final clone; its payload charge remains separately observable.
+`ExecutionImmutableBytes::is_external_backing()` distinguishes external custody
+from allocated fixed backing; it proves no admission or execution permission. See
 [execution backing admission](../crates/worth-execution/README.md).
 
 Platform native ordered-map owners move non-`Clone` payloads through

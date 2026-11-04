@@ -29,6 +29,7 @@ use crate::domain_computation::{
 #[cfg(test)]
 #[path = "running/affinity_tests.rs"]
 mod affinity_tests;
+mod completion_storage;
 #[cfg(test)]
 #[path = "running/independent_axis_tests.rs"]
 mod independent_axis_tests;
@@ -40,6 +41,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt::provider_e
     Input,
     Scope,
 > {
+    completion_storage: completion_storage::ApplicationCommitCompletionStorage,
     admission: crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<
         Schema,
         Operation,
@@ -96,6 +98,8 @@ where
             crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(foreign)
                 .into_commit_outcome()
         })?;
+    let completion_storage =
+        completion_storage::ApplicationCommitCompletionStorage::prepare(&execution)?;
     let attempt_basis = WorthQueryApplicationAttemptBasis::capture(
         application,
         &admission,
@@ -146,6 +150,7 @@ where
         return Err(denied(DenialStage::ManagedRunAdmission));
     };
     Ok(WorthQueryRunningApplicationCommit {
+        completion_storage,
         admission,
         lease,
         provider_attempt,
@@ -231,3 +236,4 @@ where
     )
     .map_err(|detail| denied_with_detail(DenialStage::InvariantExecution, detail))
 }
+pub use completion_storage::WorthQueryManagedPhaseStorageForTest;

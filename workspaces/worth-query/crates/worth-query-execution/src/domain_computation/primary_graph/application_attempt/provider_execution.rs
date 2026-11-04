@@ -26,6 +26,7 @@ pub(in crate::domain_computation) use outcome::{
     progression_denied, WorthQueryProviderProgressionOutcome,
 };
 pub(in crate::domain_computation::primary_graph::application_attempt) use phase::WorthQueryFreshCommitReceiptPermit;
+pub use phase::WorthQueryManagedPhaseStorageForTest;
 pub(in crate::domain_computation) use phase::{
     WorthQueryProviderAttemptRegistrationContext, WorthQueryRegisteredProviderAttempt,
 };
