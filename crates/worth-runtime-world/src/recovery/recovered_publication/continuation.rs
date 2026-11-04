@@ -68,6 +68,9 @@ impl Drop for ContinuationLease {
     }
 }
 impl PreparedRecoveredPublication {
+    pub(crate) fn movement_recovery_required(&self) -> bool {
+        self.protection.is_some() && self.permit.is_none()
+    }
     pub(crate) fn disposition_committed(&self) -> bool {
         match self.disposition {
             OriginalContinuationDisposition::Undisposed(_) => false,

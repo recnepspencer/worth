@@ -90,6 +90,16 @@ impl WorldRecoveredUnpublishedEffects {
     }
     pub fn next_actions(&self) -> &[super::ProductUnpublishedNextAction] {
         use super::ProductUnpublishedNextAction as Action;
+        let lost_permit = self
+            .record
+            .continuation
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .as_ref()
+            .is_some_and(|phase| phase.movement_recovery_required());
+        if self.record.binding.publication_recovery_required() || lost_permit {
+            return &[Action::Inspect, Action::ReopenRequired];
+        }
         if self
             .record
             .release

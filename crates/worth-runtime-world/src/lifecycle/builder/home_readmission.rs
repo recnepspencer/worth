@@ -51,14 +51,7 @@ where
         binding
             .admit_recovered_checkpoint_coverage(selected_coverage)
             .map_err(Denial::Medium)?;
-        if recovered.branches.len() > 1
-            || recovered.dispositions.values().any(|disposition| {
-                matches!(
-                    disposition.disposition(),
-                    crate::durability::RecoveredCustodyDisposition::Continued
-                )
-            })
-        {
+        if recovered.branches.len() > 1 {
             return Err(Denial::OccurrenceReadmissionRequired);
         }
         for origin in recovered.branch_origins() {

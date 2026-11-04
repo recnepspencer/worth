@@ -116,6 +116,12 @@ impl WorldDurableMediumBinding {
             .map_err(|_| WorldDurableMediumDenial::PublicationBusy)?
             .admit_recovered(coverage)
     }
+    pub(crate) fn publication_recovery_required(&self) -> bool {
+        let gates = self.gates.lock().unwrap_or_else(|e| e.into_inner());
+        gates.custody.barrier.is_some()
+            || gates.occurrences.barrier.is_some()
+            || gates.branches.barrier.is_some()
+    }
     pub(crate) fn occurrence_unresolved(&self) -> bool {
         self.gates
             .lock()

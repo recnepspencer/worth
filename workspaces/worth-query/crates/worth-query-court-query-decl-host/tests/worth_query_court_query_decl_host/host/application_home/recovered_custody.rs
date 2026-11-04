@@ -20,6 +20,7 @@ fn recovered_original_custody_reaches_service_and_release_stays_released() {
 fn continued_recovered_custody_closes_cooperatively_and_resumes_after_reopen() {
     journey(true, true);
 }
+struct ContinuedBoundaryReached;
 fn journey(continue_original: bool, close_prepared: bool) {
     use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome;
     let location = fixture::location();
@@ -116,14 +117,21 @@ fn journey(continue_original: bool, close_prepared: bool) {
             .runtime()
             .world_operation_control_for_test()
             .observe_recovered_continued_for_test(|| {
-                panic!("actual Continued acknowledged; occurrence not submitted")
+                std::panic::panic_any(ContinuedBoundaryReached)
             });
-        let interrupted = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            recovery.continue_original_in_request(&execution)
+        let interrupted = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| loop {
+            match recovery.continue_original_in_request(&execution).unwrap() {
+                Continuation::Pending(custody) => drop(custody),
+                other => {
+                    panic!("the disposition observer must interrupt before occurrence: {other:?}")
+                }
+            }
         }));
+        let failure =
+            interrupted.expect_err("actual control interrupts the acknowledged disposition");
         assert!(
-            interrupted.is_err(),
-            "actual control interrupts the acknowledged disposition"
+            failure.is::<ContinuedBoundaryReached>(),
+            "only the real acknowledged-disposition callback may interrupt this fixture"
         );
         drop(observation);
         drop(recovery);
