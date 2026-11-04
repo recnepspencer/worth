@@ -56,9 +56,10 @@ def constructor_orders(root):
     orders = {}
     for path in door_files(root):
         text = path.read_text(encoding='utf-8')
+        source = None
         for block in re.finditer(r'impl(?:<[^{]*?>)?\s+(\w+)[^{]*\{\s*#\[doc\(hidden\)\]\s*pub fn new_for_test\(', text):
-            source = Source(text[block.end() - 1:])
-            params = [source.value(a) for a, _b in split_top(source, 0)]
+            source = source or Source(text)
+            params = [source.value(a) for a, _b in split_top(source, source.index(block.end() - 1))]
             named = not all(re.fullmatch(r'field\d+', p) for p in params)
             orders[block.group(1)] = (named, params)
     return orders
