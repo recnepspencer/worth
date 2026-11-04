@@ -144,6 +144,7 @@ import "./signals_runtime/inputs/controller_contract_internal_boundary.test.mjs"
 import "./signals_runtime/inputs/public_input_requiredness_contract.test.mjs";
 import "./signals_runtime/inputs/public_input_authority_class.test.mjs";
 import "./signals_runtime/inputs/graph_native_input_operations.test.mjs";
+import "./signals_runtime/inputs/valid_value_decoding.test.mjs";
 import "./signals_runtime/export_restore/graph_native_export_restore_equivalence.test.mjs";
 import "./signals_runtime/export_restore/public_boundary_naming_truth.test.mjs";
 import "./signals_runtime/export_restore/contract_dependency_explanation.test.mjs";
