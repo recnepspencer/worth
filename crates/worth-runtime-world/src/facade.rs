@@ -125,7 +125,8 @@ pub use crate::recovery::{
     ProductUnpublishedRetentionPosture, RecoveryContinuationContract, RuntimeWorldRecoveryDenial,
     RuntimeWorldSettledRelationalAdoptionDenial, WorldRecoveredContinuationDenial,
     WorldRecoveredContinuationOutcome, WorldRecoveredReleaseOutcome,
-    WorldRecoveredUnpublishedEffects, WorldReleasedRecoveredEffects,
+    WorldRecoveredUnpublishedEffects, WorldReleasedEffects, WorldReleasedOriginal,
+    WorldReleasedOriginalPage,
 };
 
 pub use crate::inspection::{

@@ -591,6 +591,7 @@ workspaces/worth-store/crates/worth-store-application/ workspaces/worth-query/cr
 workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/crates/worth-store-testkit-application-oracle/src/host_observation/opening.rs
 workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/crates/worth-store-testkit-application-oracle/src/host_interruption/opening.rs
 workspaces/worth-query/crates/worth-query-host/ workspaces/worth-store/crates/worth-store-testkit-application-oracle/src/host_observation/opening.rs
+workspaces/worth-query/crates/worth-query-host/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/host_oracle/admission_retry/readmission.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-store/crates/worth-store-testkit-application-oracle/src/host_observation/projection.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-store/crates/worth-store-testkit-application-oracle/src/host_interruption/publication.rs
 crates/worth-runtime-world/ workspaces/worth-store/crates/worth-store-testkit-application-oracle/src/host_interruption/publication.rs
@@ -604,6 +605,7 @@ workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/cr
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/host_oracle/execution.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/host_oracle/continuation.rs
 workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/host_oracle/opening.rs
+workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/host_oracle/no_effect_release.rs
 
 crates/worth-runtime-world/ workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/host/application_home/recovered_custody/original.rs
 crates/worth-runtime-world/ workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/host/application_home/recovered_custody/disposition.rs

@@ -1,7 +1,7 @@
 //! Distinct cold-recovered custody; it never fabricates a live Native result.
 use crate::branch::ProductBranchObservation;
 use crate::durability::{
-    ActualWorldPublication, AdmittedWorldOpenAttempt, WorldDurableArtifact,
+    AdmittedWorldOpenAttempt, WorldCommittedPublication, WorldDurableArtifact,
     WorldDurableMediumBinding,
 };
 use crate::identity::{
@@ -9,16 +9,18 @@ use crate::identity::{
     ProductUnpublishedOwnerEffectsIdentity,
 };
 use std::sync::{Arc, Mutex};
-use worth_proof::{DurablyCommitted, RelationalPublicationReadmitted};
+use worth_proof::RelationalPublicationReadmitted;
 use worth_relational::facade::durability::{
     ReadmittedRelationalAssociatedEffect, RelationalRecoveredPublicationCustody,
 };
 
 pub(crate) mod continuation;
 mod release;
+mod release_preparation;
 pub(crate) use continuation::PreparedRecoveredPublication;
 pub use continuation::{WorldRecoveredContinuationDenial, WorldRecoveredContinuationOutcome};
-pub use release::{WorldRecoveredReleaseOutcome, WorldReleasedRecoveredEffects};
+pub use release::WorldRecoveredReleaseOutcome;
+pub(crate) use release_preparation::RecoveredReleaseDestination;
 
 #[derive(Debug)]
 pub(crate) enum RecoveredNativeCustody {
@@ -55,7 +57,8 @@ pub(crate) struct RecoveredWorldPublicationRecord {
     pub(crate) native: Mutex<RecoveredNativeCustody>,
     pub(crate) claimed: Mutex<bool>,
     pub(crate) release: Mutex<Option<WorldDurableArtifact>>,
-    pub(crate) committed_release: Mutex<Option<DurablyCommitted<ActualWorldPublication>>>,
+    pub(crate) committed_release: Mutex<Option<WorldCommittedPublication>>,
+    pub(crate) prepared_release: Mutex<Option<RecoveredReleaseDestination>>,
     pub(crate) continuation: Mutex<Option<Box<PreparedRecoveredPublication>>>,
     pub(crate) metadata_bytes: usize,
 }
@@ -215,6 +218,7 @@ impl RecoveredWorldPublicationRecord {
             claimed: Mutex::new(false),
             release: Mutex::new(None),
             committed_release: Mutex::new(None),
+            prepared_release: Mutex::new(None),
             continuation: Mutex::new(None),
             metadata_bytes,
         })

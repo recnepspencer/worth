@@ -29,14 +29,17 @@ impl Owner {
     }
 }
 impl Stage {
-    fn advance(self) -> Result<Released, ReleaseFailure> {
+    fn advance(
+        self,
+        phase: &worth_query_host::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
+    ) -> Result<Released, ReleaseFailure> {
         match self {
             Self::Pending(owner) => owner
-                .release_obligations(0)
+                .release_obligations(phase, 0)
                 .map(|receipt| Released::Creation { _receipt: receipt }),
             Self::Refused(ReleaseFailure::Recovery(failure)) => failure
                 .into_recovery()
-                .release_obligations(0)
+                .release_obligations(phase, 0)
                 .map(|receipt| Released::Creation { _receipt: receipt }),
             Self::Refused(ReleaseFailure::OwnerCleanup(failure)) => failure
                 .into_cleanup()
@@ -105,12 +108,12 @@ pub(super) fn release<'host>(
     } = owner;
     let mut stage = Some(stage);
     let mut result = None;
-    let advancement = host.with_application_advancement(caller.scope, |_| {
+    let advancement = host.with_application_advancement(caller.scope, |phase| {
         result = Some(
             stage
                 .take()
                 .expect("original native creation owner")
-                .advance(),
+                .advance(&phase),
         );
     });
     match (result, advancement) {

@@ -102,6 +102,8 @@ impl WorthQueryProductUnpublishedRecovery {
 /// Why releasing an unpublished product's recovery record was refused.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryProductUnpublishedRecoveryReleaseDenial {
+    OriginalBinding(crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenialKind),
+    OriginalBindingMismatch,
     Execution(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
     RecoveredPending,
     RecoveredRefused,

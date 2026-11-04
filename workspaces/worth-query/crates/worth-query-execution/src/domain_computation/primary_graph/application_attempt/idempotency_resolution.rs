@@ -24,6 +24,7 @@ use crate::domain_computation::primary_graph::{
 /// anything.
 #[derive(Debug)]
 pub enum WorthQueryApplicationIdempotencyResolution {
+    ReleasedOriginal(crate::domain_computation::primary_graph::WorthQueryReleasedApplicationEffect),
     ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
     ProductPreparationPending(crate::domain_computation::WorthQueryProductPreparationPending),
     /// No commit is recorded under this key.
@@ -37,6 +38,7 @@ pub enum WorthQueryApplicationIdempotencyResolution {
 /// carries authority to settle the workflow's operation transition.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryGuardedWorkflowOperationCustody {
+    ReleasedOriginal(crate::domain_computation::primary_graph::WorthQueryReleasedApplicationEffect),
     Unseen,
     Committed(WorthQueryApplicationCommitReceipt),
     RecoveredCommitted(crate::domain_computation::primary_graph::provider::WorthQueryRecoveredApplicationCommitReceipt),
@@ -165,6 +167,9 @@ where
                 } else {
                     WorthQueryGuardedWorkflowOperationCustody::RecoveredCommitted(receipt)
                 }
+            }
+            Owner::ReleasedOriginal(original) => {
+                WorthQueryGuardedWorkflowOperationCustody::ReleasedOriginal(original)
             }
             Owner::Unseen => WorthQueryGuardedWorkflowOperationCustody::Unseen,
             Owner::IntentDrift => WorthQueryGuardedWorkflowOperationCustody::IntentDrift,
@@ -297,6 +302,7 @@ where
             .zip(resolutions)
             .map(|((read_for, _binding), resolution)| match resolution {
                 Ok(WorthQueryProviderIdempotencyResolution::Readmitted(receipt)) => Ok(WorthQueryAdmittedIdempotencyRead::mint(read_for, WorthQueryApplicationIdempotencyResolution::RecoveredCommitted(receipt))),
+                Ok(WorthQueryProviderIdempotencyResolution::ReleasedOriginal(original)) => Ok(WorthQueryAdmittedIdempotencyRead::mint(read_for, WorthQueryApplicationIdempotencyResolution::ReleasedOriginal(original))),
                 Ok(WorthQueryProviderIdempotencyResolution::Absent) => {
                     Ok(WorthQueryAdmittedIdempotencyRead::mint(
                         read_for,

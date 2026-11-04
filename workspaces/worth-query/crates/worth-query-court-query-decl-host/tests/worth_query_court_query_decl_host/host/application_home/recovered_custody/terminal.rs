@@ -6,6 +6,7 @@ pub(super) fn verify(
     original: &OriginalCustody,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     continue_original: bool,
+    released: Option<&worth_query_host::facade::primary_graph::WorthQueryReleasedApplicationEffect>,
 ) {
     let original_meaning = original.native_meaning.clone();
     let (_, live) = scope();
@@ -31,6 +32,13 @@ pub(super) fn verify(
                 panic!("continued occurrence must remain original and published once: {other:?}")
             }
         }
+    }
+    if let Some(released) = released {
+        let recovered = super::released::observe(&home, context, original);
+        assert_eq!(
+            &recovered, released,
+            "checkpoint and reopen preserve every original binding and physical-source field"
+        );
     }
     assert_eq!(context.contacts.load(Ordering::SeqCst), 2);
     assert_eq!(context.initialized.load(Ordering::SeqCst), 1);

@@ -141,6 +141,16 @@ fn journey(continuing: bool, interrupt_continued: bool) {
         "recovered disposition cannot run a handler"
     );
     let selected = completed.state.unwrap();
+    let released = if continuing {
+        None
+    } else {
+        let observed = session.send(Request::ObserveReleased { key, value });
+        assert_eq!(
+            observed.contacts, 0,
+            "terminal retries never contact the handler"
+        );
+        Some(observed.disposition.unwrap())
+    };
     assert!(selected.custody.is_empty());
     if continuing {
         assert_eq!(selected.head.generation, original.head.generation + 1);
@@ -164,6 +174,15 @@ fn journey(continuing: bool, interrupt_continued: bool) {
     assert_eq!(stable.head, selected.head);
     assert_eq!(stable.occurrences.len(), selected.occurrences.len());
     assert_eq!(recovered.contacts, 0);
+    if let Some(released) = released {
+        let observed = session.send(Request::ObserveReleased { key, value });
+        assert_eq!(observed.contacts, 0);
+        assert_eq!(
+            observed.disposition.as_ref(),
+            Some(&released),
+            "kill and reopen preserve the complete terminal binding and original source"
+        );
+    }
     if continuing {
         let retry = session.send(Request::ContinueOriginal {
             key,

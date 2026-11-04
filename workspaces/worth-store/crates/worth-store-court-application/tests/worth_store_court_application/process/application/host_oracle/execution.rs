@@ -88,6 +88,9 @@ pub(super) fn disposition(home: &OracleHome, command: &HostCommand) -> Option<Di
                 Resolution::ProductPreparationPending(pending) => {
                     panic!("original remains pending: {pending:?}")
                 }
+                Resolution::ReleasedOriginal(original) => {
+                    panic!("released original cannot be continued: {original:?}")
+                }
                 Resolution::Unseen => panic!("original settlement key is absent"),
                 Resolution::IntentDrift => panic!("original settlement intent changed"),
             }

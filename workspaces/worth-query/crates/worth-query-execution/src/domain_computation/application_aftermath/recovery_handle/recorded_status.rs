@@ -33,6 +33,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     claimed, terminal,
                 )))
             }
+            WorthQueryApplicationIdempotencyResolution::ReleasedOriginal(_) => Ok(None),
             WorthQueryApplicationIdempotencyResolution::ProductUnpublished(_)
             | WorthQueryApplicationIdempotencyResolution::ProductPreparationPending(_)
             | WorthQueryApplicationIdempotencyResolution::Unseen

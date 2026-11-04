@@ -54,10 +54,11 @@ where
             let mut native = self.description.request_view(request, &self.installed_action);
             let prepared = native.authorize_fixed_source::<Program, Root>(phase, &self.runtime, None)?;
             let read = native.read_recovery_idempotency(phase, &prepared)?;
-            let Resolution::RecoveredCommitted(receipt) = read.into_resolution() else {
-                return Err(WorthQueryApplicationRecoveryRequestDenial::Recovery(
-                    RecoveryDenial::BindingMismatch,
-                ));
+            let receipt = match read.into_resolution() {
+                Resolution::RecoveredCommitted(receipt) => receipt,
+                Resolution::ReleasedOriginal(original) => return Err(WorthQueryApplicationRecoveryRequestDenial::ReleasedOriginal(original)),
+                Resolution::ProductUnpublished(_) | Resolution::ProductPreparationPending(_)
+                | Resolution::IntentDrift | Resolution::Unseen => return Err(WorthQueryApplicationRecoveryRequestDenial::Recovery(RecoveryDenial::BindingMismatch)),
             };
             if !super::receipt_correspondence::matches_retained_original(original, &receipt) {
                 return Err(WorthQueryApplicationRecoveryRequestDenial::Recovery(

@@ -5,6 +5,7 @@ use crate::recovery::{
 };
 
 use super::RuntimeWorldOwnerRoot;
+mod memory_release;
 mod recovered_continuation;
 mod recovered_publication;
 
@@ -91,7 +92,11 @@ where
         handle: &ProductUnpublishedRecoveryHandle,
     ) -> Option<Vec<OwnerRetirementWork>> {
         let work = self.reserve_recovery_retirement_work(handle).ok()?;
-        let released = self.state.recovery.cleanup_record(handle, None).ok()?;
+        let released = self
+            .state
+            .recovery
+            .cleanup_record(handle, None, None, || {})
+            .ok()?;
         Some(self.drain_released_occurrence(&released, work))
     }
 
@@ -247,35 +252,29 @@ where
     }
     fn release_effects(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         handle: &ProductUnpublishedRecoveryHandle,
         minimum_age_ticks: u64,
+        native: Option<worth_relational::facade::durability::ObservedRelationalMemoryCommit>,
+    ) -> Result<crate::recovery::WorldReleasedEffects, crate::recovery::RuntimeWorldRecoveryDenial>
+    {
+        self.release_memory_original(execution, handle, minimum_age_ticks, native)
+    }
+    fn released_original_page(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        after: Option<&crate::identity::ProductUnpublishedOwnerEffectsIdentity>,
+        maximum: std::num::NonZeroUsize,
     ) -> Result<
-        crate::recovery::ProductUnpublishedCleanup,
-        crate::recovery::RuntimeWorldRecoveryDenial,
+        crate::recovery::WorldReleasedOriginalPage,
+        crate::durability::WorldDurableMediumDenial,
     > {
-        if self.state.durable.is_some() {
-            return Err(crate::recovery::RuntimeWorldRecoveryDenial::ReopenRequired);
-        }
         let _operation = self
             .reserve_recovery_operation_if_open_and_bootstrapped()
-            .map_err(|_| super::super::RuntimeWorldOwnerUnavailable::new())?;
-        let work = self.reserve_recovery_retirement_work(handle)?;
-        let mut unpublished_history_candidates = Vec::new();
-        unpublished_history_candidates
-            .try_reserve_exact(1)
-            .map_err(|_| crate::recovery::RuntimeWorldRecoveryDenial::OutputCapacityExhausted)?;
-        let released = self
-            .state
+            .map_err(|()| crate::durability::WorldDurableMediumDenial::Unavailable)?;
+        self.state
             .recovery
-            .cleanup_record(handle, Some((self.state.clock.now(), minimum_age_ticks)))?;
-        if let Some(commit) = released.unpublished_commit() {
-            unpublished_history_candidates.push(commit.clone());
-        }
-        let owner_retirement_work = self.drain_released_occurrence(&released, work);
-        Ok(crate::recovery::ProductUnpublishedCleanup::new(
-            unpublished_history_candidates,
-            owner_retirement_work,
-        ))
+            .released_original_page(execution, after, maximum)
     }
     fn continue_effects(
         &self,

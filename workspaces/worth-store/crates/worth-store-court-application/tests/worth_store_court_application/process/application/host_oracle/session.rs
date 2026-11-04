@@ -131,6 +131,23 @@ fn host_oracle_service_child() {
         let mut closed = false;
         match command {
             Request::Observe => (),
+            Request::ObserveReleased { key, value } => {
+                disposition = Some(super::protocol::Disposition::ReleasedOriginal(
+                    super::released_original::terminal_projection(
+                        home.as_ref().unwrap(),
+                        key,
+                        value,
+                        &execution,
+                    ),
+                ));
+            }
+            Request::AbandonOriginal { key, value } => {
+                let home = home.as_ref().unwrap();
+                let before = host_observation::projection::observe(home.runtime(), &execution);
+                let outcome =
+                    host_interruption::publication::abandon_after_owner(home.runtime(), key, value);
+                mutation = Some(host_observation::receipts::observe(&outcome, &before.head));
+            }
             Request::ContinueOriginal {
                 key,
                 value,

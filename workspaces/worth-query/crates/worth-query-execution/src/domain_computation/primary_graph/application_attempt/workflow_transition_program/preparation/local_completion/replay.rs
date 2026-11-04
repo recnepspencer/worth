@@ -38,7 +38,8 @@ where
         WorthQueryApplicationIdempotencyResolution::IntentDrift => return Ok(Some(
             WorkflowProgressOutcome::Application(WorthQueryApplicationUncommitted::Denied(
                 crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::idempotency_intent_drift())))),
-        WorthQueryApplicationIdempotencyResolution::Unseen => {
+        WorthQueryApplicationIdempotencyResolution::ReleasedOriginal(_) => return Ok(Some(WorkflowProgressOutcome::Application(WorthQueryApplicationUncommitted::Denied(crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::original_effect_released())))),
+            WorthQueryApplicationIdempotencyResolution::Unseen => {
             super::super::super::publication::transition_entity_in_receipt(original, required.transition_identity(), &locator)
                 .map(|_| original.clone())
         }

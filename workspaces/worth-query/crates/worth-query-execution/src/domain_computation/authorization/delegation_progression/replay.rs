@@ -180,6 +180,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             )?
             .into_resolution();
         Ok(match resolution {
+            WorthQueryApplicationIdempotencyResolution::ReleasedOriginal(_) => Some(WorthQueryApplicationCommitOutcome::Denied(crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::original_effect_released())),
             WorthQueryApplicationIdempotencyResolution::ProductUnpublished(effects) => Some(
                 WorthQueryApplicationCommitOutcome::ProductUnpublished(effects),
             ),

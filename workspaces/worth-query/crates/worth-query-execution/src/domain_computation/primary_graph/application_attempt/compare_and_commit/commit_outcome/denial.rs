@@ -28,6 +28,7 @@ mod workflow;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationCommitDenialKind {
     IdempotencyPreparationBusy,
+    OriginalEffectReleased,
     StorageUnavailable(worth_relational::facade::storage::RelationalStorageUnavailable),
     /// The execution owner refused preparation before any commit effect.
     ExecutionResource {

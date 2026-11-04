@@ -15,6 +15,8 @@ pub enum RuntimeWorldRecoveryDenial {
     CallerCapabilityLive,
     SettlementRequired,
     SettlementEvidenceUnavailable,
+    OriginalSourceUnavailable,
+    OriginalSourceMismatch,
     OutputCapacityExhausted,
 }
 impl From<crate::lifecycle::RuntimeWorldOwnerUnavailable> for RuntimeWorldRecoveryDenial {

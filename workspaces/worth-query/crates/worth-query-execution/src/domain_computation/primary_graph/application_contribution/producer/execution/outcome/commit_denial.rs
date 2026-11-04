@@ -66,6 +66,7 @@ pub(super) fn stopped(
             | Kind::CandidateIdentityExhausted
             | Kind::IndexMaintenanceBudgetExceeded
             | Kind::IndexGenerationIdentityExhausted
+            | Kind::OriginalEffectReleased
             | Kind::IdempotencyIntentUnverifiable
             | Kind::OperationBodyExecutionRequired
             | Kind::SignedCreationAuthentication { .. }

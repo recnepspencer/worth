@@ -348,6 +348,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationRequest<'_, '_, '_, Schema>
                     WorthQueryApplicationIdempotencyResolution::IntentDrift => {
                         return Err(Denial::IdempotencyIntentDrift)
                     }
+                    WorthQueryApplicationIdempotencyResolution::ReleasedOriginal(_) => return Err(Denial::Idempotency(worth_query_execution::facade::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial::original_effect_released())),
                     WorthQueryApplicationIdempotencyResolution::Unseen => {}
                 }
                 let prepared = prepare(phase, admission).map_err(Denial::Preparation)?;

@@ -103,6 +103,7 @@ where
             WorthQueryApplicationIdempotencyResolution::RecoveredCommitted(receipt) => {
                 WorkflowProposalOutcome::RecoveredCommitted(receipt)
             }
+            WorthQueryApplicationIdempotencyResolution::ReleasedOriginal(_) => WorkflowProposalOutcome::Application(WorthQueryApplicationUncommitted::Denied(crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::original_effect_released())),
             WorthQueryApplicationIdempotencyResolution::Unseen => return Ok(None),
             WorthQueryApplicationIdempotencyResolution::ProductUnpublished(owner) => {
                 WorkflowProposalOutcome::Application(

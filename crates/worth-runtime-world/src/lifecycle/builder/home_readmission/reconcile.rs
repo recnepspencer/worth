@@ -200,6 +200,23 @@ where
             binding.retain_checkpoint_occurrence(origin);
             insert(&mut observations, &open.commit, &selected, execution)?;
         }
+        for disposition in recovered.dispositions.values() {
+            if let RecoveredCustodyDisposition::Released(_) = disposition.disposition() {
+                let open = disposition.open();
+                let expected = observations
+                    .get(&open.expected.commit)
+                    .ok_or(Denial::MissingPredecessor)?;
+                root.state
+                    .recovery
+                    .readmit_released_original(
+                        execution,
+                        disposition,
+                        expected,
+                        effects.take(&open.association.attempt()),
+                    )
+                    .map_err(Denial::Medium)?;
+            }
+        }
         for (open, (attempt, commit, identity), index, slot_index) in opens.values() {
             let expected = observations
                 .get(&open.expected.commit)

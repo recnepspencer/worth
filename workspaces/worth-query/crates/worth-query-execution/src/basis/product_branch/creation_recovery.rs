@@ -71,6 +71,9 @@ impl WorthQueryProductBranchCreationRecoveryInspection {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryProductBranchRecoveryDenial {
+    ForeignPhase,
+    OriginalSourceUnavailable,
+    OriginalSourceMismatch,
     ReopenRequired,
     RecoveredCustodyRequired,
     OwnerUnavailable,
@@ -140,11 +143,25 @@ impl WorthQueryProductBranchCreationRecovery {
 
     pub fn release_obligations(
         mut self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         minimum_age_ticks: u64,
     ) -> Result<
         WorthQueryProductBranchCreationRecoveryRelease,
         WorthQueryProductBranchCreationRecoveryReleaseFailure,
     > {
+        let execution = match phase.execution_request_for(&self.runtime) {
+            Ok(execution) => execution,
+            Err(_) => {
+                return Err(
+                    WorthQueryProductBranchCreationRecoveryReleaseFailure::Recovery(
+                        WorthQueryProductBranchCreationRecoveryFailure {
+                            denial: WorthQueryProductBranchRecoveryDenial::ForeignPhase,
+                            recovery: self,
+                        },
+                    ),
+                )
+            }
+        };
         let cleanup_reservation = match self.runtime.reserve_owner_cleanup_for_creation() {
             Ok(reservation) => reservation,
             Err(_) => {
@@ -161,9 +178,10 @@ impl WorthQueryProductBranchCreationRecovery {
         drop(self.effects.take());
         match self
             .recovery
-            .release_effects(&self.handle, minimum_age_ticks)
+            .release_effects(&execution, &self.handle, minimum_age_ticks, None)
         {
-            Ok(cleanup) => {
+            Ok(released) => {
+                let (_original, cleanup) = released.into_parts();
                 let cleanup_identity = cleanup_reservation.install_unpublished(cleanup);
                 WorthQueryProductBranchOwnerCleanup::new(self.runtime.clone(), cleanup_identity)
                     .retry()
@@ -343,6 +361,12 @@ pub(crate) fn map_recovery_denial(
         Denial::TooYoung => WorthQueryProductBranchRecoveryDenial::TooYoung,
         Denial::ClockRegressed => WorthQueryProductBranchRecoveryDenial::ClockRegressed,
         Denial::CallerCapabilityLive => WorthQueryProductBranchRecoveryDenial::CallerCapabilityLive,
+        Denial::OriginalSourceUnavailable => {
+            WorthQueryProductBranchRecoveryDenial::OriginalSourceUnavailable
+        }
+        Denial::OriginalSourceMismatch => {
+            WorthQueryProductBranchRecoveryDenial::OriginalSourceMismatch
+        }
         Denial::SettlementRequired => WorthQueryProductBranchRecoveryDenial::SettlementRequired,
         Denial::SettlementEvidenceUnavailable => {
             WorthQueryProductBranchRecoveryDenial::SettlementEvidenceUnavailable

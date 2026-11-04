@@ -25,10 +25,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         };
         let cause = match port.release_recovered_effects(execution, effects) {
             Outcome::Released(released) => {
+                let (original, cleanup) = released.into_parts();
                 self.primary_provider
                     .unpublished_idempotency_disposition()
-                    .finish_recovered(&handle);
-                let identity = reservation.install_unpublished(released.into_cleanup());
+                    .finish_recovered_release(&handle, original);
+                let identity = reservation.install_unpublished(cleanup);
                 return Ok(crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanup::new(self.product_runtime.clone(), identity));
             }
             Outcome::AdmissionRefused { cause, custody } => {

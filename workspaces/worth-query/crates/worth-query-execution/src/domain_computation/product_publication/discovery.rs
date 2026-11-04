@@ -175,6 +175,31 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             }
             Err(denial) => return Err(recovery_failure(recovery, denial.into())),
         };
+        let (native, original_binding) =
+            match self.primary_provider.prepare_memory_released_binding(
+                execution,
+                effects.component_results().relational_settlement(),
+                provider_release.is_some(),
+            ) {
+                Ok(prepared) => prepared,
+                Err(cause) => {
+                    return Err(recovery_failure(
+                        recovery,
+                        WorthQueryProductUnpublishedRecoveryReleaseDenial::OriginalBinding(cause),
+                    ))
+                }
+            };
+        if let (Some(reservation), Some(binding)) = (&provider_release, &original_binding) {
+            if reservation
+                .validate_original(binding, effects.expected_head())
+                .is_err()
+            {
+                return Err(recovery_failure(
+                    recovery,
+                    WorthQueryProductUnpublishedRecoveryReleaseDenial::OriginalBindingMismatch,
+                ));
+            }
+        }
         let reservation = if effects.destination_branch().is_some() {
             self.product_runtime.reserve_owner_cleanup_for_creation()
         } else {
@@ -191,17 +216,23 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             }
         };
         let (handle, recovery_port, disposition) = recovery.into_release_parts();
-        let cleanup = match recovery_port.release_effects(&handle, minimum_age_ticks) {
-            Ok(cleanup) => cleanup,
-            Err(denial) => {
-                return Err(recovery_failure(
-                    WorthQueryProductUnpublishedRecovery::new(handle, recovery_port, disposition),
-                    denial.into(),
-                ))
-            }
-        };
+        let cleanup =
+            match recovery_port.release_effects(execution, &handle, minimum_age_ticks, native) {
+                Ok(cleanup) => cleanup,
+                Err(denial) => {
+                    return Err(recovery_failure(
+                        WorthQueryProductUnpublishedRecovery::new(
+                            handle,
+                            recovery_port,
+                            disposition,
+                        ),
+                        denial.into(),
+                    ))
+                }
+            };
+        let (original, cleanup) = cleanup.into_parts();
         if let Some(provider_release) = provider_release {
-            provider_release.finish();
+            provider_release.finish(original_binding, original);
         }
         let cleanup_identity = reservation.install_unpublished(cleanup);
         Ok(crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanup::new(

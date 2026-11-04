@@ -8,7 +8,7 @@ pub(super) fn apply(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     continue_original: bool,
     close_prepared: bool,
-) {
+) -> Option<worth_query_host::facade::primary_graph::WorthQueryReleasedApplicationEffect> {
     let original_identity = original.identity.clone();
     let original_attempt = original.attempt.clone();
     let original_meaning = original.native_meaning.clone();
@@ -118,7 +118,17 @@ pub(super) fn apply(
         }
         assert_eq!(balance(home.runtime(), &live), 8);
     }
+    let released = if continue_original {
+        None
+    } else {
+        Some(super::released::observe(&home, context, original))
+    };
+    if !continue_original {
+        home.checkpoint(execution)
+            .unwrap_or_else(|cause| panic!("released original checkpoint: {cause:?}"));
+    }
     drop(recovery);
     assert_eq!(context.contacts.load(Ordering::SeqCst), 2);
     drop(home);
+    released
 }

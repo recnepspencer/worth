@@ -314,7 +314,7 @@ pub use crate::domain_computation::primary_graph::{
 };
 pub use crate::domain_computation::primary_graph::{
     WorthQueryRecoveredAftermathCausality, WorthQueryRecoveredApplicationCommitReceipt,
-    WorthQueryRecoveredDispatchOutbox,
+    WorthQueryRecoveredDispatchOutbox, WorthQueryReleasedApplicationEffect,
 };
 
 pub use crate::domain_computation::application_aftermath::{

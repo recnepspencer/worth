@@ -276,7 +276,7 @@ pub use super::invariant_installation::{
 };
 pub use super::provider::{
     WorthQueryRecoveredAftermathCausality, WorthQueryRecoveredApplicationCommitReceipt,
-    WorthQueryRecoveredDispatchOutbox,
+    WorthQueryRecoveredDispatchOutbox, WorthQueryReleasedApplicationEffect,
 };
 mod decision_read;
 pub use super::merge_unique_values::{

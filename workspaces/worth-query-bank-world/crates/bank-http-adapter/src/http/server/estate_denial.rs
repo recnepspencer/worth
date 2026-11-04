@@ -80,6 +80,9 @@ fn idempotency_denial(denial: BankEstateIdempotencyResolutionDenial) -> BankHttp
     use BankHttpDenialKind as Denial;
     use BankHttpNextAction as Next;
     let (denial, next) = match denial {
+        Idempotency::OriginalEffectReleased => {
+            (Denial::OriginalEffectReleased, Next::ContactOperator)
+        }
         Idempotency::PreparationBusy => (Denial::Unavailable, Next::Retry),
         Idempotency::ExecutionDenied(kind) => {
             return super::mutation_application::pending_execution_stop(kind)

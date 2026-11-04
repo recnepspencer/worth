@@ -22,6 +22,7 @@ fn continued_recovered_custody_closes_cooperatively_and_resumes_after_reopen() {
 }
 mod disposition;
 mod original;
+mod released;
 mod terminal;
 
 type Home = worth_query_host::facade::WorthQueryApplicationHome<
@@ -50,12 +51,18 @@ fn journey(continue_original: bool, close_prepared: bool) {
     let lease = checkpoint_capture::lease(128 * 1024 * 1024);
     let execution = worth_execution::ExecutionRequest::leased(&lease);
     let original = original::capture(&context, &execution);
-    disposition::apply(
+    let released = disposition::apply(
         &context,
         &original,
         &execution,
         continue_original,
         close_prepared,
     );
-    terminal::verify(&context, &original, &execution, continue_original);
+    terminal::verify(
+        &context,
+        &original,
+        &execution,
+        continue_original,
+        released.as_ref(),
+    );
 }

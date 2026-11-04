@@ -3,7 +3,10 @@ use worth_query_host::facade::admission::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
 };
 
-use super::super::super::protocol::{BankHttpCommitDisposition, BankHttpElevationRequestOutcome};
+use super::super::super::protocol::{
+    BankHttpCommitDisposition, BankHttpDenial, BankHttpDenialKind, BankHttpElevationRequestOutcome,
+    BankHttpNextAction,
+};
 use super::super::authenticated_owner::BankHttpAuthenticatedOwner;
 use super::super::authentication::BankHttpApplicationAuthenticator;
 use super::super::elevation_registry::{
@@ -102,6 +105,19 @@ where
         }
         BankEstateElevationRequestOutcome::TimedOut => {
             return (request_denied(Some(request_id), deadline_exceeded())).into();
+        }
+        BankEstateElevationRequestOutcome::Denied {
+            kind: BankCommitDenialKind::OriginalEffectReleased,
+            ..
+        } => {
+            return (request_denied(
+                Some(request_id),
+                BankHttpDenial::new(
+                    BankHttpDenialKind::OriginalEffectReleased,
+                    BankHttpNextAction::ContactOperator,
+                ),
+            ))
+            .into();
         }
         BankEstateElevationRequestOutcome::Denied {
             kind: BankCommitDenialKind::IdempotencyIntentDrift,

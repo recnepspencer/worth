@@ -143,7 +143,8 @@ where
         )?
         .into_resolution();
     Ok(match resolution {
-        WorthQueryApplicationIdempotencyResolution::Unseen => None,
+        WorthQueryApplicationIdempotencyResolution::ReleasedOriginal(_) => return Ok(Some(WorkflowProgressOutcome::Application(WorthQueryApplicationUncommitted::Denied(crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::original_effect_released())))),
+            WorthQueryApplicationIdempotencyResolution::Unseen => None,
         WorthQueryApplicationIdempotencyResolution::ProductUnpublished(owner) => {
             Some(WorkflowProgressOutcome::Application(
                 WorthQueryApplicationUncommitted::ProductUnpublished(owner),

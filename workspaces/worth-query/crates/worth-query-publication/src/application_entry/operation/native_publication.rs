@@ -157,7 +157,8 @@ impl<Outcome, Completion, AdmissionDenial>
                 }
             }
             Resolution::Unseen => Ok(NativeKeyedProgress::Progress { proved_abort: None }),
-            resolution @ (Resolution::IntentDrift
+            resolution @ (Resolution::ReleasedOriginal(_)
+            | Resolution::IntentDrift
             | Resolution::ProductPreparationPending(_)
             | Resolution::ProductUnpublished(_)) => Ok(NativeKeyedProgress::Terminal(resolution)),
         }

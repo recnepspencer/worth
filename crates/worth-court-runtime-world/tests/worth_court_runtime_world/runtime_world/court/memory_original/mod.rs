@@ -55,7 +55,16 @@ fn older_memory_original_survives_an_unrelated_unsealed_publication() {
     let recovery = court.world.recovery_port();
     let handle = effects.recovery_handle();
     drop(effects);
-    let cleanup = recovery.release_effects(&handle, 0).unwrap();
+    let cleanup = recovery
+        .release_effects(
+            &execution,
+            &handle,
+            0,
+            court.observe_recovery_original(&execution, &handle),
+        )
+        .unwrap()
+        .into_parts();
+    let (_original, cleanup) = cleanup;
     assert!(cleanup.owner_retirement_work().is_empty());
     drop(cleanup);
     drop((observed, root, original_head));

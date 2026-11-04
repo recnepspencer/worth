@@ -195,6 +195,7 @@ fn classify_kind(kind: Kind) -> Outcome {
         | Kind::IndexGenerationIdentityExhausted
         | Kind::IdempotencyForeignAffinity
         | Kind::IdempotencyIntentDrift
+        | Kind::OriginalEffectReleased
         | Kind::IdempotencyIntentUnverifiable
         | Kind::MutationBindingMismatch
         | Kind::MutationInputMismatch

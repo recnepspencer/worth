@@ -134,6 +134,7 @@ pub enum WorthQueryApplicationRequestMutationDenialKind {
     /// The provider could not resolve the key yet: its snapshot or retention
     /// capacity is in use, or it could not answer. Nothing took effect.
     IdempotencyUnavailable,
+    OriginalEffectReleased,
     /// Execution refused pending-publication recovery while resolving this key.
     IdempotencyExecutionDenied(
         Result<
@@ -318,6 +319,7 @@ const fn idempotency_kind(
     use WorthQueryApplicationIdempotencyResolutionDenialKind as Resolution;
     use WorthQueryApplicationRequestMutationDenialKind as Request;
     match kind {
+        Resolution::OriginalEffectReleased => Request::OriginalEffectReleased,
         Resolution::PreparationBusy => Request::IdempotencyPreparationBusy,
         Resolution::ExecutionDenied(kind) => Request::IdempotencyExecutionDenied(kind),
         Resolution::Authorization(kind) => Request::Authorization(kind),

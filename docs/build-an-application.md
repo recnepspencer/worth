@@ -6819,6 +6819,13 @@ Rust return value. Its `ContinueOriginalPublication` action is executed through
 `continue_original_in_request` on the fresh recovery claim: it publishes the
 original occurrence without handler or effect replay. Release first commits its
 original durable disposition. Pending/refused outcomes retain the same owner.
+A released effect-bearing original keeps its idempotency binding. Explicit
+resolution returns `ReleasedOriginal` with the original Native meaning and
+release provenance. It carries no application receipt or adoption authority.
+An ordinary retry refuses with `OriginalEffectReleased` before the handler;
+changed intent still reports drift. Only an actual no-effect release permits
+fresh execution of that key. Memory release preserves the same terminal meaning
+without claiming a durable World association.
 A durable `Continued` disposition excludes release across every subsequent open. Persisted
 workflow, outbox, inbound-completion and aftermath rows refuse cold service;
 compiled workflow declarations alone remain allowed. Missing or incompatible

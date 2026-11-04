@@ -42,7 +42,7 @@ mod idempotency;
 mod original_publication;
 pub use idempotency::{
     WorthQueryRecoveredAftermathCausality, WorthQueryRecoveredApplicationCommitReceipt,
-    WorthQueryRecoveredDispatchOutbox,
+    WorthQueryRecoveredDispatchOutbox, WorthQueryReleasedApplicationEffect,
 };
 use original_publication::OriginalPublication;
 mod inbound_completion;

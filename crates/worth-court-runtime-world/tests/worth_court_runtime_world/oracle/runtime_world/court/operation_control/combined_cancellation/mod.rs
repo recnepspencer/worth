@@ -136,7 +136,14 @@ fn combined_cancellation_retains_actual_owners_without_a_mixed_world() {
                 signal_moved
             );
             drop(retained);
-            recovery.release_effects(&handle, 0).unwrap();
+            recovery
+                .release_effects(
+                    execution,
+                    &handle,
+                    0,
+                    court.observe_recovery_original(execution, &handle),
+                )
+                .unwrap();
             assert_eq!(court.observe(&root), root);
         });
         drop((signal_reference, root));

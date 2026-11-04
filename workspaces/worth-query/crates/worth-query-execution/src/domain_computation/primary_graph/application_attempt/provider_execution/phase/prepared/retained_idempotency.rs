@@ -52,6 +52,11 @@ where
             ))
         }
         Ok(Ok(WorthQueryProviderIdempotencyResolution::Absent)) => None,
+        Ok(Ok(WorthQueryProviderIdempotencyResolution::ReleasedOriginal(_))) => {
+            Some(WorthQueryApplicationCommitOutcome::Denied(
+                WorthQueryApplicationCommitDenial::original_effect_released(),
+            ))
+        }
         Ok(Ok(WorthQueryProviderIdempotencyResolution::Readmitted(receipt))) => Some(
             if super::super::super::aftermath_resolution::recovered_answers_aftermath(
                 aftermath_causality,

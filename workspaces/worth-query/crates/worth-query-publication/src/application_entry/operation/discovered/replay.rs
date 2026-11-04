@@ -43,10 +43,21 @@ where
             let prepared =
                 native.authorize_discovered_source::<P, R>(phase, &self.runtime, None)?;
             let read = native.read_recovery_idempotency(phase, &prepared)?;
-            let Resolution::RecoveredCommitted(receipt) = read.into_resolution() else {
-                return Err(WorthQueryApplicationRecoveryRequestDenial::Recovery(
-                    Recovery::BindingMismatch,
-                ));
+            let receipt = match read.into_resolution() {
+                Resolution::RecoveredCommitted(receipt) => receipt,
+                Resolution::ReleasedOriginal(original) => {
+                    return Err(
+                        WorthQueryApplicationRecoveryRequestDenial::ReleasedOriginal(original),
+                    )
+                }
+                Resolution::ProductUnpublished(_)
+                | Resolution::ProductPreparationPending(_)
+                | Resolution::IntentDrift
+                | Resolution::Unseen => {
+                    return Err(WorthQueryApplicationRecoveryRequestDenial::Recovery(
+                        Recovery::BindingMismatch,
+                    ))
+                }
             };
             if !super::super::receipt_correspondence::matches_retained_original(original, &receipt)
             {

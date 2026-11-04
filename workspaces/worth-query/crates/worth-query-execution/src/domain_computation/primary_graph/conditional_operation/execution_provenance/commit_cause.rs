@@ -30,6 +30,7 @@ pub(super) fn application_commit_cause(
         | Kind::IndexGenerationIdentityExhausted
         | Kind::IdempotencyForeignAffinity
         | Kind::IdempotencyIntentDrift
+        | Kind::OriginalEffectReleased
         | Kind::IdempotencyIntentUnverifiable
         | Kind::MutationBindingMismatch
         | Kind::MutationInputMismatch

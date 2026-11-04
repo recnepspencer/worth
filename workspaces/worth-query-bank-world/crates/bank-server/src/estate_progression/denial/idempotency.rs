@@ -5,6 +5,7 @@ use worth_query_host::facade::primary_graph::{
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankEstateIdempotencyResolutionDenial {
+    OriginalEffectReleased,
     PreparationBusy,
     Authorization(crate::BankAuthorizationDenial),
     ForeignAdmission,
@@ -47,6 +48,9 @@ fn from_kind(
     contributing_cause_count: usize,
 ) -> BankEstateIdempotencyResolutionDenial {
     match kind {
+        WorthQueryApplicationIdempotencyResolutionDenialKind::OriginalEffectReleased => {
+            BankEstateIdempotencyResolutionDenial::OriginalEffectReleased
+        }
         WorthQueryApplicationIdempotencyResolutionDenialKind::PreparationBusy => {
             BankEstateIdempotencyResolutionDenial::PreparationBusy
         }

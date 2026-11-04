@@ -9,6 +9,10 @@ pub(in crate::http::server) fn request_mutation_denial(
 ) -> BankHttpDenial {
     use WorthQueryApplicationRequestMutationDenialKind as Denial;
     match kind {
+        Denial::OriginalEffectReleased => BankHttpDenial::new(
+            BankHttpDenialKind::OriginalEffectReleased,
+            BankHttpNextAction::ContactOperator,
+        ),
         Denial::ExecutionRequest(cause) => super::super::advancement_denial::advancement(cause),
         Denial::IdempotencyPreparationBusy => {
             BankHttpDenial::new(BankHttpDenialKind::Unavailable, BankHttpNextAction::Retry)
@@ -175,6 +179,7 @@ mod tests {
     fn each_idempotency_cause_asks_for_the_action_that_can_succeed() {
         use worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationDenialKind as Authorization;
         let cases = [
+            (Denial::OriginalEffectReleased, BankHttpDenialKind::OriginalEffectReleased, BankHttpNextAction::ContactOperator),
             (
                 Denial::Authorization(Authorization::Stopped(Err(worth_query_host::facade::primary_graph::WorthQueryProviderSessionControlStopKind::TimedOut))),
                 BankHttpDenialKind::DeadlineExceeded,

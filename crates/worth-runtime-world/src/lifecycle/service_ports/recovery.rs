@@ -118,13 +118,27 @@ impl RuntimeWorldRecoveryPort {
     }
     pub fn release_effects(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         handle: &crate::recovery::ProductUnpublishedRecoveryHandle,
         minimum_age_ticks: u64,
+        native: Option<worth_relational::facade::durability::ObservedRelationalMemoryCommit>,
+    ) -> Result<crate::recovery::WorldReleasedEffects, crate::recovery::RuntimeWorldRecoveryDenial>
+    {
+        self.service()?
+            .release_effects(execution, handle, minimum_age_ticks, native)
+    }
+    pub fn released_original_page(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        after: Option<&crate::identity::ProductUnpublishedOwnerEffectsIdentity>,
+        maximum: std::num::NonZeroUsize,
     ) -> Result<
-        crate::recovery::ProductUnpublishedCleanup,
-        crate::recovery::RuntimeWorldRecoveryDenial,
+        crate::recovery::WorldReleasedOriginalPage,
+        crate::durability::WorldDurableMediumDenial,
     > {
-        self.service()?.release_effects(handle, minimum_age_ticks)
+        self.service()
+            .map_err(|_| crate::durability::WorldDurableMediumDenial::Unavailable)?
+            .released_original_page(execution, after, maximum)
     }
     pub fn continue_effects(
         &self,

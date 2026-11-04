@@ -26,6 +26,7 @@ pub(super) fn cleanup_failed_outcome(outcome: Progression, receiver: &crate::dom
         Progression::ProductStale(stale) => Outcome::ProductStale(stale),
         Progression::NoEffect(no_effect) => Outcome::NoEffect(no_effect),
         Progression::Denied(denial) => match denial.kind() {
+            Kind::OriginalEffectReleased => Outcome::Denied(denial),
             Kind::IdempotencyPreparationBusy => {
                 let Outcome::Indeterminate(evidence) = cleanup_indeterminate() else {
                     unreachable!()

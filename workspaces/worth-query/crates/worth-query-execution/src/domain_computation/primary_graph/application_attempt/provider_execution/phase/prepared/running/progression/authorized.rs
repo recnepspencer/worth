@@ -174,6 +174,12 @@ where
             });
             finish_authorized_compare(execution, compared, context)
         }
+        Ok(WorthQueryProviderIdempotencyResolution::ReleasedOriginal(_)) => {
+            candidate.discard();
+            WorthQueryProviderProgressionOutcome::Denied(
+                WorthQueryApplicationCommitDenial::original_effect_released(),
+            )
+        }
         Ok(WorthQueryProviderIdempotencyResolution::Readmitted(receipt)) => {
             candidate.discard();
             if graph::application_attempt::provider_execution::aftermath_resolution::recovered_answers_aftermath(authority.aftermath_causality(), &receipt) {

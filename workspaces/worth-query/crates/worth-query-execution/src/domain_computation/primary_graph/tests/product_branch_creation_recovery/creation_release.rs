@@ -32,7 +32,12 @@ fn creation_release_retains_live_recovery_and_defers_actual_owner_cleanup() {
             .branches()
             .readmit_recovery(row.handle())
             .unwrap();
-        let ReleaseFailure::Recovery(failure) = recovery.release_obligations(0).unwrap_err() else {
+        let ReleaseFailure::Recovery(failure) = world
+            .application
+            .with_host_advancement(|phase| recovery.release_obligations(&phase, 0))
+            .unwrap()
+            .unwrap_err()
+        else {
             panic!("the independently readmitted live capability retains recovery")
         };
         assert_eq!(
@@ -73,8 +78,11 @@ fn creation_release_retains_live_recovery_and_defers_actual_owner_cleanup() {
             })
         });
         if deferred {
-            let ReleaseFailure::OwnerCleanup(failure) =
-                recovery.release_obligations(0).unwrap_err()
+            let ReleaseFailure::OwnerCleanup(failure) = world
+                .application
+                .with_host_advancement(|phase| recovery.release_obligations(&phase, 0))
+                .unwrap()
+                .unwrap_err()
             else {
                 panic!("released World effects transfer their actual cleanup owner")
             };
@@ -100,7 +108,11 @@ fn creation_release_retains_live_recovery_and_defers_actual_owner_cleanup() {
             assert_eq!(receipt.retired_component_count(), 1);
             assert!(receipt.is_complete());
         } else {
-            let receipt = recovery.release_obligations(0).unwrap();
+            let receipt = world
+                .application
+                .with_host_advancement(|phase| recovery.release_obligations(&phase, 0))
+                .unwrap()
+                .unwrap();
             assert_eq!(receipt.retired_component_count(), 1);
             assert!(receipt.is_complete());
             drop(active);

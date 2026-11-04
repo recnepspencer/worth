@@ -1,5 +1,7 @@
+use super::release_preparation::ReleaseDestinationLease;
 use super::*;
 use crate::durability::{WorldDurableMediumDenial, WorldDurablePublicationStop, WorldRecord};
+use crate::recovery::{ProductUnpublishedCleanup, WorldReleasedEffects};
 
 #[derive(Debug)]
 pub enum WorldRecoveredReleaseOutcome {
@@ -7,7 +9,7 @@ pub enum WorldRecoveredReleaseOutcome {
         cause: crate::recovery::RuntimeWorldRecoveryDenial,
         custody: WorldRecoveredUnpublishedEffects,
     },
-    Released(WorldReleasedRecoveredEffects),
+    Released(WorldReleasedEffects),
     Pending(WorldRecoveredUnpublishedEffects),
     Refused {
         cause: WorldDurableMediumDenial,
@@ -15,35 +17,6 @@ pub enum WorldRecoveredReleaseOutcome {
     },
     EvidenceRequired(WorldRecoveredUnpublishedEffects),
     Indeterminate(WorldRecoveredUnpublishedEffects),
-}
-
-/// The original Native semantic evidence remains descriptive after disposition.
-/// This is neither a live CommitResult nor a performed composite publication.
-#[derive(Debug)]
-pub struct WorldReleasedRecoveredEffects {
-    identity: ProductUnpublishedOwnerEffectsIdentity,
-    attempt: CompositePublicationAttemptIdentity,
-    commit: CompositeCommitIdentity,
-    effect: Option<ReadmittedRelationalAssociatedEffect>,
-}
-impl WorldReleasedRecoveredEffects {
-    pub fn identity(&self) -> &ProductUnpublishedOwnerEffectsIdentity {
-        &self.identity
-    }
-    pub fn attempt_identity(&self) -> &CompositePublicationAttemptIdentity {
-        &self.attempt
-    }
-    pub fn reserved_commit_identity(&self) -> &CompositeCommitIdentity {
-        &self.commit
-    }
-    pub fn into_cleanup(self) -> crate::recovery::ProductUnpublishedCleanup {
-        // Recovered application opens retain Native custody, never forked component branches.
-        // This is reachable only from this SAME original durable Released result.
-        crate::recovery::ProductUnpublishedCleanup::new(Vec::new(), Vec::new())
-    }
-    pub fn native_effect(&self) -> Option<&ReadmittedRelationalAssociatedEffect> {
-        self.effect.as_ref()
-    }
 }
 
 impl WorldRecoveredUnpublishedEffects {
@@ -126,6 +99,15 @@ impl WorldRecoveredUnpublishedEffects {
                 }
             }
         };
+        let mut destination = match ReleaseDestinationLease::begin(execution, &self, &subject) {
+            Ok(destination) => destination,
+            Err(cause) => {
+                return WorldRecoveredReleaseOutcome::Refused {
+                    cause,
+                    custody: self,
+                }
+            }
+        };
         let already_committed = self
             .record
             .committed_release
@@ -143,11 +125,23 @@ impl WorldRecoveredUnpublishedEffects {
                         .record
                         .committed_release
                         .lock()
-                        .unwrap_or_else(|e| e.into_inner()) = Some(committed.into_witness());
+                        .unwrap_or_else(|e| e.into_inner()) = Some(committed);
                 })
         };
         match publication {
             Ok(()) => {
+                {
+                    let committed = self
+                        .record
+                        .committed_release
+                        .lock()
+                        .unwrap_or_else(|e| e.into_inner());
+                    destination.acknowledge(
+                        committed
+                            .as_ref()
+                            .expect("same actual acknowledged release"),
+                    );
+                }
                 // End the immutable view before transferring the SAME Native proof.
                 self.source = None;
                 let native = std::mem::replace(
@@ -176,13 +170,12 @@ impl WorldRecoveredUnpublishedEffects {
                     }
                     RecoveredNativeCustody::Released => unreachable!("released exactly once"),
                 };
+                let original = destination.finish(effect);
                 self.catalog.remove_recovered(&self.record);
-                WorldRecoveredReleaseOutcome::Released(WorldReleasedRecoveredEffects {
-                    identity: self.record.identity.clone(),
-                    attempt: self.record.attempt.clone(),
-                    commit: self.record.commit.clone(),
-                    effect,
-                })
+                WorldRecoveredReleaseOutcome::Released(WorldReleasedEffects::new(
+                    original,
+                    ProductUnpublishedCleanup::new(Vec::new(), Vec::new()),
+                ))
             }
             Err(WorldDurablePublicationStop::Pending | WorldDurablePublicationStop::Busy) => {
                 WorldRecoveredReleaseOutcome::Pending(self)

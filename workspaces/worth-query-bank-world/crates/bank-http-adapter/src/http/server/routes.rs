@@ -183,6 +183,7 @@ pub(super) const fn response_status(kind: BankHttpDenialKind) -> StatusCode {
         }
         BankHttpDenialKind::Stale => StatusCode::CONFLICT,
         BankHttpDenialKind::ManagedCleanupRequired => StatusCode::SERVICE_UNAVAILABLE,
+        BankHttpDenialKind::OriginalEffectReleased => StatusCode::CONFLICT,
         BankHttpDenialKind::Unavailable => StatusCode::SERVICE_UNAVAILABLE,
         BankHttpDenialKind::ResourceExhausted | BankHttpDenialKind::Saturated => {
             StatusCode::TOO_MANY_REQUESTS

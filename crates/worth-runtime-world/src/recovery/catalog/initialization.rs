@@ -20,6 +20,7 @@ impl ProductUnpublishedRecoveryCatalog {
                 reserved_metadata_bytes: 0,
                 updating_slots: 0,
                 metadata_bytes: 0,
+                released: Default::default(),
             })),
         }
     }
@@ -41,6 +42,7 @@ impl ProductUnpublishedRecoveryCatalog {
                 reserved_metadata_bytes: 0,
                 updating_slots: 0,
                 metadata_bytes: 0,
+                released: Default::default(),
             })),
         }
     }

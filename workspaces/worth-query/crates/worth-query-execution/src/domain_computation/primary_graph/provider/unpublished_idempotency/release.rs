@@ -17,6 +17,33 @@ pub(in crate::domain_computation) struct WorthQueryUnpublishedReleaseReservation
 }
 
 impl WorthQueryUnpublishedReleaseReservation {
+    pub(in crate::domain_computation) fn validate_original(
+        &self,
+        binding: &super::super::idempotency::released_original::OriginalBinding,
+        expected: &worth_runtime_world::facade::ProductBranchObservation,
+    ) -> Result<(), ()> {
+        let store = self.store.lock().unwrap_or_else(|e| e.into_inner());
+        let entry = store
+            .by_key
+            .get(&self.key)
+            .ok_or(())?
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
+        let affinity =
+            super::super::idempotency::WorthQueryProductIdempotencyAffinity::from_observation(
+                expected,
+            );
+        let same = entry
+            .binding
+            .match_recorded_intent(&binding.binding.intent)
+            .map_err(|_| ())?;
+        if entry.handle() != &self.handle || entry.binding.key_identity() != &binding.binding.key
+            || same != crate::domain_computation::primary_graph::application_attempt::WorthQueryRecordedIntentMatch::Same
+            || binding.binding.affinity != super::super::idempotency::recorded_origin::affinity_text(&affinity) {
+            return Err(());
+        }
+        Ok(())
+    }
     pub(super) fn begin(
         store: Arc<Mutex<WorthQueryUnpublishedIdempotencyStore>>,
         handle: &ProductUnpublishedRecoveryHandle,
@@ -45,14 +72,39 @@ impl WorthQueryUnpublishedReleaseReservation {
         }))
     }
 
-    pub(in crate::domain_computation) fn finish(mut self) {
-        let removed = self
-            .store
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .release_exact(&self.key, &self.handle);
+    pub(in crate::domain_computation) fn finish(
+        mut self,
+        binding: Option<Arc<super::super::idempotency::released_original::OriginalBinding>>,
+        original: worth_runtime_world::facade::WorldReleasedOriginal,
+    ) {
+        let mut store = self.store.lock().unwrap_or_else(|e| e.into_inner());
+        let retired;
+        let removed;
+        if original.native_semantic_result().is_some() {
+            let binding = binding.expect("original binding admitted before effect-bearing release");
+            let entry = store
+                .by_key
+                .get(&self.key)
+                .expect("same exclusive provider release");
+            let mut entry = entry.lock().unwrap_or_else(|e| e.into_inner());
+            assert_eq!(entry.handle(), &self.handle);
+            entry.released = Some(
+                super::super::idempotency::WorthQueryReleasedApplicationEffect::new(
+                    binding, original,
+                ),
+            );
+            entry.posture = Posture::Released;
+            retired = (entry.managed.take(), entry.preparing.take());
+            removed = None;
+            drop(entry);
+            store.by_recovery.retain(|(_, key)| key != &self.key);
+        } else {
+            retired = (None, None);
+            removed = store.release_exact(&self.key, &self.handle);
+        }
+        drop(store);
+        drop((retired, removed));
         self.armed = false;
-        drop(removed);
     }
 }
 

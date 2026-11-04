@@ -11,6 +11,7 @@ pub enum QueryHomeCustodyReadmissionDenial {
     OriginalBindingUnavailable,
     ForeignOriginalAffinity,
     OriginalMemoryAdmission,
+    ReleasedSource(worth_runtime_world::facade::WorldDurableMediumDenial),
 }
 pub struct QueryHomeCustodyReadmissionRefused<Schema, Program> {
     query: ReadmittedHomeQueryService<Schema, Program>,
@@ -76,19 +77,54 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
                 let effects = recovery
                     .inspect_recovered_effects(row.handle())
                     .map_err(Denial::Recovery)?;
-                application.primary_provider.admit_recovered_idempotency(execution, row.handle().clone(), &effects).map_err(|cause| {
-                    use crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial as Source;
-                    match cause {
-                        Source::ForeignAffinity => Denial::ForeignOriginalAffinity,
-                        Source::RetentionCapacityExhausted | Source::RetentionIdentityExhausted => Denial::OriginalMemoryAdmission,
-                        Source::PreparationBusy | Source::ActiveSnapshotCapacityExhausted { .. } | Source::SnapshotIdentityExhausted | Source::RecordedIntentUnverifiable | Source::ExecutionDenied(_) | Source::Unavailable => Denial::OriginalBindingUnavailable,
-                    }
-                })?;
+                application
+                    .primary_provider
+                    .admit_recovered_idempotency(execution, row.handle().clone(), &effects)
+                    .map_err(original_binding_denial)?;
+            }
+            after = page.next_after().cloned();
+            if after.is_none() {
+                break;
+            }
+        }
+        let mut after = None;
+        loop {
+            let page = recovery
+                .released_original_page(
+                    execution,
+                    after.as_ref(),
+                    std::num::NonZeroUsize::new(32).expect("nonzero page"),
+                )
+                .map_err(Denial::ReleasedSource)?;
+            for original in page.rows() {
+                application
+                    .primary_provider
+                    .admit_released_idempotency(execution, original)
+                    .map_err(original_binding_denial)?;
             }
             after = page.next_after().cloned();
             if after.is_none() {
                 return Ok(());
             }
         }
+    }
+}
+
+fn original_binding_denial(
+    cause: crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial,
+) -> QueryHomeCustodyReadmissionDenial {
+    use crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial as Source;
+    use QueryHomeCustodyReadmissionDenial as Denial;
+    match cause {
+        Source::ForeignAffinity => Denial::ForeignOriginalAffinity,
+        Source::RetentionCapacityExhausted | Source::RetentionIdentityExhausted => {
+            Denial::OriginalMemoryAdmission
+        }
+        Source::PreparationBusy
+        | Source::ActiveSnapshotCapacityExhausted { .. }
+        | Source::SnapshotIdentityExhausted
+        | Source::RecordedIntentUnverifiable
+        | Source::ExecutionDenied(_)
+        | Source::Unavailable => Denial::OriginalBindingUnavailable,
     }
 }

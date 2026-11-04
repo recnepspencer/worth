@@ -7,7 +7,9 @@ pub(in crate::domain_computation::primary_graph) use lookup_key::WorthQueryIdemp
 pub(in crate::domain_computation::primary_graph) use product_affinity::WorthQueryProductIdempotencyAffinity;
 pub(super) mod recorded_origin;
 mod registration;
+pub(super) mod released_original;
 pub(super) use registration::idempotency_create_intent;
+pub use released_original::WorthQueryReleasedApplicationEffect;
 pub(super) mod snapshot_resolution;
 use snapshot_resolution::resolve_at_snapshot;
 pub use snapshot_resolution::{
@@ -17,6 +19,7 @@ pub use snapshot_resolution::{
 
 #[derive(Debug)]
 pub(in crate::domain_computation::primary_graph) enum WorthQueryProviderIdempotencyResolution {
+    ReleasedOriginal(WorthQueryReleasedApplicationEffect),
     PreparationBusy,
     RecoveredUnpublished {
         handle: worth_runtime_world::facade::ProductUnpublishedRecoveryHandle,
@@ -33,6 +36,7 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryProviderIdempote
 
 pub(in crate::domain_computation::primary_graph) enum WorthQueryProviderGuardedWorkflowOperationCustody
 {
+    ReleasedOriginal(WorthQueryReleasedApplicationEffect),
     Unseen,
     Readmitted(WorthQueryRecoveredApplicationCommitReceipt),
     IntentDrift,
@@ -82,13 +86,23 @@ impl WorthQueryPrimaryGraphProvider {
         let affinity =
             WorthQueryProductIdempotencyAffinity::from_observation(product.observation());
         match self.resolve_unpublished_application_idempotency(&affinity, binding) {
+            Some(WorthQueryProviderIdempotencyResolution::ReleasedOriginal(original)) => {
+                return Custody::ReleasedOriginal(original)
+            }
             Some(WorthQueryProviderIdempotencyResolution::PreparationBusy) => {
                 return Custody::Indeterminate(
                     WorthQueryProviderIdempotencyResolutionDenial::PreparationBusy,
                 )
             }
             Some(WorthQueryProviderIdempotencyResolution::Drift) => return Custody::IntentDrift,
-            _ => {}
+            None
+            | Some(
+                WorthQueryProviderIdempotencyResolution::Absent
+                | WorthQueryProviderIdempotencyResolution::Readmitted(_)
+                | WorthQueryProviderIdempotencyResolution::RecoveredUnpublished { .. }
+                | WorthQueryProviderIdempotencyResolution::Unpublished
+                | WorthQueryProviderIdempotencyResolution::PreparationPending { .. },
+            ) => {}
         }
         // A retained World partial keeps its publication slot reserved for
         // resumption, and a reserved slot reports its binding, so exact
@@ -121,6 +135,9 @@ impl WorthQueryPrimaryGraphProvider {
             Ok(WorthQueryProviderIdempotencyResolution::PreparationBusy) => Custody::Indeterminate(
                 WorthQueryProviderIdempotencyResolutionDenial::PreparationBusy,
             ),
+            Ok(WorthQueryProviderIdempotencyResolution::ReleasedOriginal(original)) => {
+                Custody::ReleasedOriginal(original)
+            }
             Ok(WorthQueryProviderIdempotencyResolution::Absent) => Custody::Unseen,
             Ok(WorthQueryProviderIdempotencyResolution::Readmitted(receipt)) => {
                 Custody::Readmitted(receipt)
@@ -167,9 +184,16 @@ impl WorthQueryPrimaryGraphProvider {
                 resolution @ (WorthQueryProviderIdempotencyResolution::PreparationPending {
                     ..
                 }
-                | WorthQueryProviderIdempotencyResolution::Drift),
+                | WorthQueryProviderIdempotencyResolution::Drift
+                | WorthQueryProviderIdempotencyResolution::ReleasedOriginal(_)),
             ) => return Ok(resolution),
-            _ => {}
+            None
+            | Some(
+                WorthQueryProviderIdempotencyResolution::Absent
+                | WorthQueryProviderIdempotencyResolution::Readmitted(_)
+                | WorthQueryProviderIdempotencyResolution::RecoveredUnpublished { .. }
+                | WorthQueryProviderIdempotencyResolution::Unpublished,
+            ) => {}
         }
         let mut retired = crate::domain_computation::primary_graph::application_query::derived_view::PredicatePreparationRetirement::default();
         self.graph.with_runtime(execution, |runtime| {

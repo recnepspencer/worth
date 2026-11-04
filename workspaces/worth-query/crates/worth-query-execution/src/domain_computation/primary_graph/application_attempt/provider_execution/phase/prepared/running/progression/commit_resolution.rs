@@ -210,6 +210,7 @@ fn resolve_indeterminate_commit(
         );
     }
     match resolution {
+        Ok(WorthQueryProviderIdempotencyResolution::ReleasedOriginal(_)) => WorthQueryProviderProgressionOutcome::Denied(crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::original_effect_released()),
         Ok(WorthQueryProviderIdempotencyResolution::Readmitted(receipt)) => {
             WorthQueryProviderProgressionOutcome::RecoveredCommitted(receipt)
         }

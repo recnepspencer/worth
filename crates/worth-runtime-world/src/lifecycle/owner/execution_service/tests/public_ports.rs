@@ -1,5 +1,7 @@
 use super::*;
 use crate::facade::{NoEffectCause, RuntimeWorldOwner, RuntimeWorldPublicationOutcome};
+#[path = "public_ports/released_source.rs"]
+mod released_source;
 
 pub(super) fn public_world() -> (
     RealReferenceFixture,
@@ -288,17 +290,47 @@ fn public_partial_recovery_preserves_foreign_and_live_capability_denials() {
         RuntimeWorldPublicationOutcome::ProductUnpublished(record) => record,
         other => panic!("Relational moved before Signal cancellation: {other:?}"),
     };
+    let original_receipt = record
+        .component_results()
+        .relational_settlement()
+        .unwrap()
+        .clone();
     let handle = record.recovery_handle();
     assert!(matches!(
         foreign.recovery_port().inspect_effects(&handle),
         Err(crate::facade::RuntimeWorldRecoveryDenial::ForeignHandle)
     ));
     assert!(matches!(
-        owner.recovery_port().release_effects(&handle, 0),
+        owner.recovery_port().release_effects(
+            &execution,
+            &handle,
+            0,
+            Some(
+                fixture
+                    .relational_runtime()
+                    .durability_authority()
+                    .observe_memory_commit(&execution, &original_receipt)
+                    .unwrap()
+            )
+        ),
         Err(crate::facade::RuntimeWorldRecoveryDenial::CallerCapabilityLive)
     ));
     drop(record);
-    owner.recovery_port().release_effects(&handle, 0).unwrap();
+    owner
+        .recovery_port()
+        .release_effects(
+            &execution,
+            &handle,
+            0,
+            Some(
+                fixture
+                    .relational_runtime()
+                    .durability_authority()
+                    .observe_memory_commit(&execution, &original_receipt)
+                    .unwrap(),
+            ),
+        )
+        .unwrap();
     assert!(matches!(
         owner.recovery_port().inspect_effects(&handle),
         Err(crate::facade::RuntimeWorldRecoveryDenial::MissingRecord)

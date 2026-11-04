@@ -18,6 +18,7 @@ pub(in crate::http::server) fn commit_denial(
 ) -> BankHttpDenial {
     use WorthQueryApplicationCommitDenialKind as Denial;
     match kind {
+        Denial::OriginalEffectReleased => BankHttpDenial::new(BankHttpDenialKind::OriginalEffectReleased, BankHttpNextAction::ContactOperator),
         Denial::IdempotencyPreparationBusy => BankHttpDenial::new(BankHttpDenialKind::Unavailable, BankHttpNextAction::Retry),
         Denial::DomainValueRejected => BankHttpDenial::new(BankHttpDenialKind::MalformedRequest, BankHttpNextAction::CorrectRequest),
         Denial::StorageUnavailable(failure) => super::super::relational_execution_denial::denial(worth_query_host::facade::primary_graph::RelationalExecutionDenialCause::StorageUnavailable(failure)),
