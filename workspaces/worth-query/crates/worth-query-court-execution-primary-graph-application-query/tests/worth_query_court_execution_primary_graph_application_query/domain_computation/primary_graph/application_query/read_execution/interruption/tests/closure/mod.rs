@@ -19,13 +19,13 @@ fn query_caller_cancel_interrupts_complete_native_closure_and_preserves_original
     let visited = Rc::new(Cell::new(0));
     let witness = Rc::clone(&visited);
     let guard = observe_checkpoints_for_test(Box::new(move |subject| {
-            if subject == "Next" {
-                witness.set(witness.get() + 1);
-                if witness.get() == 25 {
-                    cancellation.cancel();
-                }
+        if subject == "Next" {
+            witness.set(witness.get() + 1);
+            if witness.get() == 25 {
+                cancellation.cancel();
             }
-        }));
+        }
+    }));
     let refusal = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_walks::declared_queries::read::execute(&world, &execution, &request, Forward::reference(), 0)
         .err()
         .expect("caller cancellation refuses whole result");

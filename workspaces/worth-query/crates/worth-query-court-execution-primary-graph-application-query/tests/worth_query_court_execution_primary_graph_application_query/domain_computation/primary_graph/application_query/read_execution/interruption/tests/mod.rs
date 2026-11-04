@@ -95,11 +95,11 @@ fn cancellation_during_real_nested_materialization_releases_all_read_resources()
     let triggered = Rc::new(Cell::new(false));
     let witness = Rc::clone(&triggered);
     let _guard = observe_checkpoints_for_test(Box::new(move |subject| {
-            if !witness.get() && subject.contains("relation") {
-                witness.set(true);
-                cancellation.cancel();
-            }
-        }));
+        if !witness.get() && subject.contains("relation") {
+            witness.set(true);
+            cancellation.cancel();
+        }
+    }));
     let denial = world
         .application
         .with_host_advancement(|phase| {
