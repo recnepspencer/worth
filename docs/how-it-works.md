@@ -1491,7 +1491,7 @@ denied with `TouchedRecordsRequired` if the commit sealed no touched records.
 
 ### 10.4 Executable example
 
-[`owner_validated_application_touch_outside_installed_ceiling_is_denied`](../workspaces/worth-query/crates/worth-query-court-execution-package-archive-primary-graph-application-attempt/tests/worth_query_court_execution_package_archive_primary_graph_application_attempt/domain_computation/primary_graph/tests/application_attempt/terminal_failures/mod.rs)
+[`owner_validated_application_touch_outside_installed_ceiling_is_denied`](../workspaces/worth-query/crates/worth-query-court-execution-package-archive/tests/worth_query_court_execution_package_archive/domain_computation/primary_graph/tests/application_attempt/terminal_failures/mod.rs)
 adds an undeclared application touch after the owner validated the candidate.
 Commit is denied at invariant execution, and the account stays open. Validation
 cannot promote a proposed touch outside the installed ceiling into performed

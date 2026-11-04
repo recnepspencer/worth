@@ -91,7 +91,7 @@ from this exact proposal and installation. The target's declared kind, original
 controls and prepared scope still govern both presence and absence. A removed
 target returns `None`; undeclared access and stale/foreign selectors refuse.
 The returned handle belongs to the target posture, while ordinary reads still
-reject the original cross-view handle. The compiled [reobservation court](../../../worth-query-court-execution-package-archive-primary-graph-application-query/tests/worth_query_court_execution_package_archive_primary_graph_application_query/domain_computation/primary_graph/tests/application_attempt/invariant_walks/reobservation/mod.rs)
+reject the original cross-view handle. The compiled [reobservation court](../../../worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/tests/application_attempt/invariant_walks/reobservation/mod.rs)
 covers an untouched incidence-reached survivor and actual creation/deletion.
 
 Each planner owns one observation value shared by all its views. Each evaluation

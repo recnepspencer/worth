@@ -1,5 +1,5 @@
 [package]
-name = "worth-query-court-execution-package-archive-primary-graph-application-query"
+name = "worth-query-court-execution-primary-graph-authorization"
 autotests = false
 edition.workspace = true
 rust-version.workspace = true
@@ -8,6 +8,8 @@ license.workspace = true
 publish = false
 
 [dev-dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
 worth-execution = { path = "../../../../crates/worth-execution" }
 worth-foundational = { path = "../../../../crates/worth-foundational" }
 worth-query-admission = { path = "../worth-query-admission" }
@@ -20,8 +22,8 @@ worth-query-testkit-execution-primary-graph-application-contribution = { path = 
 worth-relational = { path = "../../../../crates/worth-relational" }
 
 [[test]]
-name = "worth_query_court_execution_package_archive_primary_graph_application_query"
-path = "tests/worth_query_court_execution_package_archive_primary_graph_application_query.rs"
+name = "worth_query_court_execution_primary_graph_authorization"
+path = "tests/worth_query_court_execution_primary_graph_authorization.rs"
 
 [lints]
 workspace = true
