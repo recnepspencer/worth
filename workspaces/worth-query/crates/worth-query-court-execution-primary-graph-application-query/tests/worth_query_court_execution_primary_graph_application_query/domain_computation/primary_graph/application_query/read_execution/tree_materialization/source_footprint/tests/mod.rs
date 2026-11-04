@@ -23,7 +23,11 @@ fn normalization_deduplicates_revisited_native_dependencies() {
         )));
     let incoming = adjacency(entity, RelationalAdjacencyDirection::Incoming);
     let outgoing = adjacency(entity, RelationalAdjacencyDirection::Outgoing);
-    let mut footprint = WorthQueryObservedSourceFootprint::new_for_test(entity, true, vec![entity, entity], vec![aspect.clone(), aspect], vec![incoming.clone(), outgoing.clone(), incoming, outgoing], None);
+    let mut footprint = {
+// Bound in the original literal order, passed in the door's.
+let (root, complete, entities, aspects, adjacencies, root_selection) = (entity, true, vec![entity, entity], vec![aspect.clone(), aspect], vec![incoming.clone(), outgoing.clone(), incoming, outgoing], None);
+WorthQueryObservedSourceFootprint::new_for_test(root, complete, entities, aspects, root_selection, adjacencies)
+};
 
     normalize_source_footprint(&mut footprint);
 
@@ -79,7 +83,9 @@ pub fn managed_order_matches_legacy_for_stable_keys_and_full_equality(
     let mut b = a.clone();
     (*b.endpoints_mut_for_test()).push(EntityId::new(PartitionId::main(), 9, 2));
     for rotation in 0..5 {
-        let mut input = WorthQueryObservedSourceFootprint::new_for_test((*base.root_for_test()), true, vec![
+        let mut input = {
+// Bound in the original literal order, passed in the door's.
+let (root, complete, entities, aspects, adjacencies, root_selection) = ((*base.root_for_test()), true, vec![
                 EntityId::new(PartitionId::main(), 8, 1),
                 (*base.root_for_test()),
                 (*base.root_for_test()),
@@ -90,6 +96,8 @@ pub fn managed_order_matches_legacy_for_stable_keys_and_full_equality(
                 later.clone(),
                 earlier.clone(),
             ], vec![b.clone(), b.clone(), a.clone(), b.clone(), a.clone()], None);
+WorthQueryObservedSourceFootprint::new_for_test(root, complete, entities, aspects, root_selection, adjacencies)
+};
         (*input.aspects_mut_for_test()).rotate_left(rotation);
         input.adjacencies.rotate_right(rotation);
         let mut expected = input.clone();
@@ -100,7 +108,11 @@ pub fn managed_order_matches_legacy_for_stable_keys_and_full_equality(
             "stable sort keys and full-value dedup differ at {rotation}"
         );
     }
-    let mut empty = WorthQueryObservedSourceFootprint::new_for_test((*base.root_for_test()), true, Vec::new(), Vec::new(), Vec::new(), None);
+    let mut empty = {
+// Bound in the original literal order, passed in the door's.
+let (root, complete, entities, aspects, adjacencies, root_selection) = ((*base.root_for_test()), true, Vec::new(), Vec::new(), Vec::new(), None);
+WorthQueryObservedSourceFootprint::new_for_test(root, complete, entities, aspects, root_selection, adjacencies)
+};
     storage.normalize_for_test(&mut empty).unwrap();
     assert!((*empty.entities_for_test()).is_empty() && (*empty.aspects_for_test()).is_empty() && empty.adjacencies.is_empty());
 }

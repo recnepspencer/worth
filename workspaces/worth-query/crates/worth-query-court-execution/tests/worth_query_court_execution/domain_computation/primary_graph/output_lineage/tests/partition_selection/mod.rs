@@ -113,7 +113,9 @@ pub fn unrelated_partition_selection(population: u64) {
         .entry(revised_generation)
         .or_default();
     let slot = records.len();
-    let recorded = RecordedOutput::new_for_test(None, None, None, worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false), None, Arc::from([]), None, None, None, OnceLock::new(), std::sync::Mutex::new(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::recorded_output::RecordedOutputMutable::new_for_test(None, None, worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::retained_computation::RecordedComputation::Absent(PriorAbsence::Restored))), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::settlement_identity::RecordedSettlementIdentity::retain_for_test(
+    let recorded = {
+// Bound in the original literal order, passed in the door's.
+let (producing_implementation, required_publication, native_prior_checkpoint, computation_source, performed_origin, consumed_outputs, completed_handler_facts, completed_decision_reuse, prepared_input_reuse_key, native_output_witness, mutable, settlement_identity, correspondence, source_identity, source_partition_identity, producer_dependency_identity, idempotency_key_identity) = (None, None, None, worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false), None, Arc::from([]), None, None, None, OnceLock::new(), std::sync::Mutex::new(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::recorded_output::RecordedOutputMutable::new_for_test(None, None, worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::retained_computation::RecordedComputation::Absent(PriorAbsence::Restored))), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::settlement_identity::RecordedSettlementIdentity::retain_for_test(
             &source,
             ProductCoordinate {
                 occurrence,
@@ -121,6 +123,8 @@ pub fn unrelated_partition_selection(population: u64) {
             },
             slot,
         ), Arc::clone(&revised_target), Some(checkpoint_identity([0x31; 32])), Some(partition(0)), None, [0x42; 32]);
+RecordedOutput::new_for_test(producing_implementation, required_publication, computation_source, native_prior_checkpoint, performed_origin, consumed_outputs, completed_handler_facts, completed_decision_reuse, prepared_input_reuse_key, native_output_witness, settlement_identity, correspondence, source_identity, source_partition_identity, producer_dependency_identity, idempotency_key_identity, mutable)
+};
     let cell = Arc::new(std::sync::OnceLock::new());
     assert!(cell.set(recorded).is_ok());
     records.push(cell);

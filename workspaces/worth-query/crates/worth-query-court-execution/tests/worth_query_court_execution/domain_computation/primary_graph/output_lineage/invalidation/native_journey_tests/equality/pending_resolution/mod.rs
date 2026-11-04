@@ -234,7 +234,9 @@ pub fn candidate(
     prefix: Arc<[WorthQueryApplicationObservedFact]>,
 ) -> RetainedInputCutoffCandidate {
     let boundary = CompletedHandlerFactBoundary::completed_for_test(prefix.len());
-    RetainedInputCutoffCandidate::from_exact_cell_for_test(Arc::new(OnceLock::from(RecordedOutput::new_for_test(None, None, ComputationSourceEvidence::for_test(false), None, None, Arc::from([]), boundary
+    RetainedInputCutoffCandidate::from_exact_cell_for_test(Arc::new(OnceLock::from({
+// Bound in the original literal order, passed in the door's.
+let (producing_implementation, required_publication, computation_source, native_prior_checkpoint, performed_origin, consumed_outputs, completed_decision_reuse, completed_handler_facts, prepared_input_reuse_key, native_output_witness, settlement_identity, correspondence, source_identity, source_partition_identity, producer_dependency_identity, idempotency_key_identity, mutable) = (None, None, ComputationSourceEvidence::for_test(false), None, None, Arc::from([]), boundary
             .seal_decision_reuse_for_test(context(), DecisionContextUse::default().key_for_test()), Some(boundary), Some(PreparedInputReuseKey::new_for_test(
             WorthQueryObservedSourceSelection::selecting_for_test(
                 u64::try_from(prefix.len()).unwrap(),
@@ -247,7 +249,9 @@ pub fn candidate(
             None,
             Some(RetainedSourceFacts::for_test_for_test(false, prefix)),
             RecordedComputation::Absent(PriorAbsence::Restored),
-        ))))))
+        )));
+RecordedOutput::new_for_test(producing_implementation, required_publication, computation_source, native_prior_checkpoint, performed_origin, consumed_outputs, completed_handler_facts, completed_decision_reuse, prepared_input_reuse_key, native_output_witness, settlement_identity, correspondence, source_identity, source_partition_identity, producer_dependency_identity, idempotency_key_identity, mutable)
+})))
 }
 
 #[test]
