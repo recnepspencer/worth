@@ -33,6 +33,34 @@ impl CheckpointRegionKindImages {
         Ok(Self(images))
     }
 
+    pub(crate) fn omit_deleted_current_records(
+        &mut self,
+        partitions: &[crate::durability::data::PartitionCheckpointImage],
+    ) {
+        let mut removed = std::collections::BTreeSet::new();
+        for partition in partitions {
+            for (index, life) in partition.relation_arena.lifecycle.iter().enumerate() {
+                if *life == crate::storage::data::RecordLifecycleState::DeletedRetained {
+                    let slot = partition
+                        .relation_arena
+                        .slots
+                        .get(index)
+                        .copied()
+                        .unwrap_or(index as u64);
+                    removed.insert(crate::identity::data::RelationId::new(
+                        partition.partition_id,
+                        slot,
+                        partition.relation_arena.generations[index],
+                    ));
+                }
+            }
+        }
+        for region in self.0.values_mut() {
+            region
+                .head
+                .retain(|claim| !removed.contains(&claim.relation));
+        }
+    }
     pub(crate) fn restore(
         &self,
         partitions: &mut BTreeMap<PartitionId, PartitionState>,

@@ -12,6 +12,8 @@ pub(super) fn select(
     execution: &ExecutionRequest<'_, '_>,
     runtime: &RelationalPreparationRuntime,
     basis: &AdmittedRelationalBranchBasis,
+    candidate: &crate::history::data::CanonicalCommitEnvelope,
+    admission: Option<&crate::mvcc::RequiredOutputPublicationAdmission>,
 ) -> Result<Option<Arc<CurrentPublicationRoster>>, TransactionCommitError> {
     if basis
         .inner
@@ -23,7 +25,30 @@ pub(super) fn select(
     {
         return Ok(None);
     }
-    let run = || ownership::select_current(execution, basis);
+    let mut records = candidate
+        .patch
+        .authoritative_record_patches
+        .iter()
+        .filter(|p| {
+            p.structural_change != crate::publication::patch::data::RecordStructuralChange::Created
+        })
+        .map(|p| p.target.clone())
+        .collect::<Vec<_>>();
+    if let Some(admission) = admission {
+        admission.publication.ownership_seeds(&mut records);
+    }
+    for event in &candidate.required_output_codec_retirements {
+        records.push(crate::transactions::data::RecordRef::Entity(
+            event.meaning.source_scope,
+        ));
+    }
+    if let Some(current) = admission.and_then(|a| a.publication.current_ownership_evidence())
+        && current.basis == *basis.descriptor()
+        && current.covers(&records)
+    {
+        return Ok(Some(Arc::clone(current)));
+    }
+    let run = || ownership::select_current(execution, basis, &records);
     let result = match (
         super::super::super::request_lease(execution),
         runtime.commit_work_budget.as_ref(),

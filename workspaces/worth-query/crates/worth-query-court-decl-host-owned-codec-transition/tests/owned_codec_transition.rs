@@ -59,6 +59,20 @@ fn same_route_codec_retirement_covers_the_source_owned_origin() {
     assert_eq!(checkpoint.bytes(), original);
     assert_eq!(v2::host::source_id(&after), source);
     assert_eq!(v2::host::read(&after), authored);
+    // Reopen while the route is codec-retired, before a fresh publication replaces it.
+    // Its independent presence and retained publication row must still agree.
+    let retired = after
+        .runtime()
+        .with_host_advancement(|phase| {
+            after
+                .runtime()
+                .capture_application_checkpoint(&phase, CapturePolicy::SystemAllocation)
+                .unwrap()
+        })
+        .unwrap();
+    drop(after);
+    let after = v2::host::restore(retired);
+    assert_eq!(v2::host::source_id(&after), source);
     let scope = request_scope();
     let principal = authenticate_operator(after.installed_schema(), &scope);
     let request = after.runtime().request(&principal, &scope);

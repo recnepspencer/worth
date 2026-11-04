@@ -23,13 +23,14 @@ pub(crate) fn validate_binding(
         storage.catalog_aspect,
         storage.publication_aspect,
         storage.edge_aspect,
+        storage.position_aspect,
         storage.link_aspect,
     ]
     .into_iter()
     .collect::<BTreeSet<_>>();
     if registry.current_publication_storage.is_some()
-        || private.len() != 7
-        || aspects.len() != 4
+        || private.len() != 9
+        || aspects.len() != 5
         || relation.kind_id != storage.scope_link
         || storage.entity_kinds.is_empty()
         || storage
@@ -52,6 +53,7 @@ pub(crate) fn validate_binding(
             storage.publication_aspect,
         ),
         (storage.edge_kind, EDGE, storage.edge_aspect),
+        (storage.position_kind, POSITION, storage.position_aspect),
     ] {
         let actual = registry.entity_kinds.get(&kind).ok_or_else(invalid)?;
         let expected = crate::schema::canonicalize_entity_registration(EntityKindRegistration {
@@ -83,6 +85,12 @@ pub(crate) fn validate_binding(
             "worth-current-publication-edge-link",
             vec![storage.edge_kind],
             vec![storage.publication_kind],
+        ),
+        (
+            storage.position_link,
+            "worth-current-output-position-source",
+            vec![storage.position_kind],
+            storage.entity_kinds.clone(),
         ),
         (
             storage.scope_link,
@@ -130,7 +138,8 @@ pub(crate) fn validate_binding(
     {
         if !private.contains(kind)
             && declarations.aspects.iter().any(|aspect| {
-                [CATALOG, PUBLICATION, EDGE, LINK].contains(&aspect.contract.key().as_str())
+                [CATALOG, PUBLICATION, EDGE, POSITION, LINK]
+                    .contains(&aspect.contract.key().as_str())
             })
         {
             return Err(invalid());

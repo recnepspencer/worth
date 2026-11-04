@@ -100,6 +100,52 @@ fn lifecycle<const MODE: u8>(case: u8) {
         inspection::inspect(&host, &request, original_edges, "original-stage-links");
     super::super::coupled::producer::handler::reset_contacts();
     let retiring = if case == 43 { 30 } else { 20 };
+    if case == 43 {
+        let fault = host
+            .runtime()
+            .corrupt_next_coupled_participant_for_test(true);
+        let refused = request
+            .advanced()
+            .mutate(Retire {
+                relation_fault: case,
+                corrupt_restoration: false,
+                co_anchors: vec![],
+                scope: 1,
+                id: retiring,
+                descendants: vec![],
+            })
+            .without_source()
+            .idempotency(&"refused-tail-splice".to_owned())
+            .execute_in_program(&host, ExecutionAllocationPolicy::SystemAllocation)
+            .unwrap();
+        let WorthQueryApplicationMutationOutcome::Commit(WorthQueryApplicationUncommitted::Denied(
+            denial,
+        )) = refused
+        else {
+            panic!("{refused:?}")
+        };
+        let error = denial
+            .authored_retirement_error()
+            .expect("typed foreign participant");
+        assert_eq!(error.authored_retirement_refusal(),Some(worth_relational::facade::publication::AuthoredRetirementRefusal::ForeignCoupledOwner));
+        assert_eq!(
+            super::super::coupled::producer::handler::contacts(),
+            1,
+            "one body contact for the refused edit"
+        );
+        inspection::inspect(
+            &host,
+            &request,
+            original_edges,
+            "refused-tail-splice-thread",
+        );
+        for id in [20, 30, 101, 102] {
+            assert!(request.query(query::Input { id }).execute().is_ok());
+        }
+        drop(fault);
+        super::super::coupled::producer::handler::reset_contacts();
+    }
+
     let outcome = request
         .advanced()
         .mutate(Retire {

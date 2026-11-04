@@ -46,9 +46,7 @@ pub(super) fn validate(
     {
         return Err(TransactionCommitError::publication(
             crate::publication::data::PublicationError::authored_retirement(
-                crate::publication::data::AuthoredRetirementRefusal::CorruptCurrentOwnership {
-                    publication,
-                },
+                crate::publication::data::AuthoredRetirementRefusal::CurrentOwnershipStorageMissing,
                 RecordRef::Entity(meaning.source_scope),
             ),
         ));

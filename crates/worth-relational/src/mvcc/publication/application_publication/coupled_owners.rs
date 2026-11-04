@@ -145,13 +145,15 @@ impl RelationalRuntime {
                         &selected.origin,
                     )
                     .map_err(|error| match error {
-                        TransactionCommitError::Publication { .. } => {
-                            TransactionCommitError::publication(
-                                PublicationError::authored_retirement(
-                                    Cause::CorruptPublication,
-                                    RecordRef::Entity(selected.origin.meaning.source_scope),
-                                ),
-                            )
+                        TransactionCommitError::Publication { error, .. } => {
+                            let original_detail = error.detail;
+                            let mut error = PublicationError::authored_retirement(
+                                Cause::CorruptPublication,
+                                RecordRef::Entity(selected.origin.meaning.source_scope),
+                            );
+                            error.detail.push_str(": ");
+                            error.detail.push_str(&original_detail);
+                            TransactionCommitError::publication(error)
                         }
                         _ => error,
                     })

@@ -6,6 +6,11 @@ pub(super) fn rebind(checkpoint: &mut DurableCheckpoint) -> Result<(), Relationa
     let mut symbols = crate::symbols::data::StringInterner::default();
     symbols.restore_snapshot(checkpoint.symbol_table.clone());
     for root in &checkpoint.branch_roots {
+        checkpoint
+            .root_kind_images
+            .get_mut(&root.commit_id)
+            .ok_or_else(|| invalid("missing kind images"))?
+            .omit_deleted_current_records(&root.partition_images);
         let image = checkpoint
             .branch_root_schema_images
             .iter()

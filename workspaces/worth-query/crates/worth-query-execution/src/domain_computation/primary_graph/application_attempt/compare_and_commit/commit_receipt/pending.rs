@@ -73,7 +73,7 @@ impl WorthQueryPendingApplicationCommitReceipt {
         } else {
             Some(self.provider.take_fresh_product_change()?)
         };
-        Some(WorthQueryApplicationCommitReceipt {
+        let receipt = WorthQueryApplicationCommitReceipt {
             authoritative_provider_session: self
                 .provider
                 .commit_evidence()
@@ -123,6 +123,8 @@ impl WorthQueryPendingApplicationCommitReceipt {
                 .rebased_source_facts()
                 .err()
                 .map(|failed| failed.own_effect),
-        })
+        };
+        super::recording::observe(&receipt);
+        Some(receipt)
     }
 }

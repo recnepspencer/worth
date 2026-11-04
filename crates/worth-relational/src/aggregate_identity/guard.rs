@@ -21,7 +21,10 @@ pub(crate) fn retained_entity_selection(
             .is_some_and(|storage| storage.metadata_kinds().contains(&kind))
         {
             work.checkpoint(1)?;
-            return work.invalid(super::preparation::PlanDenial::OrdinaryMetadataWrite);
+            return work.invalid(super::preparation::PlanDenial::CurrentMetadataWrite {
+                kind,
+                record: None,
+            });
         }
         for contract in registry
             .relation_kinds
@@ -121,14 +124,17 @@ pub(crate) fn ordinary_plan(
             };
             if declared.into_iter().chain(record).any(private) {
                 if registry.current_publication_storage.is_some() {
-                    let record=match intent {
-                        MutationIntent::Entity(Entity::Delete(value))=>Some(crate::transactions::data::RecordRef::Entity(value.entity_id)),
-                        MutationIntent::Relation(Relation::Delete(value))=>Some(crate::transactions::data::RecordRef::Relation(value.relation_id)),
+                    let target=match intent {
+                        MutationIntent::Entity(Entity::UpdateFields(v))=>Some(crate::transactions::data::RecordRef::Entity(v.entity_id)),
+                        MutationIntent::Entity(Entity::ApplyAspectPatch(v))=>Some(crate::transactions::data::RecordRef::Entity(v.entity_id)),
+                        MutationIntent::Entity(Entity::Delete(v))=>Some(crate::transactions::data::RecordRef::Entity(v.entity_id)),
+                        MutationIntent::Entity(Entity::Replace(v))=>Some(crate::transactions::data::RecordRef::Entity(v.entity_id)),
+                        MutationIntent::Relation(Relation::UpdateEndpoints(v))=>Some(crate::transactions::data::RecordRef::Relation(v.relation_id)),
+                        MutationIntent::Relation(Relation::ApplyAspectPatch(v))=>Some(crate::transactions::data::RecordRef::Relation(v.relation_id)),
+                        MutationIntent::Relation(Relation::Delete(v))=>Some(crate::transactions::data::RecordRef::Relation(v.relation_id)),
                         _=>None,
                     };
-                    if let Some(record)=record {
-                        return work.invalid(super::preparation::PlanDenial::OwnedMetadataWrite(record));
-                    }
+                    return work.invalid(super::preparation::PlanDenial::CurrentMetadataWrite{kind:declared.or(record).expect("a private declared or retained kind matched"),record:target});
                 }
                 return work.invalid(super::preparation::PlanDenial::OrdinaryMetadataWrite);
             }
@@ -139,7 +145,7 @@ pub(crate) fn ordinary_plan(
 }
 enum PrivateKinds {
     Aggregate([KindId; 3]),
-    Publication([KindId; 7]),
+    Publication([KindId; 9]),
 }
 impl PrivateKinds {
     fn contains(&self, kind: KindId) -> bool {
@@ -175,4 +181,37 @@ pub(crate) fn is_metadata_record(
             .and_then(|row| row.kind_id()),
     };
     kind.is_some_and(|kind| registry.native_private_kinds.contains(&kind))
+}
+
+/// A private relation create is refused before ordinary duplicate-pair admission.
+/// Otherwise an existing metadata link could disguise a single-writer violation
+/// as an unrelated business-relation identity conflict.
+pub(crate) fn current_relation_creations(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    budget: Option<&crate::execution::RequestWorkBudget>,
+    registry: &RelationalSchemaRegistry,
+    intents: &[MutationIntent],
+) -> Result<(), TransactionCommitError> {
+    let Some(storage) = &registry.current_publication_storage else {
+        return Ok(());
+    };
+    super::funding::run(execution, budget, |work| {
+        for intent in intents {
+            work.checkpoint(1)?;
+            let kind = match intent {
+                MutationIntent::Create(CreateIntent::Relation(v)) => v.kind_id,
+                MutationIntent::Create(CreateIntent::RelationAspects(v)) => v.kind_id,
+                MutationIntent::Create(CreateIntent::BulkRelations(v)) => v.kind_id,
+                _ => continue,
+            };
+            if storage.metadata_kinds().contains(&kind) {
+                return work.invalid(super::preparation::PlanDenial::CurrentMetadataWrite {
+                    kind,
+                    record: None,
+                });
+            }
+        }
+        Ok(GuardAdmission)
+    })
+    .map(|_| ())
 }

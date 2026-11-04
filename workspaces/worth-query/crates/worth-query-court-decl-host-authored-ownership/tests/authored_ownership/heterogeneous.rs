@@ -116,7 +116,7 @@ impl<const DECLARED: bool> Profile for Present<DECLARED> {
     fn retired_identity<S: Scenario>(
         identity: ApplicationAuthoredCorrection<S>,
     ) -> ApplicationAuthoredCorrection<S> {
-        if DECLARED {
+        if DECLARED && S::MODE != 46 {
             identity.co_restore_retired::<correction::UndoRetire<S>, BodyFamily, BodyRetired<S>, BodyCreated<S>>()
         } else {
             identity

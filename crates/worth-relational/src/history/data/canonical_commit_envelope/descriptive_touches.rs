@@ -96,3 +96,50 @@ impl RelationalDescriptiveTouchGraph {
         }
     }
 }
+
+impl super::CanonicalCommitEnvelope {
+    /// Late Native consequences carry the same actual adjacency effects as ordinary
+    /// mutation. Full generations and kinds come from the mutation owner, never
+    /// from dense patch detail or invented authored endpoint intents.
+    pub(crate) fn complete_native_adjacency(
+        &mut self,
+        deltas: &[crate::authority::mutation::AdjacencyDelta],
+    ) {
+        if deltas.is_empty() {
+            return;
+        }
+        let RelationalDescriptiveTouchGraph::Exact(touches) = &mut self.descriptive_touches else {
+            return;
+        };
+        for delta in deltas {
+            let (source, target) = match delta.kind {
+                crate::authority::mutation::AdjacencyDeltaKind::Created { source, target }
+                | crate::authority::mutation::AdjacencyDeltaKind::Deleted { source, target } => {
+                    (source, target)
+                }
+            };
+            touches.push(RelationalDescriptiveTouch::RelationLifecycle {
+                relation: delta.relation_id,
+                kind: delta.kind_id,
+            });
+            touches.push(RelationalDescriptiveTouch::RelationMembership {
+                relation: delta.relation_id,
+                kind: delta.kind_id,
+                source,
+                target,
+            });
+            for (anchor, direction) in [
+                (source, RelationalTouchAdjacencyDirection::Outgoing),
+                (target, RelationalTouchAdjacencyDirection::Incoming),
+            ] {
+                touches.push(RelationalDescriptiveTouch::AdjacencyRevision {
+                    kind: delta.kind_id,
+                    anchor,
+                    direction,
+                });
+            }
+        }
+        touches.sort();
+        touches.dedup();
+    }
+}

@@ -105,7 +105,7 @@ fn validate_metered(
                 }
             }
             if current.is_some() {
-                charge(context, 7)?;
+                charge(context, 9)?;
             }
             let native_retired = private(old.kind_id())
                 && old.is_live()
@@ -144,7 +144,10 @@ fn validate_metered(
                 activation_seen = true;
             } else if old.extra().authoritative_aspect_state
                 != new.extra().authoritative_aspect_state
-                && !current.is_some_and(|storage| old.kind_id() == Some(storage.catalog_kind))
+                && !current.is_some_and(|storage| {
+                    [Some(storage.catalog_kind), Some(storage.position_kind)]
+                        .contains(&old.kind_id())
+                })
             {
                 return Err("codec retirement changed protected payload".into());
             }
@@ -177,7 +180,7 @@ fn validate_metered(
             }
             let id = RelationId::new(partition_id, slot as u64, old.generation());
             if current.is_some() {
-                charge(context, 7)?;
+                charge(context, 9)?;
             }
             let retired = closure.relations.contains(&id)
                 || (private(old.kind_id())

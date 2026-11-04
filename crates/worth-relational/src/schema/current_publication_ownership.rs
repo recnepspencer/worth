@@ -15,6 +15,7 @@ pub(crate) use validation::validate_binding;
 pub(crate) const CATALOG: &str = "worth-current-publication-catalog";
 pub(crate) const PUBLICATION: &str = "worth-current-publication";
 pub(crate) const EDGE: &str = "worth-current-publication-edge";
+pub(crate) const POSITION: &str = "worth-current-output-position";
 pub(crate) const LINK: &str = "worth-current-publication-link";
 
 /// Platform installation, conditional on an actual source-scope-owned producer.
@@ -43,7 +44,9 @@ pub fn register_current_publication_storage(
         next = next.checked_add(1).ok_or_else(exhausted)?;
         Ok(KindId(next))
     };
-    let kinds: [KindId; 7] = [
+    let kinds: [KindId; 9] = [
+        kind()?,
+        kind()?,
         kind()?,
         kind()?,
         kind()?,
@@ -77,10 +80,13 @@ pub fn register_current_publication_storage(
         publication_link: kinds[3],
         member_link: kinds[4],
         edge_link: kinds[5],
-        scope_link: kinds[6],
+        scope_link: kinds[8],
+        position_kind: kinds[6],
+        position_link: kinds[7],
         catalog_aspect: identity()?,
         publication_aspect: identity()?,
         edge_aspect: identity()?,
+        position_aspect: identity()?,
         link_aspect: identity()?,
         entity_kinds: registry
             .entity_kinds
@@ -98,6 +104,7 @@ pub fn register_current_publication_storage(
             storage.publication_aspect,
         ),
         (storage.edge_kind, EDGE, storage.edge_aspect),
+        (storage.position_kind, POSITION, storage.position_aspect),
     ] {
         registry = registry.register_entity_kind(EntityKindRegistration {
             kind_id,
@@ -125,6 +132,12 @@ pub fn register_current_publication_storage(
             "worth-current-publication-edge-link",
             vec![storage.edge_kind],
             vec![storage.publication_kind],
+        ),
+        (
+            storage.position_link,
+            "worth-current-output-position-source",
+            vec![storage.position_kind],
+            storage.entity_kinds.clone(),
         ),
         (
             storage.scope_link,

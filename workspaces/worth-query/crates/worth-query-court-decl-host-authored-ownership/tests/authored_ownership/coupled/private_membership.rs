@@ -11,8 +11,21 @@ fn caller_supplied_private_membership_delete_refuses_inside_the_real_cascade() {
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.runtime().request(&principal, &scope);
-    create(&host, &request, 10, vec![20]);
+    let created = create(&host, &request, 10, vec![20]);
     settle(&host, &request, 10);
+    let owner = created
+        .outputs_of::<super::super::lifecycle::CreatedOutputs>()
+        .unwrap()
+        .entity::<super::super::lifecycle::Created<S>>()
+        .unwrap()
+        .entity_id();
+    let memberships = host
+        .runtime()
+        .current_owned_aggregate_memberships_for_test(created.product_branch(), owner, &scope)
+        .unwrap();
+    let expected = *memberships
+        .first()
+        .expect("the installed body really has a private aggregate member");
     let _fault = host.runtime().supply_private_membership_deletion_for_test();
     let outcome = request
         .advanced()
@@ -42,10 +55,10 @@ fn caller_supplied_private_membership_delete_refuses_inside_the_real_cascade() {
         Some(AuthoredRetirementRefusal::OrdinaryMetadataWrite),
         "{error:?}"
     );
-    assert!(matches!(
-        error.context.affected_records.as_slice(),
-        [RecordRef::Relation(_)]
-    ));
+    assert_eq!(
+        error.context.affected_records,
+        [RecordRef::Relation(expected)]
+    );
     for id in [10, 20, 101, 102] {
         assert!(request.query(query::Input { id }).execute().is_ok());
     }

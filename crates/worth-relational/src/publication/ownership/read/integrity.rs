@@ -1,6 +1,7 @@
-//! Bidirectional current correspondence detects omitted, added and re-pointed facts.
+//! One indexed correspondence pass; each link and witness is consumed exactly once.
 use super::*;
 use crate::mvcc::RequiredOutputRolePosture as Posture;
+use std::collections::HashMap;
 
 pub(super) fn validate(
     roster: &CurrentPublicationRoster,
@@ -8,249 +9,198 @@ pub(super) fn validate(
     view: &InvariantStateView<'_>,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<(), TransactionCommitError> {
-    for (id, catalog) in &roster.catalogs {
-        checkpoint(
-            context,
-            (roster.catalogs.len() + roster.links.len() + 1) as u64,
-        )?;
-        if view.entity_metadata(catalog.scope).is_none()
-            || roster
-                .catalogs
-                .iter()
-                .filter(|(_, row)| row.scope == catalog.scope)
-                .count()
-                != 1
-            || roster
-                .links
-                .iter()
-                .filter(|link| {
-                    link.kind == storage.scope_link
-                        && link.source == *id
-                        && link.target == catalog.scope
-                        && link.publication == CommitId(0)
-                })
-                .count()
-                != 1
-        {
-            return Err(corrupt(
-                catalog
-                    .routes
-                    .first()
-                    .map_or(CommitId(0), |route| route.publication),
-                RecordRef::Entity(catalog.scope),
-            ));
-        }
-        for (index, route) in catalog.routes.iter().enumerate() {
-            checkpoint(context, (index + roster.publications.len() + 1) as u64)?;
-            if route.meaning.source_scope != catalog.scope
-                || catalog.routes[..index]
-                    .iter()
-                    .any(|old| old.meaning.same_route(&route.meaning))
-                || roster
-                    .publications
-                    .iter()
-                    .filter(|row| {
-                        row.value.origin.meaning == route.meaning
-                            && row.value.origin.commit.commit_id == route.publication
-                            && row.digest == route.digest
-                    })
-                    .count()
-                    != 1
-            {
-                return Err(corrupt(route.publication, RecordRef::Entity(catalog.scope)));
-            }
+    let mut links = HashMap::new();
+    let mut catalogs = HashMap::new();
+    let mut publications = HashMap::new();
+    let mut edges = HashMap::new();
+    for link in &roster.links {
+        checkpoint(context, 1)?;
+        let key = (link.kind, link.source, link.target, link.publication);
+        if links.insert(key, link.id).is_some() {
+            return Err(corrupt(link.publication, RecordRef::Relation(link.id)));
         }
     }
-    for row in &roster.publications {
-        let origin = &row.value.origin;
-        let publication = origin.commit.commit_id;
-        let owner = origin.meaning.source_scope;
-        checkpoint(
-            context,
-            (roster.publications.len()
-                + roster.catalogs.len()
-                + roster.links.len()
-                + origin.members.len()
-                + origin.relations.len()
-                + 1) as u64,
-        )?;
-        let fail = || corrupt(publication, RecordRef::Entity(owner));
-        if !origin.source_scope_owned
-            || origin
-                .members
-                .iter()
-                .all(|member| member.posture == Posture::Retire)
-            || roster
-                .publications
-                .iter()
-                .filter(|other| other.value.origin.meaning.same_route(&origin.meaning))
-                .count()
-                != 1
-        {
-            return Err(fail());
-        }
-        let Some((catalog_id, catalog)) = roster
-            .catalogs
-            .iter()
-            .find(|(_, catalog)| catalog.scope == owner)
-        else {
-            return Err(fail());
+    let take =
+        |links: &mut HashMap<_, _>, kind, source, target, publication, subject: RecordRef| {
+            links
+                .remove(&(kind, source, target, publication))
+                .map(|_| ())
+                .ok_or_else(|| corrupt(publication, subject))
         };
-        if catalog
-            .routes
-            .iter()
-            .filter(|route| {
-                route.meaning == origin.meaning
-                    && route.publication == publication
-                    && route.digest == row.digest
-            })
-            .count()
-            != 1
-            || roster
-                .links
-                .iter()
-                .filter(|link| {
-                    link.kind == storage.publication_link
-                        && link.source == row.entity
-                        && link.target == *catalog_id
-                        && link.publication == publication
-                })
-                .count()
-                != 1
-        {
-            return Err(fail());
+    for (id, catalog) in &roster.catalogs {
+        checkpoint(context, 1)?;
+        if catalogs.insert(catalog.scope, (*id, catalog)).is_some() {
+            return Err(damaged(&RecordRef::Entity(*id)));
         }
-        for member in origin
-            .members
-            .iter()
-            .filter(|member| member.posture != Posture::Retire)
+        if links
+            .remove(&(storage.scope_link, *id, catalog.scope, CommitId(0)))
+            .is_none()
         {
-            checkpoint(context, (roster.links.len() + 1) as u64)?;
-            if view
-                .entity_metadata(member.id)
-                .is_none_or(|metadata| metadata.kind_id != member.kind)
-                || roster
-                    .links
-                    .iter()
-                    .filter(|link| {
-                        link.kind == storage.member_link
-                            && link.source == member.id
-                            && link.target == row.entity
-                            && link.publication == publication
-                    })
-                    .count()
-                    != 1
-            {
-                return Err(corrupt(publication, RecordRef::Entity(member.id)));
-            }
+            // A scope catalog does not designate one publication. Do not invent
+            // publication zero when its structural incidence is unavailable.
+            return Err(damaged(&RecordRef::Entity(*id)));
         }
-        for edge in &origin.relations {
-            checkpoint(
-                context,
-                (roster.edges.len() + roster.links.len() + 1) as u64,
-            )?;
-            let mut matching = roster
-                .edges
-                .iter()
-                .filter(|(_, witness)| witness.publication == publication && witness.edge == *edge);
-            let Some((witness_id, _)) = matching.next() else {
-                return Err(corrupt(publication, RecordRef::Relation(edge.id)));
-            };
-            if matching.next().is_some() {
-                return Err(corrupt(publication, RecordRef::Relation(edge.id)));
-            }
-            if view.relation_metadata(edge.id).is_none_or(|metadata| {
-                metadata.kind_id != edge.kind
-                    || metadata.source != edge.source
-                    || metadata.target != edge.target
-            }) || roster
-                .links
-                .iter()
-                .filter(|link| {
-                    link.kind == storage.edge_link
-                        && link.source == *witness_id
-                        && link.target == row.entity
-                        && link.publication == publication
-                })
-                .count()
-                != 1
-            {
-                return Err(corrupt(publication, RecordRef::Relation(edge.id)));
-            }
+    }
+    for row in roster.publications.iter().chain(&roster.codec_retired) {
+        checkpoint(context, 1)?;
+        let o = &row.value.origin;
+        let key = (
+            &o.meaning.family,
+            o.meaning.source_scope,
+            o.meaning.source_partition,
+        );
+        if publications.insert(key, row).is_some() {
+            return Err(corrupt(
+                o.commit.commit_id,
+                RecordRef::Entity(o.meaning.source_scope),
+            ));
         }
     }
     for (id, witness) in &roster.edges {
-        checkpoint(
-            context,
-            (roster.publications.len() + roster.links.len() + 1) as u64,
-        )?;
-        let mut owners = 0;
-        for row in &roster.publications {
-            checkpoint(context, row.value.origin.relations.len() as u64)?;
-            owners += usize::from(
-                row.value.origin.commit.commit_id == witness.publication
-                    && row.value.origin.relations.contains(&witness.edge)
-                    && roster.links.iter().any(|link| {
-                        link.kind == storage.edge_link
-                            && link.source == *id
-                            && link.target == row.entity
-                            && link.publication == witness.publication
-                    }),
-            );
-        }
-        if owners != 1 {
+        checkpoint(context, 1)?;
+        if edges
+            .insert((witness.publication, witness.edge.id), (*id, witness))
+            .is_some()
+        {
             return Err(corrupt(
                 witness.publication,
                 RecordRef::Relation(witness.edge.id),
             ));
         }
     }
-    for link in &roster.links {
-        checkpoint(
-            context,
-            (roster.publications.len() + roster.catalogs.len() + roster.edges.len() + 1) as u64,
-        )?;
-        let valid = if link.kind == storage.scope_link {
-            link.publication == CommitId(0)
-                && roster
-                    .catalogs
-                    .iter()
-                    .any(|(id, row)| *id == link.source && row.scope == link.target)
-        } else if link.kind == storage.publication_link {
-            roster.publications.iter().any(|row| {
-                row.entity == link.source
-                    && row.value.origin.commit.commit_id == link.publication
-                    && roster.catalogs.iter().any(|(id, catalog)| {
-                        *id == link.target && catalog.scope == row.value.origin.meaning.source_scope
-                    })
-            })
-        } else {
-            let Some(row) = roster.publications.iter().find(|row| {
-                row.entity == link.target && row.value.origin.commit.commit_id == link.publication
-            }) else {
-                return Err(corrupt(link.publication, RecordRef::Relation(link.id)));
-            };
-            checkpoint(
-                context,
-                (row.value.origin.members.len() + roster.edges.len() + 1) as u64,
-            )?;
-            if link.kind == storage.member_link {
-                row.value
-                    .origin
-                    .members
-                    .iter()
-                    .any(|member| member.id == link.source && member.posture != Posture::Retire)
-            } else {
-                roster.edges.iter().any(|(id, edge)| {
-                    *id == link.source
-                        && edge.publication == link.publication
-                        && row.value.origin.relations.contains(&edge.edge)
-                })
+    let mut routes = HashMap::new();
+    for (_, catalog) in &roster.catalogs {
+        for route in &catalog.routes {
+            checkpoint(context, 1)?;
+            let key = (
+                &route.meaning.family,
+                route.meaning.source_scope,
+                route.meaning.source_partition,
+            );
+            if route.meaning.source_scope != catalog.scope || routes.insert(key, route).is_some() {
+                return Err(corrupt(route.publication, RecordRef::Entity(catalog.scope)));
             }
-        };
-        if !valid {
-            return Err(corrupt(link.publication, RecordRef::Relation(link.id)));
+            let row = publications
+                .get(&key)
+                .ok_or_else(|| corrupt(route.publication, RecordRef::Entity(catalog.scope)))?;
+            if row.value.origin.meaning != route.meaning
+                || row.value.origin.commit.commit_id != route.publication
+                || row.digest != route.digest
+            {
+                return Err(corrupt(route.publication, RecordRef::Entity(catalog.scope)));
+            }
         }
+    }
+    for row in &roster.publications {
+        let o = &row.value.origin;
+        let publication = o.commit.commit_id;
+        let owner = o.meaning.source_scope;
+        checkpoint(context, 1)?;
+        let key = (&o.meaning.family, owner, o.meaning.source_partition);
+        if view.entity_metadata(owner).is_none()
+            || !o.source_scope_owned
+            || o.members.iter().all(|m| m.posture == Posture::Retire)
+            || !routes.contains_key(&key)
+        {
+            return Err(corrupt(publication, RecordRef::Entity(owner)));
+        }
+        let (catalog, _) = catalogs
+            .get(&owner)
+            .ok_or_else(|| corrupt(publication, RecordRef::Entity(owner)))?;
+        take(
+            &mut links,
+            storage.publication_link,
+            row.entity,
+            *catalog,
+            publication,
+            RecordRef::Entity(owner),
+        )?;
+        for member in o.members.iter().filter(|m| m.posture != Posture::Retire) {
+            checkpoint(context, 1)?;
+            if view
+                .entity_metadata(member.id)
+                .is_none_or(|m| m.kind_id != member.kind)
+            {
+                return Err(corrupt(publication, RecordRef::Entity(member.id)));
+            }
+            take(
+                &mut links,
+                storage.member_link,
+                member.id,
+                row.entity,
+                publication,
+                RecordRef::Entity(member.id),
+            )?;
+        }
+        for edge in &o.relations {
+            checkpoint(context, 1)?;
+            let (id, witness) = edges
+                .remove(&(publication, edge.id))
+                .ok_or_else(|| corrupt(publication, RecordRef::Relation(edge.id)))?;
+            if witness.edge != *edge
+                || view.relation_metadata(edge.id).is_none_or(|m| {
+                    m.kind_id != edge.kind || m.source != edge.source || m.target != edge.target
+                })
+            {
+                return Err(corrupt(publication, RecordRef::Relation(edge.id)));
+            }
+            take(
+                &mut links,
+                storage.edge_link,
+                id,
+                row.entity,
+                publication,
+                RecordRef::Relation(edge.id),
+            )?;
+        }
+    }
+    for row in &roster.codec_retired {
+        checkpoint(context, 1)?;
+        let o = &row.value.origin;
+        let owner = o.meaning.source_scope;
+        let key = (&o.meaning.family, owner, o.meaning.source_partition);
+        if !routes.contains_key(&key) {
+            return Err(corrupt(o.commit.commit_id, RecordRef::Entity(owner)));
+        }
+        let (catalog, _) = catalogs
+            .get(&owner)
+            .ok_or_else(|| corrupt(o.commit.commit_id, RecordRef::Entity(owner)))?;
+        take(
+            &mut links,
+            storage.publication_link,
+            row.entity,
+            *catalog,
+            o.commit.commit_id,
+            RecordRef::Entity(owner),
+        )?;
+    }
+    for (id, position) in &roster.positions {
+        checkpoint(context, 1)?;
+        if links
+            .remove(&(
+                storage.position_link,
+                *id,
+                position.meaning.source_scope,
+                CommitId(0),
+            ))
+            .is_none()
+        {
+            return Err(corrupt(
+                position.publication,
+                RecordRef::Entity(position.meaning.source_scope),
+            ));
+        }
+    }
+    checkpoint(context, (edges.len() + links.len()) as u64)?;
+    if let Some(((_, edge), (_, witness))) = edges.into_iter().min_by_key(|((_, edge), _)| *edge) {
+        return Err(corrupt(witness.publication, RecordRef::Relation(edge)));
+    }
+    if let Some(((.., publication), id)) = links.into_iter().min_by_key(|(_, id)| *id) {
+        return Err(if publication == CommitId(0) {
+            damaged(&RecordRef::Relation(id))
+        } else {
+            corrupt(publication, RecordRef::Relation(id))
+        });
     }
     Ok(())
 }

@@ -44,6 +44,11 @@ impl RelationalRuntime {
                     execution,
                     &restoration.before,
                     Some(installed),
+                    &group
+                        .participants
+                        .iter()
+                        .map(|p| RecordRef::Entity(p.origin.meaning.source_scope))
+                        .collect::<Vec<_>>(),
                     context,
                 )?;
                 let mut owners = Vec::with_capacity(group.participants.len());

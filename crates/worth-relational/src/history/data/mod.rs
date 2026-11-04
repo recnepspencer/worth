@@ -27,6 +27,7 @@ mod merge_branch_basis_foundational;
 mod positioned_canonical_commit;
 mod publication_relations;
 mod required_output_positions;
+pub(crate) use required_output_positions::presence as current_route_presence;
 pub(crate) use required_output_positions::{
     RequiredOutputPublicationPositions, RequiredOutputRoutePosition,
 };

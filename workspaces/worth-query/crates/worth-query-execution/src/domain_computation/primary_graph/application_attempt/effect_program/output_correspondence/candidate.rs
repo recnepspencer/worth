@@ -216,7 +216,11 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
         self,
         commit: &CommitResult,
     ) -> WorthQueryApplicationOutputCorrespondence {
-        self.seal_with(|created| commit.created_entity(created))
+        let mut correspondence = self.seal_with(|created| commit.created_entity(created));
+        if let Some(members) = commit.primary_output_members() {
+            correspondence.separate_closure_evidence(members);
+        }
+        correspondence
     }
 
     pub(super) fn seal_with(

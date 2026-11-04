@@ -130,6 +130,10 @@ impl<S: Scenario> ApplicationMutationOutputContract<S> for RetiredOutputs {
             ]
         };
 }
+pub struct CreationTargets<S: Scenario> {
+    pub scope: Target<S>,
+    pub previous: Option<Target<S>>,
+}
 pub type Target<S> = WorthQueryInvariantMutationTarget<S, Node>;
 pub struct RetirementTargets<S: Scenario> {
     pub body: Option<WorthQueryInvariantMutationTarget<S, heterogeneous::Body>>,
@@ -142,7 +146,7 @@ worth_query_mutation_binding!(
     pub CreateBinding for Create, schema generic S: Scenario,
     identity "ownership.create.v1", input CreateInput, operation CreateOp,
     result query::UnitBinding, idempotency String, identity "ownership.command.v1",
-    decision Target<S>, denial query::UnitBinding, handler identity "ownership.create.handler.v1",
+    decision CreationTargets<S>, denial query::UnitBinding, handler identity "ownership.create.handler.v1",
     outputs CreatedOutputs, source NoApplicationMutationSource,
     principal binding actor(), binding_type Actor, mapping Mapping, principal_entity Node,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
@@ -190,16 +194,22 @@ impl OperationCreates<CreateOp> for Node {}
 impl OperationReads<CreateOp> for Id {}
 impl OperationReads<CreateOp> for Node {}
 impl OperationReads<CreateOp> for Peer {}
+impl OperationLinks<CreateOp> for Peer {}
 impl OperationWrites<CreateOp> for Id {}
 impl OperationWrites<CreateOp> for Value {}
 impl<S: Scenario> ApplicationDeclaredOperation<S> for CreateOp {
     fn declare_access(
         schema: ApplicationSchemaDeclarationBuilder<S>,
     ) -> ApplicationSchemaDeclarationBuilder<S> {
-        let schema = if matches!(S::MODE, 21 | 30 | 39 | 40 | 41) {
+        let schema = if matches!(S::MODE, 21 | 30 | 39 | 40 | 41 | 60) {
             schema
                 .operation_link(Self::reference(), PreviousStage::reference())
                 .operation_link(Self::reference(), StageVisible::reference())
+        } else {
+            schema
+        };
+        let schema = if S::MODE == 48 {
+            schema.operation_link(Self::reference(), Peer::reference())
         } else {
             schema
         };
@@ -252,7 +262,7 @@ impl<S: Scenario> ApplicationDeclaredOperation<S> for RetireOp {
         } else {
             schema
         };
-        let schema = if matches!(S::MODE, 21 | 30 | 39 | 40 | 41) {
+        let schema = if matches!(S::MODE, 21 | 30 | 39 | 40 | 41 | 60) {
             let schema = if S::MODE == 39 {
                 schema
             } else {

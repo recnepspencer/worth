@@ -31,3 +31,5 @@ pub(in crate::domain_computation::primary_graph) use commit_receipt::{
 pub use committed_publication::WorthQueryCommittedProductPublication;
 
 pub(in crate::domain_computation::primary_graph) use commit_receipt::MaterializedCommittedField;
+
+pub(in crate::domain_computation::primary_graph) use commit_receipt::recording;

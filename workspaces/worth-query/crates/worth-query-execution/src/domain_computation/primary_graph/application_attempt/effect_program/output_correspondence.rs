@@ -25,7 +25,10 @@ pub(crate) mod role_use;
 pub(in crate::domain_computation::primary_graph) use role_use::OutputRoleUse;
 
 mod typed;
-pub use typed::WorthQueryApplicationTypedOutputCorrespondence;
+pub use typed::{
+    WorthQueryApplicationClosureEvidenceEntry, WorthQueryApplicationTypedClosureEvidence,
+    WorthQueryApplicationTypedOutputCorrespondence,
+};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 struct CommittedOutputBinding {
@@ -298,3 +301,41 @@ impl WorthQueryApplicationOutputCorrespondence {
 }
 
 mod court_doors_for_test;
+
+impl WorthQueryApplicationOutputCorrespondence {
+    fn separate_closure_evidence<'a>(
+        &mut self,
+        members: impl ExactSizeIterator<
+            Item = (
+                &'a str,
+                &'a str,
+                worth_relational::facade::mvcc::RequiredOutputRolePosture,
+                EntityId,
+            ),
+        >,
+    ) {
+        if members.len() == self.storage.roles.len() {
+            return;
+        }
+        use std::collections::BTreeSet;
+        let members = members
+            .map(|(role, entity, _, id)| (role, entity, id))
+            .collect::<BTreeSet<_>>();
+        let storage = std::sync::Arc::get_mut(&mut self.storage)
+            .expect("newly sealed correspondence has one owner");
+        let mut published = Vec::with_capacity(storage.roles.len());
+        for (role, binding) in std::mem::take(&mut storage.roles) {
+            if members.contains(&(role.as_str(), binding.entity_name.as_str(), binding.entity)) {
+                published.push((role, binding));
+            } else {
+                assert_eq!(
+                    binding.posture,
+                    WorthQueryApplicationOutputPosture::Retire,
+                    "Native admits only retired descendants as closure witnesses"
+                );
+                storage.closure_evidence.push((role, binding));
+            }
+        }
+        storage.roles = published;
+    }
+}

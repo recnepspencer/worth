@@ -99,13 +99,16 @@ impl<S: Scenario> ApplicationProgramDefinition<S> for TwoProgram {
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("ownership.two-bodies.v1");
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
-        vec![
-            program::entry_spec::<S>(),
-            ApplicationFeatureSpec::root::<S, Parent>()
-                .conditional_operation::<super::super::producer::Operation>()
-                .conditional_operation::<super::producer::Operation>()
-                .finish(),
-        ]
+        vec![program::entry_spec::<S>(), {
+            let spec = ApplicationFeatureSpec::root::<S, Parent>()
+                .conditional_operation::<super::super::producer::Operation>();
+            if S::COUPLED {
+                spec.conditional_operation::<super::producer::Operation>()
+                    .finish()
+            } else {
+                spec.finish()
+            }
+        }]
     }
 }
 type Host<S> = WorthQueryProgramApplicationRuntime<S, TwoProgram>;

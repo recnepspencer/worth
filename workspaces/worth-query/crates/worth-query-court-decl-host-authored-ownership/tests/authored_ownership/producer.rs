@@ -130,7 +130,7 @@ impl<S: Scenario> WorthQueryApplicationProducerBinding<S> for Producer<S> {
         )];
     const REQUIRED_INVARIANTS: &'static [WorthQueryProducerInvariantRequirement] = &[];
     const REUSE_POLICY: &'static str = "exact-source";
-    const OWNERSHIP: ProducerPublicationOwnership = if S::MODE == 3 {
+    const OWNERSHIP: ProducerPublicationOwnership = if matches!(S::MODE, 3 | 65) {
         ProducerPublicationOwnership::Independent
     } else {
         ProducerPublicationOwnership::SourceScopeCascade

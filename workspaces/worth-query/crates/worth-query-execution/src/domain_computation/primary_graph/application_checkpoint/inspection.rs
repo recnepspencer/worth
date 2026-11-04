@@ -22,6 +22,7 @@ pub struct WorthQueryApplicationCheckpointInspection<'a> {
     pub symbol_identity_frontier: u32,
     pub frontiers: Vec<CheckpointRecordFrontier>,
     pub generations: Vec<CheckpointRecordIdentity>,
+    pub current_publication_records: std::collections::BTreeSet<CheckpointRecordIdentity>,
     pub live_records: std::collections::BTreeSet<CheckpointRecordIdentity>,
 }
 #[derive(Debug)]
@@ -62,6 +63,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static>
             frontiers,
             generations,
             live_records,
+            current_publication_records,
         } = worth_relational::facade::durability::RelationalNativeCheckpoint::inspect_bytes(
             &execution, native,
         )
@@ -77,6 +79,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static>
             frontiers,
             generations,
             live_records,
+            current_publication_records,
         })
     }
 }

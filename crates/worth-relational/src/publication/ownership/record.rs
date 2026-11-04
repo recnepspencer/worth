@@ -7,33 +7,33 @@ use crate::{
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use worth_foundational::facade::{
-    AspectFieldLocator, AspectKey, AspectValue, AuthoritativeRecordAspectState, CanonicalFieldPath,
-    ContractValidatedAspectValueView, FieldKey, LocatorAuthority,
+    AspectKey, AspectValue, AuthoritativeRecordAspectState, ContractValidatedAspectValueView,
+    FieldKey,
 };
 
 #[derive(Debug, Serialize, Deserialize)]
-pub(super) struct Catalog {
-    pub(super) scope: EntityId,
-    pub(super) routes: Vec<Route>,
+pub(crate) struct Catalog {
+    pub(crate) scope: EntityId,
+    pub(crate) routes: Vec<Route>,
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub(super) struct Route {
-    pub(super) meaning: RequiredOutputPublicationMeaning,
-    pub(super) publication: CommitId,
-    pub(super) digest: [u8; 32],
+pub(crate) struct Route {
+    pub(crate) meaning: RequiredOutputPublicationMeaning,
+    pub(crate) publication: CommitId,
+    pub(crate) digest: [u8; 32],
 }
 #[derive(Debug, Serialize, Deserialize)]
-pub(super) struct Publication {
-    pub(super) origin: Arc<CanonicalRequiredOutputOrigin>,
-    pub(super) ordinal: usize,
+pub(crate) struct Publication {
+    pub(crate) origin: Arc<CanonicalRequiredOutputOrigin>,
+    pub(crate) ordinal: usize,
 }
 #[derive(Debug, Serialize, Deserialize)]
-pub(super) struct Edge {
-    pub(super) publication: CommitId,
-    pub(super) edge: CanonicalRequiredOutputRelation,
+pub(crate) struct Edge {
+    pub(crate) publication: CommitId,
+    pub(crate) edge: CanonicalRequiredOutputRelation,
 }
 
-pub(super) fn fields<'a>(
+pub(crate) fn fields<'a>(
     state: &'a AuthoritativeRecordAspectState,
     aspect: &str,
 ) -> Option<(CommitId, &'a [u8])> {
@@ -51,12 +51,4 @@ pub(super) fn fields<'a>(
         return None;
     };
     Some((CommitId(*publication), payload.as_bytes()))
-}
-
-pub(super) fn locator(aspect: &str, field: &str) -> AspectFieldLocator {
-    AspectFieldLocator::new(
-        LocatorAuthority::Planned,
-        AspectKey::new(aspect).expect("fixed ownership aspect"),
-        CanonicalFieldPath::single(FieldKey::new(field).expect("fixed ownership field")),
-    )
 }

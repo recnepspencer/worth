@@ -100,10 +100,11 @@ pub(crate) fn current(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     basis: &crate::branch::AdmittedRelationalBranchBasis,
     installed: Option<&RelationalInstalledApplicationPublicationAuthority>,
+    records: &[crate::transactions::data::RecordRef],
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<Vec<SelectedOutputPublication>, crate::transactions::data::TransactionCommitError> {
     let roster = Arc::new(crate::publication::ownership::read(
-        execution, basis, context,
+        execution, basis, records, context,
     )?);
     from_current(roster, installed, context)
 }
@@ -226,11 +227,14 @@ pub(crate) fn validate_historical_prefix(
     .map(|_| ())
     .map_err(|failure| match failure.stop {
         Stop::Request(cause) => crate::publication::ownership::request(cause),
-        Stop::Payload(_) => crate::transactions::data::TransactionCommitError::publication(
-            crate::publication::data::PublicationError::authored_retirement(
+        Stop::Payload(detail) => {
+            let mut error = crate::publication::data::PublicationError::authored_retirement(
                 crate::publication::data::AuthoredRetirementRefusal::CorruptPublication,
                 crate::transactions::data::RecordRef::Entity(failure.source.unwrap_or(source)),
-            ),
-        ),
+            );
+            error.detail.push_str(": ");
+            error.detail.push_str(&detail);
+            crate::transactions::data::TransactionCommitError::publication(error)
+        }
     })
 }

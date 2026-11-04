@@ -1,17 +1,40 @@
 //! Live opted-in retirement custody comes from current facts before legacy history.
 use super::*;
 impl RelationalRuntime {
-    pub(super) fn refuse_live_owned_retirement(
+    pub(super) fn current_retirement_custody(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         installed: &RelationalInstalledApplicationPublicationAuthority,
         basis: &AdmittedRelationalBranchBasis,
         roles: &[RequiredOutputRoleTarget],
-    ) -> Result<(), TransactionCommitError> {
+    ) -> Result<
+        Option<Arc<crate::publication::ownership::CurrentPublicationRoster>>,
+        TransactionCommitError,
+    > {
         if installed.source_scope_ownership.is_empty() {
-            return Ok(());
+            return Ok(None);
         }
-        let current = crate::publication::ownership::select_current(execution, basis)?;
+        let records = roles
+            .iter()
+            .filter_map(|r| match r.target {
+                EntityReference::Existing(id) => {
+                    Some(crate::transactions::data::RecordRef::Entity(id))
+                }
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        crate::publication::ownership::select_current(execution, basis, &records).map(Some)
+    }
+
+    pub(super) fn refuse_live_owned_retirement(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        roles: &[RequiredOutputRoleTarget],
+        current: Option<&crate::publication::ownership::CurrentPublicationRoster>,
+    ) -> Result<(), TransactionCommitError> {
+        let Some(current) = current else {
+            return Ok(());
+        };
         let selected = execution
             .run_native_with_checkpoint(|context| {
                 crate::history::data::select_owned_scope_dependent(
@@ -39,7 +62,7 @@ impl RelationalRuntime {
                             Ok(false)
                         },
                     ),
-                    &current,
+                    current,
                     context,
                 )
             })

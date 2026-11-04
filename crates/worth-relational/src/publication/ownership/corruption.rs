@@ -1,5 +1,6 @@
 //! Closed corruption of current facts; the ordinary reader must reject the result.
 use super::record;
+mod coherent;
 use crate::{durability::data::PartitionCheckpointImage, history::data::CommitId};
 use worth_foundational::facade::*;
 
@@ -7,7 +8,11 @@ pub(crate) fn alter(
     partition: &mut PartitionCheckpointImage,
     publication: CommitId,
     change: u8,
+    storage: &crate::schema::data::CurrentPublicationStorage,
 ) -> bool {
+    if change >= 3 {
+        return coherent::alter(partition, publication, change, storage);
+    }
     let mut changed = false;
     for extra in &mut partition.entity_arena.extra {
         changed |= state(&mut extra.authoritative_aspect_state, publication, change);

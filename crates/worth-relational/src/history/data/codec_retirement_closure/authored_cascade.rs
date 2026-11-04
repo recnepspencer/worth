@@ -72,7 +72,8 @@ pub(crate) fn select_authored_source_retirement(
                     return Err(reject(Cause::InvalidAuthoredAnchor, anchor));
                 }
                 let birth = authored_birth(execution, runtime, basis, anchor, context)?;
-                let latest = super::source_scope_closure::current(execution,basis,Some(installed),context)?;
+                let records=std::iter::once(anchor).chain(co_anchors.iter().copied()).map(RecordRef::Entity).collect::<Vec<_>>();
+                let latest = super::source_scope_closure::current(execution,basis,Some(installed),&records,context)?;
                 let mut anchors = Vec::with_capacity(co_anchors.len() + 1);
                 anchors.push(anchor);
                 let mut births = Vec::with_capacity(co_anchors.len());

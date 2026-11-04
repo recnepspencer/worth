@@ -4,8 +4,11 @@ use serde::Serialize;
 use std::collections::BTreeMap;
 use std::io::Write;
 use worth_foundational::facade::AspectValue;
+use worth_foundational::facade::{
+    AspectFieldLocator, AspectKey, CanonicalFieldPath, FieldKey, LocatorAuthority,
+};
 
-pub(super) fn encode(
+pub(crate) fn encode(
     aspect: &str,
     publication: CommitId,
     bytes: Vec<u8>,
@@ -14,17 +17,14 @@ pub(super) fn encode(
         .map_err(|_| crate::mvcc::origin_denial("Native ownership payload UTF-8 refused"))?;
     Ok(AspectFieldPatch::new(BTreeMap::from([
         (
-            record::locator(aspect, "publication"),
+            locator(aspect, "publication"),
             AspectValue::UInt64(publication.0),
         ),
-        (
-            record::locator(aspect, "payload"),
-            AspectValue::String(text.into()),
-        ),
+        (locator(aspect, "payload"), AspectValue::String(text.into())),
     ])))
 }
 impl Writer<'_, '_, '_, '_, '_> {
-    pub(super) fn encode<T: Serialize>(
+    pub(crate) fn encode<T: Serialize>(
         &mut self,
         value: &T,
     ) -> Result<Vec<u8>, TransactionCommitError> {
@@ -78,4 +78,12 @@ impl<F: FnMut(usize) -> Result<(), TransactionCommitError>> Write for Width<F> {
     fn flush(&mut self) -> std::io::Result<()> {
         Ok(())
     }
+}
+
+fn locator(aspect: &str, field: &str) -> AspectFieldLocator {
+    AspectFieldLocator::new(
+        LocatorAuthority::Planned,
+        AspectKey::new(aspect).expect("fixed Native current aspect"),
+        CanonicalFieldPath::single(FieldKey::new(field).expect("fixed Native current field")),
+    )
 }

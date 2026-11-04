@@ -53,7 +53,7 @@ impl RelationalRuntime {
         let (_, basis) = self
             .observe_branch(&identity)
             .map_err(|cause| setup(format!("{cause:?}")))?;
-        let roster = super::select_current(execution, &basis)?;
+        let roster = super::select_current(execution, &basis, &[RecordRef::Entity(owner)])?;
         let member = roster
             .origins()
             .find(|origin| origin.meaning.source_scope == owner)

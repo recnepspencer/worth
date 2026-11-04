@@ -88,3 +88,210 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
         })?
     }
 }
+
+impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S> {
+    #[doc(hidden)]
+    pub fn probe_current_metadata_writes_for_test(
+        &self,
+        branch: WorthQueryProductBranch,
+        owner: EntityId,
+        request: &WorthQueryRequestScope,
+    ) -> Result<
+        Vec<(
+            worth_relational::facade::identity::KindId,
+            u8,
+            Result<(), TransactionCommitError>,
+        )>,
+        WorthQueryAdvancementDenial,
+    > {
+        self.with_application_advancement(request, |phase| {
+            let execution = phase.execution_request_for(&self.runtime.product_runtime)?;
+            let (_, product, _) = self
+                .on_branch(branch)
+                .select(&phase)
+                .expect("actual producer branch")
+                .into_parts();
+            let graph = self.runtime.primary_graph().expect("live Query graph");
+            Ok(graph
+                .integration_handle()
+                .with_runtime_mut(&execution, |runtime| {
+                    runtime.probe_current_metadata_writes_for_test(
+                        &execution,
+                        product.relational_basis(),
+                        owner,
+                    )
+                })
+                .expect("real publication metadata"))
+        })?
+    }
+}
+
+impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S> {
+    #[doc(hidden)]
+    pub fn probe_current_ownership_locality_for_test(
+        &self,
+        branch: WorthQueryProductBranch,
+        owner: EntityId,
+        request: &WorthQueryRequestScope,
+    ) -> Result<
+        worth_relational::facade::runtime::CurrentOwnershipLocalityForTest,
+        WorthQueryAdvancementDenial,
+    > {
+        self.with_application_advancement(request, |phase| {
+            let execution = phase.execution_request_for(&self.runtime.product_runtime)?;
+            let (_, product, _) = self
+                .on_branch(branch)
+                .select(&phase)
+                .expect("actual producer branch")
+                .into_parts();
+            let graph = self.runtime.primary_graph().expect("live Query graph");
+            Ok(graph
+                .integration_handle()
+                .with_runtime_mut(&execution, |runtime| {
+                    runtime.probe_current_ownership_locality_for_test(
+                        &execution,
+                        product.relational_basis(),
+                        owner,
+                    )
+                })
+                .expect("real cold ownership locality court"))
+        })?
+    }
+}
+
+impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S> {
+    #[doc(hidden)]
+    pub fn current_owned_aggregate_memberships_for_test(
+        &self,
+        branch: WorthQueryProductBranch,
+        owner: EntityId,
+        request: &WorthQueryRequestScope,
+    ) -> Result<Vec<worth_relational::facade::identity::RelationId>, WorthQueryAdvancementDenial>
+    {
+        self.with_application_advancement(request, |phase| {
+            let execution = phase.execution_request_for(&self.runtime.product_runtime)?;
+            let (_, product, _) = self
+                .on_branch(branch)
+                .select(&phase)
+                .expect("actual producer branch")
+                .into_parts();
+            let graph = self.runtime.primary_graph().expect("live Query graph");
+            Ok(graph
+                .integration_handle()
+                .with_runtime_mut(&execution, |runtime| {
+                    runtime.current_owned_aggregate_memberships_for_test(
+                        &execution,
+                        product.relational_basis(),
+                        owner,
+                    )
+                })
+                .expect("real current aggregate memberships"))
+        })?
+    }
+}
+
+impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S> {
+    #[doc(hidden)]
+    pub fn probe_coherent_ownership_loss_for_test(
+        &self,
+        branch: WorthQueryProductBranch,
+        owner: EntityId,
+        request: &WorthQueryRequestScope,
+    ) -> Result<Result<(), TransactionCommitError>, WorthQueryAdvancementDenial> {
+        self.with_application_advancement(request, |phase| {
+            let execution = phase.execution_request_for(&self.runtime.product_runtime)?;
+            let (_, product, _) = self
+                .on_branch(branch)
+                .select(&phase)
+                .expect("actual producer branch")
+                .into_parts();
+            let graph = self.runtime.primary_graph().expect("live Query graph");
+            Ok(graph
+                .integration_handle()
+                .with_runtime_mut(&execution, |runtime| {
+                    runtime.probe_coherent_ownership_loss_for_test(
+                        &execution,
+                        product.relational_basis(),
+                        owner,
+                    )
+                }))
+        })?
+    }
+}
+
+impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S> {
+    /// Readonly, thread-scoped observation of this receiver's actual publications.
+    /// The callback receives existing public views and grants no operational custody.
+    #[doc(hidden)]
+    #[must_use = "retain the readonly recording guard until settlement completes"]
+    pub fn record_output_publications_for_test(
+        &self,
+        observer: impl Fn(&crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt)
+            + 'static,
+    ) -> impl Sized {
+        crate::domain_computation::primary_graph::application_attempt::compare_and_commit::recording::install(self.runtime.authority_identity().as_u64(),Box::new(observer))
+    }
+}
+
+impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S> {
+    #[doc(hidden)]
+    pub fn probe_cold_current_ownership_pairing_for_test(
+        &self,
+        branch: WorthQueryProductBranch,
+        owner: EntityId,
+        unrelated: EntityId,
+        request: &WorthQueryRequestScope,
+    ) -> Result<
+        Result<Vec<Result<(), TransactionCommitError>>, TransactionCommitError>,
+        WorthQueryAdvancementDenial,
+    > {
+        self.with_application_advancement(request, |phase| {
+            let execution = phase.execution_request_for(&self.runtime.product_runtime)?;
+            let (_, product, _) = self
+                .on_branch(branch)
+                .select(&phase)
+                .expect("actual Query producer branch")
+                .into_parts();
+            let graph = self.runtime.primary_graph().expect("actual Query graph");
+            Ok(graph
+                .integration_handle()
+                .with_runtime_mut(&execution, |runtime| {
+                    runtime.probe_cold_current_ownership_pairing_for_test(
+                        &execution,
+                        product.relational_basis(),
+                        owner,
+                        unrelated,
+                    )
+                }))
+        })?
+    }
+}
+
+impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S> {
+    #[doc(hidden)]
+    pub fn current_ownership_sources_for_record_for_test(
+        &self,
+        record: EntityId,
+        request: &WorthQueryRequestScope,
+    ) -> Result<Vec<EntityId>, WorthQueryAdvancementDenial> {
+        self.with_application_advancement(request, |phase| {
+            let execution = phase.execution_request_for(&self.runtime.product_runtime)?;
+            let (_, product, _) = self
+                .on_branch(self.current_world())
+                .select(&phase)
+                .expect("actual Query product")
+                .into_parts();
+            let graph = self.runtime.primary_graph().expect("actual Query graph");
+            Ok(graph
+                .integration_handle()
+                .with_runtime_mut(&execution, |runtime| {
+                    runtime.current_ownership_sources_for_record_for_test(
+                        &execution,
+                        product.relational_basis(),
+                        record,
+                    )
+                })
+                .expect("actual current custody count"))
+        })?
+    }
+}

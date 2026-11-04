@@ -108,6 +108,18 @@ impl crate::runtime::RelationalRuntime {
                 "route absence requires the exact installed native basis",
             ));
         }
+        let current = if installed.source_scope_ownership.is_empty()
+            || basis
+                .inner
+                .root
+                .output_publication_positions
+                .unresolved_prefix()
+                .is_none()
+        {
+            None
+        } else {
+            crate::history::data::current_route_presence::read_current(execution, basis, meaning)?
+        };
         let result = execution.in_scope(|lease| {
             ExecutionWorkCeiling::new(execution.work_ceiling()).run_with_checkpoint(
                 lease,
@@ -115,7 +127,7 @@ impl crate::runtime::RelationalRuntime {
                 |context| {
                     let positions = &basis.inner.root.output_publication_positions;
                     use crate::history::data::RequiredOutputRoutePosition as Position;
-                    let selected = match positions.get(meaning, context)? {
+                    let selected = match positions.get(meaning, context)?.or(current) {
                         Some(position) => Some(position),
                         None if positions.unresolved_prefix().is_some() => {
                             crate::history::data::readmit_required_output_route(

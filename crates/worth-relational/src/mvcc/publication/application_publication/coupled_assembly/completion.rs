@@ -65,6 +65,7 @@ pub(crate) fn prepare_coupled_candidate(
     };
     let runtime = round.with_candidate_symbols(symbols);
     let mut prepared = crate::authority::commit::phases::prepare::prepare_working_state_scope(
+        execution,
         &runtime,
         transaction,
         selected,

@@ -36,7 +36,7 @@ impl OperationUnlinks<RestoreOp> for PreviousStage {}
 pub fn declare<S: Scenario>(
     schema: ApplicationSchemaDeclarationBuilder<S>,
 ) -> ApplicationSchemaDeclarationBuilder<S> {
-    if matches!(S::MODE, 30 | 39 | 40 | 41) {
+    if matches!(S::MODE, 30 | 39 | 40 | 41 | 60) {
         inspection::declare(schema)
     } else {
         schema
@@ -56,7 +56,7 @@ pub fn derive<S: Scenario>(
     fields: &dyn ApplicationCorrectionPreImage<S>,
     case: u8,
 ) -> Result<(Option<Coordinate>, Vec<Material>), ApplicationCorrectionDerivationDenial> {
-    if !matches!(S::MODE, 30 | 39 | 40 | 41) {
+    if !matches!(S::MODE, 30 | 39 | 40 | 41 | 60) {
         return Ok((None, Vec::new()));
     }
     use ApplicationCorrectionDerivationDenial::MissingPreImage;

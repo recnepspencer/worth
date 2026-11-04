@@ -79,8 +79,12 @@ pub(super) fn entry_spec<S: Scenario>() -> ApplicationFeatureSpec {
         .finish_action()
         .native_action::<lifecycle::PlainBinding<S>>()
         .finish_action();
-    if matches!(S::MODE, 30 | 39 | 40 | 41) {
+    if matches!(S::MODE, 30 | 39 | 40 | 41 | 60) {
         spec.native_action::<relation_splice::inspection::Binding<S>>()
+            .finish_action()
+            .finish()
+    } else if S::MODE == 48 {
+        spec.native_action::<parameter_inverse::Binding<S>>()
             .finish_action()
             .finish()
     } else if S::MODE == 29 {

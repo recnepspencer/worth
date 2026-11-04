@@ -4,13 +4,14 @@ use serde::de::{DeserializeOwned, DeserializeSeed, Error, MapAccess, SeqAccess, 
 use serde::{Deserializer, Serialize};
 use std::fmt;
 
-pub(super) fn decode<T: DeserializeOwned + Serialize>(
+pub(crate) fn decode<T: DeserializeOwned + Serialize>(
     bytes: &[u8],
     publication: CommitId,
     record: &RecordRef,
     funding: &mut ExecutionMemoryReservation,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<T, TransactionCommitError> {
+    let bad = || malformed(publication, record);
     // serde_json may grow its escaped-string scratch to twice the payload width.
     // Fund it before either pass; the quote separately covers retained values.
     grow(
@@ -50,15 +51,22 @@ pub(super) fn decode<T: DeserializeOwned + Serialize>(
     if let Some(stop) = quote.stop {
         return Err(stop);
     }
-    result.map_err(|_| corrupt(publication, record.clone()))?;
+    result.map_err(|_| bad())?;
     grow(funding, quote.bytes)?;
-    let value: T =
-        serde_json::from_slice(bytes).map_err(|_| corrupt(publication, record.clone()))?;
+    let value: T = serde_json::from_slice(bytes).map_err(|_| bad())?;
     let mut canonical = CanonicalBytes(bytes);
     if serde_json::to_writer(&mut canonical, &value).is_err() || !canonical.0.is_empty() {
-        return Err(corrupt(publication, record.clone()));
+        return Err(bad());
     }
     Ok(value)
+}
+
+pub(super) fn malformed(publication: CommitId, record: &RecordRef) -> TransactionCommitError {
+    if publication == CommitId(0) {
+        damaged(record)
+    } else {
+        corrupt(publication, record.clone())
+    }
 }
 
 struct Quote<'a, 'scope, 'authority> {

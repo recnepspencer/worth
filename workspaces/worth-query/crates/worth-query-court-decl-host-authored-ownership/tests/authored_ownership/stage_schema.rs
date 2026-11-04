@@ -220,7 +220,7 @@ pub fn declare<S: Scenario>(
                 path,
             ));
     }
-    if !matches!(S::MODE, 21 | 30 | 39 | 40 | 41) {
+    if !matches!(S::MODE, 21 | 30 | 39 | 40 | 41 | 60) {
         return schema;
     }
     let schema = if S::MODE == 40 {
@@ -262,7 +262,7 @@ pub fn declare<S: Scenario>(
         .operation_component_read(ApplicationOperationComponentReadDefinition::new(
             coupled::producer::Operation::reference(),
             Components::reference(),
-            if matches!(S::MODE, 30 | 39 | 40 | 41) {
+            if matches!(S::MODE, 30 | 39 | 40 | 41 | 60) {
                 ApplicationQueryRootPath::from(Node::reference())
                     .forward(StageVisible::reference())
                     .forward_closure(PreviousStage::reference())

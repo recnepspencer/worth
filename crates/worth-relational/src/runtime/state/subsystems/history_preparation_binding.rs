@@ -88,17 +88,6 @@ impl RelationalPreparationHistory {
         self.canonical_routes.by_commit(commit)
     }
 
-    pub(crate) fn demand_canonical_envelope(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        commit: CommitId,
-    ) -> Result<
-        Option<Arc<CanonicalCommitEnvelope>>,
-        crate::storage::residency::RelationalResidencyDemandFailure,
-    > {
-        self.canonical_routes.demand_envelope(execution, commit)
-    }
-
     pub(crate) fn canonical_catalog_len(&self) -> usize {
         self.canonical_routes.catalog_len_bound()
     }

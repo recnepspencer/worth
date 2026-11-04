@@ -10,6 +10,7 @@ mod completion;
 mod coupled_assembly;
 mod coupled_owners;
 mod custody;
+mod ownership_reach;
 pub(crate) use coupled_assembly::BoundAuthoredCoupling;
 pub use coupled_assembly::{
     RelationalAuthoredCoupledCandidate, RelationalAuthoredCoupledProducerAssembly,

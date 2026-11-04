@@ -38,9 +38,12 @@ def declared_doors(root):
 
 
 def control_owners(root):
-    """{control name: owner dir} for names one crate declares: the library, each testkit of
-    the family, and the repository's root crates the moved tests also reach."""
-    owners, seen = {}, {}
+    """{control name: owner dirs}, retaining ambiguous names in distinct crates.
+
+    An exact caller must name every possible external owner of a sealed control.
+    A declaration in the caller's own crate resolves that name locally.
+    """
+    seen = {}
     crates = [root / OWNER] + [d for d in sorted((root / CRATES).iterdir())
                                if d.name.startswith('worth-query-testkit-') and 'execution' in d.name]
     if (root / 'crates').is_dir():
@@ -48,7 +51,7 @@ def control_owners(root):
     for directory in crates:
         for name in declared_in(directory / 'src'):
             seen.setdefault(name, set()).add(str(directory.relative_to(root)) + '/')
-    return {name: next(iter(dirs)) for name, dirs in seen.items() if len(dirs) == 1}
+    return seen
 
 
 def moved_files(root):
@@ -69,10 +72,9 @@ def module_key(path):
     return 'domain_computation/' + tail[1] if len(tail) == 2 else None
 
 
-def updated(root, lines):
+def updated(root, lines, callers=()):
     """New control-callers lines: stale callers moved or dropped, door callers added."""
-    doors = declared_doors(root)
-    files = moved_files(root)
+    files = sorted(set(callers)) if callers else moved_files(root)
     by_key = {}
     for f in files:
         rel = str(f.relative_to(root))
@@ -96,7 +98,8 @@ def updated(root, lines):
         rel = str(f.relative_to(root))
         own = '/'.join(rel.split('/')[:4]) + '/'
         names = {t.value for t in tokens(f.read_text(encoding='utf-8')) if t.kind == 'ident'}
-        for owner in sorted({owners[n] for n in names if n in owners} - {own}):
+        reached = set().union(*(owners[n] for n in names if n in owners and own not in owners[n]))
+        for owner in sorted(reached - {own}):
             if (owner, rel) not in present:
                 added.append(f'{owner} {rel}')
                 present.add((owner, rel))
@@ -106,10 +109,10 @@ def updated(root, lines):
     return out
 
 
-def update_callers(root):
+def update_callers(root, callers=()):
     path = root / CONFIG
     lines = path.read_text(encoding='utf-8').splitlines()
-    new = updated(root, lines)
+    new = updated(root, lines, callers)
     path.write_text('\n'.join(new) + '\n', encoding='utf-8', newline='\n')
     return len(new) - len(lines)
 

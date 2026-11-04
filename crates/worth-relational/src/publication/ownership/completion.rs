@@ -1,24 +1,18 @@
 //! The publication writer replaces its current custody in the unpublished commit.
-use super::{checkpoint, record, request, CurrentPublicationRoster};
-use crate::schema::current_publication_ownership::{CATALOG, EDGE, LINK, PUBLICATION};
+use super::{record, CurrentPublicationRoster};
+use crate::authority::mutation::current_records::{
+    CompletedCurrentRecords as CompletedOwnership, Writer,
+};
+use crate::schema::current_publication_ownership::{CATALOG, EDGE, PUBLICATION};
 use crate::{
     branch::{AdmittedRelationalBranchBasis, SelectedRelationalBranchState},
     history::data::{CanonicalCommitEnvelope, CommitId},
-    identity::data::{EntityId, KindId, RelationId},
     runtime::RelationalPreparationRuntime,
-    storage::overlay::{CurrentPartitionAccess, OverlayStateView, WorkingState},
+    storage::overlay::{OverlayStateView, WorkingState},
     transactions::data::*,
     validation::engine::state_view::InvariantStateView,
 };
-use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, MapKernelContext};
-mod apply;
-mod fields;
-use apply::Writer;
-
-pub(crate) struct CompletedOwnership {
-    pub(crate) effect: crate::authority::mutation::MutationEffect,
-    pub(crate) funding: ExecutionMemoryReservation,
-}
+use worth_execution::{ExecutionRequest, MapKernelContext};
 
 pub(crate) fn complete(
     execution: &ExecutionRequest<'_, '_>,
@@ -55,11 +49,31 @@ pub(crate) fn complete(
             scopes.push(origin.meaning.source_scope);
         }
     }
+    for row in &roster.codec_retired {
+        writer.checkpoint(candidate.patch.authoritative_record_patches.len() + 1)?;
+        let scope = row.value.origin.meaning.source_scope;
+        if candidate
+            .patch
+            .authoritative_record_patches
+            .iter()
+            .any(|patch| {
+                patch.target == RecordRef::Entity(scope)
+                    && patch.structural_change
+                        == crate::publication::patch::data::RecordStructuralChange::Deleted
+            })
+            && !scopes.contains(&scope)
+        {
+            scopes.push(scope);
+        }
+    }
     for retired in &candidate.required_output_codec_retirements {
-        writer.checkpoint(scopes.len() + roster.publications.len() + 1)?;
+        writer.checkpoint(
+            scopes.len() + roster.publications.len() + roster.codec_retired.len() + 1,
+        )?;
         if roster
             .publications
             .iter()
+            .chain(&roster.codec_retired)
             .any(|row| row.value.origin.meaning.same_route(&retired.meaning))
             && !scopes.contains(&retired.meaning.source_scope)
         {
@@ -73,10 +87,23 @@ pub(crate) fn complete(
             .find(|(_, catalog)| catalog.scope == scope);
         writer.retain(roster._funding.bytes())?;
         let mut routes = old_catalog.map_or_else(Vec::new, |(_, catalog)| catalog.routes.clone());
+        let scope_deleted = candidate
+            .patch
+            .authoritative_record_patches
+            .iter()
+            .any(|patch| {
+                patch.target == RecordRef::Entity(scope)
+                    && patch.structural_change
+                        == crate::publication::patch::data::RecordStructuralChange::Deleted
+            });
+        let replaced = |meaning: &crate::mvcc::RequiredOutputPublicationMeaning| {
+            scope_deleted
+                || candidate
+                    .output_origins()
+                    .any(|origin| origin.source_scope_owned && origin.meaning.same_route(meaning))
+        };
         let changed = |meaning: &crate::mvcc::RequiredOutputPublicationMeaning| {
-            candidate
-                .output_origins()
-                .any(|origin| origin.source_scope_owned && origin.meaning.same_route(meaning))
+            replaced(meaning)
                 || candidate
                     .required_output_codec_retirements
                     .iter()
@@ -85,6 +112,7 @@ pub(crate) fn complete(
         for row in roster
             .publications
             .iter()
+            .chain(&roster.codec_retired)
             .filter(|row| row.value.origin.meaning.source_scope == scope)
         {
             writer.checkpoint(
@@ -96,7 +124,9 @@ pub(crate) fn complete(
                 let mut witnesses = Vec::new();
                 for link in &roster.links {
                     writer.checkpoint(1)?;
-                    if (link.kind == storage.publication_link && link.source == row.entity)
+                    if (replaced(&row.value.origin.meaning)
+                        && link.kind == storage.publication_link
+                        && link.source == row.entity)
                         || ([storage.member_link, storage.edge_link].contains(&link.kind)
                             && link.target == row.entity)
                     {
@@ -109,10 +139,12 @@ pub(crate) fn complete(
                 for witness in witnesses {
                     writer.delete_entity(witness)?;
                 }
-                writer.delete_entity(row.entity)?;
+                if replaced(&row.value.origin.meaning) {
+                    writer.delete_entity(row.entity)?;
+                }
             }
         }
-        routes.retain(|route| !changed(&route.meaning));
+        routes.retain(|route| !replaced(&route.meaning));
         let has_new = candidate.output_origins().any(|origin| {
             origin.source_scope_owned
                 && origin.meaning.source_scope == scope
@@ -133,7 +165,7 @@ pub(crate) fn complete(
                 CATALOG,
                 CommitId(0),
                 &payload,
-                Some((storage.scope_link, scope)),
+                Some((storage.scope_link, scope, CommitId(0))),
             )?)
         } else {
             None
@@ -168,7 +200,7 @@ pub(crate) fn complete(
                 PUBLICATION,
                 publication,
                 bytes,
-                Some((storage.publication_link, catalog)),
+                Some((storage.publication_link, catalog, publication)),
             )?;
             routes.push(record::Route {
                 meaning: origin.meaning.clone(),
@@ -191,7 +223,7 @@ pub(crate) fn complete(
                         publication,
                         edge: edge.clone(),
                     },
-                    Some((storage.edge_link, row)),
+                    Some((storage.edge_link, row, publication)),
                 )?;
             }
         }

@@ -125,10 +125,11 @@ pub(in crate::domain_computation::primary_graph) use effect_program::{
     WorthQueryCheckpointOutputRole,
 };
 pub use effect_program::{
-    WorthQueryApplicationCreatedRelation, WorthQueryApplicationEffectEntity,
-    WorthQueryApplicationEffectProgram, WorthQueryApplicationEffectProgramBuilder,
-    WorthQueryApplicationOutputEntity, WorthQueryApplicationOutputFamilyEntry,
-    WorthQueryApplicationOutputPosture, WorthQueryApplicationOutputProjectionDenial,
+    WorthQueryApplicationClosureEvidenceEntry, WorthQueryApplicationCreatedRelation,
+    WorthQueryApplicationEffectEntity, WorthQueryApplicationEffectProgram,
+    WorthQueryApplicationEffectProgramBuilder, WorthQueryApplicationOutputEntity,
+    WorthQueryApplicationOutputFamilyEntry, WorthQueryApplicationOutputPosture,
+    WorthQueryApplicationOutputProjectionDenial, WorthQueryApplicationTypedClosureEvidence,
     WorthQueryApplicationTypedOutputCorrespondence,
 };
 pub(super) use elevation_approval_outcome::approved_outcome;

@@ -1,32 +1,47 @@
 //! Ordinary Native consequence mutation shares allocation, symbols and work custody.
-use super::*;
+use crate::publication::ownership::{checkpoint, request};
+use crate::{
+    branch::AdmittedRelationalBranchBasis,
+    history::data::{CanonicalCommitEnvelope, CommitId},
+    identity::data::{EntityId, KindId, RelationId},
+    runtime::RelationalPreparationRuntime,
+    storage::overlay::{CurrentPartitionAccess, WorkingState},
+    transactions::data::*,
+};
+use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, MapKernelContext};
+const LINK: &str = crate::schema::current_publication_ownership::LINK;
+mod fields;
+pub(crate) struct CompletedCurrentRecords {
+    pub(crate) effect: MutationEffect,
+    pub(crate) funding: ExecutionMemoryReservation,
+}
 use crate::authority::mutation::{
     apply_plan_to_working_state, BranchLocalDeleteAllowance, MutationApplyDenial, MutationEffect,
 };
 use crate::symbols::data::ClientKey;
 use std::collections::BTreeSet;
 
-pub(super) struct Writer<'a, 'request, 'scope, 'kernel, 'authority> {
-    pub(super) execution: &'a ExecutionRequest<'request, 'scope>,
+pub(crate) struct Writer<'a, 'request, 'scope, 'kernel, 'authority> {
+    pub(crate) execution: &'a ExecutionRequest<'request, 'scope>,
     runtime: &'a RelationalPreparationRuntime,
     basis: &'a AdmittedRelationalBranchBasis,
-    pub(super) working: &'a mut WorkingState,
+    pub(crate) working: &'a mut WorkingState,
     identities:
         &'a mut crate::authority::commit::phases::applied_mutation::PendingMutationIdentities,
     candidate: &'a CanonicalCommitEnvelope,
     context: &'a mut MapKernelContext<'kernel, 'authority>,
     funding: ExecutionMemoryReservation,
-    pub(super) effect: MutationEffect,
+    pub(crate) effect: MutationEffect,
 }
 impl<'a, 'request, 'scope, 'kernel, 'authority> Writer<'a, 'request, 'scope, 'kernel, 'authority> {
-    pub(super) fn finish(self) -> super::CompletedOwnership {
-        super::CompletedOwnership {
+    pub(crate) fn finish(self) -> CompletedCurrentRecords {
+        CompletedCurrentRecords {
             effect: self.effect,
             funding: self.funding,
         }
     }
     #[allow(clippy::too_many_arguments)]
-    pub(super) fn new(
+    pub(crate) fn new(
         execution: &'a ExecutionRequest<'request, 'scope>,
         runtime: &'a RelationalPreparationRuntime,
         basis: &'a AdmittedRelationalBranchBasis,
@@ -51,10 +66,13 @@ impl<'a, 'request, 'scope, 'kernel, 'authority> Writer<'a, 'request, 'scope, 'ke
             effect: Default::default(),
         })
     }
-    pub(super) fn checkpoint(&mut self, units: usize) -> Result<(), TransactionCommitError> {
+    pub(crate) fn context(&mut self) -> &mut MapKernelContext<'kernel, 'authority> {
+        self.context
+    }
+    pub(crate) fn checkpoint(&mut self, units: usize) -> Result<(), TransactionCommitError> {
         checkpoint(self.context, units as u64)
     }
-    pub(super) fn retain(&mut self, bytes: u64) -> Result<(), TransactionCommitError> {
+    pub(crate) fn retain(&mut self, bytes: u64) -> Result<(), TransactionCommitError> {
         let total = self.funding.bytes().checked_add(bytes).ok_or_else(|| {
             request(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow)
         })?;
@@ -64,28 +82,50 @@ impl<'a, 'request, 'scope, 'kernel, 'authority> Writer<'a, 'request, 'scope, 'ke
             ))
         })
     }
-    pub(super) fn create_entity<T: serde::Serialize>(
+    pub(crate) fn current_links(
+        &mut self,
+        entity: EntityId,
+        kind: KindId,
+    ) -> Result<Vec<RelationId>, TransactionCommitError> {
+        let view = crate::validation::engine::state_view::InvariantStateView::new(
+            self.basis.inner.root.as_ref(),
+            self.candidate.commit.version_id,
+        );
+        view.outgoing_relations_for_entity_observed(entity, || self.checkpoint(1))
+            .map(|links| {
+                links
+                    .into_iter()
+                    .filter(|id| {
+                        view.relation_metadata(*id)
+                            .is_some_and(|row| row.kind_id == kind)
+                    })
+                    .collect()
+            })
+    }
+    pub(crate) fn create_entity<T: serde::Serialize>(
         &mut self,
         kind: KindId,
         aspect: &str,
         publication: CommitId,
         value: &T,
-        link: Option<(KindId, EntityId)>,
+        link: Option<(KindId, EntityId, CommitId)>,
     ) -> Result<EntityId, TransactionCommitError> {
         let bytes = self.encode(value)?;
         self.create_encoded_entity(kind, aspect, publication, bytes, link)
     }
-    pub(super) fn create_encoded_entity(
+    pub(crate) fn create_encoded_entity(
         &mut self,
         kind: KindId,
         aspect: &str,
         publication: CommitId,
         bytes: Vec<u8>,
-        link: Option<(KindId, EntityId)>,
+        link: Option<(KindId, EntityId, CommitId)>,
     ) -> Result<EntityId, TransactionCommitError> {
-        let partition = link.map(|(_, target)| target.partition_id).ok_or_else(|| {
-            crate::mvcc::origin_denial("ownership creation requires its publication source")
-        })?;
+        let partition = link
+            .map(|(_, target, _)| target.partition_id)
+            .ok_or_else(|| {
+                crate::mvcc::origin_denial("ownership creation requires its publication source")
+            })?;
         let key = ClientKey::raw(aspect);
         let created = CreatedEntityRef {
             partition_id: partition,
@@ -98,7 +138,7 @@ impl<'a, 'request, 'scope, 'kernel, 'authority> Writer<'a, 'request, 'scope, 'ke
             client_key: key,
             fields: fields::encode(aspect, publication, bytes)?,
         }))];
-        if let Some((link_kind, target)) = link {
+        if let Some((link_kind, target, link_publication)) = link {
             intents.push(MutationIntent::Create(CreateIntent::Relation(
                 RelationSpec {
                     partition_id: partition,
@@ -106,7 +146,7 @@ impl<'a, 'request, 'scope, 'kernel, 'authority> Writer<'a, 'request, 'scope, 'ke
                     client_key: ClientKey::raw(LINK),
                     source: EntityReference::Created(created.clone()),
                     target: EntityReference::Existing(target),
-                    fields: fields::encode(LINK, publication, Vec::new())?,
+                    fields: fields::encode(LINK, link_publication, Vec::new())?,
                 },
             )));
         }
@@ -115,7 +155,7 @@ impl<'a, 'request, 'scope, 'kernel, 'authority> Writer<'a, 'request, 'scope, 'ke
             crate::mvcc::origin_denial("Native current ownership allocation lost its binding")
         })
     }
-    pub(super) fn create_link(
+    pub(crate) fn create_link(
         &mut self,
         kind: KindId,
         publication: CommitId,
@@ -134,7 +174,7 @@ impl<'a, 'request, 'scope, 'kernel, 'authority> Writer<'a, 'request, 'scope, 'ke
         ))])
         .map(|_| ())
     }
-    pub(super) fn update_entity<T: serde::Serialize>(
+    pub(crate) fn update_entity<T: serde::Serialize>(
         &mut self,
         entity: EntityId,
         aspect: &str,
@@ -150,13 +190,13 @@ impl<'a, 'request, 'scope, 'kernel, 'authority> Writer<'a, 'request, 'scope, 'ke
         )])
         .map(|_| ())
     }
-    pub(super) fn delete_entity(&mut self, entity: EntityId) -> Result<(), TransactionCommitError> {
+    pub(crate) fn delete_entity(&mut self, entity: EntityId) -> Result<(), TransactionCommitError> {
         self.apply(vec![MutationIntent::Entity(EntityMutationIntent::Delete(
             DeleteEntityIntent { entity_id: entity },
         ))])
         .map(|_| ())
     }
-    pub(super) fn delete_relation(
+    pub(crate) fn delete_relation(
         &mut self,
         relation: RelationId,
     ) -> Result<(), TransactionCommitError> {

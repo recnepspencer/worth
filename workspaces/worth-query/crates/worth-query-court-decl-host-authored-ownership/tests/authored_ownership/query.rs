@@ -6,6 +6,7 @@ pub struct Input {
 #[derive(Clone, Debug, worth_foundational::facade::WorthValue)]
 pub struct Row {
     pub id: u64,
+    pub value: u64,
 }
 worth_query_structured_value_binding!(pub InputBinding for Input { identity: "authored-ownership.input.v1" });
 worth_query_structured_value_binding!(pub RowBinding for Row { identity: "authored-ownership.row.v1" });
@@ -27,15 +28,34 @@ fn id<S: Scenario>() -> ApplicationQueryResultFieldRef<
 > {
     ApplicationQueryResultFieldRef::new("id", Id::reference())
 }
+pub struct ValueSlot;
+worth_query_portable_type!(ValueSlot => "authored-ownership.value-slot.v1");
+fn parameter<S: Scenario>() -> ApplicationQueryResultFieldRef<
+    Query,
+    ValueSlot,
+    S,
+    Node,
+    Values,
+    Value,
+    u64,
+    ReadWrite,
+    EqualityPredicate,
+    NoApplicationUnit,
+> {
+    ApplicationQueryResultFieldRef::new("value", Value::reference())
+}
 pub fn definition<S: Scenario>() -> ApplicationQueryDefinition<S, Query, (), Row, Node> {
     let query = ApplicationQueryDefinitionBuilder::declare(Query::reference())
         .root(Node::reference())
         .scope(Node::reference())
-        .result_shape(
-            ApplicationQueryResultShapeBuilder::new(Node::reference())
-                .field(id())
-                .build(),
-        )
+        .result_shape({
+            let shape = ApplicationQueryResultShapeBuilder::new(Node::reference()).field(id());
+            if S::MODE == 48 {
+                shape.field(parameter()).build()
+            } else {
+                shape.build()
+            }
+        })
         .cardinality(ApplicationQueryCardinality::Many)
         .disclosure(ApplicationQueryDisclosureContract::public())
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
@@ -55,6 +75,11 @@ impl<S: Scenario> WorthQueryApplicationProjection<S, Query> for Row {
     ) -> Result<Self, WorthQueryApplicationProjectionDenial> {
         Ok(Self {
             id: row.field(id())?,
+            value: if S::MODE == 48 {
+                row.field(parameter())?
+            } else {
+                0
+            },
         })
     }
 }

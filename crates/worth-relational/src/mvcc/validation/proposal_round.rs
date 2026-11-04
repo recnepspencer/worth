@@ -121,6 +121,7 @@ impl RelationalPreparationRuntime {
                             plan.clone(),
                         ),
                         RelationalProposalSource::Transaction { lowered: None, .. } => prepare_working_state_scope(
+        execution,
                             &runtime,
                             transaction,
                             selected,

@@ -61,8 +61,9 @@ pub(in crate::domain_computation::primary_graph) use output_correspondence::{
     OutputRoleUse, WorthQueryApplicationOutputCorrespondence, WorthQueryCheckpointOutputRole,
 };
 pub use output_correspondence::{
-    WorthQueryApplicationOutputEntity, WorthQueryApplicationOutputFamilyEntry,
-    WorthQueryApplicationOutputPosture, WorthQueryApplicationOutputProjectionDenial,
+    WorthQueryApplicationClosureEvidenceEntry, WorthQueryApplicationOutputEntity,
+    WorthQueryApplicationOutputFamilyEntry, WorthQueryApplicationOutputPosture,
+    WorthQueryApplicationOutputProjectionDenial, WorthQueryApplicationTypedClosureEvidence,
     WorthQueryApplicationTypedOutputCorrespondence,
 };
 use target_admission::installed_contract_admits_program_target;

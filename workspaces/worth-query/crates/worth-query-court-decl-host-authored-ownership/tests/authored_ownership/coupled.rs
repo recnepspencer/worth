@@ -44,6 +44,7 @@ mod component_reads;
 
 mod fresh_subject;
 
+mod history_seams;
 mod owner_set_history;
 
 mod append;

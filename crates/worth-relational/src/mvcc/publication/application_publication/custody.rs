@@ -245,3 +245,32 @@ pub(super) fn execution_stop(
         },
     )
 }
+
+impl crate::transactions::data::CommitResult {
+    /// Descriptive roles of this commit's canonical primary publication. Closure
+    /// witnesses used to admit a succession are not members of that publication.
+    /// This view grants no publication or succession custody.
+    pub fn primary_output_members(
+        &self,
+    ) -> Option<
+        impl ExactSizeIterator<
+            Item = (
+                &str,
+                &str,
+                super::RequiredOutputRolePosture,
+                crate::identity::data::EntityId,
+            ),
+        >,
+    > {
+        self.publication()
+            .envelope
+            .required_output_origin
+            .as_ref()
+            .map(|origin| {
+                origin
+                    .members
+                    .iter()
+                    .map(|m| (m.role.as_str(), m.entity_name.as_str(), m.posture, m.id))
+            })
+    }
+}

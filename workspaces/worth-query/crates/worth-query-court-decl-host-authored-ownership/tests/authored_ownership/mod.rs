@@ -25,10 +25,14 @@ mod correction_courts;
 mod coupled;
 mod lifecycle;
 mod lifecycle_handlers;
+mod locality;
+mod metadata_guard;
 mod native_checkpoint_tamper;
+mod parameter_inverse;
 mod producer;
 mod program;
 mod query;
+mod suspension;
 
 fn install<const MODE: u8>() -> Result<
     WorthQueryPrimaryGraphApplicationRuntime<Model<MODE>>,
@@ -94,6 +98,8 @@ mod heterogeneous;
 
 mod current_fence;
 
+mod coherent_roster;
+mod cold_pairing;
 mod current_roster;
 
 mod endpoint_fence;

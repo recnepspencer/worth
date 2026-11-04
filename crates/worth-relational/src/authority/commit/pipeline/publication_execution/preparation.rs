@@ -168,9 +168,6 @@ pub(super) fn prepare_publication_phase(
         merge_base_commits,
         merge_parent_branches,
     } = input;
-    let current_ownership = current_ownership::select(execution, runtime, &branch_basis)?;
-    let runtime_with_current = runtime.with_current_ownership(current_ownership);
-    let runtime = &runtime_with_current;
     let (
         mut artifacts,
         mut changed_records,
@@ -180,6 +177,15 @@ pub(super) fn prepare_publication_phase(
         deferred_diagnostic_artifacts,
         target_schema_registry,
     ) = publication.into_finalize().into_parts();
+    let current_ownership = current_ownership::select(
+        execution,
+        runtime,
+        &branch_basis,
+        &canonical_commit_envelope,
+        required_output_publication.as_ref(),
+    )?;
+    let runtime_with_current = runtime.with_current_ownership(current_ownership);
+    let runtime = &runtime_with_current;
     if required_output_materialization.is_some()
         && (recovered_codec_publication_custody.is_some() || required_output_publication.is_some())
     {
@@ -193,7 +199,7 @@ pub(super) fn prepare_publication_phase(
             "codec retirement cannot also mint a producer completion",
         ));
     }
-    let output_positions = if let Some(custody) = recovered_codec_publication_custody {
+    let mut output_positions = if let Some(custody) = recovered_codec_publication_custody {
         Some(custody.install_retirements(
             execution,
             &mut canonical_commit_envelope,
@@ -239,6 +245,7 @@ pub(super) fn prepare_publication_phase(
         &mut canonical_commit_envelope,
         &mut artifacts,
         &mut changed_records,
+        &mut output_positions,
     )?;
     if lineage_deferred {
         let prepared = runtime

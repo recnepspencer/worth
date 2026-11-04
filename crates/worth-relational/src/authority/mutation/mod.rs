@@ -1,5 +1,6 @@
 mod aspect_versions;
 mod canonical_deltas;
+pub(crate) mod current_records;
 mod deletion_publication;
 mod delta_symbols;
 mod effect;

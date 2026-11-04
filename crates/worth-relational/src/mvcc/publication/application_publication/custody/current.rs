@@ -21,7 +21,11 @@ pub(super) fn readmit(
             RecordRef::Entity(subject),
         ))
     };
-    let roster = crate::publication::ownership::select_current(execution, basis)?;
+    let roster = crate::publication::ownership::select_current(
+        execution,
+        basis,
+        &[RecordRef::Entity(meaning.source_scope)],
+    )?;
     let (origin, ordinal) = roster
         .coordinates()
         .find(|(origin, _)| origin.meaning.same_route(meaning))

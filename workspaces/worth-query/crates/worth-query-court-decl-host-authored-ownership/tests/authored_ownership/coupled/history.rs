@@ -97,6 +97,11 @@ pub(super) fn require_unique_edge_ownership<S: Scenario>(
 pub(in super::super) fn reopen<S: Scenario>(
     checkpoint: WorthQueryApplicationCheckpoint,
 ) -> Host<S> {
+    try_reopen(checkpoint).expect("both indexed digests are valid")
+}
+pub(in super::super) fn try_reopen<S: Scenario>(
+    checkpoint: WorthQueryApplicationCheckpoint,
+) -> Result<Host<S>, WorthQueryInMemoryApplicationDenial> {
     let schema = S::declaration().unwrap();
     in_memory_program_from_checkpoint(
         ApplicationProgramAuthoring::<S, TwoProgram>::begin()
@@ -109,7 +114,6 @@ pub(in super::super) fn reopen<S: Scenario>(
         host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         checkpoint,
     )
-    .expect("both indexed digests are valid")
 }
 pub(super) fn retire_sentinel<S: Scenario>(
     host: &Host<S>,

@@ -22,6 +22,17 @@ pub(super) fn try_install_definition<
 where
     P::Outputs: WorthQueryApplicationProgramRoots<S>,
 {
+    try_install_definition_with_limits::<S,P>(host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()))
+}
+pub(super) fn try_install_definition_with_limits<
+    S: Scenario,
+    P: ApplicationProgramDefinition<S, Contributions = (Contribution,)>,
+>(
+    limits: WorthQueryInMemoryApplicationLimits,
+) -> Result<WorthQueryProgramApplicationRuntime<S, P>, WorthQueryInMemoryApplicationDenial>
+where
+    P::Outputs: WorthQueryApplicationProgramRoots<S>,
+{
     let schema = S::declaration().unwrap();
     in_memory_program(
         ApplicationProgramAuthoring::<S, P>::begin()
@@ -31,7 +42,7 @@ where
         schema,
         ((),),
         ApplicationBuildIdentity::parse("919b0039-0000-0000-0000-000000000002").unwrap(),
-        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
+        limits,
         |_, graph, installed| {
             graph.bind_principal(
                 &installed.principal_binding(actor()).unwrap(),

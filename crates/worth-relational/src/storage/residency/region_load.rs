@@ -80,6 +80,11 @@ pub(super) fn load_head(
     let commitment = PartitionContentCommitment::capture_head(&partition, &symbols, &frontiers)
         .ok_or_else(|| unavailable(cold, Cause::Damaged))?;
     verify_leaf(cold, &partition, &commitment).map_err(|cause| unavailable(cold, cause))?;
+    crate::history::data::current_route_presence::admission::validate(
+        execution,
+        &partition,
+        cold.schema.registry(),
+    )?;
     let history_custody = cold
         .source
         .retain_members(
