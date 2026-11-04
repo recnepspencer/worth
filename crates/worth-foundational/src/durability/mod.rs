@@ -8,12 +8,16 @@ pub use native_checkpoint_reference::{
 };
 mod home_binding;
 mod home_program_transition;
+mod home_transition_plan;
 pub use checkpoint_admission::{
     CheckpointAdmissionCut, CheckpointAdmissionScope, CheckpointProductBindingIdentity,
 };
 pub use home_program_transition::{
     HomeProgramTransitionIdentity, HomeProgramTransitionPlanDigest,
     HomeProgramTransitionStepAssociation,
+};
+pub use home_transition_plan::{
+    HomeProgramTransitionDescriptionDenial, HomeProgramTransitionPlanDescription,
 };
 mod world_identity;
 mod world_journal;

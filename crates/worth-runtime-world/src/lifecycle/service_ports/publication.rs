@@ -18,6 +18,7 @@ mod durable;
 mod execution;
 mod incarnation;
 use incarnation::publication_owner_denial;
+mod home_transition;
 mod open_attempt;
 mod owned_async;
 

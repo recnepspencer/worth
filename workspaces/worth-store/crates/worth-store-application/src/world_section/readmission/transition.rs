@@ -41,6 +41,43 @@ impl NoPendingApplicationHomeTransition {
     }
 }
 
+impl<D, I, E, Ctx, T> WorldReadmittedApplicationHome<D, I, E, Ctx, T>
+where
+    D: Copy + Ord + std::fmt::Debug + Send + Sync + 'static,
+    I: Copy + Ord + Send + Sync + 'static,
+    E: Send + Sync + 'static,
+    Ctx: Send + Sync + 'static,
+    T: Copy + Ord + Send + Sync + 'static,
+{
+    pub fn transition_admission_observation(
+        &self,
+    ) -> crate::ApplicationHomeTransitionAdmissionObservation {
+        self.home.context.transition.observation()
+    }
+
+    /// Reserve original World attempt assignments for a complete plan. This
+    /// does not publish an intent, a World open, a Native step or a new head.
+    pub fn reserve_home_program_transition_plan(
+        &self,
+        expected: worth_runtime_world::facade::ProductBranchObservation,
+        digest: worth_foundational::facade::HomeProgramTransitionPlanDigest,
+        steps: u32,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<
+        crate::ReservedApplicationHomeTransitionPlan,
+        crate::ApplicationHomeTransitionPlanningDenial,
+    > {
+        crate::open::readmission::transition::reserve_plan(
+            &self.home.context,
+            self.world.publication_port(),
+            expected,
+            digest,
+            steps,
+            request,
+        )
+    }
+}
+
 pub struct ApplicationHomeOwnerAdmissionRefused {
     home: Box<WorldReadmittedApplicationHome<(), (), (), (), ()>>,
     cause: ApplicationHomeOwnerAdmissionDenial,

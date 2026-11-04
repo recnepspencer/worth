@@ -10,6 +10,7 @@ pub struct WorldDurableHomeBinding {
     owner: DurableWorldOwnerIdentity,
     incarnation: HomeIncarnation,
     program_revision: [u8; 32],
+    transition: Option<worth_proof::HomeProgramTransitionAuthority>,
 }
 impl WorldDurableHomeBinding {
     /// Data provided by the trusted admitted adapter contract, not physical
@@ -23,6 +24,7 @@ impl WorldDurableHomeBinding {
             owner,
             incarnation,
             program_revision,
+            transition: None,
         }
     }
     pub const fn owner(&self) -> DurableWorldOwnerIdentity {
@@ -33,6 +35,22 @@ impl WorldDurableHomeBinding {
     }
     pub const fn program_revision(&self) -> [u8; 32] {
         self.program_revision
+    }
+
+    /// The actual Home composition attaches this verifier once. An individual
+    /// transition caller cannot substitute its own admission authority.
+    pub fn with_home_transition_authority(
+        mut self,
+        transition: worth_proof::HomeProgramTransitionAuthority,
+    ) -> Self {
+        self.transition = Some(transition);
+        self
+    }
+
+    pub(crate) fn transition_authority(
+        &self,
+    ) -> Option<&worth_proof::HomeProgramTransitionAuthority> {
+        self.transition.as_ref()
     }
 }
 #[derive(Debug)]

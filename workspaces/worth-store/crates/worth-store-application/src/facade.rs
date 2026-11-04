@@ -26,7 +26,10 @@ pub use crate::open::physical_admission::{
     ApplicationHomePhysicalRefusal, ApplicationHomePhysicalRefusalKind,
     ApplicationHomePhysicalStage,
 };
-pub use crate::open::readmission::transition::ApplicationHomeOwnerAdmissionDenial;
+pub use crate::open::readmission::transition::{
+    ApplicationHomeOwnerAdmissionDenial, ApplicationHomeTransitionAdmissionObservation,
+    ApplicationHomeTransitionPlanningDenial, ReservedApplicationHomeTransitionPlan,
+};
 pub use crate::open::{admit_home, readmit_relational, recover_home, ApplicationHomeOpenRefusal};
 pub use crate::relational_preparation::{
     attach_relational, ApplicationHomeInitializationDenial, ApplicationHomeInitializationRefused,

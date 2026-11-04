@@ -78,6 +78,7 @@ impl UnclaimedWorldSlot {
     pub(crate) fn from_admitted_home(
         serving: Arc<ServingPhysicalRuntime>,
         descriptor: &crate::descriptor::HomeDescriptor,
+        transition: worth_proof::HomeProgramTransitionAuthority,
         checkpoint: &Arc<crate::checkpoint::owner::HomeCheckpointOwner>,
         request: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Self, worth_execution::WorkCeilingDenial> {
@@ -97,7 +98,8 @@ impl UnclaimedWorldSlot {
                     owner,
                     descriptor.incarnation,
                     *descriptor.binding.selected().revision().bytes(),
-                ),
+                )
+                .with_home_transition_authority(transition),
                 placement: crate::open::physical_admission::placement(),
                 publications: Arc::new(super::WorldPublications::default()),
                 checkpoint: Arc::downgrade(checkpoint),

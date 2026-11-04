@@ -1,6 +1,15 @@
 //! Inspect unsupported persisted owner state while the original Home stays owned.
+mod admission_backing;
+mod owner;
+pub use admission_backing::ApplicationHomeTransitionAdmissionObservation;
+pub(crate) use owner::HomeTransitionOwner;
+mod planning;
 use crate::home_context::HomeContext;
 use crate::registry::{HomeJournalAdmission, HOME_JOURNALS};
+pub(crate) use planning::reserve as reserve_plan;
+pub use planning::{
+    ApplicationHomeTransitionPlanningDenial, ReservedApplicationHomeTransitionPlan,
+};
 use worth_execution::ExecutionRequest;
 use worth_relational::facade::durability::RecoveredRelationalRuntimeAuthority;
 use worth_store::physical_runtime::{

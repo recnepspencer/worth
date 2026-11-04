@@ -12,6 +12,7 @@ mod attempt;
 mod call_admission;
 #[path = "operation/creation_reservation.rs"]
 mod creation_reservation;
+mod home_transition;
 mod open_attempt;
 #[cfg(test)]
 #[path = "operation/preparation_test_support.rs"]

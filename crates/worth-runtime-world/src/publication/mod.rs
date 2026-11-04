@@ -1,4 +1,8 @@
 mod cancellation;
+mod home_transition;
+pub use home_transition::{
+    ReservedWorldHomeTransitionAssignments, WorldHomeTransitionReservationRefusal,
+};
 mod open_attempt;
 pub use open_attempt::{
     WorldNativePreparationDenial, WorldNativePreparationRefusal, WorldOpenAttemptOutcome,

@@ -105,9 +105,16 @@ pub fn admit_home(
             crate::descriptor::publish(&recovered.serving, prepared_descriptor, execution)
                 .map_err(ApplicationHomeOpenRefusal::Descriptor)?;
         let checkpoint = Arc::new(Default::default());
+        let transition = readmission::transition::HomeTransitionOwner::new(
+            descriptor.identity,
+            descriptor.incarnation.fence(),
+            execution,
+        )
+        .map_err(ApplicationHomeOpenRefusal::Execution)?;
         let world_slot = crate::world_section::UnclaimedWorldSlot::from_admitted_home(
             Arc::clone(&recovered.serving),
             &descriptor,
+            transition.authority(),
             &checkpoint,
             execution,
         )
@@ -115,6 +122,7 @@ pub fn admit_home(
         Ok(HomeAdmitted::from_owner(AdmittedApplicationHome {
             native_source,
             context: HomeContext {
+                transition,
                 selected_home_source: Some(selected_source),
                 initialization: crate::relational_preparation::HomeInitializationOrigin::Available(
                     recovered.origin,
