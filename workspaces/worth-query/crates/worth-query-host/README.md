@@ -24,6 +24,20 @@ branch. This README covers the host's deeper contracts.
 
 ## Directory Home publication custody
 
+`WorthQueryApplicationHomeRequest::with_authorization_time_source(source)`
+installs a trusted `WorthQueryRuntimeTimeSource` for capability admission and
+revalidation. It applies to MemoryOnly and Directory Homes, including reopen.
+Opening does not sample the clock; an unavailable source yields the typed
+`TrustedTimeUnavailable` authorization refusal when the decision needs time.
+
+Advanced provider integrations retain a port-free `WorthQueryProviderSessionGrant`.
+Use `runtime.prepare_provider_session_grant(&phase, grant, receiver)` with a lazy
+constructor for its live `WorthQueryProviderSessionReceiver`. The actual receiving
+application supplies its installed provider and Home witness; stale or foreign
+grants refuse before that constructor can read or evaluate a supplier. Current
+preparation requires the exact original plan and provider. Physical prepared
+sessions keep their original request and Drop-abort custody.
+
 Dispose of a development directory with
 `worth_query_host::facade::discard_home(WorthQueryApplicationHomeLocation::Directory(path))`.
 It takes the same filesystem mutation lease as opening, without opening Store.

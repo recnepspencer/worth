@@ -194,7 +194,14 @@ where
             provider,
             participation,
             authorization,
-            crate::domain_computation::authorization::WorthQueryRuntimeClock::system(),
+            match state.authorization_time_source {
+                Some(source) => {
+                    crate::domain_computation::authorization::WorthQueryRuntimeClock::from_source(
+                        source,
+                    )
+                }
+                None => crate::domain_computation::authorization::WorthQueryRuntimeClock::system(),
+            },
             handlers,
             bridge,
             product,

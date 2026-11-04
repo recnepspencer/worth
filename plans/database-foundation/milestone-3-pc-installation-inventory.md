@@ -220,3 +220,153 @@ guard; it is not a separate filesystem elevation/delegation journey. The typed
 outer observation result makes its six consumers explicitly preserve or handle
 the refusal. Evidence is indexed in pc-d7-rulings-lane-index.json. Fresh source
 review is still required. This does not close the live-session obligation.
+
+## Next slice after integration 82e2661e68
+
+The coordinator released the live session-preparation seam and deferred accepted
+outputs to D12's Query application section. Same-build accepted-output reuse and
+D16 therefore remain outside this slice. Durable sibling implementation also
+waits for D12; its reviewed design lives at
+`target/lane-evidence/durable-sibling-publication-design.md`, with original Native
+association/ACK evidence, dependency-ordered image/tail readmission, typed custody
+and an exact file inventory. No owner format changes are implemented here.
+
+The session cutover separates a portable `WorthQueryProviderSessionGrant` from a
+scoped `WorthQueryProviderSessionReceiver`. Issuance checks the real run/product
+and advancement phase, reserves the existing session generation, and carries
+only the sealed contract and original token-admission grant. The contract's
+SnapshotHandle is scalar identity, with no source or retention owner. Preparation
+receives the actual run/product/provider owner, checks the original Home fence
+before contract comparison or physical readmission, then opens and prepares the
+provider session. The existing SessionLease keeps its original-request Drop-abort
+custody throughout physical prepared/staged/terminal phases. No replacement
+request, token cloning, metadata-made authority or new session table is added.
+
+This deliberately retires the former implementation claim that issuing the
+retained grant itself opens a physical session (6b70aaeac4's
+`dropping_a_readmitted_session_aborts_once`). The retained court is renamed
+`dropping_a_portable_session_grant_has_no_physical_session_to_abort` and requires
+zero readmission/abort effects. All physical prepared/staged/panic/terminal abort
+counts remain unchanged. Receiver-owned compiled controls capture authentic grants
+at that boundary; their handles have no provider or product port. The original
+grant and capture handle both survive Home abandonment in the new filesystem
+court. A distinct foreign-Home court uses the same actual preparation receiver.
+
+The first Host qualification found a design flaw in late grant injection: a new
+mutation evaluates its handler before it reaches session admission. Late
+injection could not establish refusal before supplier evaluation. It is removed.
+The real runtime now exposes `prepare_provider_session_grant` with its actual
+installed provider and Home witness and a lazy live-receiver constructor. It and
+the direct protocol path share the same preparation owner. The Home fence runs
+before invoking that constructor; a current run must still match the exact
+original contract and provider pointer. The Host courts move their authentic
+grants directly into this real N+1 API, and forbid constructing any new live work.
+The original issuing request legitimately evaluated its handler once; refusal
+on the receiving Home must add zero supplier calls. No late replacement control
+or synthetic grant remains. Existing actual-session affinity controls exercise
+the same runtime entry positively.
+
+The governing coordinator decision is: "retained session values carry identity
+and grant only, and the receiver supplies the live provider at use." Physical
+session readmission therefore begins at receiver preparation. The existing
+readmission-rejection/panic and prepared/staged Drop-abort courts still require
+their original callback counts and recovery postures; none is deleted or ignored.
+
+Home now carries its optional trusted authorization clock through the existing
+Home state, without sampling at open. MemoryOnly delegates to the existing
+source-aware ordinary construction owner. Directory attachment uses the same
+RuntimeClock owner as ordinary installation, including on reopen. Every direct
+prepare_home_program caller must choose a source or explicit system default.
+
+The remaining shared installation cutover is not implemented. Producer routes
+allocate Signal nodes through Bridge's unsealed builder; the Home Bridge is
+already sealed. Its extension owner only replaces existing definitions. D15's
+InitialEmpty contract forbids allocated nodes/definitions. A coordinator question
+is pending on the new owner installation/seed contract. Producer/conditional/
+resource installation and owner-consumed registry retirement stay together; no
+unsupported refusal is recorded as the required produce/reopen/regenerate proof.
+
+### Requirement-to-court map for this slice
+
+These are qualification targets, not pass claims. Full log results are indexed
+under `target/lane-evidence/pc-d7-next-*` after execution.
+
+| Requirement | Court / compiler enforcement |
+| --- | --- |
+| D7: retained session has no Home ports | Grant has no lifetime, provider, request, product lease or run borrow; the separate receiver owns those fields. `reopened_home_refuses_the_authentic_prior_provider_session_before_any_provider_effect` keeps the real grant and capture handle through abandonment and actual N+1 open. |
+| D7/D17: stale before effects | Same court requires typed StaleIncarnation, zero provider readmissions/preparations/registrations and no additional supplier contacts on the receiving Home, a forbidden live constructor, unchanged balance, and a successful fresh request. |
+| D7: foreign remains foreign | `foreign_home_session_grant_is_refused_before_provider_preparation` requires ForeignGraphAuthority with the same zero-effect counters and successful current control. |
+| D17: exact session binding | `token_minted_for_an_earlier_plan_cannot_open_a_later_plan`, existing direct/workflow protocol and independent-affinity courts; physical token generation must equal the original reserved grant generation. |
+| D7: honest physical cleanup | Existing prepared/staged/panic/rejection/commit/abort courts retain their exact original backend abort counts; port-free issuance court requires no physical effect. |
+| Phase 3: trusted time input | `directory_reopen_uses_the_new_trusted_clock_without_sampling_during_open` and `memory_home_uses_its_supplied_trusted_authorization_clock` use real public Home requests and capability admission. |
+| D7: retained capabilities/selectors | Existing real filesystem stale-capability and stale-selector courts, with current governed-read and exact durable-retry controls. |
+| D7: process lease | `competing_host_processes_admit_exactly_one_writer_until_process_death`, including direct unset-stack execution. |
+| Changed-build native/authored admission | `changed_host_build_keeps_initializer_closed_and_reaches_native_readmission`; this is not producer/accepted-output lineage qualification. |
+| Default stack after merge | World `closed_world_releases_its_bridge_and_retains_the_same_native_home_until_external_reads_release` and selected Host controls run directly with RUST_MIN_STACK absent. |
+
+### Qualification of the first reviewed candidate (a6a627a951)
+
+Evidence index: `target/lane-evidence/pc-d7-next-lane-index.json` and `.md`.
+The logs record their actual parent HEAD and dirty state, not a claimed clean
+committed-HEAD execution. Broad suites, ignored/scale cases, exhaustive Home
+oracle, Store scenarios and tool self-tests remain unrun.
+
+Root/Query/Store initial workspace checks and the affected Query/Store/public-
+audience test checks pass. The first 87 unit controls pass. The corrected
+receiver batch passes 91 affected/projection controls. The first eight-case Host
+court lane records 6 passed and 2 failed; both failures and the affected current
+paths pass the four-case correction lane and each direct unset-stack run. The
+unaffected capability/time/foreign-selector controls retain their earlier green
+evidence. The three Store Host controls pass; contention and changed-build
+history also pass directly without RUST_MIN_STACK. Public audience is 1/0/0;
+the four changed rustdoc phase contracts are 4/0/0. The World external-read close
+control now passes directly, resolving its former integration-stack blocker.
+
+Formatting passes; dirty line caps pass for 83 Rust files; generated context
+passes without regeneration. Boundary-check fails with 10 BC9002 findings.
+Seven are the coordinator-assigned Native courts. Integration 82e2661e68 adds:
+
+- `crates/worth-relational/src/authority/commit/pipeline/phase_backing_tests.rs`;
+- `crates/worth-relational/src/runtime/state/subsystems/services/symbol_table/publication_tests.rs`;
+- `workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution/phase/prepared/running/completion_storage.rs::tests`.
+
+These three files were unchanged by the first P-C candidate relative to the
+original merge tree. Independent review rejected that integrated candidate for
+these three new scoped violations; the seven assigned P-A paths were separate.
+
+### Resolution of the source-court review finding
+
+The three new source courts move into the existing court binaries. No test claim,
+case, assertion or ignored status is removed. The production owners supply narrow
+compiled controls, sealed to the exact court files in control-callers.txt:
+
+| Existing cases | New court owner | Compiled owner control and facade |
+| --- | --- | --- |
+| phase_backing_tests.rs, two candidate backing cases | worth-court-relational-certification/process/commit_phase_backing.rs | RelationalCommitPhaseBackingForTest, facade::transactions |
+| symbol_table/publication_tests.rs, three canonical symbol custody cases | worth-court-relational-certification/process/symbol_publication.rs | RelationalSymbolTableForTest, facade::symbols |
+| completion_storage.rs::tests, three original-grant completion cases | worth-query-court-query-decl-host/process/certification/managed_phase_storage.rs | WorthQueryManagedPhaseStorageForTest, facade::primary_graph |
+
+Each control delegates to the actual original owner; backing/phase storage owns
+its actual production value and Drop custody. The symbol control owns the actual
+RuntimeSymbolTable and observes its stored configuration key. Its text constructor
+delegates the existing managed-text constructor with the original request. The
+first relocation check exposed four private-constructor calls; moving those calls
+through this same owner control fixes court reach without changing production
+symbol allocation. No BC9002 exemption or new feature is added. Internal facade
+forwarding and the three exact caller entries are the only boundary additions
+for this correction. The seven coordinator-assigned P-A courts remain untouched.
+
+Constitution completion is not claimed while their findings remain.
+Installation/registry retirement and directory producer changed-build legs remain
+unimplemented and unrun pending the InitialEmpty/installed-definition contract
+ruling documented above. Accepted-output restoration and same-build reuse remain
+D12-deferred. The lane index records the corrected named cases and phase checks
+separately from the retained first-candidate failures.
+
+Final topology correction qualification: Root and Query selected check--tests pass;
+the relocated Native court is 5/0/0 and Query court is 3/0/0. Formatting passes.
+Dirty Rust caps pass for 100 files. Generated context passes without regeneration.
+Boundary-check now reports exactly the seven unchanged P-A-assigned BC9002 paths;
+the three first-review findings are absent. The prior ten-finding log and failed
+private-constructor check remain in the evidence index. No broad or ignored lane
+is run for this correction. The previously qualified D7 paths are unchanged.

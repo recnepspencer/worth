@@ -164,7 +164,10 @@ pub(in crate::domain_computation::primary_graph) fn provider_session_admission_d
     failure: crate::domain_computation::WorthQueryProviderSessionFailure,
 ) -> Denial {
     use crate::domain_computation::WorthQueryProviderSessionDenialKind as Kind;
-    if failure.kind() == Kind::StaleIncarnation {
+    if matches!(
+        failure.kind(),
+        Kind::StaleIncarnation | Kind::ForeignGraphAuthority | Kind::TokenNotMintedForPlan
+    ) {
         Denial::provider_execution_denied(Stage::ProviderPlan, Ok(failure.kind()), failure.detail())
             .with_provider_session_failure(failure)
     } else {

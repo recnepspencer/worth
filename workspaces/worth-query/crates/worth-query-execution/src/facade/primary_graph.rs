@@ -27,8 +27,8 @@ pub use worth_relational::facade::history::{CommitId, RelationalAuthoredWriteDen
 
 pub use crate::domain_computation::{
     WorthQueryInvariantExecutionDenialKind, WorthQueryInvariantExecutionFailure,
-    WorthQueryInvariantExecutionFailurePosture, WorthQueryProductUnpublishedRecoveryFailure,
-    WorthQueryProductUnpublishedRecoveryReleaseDenial,
+    WorthQueryInvariantExecutionFailurePosture, WorthQueryPreparedProviderSession,
+    WorthQueryProductUnpublishedRecoveryFailure, WorthQueryProductUnpublishedRecoveryReleaseDenial,
     WorthQueryProductUnpublishedRecoveryReleaseFailure, WorthQueryProviderSessionFailure,
     WorthQueryRelationLawDenial,
 };
@@ -361,6 +361,8 @@ pub use worth_signal::facade::runtime::SignalConditionalEvaluationBudget;
 pub use crate::domain_computation::primary_graph::relational_execution_kind;
 pub use crate::domain_computation::{
     WorthQueryProviderSessionControlStopKind, WorthQueryProviderSessionDenialKind,
+    WorthQueryProviderSessionGrant, WorthQueryProviderSessionGrantControlDenial,
+    WorthQueryProviderSessionGrantControlForTest, WorthQueryProviderSessionReceiver,
 };
 
 pub use worth_signal::facade::{

@@ -122,9 +122,8 @@ fn workflow_stage_uses_stage_resources_and_scope_in_the_same_protocol() {
             assert_eq!(plan.contract().scope().stage_identity(), Some("stage"));
             assert_eq!(plan.contract().read_closure(), ["managed-graph:project"]);
             let outcome = plan
-                .readmit(&installed_running_phase)
-                .expect("workflow plan should readmit")
-                .prepare()
+                .admit_session(&installed_running_phase)
+                .and_then(|(grant, receiver)| grant.prepare(receiver, &installed_running_phase))
                 .expect("workflow session should prepare")
                 .bind_reads_and_effects()
                 .abort();

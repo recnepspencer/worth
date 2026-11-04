@@ -93,6 +93,7 @@ pub(super) fn prepared(
         (Arc::new(AtomicUsize::new(0)),),
         build(),
         limits(),
+        None,
     )
     .unwrap();
     let expected = query
@@ -256,6 +257,7 @@ pub(super) fn meaning() -> PreparedHomeApplication<HomeIdentitySchema, HomeProgr
         (Arc::new(AtomicUsize::new(0)),),
         build(),
         limits(),
+        None,
     )
     .unwrap()
 }

@@ -15,10 +15,9 @@ pub(in super::super) fn staged_with_fresh_read_set<'run>(
         running
             .admit_provider_execution_plan(graph)
             .unwrap()
-            .readmit(&installed_fixture_phase)
+            .admit_session(&installed_fixture_phase)
+            .and_then(|(grant, receiver)| grant.prepare(receiver, &installed_fixture_phase))
     }
-    .unwrap()
-    .prepare()
     .unwrap()
     .bind_reads_and_effects();
     let fresh = {

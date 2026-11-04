@@ -230,9 +230,8 @@ fn real_terminal_session<'run>(
     running
         .admit_provider_execution_plan(&world.application.primary_graph_authority)
         .unwrap()
-        .readmit(execution)
-        .unwrap()
-        .prepare()
+        .admit_session(execution)
+        .and_then(|(grant, receiver)| grant.prepare(receiver, execution))
         .unwrap()
         .bind_reads_and_effects()
 }

@@ -54,9 +54,8 @@ fn phase_seven_through_ten_consumer_journey(
     let staged = running
         .admit_provider_execution_plan(graph)
         .unwrap()
-        .readmit(execution_request)
-        .unwrap()
-        .prepare()
+        .admit_session(execution_request)
+        .and_then(|(grant, receiver)| grant.prepare(receiver, execution_request))
         .unwrap()
         .bind_reads_and_effects();
     let read_set = {

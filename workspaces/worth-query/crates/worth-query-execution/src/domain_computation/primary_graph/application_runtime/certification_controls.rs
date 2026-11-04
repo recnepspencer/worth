@@ -5,6 +5,7 @@ mod actor_retention;
 mod correction_history_indexes;
 mod inspection_materialization;
 mod managed_cleanup;
+mod provider_session_grant;
 use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
 #[path = "certification_controls/workflow_membership.rs"]
 mod workflow_membership;

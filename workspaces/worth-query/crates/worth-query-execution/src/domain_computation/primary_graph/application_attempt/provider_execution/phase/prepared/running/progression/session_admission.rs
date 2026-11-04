@@ -34,8 +34,8 @@ pub(super) fn admit_provider_session<'run>(
     let staged = match running
         .admit_provider_execution_plan(graph)
         .and_then(|plan| plan.bind_application_product(product))
-        .and_then(|plan| plan.readmit(phase))
-        .and_then(|session| session.prepare())
+        .and_then(|plan| plan.admit_session(phase))
+        .and_then(|(grant, receiver)| grant.prepare(receiver, phase))
         .map(|prepared| prepared.bind_reads_and_effects())
     {
         Ok(staged) => staged,

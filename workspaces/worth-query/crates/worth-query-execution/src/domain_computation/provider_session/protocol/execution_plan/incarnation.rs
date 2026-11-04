@@ -2,7 +2,7 @@
 use super::*;
 
 impl WorthQueryAdmittedProviderExecutionPlan<'_> {
-    pub(super) fn require_current_home(
+    pub(in crate::domain_computation::provider_session::protocol) fn require_current_home(
         &self,
         current: Option<worth_runtime_world::facade::RuntimeWorldOwnerIdentity>,
     ) -> Result<(), WorthQueryProviderSessionFailure> {

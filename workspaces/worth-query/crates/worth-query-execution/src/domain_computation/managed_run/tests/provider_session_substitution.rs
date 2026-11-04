@@ -141,7 +141,8 @@ fn token_minted_for_an_earlier_plan_cannot_open_a_later_plan() {
             first
                 .admit_provider_execution_plan(&world.graph)
                 .expect("first plan should admit")
-                .readmit(&installed_fixture_phase)
+                .admit_session(&installed_fixture_phase)
+                .and_then(|(grant, receiver)| grant.prepare(receiver, &installed_fixture_phase))
         }
         .expect_err("provider intentionally retains the first token");
         assert_eq!(
@@ -169,7 +170,8 @@ fn token_minted_for_an_earlier_plan_cannot_open_a_later_plan() {
             second
                 .admit_provider_execution_plan(&world.graph)
                 .expect("second plan should admit")
-                .readmit(&installed_fixture_phase)
+                .admit_session(&installed_fixture_phase)
+                .and_then(|(grant, receiver)| grant.prepare(receiver, &installed_fixture_phase))
         }
         .expect_err("token minted for the first plan must not substitute");
         assert_eq!(
