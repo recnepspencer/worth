@@ -365,3 +365,7 @@ pub use source_custody::WorthQueryDiscoveredRetentionControlDenial;
 pub use source_custody::WorthQueryDiscoveredRetentionReservationForTest;
 
 mod court_doors_for_test;
+#[path = "registry/demand_record_court_doors_for_test.rs"]
+mod demand_record_court_doors_for_test;
+#[path = "registry/source_custody_court_doors_for_test.rs"]
+mod source_custody_court_doors_for_test;
