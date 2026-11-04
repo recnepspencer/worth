@@ -3,6 +3,7 @@
 mod attachment;
 pub mod bytes;
 mod cold_source;
+pub mod immutable_members;
 mod member_faults;
 mod owned_snapshot;
 use bytes::{ByteJournal, MemberBytes};

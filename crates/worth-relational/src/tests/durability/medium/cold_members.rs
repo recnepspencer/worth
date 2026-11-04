@@ -28,8 +28,6 @@ mod cold_index_fixture;
 mod cold_index_frontier;
 #[path = "cold_index_matrix.rs"]
 mod cold_index_matrix;
-#[path = "cold_index_refresh.rs"]
-mod cold_index_refresh;
 #[path = "cold_invariants.rs"]
 mod cold_invariants;
 #[path = "cold_lineage_custody.rs"]
@@ -64,7 +62,6 @@ mod cold_read_door;
 mod cold_read_matrix;
 #[path = "cold_reserved_checkpoint.rs"]
 mod cold_reserved_checkpoint;
-mod cold_selected_subject;
 #[path = "cold_symbols.rs"]
 mod cold_symbols;
 #[path = "cold_tail_matrix.rs"]

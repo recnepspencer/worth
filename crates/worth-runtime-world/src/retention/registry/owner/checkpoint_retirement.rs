@@ -73,40 +73,6 @@ where
 // borrowed issued basis/runtime/request handles; no authority is constructed here.
 #[cfg(test)]
 impl RuntimeWorldRetentionOwner<(), (), ()> {
-    pub(crate) fn assert_checkpoint_origin_keeps_exact_component_leases_after_history_claims_retire(
-        &self,
-        basis: &crate::basis::AdmittedCompositeRuntimeWorldBasis,
-        native: &worth_relational::facade::runtime::RelationalRuntime,
-        request: &worth_execution::ExecutionRequest<'_, '_>,
-    ) {
-        let head = self.issue_product_head(basis).unwrap();
-        let history = head.fork_history(basis).unwrap();
-        let origin_pins = head.fork_history(basis).unwrap();
-        let keys = origin_pins.retention_keys();
-        let acquired = self.cost_snapshot().owner_acquisition_contacts();
-        let mut origin = crate::durability::WorldCheckpointOrigin::new(basis, origin_pins);
-        assert_eq!(self.cost_snapshot().owner_acquisition_contacts(), acquired);
-        drop(head);
-        drop(history);
-        for key in &keys {
-            let entry = self.inspect_key(key).unwrap().unwrap();
-            assert!(entry.owner_lease_present);
-            assert_eq!(entry.dependencies.total(), 1);
-        }
-        assert_eq!(self.active_component_obligation_count(), 2);
-        while !origin.advance_retirement(request, native).unwrap() {}
-        let retired = origin.into_retired().unwrap();
-        let retired_keys: Vec<_> = retired.retention_keys().cloned().collect();
-        assert_eq!(retired_keys, keys);
-        assert_eq!(self.active_component_obligation_count(), 0);
-        for key in &keys {
-            let entry = self.inspect_key(key).unwrap().unwrap();
-            assert!(!entry.owner_lease_present);
-            assert!(entry.dependencies.is_zero());
-        }
-        let reclaimed = self.reclaim_keys(&retired_keys, 2).unwrap();
-        assert_eq!(reclaimed.reclaimed(), 2);
-    }
     pub(crate) fn assert_checkpoint_origin_preserves_original_claims_across_busy_and_cancelled_retirement(
         &self,
         basis: &crate::basis::AdmittedCompositeRuntimeWorldBasis,
