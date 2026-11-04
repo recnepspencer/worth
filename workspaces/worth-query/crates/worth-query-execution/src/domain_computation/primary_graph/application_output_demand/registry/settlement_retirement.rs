@@ -68,7 +68,7 @@ impl WorthQueryOutputDemandRegistry {
     pub(in crate::domain_computation::primary_graph) fn posts_settlement(
         &self,
         identity: &RecordedSettlementIdentity,
-    ) -> Result<bool, crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial> {
+    ) -> Result<bool, crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial>{
         let state = self
             .state
             .lock()

@@ -70,7 +70,7 @@ where
         Root: ApplicationOutputGraphShape<Schema>
             + worth_query_declaration::facade::application_program::ApplicationDiscoveredOutputRoot,
         RootConnection<Schema, Root>: WorthQueryApplicationDiscoveredOutputConnection<Schema>,
-    {
+{
         if !self.contains_output_root::<Root>() {
             return Err(crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial::new(
                 crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::ForeignDemand,

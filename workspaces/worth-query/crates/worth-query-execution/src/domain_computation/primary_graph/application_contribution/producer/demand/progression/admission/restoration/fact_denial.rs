@@ -1,8 +1,12 @@
 //! Checkpoint format and retention refusals retain their distinct causes.
-use {super::denial, crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial, crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind as Kind};
 use crate::domain_computation::primary_graph::{
     application_attempt::retained_decision_facts::StoreDenial,
     application_checkpoint::FactDecodeDenial,
+};
+use {
+    super::denial,
+    crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial,
+    crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind as Kind,
 };
 
 pub(super) fn decode_denial(error: FactDecodeDenial) -> WorthQueryOutputDemandDenial {

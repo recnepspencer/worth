@@ -7,9 +7,9 @@ mod source_basis;
 
 use super::denial;
 use super::WorthQueryObservedSource;
+use super::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind;
-use super::WorthQueryPrimaryGraphApplicationRuntime;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where

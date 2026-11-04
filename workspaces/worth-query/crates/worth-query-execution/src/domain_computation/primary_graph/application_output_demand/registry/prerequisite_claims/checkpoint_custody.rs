@@ -2,8 +2,8 @@
 use std::sync::Arc;
 
 use super::prerequisite_denials::capacity_denial;
-use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
 
 /// The reader and lineage retain the complete funded facts and output witness.
 /// This claim pins their exact settlement address through prerequisite custody.

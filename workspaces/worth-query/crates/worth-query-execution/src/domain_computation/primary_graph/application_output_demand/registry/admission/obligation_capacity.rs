@@ -1,4 +1,8 @@
-use {crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial, crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind, super::WorthQueryOutputDemandKey};
+use {
+    super::WorthQueryOutputDemandKey,
+    crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial,
+    crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind,
+};
 
 pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn prepare_performed_obligation_slots(
     state: &super::super::DemandRegistryState,

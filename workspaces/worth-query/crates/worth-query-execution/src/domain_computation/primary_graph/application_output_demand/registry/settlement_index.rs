@@ -9,10 +9,10 @@ use std::sync::Mutex;
 
 use super::DemandRegistryState;
 use super::WorthQueryOutputDemandKey;
-use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
-use crate::domain_computation::primary_graph::output_lineage::SemanticSource;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind as Kind;
+use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::output_lineage::SemanticSource;
 
 type Address = (
     worth_runtime_world::facade::ProductBranchIncarnation,

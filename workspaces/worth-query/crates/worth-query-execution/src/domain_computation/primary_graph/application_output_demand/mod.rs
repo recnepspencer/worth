@@ -20,8 +20,8 @@ pub(crate) mod recovered_outputs;
 pub(crate) mod registry;
 pub(in crate::domain_computation::primary_graph) use registry::AdmittedRequiredWave;
 pub(in crate::domain_computation::primary_graph) use registry::PreparedRequiredInputs;
-pub(crate) mod settlement;
 pub(crate) mod denial;
+pub(crate) mod settlement;
 pub(in crate::domain_computation::primary_graph) use settlement::OriginalProducingPublication;
 
 pub use readiness_delivery::WorthQueryOutputReadinessDeliveryEvidence;

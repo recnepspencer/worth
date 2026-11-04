@@ -136,7 +136,7 @@ impl DemandRecord {
     #[doc(hidden)]
     pub fn required_stop_for_test(
         &self,
-    ) -> &Option<crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind> {
+    ) -> &Option<crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind>{
         &self.required_stop
     }
 }
@@ -280,7 +280,7 @@ impl DemandRecord {
     pub fn required_stop_mut_for_test(
         &mut self,
     ) -> &mut Option<crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind>
-    {
+{
         &mut self.required_stop
     }
 }

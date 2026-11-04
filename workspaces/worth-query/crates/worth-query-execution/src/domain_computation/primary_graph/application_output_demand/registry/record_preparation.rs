@@ -3,8 +3,11 @@ use super::required_work::{RequiredWorkMembership, RequiredWorkQueue};
 use super::{
     DemandRecord, DemandRegistryState, DemandState, DemandWake, WorthQueryOutputDemandKey,
 };
-use {crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial, crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind};
 use std::sync::{Arc, Condvar, Mutex};
+use {
+    crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial,
+    crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind,
+};
 type Commit = worth_runtime_world::facade::CompositeCommitIdentity;
 impl DemandRegistryState {
     pub(super) fn prepare_new_record(

@@ -1,10 +1,15 @@
 //! Retry meaning of typed output-demand stops.
 
-use {crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind, crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandRecoveryPosture};
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use {
+    crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind,
+    crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandRecoveryPosture,
+};
 
 impl WorthQueryOutputDemandDenialKind {
-    pub(in crate::domain_computation::primary_graph) fn default_recovery_posture(&self) -> WorthQueryOutputDemandRecoveryPosture {
+    pub(in crate::domain_computation::primary_graph) fn default_recovery_posture(
+        &self,
+    ) -> WorthQueryOutputDemandRecoveryPosture {
         use WorthQueryOutputDemandRecoveryPosture::{Retryable, Terminal};
         match self {
             Self::PublicationReceipt(stop) => {

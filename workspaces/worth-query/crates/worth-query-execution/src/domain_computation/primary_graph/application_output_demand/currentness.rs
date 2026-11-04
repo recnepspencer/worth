@@ -7,13 +7,13 @@ use facts::require_witnessed_output;
 
 use worth_query_installation::facade::ApplicationSchema;
 
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind;
 use crate::domain_computation::primary_graph::output_lineage::RetainedOutputCurrentnessRead;
 use crate::domain_computation::primary_graph::output_reuse::first_moved_fact_in;
 use crate::domain_computation::primary_graph::output_reuse::RetainedFactStop;
 use crate::domain_computation::primary_graph::provider::FactlessCurrentness;
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt;
-use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
-use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind;
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandSettlement;
 use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation;
 

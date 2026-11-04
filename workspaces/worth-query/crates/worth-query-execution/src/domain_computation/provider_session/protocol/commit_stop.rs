@@ -61,7 +61,7 @@ impl WorthQueryProviderSessionCommitDeferred {
 
     pub(in crate::domain_computation) fn into_prerequisite_denial(
         self,
-    ) -> Option<crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial> {
+    ) -> Option<crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial>{
         self.prerequisite_denial
     }
 

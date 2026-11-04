@@ -167,7 +167,7 @@ thread_local! {
 pub fn caller_pass_reports_on_this_thread_for_test() -> Vec<(
     Result<(), crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind>,
     u64,
-)> {
+)>{
     CALLER_PASSES.with(|passes| std::mem::take(&mut *passes.borrow_mut()))
 }
 pub(in crate::domain_computation::primary_graph) fn record_caller_pass_for_test<R>(

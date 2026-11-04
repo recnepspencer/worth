@@ -1,5 +1,12 @@
 //! Original native owner stops from a non-driving output observation.
-use {crate::domain_computation::primary_graph::application_query::SourceQueryObservationStop, crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop, crate::domain_computation::primary_graph::output_lineage::invalidation::SettlementRegistrationStop, crate::domain_computation::primary_graph::WorthQueryCurrentOutputDenial, crate::domain_computation::primary_graph::WorthQueryInvariantDecisionPlanDenial, crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial};
+use {
+    crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial,
+    crate::domain_computation::primary_graph::application_query::SourceQueryObservationStop,
+    crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop,
+    crate::domain_computation::primary_graph::output_lineage::invalidation::SettlementRegistrationStop,
+    crate::domain_computation::primary_graph::WorthQueryCurrentOutputDenial,
+    crate::domain_computation::primary_graph::WorthQueryInvariantDecisionPlanDenial,
+};
 /// Original admission, source-read or output-verification refusal.
 /// The causal accessors retain native failure meaning; a refusal grants no
 /// pending state or independent source/currentness authority.

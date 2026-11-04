@@ -12,7 +12,7 @@ pub(super) fn validate_original_ready(
     key: &WorthQueryOutputDemandKey,
     successor: &SourceEpoch,
     producer: &Arc<dyn Any + Send + Sync>,
-) -> Result<(), crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial> {
+) -> Result<(), crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial>{
     let refuse = |subject| {
         crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial::new(
         crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::ForeignSource,

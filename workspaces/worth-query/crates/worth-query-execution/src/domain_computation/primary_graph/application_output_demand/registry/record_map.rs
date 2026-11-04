@@ -299,7 +299,7 @@ impl DemandRecords {
     ) -> Result<
         std::sync::Arc<std::sync::atomic::AtomicUsize>,
         crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial,
-    > {
+    >{
         self.3.counter(occurrence)
     }
     pub(super) fn publication_selection(
@@ -308,7 +308,7 @@ impl DemandRecords {
     ) -> Result<
         super::PublicationHeadSelection,
         crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial,
-    > {
+    >{
         self.3.selection(occurrence)
     }
 }

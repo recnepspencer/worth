@@ -1,6 +1,9 @@
 //! Original native output-verification stops at demand admission boundaries.
 use super::super::invariant_projection::ConsumedOutputVerificationStop as Stop;
-use {crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial, crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind as Kind};
+use {
+    crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial,
+    crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind as Kind,
+};
 pub(in crate::domain_computation::primary_graph) fn verification_denial(
     stop: Stop,
     subject: impl Into<std::borrow::Cow<'static, str>>,

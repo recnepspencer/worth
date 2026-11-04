@@ -19,8 +19,8 @@ use super::FamilySourceQuery;
 use super::FamilySourceValue;
 use super::WorthQueryAdmittedOutputDemand;
 use super::WorthQueryOutputDemandAdvance;
-use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
 use super::WorthQueryProducerOutputFamily;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
 mod awaited_delivery;
 mod contacts;
 mod held;
@@ -164,7 +164,7 @@ where
         phase: &WorthQueryAdvancementPhase<'_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         branch: crate::basis::WorthQueryProductBranch,
-    ) -> Result<(), crate::domain_computation::primary_graph::application_output_demand::denial::read_cleanup::WorthQueryOutputReadCloseDenial> {
+    ) -> Result<(), crate::domain_computation::primary_graph::application_output_demand::denial::read_cleanup::WorthQueryOutputReadCloseDenial>{
         if self.pending_claim.is_some() {
             return Err(crate::domain_computation::primary_graph::application_output_demand::denial::read_cleanup::WorthQueryOutputReadCloseDenial::NativePublicationRetained);
         }

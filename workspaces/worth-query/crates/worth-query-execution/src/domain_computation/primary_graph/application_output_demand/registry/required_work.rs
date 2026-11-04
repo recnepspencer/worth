@@ -39,10 +39,10 @@ use worth_relational::facade::mvcc::CompanionPublicationCompletionObserver;
 
 use super::WorthQueryOutputDemandKey;
 use super::WorthQueryOutputDemandRegistry;
-use crate::domain_computation::primary_graph::output_lineage::invalidation::SourceInvalidationOwner;
-use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind;
+use crate::domain_computation::primary_graph::output_lineage::invalidation::SourceInvalidationOwner;
+use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
 
 pub struct RequiredWorkMembership {
     key: Arc<WorthQueryOutputDemandKey>,

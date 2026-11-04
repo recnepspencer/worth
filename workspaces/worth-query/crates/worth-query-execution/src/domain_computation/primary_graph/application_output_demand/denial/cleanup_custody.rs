@@ -41,7 +41,7 @@ impl CleanupOwner for NativeCleanupOwner {
         &mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
         release: &mut ReadRelease<'_>,
-    ) -> Result<(), crate::domain_computation::primary_graph::application_output_demand::denial::read_cleanup::WorthQueryOutputReadCloseDenial> {
+    ) -> Result<(), crate::domain_computation::primary_graph::application_output_demand::denial::read_cleanup::WorthQueryOutputReadCloseDenial>{
         use crate::domain_computation::primary_graph::application_output_demand::denial::read_cleanup::WorthQueryOutputReadCloseDenial as Denial;
         self.release(phase).map_err(Denial::Cleanup)?;
         let state = self
@@ -185,13 +185,9 @@ impl CleanupOwner for NativeCleanupOwner {
     }
 }
 #[derive(Debug)]
-pub(in crate::domain_computation::primary_graph) struct DemandCleanupCustody(
-    Box<dyn CleanupOwner>,
-);
+pub(in crate::domain_computation::primary_graph) struct DemandCleanupCustody(Box<dyn CleanupOwner>);
 impl DemandCleanupCustody {
-    pub(in crate::domain_computation::primary_graph) fn retired_components(
-        &mut self,
-    ) -> usize {
+    pub(in crate::domain_computation::primary_graph) fn retired_components(&mut self) -> usize {
         self.0.retired_components()
     }
     pub(in crate::domain_computation::primary_graph) fn from_outcome(
@@ -216,12 +212,10 @@ impl DemandCleanupCustody {
         &mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
         release: &mut ReadRelease<'_>,
-    ) -> Result<(), crate::domain_computation::primary_graph::application_output_demand::denial::read_cleanup::WorthQueryOutputReadCloseDenial> {
+    ) -> Result<(), crate::domain_computation::primary_graph::application_output_demand::denial::read_cleanup::WorthQueryOutputReadCloseDenial>{
         self.0.read_close(phase, release)
     }
-    pub(in crate::domain_computation::primary_graph) fn receipt(
-        &mut self,
-    ) -> Option<&Receipt> {
+    pub(in crate::domain_computation::primary_graph) fn receipt(&mut self) -> Option<&Receipt> {
         self.0.receipt()
     }
 
@@ -231,9 +225,7 @@ impl DemandCleanupCustody {
         self.0.failure()
     }
 
-    pub(in crate::domain_computation::primary_graph) fn new(
-        owner: Box<Required>,
-    ) -> Self {
+    pub(in crate::domain_computation::primary_graph) fn new(owner: Box<Required>) -> Self {
         Self(Box::new(NativeCleanupOwner(std::sync::Mutex::new(
             NativeCleanupState {
                 required: Some(owner),

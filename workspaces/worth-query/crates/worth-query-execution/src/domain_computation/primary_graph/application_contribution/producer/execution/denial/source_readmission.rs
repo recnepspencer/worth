@@ -1,11 +1,11 @@
 //! Request rejection remains local to the caller through both query phases.
 
 use super::request_execution::kind as request_execution_kind;
-use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind as DemandKind;
 use super::{
     denial, failed, request_admission_denied, request_admission_rejected, request_authority_stop,
     ProducerExecutionStop,
 };
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind as DemandKind;
 use crate::domain_computation::primary_graph::application_query::{
     WorthQueryApplicationOneShotDenial, WorthQueryApplicationOneShotDenialKind as ExecutionKind,
     WorthQueryApplicationQueryAdmissionDenial,

@@ -1,6 +1,10 @@
 //! The installed root binds its prepared source to the actual admitted demand.
 use super::*;
-use {crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt, crate::domain_computation::primary_graph::WorthQueryFulfilledRequiredRoot, crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind as Kind};
+use {
+    crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind as Kind,
+    crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+    crate::domain_computation::primary_graph::WorthQueryFulfilledRequiredRoot,
+};
 impl<Schema, Program, Demand> WorthQueryAdmittedProgramOutput<Schema, Program, Demand>
 where
     Schema: ApplicationSchema + 'static,

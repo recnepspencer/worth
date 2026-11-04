@@ -1,8 +1,11 @@
-use {crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial, crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind};
 use crate::domain_computation::primary_graph::{
     MutationHandlerExecutionDenial, WorthQueryApplicationAttemptDenialKind,
 };
 use worth_query_declaration::facade::application_operation::ApplicationMutationIdentityDenial;
+use {
+    crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial,
+    crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind,
+};
 
 pub(crate) mod content_identity;
 pub(crate) mod request_execution;

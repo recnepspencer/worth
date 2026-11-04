@@ -1,11 +1,17 @@
 //! Exact original output movements, without ordinal inference or head selection.
 use super::WorthQueryOutputDemandSettlement;
-use {crate::domain_computation::primary_graph::output_reuse::read_denial, crate::domain_computation::primary_graph::structural_walk::memory, crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation as Read, crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial as Denial, crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind as Kind};
 use std::{collections::BTreeMap, sync::Arc};
 use worth_execution::{ExecutionRequest, MapKernelContext, WorkCeilingDenial};
 use worth_runtime_world::facade::{
     CompositeCommitIdentity, ConsumedCompositePublication, ProductBranchReferenceGeneration,
     ProductBranchReferenceSnapshot,
+};
+use {
+    crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial as Denial,
+    crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind as Kind,
+    crate::domain_computation::primary_graph::output_reuse::read_denial,
+    crate::domain_computation::primary_graph::structural_walk::memory,
+    crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation as Read,
 };
 
 type Key<'a> = (

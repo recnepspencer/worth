@@ -1,7 +1,14 @@
 //! Existing output stop vocabulary, retaining request/control/resource posture.
 use super::*;
 use crate::domain_computation::primary_graph::output_reuse;
-use {crate::domain_computation::primary_graph::application_query::SourceQueryObservationStop as QueryStop, crate::domain_computation::primary_graph::application_query::WorthQueryAdmittedOneShotStop as ReadStop, crate::domain_computation::primary_graph::WorthQueryApplicationOneShotDenialKind as ReadKind, crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind as AdmissionKind, crate::domain_computation::primary_graph::WorthQueryCurrentOutputDenialKind as CurrentKind, crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind as Kind};
+use {
+    crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind as Kind,
+    crate::domain_computation::primary_graph::application_query::SourceQueryObservationStop as QueryStop,
+    crate::domain_computation::primary_graph::application_query::WorthQueryAdmittedOneShotStop as ReadStop,
+    crate::domain_computation::primary_graph::WorthQueryApplicationOneShotDenialKind as ReadKind,
+    crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind as AdmissionKind,
+    crate::domain_computation::primary_graph::WorthQueryCurrentOutputDenialKind as CurrentKind,
+};
 
 impl WorthQueryOutputAvailabilityDenial {
     /// Native refusal classification; diagnostic state grants no availability.

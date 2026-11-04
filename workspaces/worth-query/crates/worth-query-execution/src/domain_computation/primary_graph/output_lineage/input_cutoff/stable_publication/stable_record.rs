@@ -7,13 +7,13 @@ use super::PreparedStableLineagePublication;
 use super::StableFactSpans;
 use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl;
 use crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind as Kind;
 use crate::domain_computation::primary_graph::application_query::BoundStableObservedSourceFacts;
 use crate::domain_computation::primary_graph::output_lineage::RecordedOutput;
 use crate::domain_computation::primary_graph::output_lineage::RecordedOutputMutable;
 use crate::domain_computation::primary_graph::output_lineage::RecordedSourceIdentity;
 use crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation;
-use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
-use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind as Kind;
 
 impl<'lane, 'selected> PreparedStableLineageAddress<'lane, 'selected> {
     /// All allocation and retained custody is admitted before copying the

@@ -1,7 +1,7 @@
 //! Close only an authentic, cleanup-free, prepublication domain refusal.
 use super::*;
-use crate::domain_computation::primary_graph::output_lineage::invalidation::SourceInvalidationOwner;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind as Kind;
+use crate::domain_computation::primary_graph::output_lineage::invalidation::SourceInvalidationOwner;
 use crate::domain_computation::primary_graph::WorthQueryPreparedRequiredOutputSource;
 
 impl WorthQueryOutputDemandRegistry {

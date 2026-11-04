@@ -111,7 +111,7 @@ where
         access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         runtime: &WorthQueryProgramApplicationRuntime<S, P>,
         branch: crate::basis::WorthQueryProductBranch,
-    ) -> Result<(), crate::domain_computation::primary_graph::application_output_demand::denial::read_cleanup::WorthQueryOutputReadCloseDenial> {
+    ) -> Result<(), crate::domain_computation::primary_graph::application_output_demand::denial::read_cleanup::WorthQueryOutputReadCloseDenial>{
         self.admitted
             .close_read_request(phase, access, runtime, branch)
     }

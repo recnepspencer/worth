@@ -1,6 +1,9 @@
 use crate::domain_computation::execution_runtime::product_world::WorthQueryPerformedRelationalProductChange;
-use {crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt, crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial};
 use worth_runtime_world::facade::CompositeCommitIdentity;
+use {
+    crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial,
+    crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+};
 
 use super::ReadyCompletion;
 

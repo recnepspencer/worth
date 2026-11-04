@@ -230,7 +230,7 @@ impl<Schema>
     ) -> Vec<(
         Root,
         crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind,
-    )> {
+    )>{
         REFRESH_STOPS.with(|stops| std::mem::take(&mut *stops.borrow_mut()))
     }
 }

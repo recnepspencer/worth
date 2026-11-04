@@ -80,7 +80,7 @@ impl ManagedUnpublishedAttempt {
         &mut self,
         provider: &crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider,
         planned: &worth_runtime_world::facade::PlannedProductReferenceSuccessor,
-    ) -> Result<(), crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial> {
+    ) -> Result<(), crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial>{
         let Some(binding) = self.attempt.output_binding_type() else {
             assert!(self.required_prerequisites.is_none());
             return Ok(());

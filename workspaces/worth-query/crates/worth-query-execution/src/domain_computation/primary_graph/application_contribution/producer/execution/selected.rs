@@ -2,11 +2,11 @@
 
 use super::super::demand::DecisionInput;
 use super::super::demand::PerformedMembers;
-use crate::domain_computation::primary_graph::application_output_demand::denial::ProducerPublicationStale;
 use super::super::demand::SelectedDecisionInput;
 use super::*;
 use crate::domain_computation::primary_graph::application_contribution::producer::demand::MatchedRequiredPredecessors;
 use crate::domain_computation::primary_graph::application_contribution::producer::demand::ResolvedRequiredPredecessors;
+use crate::domain_computation::primary_graph::application_output_demand::denial::ProducerPublicationStale;
 use crate::domain_computation::primary_graph::application_output_demand::RetainedOutputReadmissionSource;
 use crate::domain_computation::primary_graph::application_output_demand::SelectedReadyReadmission;
 use crate::domain_computation::primary_graph::output_lineage::AcceptedCurrentCandidate;

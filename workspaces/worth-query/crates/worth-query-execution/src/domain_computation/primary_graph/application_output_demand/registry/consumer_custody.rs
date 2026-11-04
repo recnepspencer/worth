@@ -1,8 +1,8 @@
 //! A wave handoff holds the posted consumer; a released row yields no custody.
 
 use super::*;
-use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind;
+use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
 
 pub enum ConsumerCustody {
     Handoff(ConsumerHandoff),

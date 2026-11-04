@@ -14,12 +14,15 @@ pub(crate) mod demand;
 mod denial_value;
 pub(in crate::domain_computation::primary_graph) use demand::MatchedRequiredPredecessors;
 pub(in crate::domain_computation::primary_graph) use demand::{CurrentBasis, CurrentProof};
-pub use {demand::WorthQueryAdmittedOutputDemand, demand::WorthQueryOutputDemandAdvance, demand::WorthQuerySelectedApplicationProducer};
 pub use denial_value::{
     WorthQueryProducerDenialDeclaration, WorthQueryProducerDenialDecodeDenial,
     WorthQueryProducerDenialEncodingRefusal, WorthQueryProducerDenialProjection,
     WorthQueryProducerDenialValue, WorthQueryProjectedProducerDenial,
     WorthQueryUndeclaredProducerDenial,
+};
+pub use {
+    demand::WorthQueryAdmittedOutputDemand, demand::WorthQueryOutputDemandAdvance,
+    demand::WorthQuerySelectedApplicationProducer,
 };
 pub(crate) mod execution;
 pub(in crate::domain_computation::primary_graph) use execution::unpublished::PendingProducerPublication;

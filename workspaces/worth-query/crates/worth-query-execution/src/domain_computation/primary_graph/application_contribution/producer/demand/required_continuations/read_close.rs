@@ -6,7 +6,7 @@ impl<S: ApplicationSchema + 'static> RequiredContinuations<S> {
         phase: &WorthQueryAdvancementPhase<'_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
         branch: crate::basis::WorthQueryProductBranch,
-    ) -> Result<(), crate::domain_computation::primary_graph::application_output_demand::denial::read_cleanup::WorthQueryOutputReadCloseDenial> {
+    ) -> Result<(), crate::domain_computation::primary_graph::application_output_demand::denial::read_cleanup::WorthQueryOutputReadCloseDenial>{
         for entry in &mut self.entries {
             entry.successor.close_read_request(phase, runtime, branch)?;
         }

@@ -2,9 +2,9 @@
 
 use super::denial;
 use super::PreparedOutputLineageSlot;
-use crate::domain_computation::primary_graph::output_lineage::native_prior_checkpoint::NativePriorCheckpointLocator;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind;
+use crate::domain_computation::primary_graph::output_lineage::native_prior_checkpoint::NativePriorCheckpointLocator;
 
 impl PreparedOutputLineageSlot {
     pub(in crate::domain_computation::primary_graph) fn retain_native_prior_checkpoint(

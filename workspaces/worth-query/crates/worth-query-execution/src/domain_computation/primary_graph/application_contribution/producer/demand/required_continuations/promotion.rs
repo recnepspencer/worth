@@ -1,7 +1,7 @@
 //! Extract only the actual typed successor after the caller's exact join.
 
-use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind;
 use super::*;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind;
 
 const FAMILY_SUBJECT: &str = "required successor family differs from caller demand";
 

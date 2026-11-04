@@ -1,13 +1,16 @@
 mod commit_denial;
-use crate::domain_computation::primary_graph::application_output_demand::denial::ProducerPublicationStale;
 use super::denial::{
     commit_execution_stopped, denial, failed, handler_execution_failed, request_authority_stop,
 };
-use {crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial, crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind};
 use crate::domain_computation::primary_graph as graph;
+use crate::domain_computation::primary_graph::application_output_demand::denial::ProducerPublicationStale;
 use graph::{
     HandlerResult, WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitOutcome,
     WorthQueryApplicationCommitReceipt, WorthQueryApplicationNoEffectCause,
+};
+use {
+    crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial,
+    crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind,
 };
 
 /// A stable publication carries owner-issued lineage authority and cannot be

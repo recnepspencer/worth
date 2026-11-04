@@ -1,8 +1,12 @@
 //! Per-call liveness is distinct from persistent installed producer provenance.
 use super::WorthQueryProducerCommitAuthority;
 use crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerInvocation;
-use {crate::domain_computation::primary_graph::WorthQueryHistoryNavigationDenial, crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial, crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime};
 use worth_query_installation::facade::ApplicationSchema;
+use {
+    crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial,
+    crate::domain_computation::primary_graph::WorthQueryHistoryNavigationDenial,
+    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime,
+};
 
 pub(super) fn confirm_history_source<S: ApplicationSchema, T>(
     history: Option<HistoryProducerInvocation<'_>>,

@@ -1,5 +1,5 @@
-use crate::domain_computation::primary_graph::application_output_demand::denial::ProducerPublicationStale;
 use super::*;
+use crate::domain_computation::primary_graph::application_output_demand::denial::ProducerPublicationStale;
 use crate::domain_computation::primary_graph::invariant_projection::VerificationCapacityStop;
 
 pub(super) fn ready_work_denial(subject: &'static str) -> ProducerExecutionStop {

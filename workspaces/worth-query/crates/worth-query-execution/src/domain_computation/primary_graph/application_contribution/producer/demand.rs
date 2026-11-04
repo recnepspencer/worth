@@ -38,13 +38,8 @@ pub(in crate::domain_computation::primary_graph) use required_continuations::Req
 pub(in crate::domain_computation::primary_graph) use required_continuations::RequiredFreshProgress;
 use required_provenance::DemandProgressionProvenance;
 
-
 mod managed_cleanup;
 mod read_close;
-
-
-
-
 
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind;

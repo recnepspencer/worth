@@ -3,7 +3,6 @@ use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::progression::denial;
-use {super::WorthQueryOutputDemandAdvance, crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial, crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind};
 use crate::domain_computation::execution_runtime::product_world::WorthQueryPerformedRelationalProductChangeDeliveryDenialKind as DeliveryDenialKind;
 use crate::domain_computation::primary_graph::application_output_demand::{
     WorthQueryAcceptedOutputAuthority, WorthQueryCompletedOutputDemand,
@@ -11,6 +10,11 @@ use crate::domain_computation::primary_graph::application_output_demand::{
     WorthQueryOutputDemandInterest, WorthQueryPendingOutputDelivery as Delivery,
 };
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
+use {
+    super::WorthQueryOutputDemandAdvance,
+    crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial,
+    crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind,
+};
 mod selected;
 mod unpublished;
 

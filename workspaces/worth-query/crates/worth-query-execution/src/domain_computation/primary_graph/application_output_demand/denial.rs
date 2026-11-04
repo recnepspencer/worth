@@ -103,7 +103,7 @@ impl WorthQueryOutputDemandDenial {
         &mut self,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         runtime: &R,
-    ) -> Result<(), crate::domain_computation::primary_graph::application_output_demand::denial::read_cleanup::WorthQueryOutputReadCloseDenial> {
+    ) -> Result<(), crate::domain_computation::primary_graph::application_output_demand::denial::read_cleanup::WorthQueryOutputReadCloseDenial>{
         if let Some(cleanup) = self.cleanup.as_mut() {
             cleanup.close_read(phase, &mut |recovery| {
                 runtime.close_recovery_in_advancement(phase, recovery)
@@ -130,7 +130,7 @@ impl WorthQueryOutputDemandDenial {
         self
     }
     /// Transfers actual native producer outcome/cleanup custody; diagnostic clones own none.
-    pub fn take_read_cleanup(&mut self) -> Option<crate::domain_computation::primary_graph::application_output_demand::denial::read_cleanup::WorthQueryOutputReadCleanup> {
+    pub fn take_read_cleanup(&mut self) -> Option<crate::domain_computation::primary_graph::application_output_demand::denial::read_cleanup::WorthQueryOutputReadCleanup>{
         self.cleanup
             .take()
             .map(crate::domain_computation::primary_graph::application_output_demand::denial::read_cleanup::WorthQueryOutputReadCleanup::from_custody)
@@ -375,9 +375,9 @@ mod managed_index;
 
 mod managed_source_query;
 
+pub(crate) mod bridge_deferral;
 mod court_doors_for_test;
 pub(in crate::domain_computation::primary_graph) mod diagnostic;
 pub(in crate::domain_computation::primary_graph) mod posture;
 pub(crate) mod read_cleanup;
 pub(crate) mod recovery_release;
-pub(crate) mod bridge_deferral;

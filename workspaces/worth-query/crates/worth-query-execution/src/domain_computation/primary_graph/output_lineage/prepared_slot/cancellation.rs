@@ -1,8 +1,8 @@
 //! Bounded cleanup of invisible prepared lineage addresses.
 
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
 use crate::domain_computation::primary_graph::output_lineage::RecordedGeneration;
 use crate::domain_computation::primary_graph::output_lineage::WorthQueryApplicationOutputLineage;
-use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
 
 impl WorthQueryApplicationOutputLineage {
     pub(in crate::domain_computation::primary_graph::output_lineage) fn drain_cancelled_slots(

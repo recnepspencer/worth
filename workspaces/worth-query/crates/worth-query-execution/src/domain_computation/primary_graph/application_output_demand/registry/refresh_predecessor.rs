@@ -8,7 +8,12 @@ use super::{
     WorthQueryOutputDemandRegistry,
 };
 use crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding;
-use {crate::domain_computation::primary_graph::output_lineage::PublishedStableLineage, crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt, crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial, crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind};
+use {
+    crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial,
+    crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind,
+    crate::domain_computation::primary_graph::output_lineage::PublishedStableLineage,
+    crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+};
 
 /// The accepted source being replaced. A Stable alias is identified by its
 /// own published cell and Product observation, never by its performed origin.

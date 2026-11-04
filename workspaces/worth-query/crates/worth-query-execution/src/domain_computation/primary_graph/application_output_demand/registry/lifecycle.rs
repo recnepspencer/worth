@@ -18,7 +18,7 @@ impl WorthQueryOutputDemandRegistry {
     ) -> Result<
         crate::domain_computation::primary_graph::WorthQueryPreparedRequiredOutputSource,
         crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial,
-    > {
+    >{
         let mut state = self
             .state
             .lock()

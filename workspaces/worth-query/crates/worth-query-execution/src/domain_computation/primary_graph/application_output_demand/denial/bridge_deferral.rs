@@ -3,7 +3,9 @@
 use worth_runtime_bridge::facade::BridgeConditionalDenialKind;
 
 // Recovery grouping never replaces the cause stored in the demand kind.
-pub(in crate::domain_computation::primary_graph) fn is_temporarily_deferred(kind: &BridgeConditionalDenialKind) -> bool {
+pub(in crate::domain_computation::primary_graph) fn is_temporarily_deferred(
+    kind: &BridgeConditionalDenialKind,
+) -> bool {
     use BridgeConditionalDenialKind as Kind;
     match kind {
         Kind::ConditionalRetentionCapacity => true,

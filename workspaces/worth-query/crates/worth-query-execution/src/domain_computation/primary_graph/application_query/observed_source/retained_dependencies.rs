@@ -1,9 +1,9 @@
 //! Original complete query consumption, retained without exposing native facts.
 use super::*;
-use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
-use crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind;
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource;
 use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation;
 use crate::publication_boundary::WorthQueryProgramPublicationAccess;
 use worth_execution::ExecutionArray;

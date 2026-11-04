@@ -16,7 +16,7 @@ impl WorthQueryOutputDemandRegistry {
     pub fn posts_settlement_for_test(
         &self,
         identity: &RecordedSettlementIdentity,
-    ) -> Result<bool, crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial> {
+    ) -> Result<bool, crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial>{
         Self::posts_settlement(self, identity)
     }
 }

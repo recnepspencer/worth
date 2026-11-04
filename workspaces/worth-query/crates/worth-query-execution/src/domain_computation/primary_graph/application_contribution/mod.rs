@@ -79,7 +79,6 @@ pub(in crate::domain_computation::primary_graph) use producer::{
     TypedPendingOutputReadiness, WorthQueryInstalledOutputProducerRoutes,
     WorthQueryInstalledOutputReadinessRoutes, WorthQueryProducerCommitAuthority,
 };
-pub use {producer::WorthQueryAdmittedOutputDemand, producer::WorthQueryApplicationOutputDemand, producer::WorthQueryApplicationProducerBinding, producer::WorthQueryApplicationProducerProvider, producer::WorthQueryDecisionContextDependencies, producer::WorthQueryInstalledApplicationProducerRegistry, producer::WorthQueryOutputDemandAdvance, producer::WorthQueryProducerApplicability, producer::WorthQueryProducerDenialDeclaration, producer::WorthQueryProducerDenialDecodeDenial, producer::WorthQueryProducerDenialEncodingRefusal, producer::WorthQueryProducerDenialProjection, producer::WorthQueryProducerDenialValue, producer::WorthQueryProducerEvaluationIneligibility, producer::WorthQueryProducerInputReuseContract, producer::WorthQueryProducerInvariantRequirement, producer::WorthQueryProducerLifecyclePosture, producer::WorthQueryProducerOutputEquivalence, producer::WorthQueryProducerOutputFamily, producer::WorthQueryProjectedProducerDenial, producer::WorthQuerySelectedApplicationProducer, producer::WorthQueryUndeclaredProducerDenial, producer::WorthQueryWorkflowAssessmentOutputFamily, producer::WorthQueryWorkflowAssessmentPosture};
 pub use request_execution::query_test_execution_authority_for_test;
 pub use request_execution::{
     bound_advancement_requests_on_this_thread_for_test,
@@ -91,6 +90,25 @@ pub use request_execution::{
 };
 pub use setup::{
     WorthQueryApplicationContributionSetup, WorthQueryManagedIndexProviderRegistration,
+};
+pub use {
+    producer::WorthQueryAdmittedOutputDemand, producer::WorthQueryApplicationOutputDemand,
+    producer::WorthQueryApplicationProducerBinding,
+    producer::WorthQueryApplicationProducerProvider,
+    producer::WorthQueryDecisionContextDependencies,
+    producer::WorthQueryInstalledApplicationProducerRegistry,
+    producer::WorthQueryOutputDemandAdvance, producer::WorthQueryProducerApplicability,
+    producer::WorthQueryProducerDenialDeclaration, producer::WorthQueryProducerDenialDecodeDenial,
+    producer::WorthQueryProducerDenialEncodingRefusal,
+    producer::WorthQueryProducerDenialProjection, producer::WorthQueryProducerDenialValue,
+    producer::WorthQueryProducerEvaluationIneligibility,
+    producer::WorthQueryProducerInputReuseContract,
+    producer::WorthQueryProducerInvariantRequirement, producer::WorthQueryProducerLifecyclePosture,
+    producer::WorthQueryProducerOutputEquivalence, producer::WorthQueryProducerOutputFamily,
+    producer::WorthQueryProjectedProducerDenial, producer::WorthQuerySelectedApplicationProducer,
+    producer::WorthQueryUndeclaredProducerDenial,
+    producer::WorthQueryWorkflowAssessmentOutputFamily,
+    producer::WorthQueryWorkflowAssessmentPosture,
 };
 
 pub(in crate::domain_computation) use partitioned_computation::observe_discarded;
