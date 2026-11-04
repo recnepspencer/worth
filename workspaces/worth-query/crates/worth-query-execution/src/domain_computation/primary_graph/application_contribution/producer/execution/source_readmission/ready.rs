@@ -1,4 +1,4 @@
-use super::super::super::demand::ProducerPublicationStale;
+use crate::domain_computation::primary_graph::application_output_demand::denial::ProducerPublicationStale;
 use super::*;
 use crate::domain_computation::primary_graph::invariant_projection::VerificationCapacityStop;
 
@@ -242,7 +242,7 @@ mod tests {
                 assert_eq!(actual.subject(), "producer");
                 assert_eq!(
                     actual.recovery_posture(),
-                    crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Terminal
+                    crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandRecoveryPosture::Terminal
                 );
                 assert_eq!(actual.producer_admission_stop(), Some(native));
                 assert_eq!(actual.publication_companion_stop(), None);

@@ -23,8 +23,8 @@ use crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorresp
 use crate::domain_computation::primary_graph::WorthQueryApplicationOutputProjectionDenial;
 use crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation;
 use crate::domain_computation::primary_graph::WorthQueryApplicationTypedOutputCorrespondence;
-use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
-use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation;
 

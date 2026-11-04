@@ -6,7 +6,7 @@ use std::sync::Arc;
 use std::sync::Condvar;
 use std::sync::Mutex;
 
-use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
 
 pub type SourceEpoch =
     crate::domain_computation::primary_graph::application_query::WorthQueryObservedSourceEpoch;
@@ -271,7 +271,7 @@ pub struct DemandRecord {
     /// work. Dependents still pending on it, or on an older row of its
     /// occurrence, fail with it instead of waiting for work no advance runs.
     required_stop:
-        Option<crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind>,
+        Option<crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind>,
     /// A queue frame's unfinished successor of this row; see `held_successor`.
     held_successor: Option<held_successor::HeldRequiredSuccessor>,
     wake: Arc<DemandWake>,

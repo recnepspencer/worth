@@ -17,7 +17,7 @@ use super::SourceBinding;
 use super::SourceQuery;
 use super::SourceValue;
 use super::WorthQueryApplicationProducerBinding;
-use super::WorthQueryOutputDemandDenialKind;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind;
 use crate::basis::WorthQueryProductBranch;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::SettlementRegistrationStop;
 use crate::domain_computation::primary_graph::output_lineage::AcceptedCurrentCandidate;
@@ -29,7 +29,7 @@ use crate::domain_computation::primary_graph::WorthQueryApplicationQueryAccessCo
 use crate::domain_computation::primary_graph::WorthQueryApplicationQueryControls;
 use crate::domain_computation::primary_graph::WorthQueryAuthenticatedPrincipal;
 use crate::domain_computation::primary_graph::WorthQueryObservedSource;
-use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionMode;
 use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation;

@@ -96,7 +96,7 @@ impl ContinuationState {
             )
         })?;
         let control = select_invocation_control(&execution, runtime, invocation)
-            .map_err(|stop| stop.into_output_denial().with_recovery_posture(crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable))?;
+            .map_err(|stop| stop.into_output_denial().with_recovery_posture(crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandRecoveryPosture::Retryable))?;
         let input = self
             .input
             .as_deref()
@@ -206,7 +206,7 @@ impl ContinuationState {
 
 fn retryable(kind: WorthQueryOutputDemandDenialKind) -> WorthQueryOutputDemandDenial {
     denial(kind, "producer publication recovery").with_recovery_posture(
-        crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable,
+        crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandRecoveryPosture::Retryable,
     )
 }
 fn recovery_denial(stop: RecoveryDenial) -> WorthQueryOutputDemandDenial {
@@ -276,7 +276,7 @@ fn readmission_denial(stop: WorthQueryOutputDemandDenial) -> WorthQueryOutputDem
             )
     ) {
         stop.with_recovery_posture(
-            crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable)
+            crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandRecoveryPosture::Retryable)
     } else {
         stop
     }

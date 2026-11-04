@@ -69,13 +69,13 @@ pub fn admit_unavailable_completion<'scope>(
 ) -> Result<worth_execution::ExecutionRequest<'scope, 'scope>, WorthQueryOutputDemandDenial> {
     let request = phase.execution_request_for(runtime).map_err(|cause| {
         WorthQueryOutputDemandDenial::new(
-            crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
+            crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
             "program-source-phase",
         )
     })?;
     if !owns_demand() {
         return Err(WorthQueryOutputDemandDenial::new(
-            crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ForeignDemand,
+            crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::ForeignDemand,
             "unavailable completion differs from the installed root",
         ));
     }

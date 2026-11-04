@@ -177,12 +177,12 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
 fn installation_denial(
     kind: worth_query_installation::facade::WorthQueryApplicationQueryInstallationDenialKind,
 ) -> WorthQueryOutputDemandDenial {
-    WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::SourceQueryInstallation(kind), "history dependent query")
+    WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::SourceQueryInstallation(kind), "history dependent query")
 }
 
 fn foreign_source() -> WorthQueryOutputDemandDenial {
     WorthQueryOutputDemandDenial::new(
-        crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ForeignSource,
+        crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::ForeignSource,
         "history output read does not belong to this installed parent connection",
     )
 }

@@ -1,5 +1,5 @@
 //! Diagnostic formatting for typed output-demand refusals.
-use super::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
 
 impl WorthQueryOutputDemandDenial {
     /// Names the receiving boundary without replacing original kind or custody.

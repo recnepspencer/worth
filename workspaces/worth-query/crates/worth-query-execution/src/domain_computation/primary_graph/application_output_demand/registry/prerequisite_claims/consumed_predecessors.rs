@@ -6,8 +6,8 @@ use super::prerequisite_denials;
 use super::CheckpointPrerequisiteClaims;
 use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence;
 use crate::domain_computation::primary_graph::SourceInvalidationOwner;
-use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
-use crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandRecoveryPosture;
 use std::sync::Arc;
 
 pub(super) fn select<'a>(

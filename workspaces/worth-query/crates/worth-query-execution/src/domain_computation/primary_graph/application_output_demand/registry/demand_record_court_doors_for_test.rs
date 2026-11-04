@@ -136,7 +136,7 @@ impl DemandRecord {
     #[doc(hidden)]
     pub fn required_stop_for_test(
         &self,
-    ) -> &Option<crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind> {
+    ) -> &Option<crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind> {
         &self.required_stop
     }
 }
@@ -217,7 +217,7 @@ impl DemandRecord {
         readmission_source: Option<Arc<source_readmission::RequiredOutputReadmission>>,
         successor_of: Option<succession::Succession>,
         required_stop: Option<
-            crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind,
+            crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind,
         >,
         held_successor: Option<held_successor::HeldRequiredSuccessor>,
         wake: Arc<DemandWake>,
@@ -279,7 +279,7 @@ impl DemandRecord {
     #[doc(hidden)]
     pub fn required_stop_mut_for_test(
         &mut self,
-    ) -> &mut Option<crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind>
+    ) -> &mut Option<crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind>
     {
         &mut self.required_stop
     }

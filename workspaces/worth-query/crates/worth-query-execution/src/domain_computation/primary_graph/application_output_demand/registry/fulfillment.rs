@@ -1,7 +1,7 @@
 //! Certify one real required root before its original source is discharged.
 use super::super::{WorthQueryFulfilledRequiredRoot, WorthQueryOutputDemandSettlement};
 use super::*;
-use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind as Kind;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind as Kind;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCommitReceipt, WorthQueryPreparedRequiredOutputSource,
 };

@@ -139,7 +139,7 @@ impl<Schema>
         root: worth_relational::facade::identity::EntityId,
     ) -> Vec<(
         String,
-        Option<crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind>,
+        Option<crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind>,
     )> {
         let state = self
             .runtime

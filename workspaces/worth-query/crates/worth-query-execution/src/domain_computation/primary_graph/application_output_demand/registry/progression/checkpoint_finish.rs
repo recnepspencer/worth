@@ -14,7 +14,7 @@ impl WorthQueryOutputDemandRegistry {
         checkpoint: WorthQueryOutputCheckpoint,
         denial: Option<&WorthQueryOutputDemandDenial>,
     ) -> Result<(), CheckpointFinishStop> {
-        use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind as Kind;
+        use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind as Kind;
         let returned = |kind, checkpoint| {
             CheckpointFinishStop::Returned(WorthQueryOutputDemandDenial::new(kind, ""), checkpoint)
         };

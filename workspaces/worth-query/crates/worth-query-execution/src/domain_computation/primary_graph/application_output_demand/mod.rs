@@ -21,6 +21,7 @@ pub(crate) mod registry;
 pub(in crate::domain_computation::primary_graph) use registry::AdmittedRequiredWave;
 pub(in crate::domain_computation::primary_graph) use registry::PreparedRequiredInputs;
 pub(crate) mod settlement;
+pub(crate) mod denial;
 pub(in crate::domain_computation::primary_graph) use settlement::OriginalProducingPublication;
 
 pub use readiness_delivery::WorthQueryOutputReadinessDeliveryEvidence;

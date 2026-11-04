@@ -2,7 +2,7 @@
 use super::super::DemandRegistryState;
 use super::super::DemandState;
 use super::super::WorthQueryOutputDemandKey;
-use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
 use worth_runtime_world::facade::CompositeCommitIdentity;
 pub(super) struct OccurrenceNotes {
     pub delivery: Option<WorthQueryOutputDemandKey>,

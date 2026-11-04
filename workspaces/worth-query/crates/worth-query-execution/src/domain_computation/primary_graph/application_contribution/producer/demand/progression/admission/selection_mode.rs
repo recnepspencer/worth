@@ -9,8 +9,8 @@ use crate::domain_computation::primary_graph::application_output_demand::Selecte
 use crate::domain_computation::primary_graph::product_operation::SharedSelectedProductOperation;
 
 use super::super::denial;
-use super::super::WorthQueryOutputDemandDenial;
-use super::super::WorthQueryOutputDemandDenialKind;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind;
 
 pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand::progression)
 enum SourceAdmissionSelection<'selected, 'runtime, Schema>

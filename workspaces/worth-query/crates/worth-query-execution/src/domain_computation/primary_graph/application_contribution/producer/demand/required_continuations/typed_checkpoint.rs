@@ -22,7 +22,7 @@ where
             .execution_request_for(&runtime.runtime.product_runtime)
             .map_err(|cause| {
                 WorthQueryOutputDemandDenial::new(
-                    super::super::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
+                    crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
                     "required-checkpoint-phase",
                 )
             })?;

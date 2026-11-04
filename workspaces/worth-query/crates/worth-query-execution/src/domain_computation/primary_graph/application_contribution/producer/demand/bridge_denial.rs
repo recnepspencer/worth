@@ -1,6 +1,6 @@
 use worth_runtime_bridge::facade::{BridgeConditionalDenial, BridgeConditionalDenialKind};
 
-use super::{WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind};
+use {crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial, crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind};
 
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn bridge_denial(
     producer_identity: &str,

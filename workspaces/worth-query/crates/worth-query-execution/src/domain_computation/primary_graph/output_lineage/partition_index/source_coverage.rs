@@ -1,7 +1,7 @@
 //! Exact-partition coverage, including invisible publication reservations.
 
 use super::*;
-use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
 
 pub(in crate::domain_computation::primary_graph::output_lineage) enum SourcePartitionPublication<
     'lineage,

@@ -62,9 +62,9 @@ pub(super) fn cutoff_denial(stop: InputCutoffVerificationStop) -> WorthQueryOutp
         InputCutoffVerificationStop::PendingOutput(identity) => denial(
             WorthQueryOutputDemandDenialKind::SchedulingDeferred,
             format!("producer input cutoff awaits upstream output {identity:?}"),
-        ).with_recovery_posture(crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable),
+        ).with_recovery_posture(crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandRecoveryPosture::Retryable),
         InputCutoffVerificationStop::PendingUpstream => denial(WorthQueryOutputDemandDenialKind::SchedulingDeferred, "producer input cutoff awaits upstream outputs")
-            .with_recovery_posture(crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable),
+            .with_recovery_posture(crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandRecoveryPosture::Retryable),
         _ => denial(WorthQueryOutputDemandDenialKind::PublicationStale, "producer input cutoff source moved"),
     }
 }
@@ -105,7 +105,7 @@ mod tests {
             };
             let denial = stop.into_denial();
             assert_eq!(denial.kind(), kind);
-            assert_eq!(denial.recovery_posture(), crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable);
+            assert_eq!(denial.recovery_posture(), crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandRecoveryPosture::Retryable);
         }
         assert!(matches!(
             cutoff_verification_stop(InputCutoffVerificationStop::Execution(

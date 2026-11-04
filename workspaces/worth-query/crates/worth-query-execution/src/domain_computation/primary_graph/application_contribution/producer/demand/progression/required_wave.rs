@@ -24,8 +24,8 @@ use super::super::super::execution::ProducerExecutionStop;
 use super::super::super::execution::RequiredCueProgress;
 use super::super::super::registry::InstalledProducerProvider;
 use super::super::RequiredFreshProgress;
-use super::WorthQueryOutputDemandDenial;
-use super::WorthQueryOutputDemandDenialKind;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind;
 
 pub(in crate::domain_computation::primary_graph) use performed::CurrentBasis;
 pub(in crate::domain_computation::primary_graph) use performed::CurrentProof;

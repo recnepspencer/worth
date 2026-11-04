@@ -57,7 +57,7 @@ pub enum WorthQueryManagedIndexRefusal {
 /// The actual original cause, borrowed from the owned operation denial.
 #[derive(Debug, Eq, PartialEq)]
 pub enum WorthQueryManagedIndexDenialCause<'a> {
-    CurrentControl(&'a crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial),
+    CurrentControl(&'a crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial),
     SourceVerification {
         kind: crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenialKind,
         authorization: Option<crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind>,

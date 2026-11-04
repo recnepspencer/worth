@@ -1,7 +1,7 @@
 //! Close only an authentic, cleanup-free, prepublication domain refusal.
 use super::*;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::SourceInvalidationOwner;
-use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind as Kind;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind as Kind;
 use crate::domain_computation::primary_graph::WorthQueryPreparedRequiredOutputSource;
 
 impl WorthQueryOutputDemandRegistry {
@@ -33,7 +33,7 @@ impl WorthQueryOutputDemandRegistry {
         };
 
         if denial.kind() != Kind::ProducerDomainDenied
-            || denial.recovery_posture() != crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Terminal
+            || denial.recovery_posture() != crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandRecoveryPosture::Terminal
             || record.product_occurrence != prepared.product_occurrence
             || !record.source_commits.contains(&prepared.source_commit)
             || record.interests != 1 || record.required_interests != 1

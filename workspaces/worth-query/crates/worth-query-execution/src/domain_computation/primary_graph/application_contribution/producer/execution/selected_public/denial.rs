@@ -29,7 +29,7 @@ where
     let current = |stop: ProducerExecutionStop| {
         super::super::denial::request_admission_rejected(
         stop.into_output_denial().with_recovery_posture(
-            crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable))
+            crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandRecoveryPosture::Retryable))
     };
     match stop {
         SelectedPublicPreparationStop::CurrentPrincipal(cause) => {

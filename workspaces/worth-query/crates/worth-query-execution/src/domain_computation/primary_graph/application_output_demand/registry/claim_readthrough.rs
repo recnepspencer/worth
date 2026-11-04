@@ -34,7 +34,7 @@ impl DemandRegistryState {
         &self,
         owner: &WorthQueryOutputDemandKey,
         upstream: &[Arc<WorthQueryOutputDemandKey>],
-    ) -> Result<Option<ClaimBatch>, super::WorthQueryOutputDemandDenial> {
+    ) -> Result<Option<ClaimBatch>, crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial> {
         if upstream.is_empty() {
             return Ok(None);
         }

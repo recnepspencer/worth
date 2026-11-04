@@ -1,0 +1,29 @@
+{
+ "move": "domain_computation::primary_graph::application_contribution::producer::demand::denial_posture -> domain_computation::primary_graph::application_output_demand::denial::posture",
+ "files": 2,
+ "edited_files": 3,
+ "widenings": [
+  {
+   "item": "domain_computation::primary_graph::application_contribution::producer::demand::denial_posture @442",
+   "from": "pub(super)",
+   "to": "pub(in crate::domain_computation::primary_graph)"
+  },
+  {
+   "item": "domain_computation::primary_graph::application_contribution::producer::demand::denial_posture @7685",
+   "from": "pub(super)",
+   "to": "pub(in crate::domain_computation::primary_graph)"
+  },
+  {
+   "item": "domain_computation::primary_graph::application_contribution::producer::demand::denial_posture @8213",
+   "from": "pub(super)",
+   "to": "pub(in crate::domain_computation::primary_graph)"
+  },
+  {
+   "item": "mod domain_computation::primary_graph::application_output_demand::denial::posture",
+   "from": "private",
+   "to": "pub(in crate::domain_computation::primary_graph)"
+  }
+ ],
+ "removed_reexports": [],
+ "problems": []
+}

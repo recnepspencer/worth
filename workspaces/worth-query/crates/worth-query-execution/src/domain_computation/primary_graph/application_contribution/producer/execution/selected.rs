@@ -2,7 +2,7 @@
 
 use super::super::demand::DecisionInput;
 use super::super::demand::PerformedMembers;
-use super::super::demand::ProducerPublicationStale;
+use crate::domain_computation::primary_graph::application_output_demand::denial::ProducerPublicationStale;
 use super::super::demand::SelectedDecisionInput;
 use super::*;
 use crate::domain_computation::primary_graph::application_contribution::producer::demand::MatchedRequiredPredecessors;
@@ -198,7 +198,7 @@ where
                             Binding::IDENTITY,
                         )
                         .with_recovery_posture(
-                            crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable,
+                            crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandRecoveryPosture::Retryable,
                         )
                         .with_publication_stale(Some(ProducerPublicationStale::ready_refresh_claim_moved(
                             shared.selected().product().observation(), rejection,

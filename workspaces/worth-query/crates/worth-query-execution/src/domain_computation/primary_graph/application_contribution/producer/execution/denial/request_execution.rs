@@ -1,5 +1,5 @@
 //! One classifier for caller-local native stops at source read and producer commit.
-use super::WorthQueryOutputDemandDenialKind as Demand;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind as Demand;
 use crate::domain_computation::primary_graph::{
     WorthQueryAdvancementDenial as Request, WorthQueryApplicationOneShotDenialKind as Query,
 };

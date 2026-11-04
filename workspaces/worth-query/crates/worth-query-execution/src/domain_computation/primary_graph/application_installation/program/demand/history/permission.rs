@@ -62,7 +62,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
                 )
         {
             return Err(Denial::Demand(WorthQueryOutputDemandDenial::new(
-                crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ForeignDemand,
+                crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::ForeignDemand,
                 "history output demand belongs to another original navigation",
             )));
         }

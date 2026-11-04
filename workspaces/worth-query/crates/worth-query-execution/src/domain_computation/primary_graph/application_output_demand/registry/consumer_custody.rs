@@ -2,7 +2,7 @@
 
 use super::*;
 use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
-use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind;
 
 pub enum ConsumerCustody {
     Handoff(ConsumerHandoff),

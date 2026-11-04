@@ -146,7 +146,7 @@ pub(super) fn resume_registry_successor<Schema: ApplicationSchema + 'static>(
 ) -> Result<HeldUpstream, WorthQueryOutputDemandDenial> {
     let mut held = held.downcast::<HeldFrameSuccessor<Schema>>().map_err(|_| {
         WorthQueryOutputDemandDenial::new(
-            super::super::WorthQueryOutputDemandDenialKind::ForeignDemand,
+            crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::ForeignDemand,
             "held successor belongs to another schema",
         )
     })?;
@@ -197,7 +197,7 @@ pub(super) fn resume_registry_successor<Schema: ApplicationSchema + 'static>(
 /// Only the World superseding the successor gives its occurrence back; any
 /// other stop is the wave's to report.
 fn superseded(stop: &WorthQueryOutputDemandDenial) -> bool {
-    stop.kind() == super::super::WorthQueryOutputDemandDenialKind::Superseded
+    stop.kind() == crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::Superseded
 }
 
 impl<Schema> RequiredFreshProgress<Schema>
@@ -264,7 +264,7 @@ impl<Schema: ApplicationSchema + 'static> RequiredFreshProgress<Schema> {
             .execution_request_for(&runtime.runtime.product_runtime)
             .map_err(|cause| {
                 WorthQueryOutputDemandDenial::new(
-                    super::super::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
+                    crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
                     "required successor source phase",
                 )
             })?;
@@ -297,7 +297,7 @@ where
     ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial> {
         let demand = self.demand.as_mut().ok_or_else(|| {
             WorthQueryOutputDemandDenial::new(
-                super::super::WorthQueryOutputDemandDenialKind::RequiredSuccessorStateUnavailable,
+                crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::RequiredSuccessorStateUnavailable,
                 "required successor has no admitted demand",
             )
         })?;
@@ -307,7 +307,7 @@ where
             .required()
             .ok_or_else(|| {
                 WorthQueryOutputDemandDenial::new(
-                    super::super::WorthQueryOutputDemandDenialKind::RequiredSuccessorStateUnavailable,
+                    crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::RequiredSuccessorStateUnavailable,
                     "required successor has no execution provenance",
                 )
             })?

@@ -1,5 +1,6 @@
 //! Explicit disposal of caller read custody, never completion of a source mutation.
 use super::*;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
 use crate::basis::WorthQueryProductBranch;
 use crate::domain_computation::primary_graph::{
     WorthQueryAdvancementPhase, WorthQueryPrimaryGraphApplicationRuntime,
@@ -21,10 +22,10 @@ pub enum WorthQueryOutputReadCloseDenial {
 #[derive(Debug)]
 #[must_use = "native producer cleanup and recovery must remain owned until discharged"]
 pub struct WorthQueryOutputReadCleanup {
-    pub(super) custody: denial::cleanup_custody::DemandCleanupCustody,
+    pub(super) custody: crate::domain_computation::primary_graph::application_output_demand::denial::cleanup_custody::DemandCleanupCustody,
 }
 impl WorthQueryOutputReadCleanup {
-    pub(super) fn from_custody(custody: denial::cleanup_custody::DemandCleanupCustody) -> Self {
+    pub(super) fn from_custody(custody: crate::domain_computation::primary_graph::application_output_demand::denial::cleanup_custody::DemandCleanupCustody) -> Self {
         Self { custody }
     }
     pub fn producer_outcome(

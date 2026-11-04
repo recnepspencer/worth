@@ -16,7 +16,7 @@ trait CleanupOwner: std::fmt::Debug + Send + Sync {
         &mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
         release: &mut ReadRelease<'_>,
-    ) -> Result<(), super::super::WorthQueryOutputReadCloseDenial>;
+    ) -> Result<(), crate::domain_computation::primary_graph::application_contribution::producer::demand::WorthQueryOutputReadCloseDenial>;
     fn receipt(&mut self) -> Option<&Receipt>;
     fn outcome(&mut self) -> Option<&WorthQueryApplicationUncommitted>;
     fn retired_components(&mut self) -> usize;
@@ -41,8 +41,8 @@ impl CleanupOwner for NativeCleanupOwner {
         &mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
         release: &mut ReadRelease<'_>,
-    ) -> Result<(), super::super::WorthQueryOutputReadCloseDenial> {
-        use super::super::WorthQueryOutputReadCloseDenial as Denial;
+    ) -> Result<(), crate::domain_computation::primary_graph::application_contribution::producer::demand::WorthQueryOutputReadCloseDenial> {
+        use crate::domain_computation::primary_graph::application_contribution::producer::demand::WorthQueryOutputReadCloseDenial as Denial;
         self.release(phase).map_err(Denial::Cleanup)?;
         let state = self
             .0
@@ -185,16 +185,16 @@ impl CleanupOwner for NativeCleanupOwner {
     }
 }
 #[derive(Debug)]
-pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand) struct DemandCleanupCustody(
+pub(in crate::domain_computation::primary_graph) struct DemandCleanupCustody(
     Box<dyn CleanupOwner>,
 );
 impl DemandCleanupCustody {
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand) fn retired_components(
+    pub(in crate::domain_computation::primary_graph) fn retired_components(
         &mut self,
     ) -> usize {
         self.0.retired_components()
     }
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand) fn from_outcome(
+    pub(in crate::domain_computation::primary_graph) fn from_outcome(
         outcome: WorthQueryApplicationUncommitted,
     ) -> Self {
         Self(Box::new(NativeCleanupOwner(std::sync::Mutex::new(
@@ -207,31 +207,31 @@ impl DemandCleanupCustody {
             },
         ))))
     }
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand) fn outcome(
+    pub(in crate::domain_computation::primary_graph) fn outcome(
         &mut self,
     ) -> Option<&WorthQueryApplicationUncommitted> {
         self.0.outcome()
     }
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand) fn close_read(
+    pub(in crate::domain_computation::primary_graph) fn close_read(
         &mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
         release: &mut ReadRelease<'_>,
-    ) -> Result<(), super::super::WorthQueryOutputReadCloseDenial> {
+    ) -> Result<(), crate::domain_computation::primary_graph::application_contribution::producer::demand::WorthQueryOutputReadCloseDenial> {
         self.0.read_close(phase, release)
     }
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand) fn receipt(
+    pub(in crate::domain_computation::primary_graph) fn receipt(
         &mut self,
     ) -> Option<&Receipt> {
         self.0.receipt()
     }
 
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand) fn failure(
+    pub(in crate::domain_computation::primary_graph) fn failure(
         &mut self,
     ) -> Option<&crate::domain_computation::WorthQueryMutationCleanupFailure> {
         self.0.failure()
     }
 
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand) fn new(
+    pub(in crate::domain_computation::primary_graph) fn new(
         owner: Box<Required>,
     ) -> Self {
         Self(Box::new(NativeCleanupOwner(std::sync::Mutex::new(
@@ -244,12 +244,12 @@ impl DemandCleanupCustody {
             },
         ))))
     }
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand) fn into_required(
+    pub(in crate::domain_computation::primary_graph) fn into_required(
         self,
     ) -> Result<Box<Required>, Self> {
         self.0.into_required().map_err(Self)
     }
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand) fn release(
+    pub(in crate::domain_computation::primary_graph) fn release(
         &mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
     ) -> Result<Option<Receipt>, super::WorthQueryOutputDemandDenial> {

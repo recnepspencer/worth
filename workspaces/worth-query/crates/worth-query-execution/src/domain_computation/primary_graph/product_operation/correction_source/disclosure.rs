@@ -61,7 +61,7 @@ pub enum WorthQueryCorrectionDerivationDenial {
         crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial,
     ),
     Basis(worth_relational::facade::snapshots::RelationalSnapshotAdmissionDenial),
-    DependencyComparison(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial),
+    DependencyComparison(crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial),
     Ancestry(
         worth_runtime_world::facade::RuntimeWorldServiceDenial<
             worth_runtime_world::facade::ProductBranchAncestorSelectionDenial,

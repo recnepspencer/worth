@@ -1,0 +1,14 @@
+{
+ "move": "domain_computation::primary_graph::application_contribution::producer::demand::denial_diagnostic -> domain_computation::primary_graph::application_output_demand::denial::diagnostic",
+ "files": 1,
+ "edited_files": 2,
+ "widenings": [
+  {
+   "item": "mod domain_computation::primary_graph::application_output_demand::denial::diagnostic",
+   "from": "private",
+   "to": "pub(in crate::domain_computation::primary_graph)"
+  }
+ ],
+ "removed_reexports": [],
+ "problems": []
+}

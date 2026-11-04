@@ -1,7 +1,7 @@
 //! Request rejection remains local to the caller through both query phases.
 
 use super::request_execution::kind as request_execution_kind;
-use super::WorthQueryOutputDemandDenialKind as DemandKind;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind as DemandKind;
 use super::{
     denial, failed, request_admission_denied, request_admission_rejected, request_authority_stop,
     ProducerExecutionStop,
@@ -94,7 +94,7 @@ pub fn selected_source_read_denied(
         Stop::Read(Read::Execution(stop)) => query_execution_denied(subject, stop),
         Stop::ManagedIndex(cause) => {
             let caller_local = managed_authority_rejection(cause.cause());
-            let denial = super::WorthQueryOutputDemandDenial::managed_source_query(cause, subject);
+            let denial = crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial::managed_source_query(cause, subject);
             if caller_local || matches!(denial.kind(), DemandKind::Cancelled | DemandKind::TimedOut)
             {
                 request_admission_rejected(denial)

@@ -1,6 +1,7 @@
 //! Courts over the demand's authentic retained receipt; no accessor or minted proof.
 use super::own_effect_observation::{self, Stage};
 use super::*;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind;
 use crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource;
 use crate::domain_computation::primary_graph::{
     application_attempt::WorthQueryApplicationObservedFact as Fact,

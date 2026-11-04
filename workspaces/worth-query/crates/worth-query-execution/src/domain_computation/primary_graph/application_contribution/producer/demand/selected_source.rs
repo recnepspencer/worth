@@ -1,6 +1,7 @@
 //! Admit the selected Fresh source identity comparison at its demand owner.
 
 use super::*;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
 
 impl<Schema, Family> WorthQueryAdmittedOutputDemand<Schema, Family>
 where

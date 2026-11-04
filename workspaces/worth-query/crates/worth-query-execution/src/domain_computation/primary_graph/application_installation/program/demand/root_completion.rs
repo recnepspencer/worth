@@ -1,8 +1,5 @@
 //! Readonly association with the actual first completed root of one admission.
-use crate::domain_computation::primary_graph::{
-    output_reuse::read_denial, structural_walk::memory, WorthQueryOutputDemandDenial,
-    WorthQueryOutputDemandDenialKind, WorthQueryOutputDemandSettlement,
-};
+use {crate::domain_computation::primary_graph::output_reuse::read_denial, crate::domain_computation::primary_graph::structural_walk::memory, crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial, crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind, crate::domain_computation::primary_graph::WorthQueryOutputDemandSettlement};
 use std::sync::{Arc, OnceLock, Weak};
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 

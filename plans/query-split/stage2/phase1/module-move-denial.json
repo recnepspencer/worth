@@ -1,0 +1,108 @@
+{
+ "move": "domain_computation::primary_graph::application_contribution::producer::demand::denial -> domain_computation::primary_graph::application_output_demand::denial",
+ "files": 15,
+ "edited_files": 181,
+ "widenings": [
+  {
+   "item": "domain_computation::primary_graph::application_contribution::producer::demand::denial @102",
+   "from": "pub(super)",
+   "to": "pub(in crate::domain_computation::primary_graph)"
+  },
+  {
+   "item": "domain_computation::primary_graph::application_contribution::producer::demand::denial @912",
+   "from": "pub(super)",
+   "to": "pub(in crate::domain_computation::primary_graph)"
+  },
+  {
+   "item": "domain_computation::primary_graph::application_contribution::producer::demand::denial @1081",
+   "from": "pub(super)",
+   "to": "pub(in crate::domain_computation::primary_graph)"
+  },
+  {
+   "item": "domain_computation::primary_graph::application_contribution::producer::demand::denial @3998",
+   "from": "pub(super)",
+   "to": "pub(in crate::domain_computation::primary_graph)"
+  },
+  {
+   "item": "domain_computation::primary_graph::application_contribution::producer::demand::denial @4214",
+   "from": "pub(super)",
+   "to": "pub(in crate::domain_computation::primary_graph)"
+  },
+  {
+   "item": "domain_computation::primary_graph::application_contribution::producer::demand::denial @4675",
+   "from": "pub(super)",
+   "to": "pub(in crate::domain_computation::primary_graph)"
+  },
+  {
+   "item": "domain_computation::primary_graph::application_contribution::producer::demand::denial @5607",
+   "from": "pub(super)",
+   "to": "pub(in crate::domain_computation::primary_graph)"
+  },
+  {
+   "item": "domain_computation::primary_graph::application_contribution::producer::demand::denial::cleanup_custody @7738",
+   "from": "pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand)",
+   "to": "pub(in crate::domain_computation::primary_graph)"
+  },
+  {
+   "item": "domain_computation::primary_graph::application_contribution::producer::demand::denial::cleanup_custody @7922",
+   "from": "pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand)",
+   "to": "pub(in crate::domain_computation::primary_graph)"
+  },
+  {
+   "item": "domain_computation::primary_graph::application_contribution::producer::demand::denial::cleanup_custody @8120",
+   "from": "pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand)",
+   "to": "pub(in crate::domain_computation::primary_graph)"
+  },
+  {
+   "item": "domain_computation::primary_graph::application_contribution::producer::demand::denial::cleanup_custody @8623",
+   "from": "pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand)",
+   "to": "pub(in crate::domain_computation::primary_graph)"
+  },
+  {
+   "item": "domain_computation::primary_graph::application_contribution::producer::demand::denial::cleanup_custody @8835",
+   "from": "pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand)",
+   "to": "pub(in crate::domain_computation::primary_graph)"
+  },
+  {
+   "item": "domain_computation::primary_graph::application_contribution::producer::demand::denial::cleanup_custody @9170",
+   "from": "pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand)",
+   "to": "pub(in crate::domain_computation::primary_graph)"
+  },
+  {
+   "item": "domain_computation::primary_graph::application_contribution::producer::demand::denial::cleanup_custody @9358",
+   "from": "pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand)",
+   "to": "pub(in crate::domain_computation::primary_graph)"
+  },
+  {
+   "item": "domain_computation::primary_graph::application_contribution::producer::demand::denial::cleanup_custody @9598",
+   "from": "pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand)",
+   "to": "pub(in crate::domain_computation::primary_graph)"
+  },
+  {
+   "item": "domain_computation::primary_graph::application_contribution::producer::demand::denial::cleanup_custody @10069",
+   "from": "pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand)",
+   "to": "pub(in crate::domain_computation::primary_graph)"
+  },
+  {
+   "item": "domain_computation::primary_graph::application_contribution::producer::demand::denial::cleanup_custody @10288",
+   "from": "pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand)",
+   "to": "pub(in crate::domain_computation::primary_graph)"
+  }
+ ],
+ "removed_reexports": [
+  "domain_computation::primary_graph::application_contribution::WorthQueryOutputDemandDenial",
+  "domain_computation::primary_graph::application_contribution::WorthQueryOutputDemandDenialKind",
+  "domain_computation::primary_graph::application_contribution::WorthQueryOutputDemandRecoveryPosture",
+  "domain_computation::primary_graph::application_contribution::WorthQueryOutputSettlementProvenanceDenial",
+  "domain_computation::primary_graph::application_contribution::producer::WorthQueryOutputDemandDenial",
+  "domain_computation::primary_graph::application_contribution::producer::WorthQueryOutputDemandDenialKind",
+  "domain_computation::primary_graph::application_contribution::producer::WorthQueryOutputDemandRecoveryPosture",
+  "domain_computation::primary_graph::application_contribution::producer::WorthQueryOutputSettlementProvenanceDenial",
+  "domain_computation::primary_graph::application_contribution::producer::demand::ProducerPublicationStale",
+  "domain_computation::primary_graph::application_contribution::producer::demand::WorthQueryOutputDemandDenial",
+  "domain_computation::primary_graph::application_contribution::producer::demand::WorthQueryOutputDemandDenialKind",
+  "domain_computation::primary_graph::application_contribution::producer::demand::WorthQueryOutputDemandRecoveryPosture",
+  "domain_computation::primary_graph::application_contribution::producer::demand::WorthQueryOutputSettlementProvenanceDenial"
+ ],
+ "problems": []
+}

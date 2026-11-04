@@ -1,6 +1,4 @@
-use super::{
-    WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind, WorthQueryOutputDemandKey,
-};
+use {crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial, crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind, super::WorthQueryOutputDemandKey};
 
 pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn prepare_performed_obligation_slots(
     state: &super::super::DemandRegistryState,
@@ -26,6 +24,6 @@ pub(in crate::domain_computation::primary_graph::application_output_demand::regi
         "performed output obligation allocation refused",
     )
     .with_recovery_posture(
-        crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable,
+        crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandRecoveryPosture::Retryable,
     )
 }

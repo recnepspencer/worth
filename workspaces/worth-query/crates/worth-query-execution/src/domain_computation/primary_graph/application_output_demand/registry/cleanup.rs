@@ -19,8 +19,8 @@ use super::IdleRowDisposition;
 use super::WorthQueryOutputDemandKey;
 use super::WorthQueryOutputDemandRegistry;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::SourceInvalidationOwner;
-use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
-use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind;
 
 enum CleanupTarget {
     Allocations,

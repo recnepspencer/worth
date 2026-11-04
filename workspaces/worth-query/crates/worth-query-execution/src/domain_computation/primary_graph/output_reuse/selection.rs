@@ -10,8 +10,8 @@ use crate::domain_computation::primary_graph::output_lineage::invalidation::Full
 use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
 use crate::domain_computation::primary_graph::output_lineage::SealedNativeOutputWitness;
 use crate::domain_computation::primary_graph::SourceInvalidationOwner;
-use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
-use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind;
 
 /// Internal choice; callers can only request an output through demand
 /// admission. FreshRequired never grants authority to preserve an output.

@@ -18,7 +18,7 @@ use super::WorthQueryOutputAdvancement;
 use super::WorthQueryOutputCheckpoint;
 use super::WorthQueryOutputProgress;
 
-use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
 
 pub struct Succession {
     predecessor: [u8; 32],

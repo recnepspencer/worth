@@ -2,8 +2,8 @@
 use super::super::WorthQueryOutputDemandRegistry;
 use crate::domain_computation::primary_graph::application_contribution::OwnerPlan;
 use crate::domain_computation::primary_graph::invariant_projection::PreparedCurrentInputs;
-use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
-use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind;
 use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 
 /// No driver can mint this from a dependency name, level or readiness flag.

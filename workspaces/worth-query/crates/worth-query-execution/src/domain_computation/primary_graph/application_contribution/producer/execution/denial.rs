@@ -1,4 +1,4 @@
-use super::{WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind};
+use {crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial, crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind};
 use crate::domain_computation::primary_graph::{
     MutationHandlerExecutionDenial, WorthQueryApplicationAttemptDenialKind,
 };
@@ -115,7 +115,7 @@ pub(super) fn request_admission_rejected(
         WorthQueryOutputDemandDenialKind::Cancelled | WorthQueryOutputDemandDenialKind::TimedOut
     ) {
         denial.with_recovery_posture(
-            crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable,
+            crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandRecoveryPosture::Retryable,
         )
     } else {
         denial
@@ -267,7 +267,7 @@ pub(super) fn handler_execution_failed(
             let mut denial = failed(subject, &read);
             if let Some(requested) = requested {
                 denial = denial.with_requested_output(requested);
-                denial.recovery_posture = crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable;
+                denial.recovery_posture = crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandRecoveryPosture::Retryable;
             }
             denial
         }

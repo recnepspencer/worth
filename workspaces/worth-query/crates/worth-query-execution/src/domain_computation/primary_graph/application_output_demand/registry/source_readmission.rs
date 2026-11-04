@@ -10,8 +10,8 @@ use super::WorthQueryOutputDemandRegistry;
 use crate::domain_computation::execution_runtime::WorthQueryOutputDemandLimits;
 
 use crate::domain_computation::primary_graph::WorthQueryObservedSource;
-use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
-use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind;
 
 /// The observation is moved once. Its existing selector, parameter and source
 /// capacity tickets remain inside it; neither observer duplicates that backing.

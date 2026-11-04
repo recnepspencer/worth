@@ -298,7 +298,7 @@ impl DemandRecords {
         occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
     ) -> Result<
         std::sync::Arc<std::sync::atomic::AtomicUsize>,
-        crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial,
+        crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial,
     > {
         self.3.counter(occurrence)
     }
@@ -307,7 +307,7 @@ impl DemandRecords {
         occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
     ) -> Result<
         super::PublicationHeadSelection,
-        crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial,
+        crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial,
     > {
         self.3.selection(occurrence)
     }

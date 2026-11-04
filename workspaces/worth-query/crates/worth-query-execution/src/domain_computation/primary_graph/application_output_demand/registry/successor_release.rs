@@ -33,7 +33,7 @@ impl WorthQueryOutputDemandInterest {
                             return None;
                         }
                         output.stop(WorthQueryOutputDemandDenial::new(
-                            crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::Closed, ""));
+                            crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::Closed, ""));
                         record.wake.notify();
                         record.work_membership.as_ref().map(|member| Arc::clone(member.key_arc()))
                     });

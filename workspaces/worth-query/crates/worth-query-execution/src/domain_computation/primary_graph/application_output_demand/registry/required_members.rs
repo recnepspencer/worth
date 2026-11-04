@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use super::DemandRegistryState;
 use super::WorthQueryOutputDemandKey;
-use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
 
 #[derive(Default)]
 pub(super) struct DetachedRequiredMember {

@@ -6,8 +6,8 @@ use super::super::InstalledProducerEdition;
 use super::FamilySourceQuery;
 use super::FamilySourceValue;
 use super::WorthQueryAdmittedOutputDemand;
-use super::WorthQueryOutputDemandDenial;
-use super::WorthQueryOutputDemandDenialKind;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind;
 use super::WorthQueryProducerOutputFamily;
 
 use crate::domain_computation::primary_graph::product_operation::SharedSelectedProductOperation;

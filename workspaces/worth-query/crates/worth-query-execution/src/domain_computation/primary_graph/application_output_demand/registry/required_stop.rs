@@ -19,9 +19,9 @@ use super::WorthQueryOutputAdvancement;
 use super::WorthQueryOutputDemandKey;
 use super::WorthQueryOutputDemandRegistry;
 
-use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
-use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
-use crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandRecoveryPosture;
 
 mod source_query;
 

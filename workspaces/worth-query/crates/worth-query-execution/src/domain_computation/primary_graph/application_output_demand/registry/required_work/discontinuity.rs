@@ -1,6 +1,6 @@
 //! Required-only replay of a genuine native discontinuity, one key per step.
 use super::super::{DemandRegistryState, WorthQueryOutputDemandKey};
-use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
 use std::collections::BTreeMap;
 use std::ops::Bound::{Excluded, Unbounded};
 use std::sync::Arc;

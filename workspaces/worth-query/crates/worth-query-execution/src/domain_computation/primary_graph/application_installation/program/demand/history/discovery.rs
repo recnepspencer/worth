@@ -51,15 +51,15 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
             .map_err(Denial::Demand)?;
         let installed = runtime.installed_schema().installed_query_binding::<DiscoveryBinding<S, C>>()
             .map_err(|stop| Denial::Demand(WorthQueryOutputDemandDenial::new(
-                crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::SourceQueryInstallation(stop.kind()), "history discovery query")))?;
+                crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::SourceQueryInstallation(stop.kind()), "history discovery query")))?;
         if &discovery.query != installed.query().identity() {
             return Err(Denial::Demand(WorthQueryOutputDemandDenial::new(
-                crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ForeignSource, "history discovery binding changed")));
+                crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::ForeignSource, "history discovery binding changed")));
         }
         // The set observation exists independently of row cardinality, so an
         // empty cached discovery cannot bypass its own current READ admission.
         let source = discovery.source.result_set_observation().ok_or_else(|| Denial::Demand(
-            WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::IncompleteDependencyCoverage,
+            WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::IncompleteDependencyCoverage,
                 "history discovery has no original set observation"),
         ))?.source();
         let execution = phase.checked_execution_request_for(&runtime.runtime.product_runtime)

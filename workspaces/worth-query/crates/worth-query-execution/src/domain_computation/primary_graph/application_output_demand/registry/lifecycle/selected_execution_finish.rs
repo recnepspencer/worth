@@ -12,9 +12,9 @@ use super::super::WorthQueryOutputDemandInterest;
 use super::super::WorthQueryOutputDemandRegistry;
 use super::super::WorthQueryOutputProgress;
 
-use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
-use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
-use crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandRecoveryPosture;
 
 /// Prepared before Running and consumed by exactly one execution outcome.
 pub struct PreparedSelectedExecutionFinish<'a> {

@@ -8,8 +8,8 @@ use crate::domain_computation::primary_graph::application_attempt::CompletedHand
 use crate::domain_computation::primary_graph::output_lineage::invalidation::SourceInvalidationOwner;
 use crate::domain_computation::primary_graph::ComputationPrior;
 use crate::domain_computation::primary_graph::SealedComputationRetention;
-use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
-use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind;
 
 /// The live demand record selected for a producer operation. This is a
 /// move-only carrier; the source epoch and installed producer are the registry

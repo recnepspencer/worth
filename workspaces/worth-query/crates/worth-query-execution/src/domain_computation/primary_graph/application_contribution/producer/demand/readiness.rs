@@ -7,8 +7,8 @@ use worth_relational::facade::mvcc::CompanionPreflightStop;
 use super::bridge_denial::bridge_denial;
 use super::bridge_denial::bridge_denial_kind;
 use super::progression::denial;
-use super::WorthQueryOutputDemandDenial;
-use super::WorthQueryOutputDemandDenialKind;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind;
 
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 

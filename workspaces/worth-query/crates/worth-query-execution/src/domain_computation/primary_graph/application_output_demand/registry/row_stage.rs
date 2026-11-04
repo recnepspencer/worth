@@ -7,7 +7,7 @@ use super::WorthQueryOutputAdvancement;
 use super::WorthQueryOutputCheckpoint;
 use super::WorthQueryOutputDemandInterest;
 use super::WorthQueryOutputDemandRegistry;
-use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
 
 /// The stage of a demand's row. Reading it claims nothing and moves nothing,
 /// so a demand can decide what it does before it begins the row.

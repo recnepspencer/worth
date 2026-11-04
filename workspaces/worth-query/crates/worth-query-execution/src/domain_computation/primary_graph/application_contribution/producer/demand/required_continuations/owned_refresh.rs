@@ -65,7 +65,7 @@ pub(in super::super) fn resume_owned_refresh<Schema: ApplicationSchema + 'static
         // the predecessor Ready retained only for scheduling and handoff.
         if !matches!(
             stop.kind(),
-            super::super::WorthQueryOutputDemandDenialKind::ExecutionRequest(_)
+            crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::ExecutionRequest(_)
         ) {
             runtime
                 .runtime

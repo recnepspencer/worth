@@ -24,7 +24,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
         super::prepared_plan::OwnerPlan<
             'owner,
             super::super::demand::RequiredFreshProgress<Schema>,
-            super::WorthQueryOutputDemandDenial,
+            crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial,
         >,
     ),
 }

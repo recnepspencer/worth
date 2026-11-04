@@ -17,8 +17,6 @@ pub(in crate::domain_computation::primary_graph) use progression::CurrentBasis;
 pub(in crate::domain_computation::primary_graph) use progression::CurrentProof;
 pub(crate) mod bridge_denial;
 pub(crate) mod checkpoint_delivery;
-mod denial_diagnostic;
-mod denial_posture;
 pub(super) mod disclosure;
 mod fulfillment;
 pub(crate) mod progression;
@@ -40,17 +38,16 @@ pub(in crate::domain_computation::primary_graph) use required_continuations::Req
 pub(in crate::domain_computation::primary_graph) use required_continuations::RequiredFreshProgress;
 use required_provenance::DemandProgressionProvenance;
 
-mod denial;
-pub(in crate::domain_computation::primary_graph) use denial::ProducerPublicationStale;
+
 mod managed_cleanup;
 mod read_close;
-pub use denial::WorthQueryOutputDemandDenial;
-pub use denial::WorthQueryOutputDemandDenialKind;
-pub use denial::{
-    WorthQueryOutputDemandRecoveryPosture, WorthQueryOutputSettlementProvenanceDenial,
-};
+
+
+
 pub use read_close::WorthQueryOutputReadCleanup;
 pub use read_close::WorthQueryOutputReadCloseDenial;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind;
 
 /// The one installed producer chosen for an output family and source, with the
 /// applicability it was chosen for.

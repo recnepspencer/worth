@@ -1,9 +1,6 @@
 //! One Native qualification path for complete original output sets.
 use super::WorthQueryOutputDemandSettlement;
-use crate::domain_computation::primary_graph::{
-    WorthQueryAdvancementPhase, WorthQueryApplicationReadObservation, WorthQueryOutputDemandDenial,
-    WorthQueryOutputDemandDenialKind as Kind, WorthQuerySelectedProductOperation,
-};
+use {crate::domain_computation::primary_graph::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation, crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial, crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind as Kind, crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation};
 use crate::publication_boundary::{
     discovery_currentness::{
         WorthQueryRequiredSetCurrentnessDenial, WorthQueryRetainedQueryDependencies,

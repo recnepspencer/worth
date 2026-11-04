@@ -12,8 +12,8 @@ use super::FamilySourceQuery;
 use super::FamilySourceValue;
 use super::WorthQueryAdmittedOutputDemand;
 use super::WorthQueryOutputDemandAdvance;
-use super::WorthQueryOutputDemandDenial;
-use super::WorthQueryOutputDemandDenialKind;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind;
 use super::WorthQueryProducerOutputFamily;
 
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
@@ -286,7 +286,7 @@ where
         if matches!(
             stop.kind(),
             WorthQueryOutputDemandDenialKind::ExecutionRequest(_)
-        ) && stop.recovery_posture() == super::WorthQueryOutputDemandRecoveryPosture::Terminal
+        ) && stop.recovery_posture() == crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandRecoveryPosture::Terminal
         {
             demand
                 .terminal_caller_denial

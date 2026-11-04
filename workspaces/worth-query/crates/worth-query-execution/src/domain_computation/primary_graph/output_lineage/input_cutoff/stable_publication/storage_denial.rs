@@ -1,8 +1,5 @@
 //! Preserve native/request interruption when new alias storage is refused.
-use crate::domain_computation::primary_graph::{
-    application_attempt::retained_decision_facts::StoreDenial,
-    WorthQueryOutputDemandDenial as Denial, WorthQueryOutputDemandDenialKind as Kind,
-};
+use {crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial, crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial as Denial, crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind as Kind};
 use worth_execution::{
     ExecutionAllocationDenialClass as Class, MapKernelStop as Stop, WorkCeilingDenial as Request,
 };

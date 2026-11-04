@@ -38,7 +38,7 @@ impl<'a> PreparedSelectedSchedulingFinish<'a> {
         };
         let terminal_denial = match result {
             Ok(WorthQueryOutputSchedulingResult::NoEffect(denial)) | Err(denial) => {
-                use crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture;
+                use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandRecoveryPosture;
                 // An interrupted scheduling attempt leaves the row for a later claim,
                 // with the same caller posture as interrupted execution.
                 denial.recovery_posture = if interrupted && execution_failure_is_retryable(denial) {

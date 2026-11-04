@@ -8,8 +8,8 @@ use worth_relational::facade::mvcc::CompanionPreflightStop;
 use super::denial;
 use super::FamilySourceQuery;
 use super::FamilySourceValue;
-use super::WorthQueryOutputDemandDenial;
-use super::WorthQueryOutputDemandDenialKind;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind;
 use super::WorthQueryProducerOutputFamily;
 use crate::domain_computation::primary_graph::application_query::FreshQueryPermissionStop;
 use crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerInvocation;
@@ -97,7 +97,7 @@ fn history_permission_denial(
     // The sealed error came from this call's C-only permission gate. It is
     // neither a D projection failure nor an intrinsic producer decision.
     denial.with_recovery_posture(
-        crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable,
+        crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandRecoveryPosture::Retryable,
     )
 }
 
@@ -277,7 +277,7 @@ where
                 FreshQueryPermissionStop::Inspect(stop) => return stop,
             };
             if history.is_some() {
-                denial.with_recovery_posture(crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable)
+                denial.with_recovery_posture(crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandRecoveryPosture::Retryable)
             } else { denial }
         })
 }

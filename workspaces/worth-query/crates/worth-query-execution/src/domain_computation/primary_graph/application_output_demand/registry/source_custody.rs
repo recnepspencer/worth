@@ -16,9 +16,7 @@ pub struct SourcePreparationState {
     pub(super) active: usize,
     pub(super) retired: bool,
 }
-use crate::domain_computation::primary_graph::{
-    WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
-};
+use {crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial, crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind};
 use std::cmp::Ordering;
 use worth_runtime_world::facade::CompositeCommitIdentity;
 

@@ -52,7 +52,7 @@ pub(in crate::domain_computation::primary_graph) struct SourceQueryReaderAccess<
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum SourceQueryObservationStop {
-    CurrentControl(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial),
+    CurrentControl(crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial),
     ManagedIndex(Arc<super::managed_index::WorthQueryManagedIndexDenial>),
     Installation(worth_query_installation::facade::WorthQueryApplicationQueryInstallationDenial),
     Principal(crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenial),

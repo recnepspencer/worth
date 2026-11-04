@@ -24,14 +24,7 @@ mod root_completion;
 pub(in crate::domain_computation::primary_graph) use root_completion::OriginalProgramRootCompletion;
 mod required_affinity;
 pub(crate) mod unavailable;
-use crate::domain_computation::primary_graph::{
-    WorthQueryAdmittedOutputDemand, WorthQueryApplicationDependentOutputConnection,
-    WorthQueryApplicationOutputDemand, WorthQueryApplicationOutputDemandSource,
-    WorthQueryApplicationRequiredOutputConnection, WorthQueryOutputDemandAdvance,
-    WorthQueryOutputDemandDenial, WorthQueryOutputDemandNotifications,
-    WorthQueryOutputDemandSettlement, WorthQueryPreparedRequiredOutputSource,
-    WorthQueryProducerOutputFamily,
-};
+use {crate::domain_computation::primary_graph::WorthQueryAdmittedOutputDemand, crate::domain_computation::primary_graph::WorthQueryApplicationDependentOutputConnection, crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemand, crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource, crate::domain_computation::primary_graph::WorthQueryApplicationRequiredOutputConnection, crate::domain_computation::primary_graph::WorthQueryOutputDemandAdvance, crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial, crate::domain_computation::primary_graph::WorthQueryOutputDemandNotifications, crate::domain_computation::primary_graph::WorthQueryOutputDemandSettlement, crate::domain_computation::primary_graph::WorthQueryPreparedRequiredOutputSource, crate::domain_computation::primary_graph::WorthQueryProducerOutputFamily};
 
 type Family<Schema, Demand> = <Demand as WorthQueryApplicationOutputDemand<Schema>>::OutputFamily;
 type Source<Schema, Demand> =
@@ -119,13 +112,13 @@ where
     {
         let phase_request = match phase.execution_request_for(&self.backing.runtime.runtime.product_runtime) {
             Ok(request) => request,
-            Err(cause) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "output-demand-phase")),
+            Err(cause) => return Err(crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "output-demand-phase")),
         };
         let execution = &phase_request;
 
         if !self.contains_output_root::<Root>() {
             return Err(WorthQueryOutputDemandDenial::new(
-                crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ForeignDemand,
+                crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::ForeignDemand,
                 "selected output root is not installed for this program",
             ));
         }
@@ -173,7 +166,7 @@ where
     {
         if !self.contains_output_root::<Root>() {
             return Err(WorthQueryOutputDemandDenial::new(
-                crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ForeignDemand,
+                crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::ForeignDemand,
                 "selected output root is not installed for this program",
             ));
         }
@@ -185,7 +178,7 @@ where
             .recover_prepared_output_source(receipt, TypeId::of::<Root>())
             .ok_or_else(|| {
                 WorthQueryOutputDemandDenial::new(
-                    crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
+                    crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
                     "the required root publication has no exact retained observation",
                 )
             })
@@ -207,7 +200,7 @@ where
     {
         if !self.contains_output_root::<Root>() {
             return Err(WorthQueryOutputDemandDenial::new(
-                crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ForeignDemand,
+                crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::ForeignDemand,
                 "selected output root is not installed for this program",
             ));
         }
@@ -236,7 +229,7 @@ where
     {
         if !self.contains_output_root::<Root>() {
             return Err(WorthQueryOutputDemandDenial::new(
-                crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ForeignDemand,
+                crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::ForeignDemand,
                 "selected output root is not installed for this program",
             ));
         }
@@ -261,7 +254,7 @@ where
     {
         if !self.contains_output_root::<Root>() {
             return Err(WorthQueryOutputDemandDenial::new(
-                crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ForeignDemand,
+                crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::ForeignDemand,
                 "selected output root is not installed for this program",
             ));
         }
@@ -295,13 +288,13 @@ where
     {
         let phase_request = match phase.execution_request_for(&self.backing.runtime.runtime.product_runtime) {
             Ok(request) => request,
-            Err(cause) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "output-demand-phase")),
+            Err(cause) => return Err(crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "output-demand-phase")),
         };
         let execution = &phase_request;
 
         if !self.contains_output_root::<Root>() {
             return Err(WorthQueryOutputDemandDenial::new(
-                crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ForeignDemand,
+                crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::ForeignDemand,
                 "selected output root is not installed for this program",
             ));
         }
@@ -354,13 +347,13 @@ where
     {
         let phase_request = match phase.execution_request_for(&self.backing.runtime.runtime.product_runtime) {
             Ok(request) => request,
-            Err(cause) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "output-demand-phase")),
+            Err(cause) => return Err(crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "output-demand-phase")),
         };
         let execution = &phase_request;
 
         if !self.contains_output_root::<Root>() {
             return Err(WorthQueryOutputDemandDenial::new(
-                crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ForeignDemand,
+                crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::ForeignDemand,
                 "selected output root is not installed for this program",
             ));
         }

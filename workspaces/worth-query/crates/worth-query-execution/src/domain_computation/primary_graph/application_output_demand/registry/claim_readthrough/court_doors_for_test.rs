@@ -7,7 +7,7 @@ impl DemandRegistryState {
         &self,
         owner: &WorthQueryOutputDemandKey,
         upstream: &[Arc<WorthQueryOutputDemandKey>],
-    ) -> Result<Option<ClaimBatch>, super::super::WorthQueryOutputDemandDenial> {
+    ) -> Result<Option<ClaimBatch>, crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial> {
         Self::prepare_claim_readthrough(self, owner, upstream)
     }
 }

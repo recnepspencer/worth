@@ -2,8 +2,8 @@ use super::DemandRegistryState;
 use super::DemandState;
 use super::WorthQueryOutputDemandKey;
 
-use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
-use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind;
 
 pub fn supersede_predecessors(
     state: &mut DemandRegistryState,

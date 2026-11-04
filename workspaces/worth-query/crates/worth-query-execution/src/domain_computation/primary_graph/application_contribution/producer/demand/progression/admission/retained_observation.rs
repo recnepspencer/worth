@@ -14,17 +14,7 @@ use worth_relational::facade::{runtime::ProjectionAspectScope, storage::RecordLi
 
 use super::*;
 use crate::basis::WorthQueryProductBranchReadIdentity;
-use crate::domain_computation::primary_graph::{
-    application_output_demand::DemandAdmissionKind,
-    invariant_projection::{
-        ConsumedOutputEvidence, ConsumedOutputVerification, ConsumedOutputVerificationStop,
-    },
-    output_lineage::RecordedSourceIdentity,
-    output_reuse::require_installed_output_dependencies,
-    WorthQueryApplicationBasisSelectionIdentity, WorthQueryApplicationOutputDemandSource,
-    WorthQueryApplicationReadObservation, WorthQueryOutputDemandRecoveryPosture,
-    WorthQueryOutputDemandSettlement, WorthQuerySelectedProductOperation,
-};
+use {crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind, crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence, crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerification, crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop, crate::domain_computation::primary_graph::output_lineage::RecordedSourceIdentity, crate::domain_computation::primary_graph::output_reuse::require_installed_output_dependencies, crate::domain_computation::primary_graph::WorthQueryApplicationBasisSelectionIdentity, crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource, crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation, crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandRecoveryPosture, crate::domain_computation::primary_graph::WorthQueryOutputDemandSettlement, crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation};
 use crate::domain_computation::{
     authorization::WorthQueryOperationScopeEntityBinding,
     execution_runtime::WorthQueryOutputDemandLimits,
@@ -52,7 +42,7 @@ where
     {
         let phase_request = match phase.execution_request_for(&self.runtime.product_runtime) {
             Ok(request) => request,
-            Err(cause) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "output-demand-phase")),
+            Err(cause) => return Err(crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "output-demand-phase")),
         };
         let execution = &phase_request;
 

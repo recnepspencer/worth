@@ -5,7 +5,7 @@ use worth_runtime_world::facade::ProductBranchObservation;
 use crate::basis::WorthQueryProductBranchReadIdentity;
 use crate::domain_computation::primary_graph::application_contribution::producer::demand::selection::source_basis_is_admitted;
 
-use super::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
 
 pub(super) fn admit(
     source: &WorthQueryProductBranchReadIdentity,

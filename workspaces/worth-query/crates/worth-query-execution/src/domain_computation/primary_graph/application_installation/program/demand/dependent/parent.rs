@@ -16,7 +16,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         C: ApplicationConnectionShape<S>,
         ConnectionBinding<S, C>: WorthQueryApplicationDependentOutputConnection<S, RootDemand = D>,
     {
-        use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind as Kind;
+        use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind as Kind;
         if !self.contains_connection_type::<C>() {
             return Err(WorthQueryOutputDemandDenial::new(
                 Kind::ForeignDemand,

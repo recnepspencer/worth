@@ -15,7 +15,7 @@ use super::DemandState;
 use super::WorthQueryOutputDemandKey;
 use super::WorthQueryOutputDemandRegistry;
 
-use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
 
 /// The typed successor, erased so the registry stays independent of schema.
 pub type HeldRequiredSuccessor = Box<dyn Any + Send + Sync>;

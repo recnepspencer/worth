@@ -83,9 +83,7 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
         dependents: impl IntoIterator<Item = &'s WorthQueryOutputDemandSettlement>,
         dependencies: Option<&WorthQueryRetainedQueryDependencies>,
     ) -> Result<WorthQueryCompletedRequiredOutputs, WorthQueryRequiredSetCurrentnessDenial> {
-        use crate::domain_computation::primary_graph::{
-            WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind as Kind,
-        };
+        use {crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial, crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind as Kind};
         let refused = |kind| {
             WorthQueryOutputDemandDenial::new(kind, "completed required-output qualification")
         };

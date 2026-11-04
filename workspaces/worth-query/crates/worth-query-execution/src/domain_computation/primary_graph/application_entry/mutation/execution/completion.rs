@@ -82,7 +82,7 @@ where
         registry: &crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandRegistry,
     ) -> Result<
         PreparedHandlerParts<'authority, Schema, Binding>,
-        crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial,
+        crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial,
     > {
         let inputs = registry.admit_prepared_inputs(self.projection.prepared_current_inputs())?;
         let Self {

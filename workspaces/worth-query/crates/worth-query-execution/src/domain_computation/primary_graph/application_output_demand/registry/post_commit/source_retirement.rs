@@ -4,7 +4,7 @@ use super::super::source_custody::denial;
 
 use super::*;
 use crate::domain_computation::primary_graph::application_query::WorthQueryObservedSourceEpoch;
-use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind;
 use std::cmp::Ordering;
 pub fn retire_stale_records(
     state: &mut DemandRegistryState,

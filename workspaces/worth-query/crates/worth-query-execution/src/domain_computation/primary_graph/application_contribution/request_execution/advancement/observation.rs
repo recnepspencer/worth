@@ -161,17 +161,17 @@ pub(in crate::domain_computation::primary_graph) fn record_event(
 }
 
 thread_local! {
-    static CALLER_PASSES: RefCell<Vec<(Result<(), crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind>, u64)>> = const { RefCell::new(Vec::new()) };
+    static CALLER_PASSES: RefCell<Vec<(Result<(), crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind>, u64)>> = const { RefCell::new(Vec::new()) };
 }
 /// Observes pass results without adding an execution scope or changing control flow.
 pub fn caller_pass_reports_on_this_thread_for_test() -> Vec<(
-    Result<(), crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind>,
+    Result<(), crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind>,
     u64,
 )> {
     CALLER_PASSES.with(|passes| std::mem::take(&mut *passes.borrow_mut()))
 }
 pub(in crate::domain_computation::primary_graph) fn record_caller_pass_for_test<R>(
-    result: &Result<R, crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial>,
+    result: &Result<R, crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial>,
 ) {
     if !crate::domain_computation::execution_observation::is_installed() {
         return;

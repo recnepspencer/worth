@@ -5,8 +5,8 @@ use super::super::ProductCoordinate;
 use super::super::RecordedGeneration;
 use super::super::SemanticSource;
 use super::super::WorthQueryApplicationOutputLineage;
-use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
-use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind as Kind;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind as Kind;
 
 pub(super) struct PreparedGenerationAppend {
     inserted_generation: bool,

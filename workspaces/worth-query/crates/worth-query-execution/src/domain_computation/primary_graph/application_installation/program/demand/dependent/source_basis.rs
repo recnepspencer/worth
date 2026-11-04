@@ -52,7 +52,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
             || basis.selected_commit().ordinal() < minimum.selected_commit().ordinal()
         {
             return Err(WorthQueryOutputDemandDenial::new(
-                crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ForeignSettlement,
+                crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::ForeignSettlement,
                 "dependent observation must be owned by this program and follow its settled parent and source publication on the same product branch",
             ));
         }

@@ -94,7 +94,7 @@ pub enum WorthQueryConditionalExecutionCause {
     /// A source mark changed during same-image verification; retry with a new selected root.
     SourceCurrentnessRaced(worth_relational::facade::mvcc::CompanionCellEditStop),
     RequiredPrerequisitePending(
-        crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind,
+        crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind,
     ),
     /// The provider's candidate limit was reached; the commit was deferred.
     CandidateCapacityExhausted {

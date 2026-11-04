@@ -139,7 +139,7 @@ where
 
 /// A retryable refusal of required custody.
 pub(super) fn refused_custody(stop: &WorthQueryOutputDemandDenial) -> bool {
-    stop.kind() == super::super::WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
+    stop.kind() == crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
         && stop.recovery_posture()
-            == crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable
+            == crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandRecoveryPosture::Retryable
 }

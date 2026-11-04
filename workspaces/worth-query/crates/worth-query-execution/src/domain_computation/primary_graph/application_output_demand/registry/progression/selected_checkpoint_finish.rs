@@ -5,7 +5,7 @@ use std::sync::Arc;
 use super::super::required_work::RequiredWorkMembership;
 use super::*;
 
-use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind;
 
 pub struct PreparedSelectedCheckpointFinish<'a> {
     registry: &'a WorthQueryOutputDemandRegistry,

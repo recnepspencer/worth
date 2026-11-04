@@ -19,7 +19,7 @@ use super::FamilySourceQuery;
 use super::FamilySourceValue;
 use super::WorthQueryAdmittedOutputDemand;
 use super::WorthQueryOutputDemandAdvance;
-use super::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
 use super::WorthQueryProducerOutputFamily;
 mod awaited_delivery;
 mod contacts;
@@ -282,7 +282,7 @@ where
             .execution_request_for(&runtime.runtime.product_runtime)
             .map_err(|cause| {
                 WorthQueryOutputDemandDenial::new(
-                    super::super::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
+                    crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
                     "required successor advancement phase",
                 )
             })?;
@@ -362,7 +362,7 @@ where
 
 fn capacity_denial() -> WorthQueryOutputDemandDenial {
     WorthQueryOutputDemandDenial::new(
-        super::WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
+        crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
         "required continuation exceeds retained capacity",
     )
 }

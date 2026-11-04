@@ -5,7 +5,7 @@ type Root = worth_relational::facade::identity::EntityId;
 type Commit = worth_runtime_world::facade::CompositeCommitIdentity;
 thread_local! {
     static JOINED: std::cell::RefCell<Vec<Root>>=const { std::cell::RefCell::new(Vec::new()) };
-    static REFRESH_STOPS: std::cell::RefCell<Vec<(Root,crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind)>>=const { std::cell::RefCell::new(Vec::new()) };
+    static REFRESH_STOPS: std::cell::RefCell<Vec<(Root,crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind)>>=const { std::cell::RefCell::new(Vec::new()) };
     static READS: std::cell::RefCell<Vec<(Root,Commit,Commit)>>=const { std::cell::RefCell::new(Vec::new()) };
 }
 #[derive(Default)]
@@ -211,7 +211,7 @@ impl<Schema>
 
 pub(in crate::domain_computation::primary_graph) fn observe_required_refresh_stop(
     root: Root,
-    kind: crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind,
+    kind: crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind,
 ) {
     if !crate::domain_computation::execution_observation::is_installed() {
         return;
@@ -229,7 +229,7 @@ impl<Schema>
         &self,
     ) -> Vec<(
         Root,
-        crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind,
+        crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind,
     )> {
         REFRESH_STOPS.with(|stops| std::mem::take(&mut *stops.borrow_mut()))
     }

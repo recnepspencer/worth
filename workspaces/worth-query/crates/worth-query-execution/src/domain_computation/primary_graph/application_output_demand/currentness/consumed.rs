@@ -84,8 +84,8 @@ fn verification_denial(stop: ConsumedOutputVerificationStop) -> WorthQueryOutput
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable;
-    use crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Terminal;
+    use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandRecoveryPosture::Retryable;
+    use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandRecoveryPosture::Terminal;
     use worth_relational::facade::mvcc::CompanionCellEditStop;
     use worth_relational::facade::transactions::RelationalExecutionDenialCause;
 

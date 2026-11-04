@@ -1,9 +1,9 @@
 mod commit_denial;
-use super::super::demand::ProducerPublicationStale;
+use crate::domain_computation::primary_graph::application_output_demand::denial::ProducerPublicationStale;
 use super::denial::{
     commit_execution_stopped, denial, failed, handler_execution_failed, request_authority_stop,
 };
-use super::{WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind};
+use {crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial, crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind};
 use crate::domain_computation::primary_graph as graph;
 use graph::{
     HandlerResult, WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitOutcome,

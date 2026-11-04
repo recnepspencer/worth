@@ -103,8 +103,8 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
         },
         |(), denial| {
             ProducerExecutionStop::ExecutionStopped(
-                super::super::WorthQueryOutputDemandDenial::new(
-                    super::super::WorthQueryOutputDemandDenialKind::ExecutionRequest(denial),
+                crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial::new(
+                    crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::ExecutionRequest(denial),
                     format!("member compute refused: {denial}"),
                 ),
             )

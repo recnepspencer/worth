@@ -5,7 +5,7 @@ impl WorthQueryOutputDemandDenial {
         cause: worth_runtime_bridge::facade::BridgeOutputComparisonDenial,
     ) -> Self {
         let mut denial = Self::new(
-            super::super::bridge_denial::bridge_denial_kind(cause.cause().kind()),
+            crate::domain_computation::primary_graph::application_contribution::producer::demand::bridge_denial::bridge_denial_kind(cause.cause().kind()),
             "",
         );
         denial.evidence_mut().output_comparison = Some(cause);

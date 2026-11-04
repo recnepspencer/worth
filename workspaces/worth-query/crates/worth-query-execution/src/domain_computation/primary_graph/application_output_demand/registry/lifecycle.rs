@@ -17,7 +17,7 @@ impl WorthQueryOutputDemandRegistry {
         root_kind: super::PreparedOutputRootKind,
     ) -> Result<
         crate::domain_computation::primary_graph::WorthQueryPreparedRequiredOutputSource,
-        crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial,
+        crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial,
     > {
         let mut state = self
             .state
@@ -26,14 +26,14 @@ impl WorthQueryOutputDemandRegistry {
         let visible = super::post_commit::custody_reader::visible(&state, &prepared.source_commit);
         let custody = state.source_custody
             .get_mut(&prepared.source_commit).filter(|_| visible).ok_or_else(|| {
-            crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(
-                crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
+            crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial::new(
+                crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
                 "the program source publication no longer retains custody",
             )
         })?;
         if custody.occurrence != prepared.product_occurrence || custody.root_kind != root_kind {
-            return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(
-                crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ForeignSource,
+            return Err(crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial::new(
+                crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::ForeignSource,
                 "the program source occurrence differs from its prepared custody",
             ));
         }

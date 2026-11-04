@@ -1,10 +1,7 @@
 use worth_query_declaration::facade::application_query::ApplicationQueryDependencyEquivalence;
 use worth_query_installation::facade::WorthQueryInstalledOutputDependencyContract;
 
-use crate::domain_computation::primary_graph::{
-    application_query::WorthQueryObservedSource, WorthQueryOutputDemandDenial,
-    WorthQueryOutputDemandDenialKind,
-};
+use {crate::domain_computation::primary_graph::application_query::WorthQueryObservedSource, crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial, crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind};
 
 /// An output source must carry an installed meaning and an owner-tracked
 /// complete selection. The latter includes negative and absent reads even

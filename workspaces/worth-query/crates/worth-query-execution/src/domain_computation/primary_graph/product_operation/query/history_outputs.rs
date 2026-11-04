@@ -22,7 +22,7 @@ pub enum WorthQueryHistoryOutputReadDenial {
     Admission(WorthQueryApplicationQueryAdmissionDenial),
     Read(crate::domain_computation::primary_graph::WorthQueryManagedIndexDenial),
     Control(WorthQueryHistoryOutputControlDenial),
-    Demand(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial),
+    Demand(crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial),
     Principal(crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenial),
     Scope(crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenial),
     Resource(worth_relational::facade::mvcc::CompanionPreflightStop),

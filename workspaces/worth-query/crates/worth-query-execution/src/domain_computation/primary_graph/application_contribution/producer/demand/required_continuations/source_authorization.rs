@@ -23,7 +23,7 @@ where
         }
         let demand = self.demand.as_ref().ok_or_else(|| {
             WorthQueryOutputDemandDenial::new(
-                super::super::WorthQueryOutputDemandDenialKind::RequiredSuccessorStateUnavailable,
+                crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::RequiredSuccessorStateUnavailable,
                 "required successor has no admitted source",
             )
         })?;

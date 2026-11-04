@@ -7,7 +7,7 @@ use worth_runtime_world::facade::PlannedProductReferenceSuccessor;
 use super::PreparedOutputLineageSlot;
 use crate::domain_computation::authorization::WorthQueryOperationScopeBinding;
 
-use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
 
 /// Completed read proofs and the sealed computation move across a World recovery plan. The cancelled address
 /// and its retained capacity stay with the original slot's Drop path.

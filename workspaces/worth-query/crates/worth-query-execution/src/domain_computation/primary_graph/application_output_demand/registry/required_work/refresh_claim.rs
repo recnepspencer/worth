@@ -35,7 +35,7 @@ pub(in crate::domain_computation::primary_graph) enum RequiredRefreshAdvancement
     Stopped {
         denial: WorthQueryOutputDemandDenialKind,
         recovery_posture:
-            crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture,
+            crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandRecoveryPosture,
         interrupted_claim: Option<u64>,
     },
 }
@@ -200,7 +200,7 @@ impl WorthQueryOutputDemandRegistry {
                 "restored required output awaits the first advance that reaches it",
             )
             .with_recovery_posture(
-                crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable,
+                crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandRecoveryPosture::Retryable,
             ));
         }
         // The claim shares all three exact pins only after the current Ready,

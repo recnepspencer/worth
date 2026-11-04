@@ -28,8 +28,8 @@ use crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBi
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionMode;
 
-use super::demand::WorthQueryOutputDemandDenial;
-use super::demand::WorthQueryOutputDemandDenialKind;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind;
 
 mod admitted;
 pub(crate) mod denial;

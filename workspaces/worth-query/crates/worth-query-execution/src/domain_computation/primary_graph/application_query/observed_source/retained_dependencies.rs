@@ -2,8 +2,8 @@
 use super::*;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource;
-use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
-use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind;
 use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation;
 use crate::publication_boundary::WorthQueryProgramPublicationAccess;
 use worth_execution::ExecutionArray;

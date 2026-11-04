@@ -24,7 +24,7 @@ use super::closed_retirement::closed_superseded;
 use super::closed_retirement::held_by_row;
 use super::closed_retirement::ready_at_newest;
 
-use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
 
 impl WorthQueryOutputDemandRegistry {
     /// Release one product observation nothing holds: retire a closed

@@ -13,7 +13,7 @@ pub struct WorthQueryApplicationCommitDeferred {
     counters:
         crate::domain_computation::provider_session::WorthQueryProviderSessionProtocolCounters,
     prerequisite_denial:
-        Option<crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial>,
+        Option<crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial>,
 }
 
 /// The limit that deferred a commit attempt.
@@ -35,7 +35,7 @@ pub enum WorthQueryApplicationCommitDeferredKind {
     SourceCurrentnessRaced(worth_relational::facade::mvcc::CompanionCellEditStop),
     /// Required upstream custody or its bounded preparation is unavailable.
     RequiredPrerequisitePending(
-        crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind,
+        crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind,
     ),
 }
 
@@ -82,7 +82,7 @@ impl WorthQueryApplicationCommitDeferred {
 
     pub(in crate::domain_computation::primary_graph) fn into_prerequisite_denial(
         mut self,
-    ) -> Result<crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial, Self> {
+    ) -> Result<crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial, Self> {
         self.prerequisite_denial.take().ok_or(self)
     }
 

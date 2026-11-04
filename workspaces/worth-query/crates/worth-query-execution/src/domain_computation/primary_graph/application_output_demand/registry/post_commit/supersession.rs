@@ -3,7 +3,7 @@
 use super::super::supersession::superseded_denial;
 
 use super::*;
-use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind;
 impl DemandRegistryState {
     pub(in super::super) fn finish_superseded_row(
         &mut self,

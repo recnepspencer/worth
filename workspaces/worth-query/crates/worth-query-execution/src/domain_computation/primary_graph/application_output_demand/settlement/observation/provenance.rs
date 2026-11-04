@@ -1,6 +1,6 @@
 //! The retained read must describe the settlement's actual immutable owner.
 use super::*;
-use crate::domain_computation::primary_graph::WorthQueryOutputSettlementProvenanceDenial as Reason;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputSettlementProvenanceDenial as Reason;
 use crate::domain_computation::primary_graph::{
     admitted_capture::checkpoint, output_reuse::read_denial,
 };

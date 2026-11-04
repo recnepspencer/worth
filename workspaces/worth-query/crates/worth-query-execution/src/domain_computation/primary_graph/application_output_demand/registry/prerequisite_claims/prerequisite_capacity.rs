@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use super::super::{DemandRegistryState, WorthQueryOutputDemandKey};
 use super::coverage_denial;
-use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
 
 pub(super) fn validate_predecessors(
     state: &DemandRegistryState,

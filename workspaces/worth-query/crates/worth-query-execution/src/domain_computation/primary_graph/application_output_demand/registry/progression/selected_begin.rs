@@ -3,7 +3,7 @@
 use super::selected_finish::PreparedSelectedSchedulingFinish;
 use super::*;
 
-use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind;
 
 pub(super) fn begin_admitted<'a>(
     registry: &'a WorthQueryOutputDemandRegistry,

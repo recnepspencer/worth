@@ -112,10 +112,7 @@ impl WorthQueryManagedIndexDenial {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain_computation::primary_graph::{
-        application_query::SourceQueryObservationStop, WorthQueryOutputDemandDenial,
-        WorthQueryOutputDemandDenialKind as Kind, WorthQueryOutputDemandRecoveryPosture as Posture,
-    };
+    use {crate::domain_computation::primary_graph::application_query::SourceQueryObservationStop, crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial, crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind as Kind, crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandRecoveryPosture as Posture};
 
     #[test]
     fn source_verification_preserves_request_causes_and_intrinsic_mismatch() {

@@ -26,8 +26,8 @@ impl From<HistoryRetainedPermissionStop>
         match stop {
             Stop::Current(stop) => Self::Authority(stop),
             Stop::Resource(stop) => Self::Resource(stop),
-            Stop::Installation(kind) => Self::Demand(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(
-                crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::SourceQueryInstallation(kind), "history source query")),
+            Stop::Installation(kind) => Self::Demand(crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial::new(
+                crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::SourceQueryInstallation(kind), "history source query")),
             Stop::Permission(stop) => match stop {
                 FreshQueryPermissionStop::Principal(stop) => Self::Principal(stop),
                 FreshQueryPermissionStop::Scope(stop) => Self::Scope(stop),

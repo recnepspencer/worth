@@ -7,7 +7,7 @@ use worth_query_declaration::facade::application_schema::{
 };
 
 use super::application_contribution::WorthQueryApplicationOutputDemand;
-use super::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
 
 /// Move-only owner evidence for one performed source publication.
 ///

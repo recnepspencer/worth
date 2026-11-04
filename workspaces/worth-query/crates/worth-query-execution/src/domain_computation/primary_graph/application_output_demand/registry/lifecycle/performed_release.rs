@@ -17,7 +17,7 @@ use super::super::DemandRegistryState;
 use super::super::SourceCustody;
 use super::super::WorthQueryPerformedOutputDemandSource;
 
-use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
 
 /// What a released performed source kept. It drops after the registry lock
 /// is released.

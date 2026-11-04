@@ -3,10 +3,7 @@ use worth_query_declaration::facade::application_program::ApplicationWorkflowSpe
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::WorthQueryWorkflowVocabulary;
-use crate::domain_computation::primary_graph::{
-    WorthQueryAdmittedOutputDemand, WorthQueryApplicationOutputDemandSource,
-    WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial, WorthQueryProducerOutputFamily,
-};
+use {crate::domain_computation::primary_graph::WorthQueryAdmittedOutputDemand, crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource, crate::domain_computation::primary_graph::WorthQueryOutputDemandAdvance, crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial, crate::domain_computation::primary_graph::WorthQueryProducerOutputFamily};
 
 type SourceBinding<Schema, Family> = <Family as WorthQueryProducerOutputFamily<Schema>>::Source;
 type SourceQuery<Schema, Family> = <SourceBinding<Schema, Family> as worth_query_declaration::facade::application_query::ApplicationQueryBinding<Schema>>::Query;
@@ -32,7 +29,7 @@ where
     {
         let phase_request = match phase.execution_request_for(&self.runtime().runtime.product_runtime) {
             Ok(request) => request,
-            Err(cause) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "output-demand-phase")),
+            Err(cause) => return Err(crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "output-demand-phase")),
         };
         let _execution = &phase_request;
 
@@ -64,7 +61,7 @@ impl crate::publication_boundary::WorthQueryProgramPublicationAccess {
     {
         let phase_request = match phase.execution_request_for(&runtime.runtime.product_runtime) {
             Ok(request) => request,
-            Err(cause) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "output-demand-phase")),
+            Err(cause) => return Err(crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "output-demand-phase")),
         };
         let execution = &phase_request;
 

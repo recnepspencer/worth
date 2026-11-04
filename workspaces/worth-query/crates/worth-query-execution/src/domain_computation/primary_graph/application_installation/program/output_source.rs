@@ -64,7 +64,7 @@ where
             >,
             crate::domain_computation::primary_graph::WorthQueryPreparedRequiredOutputSource,
         ),
-        crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial,
+        crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial,
     >
     where
         Root: ApplicationOutputGraphShape<Schema>
@@ -72,8 +72,8 @@ where
         RootConnection<Schema, Root>: WorthQueryApplicationDiscoveredOutputConnection<Schema>,
     {
         if !self.contains_output_root::<Root>() {
-            return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(
-                crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ForeignDemand,
+            return Err(crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial::new(
+                crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::ForeignDemand,
                 "discovered output root is not installed for this program",
             ));
         }

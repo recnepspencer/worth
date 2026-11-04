@@ -42,7 +42,7 @@ impl WorthQueryOutputDemandRegistry {
 
         if !std::sync::Arc::ptr_eq(&self.state, &interest.owner.state) {
             return Err(WorthQueryOutputDemandDenial::new(
-                crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ForeignDemand,
+                crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::ForeignDemand,
                 "",
             ));
         }
@@ -92,7 +92,7 @@ pub(super) fn begin_record(
                 }
                 let Some(next_claim) = output.next_claim.checked_add(1) else {
                     let denial = WorthQueryOutputDemandDenial::new(
-                            crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::SchedulingRejected,
+                            crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::SchedulingRejected,
                             overflow_subject,
                         );
                     output.stop(denial.clone());
@@ -129,7 +129,7 @@ impl WorthQueryOutputDemandRegistry {
         };
         match result {
             Ok(WorthQueryOutputSchedulingResult::NoEffect(denial)) | Err(denial) => {
-                use crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture;
+                use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandRecoveryPosture;
                 // An interrupted scheduling attempt leaves the row for a later claim,
                 // with the same caller posture as interrupted execution.
                 denial.recovery_posture = if rescheduled && execution_failure_is_retryable(denial) {
@@ -191,9 +191,9 @@ impl WorthQueryOutputDemandRegistry {
         let retryable = execution_failure_is_retryable(denial);
         let rescheduled = execution_failure_reschedules(denial);
         denial.recovery_posture = if retryable {
-            crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable
+            crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandRecoveryPosture::Retryable
         } else {
-            crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Terminal
+            crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandRecoveryPosture::Terminal
         };
         let mut state = self
             .state
@@ -248,7 +248,7 @@ fn start_scheduled(
 
 fn empty_begin_work_denial() -> WorthQueryOutputDemandDenial {
     WorthQueryOutputDemandDenial::new(
-        crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
+        crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
         "",
     )
 }
@@ -258,22 +258,22 @@ fn demand_record_is_closed(record: &DemandRecord) -> bool {
         &record.state,
         DemandState::Failed(denial)
             if denial.kind()
-                == crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::Closed
+                == crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::Closed
     )
 }
 
 pub(super) fn execution_failure_is_retryable(denial: &WorthQueryOutputDemandDenial) -> bool {
     denial.recovery_posture()
-        == crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable
+        == crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandRecoveryPosture::Retryable
         || matches!(
             denial.kind(),
-            crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(
+            crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::ExecutionRequest(
                 crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(_)
             )
-                | crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::PublicationStale
-                | crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::Cancelled
-                | crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::TimedOut
-                | crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::PublicationCapacityExceeded
+                | crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::PublicationStale
+                | crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::Cancelled
+                | crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::TimedOut
+                | crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::PublicationCapacityExceeded
         )
 }
 

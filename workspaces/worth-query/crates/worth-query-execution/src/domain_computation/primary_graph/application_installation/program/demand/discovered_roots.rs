@@ -9,12 +9,7 @@ use worth_query_declaration::facade::application_schema::{
 };
 
 use super::{WorthQueryAdmittedProgramOutput, WorthQueryProgramApplicationRuntime};
-use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationDiscoveredOutputConnection, WorthQueryApplicationOutputDemand,
-    WorthQueryApplicationOutputDemandSource, WorthQueryOutputDemandDenial,
-    WorthQueryOutputDemandDenialKind, WorthQueryPreparedRequiredOutputSource,
-    WorthQueryProducerOutputFamily,
-};
+use {crate::domain_computation::primary_graph::WorthQueryApplicationDiscoveredOutputConnection, crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemand, crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource, crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial, crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind, crate::domain_computation::primary_graph::WorthQueryPreparedRequiredOutputSource, crate::domain_computation::primary_graph::WorthQueryProducerOutputFamily};
 
 type RootConnection<Schema, Root> =
     <<Root as ApplicationOutputGraphShape<Schema>>::RootConnection as ApplicationConnectionShape<
@@ -58,7 +53,7 @@ where
     {
         let phase_request = match phase.execution_request_for(&self.backing.runtime.runtime.product_runtime) {
             Ok(request) => request,
-            Err(cause) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "program-source-phase")),
+            Err(cause) => return Err(crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "program-source-phase")),
         };
         let execution = &phase_request;
 
@@ -208,7 +203,7 @@ where
     {
         let phase_request = match phase.execution_request_for(&self.backing.runtime.runtime.product_runtime) {
             Ok(request) => request,
-            Err(cause) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "output-demand-phase")),
+            Err(cause) => return Err(crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "output-demand-phase")),
         };
         let execution = &phase_request;
 
@@ -266,7 +261,7 @@ where
     {
         let phase_request = match phase.execution_request_for(&self.backing.runtime.runtime.product_runtime) {
             Ok(request) => request,
-            Err(cause) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "output-demand-phase")),
+            Err(cause) => return Err(crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "output-demand-phase")),
         };
         let execution = &phase_request;
 

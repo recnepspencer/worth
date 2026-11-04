@@ -12,8 +12,8 @@ use crate::domain_computation::primary_graph::output_reuse::first_moved_fact_in;
 use crate::domain_computation::primary_graph::output_reuse::RetainedFactStop;
 use crate::domain_computation::primary_graph::provider::FactlessCurrentness;
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt;
-use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
-use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind;
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandSettlement;
 use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation;
 

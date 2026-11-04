@@ -1,9 +1,6 @@
 //! Retrospective complete-tree qualification with genuine read-origin provenance.
 use super::{WorthQueryOutputDemandSettlement, WorthQueryOutputSettlementPosture};
-use crate::domain_computation::primary_graph::{
-    WorthQueryAdvancementPhase, WorthQueryApplicationReadObservation, WorthQueryOutputDemandDenial,
-    WorthQueryOutputDemandDenialKind, WorthQuerySelectedProductOperation,
-};
+use {crate::domain_computation::primary_graph::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation, crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial, crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind, crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation};
 use crate::publication_boundary::{
     discovery_currentness::{
         WorthQueryRequiredSetCurrentnessDenial, WorthQueryRetainedQueryDependencies,

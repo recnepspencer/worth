@@ -10,7 +10,7 @@ pub struct WorthQueryProviderSessionCommitDeferred {
     detail: String,
     counters: WorthQueryProviderSessionProtocolCounters,
     prerequisite_denial:
-        Option<crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial>,
+        Option<crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -29,7 +29,7 @@ pub enum WorthQueryProviderSessionCommitDeferredKind {
     },
     SourceCurrentnessRaced(worth_relational::facade::mvcc::CompanionCellEditStop),
     RequiredPrerequisitePending(
-        crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind,
+        crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind,
     ),
 }
 
@@ -48,7 +48,7 @@ impl WorthQueryProviderSessionCommitDeferred {
     }
 
     pub(in crate::domain_computation) fn required_prerequisite(
-        denial: crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial,
+        denial: crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial,
         detail: impl Into<String>,
     ) -> Self {
         let mut deferred = Self::new(
@@ -61,7 +61,7 @@ impl WorthQueryProviderSessionCommitDeferred {
 
     pub(in crate::domain_computation) fn into_prerequisite_denial(
         self,
-    ) -> Option<crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial> {
+    ) -> Option<crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial> {
         self.prerequisite_denial
     }
 
