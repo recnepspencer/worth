@@ -301,6 +301,7 @@ where
 mod record_read;
 use record_read::CommittedOutboxRead;
 
+#[cfg(test)]
 #[path = "committed_dispatch_outbox/restoration_tests.rs"]
 mod restoration_tests;
 

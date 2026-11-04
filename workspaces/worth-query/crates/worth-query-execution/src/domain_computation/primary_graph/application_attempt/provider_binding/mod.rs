@@ -8,6 +8,7 @@ pub(in crate::domain_computation::primary_graph) use registration::WorthQueryPri
 pub(in crate::domain_computation::primary_graph::application_attempt) use registration::WorthQueryProviderRegistrationInspectionPermit;
 pub(in crate::domain_computation::primary_graph::application_attempt) use registration::WorthQueryRegisteredProviderAttemptSeal;
 
+#[cfg(test)]
 mod unique_value_tests;
 
 use worth_query_installation::facade::{

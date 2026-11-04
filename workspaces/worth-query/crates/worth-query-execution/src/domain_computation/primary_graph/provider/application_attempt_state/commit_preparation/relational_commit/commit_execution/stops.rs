@@ -208,6 +208,7 @@ fn publication_failure(
     )
 }
 
+#[cfg(test)]
 mod tests;
 
 pub(super) fn source_rebase_preparation_stop(

@@ -77,4 +77,5 @@ pub use retained_preimage::{
 // consumes it by name, and this phase does not export for consumers that do
 // not exist.
 
+#[cfg(test)]
 mod retained_preimage_tests;
