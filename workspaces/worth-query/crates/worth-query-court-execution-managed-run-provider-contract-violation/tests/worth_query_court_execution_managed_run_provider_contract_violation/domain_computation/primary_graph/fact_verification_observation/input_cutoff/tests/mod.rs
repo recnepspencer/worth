@@ -1,5 +1,3 @@
-use WorthQueryInputCutoffGateForTest;
-use WorthQueryInputCutoffOutcomeForTest;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::fact_verification_observation::input_cutoff::Scope;
 use worth_query_execution::facade::domain_computation::WorthQueryInputCutoffGateForTest;
 use worth_query_execution::facade::domain_computation::WorthQueryInputCutoffOutcomeForTest;
