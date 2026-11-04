@@ -20,7 +20,7 @@ fn a_host_presents_only_the_program_revisions_it_admitted() {
         true,
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
-    let support = installed_program_support(&world.application.installed_schema);
+    let support = installed_program_support(&(*world.application.installed_schema_for_test()));
     assert!(
         support
             .present_for_test(&rostered_program_revision())
@@ -41,7 +41,7 @@ fn an_activation_rendering_no_rostered_program_answers_to_resolves_to_nothing() 
         true,
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
-    let support = installed_program_support(&world.application.installed_schema);
+    let support = installed_program_support(&(*world.application.installed_schema_for_test()));
     assert!(
         support
             .rostered_for_rendering_for_test(&program_revision_rendering(
@@ -66,7 +66,7 @@ fn a_host_without_a_published_activation_names_no_occurrence_program() {
         true,
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
-    let support = installed_program_support(&world.application.installed_schema);
+    let support = installed_program_support(&(*world.application.installed_schema_for_test()));
     assert_eq!(
         support.activation().published_for_test(),
         None,

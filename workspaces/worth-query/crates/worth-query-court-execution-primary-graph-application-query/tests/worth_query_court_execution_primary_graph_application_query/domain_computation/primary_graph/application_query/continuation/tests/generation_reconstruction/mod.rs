@@ -30,7 +30,7 @@ fn discarded_ordered_generation_rebuilds_without_reviving_old_query_cursors() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             context.issue(&host_custody)
         })
         .expect("the fixture read owns its installed host call");
@@ -38,28 +38,28 @@ fn discarded_ordered_generation_rebuilds_without_reviving_old_query_cursors() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             context.issue(&host_custody)
         })
         .expect("the fixture read owns its installed host call");
-    assert_eq!(old_cursor.index_generation, cold_cursor.index_generation);
-    let index_id = old_cursor.index_id;
-    let basis = old_cursor.product.relational_basis().clone();
-    let graph = &context.world.application.runtime.primary_provider.graph;
-    let child_kind = context
+    assert_eq!((*old_cursor.index_generation_for_test()), (*cold_cursor.index_generation_for_test()));
+    let index_id = (*old_cursor.index_id_for_test());
+    let basis = (*old_cursor.product_for_test()).relational_basis_for_test().clone();
+    let graph = &(*(*(*context.world.application.runtime_for_test()).primary_provider_for_test()).graph_for_test());
+    let child_kind = (*(*context
         .world
         .application
-        .runtime
-        .primary_graph()
+        .runtime_for_test())
+        .primary_graph_for_test()
         .unwrap()
-        .layout
-        .entity_kind(Activity::reference().name())
+        .layout_for_test())
+        .entity_kind_for_test(Activity::reference().name())
         .unwrap();
     let original = context
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             graph.with_runtime(request_execution, |runtime| {
                 let original = runtime
                     .index_access()
@@ -70,7 +70,7 @@ fn discarded_ordered_generation_rebuilds_without_reviving_old_query_cursors() {
                     )
                     .unwrap()
                     .unwrap();
-                assert_eq!(original.generation_id, old_cursor.index_generation);
+                assert_eq!(original.generation_id, (*old_cursor.index_generation_for_test()));
                 let definitions = runtime
                     .index_access()
                     .definition_lookup_snapshot()
@@ -96,13 +96,13 @@ fn discarded_ordered_generation_rebuilds_without_reviving_old_query_cursors() {
                 let lookup = BoundedRelatedEntityOrderedLookupRequest::new(
                     snapshot.clone(),
                     index_id,
-                    old_cursor.scope_entity_id,
+                    (*old_cursor.scope_entity_id_for_test()),
                     child_kind,
                     None,
                     1,
                 )
                 .unwrap()
-                .expect_generation(old_cursor.index_generation);
+                .expect_generation((*old_cursor.index_generation_for_test()));
                 let denied = runtime
                     .index_access()
                     .execute_bounded_related_entity_ordered_lookup(
@@ -225,7 +225,7 @@ pub fn assert_fresh_pages(
     let access = WorthQueryApplicationQueryAccessContext::new(&context.principal, &context.account);
     let plan = context
         .world
-        .selected_product(&(phase_custody).test_host_request())
+        .selected_product(&(phase_custody).test_host_request_for_test())
         .admit_application_query_continuation(
             phase_custody,
             &context.query,

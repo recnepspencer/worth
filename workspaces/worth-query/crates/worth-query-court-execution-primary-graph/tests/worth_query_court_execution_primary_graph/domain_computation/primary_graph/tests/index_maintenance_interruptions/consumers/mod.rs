@@ -10,7 +10,7 @@ pub fn currency_consumer(consumer: u8) {
         WorthQueryPrincipalMappingStatus::Enabled,
     )]);
     let handle = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap()
         .integration_handle_for_test();
     let setup_host = worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request();

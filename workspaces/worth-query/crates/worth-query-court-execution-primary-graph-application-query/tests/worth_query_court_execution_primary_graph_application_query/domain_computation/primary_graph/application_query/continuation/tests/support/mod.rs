@@ -252,20 +252,20 @@ impl ContinuationTestContext {
     pub fn advance_installation(&mut self) {
         let successor = Arc::new(
             (*self.world.application.runtime_for_test())
-                .installed_packages()
+                .installed_packages_for_test()
                 .successor_generation(),
         );
-        self.world
+        (*self.world
             .application
-            .runtime
-            .execution_mut()
+            .runtime_mut_for_test())
+            .execution_mut_for_test()
             .commit_successor_installation(successor)
             .unwrap();
     }
 
     pub fn stale_principal_mapping(&self, execution: &worth_execution::ExecutionRequest<'_, '_>) {
         let graph = (*self.world.application.runtime_for_test())
-            .primary_graph()
+            .primary_graph_for_test()
             .expect("test world publishes a primary graph");
         let layout = (*graph.layout_for_test())
             .principal_binding_for_test(self.principal.binding())
@@ -286,7 +286,7 @@ impl ContinuationTestContext {
 
     pub fn stale_scope_identity(&self, execution: &worth_execution::ExecutionRequest<'_, '_>) {
         let graph = (*self.world.application.runtime_for_test())
-            .primary_graph()
+            .primary_graph_for_test()
             .expect("test world publishes a primary graph");
         let field = AccountIdentity::reference();
         let locator = (*graph.layout_for_test())

@@ -111,18 +111,18 @@ fn native_value_key_and_membership_edits_carry_unaffected_partitions() {
         ("urimar", vec![1]),     // remove an odd member
     ] {
         let field = AccountLabel::reference();
-        let locator = world
+        let locator = (*(*(*(*world
             .application
-            .runtime
-            .primary_provider
-            .graph
-            .layout
-            .field_locator(field.entity(), field.aspect(), field.field())
+            .runtime_for_test())
+            .primary_provider_for_test())
+            .graph_for_test())
+            .layout_for_test())
+            .field_locator_for_test(field.entity(), field.aspect(), field.field())
             .unwrap()
             .clone();
         let request = live_scope();
         world.application.with_application_advancement(&request, |phase| {
-            let active = phase.execution_for(&world.application.runtime.product_runtime).unwrap();
+            let active = phase.execution_for_for_test(&(*(*world.application.runtime_for_test()).product_runtime_for_test())).unwrap();
             let execution = active.execution_request().unwrap();
             worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::product_publication::publish_relational_mutation(
                 &execution, &world, WorkerIntentBatch::new("native-membership-edit").push(

@@ -43,7 +43,7 @@ fn scoped_indexed_comparison_preserves_pinned_absence_limits_and_foreign_affinit
             );
             let snapshot = selected.application_basis_for_test().snapshot_handle();
             let graph = (*world.application.runtime_for_test())
-                .primary_graph()
+                .primary_graph_for_test()
                 .unwrap();
             let field = AccountStatus::reference();
             let layout = (*graph.layout_for_test())
@@ -104,11 +104,11 @@ fn scoped_indexed_comparison_preserves_pinned_absence_limits_and_foreign_affinit
                 1,
                 "all distinct predicates share only the exact index admission"
             );
-            foreign
+            (*(*(*foreign
                 .application
-                .runtime
-                .primary_provider
-                .graph
+                .runtime_for_test())
+                .primary_provider_for_test())
+                .graph_for_test())
                 .with_runtime(&borrowed_execution, |runtime| {
                     assert!(!selectors
                         .remains_equal_for_test(execution, &present, runtime, snapshot, control)
@@ -227,7 +227,7 @@ fn prepared_indexed_comparison_keeps_a_native_cancellation() {
         let execution = phase.checked_execution_request_for(world.application.product_runtime()).unwrap();
         let selected = world.selected_product(&phase.test_host_request_for_test());
         let snapshot = selected.application_basis_for_test().snapshot_handle();
-        let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+        let graph = (*world.application.runtime_for_test()).primary_graph_for_test().unwrap();
         let field = (*graph.layout_for_test()).equality_field_for_test("Account", "AccountPolicy", "AccountStatus").unwrap();
         let (answer, seen) = graph.integration_handle_for_test().with_runtime(&execution, |runtime| {
             let fact = observe_indexed_entity_selection(runtime, &execution, snapshot,

@@ -67,11 +67,11 @@ fn pre_effect_index_budget_denial_leaves_no_effect_and_retries_through_query() {
         WorthQueryApplicationCommitDenialStage::ProviderCommit
     );
     assert_eq!(
-        world
+        (*(*world
             .application
-            .runtime
-            .primary_provider
-            .published_application_commit_count(),
+            .runtime_for_test())
+            .primary_provider_for_test())
+            .published_application_commit_count_for_test(),
         0
     );
     let _still_open = world

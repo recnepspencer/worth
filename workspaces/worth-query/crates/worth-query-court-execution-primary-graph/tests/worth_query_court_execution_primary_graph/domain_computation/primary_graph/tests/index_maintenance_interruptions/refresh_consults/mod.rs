@@ -7,7 +7,7 @@ fn refresh_preserves_the_stop_at_every_counted_consult() {
         worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation::install_on_this_thread();
     let world = installed_world(&[("counted-refresh", WorthQueryPrincipalMappingStatus::Enabled)]);
     let handle = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap()
         .integration_handle_for_test();
     let setup_host = worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request();

@@ -50,3 +50,30 @@ impl<'request, 'authority, Schema, Operation, Input, Scope, Phase>
         &self.read_scope
     }
 }
+
+impl<Schema, Operation, Input, Scope, Phase>
+    WorthQueryCompleteApplicationReadSet<Schema, Operation, Input, Scope, Phase>
+{
+    #[doc(hidden)]
+    pub fn effect_routes_for_test(&self) -> &super::super::CompletedFactRoutes {
+        &self.effect_routes
+    }
+}
+
+impl<Schema, Operation, Input, Scope, Phase>
+    WorthQueryCompleteApplicationReadSet<Schema, Operation, Input, Scope, Phase>
+{
+    #[doc(hidden)]
+    pub fn effect_routes_mut_for_test(&mut self) -> &mut super::super::CompletedFactRoutes {
+        &mut self.effect_routes
+    }
+}
+
+impl<Schema, Operation, Input, Scope, Phase>
+    WorthQueryCompleteApplicationReadSet<Schema, Operation, Input, Scope, Phase>
+{
+    #[doc(hidden)]
+    pub fn effect_routes_into_for_test(self) -> super::super::CompletedFactRoutes {
+        self.effect_routes
+    }
+}

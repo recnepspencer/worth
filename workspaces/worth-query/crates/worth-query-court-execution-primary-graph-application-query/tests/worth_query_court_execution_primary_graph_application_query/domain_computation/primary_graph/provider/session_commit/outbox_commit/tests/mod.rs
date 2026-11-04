@@ -75,7 +75,7 @@ pub fn commit_only_other_outbox(
         true,
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
-    let provider = &world.application.runtime.primary_provider;
+    let provider = &(*(*world.application.runtime_for_test()).primary_provider_for_test());
     let (_, requested) = bind_dispatch_outbox_create_intent(
         Some((*(*provider.graph_for_test()).layout_for_test()).provider_dispatch_outbox_for_test()),
         Some(&record(1)),

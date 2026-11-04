@@ -40,27 +40,27 @@ fn isolated_brand_check_allocation_probe() {
         ProgramRequiredOperation,
         &request
     );
-    let runtime = (*world.application.runtime_for_test()).authority_identity();
+    let runtime = (*world.application.runtime_for_test()).authority_identity_for_test();
     let binding = (*world.application.installed_schema_for_test()).binding_identity();
     let descriptor = (*world.application.installed_schema_for_test())
         .installed_mutation_binding_descriptor(ProgramRequiredMutationBinding::IDENTITY);
 
     let region = stats_alloc::Region::new(&stats_alloc::INSTRUMENTED_SYSTEM);
     for _ in 0..64 {
-        std::hint::black_box(admission.validate_installed_entry(
+        std::hint::black_box(admission.validate_installed_entry_for_test(
             runtime,
             &binding,
-            &world.application.runtime.installed_operations,
+            &(*(*world.application.runtime_for_test()).installed_operations_for_test()),
         ))
         .unwrap();
         assert!(std::hint::black_box(
             admission.belongs_to_for_test(runtime, &binding)
         ));
         std::hint::black_box(
-            admission.validate_installed_operation(&world.application.runtime.installed_operations),
+            admission.validate_installed_operation_for_test(&(*(*world.application.runtime_for_test()).installed_operations_for_test())),
         )
         .unwrap();
-        std::hint::black_box(admission.validate_installed_mutation_binding(descriptor)).unwrap();
+        std::hint::black_box(admission.validate_installed_mutation_binding_for_test(descriptor)).unwrap();
         std::hint::black_box(admission.capability_input());
     }
     let change = region.change();

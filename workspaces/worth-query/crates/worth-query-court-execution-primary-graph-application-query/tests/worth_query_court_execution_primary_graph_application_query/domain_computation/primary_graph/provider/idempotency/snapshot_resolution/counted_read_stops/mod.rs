@@ -18,9 +18,9 @@ fn durable_idempotency_door_preserves_stops_at_every_consult() {
         .application
         .with_host_advancement(|phase| {
             let execution = phase.borrowed_request_for_test();
-            let provider = &world.application.runtime.primary_provider;
-            let layout = provider.graph.layout.provider_idempotency().clone();
-            let binding = WorthQueryApplicationIdempotencyBinding::new([9; 32], [7; 32]);
+            let provider = &(*(*world.application.runtime_for_test()).primary_provider_for_test());
+            let layout = (*(*provider.graph_for_test()).layout_for_test()).provider_idempotency_for_test().clone();
+            let binding = WorthQueryApplicationIdempotencyBinding::new_for_test([9; 32], [7; 32]);
             publish_relational_mutation(
                 &execution,
                 &world,

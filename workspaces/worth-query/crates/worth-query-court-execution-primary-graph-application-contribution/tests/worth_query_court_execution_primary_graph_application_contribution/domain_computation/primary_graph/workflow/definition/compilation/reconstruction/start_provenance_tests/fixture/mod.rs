@@ -184,7 +184,7 @@ pub fn only_new_entity(
 ) -> EntityId {
     let selected = selected(world, execution);
     let handle = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap()
         .integration_handle_for_test();
     let added = handle.with_runtime(execution, |runtime| {
@@ -243,7 +243,7 @@ pub fn publish_instance_value(
     );
     let basis = selected(world, execution);
     let handle = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap()
         .integration_handle_for_test();
     let before = handle.with_runtime(execution, |runtime| {

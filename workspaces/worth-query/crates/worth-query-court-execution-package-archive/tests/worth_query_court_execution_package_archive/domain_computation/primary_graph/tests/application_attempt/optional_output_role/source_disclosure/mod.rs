@@ -135,7 +135,7 @@ fn non_correctable_source_keeps_disclosure_and_releases_its_native_input() {
         };
         let source_commit = receipt.commit_reference().clone();
         let source_branch = receipt.product_branch();
-        assert!(world.application.runtime.primary_provider.observe_completed_application(&source_commit).is_some());
+        assert!((*(*world.application.runtime_for_test()).primary_provider_for_test()).observe_completed_application_for_test(&source_commit).is_some());
         let carrier = receipt.authority_binding().clone();
         drop(receipt);
         assert!(carrier.retained_governed_input_carrier_for_test().is_none());
@@ -157,7 +157,7 @@ fn non_correctable_source_keeps_disclosure_and_releases_its_native_input() {
         assert!(sibling.original_inspection_disclosure_for_test().is_some());
         let closed = world.application.on_branch(source_branch).close(&phase).expect("the ordinary product occurrence closes");
         assert!(closed.is_complete());
-        assert!(world.application.runtime.primary_provider.observe_completed_application(&source_commit).is_some(), "native history still owns the completed source after ordinary close");
+        assert!((*(*world.application.runtime_for_test()).primary_provider_for_test()).observe_completed_application_for_test(&source_commit).is_some(), "native history still owns the completed source after ordinary close");
         sibling
     }).unwrap();
     drop(world);

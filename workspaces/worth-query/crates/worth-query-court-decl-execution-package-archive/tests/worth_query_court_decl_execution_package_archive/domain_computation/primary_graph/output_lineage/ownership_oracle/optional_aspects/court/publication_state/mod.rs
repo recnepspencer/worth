@@ -54,13 +54,13 @@ pub fn observe_roles<Schema: BirthSchema>(
         id
     };
     let execution = phase
-        .execution_request_for(&runtime.runtime.product_runtime)
+        .execution_request_for_for_test(&(*(*runtime.runtime_for_test()).product_runtime_for_test()))
         .unwrap();
     let selected = runtime
         .on_branch(runtime.current_world())
         .select(phase)
         .unwrap();
-    let graph = &runtime.runtime.primary_provider.graph;
+    let graph = &(*(*(*runtime.runtime_for_test()).primary_provider_for_test()).graph_for_test());
     let field = Value::reference::<Schema>();
     let locator = (*graph.layout_for_test())
         .field_locator_for_test(field.entity(), field.aspect(), field.field())

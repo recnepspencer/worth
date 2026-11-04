@@ -121,10 +121,10 @@ fn ordinary_handler_clear_of_absent_field_retains_aspect_absence() {
     let cleared =
         crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::journey::demand(&clearing, true).expect("clearing an absent Optional field is lawful");
     let receipt = cleared.application_commit_receipt().unwrap();
-    let completed = clearing
-        .runtime
-        .primary_provider
-        .observe_completed_application(receipt.commit_reference())
+    let completed = (*(*clearing
+        .runtime_for_test())
+        .primary_provider_for_test())
+        .observe_completed_application_for_test(receipt.commit_reference())
         .unwrap();
     assert!(
         completed
@@ -134,12 +134,12 @@ fn ordinary_handler_clear_of_absent_field_retains_aspect_absence() {
             .is_none(),
         "a clear that leaves the aspect absent did not move the read"
     );
-    let aspect = clearing
-        .runtime
-        .primary_provider
-        .graph
-        .layout
-        .field_locator("Body", "SourceNotes", "SourceSelection")
+    let aspect = (*(*(*(*clearing
+        .runtime_for_test())
+        .primary_provider_for_test())
+        .graph_for_test())
+        .layout_for_test())
+        .field_locator_for_test("Body", "SourceNotes", "SourceSelection")
         .unwrap()
         .aspect()
         .aspect_key();
@@ -161,12 +161,12 @@ fn ordinary_handler_clear_of_absent_field_retains_aspect_absence() {
     let request = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
     clearing
         .with_application_advancement(&request, |phase| {
-            let execution = phase.execution_request_for(&clearing.runtime.product_runtime).unwrap();
+            let execution = phase.execution_request_for_for_test(&(*(*clearing.runtime_for_test()).product_runtime_for_test())).unwrap();
             let selected = clearing.on_branch(clearing.current_world()).select(&phase).unwrap();
-            let field = clearing.runtime.primary_provider.graph.layout
-                .field_locator("Body", "SourceNotes", "SourceSelection").unwrap()
+            let field = (*(*(*(*clearing.runtime_for_test()).primary_provider_for_test()).graph_for_test()).layout_for_test())
+                .field_locator_for_test("Body", "SourceNotes", "SourceSelection").unwrap()
                 .field_path().fields()[0].clone();
-            clearing.runtime.primary_provider.graph.with_runtime(&execution, |native| {
+            (*(*(*clearing.runtime_for_test()).primary_provider_for_test()).graph_for_test()).with_runtime(&execution, |native| {
                 let view = native.read_truth()
                     .project_snapshot(selected.application_basis_for_test().snapshot_handle()).unwrap();
                 assert_eq!(view.read_entity_aspect_version(&execution, entity, aspect).unwrap(), Some(revision),

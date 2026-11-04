@@ -56,7 +56,7 @@ fn contract_incompatible_projection_mask_denies_before_result_construction() {
         diagnostic_mask: AspectMask::<DiagnosticMask>::new([CanonicalFieldPath::single(field_key)]),
     };
     let layout = (*context.world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap()
         .layout_for_test();
 

@@ -177,7 +177,7 @@ pub fn add_approver_conflict(
         )
         .unwrap();
     let graph = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap();
     let relation_kind = (*graph
         .layout_for_test()

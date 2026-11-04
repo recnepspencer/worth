@@ -231,7 +231,7 @@ pub fn real_terminal_session<'run>(
 ) -> worth_query_execution::facade::domain_computation::WorthQuerySessionBoundReadsAndEffects<'run>
 {
     running
-        .admit_provider_execution_plan(world.application.runtime.primary_graph_authority())
+        .admit_provider_execution_plan((*world.application.runtime_for_test()).primary_graph_authority_for_test())
         .unwrap()
         .readmit(execution)
         .unwrap()
@@ -286,10 +286,10 @@ pub fn start(
     );
     let WorthQueryApplicationCommitPreparation::Ready(prepared) = prepare_application_commit(
         &phase.borrowed_request_for_test(),
-        WorthQueryApplicationCommitPreparationRequest::new(
+        WorthQueryApplicationCommitPreparationRequest::new_for_test(
             world
                 .application
-                .validate_commit_program_in_advancement(phase, program)
+                .validate_commit_program_in_advancement_for_test(phase, program)
                 .unwrap_or_else(|outcome| panic!("fixture admission: {outcome:?}")),
             idempotency,
             None,

@@ -12,11 +12,11 @@ fn unwind_after_performed_publication_preserves_one_exact_retriable_record() {
             world.selected_product(&(phase).test_host_request_for_test())
         })
         .expect("the fixture read owns its installed host call");
-    let _live = world
+    let _live = (*(*world
         .application
-        .runtime
-        .primary_provider
-        .observe_application_commit_causality(selected.product());
+        .runtime_for_test())
+        .primary_provider_for_test())
+        .observe_application_commit_causality_for_test(selected.product());
     let request = live_scope();
     let principal = world
         .application
@@ -82,10 +82,10 @@ fn unwind_after_performed_publication_preserves_one_exact_retriable_record() {
         "the post-Performed unwind must occur exactly once"
     );
     assert_eq!(
-        world
+        (*(*world
             .application
-            .runtime
-            .primary_provider
+            .runtime_for_test())
+            .primary_provider_for_test())
             .pending_application_publication_count_for_test(),
         0,
         "the internal exact retry must retire the recovered slot"
@@ -116,19 +116,19 @@ fn unwind_after_performed_publication_preserves_one_exact_retriable_record() {
     assert!(recovered.is_same_authoritative_commit(&first_receipt));
     assert_eq!(recovered.emitted_effect_count(), 1);
     assert_eq!(
-        world
+        (*(*world
             .application
-            .runtime
-            .primary_provider
+            .runtime_for_test())
+            .primary_provider_for_test())
             .pending_application_publication_count_for_test(),
         0,
         "terminal recovery must disarm and retire the exact slot"
     );
-    let emissions = world
+    let emissions = (*(*world
         .application
-        .runtime
-        .primary_provider
-        .committed_application_emissions(recovered.committed_product_publication());
+        .runtime_for_test())
+        .primary_provider_for_test())
+        .committed_application_emissions_for_test(recovered.committed_product_publication());
     assert_eq!(emissions.len(), 1);
     assert_eq!(
         emissions[0]

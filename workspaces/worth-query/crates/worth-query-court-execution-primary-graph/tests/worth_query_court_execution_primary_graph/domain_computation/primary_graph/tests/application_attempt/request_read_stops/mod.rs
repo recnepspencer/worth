@@ -71,11 +71,11 @@ pub fn with_admitted_facts(
     let source = CancellationSource::new();
     let serial = SerialRequest::from_memory(SerialMemoryBudget::new(None), source.token(), None);
     let execution = ExecutionRequest::serial(&serial);
-    let outcome = world
+    let outcome = (*(*(*world
         .application
-        .runtime
-        .primary_provider
-        .graph
+        .runtime_for_test())
+        .primary_provider_for_test())
+        .graph_for_test())
         .with_runtime(&execution, |runtime| {
             std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                 body(

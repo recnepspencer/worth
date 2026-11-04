@@ -57,7 +57,7 @@ fn a_source_revision_the_effect_moved_is_kept_and_reported_superseded() {
                 vec![WorthQueryApplicationObservedFact::AbsentField {
                     entity_id: entity,
                     kind: (*(*world.application.runtime_for_test())
-                        .primary_graph()
+                        .primary_graph_for_test()
                         .unwrap()
                         .layout_for_test())
                     .entity_kind_for_test(AccountIdentity::reference().entity())
@@ -144,7 +144,7 @@ fn unavailable_native_revision_never_authorizes_output_reuse() {
                 vec![WorthQueryApplicationObservedFact::AbsentField {
                     entity_id: entity,
                     kind: (*(*world.application.runtime_for_test())
-                        .primary_graph()
+                        .primary_graph_for_test()
                         .unwrap()
                         .layout_for_test())
                     .entity_kind_for_test(AccountIdentity::reference().entity())
@@ -186,7 +186,7 @@ pub fn account_note(
         .entity_id_for_test();
     let note = AccountNote::reference();
     let locator = (*(*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap()
         .layout_for_test())
     .field_locator_for_test(note.entity(), note.aspect(), note.field())
@@ -235,7 +235,7 @@ pub fn output_selection(
 ) -> OutputDependencySelection {
     let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
     (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap()
         .integration_handle_for_test()
         .with_runtime(execution, |runtime| {
@@ -258,7 +258,7 @@ pub fn currentness(
 ) -> Result<FactMovement, WorthQuerySourceCurrentnessFailure> {
     let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
     (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap()
         .integration_handle_for_test()
         .with_runtime(execution, |runtime| {
@@ -305,7 +305,7 @@ pub fn rebase_result_at_current(
     (*world
         .application
         .runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap()
         .integration_handle_for_test()
         .with_runtime(execution, |runtime| {

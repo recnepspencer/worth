@@ -118,11 +118,11 @@ fn handler_predicate_rebases_and_its_codec_compares_against_the_reopened_world()
     let WorthQueryApplicationCommitOutcome::Committed(receipt) = outcome else {
         panic!("the indexed handler publishes through the production commit lane: {outcome:?}");
     };
-    let facts = world
+    let facts = (*(*(*world
         .application
-        .runtime
-        .primary_provider
-        .graph
+        .runtime_for_test())
+        .primary_provider_for_test())
+        .graph_for_test())
         .output_lineage
         .lock()
         .unwrap()
@@ -227,10 +227,10 @@ pub fn selection(
             application.product_runtime().default_branch_for_test(),
         )
         .unwrap();
-    application
-        .runtime
-        .primary_provider
-        .graph
+    (*(*(*application
+        .runtime_for_test())
+        .primary_provider_for_test())
+        .graph_for_test())
         .with_runtime(execution, |runtime| {
             compare_retained_output_dependencies(
                 execution,
@@ -252,7 +252,7 @@ pub fn change_status(
 ) {
     let field = AccountStatus::reference();
     let locator = (*(*application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap()
         .layout_for_test())
     .field_locator_for_test(field.entity(), field.aspect(), field.field())

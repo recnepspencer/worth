@@ -135,7 +135,7 @@ fn optional_owner_removal_and_insertion_refresh_at_the_real_current_product() {
                     .0,
                 Some(owner)
             );
-            let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+            let graph = (*world.application.runtime_for_test()).primary_graph_for_test().unwrap();
             let kind = (*(*graph
                 .layout_for_test())
                 .relation(AccountOwner::reference().name())

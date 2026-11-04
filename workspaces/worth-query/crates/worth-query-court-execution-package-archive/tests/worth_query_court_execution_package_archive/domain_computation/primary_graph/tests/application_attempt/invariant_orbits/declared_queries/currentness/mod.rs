@@ -18,7 +18,7 @@ fn retained_query_aggregate_identity_is_not_hidden_by_its_walk_companion() {
         worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::declared_queries::read::run(&world, Orbit::reference(), 3),
     ];
     let bodies = results.each_ref().map(|result| {
-        let layout = (*world.application.runtime_for_test()).primary_graph().unwrap().layout_for_test();
+        let layout = (*world.application.runtime_for_test()).primary_graph_for_test().unwrap().layout_for_test();
         let facts = result.result_set_observation().source().retained_checkpoint_facts_for_test(layout, Some(&request), Allocation::SystemAllocation).unwrap();
         let aggregate = facts.iter().find_map(|fact| match fact { WorthQueryApplicationObservedFact::Aggregate { observation } => Some(Arc::clone(observation)), _ => None }).unwrap();
         let walk = facts.iter().find_map(|fact| match fact { WorthQueryApplicationObservedFact::StructuralWalk { observation } => Some(Arc::clone(observation)), _ => None }).unwrap();

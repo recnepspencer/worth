@@ -149,12 +149,12 @@ fn installed_program_denies_raw_commit_for_an_unlisted_operation() {
         true,
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
-    assert!(!world
+    assert!(!(*world
         .application
-        .program_required_operations
-        .contains(&TypeId::of::<TouchAccountOperation>()));
-    world.application.program_support = Some(installed_program_support(
-        &world.application.installed_schema,
+        .program_required_operations_for_test())
+        .contains(&TypeId::of_for_test::<TouchAccountOperation>()));
+    (*world.application.program_support_mut_for_test()) = Some(installed_program_support(
+        &(*world.application.installed_schema_for_test()),
     ));
     let request = live_scope();
     let principal = world
@@ -237,8 +237,8 @@ fn installed_program_denies_raw_commit_for_an_unlisted_operation() {
 fn program_output_producer_names_an_operation_not_installed_as_conditional() {
     {
         let mut world = installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
-        world.application.program_support = Some(installed_program_support(
-            &world.application.installed_schema,
+        (*world.application.program_support_mut_for_test()) = Some(installed_program_support(
+            &(*world.application.installed_schema_for_test()),
         ));
         let request = live_scope();
         let principal = world

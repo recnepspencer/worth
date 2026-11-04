@@ -249,7 +249,7 @@ fn changed_member_token_for_same_entity_refreshes_entry_and_duplicate_members_fa
                     .unwrap()
                     .unwrap()
             ));
-            let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+            let graph = (*world.application.runtime_for_test()).primary_graph_for_test().unwrap();
             let tag_field = AccountMembershipTag::reference();
             let tag_locator = (*graph
                 .layout_for_test())

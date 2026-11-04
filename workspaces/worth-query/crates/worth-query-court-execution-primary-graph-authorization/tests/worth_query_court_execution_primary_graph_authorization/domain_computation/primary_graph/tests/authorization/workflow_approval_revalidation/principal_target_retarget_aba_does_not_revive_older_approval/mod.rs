@@ -32,7 +32,7 @@ fn principal_target_retarget_aba_does_not_revive_older_approval() {
         })
         .expect("the fixture envelope owns its installed host call");
     let binding = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap()
         .layout_for_test()
         .principal_binding_for_test(world.binding.binding())

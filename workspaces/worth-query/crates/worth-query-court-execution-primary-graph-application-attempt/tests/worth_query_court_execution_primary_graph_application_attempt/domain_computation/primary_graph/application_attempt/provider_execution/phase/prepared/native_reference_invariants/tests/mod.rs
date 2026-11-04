@@ -42,7 +42,7 @@ fn native_output_reference_selects_endpoint_while_ordinary_relations_do_not() {
         false,
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
-    let layout = &world.application.runtime.primary_provider.graph.layout;
+    let layout = &(*(*(*(*world.application.runtime_for_test()).primary_provider_for_test()).graph_for_test()).layout_for_test());
     let transition = CreatedEntityRef {
         partition_id: PartitionId(1),
         kind_id: (*(*layout.workflow().transition_for_test()).entity_kind_for_test()),
@@ -89,7 +89,7 @@ fn native_reference_without_matching_output_entry_is_refused() {
         false,
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
-    let layout = &world.application.runtime.primary_provider.graph.layout;
+    let layout = &(*(*(*(*world.application.runtime_for_test()).primary_provider_for_test()).graph_for_test()).layout_for_test());
     let entry = EntityReference::Created(CreatedEntityRef {
         partition_id: PartitionId(1),
         kind_id: (*layout.workflow().operation_output.entity_kind_for_test()),

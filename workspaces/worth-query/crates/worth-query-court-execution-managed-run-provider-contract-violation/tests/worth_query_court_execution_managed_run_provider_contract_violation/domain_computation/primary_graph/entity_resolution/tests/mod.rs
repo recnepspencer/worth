@@ -21,8 +21,8 @@ fn equal_version_snapshot_from_another_relational_runtime_is_rejected() {
         true,
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
-    let first_graph = first.application.runtime.primary_graph().unwrap();
-    let second_graph = second.application.runtime.primary_graph().unwrap();
+    let first_graph = (*first.application.runtime_for_test()).primary_graph_for_test().unwrap();
+    let second_graph = (*second.application.runtime_for_test()).primary_graph_for_test().unwrap();
     let installed = first_graph.retain_entity_resolution_context();
     let first_version = first
         .application
@@ -112,7 +112,7 @@ fn rebuilt_index_generation_preserves_stable_entity_meaning() {
                 )
                 .unwrap();
             let graph = (*world.application.runtime_for_test())
-                .primary_graph()
+                .primary_graph_for_test()
                 .unwrap();
             let installed = graph.retain_entity_resolution_context();
             let selected = world.selected_product(
@@ -168,7 +168,7 @@ fn installed_context_derives_binding_layout_and_index_from_its_graph() {
         true,
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
-    let graph = world.application.runtime.primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test()).primary_graph_for_test().unwrap();
     let installed = graph.retain_entity_resolution_context();
     world.application.with_host_advancement(|phase| {
 let host_custody = phase.test_host_request_for_test();

@@ -107,7 +107,7 @@ fn five_admitted_envelopes_publish_original_json_and_keep_payer_until_last_nativ
             let selected = world.selected_product(&host);
             let (_, product, _) = selected.into_parts_for_test();
             let basis = product.relational_basis_for_test();
-            let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+            let graph = (*world.application.runtime_for_test()).primary_graph_for_test().unwrap();
             let handle = graph.integration_handle_for_test();
             let retained_layout = graph.layout_for_test();
             let layout = retained_layout.workflow();
@@ -165,7 +165,7 @@ fn five_admitted_envelopes_publish_original_json_and_keep_payer_until_last_nativ
             let handle = (*world
                 .application
                 .runtime_for_test())
-                .primary_graph()
+                .primary_graph_for_test()
                 .unwrap()
                 .integration_handle_for_test();
             let prepared = prepare_relational_mutation_on_application(
@@ -273,7 +273,7 @@ fn original_cancellation_reaches_query_native_receiving_before_any_dictionary_or
         let (_, product, _) = selected.into_parts_for_test();
         let basis = product.relational_basis_for_test();
         let observer = host.borrowed_request_for_test();
-        let handle = (*world.application.runtime_for_test()).primary_graph().unwrap().integration_handle_for_test();
+        let handle = (*world.application.runtime_for_test()).primary_graph_for_test().unwrap().integration_handle_for_test();
         // Open the real receiver while live. Cancellation occurs inside, with
         // no intervening outer with_runtime check or new callback/test control.
         handle.with_runtime_mut_for_test(&execution, |runtime| {
@@ -302,10 +302,10 @@ fn original_cancellation_reaches_query_native_receiving_before_any_dictionary_or
             // it does not reset the cancelled request or manufacture admission.
             let admitted_text = WorkflowApprovalFieldText::admit_for_test(runtime, &observer, basis, &meaning).unwrap();
             let fields = workflow_approval_fields(
-                (*world.application.runtime_for_test()).primary_graph().unwrap().layout_for_test().workflow(),
+                (*world.application.runtime_for_test()).primary_graph_for_test().unwrap().layout_for_test().workflow(),
                 &meaning, basis, &admitted_text,
             ).unwrap();
-            assert!(locators((*world.application.runtime_for_test()).primary_graph().unwrap().layout_for_test().workflow()).iter().all(|locator| {
+            assert!(locators((*world.application.runtime_for_test()).primary_graph_for_test().unwrap().layout_for_test().workflow()).iter().all(|locator| {
                 matches!(fields.get(*locator), Some(AspectValue::String(InternedString::Symbol(_))))
             }));
         });

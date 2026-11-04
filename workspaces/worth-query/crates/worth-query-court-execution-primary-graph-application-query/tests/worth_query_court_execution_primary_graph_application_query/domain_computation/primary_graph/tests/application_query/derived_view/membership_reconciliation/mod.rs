@@ -194,7 +194,7 @@ fn certified_membership_changes_retain_clean_arcs_and_read_only_new_or_dirty_ent
             .get(&key)
             .unwrap()
             .unwrap();
-        let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+        let graph = (*world.application.runtime_for_test()).primary_graph_for_test().unwrap();
         let (tag_locator, label_locator) = crate::domain_computation::primary_graph::tests::application_query::derived_view::membership_reconciliation::collection_locators::membership_and_label(&world);
         let change =
             |before: &WorthQueryProductBranchLease, locator: &AspectFieldLocator, value: &str| {

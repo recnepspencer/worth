@@ -16,11 +16,11 @@ fn external_receipt_clones_do_not_pin_an_evicted_historical_basis() {
                 )
             })
             .expect("the fixture read owns its installed host call");
-        let _live = world
+        let _live = (*(*world
             .application
-            .runtime
-            .primary_provider
-            .observe_application_commit_causality(selected.product());
+            .runtime_for_test())
+            .primary_provider_for_test())
+            .observe_application_commit_causality_for_test(selected.product());
         let request = live_scope();
         let principal = world
             .application
@@ -130,11 +130,11 @@ fn external_receipt_clones_do_not_pin_an_evicted_historical_basis() {
             current_status = replacement;
         }
         assert!(
-            world
+            (*(*world
                 .application
-                .runtime
-                .primary_provider
-                .committed_application_emissions(original.committed_product_publication())
+                .runtime_for_test())
+                .primary_provider_for_test())
+                .committed_application_emissions_for_test(original.committed_product_publication())
                 .is_empty(),
             "the first batch must be absent from the bounded live source"
         );
@@ -156,10 +156,10 @@ fn external_receipt_clones_do_not_pin_an_evicted_historical_basis() {
         assert_eq!(recovered.emitted_effect_count(), 1);
         let external_recovered_clone = recovered.clone();
         assert_eq!(
-            world
+            (*(*world
                 .application
-                .runtime
-                .primary_provider
+                .runtime_for_test())
+                .primary_provider_for_test())
                 .retained_receipt_basis_count(),
             64,
             "completed evidence must not grow the bounded receipt-basis owner"

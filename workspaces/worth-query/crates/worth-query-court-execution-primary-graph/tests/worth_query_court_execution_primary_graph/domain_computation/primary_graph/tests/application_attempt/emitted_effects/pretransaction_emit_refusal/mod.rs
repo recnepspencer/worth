@@ -54,11 +54,11 @@ fn rejection_before_transaction_publishes_no_emit_causality() {
         "rejected transaction claimed commit: {outcome:?}"
     );
     assert_eq!(
-        world
+        (*(*world
             .application
-            .runtime
-            .primary_provider
-            .published_application_commit_count(),
+            .runtime_for_test())
+            .primary_provider_for_test())
+            .published_application_commit_count_for_test(),
         0
     );
 }

@@ -140,7 +140,7 @@ pub fn with_genuine_native_observation<T>(
         .unwrap()
         .causal_observation_for_test()
         .unwrap();
-    let owner = runtime.runtime.bridge.conditional();
+    let owner = (*(*runtime.runtime_for_test()).bridge_for_test()).conditional();
     inspect(&owner, observation)
 }
 

@@ -104,10 +104,10 @@ fn world_unwind_retains_and_releases_the_exact_query_idempotency_slot() {
         "only the unwind guard inspects its exact World recovery identity",
     );
     assert_eq!(
-        world
+        (*(*world
             .application
-            .runtime
-            .primary_provider
+            .runtime_for_test())
+            .primary_provider_for_test())
             .unpublished_idempotency_count(),
         1,
     );
@@ -141,10 +141,10 @@ fn world_unwind_retains_and_releases_the_exact_query_idempotency_slot() {
         .unwrap();
     assert_eq!(receipt.retired_component_count(), 0);
     assert_eq!(
-        world
+        (*(*world
             .application
-            .runtime
-            .primary_provider
+            .runtime_for_test())
+            .primary_provider_for_test())
             .unpublished_idempotency_count(),
         0,
         "cleanup releases Query's exact recovery-indexed slot",

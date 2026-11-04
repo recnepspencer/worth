@@ -12,7 +12,7 @@ fn successor_read_keeps_cancellation_at_the_native_frontier() {
             let host = phase.test_host_request_for_test();
             let execution = host.borrowed_request_for_test();
             let selected = world.selected_product(&host);
-            let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+            let graph = (*world.application.runtime_for_test()).primary_graph_for_test().unwrap();
             let request = worth_execution::CancellationSource::new();
             let serial = worth_execution::SerialRequest::from_memory(worth_execution::SerialMemoryBudget::new(None), request.token(), None);
             let cancelled = worth_execution::ExecutionRequest::serial(&serial);

@@ -168,7 +168,7 @@ fn root_path_guard_reads_its_pinned_truth_version() {
         })
         .expect("the fixture read owns its installed host call");
     let graph = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap();
     let unavailable = WorthQueryApplicationObservedFact::SourceFieldRevision {
         entity_id: (*guard.entity_for_test()),

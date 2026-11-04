@@ -42,26 +42,26 @@ fn later_commit_recovery_selects_exact_evidence_and_rejects_foreign_reference_ax
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let first_account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let later_account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "unrelated", &request)
+            resolved_account(&(phase).test_host_request_for_test(), &world, "unrelated", &request)
         })
         .expect("the fixture read owns its installed host call");
     let first = world
         .application
         .with_host_advancement(|phase| {
             retained_status_program(
-                &(phase).test_host_request(),
+                &(phase).test_host_request_for_test(),
                 &world,
                 &principal,
                 &first_account,
@@ -88,7 +88,7 @@ fn later_commit_recovery_selects_exact_evidence_and_rejects_foreign_reference_ax
         .application
         .with_host_advancement(|phase| {
             retained_status_program(
-                &(phase).test_host_request(),
+                &(phase).test_host_request_for_test(),
                 &world,
                 &principal,
                 &later_account,
@@ -102,7 +102,7 @@ fn later_commit_recovery_selects_exact_evidence_and_rejects_foreign_reference_ax
         .application
         .with_host_advancement(|phase| {
             retained_status_program(
-                &(phase).test_host_request(),
+                &(phase).test_host_request_for_test(),
                 &world,
                 &principal,
                 &later_account,
@@ -143,10 +143,10 @@ fn later_commit_recovery_selects_exact_evidence_and_rejects_foreign_reference_ax
     foreign_parents.parents.push(foreign_parents.commit_id);
     for foreign in [foreign_version, foreign_branch, foreign_parents] {
         assert!(
-            world
+            (*(*world
                 .application
-                .runtime.primary_provider
-                .observe_completed_application(&foreign)
+                .runtime_for_test()).primary_provider_for_test())
+                .observe_completed_application_for_test(&foreign)
                 .is_none(),
             "equal CommitId with any foreign RelationalCommitReceipt axis must not observe evidence"
         );

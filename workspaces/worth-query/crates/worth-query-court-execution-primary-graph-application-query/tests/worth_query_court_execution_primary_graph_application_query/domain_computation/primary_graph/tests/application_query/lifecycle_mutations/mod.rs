@@ -21,7 +21,7 @@ pub fn disable_mapping(
     mapping_id: EntityId,
 ) {
     let graph = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .expect("test world publishes a primary graph");
     let layout = (*graph.layout_for_test())
         .principal_binding_for_test(world.binding.binding())
@@ -53,7 +53,7 @@ pub fn revoke_account_ownership(
     account: EntityId,
 ) {
     let graph = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .expect("test world publishes a primary graph");
     let relation_kind = (*(*graph.layout_for_test())
         .relation(AccountOwner::reference().name())

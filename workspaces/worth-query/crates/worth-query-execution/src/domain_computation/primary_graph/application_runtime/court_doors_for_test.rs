@@ -78,3 +78,10 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         &mut self.mutation_handlers
     }
 }
+
+impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    #[doc(hidden)]
+    pub fn runtime_mut_for_test(&mut self) -> &mut WorthQueryApplicationRuntimeCore {
+        &mut self.runtime
+    }
+}

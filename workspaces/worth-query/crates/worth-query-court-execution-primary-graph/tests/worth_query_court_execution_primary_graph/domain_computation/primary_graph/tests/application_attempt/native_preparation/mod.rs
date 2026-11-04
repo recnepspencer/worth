@@ -88,11 +88,11 @@ fn native_preparation_cancellation_leaves_head_and_key_available_for_fresh_retry
         })
         .expect("the fixture read owns its installed host call");
     assert_eq!(
-        world
+        (*(*world
             .application
-            .runtime
-            .primary_provider
-            .published_application_commit_count(),
+            .runtime_for_test())
+            .primary_provider_for_test())
+            .published_application_commit_count_for_test(),
         0
     );
     let fresh = live_scope();
@@ -137,11 +137,11 @@ fn native_preparation_cancellation_leaves_head_and_key_available_for_fresh_retry
         "the cancelled preparation must not consume its idempotency key: {outcome:?}"
     );
     assert_eq!(
-        world
+        (*(*world
             .application
-            .runtime
-            .primary_provider
-            .published_application_commit_count(),
+            .runtime_for_test())
+            .primary_provider_for_test())
+            .published_application_commit_count_for_test(),
         1
     );
     let landed = world

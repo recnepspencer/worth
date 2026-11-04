@@ -14,7 +14,7 @@ fn producer_decision_absence_uses_native_presence_revision() {
     let fact = WorthQueryApplicationObservedFact::AbsentField {
         entity_id: entity,
         kind: (*(*world.application.runtime_for_test())
-            .primary_graph()
+            .primary_graph_for_test()
             .unwrap()
             .layout_for_test())
         .entity_kind_for_test(AccountIdentity::reference().entity())

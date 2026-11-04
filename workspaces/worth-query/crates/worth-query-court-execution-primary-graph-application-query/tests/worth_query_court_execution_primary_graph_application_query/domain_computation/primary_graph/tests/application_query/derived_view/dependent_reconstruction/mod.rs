@@ -205,7 +205,7 @@ pub fn journey(case: Case) {
 
                     if failure && case == Case::AfterProjection { cancellation.cancel(); }
                     if failure && case == Case::StaleProduct {
-                        let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+                        let graph = (*world.application.runtime_for_test()).primary_graph_for_test().unwrap();
                         let field = AccountLabel::reference();
                         let locator = (*graph.layout_for_test()).field_locator_for_test(field.entity(), field.aspect(), field.field()).unwrap().clone();
                         let prepared = graph.managed_derived_views_for_test().prepare_publication_for_test(

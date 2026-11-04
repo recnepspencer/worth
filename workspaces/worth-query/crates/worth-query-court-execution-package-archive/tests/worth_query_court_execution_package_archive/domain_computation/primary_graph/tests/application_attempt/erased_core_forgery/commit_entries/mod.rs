@@ -39,7 +39,7 @@ fn foreign_installed_seal_is_stale_at_commit_validation_before_work() {
     let _observation =
         worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation::install_on_this_thread();
     let consults = observe_consults_for_test(|_| {});
-    let result = world.application.validate_commit_program(program);
+    let result = world.application.validate_commit_program_for_test(program);
     let Err(WorthQueryApplicationCommitOutcome::Denied(denial)) = result else {
         panic!("foreign seal must refuse at commit validation");
     };
@@ -88,7 +88,7 @@ fn foreign_installed_seal_is_stale_at_commit_validation_in_advancement_before_wo
             let consults = observe_consults_for_test(|_| {});
             let result = world
                 .application
-                .validate_commit_program_in_advancement(&phase, program);
+                .validate_commit_program_in_advancement_for_test(&phase, program);
             let Err(WorthQueryApplicationCommitOutcome::Denied(denial)) = result else {
                 panic!("the in-advancement producer must refuse the foreign seal");
             };

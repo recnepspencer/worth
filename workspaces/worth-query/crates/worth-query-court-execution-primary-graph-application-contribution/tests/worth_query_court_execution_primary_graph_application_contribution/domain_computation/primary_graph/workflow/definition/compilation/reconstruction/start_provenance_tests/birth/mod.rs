@@ -18,7 +18,7 @@ fn birth_subject_provenance_and_start_actor_remain_readable() {
     let payer = payer();
     let execution = ExecutionRequest::leased(&payer);
     let graph = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap();
     let layout = (*graph.layout_for_test()).workflow().clone();
     let (_, product, _lease) = world

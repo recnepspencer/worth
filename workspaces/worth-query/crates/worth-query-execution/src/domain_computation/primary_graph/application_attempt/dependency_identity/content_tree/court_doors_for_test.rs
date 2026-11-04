@@ -10,3 +10,10 @@ impl CompletedFactRoutes {
         Self::from_facts(body, control)
     }
 }
+
+impl CompletedFactRoutes {
+    #[doc(hidden)]
+    pub fn matches_body_for_test(&self, body: &FactPayload) -> bool {
+        Self::matches_body(self, body)
+    }
+}

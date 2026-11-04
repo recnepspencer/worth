@@ -46,10 +46,10 @@ fn second_real_overlay_is_rejected_without_orphaning_the_first_overlay() {
             );
             let prepared = prepare_application_commit(
                 &phase.borrowed_request_for_test(),
-                WorthQueryApplicationCommitPreparationRequest::new(
+                WorthQueryApplicationCommitPreparationRequest::new_for_test(
                     world
                         .application
-                        .validate_commit_program_in_advancement(phase, program)
+                        .validate_commit_program_in_advancement_for_test(phase, program)
                         .unwrap_or_else(|outcome| panic!("fixture admission: {outcome:?}")),
                     idempotency(185, 186),
                     None,
@@ -65,7 +65,7 @@ fn second_real_overlay_is_rejected_without_orphaning_the_first_overlay() {
             let admitted_session = admit_provider_session(
                 execution,
                 &mut running,
-                world.application.runtime.primary_graph_authority(),
+                (*world.application.runtime_for_test()).primary_graph_authority_for_test(),
                 attempt_basis.retained_product(),
                 mutation_run,
             )
@@ -75,8 +75,8 @@ fn second_real_overlay_is_rejected_without_orphaning_the_first_overlay() {
                     &mut authorization,
                     provider_attempt,
                     attempt_basis,
-                    WorthQueryProviderAttemptRegistrationContext::new(
-                        &world.application.runtime.primary_provider,
+                    WorthQueryProviderAttemptRegistrationContext::new_for_test(
+                        &(*(*world.application.runtime_for_test()).primary_provider_for_test()),
                         &admission,
                         idempotency,
                         outcome_identity,

@@ -143,7 +143,7 @@ fn reentrant_host_open_is_typed_at_serial_and_leased_placements() {
                 assert!(matches!(
                     charged_request(
                         phase
-                            .execution_request_for(&world.application.runtime.product_runtime)
+                            .execution_request_for_for_test(&(*(*world.application.runtime_for_test()).product_runtime_for_test()))
                             .expect("the issuer accepts its own phase"),
                         1
                     ),

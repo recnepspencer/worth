@@ -187,3 +187,22 @@ impl WorthQueryApplicationProjectedRelation {
         }
     }
 }
+
+impl WorthQueryApplicationProjectedField {
+    #[doc(hidden)]
+    pub fn new_for_test(
+        result_path: Arc<str>,
+        slot_type: Arc<str>,
+        slot_key: Arc<ApplicationQueryResultSlotKey>,
+        content: Option<worth_relational::facade::content::RelationalContentFrame>,
+        value: AspectValue,
+    ) -> Self {
+        Self {
+            result_path,
+            slot_type,
+            slot_key,
+            content,
+            value,
+        }
+    }
+}

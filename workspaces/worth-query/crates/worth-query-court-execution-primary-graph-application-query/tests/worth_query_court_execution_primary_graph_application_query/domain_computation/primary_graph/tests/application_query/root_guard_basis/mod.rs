@@ -135,7 +135,7 @@ fn empty_indexed_root_set_stales_when_its_scoped_guard_becomes_a_match() {
         })
         .expect("the fixture read owns its installed host call");
     let graph = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap();
     world
         .application
@@ -255,7 +255,7 @@ pub fn change_account_status(
     status: &str,
 ) {
     let graph = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap();
     let field = AccountStatus::reference();
     let locator = (*graph.layout_for_test())

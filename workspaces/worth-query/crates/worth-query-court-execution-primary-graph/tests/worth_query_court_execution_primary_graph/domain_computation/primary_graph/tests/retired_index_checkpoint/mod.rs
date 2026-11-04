@@ -149,7 +149,7 @@ pub fn persist_as_the_retired_code_did(
     world: &IdentityWorld,
 ) -> DerivedIndexId {
     let graph = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap();
     let correlation = (*graph.layout_for_test())
         .provider_inbound_completion()
@@ -189,7 +189,7 @@ pub fn assert_retired_index_is_inert(
     retired: DerivedIndexId,
 ) {
     let graph = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap();
     let handle = graph.integration_handle_for_test();
     assert!(!(*handle.primary_index_ids_for_test()).contains(&retired));
@@ -231,7 +231,7 @@ pub fn set_principal_identity(
     identity: u64,
 ) {
     let graph = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap();
     let locator = (*(*graph.layout_for_test())
         .principal_binding_for_test(world.binding.binding())
@@ -259,7 +259,7 @@ pub fn with_runtime<T>(
     read: impl FnOnce(&RelationalRuntime) -> T,
 ) -> T {
     let graph = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap();
     graph
         .integration_handle_for_test()

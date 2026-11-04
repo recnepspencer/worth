@@ -14,7 +14,7 @@ pub fn body<Q>(
     request: &WorthQueryRequestScope,
 ) -> Arc<ComponentSelection> {
     let layout = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap()
         .layout_for_test();
     let facts = source

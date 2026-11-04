@@ -86,7 +86,7 @@ fn fresh_native_retirement_descriptions_do_not_issue_original_output_authority()
         )
         .expect("actual opaque native checkpoint freshly installs");
         fresh.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request_for_test(); let borrowed_execution = phase.borrowed_request_for_test(); let execution = &borrowed_execution;        let selected = fresh.selected_product(&host_custody);
-        let graph = (*fresh.application.runtime_for_test()).primary_graph().unwrap();
+        let graph = (*fresh.application.runtime_for_test()).primary_graph_for_test().unwrap();
         let handle = graph.integration_handle_for_test();
         handle.with_runtime(&borrowed_execution, |runtime| {
         let snapshot = selected.application_basis_for_test().snapshot_handle();

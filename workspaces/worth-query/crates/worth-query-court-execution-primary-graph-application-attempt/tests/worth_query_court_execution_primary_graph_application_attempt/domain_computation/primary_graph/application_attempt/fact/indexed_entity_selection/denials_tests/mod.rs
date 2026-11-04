@@ -25,7 +25,7 @@ fn indexed_reobservation_preserves_native_request_and_lookup_denials() {
         })
         .expect("the fixture read owns its installed host call");
     let graph = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap();
     let field = AccountNote::reference();
     let locator = (*graph.layout_for_test())

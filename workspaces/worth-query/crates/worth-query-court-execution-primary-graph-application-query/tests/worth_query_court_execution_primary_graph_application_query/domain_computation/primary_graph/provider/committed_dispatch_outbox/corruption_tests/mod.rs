@@ -80,7 +80,7 @@ fn a_committed_record_of_another_kind_denies_before_projection() {
         true,
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
-    let provider = &world.application.runtime.primary_provider;
+    let provider = &(*(*world.application.runtime_for_test()).primary_provider_for_test());
     let record = record();
     let (binding, commit, runtime_id) = (*provider.graph_for_test()).with_runtime_mut_for_test(execution, |runtime| {
         let (outbox_intent, pending) = bind_dispatch_outbox_create_intent(
@@ -153,7 +153,7 @@ fn a_deleted_record_is_non_visible_at_the_requested_commit_without_binding_fallb
         true,
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
-    let provider = &world.application.runtime.primary_provider;
+    let provider = &(*(*world.application.runtime_for_test()).primary_provider_for_test());
     let record = record();
     let (binding, deletion_commit, runtime_id) = (*provider.graph_for_test()).with_runtime_mut_for_test(execution, |runtime| {
         let (intent, pending) = bind_dispatch_outbox_create_intent(
@@ -234,7 +234,7 @@ pub fn committed_substituted_row(
         true,
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
-    let provider = world.application.runtime.primary_provider.clone();
+    let provider = (*(*world.application.runtime_for_test()).primary_provider_for_test()).clone();
     let record = record();
     let layout = (*(*provider.graph_for_test()).layout_for_test())
         .provider_dispatch_outbox_for_test()

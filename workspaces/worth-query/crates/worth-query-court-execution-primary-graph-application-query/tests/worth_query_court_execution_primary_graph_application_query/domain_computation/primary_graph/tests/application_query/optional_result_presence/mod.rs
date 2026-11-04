@@ -88,7 +88,7 @@ fn absent_optional_source_stays_current_across_sibling_edit_but_not_presence_cha
         .expect("the fixture read owns its installed host call");
 
     let graph = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap();
     let label = AccountLabel::reference();
     let label_locator = (*graph.layout_for_test())
@@ -167,7 +167,7 @@ pub fn current(
 ) -> bool {
     let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
     let graph = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap();
     graph
         .integration_handle_for_test()

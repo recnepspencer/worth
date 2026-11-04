@@ -6,7 +6,7 @@ pub fn membership_and_label(
     world: &AuthorizationWorld,
 ) -> (AspectFieldLocator, AspectFieldLocator) {
     let graph = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap();
     let tag_field = AccountMembershipTag::reference();
     let tag_locator = (*graph.layout_for_test())

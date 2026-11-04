@@ -43,7 +43,7 @@ pub fn elevation_status(
         .unwrap();
     let field = CapabilityElevationStatusField::reference();
     let locator = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap()
         .layout_for_test()
         .field_locator_for_test(field.entity(), field.aspect(), field.field())
@@ -67,7 +67,7 @@ pub fn review_status(
     let (review, kind) = resolved_review(phase_custody, execution, world);
     let field = CapabilityReviewStatusField::reference();
     let locator = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap()
         .layout_for_test()
         .field_locator_for_test(field.entity(), field.aspect(), field.field())
@@ -85,7 +85,7 @@ pub fn has_exact_reviewer(
 ) -> bool {
     let (review, _) = resolved_review(phase_custody, execution, world);
     let graph = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap();
     let relation_kind = (*graph
         .layout_for_test()
@@ -142,7 +142,7 @@ pub fn has_exact_approver(
         )
         .unwrap();
     let graph = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap();
     let relation_kind = (*graph
         .layout_for_test()
@@ -213,7 +213,7 @@ pub fn observed_field<Schema>(
 where
     Schema: worth_query_installation::facade::ApplicationSchema,
 {
-    let graph = (*runtime.runtime_for_test()).primary_graph().unwrap();
+    let graph = (*runtime.runtime_for_test()).primary_graph_for_test().unwrap();
     let selected = runtime
         .select_product_branch_for_test(
             execution,

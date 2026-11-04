@@ -14,9 +14,9 @@ pub fn refuse_mixed_and_created_subset(
 ) {
     let scope = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
     runtime.with_application_advancement(&scope, |phase| {
-        let execution = phase.execution_request_for(&runtime.runtime.product_runtime).unwrap();
-        let (_, product, _application_basis) = runtime.on_branch(runtime.current_world()).select(&phase).unwrap().into_parts();
-        let graph = &runtime.runtime.primary_provider.graph;
+        let execution = phase.execution_request_for_for_test(&(*(*runtime.runtime_for_test()).product_runtime_for_test())).unwrap();
+        let (_, product, _application_basis) = runtime.on_branch(runtime.current_world()).select(&phase).unwrap().into_parts_for_test();
+        let graph = &(*(*(*runtime.runtime_for_test()).primary_provider_for_test()).graph_for_test());
         let publisher = graph.application_publication.as_ref().expect("actual installed publication owner");
         let roles: Vec<_> = settled.output_correspondence.native_witness_roles_for_test().map(|(role, posture, name, entity)| RequiredOutputRoleTarget {
             role: role.to_owned(), entity_name: name.to_owned(), kind: (*graph.layout_for_test()).entity_kind_for_test(name).unwrap(),
@@ -30,7 +30,7 @@ pub fn refuse_mixed_and_created_subset(
         let anchor = roles.iter().find(|role| role.posture == RequiredOutputRolePosture::Preserve).unwrap();
         let EntityReference::Existing(anchor) = anchor.target else { unreachable!() };
         let lineage = graph.output_lineage.lock().unwrap();
-        let source = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::semantic_source::SemanticSource::new_for_test((*runtime.runtime_for_test()).authority_identity().as_u64(), runtime.installed_schema().binding_identity(), WorthQueryOperationScopeEntityBinding::from_entity_for_test(anchor), lineage.binding_identity_for_test(worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId::of_for_test::<RegionOutputBinding<OwnerSchema>>()).unwrap());
+        let source = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::semantic_source::SemanticSource::new_for_test((*runtime.runtime_for_test()).authority_identity_for_test().as_u64(), runtime.installed_schema().binding_identity(), WorthQueryOperationScopeEntityBinding::from_entity_for_test(anchor), lineage.binding_identity_for_test(worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId::of_for_test::<RegionOutputBinding<OwnerSchema>>()).unwrap());
         let coordinate = product.observation_for_test();
         let cells = &(*lineage.by_source_for_test())[&source][&coordinate.lifecycle_incarnation()][&coordinate.reference_generation().get()];
         assert_eq!(cells.len(), 1, "exact initial performed generation has one publication");

@@ -192,7 +192,7 @@ pub fn with_indexed_fact<R>(
         .unwrap();
     let snapshot = selected.application_basis_for_test().snapshot_handle();
     let graph = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap();
     let field = AccountStatus::reference();
     let layout = (*graph.layout_for_test())

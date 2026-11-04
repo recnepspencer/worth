@@ -21,7 +21,7 @@ fn nested_partition_workers_keep_the_member_reentry_refusal() {
     let scope = WorthQueryRequestScope::new(
         None,
         cancellation.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
-    let root = QueryRequestExecution::open(
+    let root = QueryRequestExecution::open_for_test(
         worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Leased {
             authority: test_authority(),
             policy: test_policy(NonZeroUsize::new(4).unwrap(), None),

@@ -83,11 +83,11 @@ fn omitted_work_budget_keeps_live_cancellation_through_native_validation() {
         )
     );
     assert_eq!(
-        world
+        (*(*world
             .application
-            .runtime
-            .primary_provider
-            .published_application_commit_count(),
+            .runtime_for_test())
+            .primary_provider_for_test())
+            .published_application_commit_count_for_test(),
         0
     );
     let fresh = live_scope();

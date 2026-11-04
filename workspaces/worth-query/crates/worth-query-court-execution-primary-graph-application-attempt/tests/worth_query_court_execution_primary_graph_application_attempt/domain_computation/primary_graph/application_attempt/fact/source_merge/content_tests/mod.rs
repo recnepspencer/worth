@@ -16,8 +16,8 @@ fn native_comparison_refusals_keep_literal_attempt_categories_and_causes() {
             (Denial::ContentIdentityConflict, Cause::Content(Rejection::ContentIdentityConflict), Kind::ContentInconsistency),
             (Denial::SizeLimit { observed: 97, maximum: 31 }, Cause::Content(Rejection::SizeLimit { observed: 97, maximum: 31 }), worth_query_execution::facade::domain_computation::WorthQueryApplicationAttemptDenialKind::ExecutionRequest(Session::Content(Rejection::SizeLimit { observed: 97, maximum: 31 }))),
         ] {
-            let actual = StoreDenial::Content(input).into_attempt_denial("comparison");
-            assert_eq!(actual.relational_execution_cause(), Some(cause));
+            let actual = StoreDenial::Content(input).into_attempt_denial_for_test("comparison");
+            assert_eq!(actual.relational_execution_cause_for_test(), Some(cause));
             assert_eq!(actual.kind(), kind);
         }
 }

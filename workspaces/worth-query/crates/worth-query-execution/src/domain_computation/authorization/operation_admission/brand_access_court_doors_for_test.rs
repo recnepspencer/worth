@@ -95,3 +95,12 @@ impl<Schema, Operation, Input, Scope>
         Self::workflow_approval_support_snapshot(self, execution)
     }
 }
+
+impl<Schema, Operation, Input, Scope>
+    WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>
+{
+    #[doc(hidden)]
+    pub fn source_partition_identity_for_test(&self) -> Option<[u8; 32]> {
+        Self::source_partition_identity(self)
+    }
+}

@@ -26,7 +26,7 @@ fn current_output_door_preserves_stops_at_every_consult() {
         })
         .unwrap();
     (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap()
         .integration_handle_for_test()
         .output_lineage

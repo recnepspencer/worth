@@ -17,7 +17,7 @@ pub fn owner_path_fixture() -> (
             let phase_custody = &phase.test_host_request_for_test();
 
             let borrowed_execution = phase
-                .execution_request_for(&world.application.runtime.product_runtime)
+                .execution_request_for_for_test(&(*(*world.application.runtime_for_test()).product_runtime_for_test()))
                 .expect("fixture borrows its runtime request");
             let execution = &borrowed_execution;
 
@@ -42,10 +42,10 @@ pub fn owner_path_fixture() -> (
         })
         .expect("the fixture read owns its installed host call");
     let field = AccountStatus::reference();
-    let graph = world.application.runtime.primary_provider.graph.clone();
-    let locator = graph
-        .layout
-        .field_locator(field.entity(), field.aspect(), field.field())
+    let graph = (*(*(*world.application.runtime_for_test()).primary_provider_for_test()).graph_for_test()).clone();
+    let locator = (*graph
+        .layout_for_test())
+        .field_locator_for_test(field.entity(), field.aspect(), field.field())
         .unwrap()
         .clone();
     let operation = world
@@ -87,7 +87,7 @@ pub fn owner_path_fixture() -> (
         .application
         .with_host_advancement(|phase| {
             let borrowed_execution = phase
-                .execution_request_for(&world.application.runtime.product_runtime)
+                .execution_request_for_for_test(&(*(*world.application.runtime_for_test()).product_runtime_for_test()))
                 .expect("fixture borrows its runtime request");
             let execution = &borrowed_execution;
 
@@ -113,8 +113,8 @@ pub fn validated_status_footprint(
     entity: EntityId,
     locator: AspectFieldLocator,
 ) -> ValidatedMutationFootprint {
-    let graph = world.application.runtime.primary_provider.graph.clone();
-    let validated = graph.with_runtime_mut(request_execution, |runtime| {
+    let graph = (*(*(*world.application.runtime_for_test()).primary_provider_for_test()).graph_for_test()).clone();
+    let validated = graph.with_runtime_mut_for_test(request_execution, |runtime| {
         let fields = AspectFieldPatch::from(BTreeMap::from([(
             locator,
             AspectValue::String(InternedString::from("frozen")),

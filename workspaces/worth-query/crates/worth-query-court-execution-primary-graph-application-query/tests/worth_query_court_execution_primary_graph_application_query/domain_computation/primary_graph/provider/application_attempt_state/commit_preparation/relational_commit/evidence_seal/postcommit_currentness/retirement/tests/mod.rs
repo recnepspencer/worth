@@ -110,7 +110,7 @@ pub fn reads(
         .unwrap()
         .entity_id_for_test();
     let graph = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap();
     let identity = AccountIdentity::reference();
     let note = AccountNote::reference();
@@ -258,7 +258,7 @@ pub fn rebase_current(
 ) -> Option<Vec<Fact>> {
     let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
     (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap()
         .integration_handle_for_test()
         .with_runtime(execution, |runtime| {
@@ -281,7 +281,7 @@ pub fn normal_rebase(
     (*world
         .application
         .runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap()
         .integration_handle_for_test()
         .with_runtime(execution, |runtime| {
@@ -306,7 +306,7 @@ pub fn selection(
 ) -> bool {
     let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
     (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap()
         .integration_handle_for_test()
         .with_runtime(execution, |runtime| {

@@ -105,7 +105,7 @@ pub fn check(fault: Fault, entry: Entry) {
                 .unwrap()
                 .into_admitted_disclosed()
                 .into_output_demand_source()
-                .into_single_source()
+                .into_single_source_for_test()
                 .unwrap();
             let pending = if matches!(entry, Entry::Pending) {
                 Some(
@@ -133,13 +133,13 @@ pub fn check(fault: Fault, entry: Entry) {
                 Fault::Cancelled => cancellation.cancel(),
                 Fault::Input => admission.forge_tag_input_type_for_test::<u8>(),
             }
-            let partition = admission.source_partition_identity();
+            let partition = admission.source_partition_identity_for_test();
             let _observation = WorthQueryExecutionObservation::install_on_this_thread();
             fact_work();
             let consults = observe_consults_for_test(|_| {});
             let outcome = if matches!(entry, Entry::Prepare) {
                 source
-                    .prepare_application_source_expectation::<OrdinaryBinding<Schema>, _>(
+                    .prepare_application_source_expectation_for_test::<OrdinaryBinding<Schema>, _>(
                         &phase, &admission, observed, &input,
                     )
                     .map(drop)
@@ -170,7 +170,7 @@ pub fn check(fault: Fault, entry: Entry) {
             let denial = outcome.unwrap_err();
             assert_eq!(denial.kind(), Denial::AdmissionAuthorization);
             assert_eq!(denial.authorization_denial().unwrap().kind(), expected);
-            assert_eq!(admission.source_partition_identity(), partition);
+            assert_eq!(admission.source_partition_identity_for_test(), partition);
             assert_eq!(fact_work().source_admission_visits, 0);
             assert_eq!(consult_count_for_test(&consults), 0);
             assert!(charged_prefixes_for_test(&consults).is_empty());

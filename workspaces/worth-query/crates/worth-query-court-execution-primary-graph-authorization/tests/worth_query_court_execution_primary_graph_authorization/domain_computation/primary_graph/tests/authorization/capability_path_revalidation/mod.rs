@@ -47,7 +47,7 @@ fn final_commit_rejects_a_replacement_policy_path_for_the_same_grant() {
         })
         .expect("the fixture read owns its installed host call");
     let commit_authorization = admission
-        .take_authorization_dependencies(world.application.runtime.authorization.bridge())
+        .take_authorization_dependencies_for_test((*(*world.application.runtime_for_test()).authorization_for_test()).bridge_for_test())
         .unwrap();
 
     world
@@ -63,11 +63,11 @@ fn final_commit_rejects_a_replacement_policy_path_for_the_same_grant() {
         })
         .expect("the fixture read owns its installed host call");
 
-    let commit_lane = world
+    let commit_lane = (*(*world
         .application
-        .runtime
-        .primary_provider
-        .application_branch_commit_lane(
+        .runtime_for_test())
+        .primary_provider_for_test())
+        .application_branch_commit_lane_for_test(
             admission
                 .graph_work_for_test()
                 .mutation_product()
@@ -124,7 +124,7 @@ pub fn replace_grantor_with_custodian(
         )
         .unwrap();
     let graph = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap();
     let grantor_kind = (*graph
         .layout_for_test()

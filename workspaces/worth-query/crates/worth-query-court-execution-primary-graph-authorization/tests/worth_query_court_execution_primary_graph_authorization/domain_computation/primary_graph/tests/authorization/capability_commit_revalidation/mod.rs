@@ -224,7 +224,7 @@ pub fn disable_mapping(
     mapping: EntityId,
 ) {
     let graph = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap();
     let layout = graph
         .layout_for_test()
@@ -249,7 +249,7 @@ pub fn enable_mapping(
     mapping: EntityId,
 ) {
     let graph = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap();
     let layout = graph
         .layout_for_test()
@@ -337,7 +337,7 @@ pub fn installed_field(
     field: &str,
 ) -> AspectFieldLocator {
     (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap()
         .layout_for_test()
         .field_locator_for_test(entity, aspect, field)

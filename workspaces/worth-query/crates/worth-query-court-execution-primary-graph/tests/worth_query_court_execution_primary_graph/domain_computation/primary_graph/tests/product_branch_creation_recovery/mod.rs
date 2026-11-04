@@ -60,7 +60,7 @@ fn real_sibling_denial_is_inspectable_releasable_and_leaves_no_recovery_orphan()
         .expect("the application facade must readmit the creation record without raw work access");
 
     let graph = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap();
     let integration = graph.integration_handle_for_test();
     let active_transaction = integration.with_runtime(request_execution, |runtime| {
@@ -143,11 +143,11 @@ fn cleanup_capacity_denial_precedes_world_retirement() {
         })
         .expect("the fixture read owns its installed host call");
     let mut held = Vec::new();
-    while let Ok(reservation) = world
+    while let Ok(reservation) = (*(*world
         .application
-        .runtime
-        .product_runtime
-        .reserve_owner_cleanup_for_creation()
+        .runtime_for_test())
+        .product_runtime_for_test())
+        .reserve_owner_cleanup_for_creation_for_test()
     {
         held.push(reservation);
     }
@@ -206,11 +206,11 @@ fn unwind_after_retirement_install_leaves_discoverable_cleanup() {
                 .expect("the forked product must publish")
         })
         .expect("the fixture read owns its installed host call");
-    world
+    (*(*world
         .application
-        .runtime
-        .product_runtime
-        .replace_owner_cleanup_after_install_hook(Some(Box::new(|| {
+        .runtime_for_test())
+        .product_runtime_for_test())
+        .replace_owner_cleanup_after_install_hook_for_test(Some(Box::new(|| {
             panic!("injected unwind after retirement cleanup installation")
         })));
     let unwind = world
@@ -222,11 +222,11 @@ fn unwind_after_retirement_install_leaves_discoverable_cleanup() {
         })
         .expect("the fixture read owns its installed host call");
     assert!(unwind.is_err());
-    world
+    (*(*world
         .application
-        .runtime
-        .product_runtime
-        .replace_owner_cleanup_after_install_hook(None);
+        .runtime_for_test())
+        .product_runtime_for_test())
+        .replace_owner_cleanup_after_install_hook_for_test(None);
     world
         .application
         .with_host_advancement(|phase| {
@@ -271,10 +271,10 @@ fn retry_unwind_restores_progress_without_repeating_owner_retirement() {
                 .expect("the two-component product must publish")
         })
         .expect("the fixture read owns its installed host call");
-    world
+    (*(*world
         .application
-        .runtime
-        .product_runtime
+        .runtime_for_test())
+        .product_runtime_for_test())
         .replace_owner_cleanup_after_component_progress_hook(Some(Box::new(|| {
             panic!("injected unwind after one owner retirement")
         })));
@@ -299,10 +299,10 @@ fn retry_unwind_restores_progress_without_repeating_owner_retirement() {
         failure.into_cleanup().pending_work().as_slice(),
         [worth_query_execution::facade::product::WorthQueryProductBranchOwnerCleanupWork::SignalBranch { .. }]
     ));
-    world
+    (*(*world
         .application
-        .runtime
-        .product_runtime
+        .runtime_for_test())
+        .product_runtime_for_test())
         .replace_owner_cleanup_after_component_progress_hook(None);
 
     let mut pending = world.application.branches().pending_cleanup();

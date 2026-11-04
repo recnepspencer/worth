@@ -17,7 +17,7 @@ fn producer_decision_field_uses_native_revision_after_value_aba() {
     let field = WorthQueryApplicationObservedFact::Field {
         entity_id: entity,
         kind: (*(*world.application.runtime_for_test())
-            .primary_graph()
+            .primary_graph_for_test()
             .unwrap()
             .layout_for_test())
         .entity_kind_for_test(AccountIdentity::reference().entity())

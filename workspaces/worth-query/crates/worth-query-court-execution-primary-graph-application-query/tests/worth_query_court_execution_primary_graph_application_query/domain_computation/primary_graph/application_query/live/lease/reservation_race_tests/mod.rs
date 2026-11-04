@@ -69,11 +69,11 @@ fn lease_opened_after_reservation_receives_the_exact_committed_successor() {
     let (parked_tx, parked_rx) = mpsc::sync_channel(0);
     let (release_tx, release_rx) = mpsc::sync_channel(0);
     let release_rx = Arc::new(Mutex::new(release_rx));
-    world
+    (*(*world
         .application
-        .runtime
-        .primary_provider
-        .set_application_commit_causality_reservation_hook(Some(Arc::new(move || {
+        .runtime_for_test())
+        .primary_provider_for_test())
+        .set_application_commit_causality_reservation_hook_for_test(Some(Arc::new(move || {
             parked_tx.send(()).unwrap();
             release_rx.lock().unwrap().recv().unwrap();
         })));
@@ -106,11 +106,11 @@ fn lease_opened_after_reservation_receives_the_exact_committed_successor() {
             .unwrap();
                 release_tx.send(()).unwrap();
                 let committed = committed.join().unwrap();
-                world
+                (*(*world
                     .application
-                    .runtime
-                    .primary_provider
-                    .set_application_commit_causality_reservation_hook(None);
+                    .runtime_for_test())
+                    .primary_provider_for_test())
+                    .set_application_commit_causality_reservation_hook_for_test(None);
 
                 let WorthQueryApplicationLiveOutcome::Delivered(update) =
                     lease.next(&phase, &principal, &request)
@@ -207,11 +207,11 @@ fn publication_without_a_joining_subscriber_releases_marker_and_observation() {
         panic!("the no-subscriber application must commit");
     };
     assert_eq!(
-        world
+        (*(*world
             .application
-            .runtime
-            .primary_provider
-            .active_application_commit_causality_partitions(),
+            .runtime_for_test())
+            .primary_provider_for_test())
+            .active_application_commit_causality_partitions_for_test(),
         0
     );
     // Compare before preparing the live attempt and after it finishes, with

@@ -15,10 +15,10 @@ fn aftermath_resolution_preserves_stops_at_every_consult() {
         .application
         .with_host_advancement(|phase| {
             let execution = phase.borrowed_request_for_test();
-            let provider = &world.application.runtime.primary_provider;
-            let selected = world.selected_product(&phase.test_host_request());
-            let basis = selected.product().relational_basis();
-            let snapshot = provider.graph.with_runtime_mut(&execution, |runtime| {
+            let provider = &(*(*world.application.runtime_for_test()).primary_provider_for_test());
+            let selected = world.selected_product(&phase.test_host_request_for_test());
+            let basis = selected.product().relational_basis_for_test();
+            let snapshot = (*provider.graph_for_test()).with_runtime_mut_for_test(&execution, |runtime| {
                 worth_query_execution::court_doors_for_test::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(runtime, basis).unwrap()
             });
             let read = |request: &worth_execution::ExecutionRequest<'_, '_>| {

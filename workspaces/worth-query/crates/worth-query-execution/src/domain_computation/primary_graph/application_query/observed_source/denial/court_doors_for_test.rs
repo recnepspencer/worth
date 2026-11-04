@@ -10,3 +10,13 @@ impl WorthQuerySourceExpectationDenial {
         Self::source_retention_denied(subject, denial)
     }
 }
+
+impl WorthQuerySourceExpectationDenial {
+    #[doc(hidden)]
+    pub fn admission_authorization_for_test(
+        subject: &str,
+        denial: crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
+    ) -> Self {
+        Self::admission_authorization(subject, denial)
+    }
+}

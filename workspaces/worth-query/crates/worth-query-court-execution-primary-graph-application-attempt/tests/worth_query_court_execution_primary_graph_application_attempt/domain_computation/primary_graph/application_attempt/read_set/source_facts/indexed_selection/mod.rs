@@ -180,12 +180,12 @@ pub fn currentness(
     world: &AuthorizationWorld,
     fact: &Fact,
 ) -> bool {
-    let selected = world.selected_product(&(phase_custody).test_host_request());
-    world
+    let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
+    (*(*(*world
         .application
-        .runtime
-        .primary_provider
-        .graph
+        .runtime_for_test())
+        .primary_provider_for_test())
+        .graph_for_test())
         .with_runtime(execution, |runtime| {
             let movement = fact
                 .source_currentness_in_for_test(
@@ -227,7 +227,7 @@ pub fn set_unrelated_value(
         &live_scope(),
     );
     let installed = (*(*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap()
         .layout_for_test())
     .field_locator_for_test(field.0, field.1, field.2)

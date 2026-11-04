@@ -29,7 +29,7 @@ fn optional_aspect_initialization_reconstructed_presence_detects_present_empty()
         let account = resolved_account(&host, &world, "unrelated", &request);
         let entity = account.entity_id_for_test();
         let kind = account.entity_kind_for_test();
-        let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+        let graph = (*world.application.runtime_for_test()).primary_graph_for_test().unwrap();
         let field = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::AccountAnnotation::reference();
         let locator = (*graph.layout_for_test()).field_locator_for_test(field.entity(), field.aspect(), field.field()).unwrap();
         let aspect = locator.aspect().aspect_key().clone();

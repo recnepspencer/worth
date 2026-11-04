@@ -31,13 +31,13 @@ pub fn assert_live_reservation_denial(
     let principal = world
         .application
         .with_application_advancement(&request, |phase| {
-            authenticated_principal(&phase.test_host_request(), &world, &request)
+            authenticated_principal(&phase.test_host_request_for_test(), &world, &request)
         })
         .unwrap();
     let account = world
         .application
         .with_application_advancement(&request, |phase| {
-            resolved_account(&phase.test_host_request(), &world, "open", &request)
+            resolved_account(&phase.test_host_request_for_test(), &world, "open", &request)
         })
         .unwrap();
     let branch = world.application.current_world();
@@ -50,16 +50,16 @@ pub fn assert_live_reservation_denial(
         .unwrap();
     let product_before = selected.product().selected_commit().clone();
     let bridge_before = bridge_head_commit(&world, resource_request);
-    let _live = world
+    let _live = (*(*world
         .application
-        .runtime
-        .primary_provider
-        .observe_application_commit_causality(selected.product());
-    world
+        .runtime_for_test())
+        .primary_provider_for_test())
+        .observe_application_commit_causality_for_test(selected.product());
+    (*(*world
         .application
-        .runtime
-        .primary_provider
-        .set_application_commit_causality_limits(batch_capacity);
+        .runtime_for_test())
+        .primary_provider_for_test())
+        .set_application_commit_causality_limits_for_test(batch_capacity);
     let program = world
         .application
         .with_application_advancement(&request, |phase| {
@@ -102,17 +102,17 @@ pub fn assert_live_reservation_denial(
     assert_eq!(product_after.product().selected_commit(), &product_before);
     assert_eq!(bridge_head_commit(&world, resource_request), bridge_before);
     assert_eq!(
-        world
+        (*(*world
             .application
-            .runtime
-            .primary_provider
-            .published_application_commit_count(),
+            .runtime_for_test())
+            .primary_provider_for_test())
+            .published_application_commit_count_for_test(),
         0
     );
     world
         .application
         .with_application_advancement(&request, |phase| {
-            resolved_account(&phase.test_host_request(), &world, "open", &request)
+            resolved_account(&phase.test_host_request_for_test(), &world, "open", &request)
         })
         .unwrap();
 }
@@ -121,11 +121,11 @@ pub fn bridge_head_commit(
     world: &worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::authorization_world_installation::AuthorizationWorld,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> worth_runtime_bridge::facade::TruthCommitIdentity {
-    world
+    (*(*(*world
         .application
-        .runtime
-        .primary_provider
-        .graph
+        .runtime_for_test())
+        .primary_provider_for_test())
+        .graph_for_test())
         .relational_bridge_source()
         .load_branch_head_patch(
             &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_branch::primary_truth_branch_identity(),

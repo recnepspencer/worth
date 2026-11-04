@@ -26,31 +26,31 @@ fn first_post_commit_admission_failure_retains_exact_idempotent_recovery_evidenc
     );
     let selected = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
         .expect("the fixture read owns its installed host call");
-    let _live = world
+    let _live = (*(*world
         .application
-        .runtime
-        .primary_provider
-        .observe_application_commit_causality(selected.product());
+        .runtime_for_test())
+        .primary_provider_for_test())
+        .observe_application_commit_causality_for_test(selected.product());
     let request = live_scope();
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
-    let published_snapshot_baseline = world
+    let published_snapshot_baseline = (*(*(*world
         .application
-        .runtime
-        .primary_provider
-        .graph
+        .runtime_for_test())
+        .primary_provider_for_test())
+        .graph_for_test())
         .with_runtime(request_execution, |runtime| {
             runtime
                 .storage_access()
@@ -102,10 +102,10 @@ fn first_post_commit_admission_failure_retains_exact_idempotent_recovery_evidenc
         "the injected post-commit snapshot failure must be consumed"
     );
     assert!(
-        !world
+        !(*(*world
             .application
-            .runtime
-            .primary_provider
+            .runtime_for_test())
+            .primary_provider_for_test())
             .has_pending_application_publication_for_test(),
         "automatic recovery must clear the retained publication state"
     );
@@ -120,27 +120,27 @@ fn first_post_commit_admission_failure_retains_exact_idempotent_recovery_evidenc
     };
     assert!(recovered.is_same_authoritative_commit(&first_receipt));
     assert_eq!(first_receipt.emitted_effect_count(), 1);
-    let emissions = world
+    let emissions = (*(*world
         .application
-        .runtime
-        .primary_provider
-        .committed_application_emissions(first_receipt.committed_product_publication());
+        .runtime_for_test())
+        .primary_provider_for_test())
+        .committed_application_emissions_for_test(first_receipt.committed_product_publication());
     assert_eq!(emissions.len(), 1);
     assert_eq!(
-        emissions[0].payload::<String>().map(String::as_str),
+        emissions[0].payload_for_test::<String>().map(String::as_str),
         Some("post-commit-effect")
     );
-    assert!(world
+    assert!((*(*world
         .application
-        .runtime
-        .primary_provider
-        .retained_application_commit_basis(first_receipt.commit_reference())
+        .runtime_for_test())
+        .primary_provider_for_test())
+        .retained_application_commit_basis_for_test(first_receipt.commit_reference())
         .is_some());
-    let bridge_head = world
+    let bridge_head = (*(*(*world
         .application
-        .runtime
-        .primary_provider
-        .graph
+        .runtime_for_test())
+        .primary_provider_for_test())
+        .graph_for_test())
         .relational_bridge_source()
         .load_branch_head_patch(
             &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_branch::primary_truth_branch_identity(),
@@ -154,11 +154,11 @@ fn first_post_commit_admission_failure_retains_exact_idempotent_recovery_evidenc
         )
     );
     assert_eq!(
-        world
+        (*(*(*world
             .application
-            .runtime
-            .primary_provider
-            .graph
+            .runtime_for_test())
+            .primary_provider_for_test())
+            .graph_for_test())
             .with_runtime(request_execution, |runtime| {
                 runtime
                     .storage_access()

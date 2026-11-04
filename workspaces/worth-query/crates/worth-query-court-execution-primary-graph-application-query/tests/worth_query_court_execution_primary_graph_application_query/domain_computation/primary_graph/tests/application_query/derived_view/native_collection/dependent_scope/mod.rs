@@ -27,7 +27,7 @@ fn dependent_second_scope_reconstructs_atomically_with_original_read_results() {
                     WorthQueryPrincipalResolutionMode::Ordinary,
                 )
                 .unwrap();
-            let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+            let graph = (*world.application.runtime_for_test()).primary_graph_for_test().unwrap();
             let field = AccountLabel::reference();
             let locator = (*graph
                 .layout_for_test())

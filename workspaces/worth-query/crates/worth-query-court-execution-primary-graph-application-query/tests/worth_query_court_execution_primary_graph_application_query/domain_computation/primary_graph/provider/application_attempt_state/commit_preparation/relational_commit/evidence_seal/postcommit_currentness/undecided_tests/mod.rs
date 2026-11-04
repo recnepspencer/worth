@@ -31,7 +31,7 @@ fn only_a_comparison_that_cannot_answer_is_undecidable() {
         .with_host_advancement(|phase| account_note(&phase, &world, "account-1"))
         .expect("the fixture read owns its installed host call");
     let kind = (*(*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap()
         .layout_for_test())
     .entity_kind_for_test(AccountIdentity::reference().entity())

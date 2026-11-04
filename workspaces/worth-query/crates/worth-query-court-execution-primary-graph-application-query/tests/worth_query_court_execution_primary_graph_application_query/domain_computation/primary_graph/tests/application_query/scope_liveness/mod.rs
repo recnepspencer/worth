@@ -113,7 +113,7 @@ pub fn change_account_status(
     new_status: &str,
 ) {
     let graph = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .expect("test world publishes a primary graph");
     let status_field = AccountStatus::reference();
     let locator = (*graph.layout_for_test())

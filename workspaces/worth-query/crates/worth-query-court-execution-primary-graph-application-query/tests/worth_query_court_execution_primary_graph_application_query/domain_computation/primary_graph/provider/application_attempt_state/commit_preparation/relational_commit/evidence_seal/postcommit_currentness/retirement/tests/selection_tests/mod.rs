@@ -166,7 +166,7 @@ pub fn sealed_rebase(
     (*world
         .application
         .runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap()
         .integration_handle_for_test()
         .with_runtime(execution, |runtime| {

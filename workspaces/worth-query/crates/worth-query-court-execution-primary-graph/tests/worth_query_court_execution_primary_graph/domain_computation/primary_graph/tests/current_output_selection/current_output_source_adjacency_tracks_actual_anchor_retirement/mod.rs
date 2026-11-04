@@ -21,7 +21,7 @@ fn current_output_source_adjacency_tracks_actual_anchor_retirement() {
         })
         .expect("the fixture read owns its installed host call");
     let graph = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap();
     let kind = (*(*graph.layout_for_test())
         .relation(AccountOwner::reference().name())

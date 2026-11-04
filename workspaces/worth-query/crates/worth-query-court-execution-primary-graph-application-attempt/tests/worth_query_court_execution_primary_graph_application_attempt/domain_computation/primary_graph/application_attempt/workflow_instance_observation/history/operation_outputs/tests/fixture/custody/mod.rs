@@ -6,7 +6,7 @@ impl Context {
         let host = payer();
         let execution = worth_execution::ExecutionRequest::serial(&host);
         let graph = (*self.world.application.runtime_for_test())
-            .primary_graph()
+            .primary_graph_for_test()
             .unwrap();
         let layout = (*graph.layout_for_test()).workflow();
         let edge = self.read(|execution, runtime, snapshot, layout| {

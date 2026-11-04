@@ -9,9 +9,9 @@ fn entry_custody_source_authorization_kind_is_unit_and_keeps_the_original_cause(
     use worth_query_execution::facade::domain_computation::WorthQueryOperationAuthorizationDenial as Authorization;
     use worth_query_execution::facade::domain_computation::WorthQueryOperationAuthorizationDenialKind as Kind;
     use worth_query_execution::facade::domain_computation::WorthQueryOperationAuthorizationRefusalKind as Refusal;
-    let original = Authorization::new(Kind::Refused(Refusal::ExpiredAuthentication), "operation");
+    let original = Authorization::new_for_test(Kind::Refused(Refusal::ExpiredAuthentication), "operation");
     let denial =
-        WorthQuerySourceExpectationDenial::admission_authorization("source", original.clone());
+        WorthQuerySourceExpectationDenial::admission_authorization_for_test("source", original.clone());
     assert_eq!(
         denial.kind(),
         worth_query_execution::facade::domain_computation::WorthQuerySourceExpectationDenialKind::AdmissionAuthorization

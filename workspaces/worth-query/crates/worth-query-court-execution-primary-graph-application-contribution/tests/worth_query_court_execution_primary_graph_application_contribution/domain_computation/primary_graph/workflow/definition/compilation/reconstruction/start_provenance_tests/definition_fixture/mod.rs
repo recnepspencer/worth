@@ -45,7 +45,7 @@ pub fn publish_definition(
     let definition = builder.finish().unwrap().validate().unwrap();
     let before = selected(world, execution);
     let handle = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap()
         .integration_handle_for_test();
     let inventories = handle.with_runtime(execution, |runtime| {

@@ -20,7 +20,7 @@ fn started_revision_reader_refuses_unmanaged_and_unrostered_current_truth() {
         let lease = payer();
         let execution = ExecutionRequest::leased(&lease);
         let layout = (*(*world.application.runtime_for_test())
-            .primary_graph()
+            .primary_graph_for_test()
             .unwrap()
             .layout_for_test())
         .workflow()
@@ -48,7 +48,7 @@ fn started_revision_reader_refuses_unmanaged_and_unrostered_current_truth() {
         );
         let selected = selected(&world, &execution);
         let handle = (*world.application.runtime_for_test())
-            .primary_graph()
+            .primary_graph_for_test()
             .unwrap()
             .integration_handle_for_test();
         handle.with_runtime(&execution, |runtime| {
@@ -104,7 +104,7 @@ fn started_revision_missing_current_field_is_rejected_by_native_restore_before_p
     let lease = payer();
     let execution = ExecutionRequest::leased(&lease);
     let layout = (*(*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap()
         .layout_for_test())
     .workflow()
@@ -118,7 +118,7 @@ fn started_revision_missing_current_field_is_rejected_by_native_restore_before_p
         admitted_actor(&world),
     );
     let handle = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap()
         .integration_handle_for_test();
     let (config, native, plan) = handle.with_runtime(&execution, |runtime| {

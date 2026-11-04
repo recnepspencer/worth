@@ -51,7 +51,7 @@ pub fn complete_review_out_of_band(
         .unwrap();
     let field = CapabilityReviewStatusField::reference();
     let graph = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap();
     let locator = graph
         .layout_for_test()
@@ -118,7 +118,7 @@ pub fn replace_support_grantor_with_custodian(
         )
         .unwrap();
     let graph = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap();
     let grantor_kind = (*graph
         .layout_for_test()

@@ -50,11 +50,11 @@ fn performed_correction_capture_preserves_original_payer_and_preclone_refusal() 
                     )
                     .unwrap()
             });
-            let captured = world
+            let captured = (*(*world
                 .application
-                .runtime
-                .primary_provider
-                .capture_correction_witness(execution, receipt);
+                .runtime_for_test())
+                .primary_provider_for_test())
+                .capture_correction_witness_for_test(execution, receipt);
             if saturate {
                 match captured {
                     Err(CorrectionWitnessDenial::CopyAdmission(WorkCeilingDenial::Admission(
@@ -108,11 +108,11 @@ fn performed_correction_capture_preserves_original_payer_and_preclone_refusal() 
         CancellationSource::new().token(),
         None,
     );
-    let witness = world
+    let witness = (*(*world
         .application
-        .runtime
-        .primary_provider
-        .capture_correction_witness(ExecutionRequest::serial(&retry), receipt)
+        .runtime_for_test())
+        .primary_provider_for_test())
+        .capture_correction_witness_for_test(ExecutionRequest::serial(&retry), receipt)
         .unwrap()
         .unwrap();
     assert_eq!(witness.aftermath.as_ref(), reversed.aftermath_causality());

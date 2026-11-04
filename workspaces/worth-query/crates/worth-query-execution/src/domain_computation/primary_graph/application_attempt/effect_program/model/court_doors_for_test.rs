@@ -49,3 +49,54 @@ impl<Schema, Entity> WorthQueryApplicationEffectEntity<Schema, Entity> {
         }
     }
 }
+
+impl<Schema, Operation, Input, Scope>
+    WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>
+{
+    #[doc(hidden)]
+    pub fn read_set_for_test(
+        &self,
+    ) -> &WorthQueryCompleteApplicationReadSet<
+        Schema,
+        Operation,
+        Input,
+        Scope,
+        WorthQueryProjectedApplicationMutation,
+    > {
+        &self.read_set
+    }
+}
+
+impl<Schema, Operation, Input, Scope>
+    WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>
+{
+    #[doc(hidden)]
+    pub fn read_set_mut_for_test(
+        &mut self,
+    ) -> &mut WorthQueryCompleteApplicationReadSet<
+        Schema,
+        Operation,
+        Input,
+        Scope,
+        WorthQueryProjectedApplicationMutation,
+    > {
+        &mut self.read_set
+    }
+}
+
+impl<Schema, Operation, Input, Scope>
+    WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>
+{
+    #[doc(hidden)]
+    pub fn read_set_into_for_test(
+        self,
+    ) -> WorthQueryCompleteApplicationReadSet<
+        Schema,
+        Operation,
+        Input,
+        Scope,
+        WorthQueryProjectedApplicationMutation,
+    > {
+        self.read_set
+    }
+}

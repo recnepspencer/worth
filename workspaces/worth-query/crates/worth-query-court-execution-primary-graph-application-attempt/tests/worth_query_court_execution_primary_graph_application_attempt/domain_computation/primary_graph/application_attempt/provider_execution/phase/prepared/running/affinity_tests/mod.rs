@@ -79,7 +79,7 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
 
             let substitute_lease = WorthQueryApplicationSnapshotLease::acquire_for_test(
                 &phase
-                    .execution_request_for(&world.application.runtime.product_runtime)
+                    .execution_request_for_for_test(&(*(*world.application.runtime_for_test()).product_runtime_for_test()))
                     .expect("fixture issuer"),
                 lease.handle_for_test().clone(),
                 std::sync::Arc::clone(&(*lease.layout_for_test())),
@@ -104,7 +104,7 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
 
             let foreign_branch_snapshot = lease.handle_for_test().with_runtime_mut_for_test(
                 &phase
-                    .execution_request_for(&world.application.runtime.product_runtime)
+                    .execution_request_for_for_test(&(*(*world.application.runtime_for_test()).product_runtime_for_test()))
                     .expect("fixture issuer"),
                 |runtime| {
                     let foreign = worth_relational::facade::history::BranchId(
@@ -116,7 +116,7 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
                     runtime
                         .fork_branch(
                             &phase
-                                .execution_request_for(&world.application.runtime.product_runtime)
+                                .execution_request_for_for_test(&(*(*world.application.runtime_for_test()).product_runtime_for_test()))
                                 .expect("fixture issuer"),
                             foreign.clone(),
                             fork_basis,
@@ -139,7 +139,7 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
             .is_err());
             assert!(lease.handle_for_test().with_runtime_mut_for_test(
                 &phase
-                    .execution_request_for(&world.application.runtime.product_runtime)
+                    .execution_request_for_for_test(&(*(*world.application.runtime_for_test()).product_runtime_for_test()))
                     .expect("fixture issuer"),
                 |runtime| {
                     runtime
@@ -286,7 +286,7 @@ pub fn real_terminal_session<'run>(
 ) -> worth_query_execution::facade::domain_computation::WorthQuerySessionBoundReadsAndEffects<'run>
 {
     running
-        .admit_provider_execution_plan(world.application.runtime.primary_graph_authority())
+        .admit_provider_execution_plan((*world.application.runtime_for_test()).primary_graph_authority_for_test())
         .expect("real application authorities must admit their provider plan")
         .bind_application_product_for_test(product)
         .expect("the exact selected product must bind its provider plan")
@@ -326,10 +326,10 @@ pub fn start(
 > {
     let prepared = prepare_application_commit(
         &phase.borrowed_request_for_test(),
-        WorthQueryApplicationCommitPreparationRequest::new(
+        WorthQueryApplicationCommitPreparationRequest::new_for_test(
             world
                 .application
-                .validate_commit_program_in_advancement(phase, program)
+                .validate_commit_program_in_advancement_for_test(phase, program)
                 .unwrap_or_else(|outcome| panic!("fixture admission: {outcome:?}")),
             idempotency,
             None,

@@ -12,7 +12,7 @@ fn required_wave_selection_answers_its_stopped_request_by_value() {
         true,
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
-    world.application.program_support = Some(installed_program_support(
+    (*world.application.program_support_mut_for_test()) = Some(installed_program_support(
         world.application.installed_schema(),
     ));
     world

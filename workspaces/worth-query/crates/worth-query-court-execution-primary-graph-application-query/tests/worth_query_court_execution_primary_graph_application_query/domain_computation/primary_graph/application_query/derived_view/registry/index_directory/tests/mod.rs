@@ -48,7 +48,7 @@ fn registration_memory_refusal_preserves_old_pair_and_funded_retry_releases_back
                 .unwrap();
             let key = |purpose| {
                 Key::storage_key_for_test(
-                    (*world.application.runtime_for_test()).authority_identity(),
+                    (*world.application.runtime_for_test()).authority_identity_for_test(),
                     selected
                         .product()
                         .observation_for_test()

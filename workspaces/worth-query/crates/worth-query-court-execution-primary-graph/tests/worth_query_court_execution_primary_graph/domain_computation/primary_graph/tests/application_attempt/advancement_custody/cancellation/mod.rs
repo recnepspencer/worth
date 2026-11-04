@@ -15,9 +15,9 @@ fn cancelled_commit_is_refused_before_any_advancement_is_funded() {
             .application
             .with_host_advancement(|phase| {
                 let principal =
-                    authenticated_principal(&phase.test_host_request(), &world, &request);
+                    authenticated_principal(&phase.test_host_request_for_test(), &world, &request);
                 let account =
-                    resolved_account(&phase.test_host_request(), &world, "open", &request);
+                    resolved_account(&phase.test_host_request_for_test(), &world, "open", &request);
                 admitted_program(&phase, &world, &principal, &account, &request, "closed")
             })
             .unwrap();
@@ -63,8 +63,8 @@ pub fn requested_program(
     world
         .application
         .with_host_advancement(|phase| {
-            let principal = authenticated_principal(&phase.test_host_request(), world, request);
-            let account = resolved_account(&phase.test_host_request(), world, "open", request);
+            let principal = authenticated_principal(&phase.test_host_request_for_test(), world, request);
+            let account = resolved_account(&phase.test_host_request_for_test(), world, "open", request);
             admitted_program(&phase, world, &principal, &account, request, "closed")
         })
         .unwrap()
@@ -87,7 +87,7 @@ fn entry_custody_refreshes_lapse_after_advancement_is_funded() {
     let program = requested_program(&world, &request);
     let entry = world
         .application
-        .validate_commit_program(program)
+        .validate_commit_program_for_test(program)
         .unwrap_or_else(|outcome| panic!("fresh: {outcome:?}"));
     reports();
     let before = reads();
@@ -99,7 +99,7 @@ fn entry_custody_refreshes_lapse_after_advancement_is_funded() {
             |phase| {
                 cancellation.cancel();
                 assert!(matches!(
-                    entry.in_advancement(&phase),
+                    entry.in_advancement_for_test(&phase),
                     Err(WorthQueryApplicationCommitOutcome::Cancelled)
                 ));
                 assert_eq!(

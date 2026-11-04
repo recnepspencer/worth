@@ -56,11 +56,11 @@ fn shared_basis_keeps_one_exact_native_owner_until_last_explicit_release() {
     world
         .application
         .with_host_advancement(|_phase| {
-            assert!(world
+            assert!((*(*(*world
                 .application
-                .runtime
-                .primary_provider
-                .graph
+                .runtime_for_test())
+                .primary_provider_for_test())
+                .graph_for_test())
                 .with_runtime(request_execution, |runtime| runtime
                     .read_truth()
                     .project_snapshot(&snapshot)
@@ -75,11 +75,11 @@ fn shared_basis_keeps_one_exact_native_owner_until_last_explicit_release() {
     world
         .application
         .with_host_advancement(|_phase| {
-            assert!(world
+            assert!((*(*(*world
                 .application
-                .runtime
-                .primary_provider
-                .graph
+                .runtime_for_test())
+                .primary_provider_for_test())
+                .graph_for_test())
                 .with_runtime(request_execution, |runtime| runtime
                     .read_truth()
                     .project_snapshot(&snapshot)
@@ -228,11 +228,11 @@ fn shared_basis_drop_releases_the_final_native_owner() {
     world
         .application
         .with_host_advancement(|_phase| {
-            assert!(world
+            assert!((*(*(*world
                 .application
-                .runtime
-                .primary_provider
-                .graph
+                .runtime_for_test())
+                .primary_provider_for_test())
+                .graph_for_test())
                 .with_runtime(request_execution, |runtime| runtime
                     .read_truth()
                     .project_snapshot(&snapshot)

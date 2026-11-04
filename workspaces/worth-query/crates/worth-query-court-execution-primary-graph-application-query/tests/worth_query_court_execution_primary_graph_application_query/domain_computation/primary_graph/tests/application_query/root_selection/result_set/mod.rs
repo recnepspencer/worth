@@ -47,7 +47,7 @@ fn empty_path_union_stales_when_a_matching_edge_is_inserted() {
         .certification_query(CrossRootQuery::reference())
         .unwrap();
     let graph = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap();
     let primary_kind = (*(*graph
         .layout_for_test())

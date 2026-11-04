@@ -66,14 +66,14 @@ fn a_terminal_delivery_stop_releases_the_head_with_a_peer_still_present() {
     );
     let key = WorthQueryOutputDemandKey::new_for_test("terminal-delivery-family", "terminal-delivery".into(),
         worth_query_execution::facade::application_contribution::WorthQueryProducerApplicability::new("terminal-delivery", worth_query_execution::facade::application_contribution::WorthQueryProducerLifecyclePosture::Preserve),
-        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::WorthQueryObservedSourceEpoch::new([1;32], [2;32], root, occurrence, 1, [3;32]));
-    let registry = &world.application.runtime.output_demands;
-    let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity(root);
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::WorthQueryObservedSourceEpoch::new_for_test([1;32], [2;32], root, occurrence, 1, [3;32]));
+    let registry = &(*(*world.application.runtime_for_test()).output_demands_for_test());
+    let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(root);
     let request = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
     // Build a genuine lowering, with no dependencies. The foreign root is
     // refused before this lowering or its compute can be used.
     let mut builder = BridgeConditionalRuntimeBuilder::with_owned_signal_graph(
-        world.application.runtime.bridge.ordinary().clone(),
+        (*(*world.application.runtime_for_test()).bridge_for_test()).ordinary_for_test().clone(),
         worth_signal::facade::runtime::SignalConditionalEvaluationBudget::development(),
     )
     .unwrap();

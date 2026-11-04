@@ -209,7 +209,7 @@ pub fn change_principal_identity(
     identity: u64,
 ) {
     let graph = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap();
     let layout = (*graph.layout_for_test())
         .principal_binding_for_test(world.binding.binding())
@@ -237,7 +237,7 @@ pub fn disable_mapping(
     mapping_id: worth_relational::facade::identity::EntityId,
 ) {
     let graph = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap();
     let layout = (*graph.layout_for_test())
         .principal_binding_for_test(world.binding.binding())
@@ -268,7 +268,7 @@ pub fn append_duplicate_mapping(
     subject: &str,
 ) {
     let graph = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap();
     let layout = (*graph.layout_for_test())
         .principal_binding_for_test(world.binding.binding())

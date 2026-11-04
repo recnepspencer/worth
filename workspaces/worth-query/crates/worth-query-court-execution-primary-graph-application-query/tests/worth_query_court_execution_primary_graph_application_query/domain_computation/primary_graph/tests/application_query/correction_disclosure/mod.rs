@@ -48,7 +48,7 @@ fn correction_disclosure_requires_the_original_native_root_after_filtering() {
                     )
                     .unwrap();
                 let execution = phase
-                    .execution_request_for(&world.application.runtime.product_runtime)
+                    .execution_request_for_for_test(&(*(*world.application.runtime_for_test()).product_runtime_for_test()))
                     .unwrap();
                 assert_eq!(
                     world
@@ -94,7 +94,7 @@ fn correction_disclosure_requires_the_original_native_root_after_filtering() {
                 )
                 .unwrap();
             let execution = phase
-                .execution_request_for(&world.application.runtime.product_runtime)
+                .execution_request_for_for_test(&(*(*world.application.runtime_for_test()).product_runtime_for_test()))
                 .unwrap();
             assert!(!world
                 .application
@@ -129,8 +129,8 @@ fn correction_disclosure_never_calls_the_application_projector() {
             ApplicationQueryParameterSet::new().bind(status_parameter(), "open".to_owned()).unwrap(),
             current_controls(&request),
         ).unwrap();
-        let execution = phase.execution_request_for(&world.application.runtime.product_runtime).unwrap();
-        assert!(world.application.execute_correction_disclosure(&execution, plan, subject).unwrap());
+        let execution = phase.execution_request_for_for_test(&(*(*world.application.runtime_for_test()).product_runtime_for_test())).unwrap();
+        assert!(world.application.execute_correction_disclosure_for_test(&execution, plan, subject).unwrap());
         // The unchanged ordinary projection is a distinguishing counterpart: its
         // forged field selector fails, while the native root above remains real.
         let plan = world.selected_product(&phase.test_host_request_for_test()).admit_application_query(

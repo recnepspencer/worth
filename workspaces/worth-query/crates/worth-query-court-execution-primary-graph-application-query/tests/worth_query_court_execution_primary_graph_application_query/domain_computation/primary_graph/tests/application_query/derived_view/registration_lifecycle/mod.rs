@@ -132,7 +132,7 @@ fn prepared_view_publication_preserves_unaffected_arc_and_colds_membership_chang
                 .get(&key)
                 .unwrap()
                 .unwrap();
-            let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+            let graph = (*world.application.runtime_for_test()).primary_graph_for_test().unwrap();
             let field = AccountLabel::reference();
             let locator = (*graph
                 .layout_for_test())

@@ -28,27 +28,27 @@ fn direct_admission_rejects_a_same_relational_different_signal_product() {
         .expect("the fixture read owns its installed host call");
     let plan = admitted_plan("direct-product-affinity", 8);
     let operation = authority_for_product(
-        direct_authority(world.application.runtime.execution(), &plan),
+        direct_authority((*world.application.runtime_for_test()).execution_for_test(), &plan),
         &exact,
     );
-    let attempt = world
+    let attempt = (*world
         .application
-        .runtime
-        .execution()
+        .runtime_for_test())
+        .execution_for_test()
         .start_direct_resource_attempt(&operation, plan)
         .expect("the exact operation should reserve its resource attempt");
-    let bridge = world
+    let bridge = (*(*world
         .application
-        .runtime
-        .bridge
-        .ordinary()
+        .runtime_for_test())
+        .bridge_for_test())
+        .ordinary_for_test()
         .fork_managed_request_lane();
 
-    let rejection = match world
+    let rejection = match (*world
         .application
-        .runtime
-        .execution()
-        .managed_run_admission(&bridge, &world.application.runtime.product_runtime.source)
+        .runtime_for_test())
+        .execution_for_test()
+        .managed_run_admission(&bridge, &(*(*(*world.application.runtime_for_test()).product_runtime_for_test()).source_for_test()))
         .admit_direct(
             &operation,
             attempt,
@@ -92,27 +92,27 @@ fn workflow_admission_rejects_a_same_relational_different_signal_product() {
         BTreeMap::from([("stage".to_owned(), stage_plan)]),
     );
     let operation = authority_for_product(
-        workflow_authority(world.application.runtime.execution(), &resources),
+        workflow_authority((*world.application.runtime_for_test()).execution_for_test(), &resources),
         &exact,
     );
-    let attempt = world
+    let attempt = (*world
         .application
-        .runtime
-        .execution()
+        .runtime_for_test())
+        .execution_for_test()
         .start_workflow_resource_attempt(&operation, resources)
         .expect("the exact workflow should reserve its resource attempts");
-    let bridge = world
+    let bridge = (*(*world
         .application
-        .runtime
-        .bridge
-        .ordinary()
+        .runtime_for_test())
+        .bridge_for_test())
+        .ordinary_for_test()
         .fork_managed_request_lane();
 
-    let rejection = match world
+    let rejection = match (*world
         .application
-        .runtime
-        .execution()
-        .managed_run_admission(&bridge, &world.application.runtime.product_runtime.source)
+        .runtime_for_test())
+        .execution_for_test()
+        .managed_run_admission(&bridge, &(*(*(*world.application.runtime_for_test()).product_runtime_for_test()).source_for_test()))
         .admit_workflow(
             &operation,
             attempt,
@@ -144,10 +144,10 @@ pub fn hostile_product_twins<Schema: worth_query_installation::facade::Applicati
     worth_query_execution::facade::domain_computation::WorthQueryProductBranchLease,
 ) {
     let root = application.current_world();
-    let exact = application
-        .runtime
-        .product_runtime
-        .admit_product_occurrence(root.occurrence())
+    let exact = (*(*application
+        .runtime_for_test())
+        .product_runtime_for_test())
+        .admit_product_occurrence_for_test(root.occurrence_for_test())
         .expect("the root product remains admitted");
     let sibling = application
         .branches()
@@ -155,10 +155,10 @@ pub fn hostile_product_twins<Schema: worth_query_installation::facade::Applicati
         .components(|components| components.reuse_exact_relational_basis().fork_signal())
         .create(phase_custody)
         .expect("the hostile twin should reuse Relational and fork Signal");
-    let substitute = application
-        .runtime
-        .product_runtime
-        .admit_product_occurrence(sibling.occurrence())
+    let substitute = (*(*application
+        .runtime_for_test())
+        .product_runtime_for_test())
+        .admit_product_occurrence_for_test(sibling.occurrence_for_test())
         .expect("the hostile twin remains admitted");
     assert_eq!(
         exact.relational_basis_descriptor(),

@@ -41,7 +41,7 @@ fn live_support_requires_the_exact_contract_and_both_equality_indexes() {
     )
     .expect("the live fixture fits its installed canonical budget");
     let graph = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap();
 
     let supported = primary_graph_support_inventory(
@@ -121,7 +121,7 @@ fn provider_mechanism_deletion_mints_no_support_row() {
     )
     .expect("the one-shot fixture fits its installed canonical budget");
     let graph = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap();
     let hostile =
         lower_layout(missing_scope_index::MissingScopeIndexSchema::declaration().unwrap());
@@ -175,7 +175,7 @@ fn continuation_ordering_requires_the_installed_seek_mechanism() {
         WorthQueryGraphReadAccessRequirementKind::OrderingSupport,
     );
     let graph = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap();
 
     assert_support_present(
@@ -220,7 +220,7 @@ fn query_runtime_mechanism_deletion_denies_plan_review() {
     )
     .expect("the nested fixture fits its installed canonical budget");
     let graph = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap();
 
     for kind in [

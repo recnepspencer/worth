@@ -14,9 +14,9 @@ fn foreign_installed_seal_is_stale_at_elevation_request_readmission_before_work(
             .application
             .with_host_advancement(|phase| {
                 let principal =
-                    authenticated_principal(&phase.test_host_request(), &world, &request);
+                    authenticated_principal(&phase.test_host_request_for_test(), &world, &request);
                 request_reads(
-                    &phase.test_host_request(),
+                    &phase.test_host_request_for_test(),
                     &world,
                     &principal,
                     &request,
@@ -39,7 +39,7 @@ fn foreign_installed_seal_is_stale_at_elevation_request_readmission_before_work(
         let consults = observe_consults_for_test(|_| {});
         let result = world
             .application
-            .readmit_elevation_request_installation(program);
+            .readmit_elevation_request_installation_for_test(program);
         if forged {
             let Err(WorthQueryElevationRequestOutcome::Denied(denial)) = result else {
                 panic!("a stale installed seal refuses the consuming lifecycle entry");

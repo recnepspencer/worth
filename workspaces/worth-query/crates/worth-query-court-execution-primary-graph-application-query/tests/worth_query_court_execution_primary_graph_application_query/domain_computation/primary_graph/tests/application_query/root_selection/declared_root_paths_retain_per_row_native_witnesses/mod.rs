@@ -177,7 +177,7 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
             let selected = world.selected_product(&phase.test_host_request_for_test());
             let serial_retained = dependencies.assert_storage_custody_for_test(
                 phase
-                    .checked_execution_request_for(&world.application.runtime.product_runtime)
+                    .checked_execution_request_for(&(*(*world.application.runtime_for_test()).product_runtime_for_test()))
                     .unwrap(),
             );
             selected
@@ -217,7 +217,7 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
         &program_publication_access(),
     );
     let graph = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap();
     let observed_source = &result.observed_sources()[0];
     let worth_query_execution::facade::domain_computation::WorthQueryApplicationBasisSelectionIdentity::Product(product) = &(*observed_source.selection_for_test()) else {

@@ -40,3 +40,91 @@ impl WorthQueryApplicationRuntimeCore {
         &self.authorization
     }
 }
+
+impl WorthQueryApplicationRuntimeCore {
+    #[doc(hidden)]
+    pub fn installed_packages_for_test(
+        &self,
+    ) -> &worth_query_installation::facade::WorthQueryInstalledPackageIndex {
+        Self::installed_packages(self)
+    }
+}
+
+impl WorthQueryApplicationRuntimeCore {
+    #[doc(hidden)]
+    pub fn bridge_for_test(
+        &self,
+    ) -> &super::super::super::managed_bridge::WorthQueryInstalledApplicationBridge {
+        &self.bridge
+    }
+}
+
+impl WorthQueryApplicationRuntimeCore {
+    #[doc(hidden)]
+    pub fn installed_operations_for_test(
+        &self,
+    ) -> &Arc<worth_query_installation::facade::InstalledOperationCatalog> {
+        &self.installed_operations
+    }
+}
+
+impl WorthQueryApplicationRuntimeCore {
+    #[doc(hidden)]
+    pub fn output_demands_for_test(
+        &self,
+    ) -> &super::super::super::application_output_demand::WorthQueryOutputDemandRegistry {
+        &self.output_demands
+    }
+}
+
+impl WorthQueryApplicationRuntimeCore {
+    #[doc(hidden)]
+    pub fn output_producer_routes_for_test(
+        &self,
+    ) -> &super::super::super::application_contribution::WorthQueryInstalledOutputProducerRoutes
+    {
+        &self.output_producer_routes
+    }
+}
+
+impl WorthQueryApplicationRuntimeCore {
+    #[doc(hidden)]
+    pub fn relational_branch_identity_for_test(
+        &self,
+    ) -> &worth_relational::facade::branch::RelationalBranchIdentity {
+        &self.relational_branch_identity
+    }
+}
+
+impl WorthQueryApplicationRuntimeCore {
+    #[doc(hidden)]
+    pub fn execution_for_test(&self) -> &WorthQueryExecutionRuntime {
+        Self::execution(self)
+    }
+}
+
+impl WorthQueryApplicationRuntimeCore {
+    #[doc(hidden)]
+    pub fn execution_mut_for_test(&mut self) -> &mut WorthQueryExecutionRuntime {
+        Self::execution_mut(self)
+    }
+}
+
+impl WorthQueryApplicationRuntimeCore {
+    #[doc(hidden)]
+    pub fn primary_graph_authority_for_test(
+        &self,
+    ) -> &worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority {
+        Self::primary_graph_authority(self)
+    }
+}
+
+impl WorthQueryApplicationRuntimeCore {
+    #[doc(hidden)]
+    pub fn output_producer_routes_mut_for_test(
+        &mut self,
+    ) -> &mut super::super::super::application_contribution::WorthQueryInstalledOutputProducerRoutes
+    {
+        &mut self.output_producer_routes
+    }
+}

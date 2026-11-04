@@ -201,7 +201,7 @@ pub fn relation_kind(
     name: &str,
 ) -> worth_relational::facade::identity::KindId {
     (*(*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap()
         .layout_for_test()
         .relation(name)
@@ -218,7 +218,7 @@ pub fn current_relation(
     target: EntityId,
 ) -> RelationId {
     let graph = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap();
     let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
     graph

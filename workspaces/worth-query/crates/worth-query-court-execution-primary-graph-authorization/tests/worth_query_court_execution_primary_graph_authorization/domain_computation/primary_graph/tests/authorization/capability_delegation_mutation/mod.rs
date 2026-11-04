@@ -52,7 +52,7 @@ pub fn installed_field(
     field: &str,
 ) -> AspectFieldLocator {
     (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap()
         .layout_for_test()
         .field_locator_for_test(entity, aspect, field)
@@ -202,7 +202,7 @@ pub fn replace_parent(
 
 pub fn relation_kind(world: &AuthorizationWorld, name: &str) -> KindId {
     (*(*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap()
         .layout_for_test()
         .relation(name)
@@ -218,7 +218,7 @@ pub fn relation_source(
     target: EntityId,
 ) -> EntityId {
     let graph = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap();
     let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
     graph
@@ -315,7 +315,7 @@ pub fn current_relation(
     target: EntityId,
 ) -> RelationId {
     let graph = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap();
     let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
     graph

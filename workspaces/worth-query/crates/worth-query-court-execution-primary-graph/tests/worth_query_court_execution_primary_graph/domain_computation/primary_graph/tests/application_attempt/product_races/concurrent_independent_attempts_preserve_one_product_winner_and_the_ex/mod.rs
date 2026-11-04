@@ -56,12 +56,12 @@ fn concurrent_independent_attempts_preserve_one_product_winner_and_the_exact_los
             world
                 .application
                 .with_host_advancement(|phase| {
-                    let host_custody = phase.test_host_request();
-                    world
+                    let host_custody = phase.test_host_request_for_test();
+                    (*(*(*world
                         .application
-                        .runtime
-                        .primary_provider
-                        .graph
+                        .runtime_for_test())
+                        .primary_provider_for_test())
+                        .graph_for_test())
                         .with_runtime(&host_custody.borrowed_request_for_test(), |runtime| {
                             runtime.history().immutable_commit_count()
                         })

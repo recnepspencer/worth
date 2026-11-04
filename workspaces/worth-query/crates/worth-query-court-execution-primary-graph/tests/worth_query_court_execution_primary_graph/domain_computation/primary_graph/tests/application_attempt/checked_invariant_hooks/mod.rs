@@ -105,11 +105,11 @@ pub fn run_case(
         opening,
         work,
         contacts: std::array::from_fn(|index| after[index] - before[index]),
-        publications: world
+        publications: (*(*world
             .application
-            .runtime
-            .primary_provider
-            .published_application_commit_count(),
+            .runtime_for_test())
+            .primary_provider_for_test())
+            .published_application_commit_count_for_test(),
     }
 }
 

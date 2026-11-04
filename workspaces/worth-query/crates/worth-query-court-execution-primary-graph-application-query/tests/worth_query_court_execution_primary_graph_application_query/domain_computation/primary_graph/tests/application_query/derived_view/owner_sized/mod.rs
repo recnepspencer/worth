@@ -75,7 +75,7 @@ fn owner_sized_image_grows_from_actual_census_and_preserves_clean_arcs() {
                     WorthQueryPrincipalResolutionMode::Ordinary,
                 )
                 .unwrap();
-            let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+            let graph = (*world.application.runtime_for_test()).primary_graph_for_test().unwrap();
             let kind = (*(*graph
                 .layout_for_test())
                 .relation(AccountOwner::reference().name())

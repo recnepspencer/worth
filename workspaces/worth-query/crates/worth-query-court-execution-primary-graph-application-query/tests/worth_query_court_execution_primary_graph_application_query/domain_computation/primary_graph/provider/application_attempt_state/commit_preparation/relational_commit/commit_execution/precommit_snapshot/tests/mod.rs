@@ -13,8 +13,8 @@ fn unwind_releases_only_its_precommit_snapshot() {
             world.selected_product(&(phase).test_host_request_for_test())
         })
         .expect("the fixture read owns its installed host call");
-    let product = selected.product().publication_binding();
-    let graph = world.application.runtime.primary_provider.graph.clone();
+    let product = selected.product().publication_binding_for_test();
+    let graph = (*(*(*world.application.runtime_for_test()).primary_provider_for_test()).graph_for_test()).clone();
     let count = || {
         graph.with_runtime(request_execution, |runtime| {
             runtime.retention().active_snapshot_count()

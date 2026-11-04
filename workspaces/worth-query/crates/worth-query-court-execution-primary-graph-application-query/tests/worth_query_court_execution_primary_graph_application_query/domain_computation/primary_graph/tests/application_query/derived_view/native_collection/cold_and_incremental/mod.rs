@@ -206,7 +206,7 @@ fn one_collection_cold_reads_two_declared_queries_then_refreshes_only_dirty_entr
                     .unwrap(),
             ));
 
-            let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+            let graph = (*world.application.runtime_for_test()).primary_graph_for_test().unwrap();
             let field = AccountLabel::reference();
             let locator = (*graph
                 .layout_for_test())

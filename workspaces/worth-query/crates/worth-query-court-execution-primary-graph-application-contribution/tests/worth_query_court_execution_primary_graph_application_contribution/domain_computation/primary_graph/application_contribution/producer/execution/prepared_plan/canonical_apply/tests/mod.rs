@@ -32,7 +32,7 @@ fn every_compute_precedes_owner_completion_and_failure_destroys_the_suffix() {
         let request = WorthQueryRequestScope::new(
             Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(60)),
             cancellation.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
-        let execution = QueryRequestExecution::open(
+        let execution = QueryRequestExecution::open_for_test(
             worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(test_policy(
                 std::num::NonZeroUsize::MIN,
                 None,

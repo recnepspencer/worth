@@ -165,7 +165,7 @@ fn shared_pair_claims_survive_projection_and_late_refusal_is_atomic() {
             assert_eq!(keys.len(), 1);
             let key = keys[0].clone();
 
-            let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+            let graph = (*world.application.runtime_for_test()).primary_graph_for_test().unwrap();
             let field = AccountLabel::reference();
             let locator = (*graph
                 .layout_for_test())

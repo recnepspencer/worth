@@ -243,7 +243,7 @@ pub fn native_stamp_for_independent_grant(
         .snapshot_handle()
         .clone();
     let graph = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap();
     let grant = grant(
         &(phase_custody).test_host_request_for_test(),

@@ -14,7 +14,7 @@ fn a_refused_author_host_call_completes_on_the_owner_and_applies_only_its_prefix
             let scope = WorthQueryRequestScope::new(
                 Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(60)),
                 cancel.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
-            let execution = QueryRequestExecution::open(
+            let execution = QueryRequestExecution::open_for_test(
                 RuntimeWorldExecutionPlacement::Leased {
                     authority: test_authority(),
                     policy: test_policy(std::num::NonZeroUsize::new(workers).unwrap(), None),

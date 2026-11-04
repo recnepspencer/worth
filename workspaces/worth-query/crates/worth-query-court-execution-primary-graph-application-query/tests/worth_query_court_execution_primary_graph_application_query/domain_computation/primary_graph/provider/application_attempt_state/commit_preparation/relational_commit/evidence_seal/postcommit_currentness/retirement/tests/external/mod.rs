@@ -34,7 +34,7 @@ fn external_pair_and_adjacency_remain_current_after_owned_endpoint_retirement() 
                 &world,
                 "account-1",
             );
-            let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+            let graph = (*world.application.runtime_for_test()).primary_graph_for_test().unwrap();
             let relation = (*(*graph
                 .layout_for_test())
                 .relation(AccountAllActivity::reference().name())
@@ -200,7 +200,7 @@ fn a_retired_entity_changes_each_revision_fact_read_without_its_entity_fact() {
                         .test_host_request_for_test(),
                 );
                 let graph = (*world.application.runtime_for_test())
-                    .primary_graph()
+                    .primary_graph_for_test()
                     .unwrap();
                 graph.integration_handle_for_test().with_runtime(
                     &phase.borrowed_request_for_test(),

@@ -103,13 +103,13 @@ fn foreign_installed_seal_is_stale_at_workflow_definition_before_work() {
             admission.forge_installed_seal_for_test(donor.installed_view());
         }
         world.application.with_host_advancement(|phase| {
-            let selected=world.selected_product(&phase.test_host_request());
-            let execution=phase.execution_request_for(&world.application.runtime.product_runtime).unwrap();
+            let selected=world.selected_product(&phase.test_host_request_for_test());
+            let execution=phase.execution_request_for_for_test(&(*(*world.application.runtime_for_test()).product_runtime_for_test())).unwrap();
             let _observation=worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation::install_on_this_thread();
             fact_work();
             let before=reads();
             let consults=observe_consults_for_test(|_|{});
-            let result=selected.prepare_workflow_publication::<TouchAccountCapability,_,_,_,Spec>(
+            let result=selected.prepare_workflow_publication_for_test::<TouchAccountCapability,_,_,_,Spec>(
                 &execution,contract,WorkflowDefinitionExpectedPredecessor::Absent,admission);
             if forged {
                 let Err(WorkflowDefinitionPreparationDenial::Projection(denial))=result else { panic!("workflow publication must check its own installed seal"); };

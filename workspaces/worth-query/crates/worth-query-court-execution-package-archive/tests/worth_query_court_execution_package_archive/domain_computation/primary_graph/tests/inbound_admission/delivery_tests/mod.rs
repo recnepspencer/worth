@@ -15,13 +15,13 @@ fn performed_completion_reaches_the_canonical_subscription_once_and_terminal_tur
     let world = installed_world();
     let dispatch = { world.commit_dispatch(51, "route-observed-notice") };
     let outbox = dispatch.dispatch_outbox().unwrap();
-    let owner = &world
+    let owner = &(*(*(*(*(*world
         .application
-        .runtime
-        .primary_provider
-        .graph
-        .source_owner
-        .invalidation_owner;
+        .runtime_for_test())
+        .primary_provider_for_test())
+        .graph_for_test())
+        .source_owner_for_test())
+        .invalidation_owner_for_test());
     let branch = &dispatch.commit_reference().branch_id;
     let before = owner.latest_position_for_test();
     let envelope = signed_envelope_for_seconds(outbox, [0xb1; 32], outbox.payload(), false, 1);

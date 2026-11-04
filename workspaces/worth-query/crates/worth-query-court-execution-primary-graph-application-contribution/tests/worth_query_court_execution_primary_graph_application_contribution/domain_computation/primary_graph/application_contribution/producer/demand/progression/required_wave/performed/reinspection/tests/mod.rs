@@ -53,7 +53,7 @@ pub fn assert_publication_credit(replay: bool, publish: bool) {
             .application
             .with_host_advancement(|phase| {
                 let execution = phase
-                    .execution_request_for(&world.application.runtime.product_runtime)
+                    .execution_request_for_for_test(&(*(*world.application.runtime_for_test()).product_runtime_for_test()))
                     .unwrap();
                 let runtime = &world.application;
 

@@ -16,7 +16,7 @@ pub fn candidate(
         .application
         .with_host_advancement(|phase| {
             world
-                .selected_product(&phase.test_host_request())
+                .selected_product(&phase.test_host_request_for_test())
                 .resolve_authenticated_principal(
                     &phase,
                     &world.binding,
@@ -30,17 +30,17 @@ pub fn candidate(
     let program = world
         .application
         .with_host_advancement(|phase| {
-            let account = resolved_account(&phase.test_host_request(), world, "open", &request);
+            let account = resolved_account(&phase.test_host_request_for_test(), world, "open", &request);
             admitted_program(&phase, world, &principal, &account, &request, "closed")
         })
         .unwrap();
     program
-        .validate_current_authority()
+        .validate_current_authority_for_test()
         .expect("the genuine candidate starts fresh");
     if lapsed {
         time.advance(Duration::from_secs(2)).unwrap();
         assert_eq!(
-            program.validate_current_authority().unwrap_err().kind(),
+            program.validate_current_authority_for_test().unwrap_err().kind(),
             worth_query_execution::facade::domain_computation::WorthQueryOperationAuthorizationDenialKind::Refused(
                 worth_query_execution::facade::domain_computation::WorthQueryOperationAuthorizationRefusalKind::ExpiredAuthentication,
             ),
@@ -48,7 +48,7 @@ pub fn candidate(
         );
     } else {
         program
-            .validate_current_authority()
+            .validate_current_authority_for_test()
             .expect("the control remains fresh");
     }
     program

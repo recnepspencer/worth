@@ -102,7 +102,7 @@ pub fn native_attempt<Owned: TestOwner>(
             let phase_custody = phase.test_host_request_for_test();
             let admission = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tests::projected_attempt::admit(world, &request, &phase);
             let execution = phase
-                .execution_for(&world.application.runtime.product_runtime)
+                .execution_for_for_test(&(*(*world.application.runtime_for_test()).product_runtime_for_test()))
                 .unwrap();
             assert!(!execution.has_accounting_for_test());
             let allocation = execution.allocation_policy_for_test().unwrap();
@@ -274,13 +274,13 @@ fn worker_only_partition_run_retains_facts_reuses_and_observes_a_real_source_edi
         })
         .unwrap();
     let field = AccountLabel::reference();
-    let locator = world
+    let locator = (*(*(*(*world
         .application
-        .runtime
-        .primary_provider
-        .graph
-        .layout
-        .field_locator(field.entity(), field.aspect(), field.field())
+        .runtime_for_test())
+        .primary_provider_for_test())
+        .graph_for_test())
+        .layout_for_test())
+        .field_locator_for_test(field.entity(), field.aspect(), field.field())
         .unwrap()
         .clone();
     let label = "worker-only-updated";
@@ -289,7 +289,7 @@ fn worker_only_partition_run_retains_facts_reuses_and_observes_a_real_source_edi
         .application
         .with_application_advancement(&request, |phase| {
             let execution = phase
-                .execution_for(&world.application.runtime.product_runtime)
+                .execution_for_for_test(&(*(*world.application.runtime_for_test()).product_runtime_for_test()))
                 .unwrap();
             assert!(!execution.has_accounting_for_test());
             let execution = execution.execution_request().unwrap();

@@ -78,7 +78,7 @@ fn foreign_installed_seal_is_stale_at_read_attempt_before_work() {
     let request = live_scope();
     let admission = forged(&world, &request);
     world.application.with_host_advancement(|phase| {
-        let custody = phase.test_host_request();
+        let custody = phase.test_host_request_for_test();
         let execution = custody.borrowed_request_for_test();
         let _work = worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation::install_on_this_thread();
         fact_work();

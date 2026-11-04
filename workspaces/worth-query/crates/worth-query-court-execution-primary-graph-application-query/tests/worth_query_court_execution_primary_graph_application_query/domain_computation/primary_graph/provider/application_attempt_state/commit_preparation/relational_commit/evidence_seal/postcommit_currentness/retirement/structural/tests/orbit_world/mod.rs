@@ -33,7 +33,7 @@ pub fn capture(world: &World, key: u64, execution: &ExecutionRequest<'_, '_>) ->
         )
         .unwrap();
     let graph = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap();
     let kind = (*graph.layout_for_test())
         .entity_kind_for_test(NodeKey::reference::<OrbitSchema<true>>().entity())
@@ -103,7 +103,7 @@ pub fn at_current<R>(
         )
         .unwrap();
     (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap()
         .integration_handle_for_test()
         .with_runtime(execution, |runtime| {

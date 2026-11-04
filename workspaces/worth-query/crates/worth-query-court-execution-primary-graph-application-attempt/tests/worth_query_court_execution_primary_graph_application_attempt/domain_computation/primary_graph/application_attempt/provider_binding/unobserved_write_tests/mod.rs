@@ -38,13 +38,13 @@ fn unobserved_effect_keeps_coordinates_at_public_lowering_without_idempotency_re
         })
         .unwrap();
     let field = AccountLabel::reference();
-    let locator = world
+    let locator = (*(*(*(*world
         .application
-        .runtime
-        .primary_provider
-        .graph
-        .layout
-        .field_locator(field.entity(), field.aspect(), field.field())
+        .runtime_for_test())
+        .primary_provider_for_test())
+        .graph_for_test())
+        .layout_for_test())
+        .field_locator_for_test(field.entity(), field.aspect(), field.field())
         .unwrap();
     // The actual installed operation permits Label, but this genuine completed
     // decision observed only Status. No public raw-effect door is introduced.

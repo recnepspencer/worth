@@ -277,9 +277,9 @@ pub fn start(
 > {
     let prepared = prepare_application_commit(
         &phase.borrowed_request_for_test(),
-        WorthQueryApplicationCommitPreparationRequest::new(
+        WorthQueryApplicationCommitPreparationRequest::new_for_test(
             application
-                .validate_commit_program_in_advancement(phase, program)
+                .validate_commit_program_in_advancement_for_test(phase, program)
                 .unwrap_or_else(|outcome| panic!("fixture admission: {outcome:?}")),
             idempotency,
             None,

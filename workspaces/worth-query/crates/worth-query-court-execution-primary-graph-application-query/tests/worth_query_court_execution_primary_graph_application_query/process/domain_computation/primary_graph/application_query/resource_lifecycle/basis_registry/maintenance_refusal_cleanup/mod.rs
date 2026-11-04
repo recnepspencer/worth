@@ -40,10 +40,10 @@ fn refused_maintenance_cleanup_probe() {
         true,
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
-    let graph = world
+    let graph = (*world
         .application
-        .runtime
-        .primary_graph()
+        .runtime_for_test())
+        .primary_graph_for_test()
         .unwrap()
         .integration_handle_for_test();
     let host = worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request();

@@ -37,7 +37,7 @@ fn postcommit_observation_cannot_certify_original_own_write_output() {
                     let principal = authenticated_principal(&host_custody, world, &request);
                     let account = resolved_account(&host_custody, world, "2", &request);
                     let graph = (*world.application.runtime_for_test())
-                        .primary_graph()
+                        .primary_graph_for_test()
                         .unwrap();
                     let handle = graph.integration_handle_for_test();
                     handle

@@ -59,12 +59,12 @@ fn two_distinct_roots_hold_the_whole_native_read_without_the_owner_lock() {
         .installed_schema()
         .certification_query(PublicScopedAccountSummaryQuery::reference())
         .unwrap();
-    let owner_probe = world
+    let owner_probe = (*(*(*(*world
         .application
-        .runtime
-        .primary_provider
-        .graph
-        .source_owner
+        .runtime_for_test())
+        .primary_provider_for_test())
+        .graph_for_test())
+        .source_owner_for_test())
         .read_lock_probe_for_test();
     assert!(!owner_probe.is_locked_for_test());
     world.application.with_host_advancement(|phase| {

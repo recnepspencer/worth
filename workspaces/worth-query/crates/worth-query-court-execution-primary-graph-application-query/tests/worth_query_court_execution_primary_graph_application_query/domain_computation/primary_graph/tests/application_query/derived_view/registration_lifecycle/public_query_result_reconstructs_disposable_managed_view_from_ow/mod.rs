@@ -157,7 +157,7 @@ fn public_query_result_reconstructs_disposable_managed_view_from_owner_observati
         .unwrap();
     drop(retained_product);
     let graph = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap();
     let field = AccountLabel::reference();
     let locator = (*graph.layout_for_test())

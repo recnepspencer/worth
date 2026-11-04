@@ -60,7 +60,7 @@ impl Context {
             })
             .unwrap();
         let graph = (*world.application.runtime_for_test())
-            .primary_graph()
+            .primary_graph_for_test()
             .unwrap();
         let layout = (*graph.layout_for_test()).workflow().clone();
         let account_kind = (*graph.layout_for_test())
@@ -141,7 +141,7 @@ impl Context {
             .unwrap()
             .into_parts_for_test();
         let graph = (*self.world.application.runtime_for_test())
-            .primary_graph()
+            .primary_graph_for_test()
             .unwrap();
         graph
             .integration_handle_for_test()
@@ -173,7 +173,7 @@ pub fn inventory(
         .unwrap()
         .into_parts_for_test();
     (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap()
         .integration_handle_for_test()
         .with_runtime(execution, |runtime| {

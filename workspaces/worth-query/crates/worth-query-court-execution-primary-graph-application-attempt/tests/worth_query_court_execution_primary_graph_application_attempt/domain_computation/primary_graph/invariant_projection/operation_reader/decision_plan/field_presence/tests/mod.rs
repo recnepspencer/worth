@@ -19,7 +19,7 @@ fn optional_aspect_initialization_presence_follows_exact_installed_write_members
         .installed_operation(WrongFieldRetentionOperation::reference())
         .unwrap();
     let graph = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap();
     for field in [
         AccountNote::reference().field(),

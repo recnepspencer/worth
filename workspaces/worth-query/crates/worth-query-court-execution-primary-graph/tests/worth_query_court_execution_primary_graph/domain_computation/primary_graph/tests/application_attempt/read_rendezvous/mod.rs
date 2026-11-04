@@ -69,11 +69,11 @@ fn cancellation_inside_a_native_read_stops_the_public_commit_door() {
         "the read must stop before publication as the request's cancellation: {outcome:?}"
     );
     assert_eq!(
-        world
+        (*(*world
             .application
-            .runtime
-            .primary_provider
-            .published_application_commit_count(),
+            .runtime_for_test())
+            .primary_provider_for_test())
+            .published_application_commit_count_for_test(),
         0
     );
 }

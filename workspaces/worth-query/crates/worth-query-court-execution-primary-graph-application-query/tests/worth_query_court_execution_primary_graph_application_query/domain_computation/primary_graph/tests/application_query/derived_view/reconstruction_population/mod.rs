@@ -21,7 +21,7 @@ pub fn add_third_root(
     world: &AuthorizationWorld,
 ) {
     let graph = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap();
     macro_rules! declared_field {
         ($marker:ty, $value:expr) => {{
@@ -82,7 +82,7 @@ pub fn add_primary_reads(
         )
         .unwrap();
     let graph = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap();
     let kind = (*(*graph.layout_for_test())
         .relation(AccountPrimaryActivity::reference().name())

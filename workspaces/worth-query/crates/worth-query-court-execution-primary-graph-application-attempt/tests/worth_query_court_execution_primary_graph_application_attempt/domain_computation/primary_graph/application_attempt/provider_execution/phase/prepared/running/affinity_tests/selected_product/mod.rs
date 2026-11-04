@@ -44,7 +44,7 @@ fn an_exact_sibling_product_cannot_substitute_at_provider_plan_binding() {
             drop(sibling_application_basis);
 
             let result = direct_run
-                .admit_provider_execution_plan(world.application.runtime.primary_graph_authority())
+                .admit_provider_execution_plan((*world.application.runtime_for_test()).primary_graph_authority_for_test())
                 .expect("the application authorities admit the provider plan")
                 .bind_application_product_for_test(sibling_product);
             assert!(result.is_err());
@@ -89,7 +89,7 @@ fn the_exact_selected_product_binds_at_provider_plan_boundary() {
                 _aftermath_causality,
             ) = running.into_parts_for_test();
             let result = direct_run
-                .admit_provider_execution_plan(world.application.runtime.primary_graph_authority())
+                .admit_provider_execution_plan((*world.application.runtime_for_test()).primary_graph_authority_for_test())
                 .expect("the application authorities admit the provider plan")
                 .bind_application_product_for_test(lease.product().retained_clone_for_test());
             assert!(result.is_ok());
@@ -148,7 +148,7 @@ fn foreign_installed_phase_refuses_provider_readmission_before_read_or_charge() 
                 let product = (*brun.lease_for_test()).product().retained_clone_for_test();
                 let plan = (*brun
                     .running_mut_for_test())
-                    .admit_provider_execution_plan(b.application.runtime.primary_graph_authority())
+                    .admit_provider_execution_plan((*b.application.runtime_for_test()).primary_graph_authority_for_test())
                     .unwrap()
                     .bind_application_product_for_test(product)
                     .unwrap();

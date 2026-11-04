@@ -14,10 +14,10 @@ fn prepared_running_refuses_foreign_phase_with_the_same_typed_cause() {
         .with_host_advancement(|phase| {
             let preparation = prepare_application_commit(
                 &phase.borrowed_request_for_test(),
-                WorthQueryApplicationCommitPreparationRequest::new(
+                WorthQueryApplicationCommitPreparationRequest::new_for_test(
                     world
                         .application
-                        .validate_commit_program_in_advancement(
+                        .validate_commit_program_in_advancement_for_test(
                             &phase,
                             retained_program(&phase, &world, "foreign-phase"),
                         )

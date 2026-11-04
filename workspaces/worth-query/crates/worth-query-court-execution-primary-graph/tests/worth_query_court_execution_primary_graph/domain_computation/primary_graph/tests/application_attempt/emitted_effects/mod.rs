@@ -21,11 +21,11 @@ fn typed_emission_is_published_with_the_exact_provider_commit() {
             world.selected_product(&(phase).test_host_request_for_test())
         })
         .expect("the fixture read owns its installed host call");
-    let _live = world
+    let _live = (*(*world
         .application
-        .runtime
-        .primary_provider
-        .observe_application_commit_causality(selected.product());
+        .runtime_for_test())
+        .primary_provider_for_test())
+        .observe_application_commit_causality_for_test(selected.product());
     let request = live_scope();
     let principal = world
         .application
@@ -69,11 +69,11 @@ fn typed_emission_is_published_with_the_exact_provider_commit() {
         panic!("typed emission attempt must commit");
     };
     assert_eq!(receipt.emitted_effect_count(), 1);
-    let emissions = world
+    let emissions = (*(*world
         .application
-        .runtime
-        .primary_provider
-        .committed_application_emissions(receipt.committed_product_publication());
+        .runtime_for_test())
+        .primary_provider_for_test())
+        .committed_application_emissions_for_test(receipt.committed_product_publication());
     assert_eq!(emissions.len(), 1);
     assert_eq!(emissions[0].effect_for_test(), "AccountActivityEffect");
     assert_eq!(
@@ -167,11 +167,11 @@ fn response_loss_recovers_emit_receipt_without_duplicate_publication() {
     );
     assert_eq!(recovered.emitted_effect_count(), 1);
     assert_eq!(
-        world
+        (*(*world
             .application
-            .runtime
-            .primary_provider
-            .published_application_commit_count(),
+            .runtime_for_test())
+            .primary_provider_for_test())
+            .published_application_commit_count_for_test(),
         1
     );
 }

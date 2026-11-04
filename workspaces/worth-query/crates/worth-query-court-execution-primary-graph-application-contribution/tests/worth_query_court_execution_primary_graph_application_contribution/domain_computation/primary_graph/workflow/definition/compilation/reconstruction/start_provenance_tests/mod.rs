@@ -37,7 +37,7 @@ fn started_revision_actual_producer_is_immutable_but_current_revision_can_change
     let original_payer = payer();
     let execution = ExecutionRequest::leased(&original_payer);
     let layout = (*(*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap()
         .layout_for_test())
     .workflow()
@@ -46,7 +46,7 @@ fn started_revision_actual_producer_is_immutable_but_current_revision_can_change
     let instance = publish_instance(&world, &execution, &layout, original, "original", actor);
     let before = selected(&world, &execution);
     let handle = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap()
         .integration_handle_for_test();
     handle.with_runtime(&execution, |runtime| {
@@ -214,13 +214,13 @@ fn started_revision_current_capture_restore_retains_exact_data_after_original_pa
     let original_payer = payer();
     let execution = ExecutionRequest::leased(&original_payer);
     let layout = (*(*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap()
         .layout_for_test())
     .workflow()
     .clone();
     let recovery_config = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap()
         .integration_handle_for_test()
         .with_runtime(&execution, |runtime| runtime.config()); // before managed revision text exists
@@ -233,7 +233,7 @@ fn started_revision_current_capture_restore_retains_exact_data_after_original_pa
         admitted_actor(&world),
     );
     let handle = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap()
         .integration_handle_for_test();
     let checkpoint = handle.with_runtime(&execution, |runtime| {

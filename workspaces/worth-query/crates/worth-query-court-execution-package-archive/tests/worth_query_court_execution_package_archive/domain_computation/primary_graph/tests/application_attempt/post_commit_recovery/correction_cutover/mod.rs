@@ -14,11 +14,11 @@ fn pending_correction_cutover_never_looks_unseen_on_another_branch() {
         .application
         .with_host_advancement(|phase| world.selected_product(&phase.test_host_request_for_test()))
         .unwrap();
-    let _delivery = world
+    let _delivery = (*(*world
         .application
-        .runtime
-        .primary_provider
-        .observe_application_commit_causality(selected.product());
+        .runtime_for_test())
+        .primary_provider_for_test())
+        .observe_application_commit_causality_for_test(selected.product());
     let request = live_scope();
     let sibling = world
         .application
@@ -93,7 +93,7 @@ fn pending_correction_cutover_never_looks_unseen_on_another_branch() {
         ),
         "the held real post-commit boundary must leave pending custody: {outcome:?}"
     );
-    let provider = &world.application.runtime.primary_provider;
+    let provider = &(*(*world.application.runtime_for_test()).primary_provider_for_test());
     assert!(
         matches!(provider.observe_correction_key_for_test(&sibling_observation, binding.key_identity()),
         Observed::Pending(Some(recorded)) if recorded.key_identity() == binding.key_identity())

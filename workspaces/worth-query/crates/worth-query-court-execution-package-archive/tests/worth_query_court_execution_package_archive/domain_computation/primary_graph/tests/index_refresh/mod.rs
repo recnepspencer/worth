@@ -23,7 +23,7 @@ fn bootstrap_seeds_exact_workflow_transition_lookup_before_any_settlement() {
         WorthQueryPrincipalMappingStatus::Enabled,
     )]);
     let graph = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap();
     let handle = graph.integration_handle_for_test();
     let transition = &(*(*graph.layout_for_test()).workflow().transition_for_test());
@@ -51,7 +51,7 @@ fn bootstrap_seeds_exact_workflow_transition_lookup_before_any_settlement() {
 fn mutation_refreshes_every_exact_performed_commit_across_branches() {
     let world = installed_world(&[("index-refresh", WorthQueryPrincipalMappingStatus::Enabled)]);
     let graph = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .expect("fixture publishes its primary graph");
     let handle = graph.integration_handle_for_test();
     let index_ids = (*handle.primary_index_ids_for_test()).to_vec();
@@ -111,7 +111,7 @@ fn multi_commit_callback_reconstructs_each_retained_generation_with_cold_budget(
         WorthQueryPrincipalMappingStatus::Enabled,
     )]);
     let graph = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .expect("published graph");
     let handle = graph.integration_handle_for_test();
     let index_ids = (*handle.primary_index_ids_for_test()).to_vec();
@@ -146,7 +146,7 @@ fn captured_before_root_with_missing_generation_uses_explicit_cold_fallback() {
         WorthQueryPrincipalMappingStatus::Enabled,
     )]);
     let graph = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .expect("published graph");
     let handle = graph.integration_handle_for_test();
     (*handle.source_owner_for_test()).with_runtime_mut(execution, |runtime| {
