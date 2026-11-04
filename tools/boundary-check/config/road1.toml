@@ -720,6 +720,10 @@ exclude_paths = [
   "workspaces/worth-query/crates/worth-query-execution/src",
   # Moved worth-query-execution tests, exempt inside the library before the move:
   "workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-contribution/tests/worth_query_court_execution_primary_graph_application_contribution/publication_boundary/mod.rs",
+  "workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-contribution/tests/worth_query_court_execution_primary_graph_application_contribution.rs",
+  "workspaces/worth-query/crates/worth-query-court-execution-package-archive/tests/worth_query_court_execution_package_archive/domain_computation/primary_graph/tests/application_attempt/erased_core_forgery/workflow_entry/mod.rs",
+  "workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-contribution/src/domain_computation/primary_graph/product_operation/document_history/constraint/installed_entry_tests/mod.rs",
+  "workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-contribution/src/domain_computation/primary_graph/product_operation/document_history/constraint/ownership_tests/mod.rs",
   "workspaces/worth-query/crates/worth-query-court-decl-execution-package-archive/tests/worth_query_court_decl_execution_package_archive/domain_computation/primary_graph/tests/application_attempt/optional_output_role/source_disclosure/mod.rs",
   "workspaces/worth-query/crates/worth-query-court-execution-package-archive/tests/worth_query_court_execution_package_archive/domain_computation/primary_graph/tests/application_attempt/optional_output_role/source_disclosure/mod.rs",
   "workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/tests/application_attempt/invariant_walks/declared_queries/currentness/mod.rs",
