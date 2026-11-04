@@ -24,7 +24,6 @@ pub use composition::{
     WorthQueryApplicationContribution, WorthQueryApplicationContributionTuple,
     WorthQueryConfiguredApplicationContributions,
 };
-pub use {computation::WorthQueryCompletedManagedComputation, computation::WorthQueryInstalledManagedComputation, computation::WorthQueryManagedComputationCheckpoint, computation::WorthQueryManagedComputationDenial, computation::WorthQueryManagedComputationExecution, computation::WorthQueryManagedComputationOwner, computation::WorthQueryMemberExecution, computation::WorthQueryPreparedManagedComputation};
 pub use conditional::{
     WorthQueryApplicationConditionalBinding, WorthQueryApplicationConditionalPackageContract,
     WorthQueryApplicationConditionalProducerAccess,
@@ -69,8 +68,15 @@ pub(in crate::domain_computation::primary_graph) use producer::{
     TypedPendingOutputReadiness, WorthQueryInstalledOutputProducerRoutes,
     WorthQueryInstalledOutputReadinessRoutes, WorthQueryProducerCommitAuthority,
 };
-
-
+pub use {
+    computation::WorthQueryCompletedManagedComputation,
+    computation::WorthQueryInstalledManagedComputation,
+    computation::WorthQueryManagedComputationCheckpoint,
+    computation::WorthQueryManagedComputationDenial,
+    computation::WorthQueryManagedComputationExecution,
+    computation::WorthQueryManagedComputationOwner, computation::WorthQueryMemberExecution,
+    computation::WorthQueryPreparedManagedComputation,
+};
 
 pub use setup::{
     WorthQueryApplicationContributionSetup, WorthQueryManagedIndexProviderRegistration,
@@ -98,22 +104,9 @@ pub use {
 pub(in crate::domain_computation) use partitioned_computation::observe_discarded;
 pub(in crate::domain_computation::primary_graph) use partitioned_computation::observe_published;
 
-
-
 pub use producer::demand::progression::caller_pass_observation::caller_pass_reports_on_this_thread_for_test;
 
-
-
-
-
-
-
-
-
 pub(in crate::domain_computation::primary_graph) use execution_denial::publication_execution_kind;
-
-
-
 
 pub(in crate::domain_computation::primary_graph) use producer::{
     ComparedProducerOutput, ProducerOutputEvaluation, ProducerOutputEvaluationState,

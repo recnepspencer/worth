@@ -148,7 +148,12 @@ impl WorthQueryCheckpointTransitionRecovery {
     ) -> Result<(), ()> {
         request.consult().map_err(|stop| {
             self.retain_capture_denial(WorthQueryCheckpointCaptureDenial::Execution(
-                super::super::request_denial(crate::domain_computation::primary_graph::request_execution::advancement_denial(stop))));
+                super::super::request_denial(
+                    crate::domain_computation::primary_graph::request_execution::advancement_denial(
+                        stop,
+                    ),
+                ),
+            ));
         })
     }
 

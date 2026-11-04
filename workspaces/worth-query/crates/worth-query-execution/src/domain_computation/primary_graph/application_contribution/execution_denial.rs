@@ -14,7 +14,12 @@ use super::partitioned_computation::{
     WorthQueryComputationPartitionStop, WorthQueryPartitionedComputationDenial,
     WorthQueryReductionInputDenial as ReductionInput,
 };
-use {crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationCheckpointDenial, super::WorthQueryManagedComputationDenial, crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationInterruption, crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial};
+use {
+    super::WorthQueryManagedComputationDenial,
+    crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationCheckpointDenial,
+    crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationInterruption,
+    crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial,
+};
 
 type Resource = WorthQueryManagedComputationResourceDenial;
 
@@ -223,19 +228,16 @@ impl<Stopped> WorthQueryComputationPartitionStop<Stopped> {
 #[cfg(test)]
 mod tests;
 
-
-
-
 mod handler;
 mod publication;
 mod retained_result;
 mod scope;
-pub(in crate::domain_computation::primary_graph) use handler::managed_advancement_denial;
-pub(in crate::domain_computation) use publication::publication_execution_kind;
-pub(in crate::domain_computation) use scope::scope_stop_kind;
 use crate::domain_computation::primary_graph::request_execution::execution_stop::checkpoint_denial;
 use crate::domain_computation::primary_graph::request_execution::execution_stop::interruption_stop;
 use crate::domain_computation::primary_graph::request_execution::execution_stop::lease_denial;
+pub(in crate::domain_computation::primary_graph) use handler::managed_advancement_denial;
+pub(in crate::domain_computation) use publication::publication_execution_kind;
+pub(in crate::domain_computation) use scope::scope_stop_kind;
 
 /// Native lifecycle owners keep the original admitted request's exact stop cause.
 pub(in crate::domain_computation) fn advancement_scope_stop(

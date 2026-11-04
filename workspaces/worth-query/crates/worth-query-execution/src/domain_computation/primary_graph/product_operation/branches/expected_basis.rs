@@ -3,8 +3,12 @@ use super::*;
 use crate::basis::{
     WorthQueryExpectedProductBasisDescription, WorthQueryProductBranchAdmissionDenial,
 };
-use {crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial, crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation};
 use worth_relational::facade::branch::RelationalBranchBasisDenial;
+use {
+    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial,
+    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase,
+    crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation,
+};
 
 #[derive(Debug)]
 pub enum WorthQueryExpectedProductBasisSelectionDenial {

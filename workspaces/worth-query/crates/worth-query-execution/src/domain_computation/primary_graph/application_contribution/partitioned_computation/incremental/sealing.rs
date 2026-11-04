@@ -18,7 +18,7 @@ impl CompletedComputationRetention {
     ) -> Result<
         Option<worth_execution::ExecutionMemoryReservation>,
         crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial,
-    > {
+    >{
         use crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource;
         match self {
             Self::Produced(run) => {

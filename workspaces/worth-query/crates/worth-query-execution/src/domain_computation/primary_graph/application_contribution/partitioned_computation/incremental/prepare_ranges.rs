@@ -1,5 +1,4 @@
 //! Ordinary fixed membership carries measured call ranges, not a full roster.
-use crate::domain_computation::primary_graph::request_execution::QueryRequestExecution;
 use super::super::compute::Denial;
 use super::super::{
     InputValue, WorthQueryComputationPartitionMembers, WorthQueryComputationReader,
@@ -9,6 +8,7 @@ use super::next_tree::NextPartitioning;
 use super::retained::CarriedItems;
 use super::*;
 use crate::domain_computation::primary_graph::invariant_projection::CallVisit;
+use crate::domain_computation::primary_graph::request_execution::QueryRequestExecution;
 use worth_query_declaration::facade::application_program::{
     ApplicationComputationPartition, ApplicationFeature, ApplicationManagedComputation,
 };

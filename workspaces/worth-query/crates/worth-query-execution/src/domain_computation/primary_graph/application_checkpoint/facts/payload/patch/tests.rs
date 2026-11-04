@@ -1,6 +1,5 @@
 //! Storage proof only: these ordinals never establish graph/read currentness.
 use super::*;
-use {crate::domain_computation::primary_graph::application_checkpoint::facts::NativeFactPayloadBuilder, crate::domain_computation::primary_graph::request_execution::with_bootstrap_advancement};
 use crate::facade::primary_graph::WorthQueryExecutionObservation;
 use std::sync::{Arc, Weak};
 use worth_execution::ExecutionAllocationPolicy;
@@ -11,6 +10,10 @@ use worth_foundational::{
 use worth_relational::facade::{
     identity::{EntityId, KindId, PartitionId},
     transactions::planned_single_field_locator,
+};
+use {
+    crate::domain_computation::primary_graph::application_checkpoint::facts::NativeFactPayloadBuilder,
+    crate::domain_computation::primary_graph::request_execution::with_bootstrap_advancement,
 };
 
 fn fact(ordinal: usize) -> Fact {

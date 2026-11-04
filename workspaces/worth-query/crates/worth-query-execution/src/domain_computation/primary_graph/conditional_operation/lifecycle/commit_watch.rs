@@ -136,10 +136,13 @@ fn capacity() -> Denial {
 }
 
 fn check_request(execution: &worth_execution::ExecutionRequest<'_, '_>) -> Result<(), Denial> {
-    use {crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationCheckpointDenial as Stop, crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationInterruption as Interrupted};
     use crate::domain_computation::{
         WorthQueryProviderSessionControlStopKind as Control,
         WorthQueryProviderSessionDenialKind as Refusal,
+    };
+    use {
+        crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationCheckpointDenial as Stop,
+        crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationInterruption as Interrupted,
     };
     execution.check_live().map_err(|stop| {
         let cause = match crate::domain_computation::primary_graph::request_execution::execution_stop::checkpoint_denial(stop) {

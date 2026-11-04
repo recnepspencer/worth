@@ -1,6 +1,5 @@
 //! Readonly capture severs the parent body and retains its own original payer.
 use super::*;
-use {crate::domain_computation::primary_graph::application_checkpoint::facts::payload::FactStorage, crate::domain_computation::primary_graph::request_execution::with_bootstrap_advancement};
 use worth_execution::ExecutionAllocationPolicy;
 use worth_foundational::{
     facade::{AspectKey, AspectValue, FieldKey, InternedString},
@@ -9,6 +8,10 @@ use worth_foundational::{
 use worth_relational::facade::{
     identity::{EntityId, KindId, PartitionId},
     transactions::planned_single_field_locator,
+};
+use {
+    crate::domain_computation::primary_graph::application_checkpoint::facts::payload::FactStorage,
+    crate::domain_computation::primary_graph::request_execution::with_bootstrap_advancement,
 };
 #[test]
 fn performed_field_copy_severs_parent_and_retains_original_request_funding() {

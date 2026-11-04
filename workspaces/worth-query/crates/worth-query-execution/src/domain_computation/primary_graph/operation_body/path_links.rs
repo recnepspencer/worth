@@ -1,5 +1,8 @@
 //! Existing anchors are observed once and carried into candidate assembly.
-use {crate::domain_computation::primary_graph::request_execution::QueryMemoryReservation, super::super::WorthQueryInvariantMutationTarget};
+use {
+    super::super::WorthQueryInvariantMutationTarget,
+    crate::domain_computation::primary_graph::request_execution::QueryMemoryReservation,
+};
 pub(in crate::domain_computation::primary_graph) struct PreparedBodyPathLinks<S> {
     pub(in crate::domain_computation::primary_graph) targets:
         Vec<WorthQueryInvariantMutationTarget<S, ()>>,

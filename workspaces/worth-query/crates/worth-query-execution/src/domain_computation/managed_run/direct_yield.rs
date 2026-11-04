@@ -70,7 +70,7 @@ impl WorthQueryYieldedDirectRun {
     ) -> Result<
         worth_execution::ExecutionRequest<'a, 'a>,
         crate::domain_computation::primary_graph::request_execution::WorthQueryForeignAdvancementPhase,
-    > {
+    >{
         phase.request_for_managed(&self.relational_basis)
     }
 

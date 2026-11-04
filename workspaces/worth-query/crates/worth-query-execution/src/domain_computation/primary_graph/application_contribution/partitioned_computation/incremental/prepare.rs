@@ -12,7 +12,6 @@ use worth_query_declaration::facade::application_program::{
 };
 use worth_query_installation::facade::ApplicationSchema;
 
-use crate::domain_computation::primary_graph::request_execution::QueryRequestExecution;
 use super::super::compute::Denial;
 use super::super::items::{item_digests, planned_items, route_item};
 use super::super::plan::PlanShape;
@@ -25,6 +24,7 @@ use super::next_tree::{NextPartitioning, PreparedIncremental};
 use super::retained::RetainedCall;
 use super::{enter, IncrementalRun, Reader, COMPARATOR};
 use crate::domain_computation::primary_graph::application_attempt::ComputationRead;
+use crate::domain_computation::primary_graph::request_execution::QueryRequestExecution;
 
 impl<Key, Item, Reduced> IncrementalRun<Key, Item, Reduced>
 where

@@ -3,8 +3,12 @@ use super::super::WorthQueryApplicationProductBranchCloseDenial;
 use super::{WorthQueryExpectedProductBranch, WorthQueryExpectedProductBranchAdoptionFailure};
 use crate::basis::WorthQueryProductBranch;
 use crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchCloseReceipt;
-use {crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQueryApplicationProductBranchCleanupFailure, crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime};
 use worth_query_installation::facade::ApplicationSchema;
+use {
+    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase,
+    crate::domain_computation::primary_graph::WorthQueryApplicationProductBranchCleanupFailure,
+    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime,
+};
 
 /// A head issued by consuming a newly created expected-source branch.
 ///

@@ -10,7 +10,10 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
     pub fn release_correction_history_indexes_for_test(
         &self,
         phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
-    ) -> Result<usize, crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial> {
+    ) -> Result<
+        usize,
+        crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial,
+    > {
         let execution = phase.execution_request_for(self.product_runtime())?;
         let graph = self
             .runtime

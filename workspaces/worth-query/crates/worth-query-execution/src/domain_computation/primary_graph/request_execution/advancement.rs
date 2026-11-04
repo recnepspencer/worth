@@ -1,11 +1,12 @@
 //! Request custody exists only while the runtime executes one advancement.
 
-use crate::domain_computation::primary_graph::application_contribution::execution_denial;
 use super::{Form, QueryRequestExecution, Resource};
-use {crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationCheckpointDenial, crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationInterruption, crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime};
 use worth_execution::{ExecutionRequest, ExecutionWorkCeiling, WorkCeilingDenial};
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
-use worth_query_installation::facade::ApplicationSchema;
+use {
+    crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationCheckpointDenial,
+    crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationInterruption,
+};
 
 /// Why an advancement could not return its ordinary result.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]

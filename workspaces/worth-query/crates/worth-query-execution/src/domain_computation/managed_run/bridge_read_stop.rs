@@ -1,10 +1,13 @@
 //! Bridge snapshot read stops translated once at managed admission.
-use {crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource, crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryMemoryLimitLevel as Level};
 use crate::domain_computation::{
     WorthQueryProviderSessionControlStopKind as Control,
     WorthQueryProviderSessionDenialKind as Kind,
 };
 use worth_runtime_bridge::facade::BridgeExecutionDenial as Bridge;
+use {
+    crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource,
+    crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryMemoryLimitLevel as Level,
+};
 
 pub(super) fn stopped(cause: Bridge) -> Result<Kind, Control> {
     let resource = |denial, policy_ancestor| Kind::ExecutionResource {

@@ -1,6 +1,10 @@
 //! The Query projection of Bridge's existing request execution carrier.
-use {crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial as Denial, crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationInterruption as Interruption, crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource};
 use worth_runtime_bridge::facade::BridgeExecutionDenial as Bridge;
+use {
+    crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationInterruption as Interruption,
+    crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource,
+    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial as Denial,
+};
 
 /// A carried Bridge denial is in flight; interruptions belong to the demand,
 /// whereas resource and custody refusals keep their typed request carrier.

@@ -207,7 +207,7 @@ where
     ) -> Result<
         Result<(), worth_relational::facade::transactions::TransactionCommitError>,
         crate::domain_computation::primary_graph::request_execution::WorthQueryForeignAdvancementPhase,
-    > {
+    >{
         let execution = phase.execution_request_for(&self.runtime.product_runtime)?;
         let selected = self
             .on_branch(definition.branch())
@@ -268,7 +268,7 @@ where
     ) -> Result<
         Result<(), worth_relational::facade::transactions::TransactionCommitError>,
         crate::domain_computation::primary_graph::request_execution::WorthQueryForeignAdvancementPhase,
-    > {
+    >{
         let execution = phase.execution_request_for(&self.runtime.product_runtime)?;
         let selected = self
             .on_branch(definition.branch())

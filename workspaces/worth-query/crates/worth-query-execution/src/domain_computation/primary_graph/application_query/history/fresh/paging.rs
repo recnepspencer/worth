@@ -5,8 +5,11 @@ use super::super::{
     WorthQueryApplicationHistoryPage as Page, WorthQueryApplicationHistoryPageLimits as Limits,
 };
 use super::*;
-use {crate::domain_computation::authorization::WorthQueryAdmittedApplicationCapabilityAccess as CapabilityAccess, crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase};
 use worth_query_declaration::facade::application_capability::ApplicationCapabilityRequest;
+use {
+    crate::domain_computation::authorization::WorthQueryAdmittedApplicationCapabilityAccess as CapabilityAccess,
+    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase,
+};
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     /// Both authored disclosure contracts must admit Public decisions. The captured

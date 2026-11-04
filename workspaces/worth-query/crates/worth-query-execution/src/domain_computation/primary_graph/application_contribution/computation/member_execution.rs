@@ -1,7 +1,13 @@
 //! The member's bounded execution, without any owner or graph access.
-use {crate::domain_computation::primary_graph::request_execution::MemberRequestExecution, crate::domain_computation::primary_graph::request_execution::QueryRequestExecution};
 use super::nested_failure::NestedFailureTransport;
-use {super::WorthQueryManagedComputationExecution, crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationInterruption};
+use {
+    super::WorthQueryManagedComputationExecution,
+    crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationInterruption,
+};
+use {
+    crate::domain_computation::primary_graph::request_execution::MemberRequestExecution,
+    crate::domain_computation::primary_graph::request_execution::QueryRequestExecution,
+};
 
 /// Execution lent only for one prepared member's compute.
 ///

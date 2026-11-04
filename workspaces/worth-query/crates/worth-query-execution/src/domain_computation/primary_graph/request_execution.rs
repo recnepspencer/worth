@@ -16,10 +16,7 @@ use worth_foundational::{ExecutionReport, ExecutionRequestPolicy};
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_runtime_world::facade::RuntimeWorldExecutionPlacement;
 
-use {
-    crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationInterruption,
-    crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial,
-};
+use crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial;
 use {
     crate::domain_computation::primary_graph::request_execution::execution_stop::interruption_stop,
     crate::domain_computation::primary_graph::request_execution::execution_stop::lease_denial,
@@ -28,7 +25,6 @@ use {
 
 pub(crate) mod test_placement;
 pub(in crate::domain_computation::primary_graph) use test_placement::test_policy;
-pub(in crate::domain_computation::primary_graph) use test_placement::FixturePlacement;
 pub use test_placement::{
     bound_advancement_requests_on_this_thread_for_test,
     place_managed_computations_on_this_thread_for_test, test_execution_workers_for_test,

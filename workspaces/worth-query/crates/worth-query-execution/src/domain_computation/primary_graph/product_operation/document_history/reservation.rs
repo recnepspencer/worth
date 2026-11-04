@@ -4,7 +4,6 @@ use super::{
     WorthQueryDocumentHistory, WorthQueryDocumentHistoryDenial as Denial,
     WorthQueryDocumentHistoryOperation, WorthQueryHistoryStep,
 };
-use {crate::basis::WorthQueryProductBranchReadIdentity, crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding, crate::publication_boundary::WorthQueryProgramPublicationAccess};
 use worth_query_declaration::facade::{
     application_history::{
         ApplicationHistoryAccessBinding, ApplicationHistoryBinding, ApplicationHistoryModel,
@@ -16,6 +15,12 @@ use worth_query_declaration::facade::{
     application_schema::{ApplicationSchema, ApplicationStructuredValueBinding},
 };
 use worth_query_installation::facade::WorthQueryInstalledDocumentHistory;
+use {
+    crate::basis::WorthQueryProductBranchReadIdentity,
+    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase,
+    crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding,
+    crate::publication_boundary::WorthQueryProgramPublicationAccess,
+};
 
 type Access<S, H> = ApplicationHistoryAccessBinding<S, H>;
 type Query<S, H> = <Access<S, H> as ApplicationQueryBinding<S>>::Query;

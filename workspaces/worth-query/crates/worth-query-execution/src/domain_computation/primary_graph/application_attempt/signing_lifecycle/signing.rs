@@ -1,7 +1,10 @@
 //! Signing admits and retains exact current membership before authentication, including absence.
 use super::super::signed_creation::WorthQuerySignedCreationPreparationDenial as SigningDenial;
 use super::super::WorthQueryApplicationEffectProgram;
-use {super::observation, super::Denial, super::Kind, crate::domain_computation::primary_graph::request_execution::QueryRequestExecution};
+use {
+    super::observation, super::Denial, super::Kind,
+    crate::domain_computation::primary_graph::request_execution::QueryRequestExecution,
+};
 
 pub(in crate::domain_computation::primary_graph::application_attempt) fn capture_signing<
     Schema,

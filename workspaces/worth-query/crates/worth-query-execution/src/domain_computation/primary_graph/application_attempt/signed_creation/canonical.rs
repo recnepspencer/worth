@@ -52,8 +52,6 @@ fn digest_stop(cause: CanonicalDigestAdmissionStop<Denial>) -> Denial {
 }
 fn execution(cause: WorkCeilingDenial) -> Denial {
     Denial::Execution(
-        crate::domain_computation::primary_graph::request_execution::advancement_denial(
-            cause,
-        ),
+        crate::domain_computation::primary_graph::request_execution::advancement_denial(cause),
     )
 }

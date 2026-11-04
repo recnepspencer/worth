@@ -1,9 +1,12 @@
 //! Host maintenance borrows the exact application's original advancement request.
 use super::WorthQueryPrimaryGraphApplicationRuntime;
-use {crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::request_execution::WorthQueryForeignAdvancementPhase};
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::runtime::{
     RelationalRetentionPassProgress, RelationalRetentionPassStop,
+};
+use {
+    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase,
+    crate::domain_computation::primary_graph::request_execution::WorthQueryForeignAdvancementPhase,
 };
 
 /// Actual completed prefix. Maintenance can stop after reclaiming some records.

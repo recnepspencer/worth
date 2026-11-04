@@ -1,10 +1,16 @@
 //! One request settles the wave; member outcomes travel to owner completion.
-use {crate::domain_computation::primary_graph::request_execution::execution_stop::checkpoint_denial, crate::domain_computation::primary_graph::request_execution::execution_stop::lease_denial};
-use {crate::domain_computation::primary_graph::request_execution::QueryRequestExecution, crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial};
 use super::prepared_request::{ComputedSlot, PreparedCompute};
 use super::WorthQueryMemberExecution;
 use worth_execution::{ExecutionMap, MapKernelFailure, MapOutcome, MapStop};
 use worth_foundational::PartitionIdentity;
+use {
+    crate::domain_computation::primary_graph::request_execution::execution_stop::checkpoint_denial,
+    crate::domain_computation::primary_graph::request_execution::execution_stop::lease_denial,
+};
+use {
+    crate::domain_computation::primary_graph::request_execution::QueryRequestExecution,
+    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial,
+};
 
 // A member outcome cannot stop the map; only its request can.
 enum NoMemberFailure {}
@@ -89,9 +95,9 @@ pub fn dispatch(
     });
     match outcome {
         Ok(outcome) => outcome,
-        Err(denial) => vec![Err(crate::domain_computation::primary_graph::request_execution::advancement_denial(
-            denial,
-        ))],
+        Err(denial) => vec![Err(
+            crate::domain_computation::primary_graph::request_execution::advancement_denial(denial),
+        )],
     }
 }
 

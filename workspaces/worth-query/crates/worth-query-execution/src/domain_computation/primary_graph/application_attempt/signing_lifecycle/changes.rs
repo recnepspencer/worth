@@ -1,10 +1,14 @@
 //! Intersect final candidate writes with native preimages using Relational's canonical value equivalence.
-use {super::attempt, super::capacity, super::resource, super::unavailable, super::Effect, super::EntityId, super::Fact, super::Lease, super::Locus, super::Outcome, crate::domain_computation::primary_graph::request_execution::QueryRequestExecution, super::Rule};
 use crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence;
 use crate::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout as Layout;
 use std::collections::BTreeMap;
 use worth_foundational::facade::{AspectKey, AspectValue, CanonicalFieldPath};
 use worth_relational::facade::storage::AuthoritativeFieldComparisonKey as Comparison;
+use {
+    super::attempt, super::capacity, super::resource, super::unavailable, super::Effect,
+    super::EntityId, super::Fact, super::Lease, super::Locus, super::Outcome, super::Rule,
+    crate::domain_computation::primary_graph::request_execution::QueryRequestExecution,
+};
 
 /// Operation-local work only: O(facts log facts + writes * declared subject fields).
 /// No source document, history, or retained derived output is scanned here.

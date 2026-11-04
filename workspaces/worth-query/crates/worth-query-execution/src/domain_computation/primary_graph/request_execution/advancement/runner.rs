@@ -1,6 +1,6 @@
 //! One advancement lifecycle, independent of the caller's body and result types.
 use super::{
-    advancement_denial, observation,
+    advancement_denial,
     phase_custody::{ActiveAdvancement, AdvancementSource},
     Form, QueryRequestExecution, WorthQueryAdvancementDenial, WorthQueryAdvancementPhase,
 };
@@ -19,7 +19,10 @@ pub fn run_advancement(
             .map(|lease| lease.resolved_posture())
             .unwrap_or(policy.posture()),
     };
-    crate::domain_computation::primary_graph::request_execution::advancement::observation::begin(posture, execution.has_accounting());
+    crate::domain_computation::primary_graph::request_execution::advancement::observation::begin(
+        posture,
+        execution.has_accounting(),
+    );
     let result = run_admitted_advancement(execution, owner, source_instance, body, discard);
     crate::domain_computation::primary_graph::request_execution::advancement::observation::record_result(&result);
     result

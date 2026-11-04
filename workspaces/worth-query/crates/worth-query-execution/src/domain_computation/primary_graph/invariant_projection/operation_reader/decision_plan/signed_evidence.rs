@@ -4,12 +4,20 @@ use super::{
     ApplicationSchema, WorthQueryApplicationOperationInvariantProjectionReader,
     WorthQueryInvariantEntityIdentity,
 };
-use {crate::domain_computation::primary_graph::request_execution::advancement_denial, crate::domain_computation::primary_graph::request_execution::QueryRequestExecution, crate::domain_computation::primary_graph::operation_body::PreparedRequirementOperand, crate::domain_computation::primary_graph::HandlerExecutionDenial, crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial, crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial, crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind};
 use worth_foundational::expression_api::ExpressionValue;
 use worth_query_declaration::facade::application_schema::{
     ApplicationOperationBodyRequirementDirection as Direction,
     ApplicationOperationBodyRequirementSource as Operand,
     ApplicationSigningEvidenceSource as Source,
+};
+use {
+    crate::domain_computation::primary_graph::operation_body::PreparedRequirementOperand,
+    crate::domain_computation::primary_graph::request_execution::advancement_denial,
+    crate::domain_computation::primary_graph::request_execution::QueryRequestExecution,
+    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial,
+    crate::domain_computation::primary_graph::HandlerExecutionDenial,
+    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
+    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind,
 };
 
 impl<Schema: ApplicationSchema, Operation>
@@ -95,8 +103,16 @@ impl<Schema: ApplicationSchema, Operation>
 
     // Platform-owned activation is already fenced by native program readmission/CAS;
     // it is not a supplier field permission or a host-provided expected revision.
-    fn active_evidence_program(&mut self, execution: &QueryRequestExecution<'_>) -> Result<(String,
-    crate::domain_computation::primary_graph::request_execution::QueryMemoryReservation), HandlerExecutionDenial>{
+    fn active_evidence_program(
+        &mut self,
+        execution: &QueryRequestExecution<'_>,
+    ) -> Result<
+        (
+            String,
+            crate::domain_computation::primary_graph::request_execution::QueryMemoryReservation,
+        ),
+        HandlerExecutionDenial,
+    > {
         let entity_id = self
             .reader
             .program_activation

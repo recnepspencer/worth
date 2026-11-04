@@ -1,7 +1,10 @@
 //! Reconstructed correspondence keeps its actual payer through every shared clone.
 use super::*;
-use {crate::domain_computation::primary_graph::request_execution::with_bootstrap_advancement, crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind as Kind};
 use worth_relational::facade::identity::{EntityId, PartitionId};
+use {
+    crate::domain_computation::primary_graph::request_execution::with_bootstrap_advancement,
+    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind as Kind,
+};
 
 #[test]
 fn reconstructed_roles_retain_their_payer_until_the_last_clone_and_refuse_without_memory() {

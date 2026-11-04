@@ -1,7 +1,16 @@
 //! One actual historical head or retired cleanup, shared by maintenance and final disposal.
-use {crate::basis::WorthQueryProductBranch, crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchCloseReceipt, crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanupReceipt, crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQueryApplicationProductBranchCleanupFailure, crate::domain_computation::primary_graph::WorthQueryApplicationProductBranchCloseDenial, crate::domain_computation::primary_graph::WorthQueryOwnedProductHead, crate::domain_computation::primary_graph::WorthQueryOwnedProductHeadCloseFailure};
 use std::sync::{Arc, Mutex, MutexGuard};
 use worth_query_installation::facade::ApplicationSchema;
+use {
+    crate::basis::WorthQueryProductBranch,
+    crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchCloseReceipt,
+    crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanupReceipt,
+    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase,
+    crate::domain_computation::primary_graph::WorthQueryApplicationProductBranchCleanupFailure,
+    crate::domain_computation::primary_graph::WorthQueryApplicationProductBranchCloseDenial,
+    crate::domain_computation::primary_graph::WorthQueryOwnedProductHead,
+    crate::domain_computation::primary_graph::WorthQueryOwnedProductHeadCloseFailure,
+};
 
 pub(super) struct HistoryHeadSlot<'r, S> {
     state: Mutex<HistoryHeadCustody<'r, S>>,

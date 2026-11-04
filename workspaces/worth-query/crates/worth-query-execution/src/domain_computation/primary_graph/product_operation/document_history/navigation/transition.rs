@@ -1,9 +1,13 @@
 //! Final selection consumes the original current admission and exact performed D.
 use super::super::WorthQueryDocumentHistory;
 use super::*;
-use {crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation, crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding};
 use worth_query_declaration::facade::application_history::ApplicationHistoryBinding;
 use worth_query_installation::facade::ApplicationSchema;
+use {
+    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase,
+    crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation,
+    crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding,
+};
 
 impl<'runtime, S: ApplicationSchema> WorthQueryDocumentHistoryNavigation<'runtime, S> {
     pub(super) fn registered_progress<'call, H, O, I, M>(
@@ -116,7 +120,13 @@ impl<'runtime, S: ApplicationSchema> WorthQueryDocumentHistoryNavigation<'runtim
         let execution = phase
             .checked_execution_request_for(&progress.application.runtime.product_runtime)
             .map_err(Denial::Stopped)?;
-        execution.check_live().map_err(|cause| Denial::Stopped(crate::domain_computation::primary_graph::request_execution::advancement_denial(worth_execution::WorkCeilingDenial::Stopped(cause))))?;
+        execution.check_live().map_err(|cause| {
+            Denial::Stopped(
+                crate::domain_computation::primary_graph::request_execution::advancement_denial(
+                    worth_execution::WorkCeilingDenial::Stopped(cause),
+                ),
+            )
+        })?;
         Ok(Some(completed))
     }
 }

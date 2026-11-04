@@ -29,7 +29,9 @@ pub enum InstalledTransportCustodyDenial {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum InstalledTransportPendingReason {
-    ExecutionRequest(crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial),
+    ExecutionRequest(
+        crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial,
+    ),
     UnknownCompletion,
     ConcurrentContinuation,
     PublicationRetryRequired,

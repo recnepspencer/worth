@@ -7,12 +7,15 @@ use super::super::{
 use super::next_tree::NextPartitioning;
 use super::retained::{CarriedItems, RetainedCall};
 use super::*;
-use {crate::domain_computation::primary_graph::request_execution::QueryRequestExecution, crate::domain_computation::primary_graph::invariant_projection::CallVisit};
 use worth_execution::ExecutionOrderedMap;
 use worth_query_declaration::facade::application_program::{
     ApplicationComputationPartition, ApplicationFeature, ApplicationManagedComputation,
 };
 use worth_query_installation::facade::ApplicationSchema;
+use {
+    crate::domain_computation::primary_graph::invariant_projection::CallVisit,
+    crate::domain_computation::primary_graph::request_execution::QueryRequestExecution,
+};
 impl<K: ApplicationComputationPartition, I: ApplicationComputationPartition, R>
     IncrementalRun<K, I, R>
 {

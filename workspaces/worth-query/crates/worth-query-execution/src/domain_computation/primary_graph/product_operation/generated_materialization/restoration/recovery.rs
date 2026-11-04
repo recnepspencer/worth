@@ -25,7 +25,9 @@ use crate::domain_computation::WorthQueryProductUnpublishedRecovery;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryGeneratedOutputRestorationRecoveryStage {
     /// The request stopped while continuing retained recovery.
-    ExecutionDenied(crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial),
+    ExecutionDenied(
+        crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial,
+    ),
     /// The unpublished product state could not be inspected.
     Inspection,
     /// Owner settlement of the unpublished effects did not finish.

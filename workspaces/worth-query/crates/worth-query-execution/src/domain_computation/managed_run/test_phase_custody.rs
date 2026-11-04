@@ -1,6 +1,9 @@
 //! Fixture phases use the retained state's actual installed observation.
 use super::*;
-use {crate::domain_computation::primary_graph::request_execution::TestHostRequest, crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase};
+use {
+    crate::domain_computation::primary_graph::request_execution::TestHostRequest,
+    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase,
+};
 
 impl WorthQueryRunningDirectRun {
     pub(crate) fn fixture_phase<'scope>(

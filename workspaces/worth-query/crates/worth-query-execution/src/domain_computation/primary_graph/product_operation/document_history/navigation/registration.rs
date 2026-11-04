@@ -4,10 +4,13 @@ use super::super::{
     WorthQueryDocumentHistory,
 };
 use super::*;
-use {crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding};
 use std::{collections::BTreeMap, sync::Mutex};
 use worth_query_declaration::facade::application_history::ApplicationHistoryBinding;
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledDocumentHistory};
+use {
+    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase,
+    crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding,
+};
 
 pub(in crate::domain_computation::primary_graph::product_operation::document_history) struct NavigationJournal<
     'runtime,

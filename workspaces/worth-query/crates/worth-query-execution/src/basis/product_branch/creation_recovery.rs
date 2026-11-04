@@ -62,7 +62,9 @@ impl WorthQueryProductBranchCreationRecoveryInspection {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryProductBranchRecoveryDenial {
-    Execution(crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial),
+    Execution(
+        crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial,
+    ),
     OwnerUnavailable,
     ForeignRecovery,
     Missing,

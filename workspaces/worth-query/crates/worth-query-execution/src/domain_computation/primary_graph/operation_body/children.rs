@@ -1,5 +1,8 @@
 //! Static parent slots plus request-funded retention of actual candidate-created handles.
-use {crate::domain_computation::primary_graph::request_execution::QueryMemoryReservation, super::super::WorthQueryApplicationEffectEntity};
+use {
+    super::super::WorthQueryApplicationEffectEntity,
+    crate::domain_computation::primary_graph::request_execution::QueryMemoryReservation,
+};
 pub(in crate::domain_computation::primary_graph) struct PreparedBodyChildren<S> {
     pub(in crate::domain_computation::primary_graph) targets:
         Vec<WorthQueryApplicationEffectEntity<S, ()>>,

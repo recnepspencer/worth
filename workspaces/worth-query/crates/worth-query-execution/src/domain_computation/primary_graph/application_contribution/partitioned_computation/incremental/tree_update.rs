@@ -1,5 +1,4 @@
 //! The next canonical tree, funded by its actual native node owner.
-use crate::domain_computation::primary_graph::request_execution::QueryRequestExecution;
 use super::super::{
     WorthQueryDeterministicReducer, WorthQueryPartitionedComputationDenial as Denial,
 };
@@ -7,6 +6,7 @@ use super::retained::RetainedPartitions;
 use super::tree_attempt::{EditDisposition, TreeAttempt};
 pub(super) use super::tree_membership::TreeTarget;
 use super::tree_report::{ReportedTree, WorthQueryPartitionedTreeRebuildCause as Cause};
+use crate::domain_computation::primary_graph::request_execution::QueryRequestExecution;
 use std::collections::BTreeMap;
 use worth_execution::{MapKernelStop, NativeReductionTree, ReductionPlan, ReductionTree};
 use worth_foundational::facade::PartitionIdentity;

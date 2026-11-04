@@ -18,9 +18,8 @@ pub struct WorthQueryRealizedProjectionScope {
         std::sync::Arc<super::ComputationCallSequence>,
         std::ops::Range<usize>,
     )>,
-    carried_memory: Option<
-        crate::domain_computation::primary_graph::request_execution::QueryMemoryReservation,
-    >,
+    carried_memory:
+        Option<crate::domain_computation::primary_graph::request_execution::QueryMemoryReservation>,
     walk_scope_bytes: u64,
     // Both physical sets drop before their original retained payment.
     walk_scope_memory: Option<worth_execution::ExecutionMemoryReservation>,

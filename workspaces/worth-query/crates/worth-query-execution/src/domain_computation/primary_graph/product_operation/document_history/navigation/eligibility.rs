@@ -4,7 +4,6 @@ use super::{
     WorthQueryHistoryNavigationDenial as Denial,
     WorthQueryHistoryNavigationEligibilityDenial as Eligibility,
 };
-use {crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation};
 use worth_query_declaration::facade::{
     application_history::{
         ApplicationHistoryAccessBinding, ApplicationHistoryBinding, ApplicationHistoryModelDomain,
@@ -14,6 +13,10 @@ use worth_query_declaration::facade::{
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledDocumentHistory};
 use worth_relational::facade::mvcc::{
     RelationalRetainedEntitySelectionPreparationError as Preparation, RelationalTransactionIntent,
+};
+use {
+    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase,
+    crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation,
 };
 
 fn correction(cause: Eligibility) -> Denial {

@@ -1,6 +1,5 @@
 //! Source-program dispatch into the existing typed capability admission owner.
 mod effect;
-use {crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionMode, crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation};
 pub(super) use effect::{AdoptionEffect, AdoptionEffectOutcome, AdoptionEffectRefusal};
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
@@ -10,6 +9,11 @@ use worth_query_declaration::facade::{
     application_schema::ApplicationOperationRef,
 };
 use worth_query_installation::facade::ApplicationSchema;
+use {
+    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase,
+    crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionMode,
+    crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation,
+};
 
 /// Why the selected source program refused inspection or adoption.
 /// Authorization refusals perform no adoption effects and preserve carried custody.

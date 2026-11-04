@@ -1,6 +1,9 @@
 //! Failed decision polls stay with preparation even when a handler catches them.
-use {super::HandlerInterruption, crate::domain_computation::primary_graph::request_execution::QueryRequestExecution};
 use std::cell::Cell;
+use {
+    super::HandlerInterruption,
+    crate::domain_computation::primary_graph::request_execution::QueryRequestExecution,
+};
 
 pub(super) fn checkpoint(
     execution: &QueryRequestExecution<'_>,

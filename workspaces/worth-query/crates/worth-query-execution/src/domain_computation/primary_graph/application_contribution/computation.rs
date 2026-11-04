@@ -49,7 +49,6 @@ pub use checkpoint::{
 };
 pub use denial::WorthQueryManagedComputationDenial;
 
-
 pub struct WorthQueryInstalledManagedComputation<Schema, Feature, Computation, Owner> {
     owner: Arc<Owner>,
     marker: PhantomData<fn() -> (Schema, Feature, Computation)>,

@@ -6,9 +6,12 @@ use worth_execution::PartitionItemId;
 use worth_foundational::facade::PartitionIdentity;
 use worth_query_declaration::facade::application_schema::ApplicationValueEncodeDenial;
 
-use {crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationInterruption, crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial};
 use super::reader::{WorthQueryComputationInputDenial, WorthQueryComputationReadDenial};
 use super::routing::ComputationPartitionRoutingDenial;
+use {
+    crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationInterruption,
+    crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial,
+};
 
 /// Why one partition stopped.
 #[derive(Debug, Eq, PartialEq)]

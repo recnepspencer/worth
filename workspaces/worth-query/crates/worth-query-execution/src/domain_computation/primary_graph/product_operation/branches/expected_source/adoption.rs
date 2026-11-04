@@ -9,7 +9,9 @@ use worth_runtime_world::facade::{
 #[derive(Debug)]
 pub enum WorthQueryExpectedProductBranchAdoptionDenial {
     ForeignPhase,
-    Stopped(crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial),
+    Stopped(
+        crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial,
+    ),
     /// The application's actual head slot no longer names the selected source.
     HeadReplaced,
     CandidateAdmission(WorthQueryProductBranchAdmissionDenial),
