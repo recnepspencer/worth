@@ -21,8 +21,16 @@ impl ReopenedPhysicalRecovery {
     pub(crate) const fn payload(&self) -> &ReopenedPayload {
         self.backing.payload()
     }
-    pub(crate) fn into_payload(self) -> ReopenedPayload {
-        self.backing.into_payload()
+    pub(crate) fn into_handoff_parts(
+        self,
+    ) -> (
+        ReopenedPayload,
+        crate::orchestration::RecoveryHandoffBacking,
+    ) {
+        self.backing.into_handoff_parts()
+    }
+    pub(crate) fn payload_backing_bytes(&self) -> Option<u64> {
+        self.backing.payload_backing_bytes().ok()
     }
     pub(crate) fn backing_bytes(&self) -> Option<u64> {
         self.backing.backing_bytes().ok()

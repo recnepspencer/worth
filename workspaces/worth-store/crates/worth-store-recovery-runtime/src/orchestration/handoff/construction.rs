@@ -69,3 +69,13 @@ impl RejoinConstruction {
         }
     }
 }
+
+/// Constructor-only facts; later publication metadata remains in admitted backing.
+pub(super) struct RejoinConstructionInput {
+    pub(super) construction: RejoinConstruction,
+    pub(super) custody: crate::progression::CustodyState,
+    pub(super) tier: Option<VerifiedSelectedTierEpochCustody>,
+    pub(super) allocation: Option<PhysicalRecoveryAllocationAdmission>,
+    pub(super) absent: Option<AbsentCheckpointWitness>,
+    pub(super) durability: Option<ConfiguredPhysicalDurabilityDeclaration>,
+}
