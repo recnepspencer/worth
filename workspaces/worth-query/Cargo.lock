@@ -1008,6 +1008,7 @@ dependencies = [
  "worth-foundational",
  "worth-proof",
  "worth-query-admission",
+ "worth-query-declaration",
  "worth-query-execution",
  "worth-query-installation",
  "worth-query-testkit-execution-primary-graph-application-attempt",
