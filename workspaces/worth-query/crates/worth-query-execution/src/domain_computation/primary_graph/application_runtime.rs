@@ -20,6 +20,7 @@ use crate::domain_computation::authorization::WorthQueryInstalledAuthorizationRe
 pub(crate) mod runtime_core;
 pub(in crate::domain_computation) use runtime_core::WorthQueryApplicationRuntimeCore;
 
+mod advancement_opening;
 mod certification_controls;
 mod certification_cost;
 mod conditional_cleanup;

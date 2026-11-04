@@ -16,8 +16,15 @@ use worth_foundational::{ExecutionReport, ExecutionRequestPolicy};
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_runtime_world::facade::RuntimeWorldExecutionPlacement;
 
-use {crate::domain_computation::primary_graph::request_execution::execution_stop::interruption_stop, crate::domain_computation::primary_graph::request_execution::execution_stop::lease_denial, crate::domain_computation::primary_graph::request_execution::execution_stop::memory_denial};
-use {crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationInterruption, crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial};
+use {
+    crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationInterruption,
+    crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial,
+};
+use {
+    crate::domain_computation::primary_graph::request_execution::execution_stop::interruption_stop,
+    crate::domain_computation::primary_graph::request_execution::execution_stop::lease_denial,
+    crate::domain_computation::primary_graph::request_execution::execution_stop::memory_denial,
+};
 
 pub(crate) mod test_placement;
 pub(in crate::domain_computation::primary_graph) use test_placement::test_policy;
@@ -37,7 +44,7 @@ pub type Resource = WorthQueryManagedComputationResourceDenial;
 mod accounting;
 mod decision_stage;
 pub(crate) mod descendants;
-mod retained_dispatch;
+pub(in crate::domain_computation::primary_graph) mod retained_dispatch;
 mod tree_charge;
 pub(in crate::domain_computation::primary_graph) use descendants::MemberRequestExecution;
 pub(crate) mod advancement;
@@ -128,7 +135,9 @@ impl<'a> QueryRequestExecution<'a> {
     }
 
     /// A safe point outside any pattern: the stop a kernel would make here.
-    pub(in crate::domain_computation::primary_graph) fn checkpoint(&self) -> Result<(), MapKernelStop> {
+    pub(in crate::domain_computation::primary_graph) fn checkpoint(
+        &self,
+    ) -> Result<(), MapKernelStop> {
         self.interruption()
             .map_or(Ok(()), |interruption| Err(interruption_stop(interruption)))
     }
@@ -150,7 +159,9 @@ impl<'a> QueryRequestExecution<'a> {
     }
 
     /// Every run, including serial placement, descends from the request's lease.
-    pub(in crate::domain_computation::primary_graph) fn dispatch(&self) -> Result<QueryDispatch<'_>, Resource> {
+    pub(in crate::domain_computation::primary_graph) fn dispatch(
+        &self,
+    ) -> Result<QueryDispatch<'_>, Resource> {
         let form = match &self.form {
             Form::Leased { lease, policy } | Form::Serial { lease, policy } => {
                 let lease = lease.as_ref().map_err(|denial| lease_denial(*denial))?;

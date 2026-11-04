@@ -13,11 +13,11 @@ impl<'scope> TestHostRequest<'scope> {
 
 impl<'scope> TestHostRequest<'scope> {
     #[doc(hidden)]
-    pub fn phase_for_application_for_test<Schema: ApplicationSchema>(
+    pub fn phase_for_application_for_test<Owner: WorthQueryInstalledProductOwner + ?Sized>(
         &self,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &Owner,
     ) -> WorthQueryAdvancementPhase<'scope> {
-        Self::phase_for_application::<Schema>(self, runtime)
+        Self::phase_for_application::<Owner>(self, runtime)
     }
 }
 

@@ -4,6 +4,14 @@ use super::{
     *,
 };
 
+/// The product runtime an installed application owns, lent to fixture host phases so the
+/// fixture host never names the application runtime.
+pub trait WorthQueryInstalledProductOwner {
+    fn installed_product_runtime(
+        &self,
+    ) -> &crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime;
+}
+
 #[derive(Clone, Copy)]
 pub struct TestHostRequest<'scope> {
     active: &'scope ActiveAdvancement<'scope>,
@@ -45,11 +53,11 @@ impl<'scope> TestHostRequest<'scope> {
         WorthQueryBootstrapAdvancementPhase::new(self.borrowed_request_for_test())
     }
 
-    pub(crate) fn phase_for_application<Schema: ApplicationSchema>(
+    pub(crate) fn phase_for_application<Owner: WorthQueryInstalledProductOwner + ?Sized>(
         &self,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &Owner,
     ) -> WorthQueryAdvancementPhase<'scope> {
-        self.phase_for_product(&runtime.runtime.product_runtime)
+        self.phase_for_product(runtime.installed_product_runtime())
     }
 
     pub(super) fn from_installed(phase: &WorthQueryAdvancementPhase<'scope>) -> Self {

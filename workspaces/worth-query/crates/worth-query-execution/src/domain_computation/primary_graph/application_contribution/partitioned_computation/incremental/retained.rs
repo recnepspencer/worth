@@ -13,7 +13,6 @@ use std::sync::Arc;
 
 use worth_execution::{NativeReductionTree, PartitionItemId};
 
-use crate::domain_computation::primary_graph::request_execution::QueryMemoryReservation;
 use super::super::items::{ItemDigests, Items};
 use super::super::routing::ComputationPartitionRouting;
 pub(in crate::domain_computation) use super::carriage::ComputationPrior;
@@ -22,6 +21,7 @@ use crate::domain_computation::primary_graph::application_attempt::{
 };
 use crate::domain_computation::primary_graph::application_contribution::InstalledProducerEdition;
 use crate::domain_computation::primary_graph::invariant_projection::ComputationCallCharge;
+use crate::domain_computation::primary_graph::request_execution::QueryMemoryReservation;
 
 /// How one run of a partitioned computation ran.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -315,3 +315,14 @@ pub(in crate::domain_computation::primary_graph) struct CompletedComputationRun 
 }
 
 mod court_doors_for_test;
+
+impl crate::domain_computation::primary_graph::request_execution::retained_dispatch::WorthQueryRetainedReductionObserver
+    for WorthQueryPartitionedComputationFullCause
+{
+    fn observe_retained_reduction<R, F, E, Tree>(
+        self,
+        outcome: &worth_execution::RetainedReduceOutcome<R, F, E, Tree>,
+    ) {
+        super::observed::observe_retained_full_tree(self, outcome);
+    }
+}

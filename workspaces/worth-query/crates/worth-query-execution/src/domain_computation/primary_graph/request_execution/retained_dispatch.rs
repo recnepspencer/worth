@@ -4,6 +4,15 @@ use worth_execution::{
     ExecutionRequest, NativeRetainedReduction, RetainedMapDenial, RetainedReduceDenial,
 };
 
+/// What a settled retained reduction reports to the computation that asked for it, so the
+/// request never names that computation's causes.
+pub trait WorthQueryRetainedReductionObserver {
+    fn observe_retained_reduction<R, F, E, Tree>(
+        self,
+        outcome: &worth_execution::RetainedReduceOutcome<R, F, E, Tree>,
+    );
+}
+
 impl QueryRequestExecution<'_> {
     /// Lends the original request's active descendant to native retained nodes.
     pub(in crate::domain_computation::primary_graph) fn with_native_lease<R>(
@@ -46,14 +55,22 @@ impl QueryDispatch<'_> {
         )
     }
 
-    pub(in crate::domain_computation::primary_graph) fn reduce_retained<T, R, E, Kernel, Diagnostic, Combine>(
+    pub(in crate::domain_computation::primary_graph) fn reduce_retained<
+        T,
+        R,
+        E,
+        Kernel,
+        Diagnostic,
+        Combine,
+        Observer,
+    >(
         &self,
         ceiling: Option<u64>,
         map: &ExecutionMap<T, (), worth_execution::NativePayload>,
         (kernel, diagnostic): (Kernel, Diagnostic),
         identity: R,
         combine: Combine,
-        cause: crate::domain_computation::primary_graph::application_contribution::partitioned_computation::WorthQueryPartitionedComputationFullCause,
+        observer: Observer,
     ) -> Result<NativeRetainedReduction<R, Combine>, RetainedReduceDenial<E>>
     where
         T: Sync,
@@ -64,6 +81,7 @@ impl QueryDispatch<'_> {
         Diagnostic:
             Fn(&T, &mut MapKernelContext<'_, '_>) -> Result<R, MapKernelFailure<E>> + Clone + Sync,
         Combine: Fn(&R, &R) -> R + Clone + Sync,
+        Observer: WorthQueryRetainedReductionObserver,
     {
         let certification = self
             .certified_seed
@@ -76,7 +94,7 @@ impl QueryDispatch<'_> {
             identity,
             combine,
         );
-        crate::domain_computation::primary_graph::application_contribution::partitioned_computation::observe_retained_full_tree(cause, &outcome);
+        observer.observe_retained_reduction(&outcome);
         if let (Some((seed, kernel, identity, combine)), Ok(result)) =
             (certification, &outcome.result)
         {

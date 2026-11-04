@@ -26,21 +26,28 @@ impl Drop for AppliedIdentity {
         });
     }
 }
-pub(in crate::domain_computation::primary_graph) fn record_commit(
-    receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+/// The mutation identity a committed application reports when no member identity is applied,
+/// so the advancement observer never names the commit receipt.
+pub(in crate::domain_computation::primary_graph) trait WorthQueryObservedCommit {
+    fn observed_operation(&self) -> [u8; 32];
+    fn observed_idempotency_key(&self) -> [u8; 32];
+    fn observed_idempotency_intent(&self) -> [u8; 32];
+}
+
+pub(in crate::domain_computation::primary_graph) fn record_commit<
+    Commit: WorthQueryObservedCommit + ?Sized,
+>(
+    receipt: &Commit,
 ) {
     if !crate::domain_computation::execution_observation::is_installed() {
         return;
     }
     let identity = MEMBER
         .with(|member| member.borrow().clone())
-        .unwrap_or_else(|| {
-            let binding = receipt.idempotency_binding();
-            Identity::Mutation {
-                operation: *receipt.installed_operation(),
-                key: *binding.key_identity(),
-                intent: *binding.intent_identity(),
-            }
+        .unwrap_or_else(|| Identity::Mutation {
+            operation: receipt.observed_operation(),
+            key: receipt.observed_idempotency_key(),
+            intent: receipt.observed_idempotency_intent(),
         });
     super::record_event(WorthQueryAdvancementEventForTest {
         kind: Kind::Commit,

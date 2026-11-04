@@ -1,5 +1,6 @@
 //! Closed application commit receipt.
 
+mod advancement_observation;
 mod committed_changes;
 mod construction;
 mod description;
