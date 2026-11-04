@@ -39,7 +39,7 @@ impl WorthQueryOutputDemandDenialKind {
                 ) => Retryable,
             },
             Self::BridgeConditional(cause) => {
-                if crate::domain_computation::primary_graph::application_contribution::producer::demand::bridge_denial::is_temporarily_deferred(cause) {
+                if crate::domain_computation::primary_graph::application_contribution::producer::demand::bridge_deferral::is_temporarily_deferred(cause) {
                     Retryable
                 } else {
                     Terminal

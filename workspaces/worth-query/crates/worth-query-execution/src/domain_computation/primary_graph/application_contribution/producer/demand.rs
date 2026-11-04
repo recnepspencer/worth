@@ -16,6 +16,7 @@ type FamilySourceQuery<Schema, Family> =
 pub(in crate::domain_computation::primary_graph) use progression::CurrentBasis;
 pub(in crate::domain_computation::primary_graph) use progression::CurrentProof;
 pub(crate) mod bridge_denial;
+pub(crate) mod bridge_deferral;
 pub(crate) mod checkpoint_delivery;
 pub(super) mod disclosure;
 mod fulfillment;
@@ -41,11 +42,12 @@ use required_provenance::DemandProgressionProvenance;
 
 mod managed_cleanup;
 mod read_close;
+pub(crate) mod read_cleanup;
 
 
 
-pub use read_close::WorthQueryOutputReadCleanup;
-pub use read_close::WorthQueryOutputReadCloseDenial;
+pub use read_cleanup::WorthQueryOutputReadCleanup;
+pub use read_cleanup::WorthQueryOutputReadCloseDenial;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind;
 
