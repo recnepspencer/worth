@@ -2,6 +2,7 @@ use worth_execution::{
     CancellationSource, ExecutionAllocationPolicy, ExecutionRequest, SerialMemoryBudget,
     SerialRequest,
 };
+use worth_relational::facade::durability::RelationalCheckpointArtifactPolicy;
 use worth_relational::facade::{history::BranchId, runtime::RelationalRuntimeApi};
 
 #[test]
@@ -64,12 +65,27 @@ fn a_late_capture_cannot_regress_the_selected_transition_frontier_or_membership(
             ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-    transaction
+    let committed = transaction
         .commit(&execution, home.relational().runtime())
         .unwrap();
+    home.relational()
+        .runtime()
+        .snapshots()
+        .release_snapshot(&committed.snapshot)
+        .unwrap();
+    // Native capture precedes Store's exclusive publication-inventory fence.
+    // Two simultaneous prepared Store selections are intentionally refused.
     let earlier = home
         .relational()
-        .prepare_complete_checkpoint(&execution)
+        .runtime()
+        .complete_checkpoint_service()
+        .prepare(
+            &execution,
+            RelationalCheckpointArtifactPolicy::ExternalMembers {
+                current_members: &[],
+                source: None,
+            },
+        )
         .unwrap();
     let (_, source) = home
         .relational()
@@ -81,7 +97,10 @@ fn a_late_capture_cannot_regress_the_selected_transition_frontier_or_membership(
         .fork_branch(&execution, BranchId("later".into()), source)
         .unwrap();
     let selected = home.checkpoint(&execution).unwrap();
-    assert!(selected.covered_transitions().0 > earlier.covered_transitions().0);
+    assert!(
+        selected.covered_transitions().0
+            > earlier.checkpoint().covered_branch_transitions().unwrap().0
+    );
     let refused = home
         .publish_captured_relational_checkpoint_for_test(earlier, &execution)
         .unwrap_err();
@@ -166,9 +185,16 @@ fn selected_checkpoint_survives_observer_drop_online_history_and_mutation_before
             ..
         }
     ));
+    // Preserve the Native opening boundary observation before World admits its
+    // own retained components. World admission has separate source demands.
+    let native = crate::durable_run::open(directory.path(), &execution).unwrap();
+    assert_eq!(native.relational().cold_storage_reads().member_reads, 0);
+    assert!(matches!(
+        native.close(&execution),
+        ApplicationHomeCloseOutcome::Closed { .. }
+    ));
     let fixture = super::coupled_home::workload(directory.path(), false, &execution);
     let home = fixture.home;
-    assert_eq!(home.relational().cold_storage_reads().member_reads, 0);
     let operation = home.checkpoint_operation(Default::default()).unwrap();
     let prior_generation =
         crate::selected_checkpoint::generation_from_serving(home.physical_serving_for_test());

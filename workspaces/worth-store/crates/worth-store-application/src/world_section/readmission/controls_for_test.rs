@@ -22,7 +22,7 @@ where
 
     pub fn publish_captured_relational_checkpoint_for_test(
         &self,
-        checkpoint: worth_store_relational::PreparedCompleteRelationalSection,
+        checkpoint: worth_relational::facade::durability::CompleteRelationalNativeCheckpoint,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<crate::ApplicationHomeCheckpoint, crate::ApplicationHomeCheckpointDenial> {
         let world = self
@@ -34,7 +34,11 @@ where
             &self.home.context.checkpoint,
             Some(&world),
             execution,
-            || Ok(checkpoint),
+            || {
+                self.home
+                    .relational()
+                    .prepare_captured_complete_checkpoint_for_test(checkpoint, execution)
+            },
             None,
             None,
             None,

@@ -54,7 +54,12 @@ fn seeded_home(path: &std::path::Path, execution: &ExecutionRequest<'_, '_>) -> 
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .unwrap();
-    txn.commit(execution, home.relational().runtime()).unwrap();
+    let committed = txn.commit(execution, home.relational().runtime()).unwrap();
+    home.relational()
+        .runtime()
+        .snapshots()
+        .release_snapshot(&committed.snapshot)
+        .unwrap();
     fixture
 }
 
@@ -82,18 +87,20 @@ fn a_speculative_foreign_runtime_cannot_publish_a_home_checkpoint() {
         let before =
             crate::selected_checkpoint::generation_from_serving(second.physical_serving_for_test());
         let refusal = second.checkpoint(&execution).unwrap_err();
-        assert!(matches!(refusal, worth_store_application::ApplicationHomeCheckpointDenial::Native(
-            worth_store_relational::RelationalSectionCheckpointDenial::PublicationAdmission(
-                worth_relational::facade::durability::RelationalCheckpointAcknowledgementDenial::CaptureNotBound))));
+        assert!(matches!(&refusal, worth_store_application::ApplicationHomeCheckpointDenial::Native(
+            worth_store_relational::RelationalSectionCheckpointDenial::Capture(
+                worth_relational::facade::durability::RelationalNativeCheckpointCaptureDenial::OriginalAuthorityUnavailable))),
+            "foreign Complete must refuse original source authority: {refusal:?}");
         assert_eq!(
             crate::selected_checkpoint::generation_from_serving(second.physical_serving_for_test()),
             before
         );
+        // Release the deliberately foreign component before closing the Home
+        // whose immutable source that speculative fork may still retain.
+        drop(second);
         first.checkpoint(&execution).unwrap();
         first
             .close(&execution)
             .unwrap_or_else(|refused| panic!("World close: {:?}", refused.reason()));
-        // The foreign runtime is a deliberate owner-loss fixture.
-        drop(second);
     }
 }
