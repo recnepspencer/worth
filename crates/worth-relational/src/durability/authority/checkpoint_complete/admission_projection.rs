@@ -1,6 +1,7 @@
 //! Project original roles only after the protected original fold has verified.
 use super::{verified_originals::VerifiedCheckpointOriginals, Denial};
 use crate::durability::checkpoint_admission::{AdmissionRowKey, EncodedAdmissionRow};
+mod outputs;
 mod reference;
 mod root_directory;
 use serde::{ser::SerializeSeq, Serialize, Serializer};
@@ -157,14 +158,7 @@ pub(super) fn capture(
                 request,
             )?,
             encode(&Created(&created), request)?,
-            encode(
-                &Outputs {
-                    origin: &envelope.required_output_origin,
-                    materialization: &envelope.required_output_materialization,
-                    retirements: &envelope.required_output_codec_retirements,
-                },
-                request,
-            )?,
+            encode(&outputs::Projection(envelope), request)?,
         ];
         rows.push(EncodedAdmissionRow {
             key: AdmissionRowKey {
@@ -227,14 +221,6 @@ struct Visibility {
     schema: [u8; 32],
     correctness: u8,
     commitment: [u8; 32],
-}
-#[derive(Serialize)]
-struct Outputs<'a> {
-    origin: &'a Option<std::sync::Arc<crate::history::data::CanonicalRequiredOutputOrigin>>,
-    materialization:
-        &'a Option<std::sync::Arc<crate::history::data::CanonicalRequiredOutputMaterialization>>,
-    retirements:
-        &'a [std::sync::Arc<crate::history::data::CanonicalRequiredOutputCodecRetirement>],
 }
 struct Created<'a>(&'a [&'a crate::publication::patch::data::PublishedAuthoritativeRecordPatch]);
 impl Serialize for Created<'_> {

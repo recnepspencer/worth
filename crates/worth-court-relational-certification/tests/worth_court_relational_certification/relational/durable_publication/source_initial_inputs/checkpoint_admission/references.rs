@@ -43,14 +43,14 @@ fn projections(
     assert_eq!(at, bytes.len());
     (axes.unwrap(), roots, expected)
 }
-fn group<'a>(bytes: &'a [u8], at: &mut usize) -> (u8, &'a [u8]) {
+pub(super) fn group<'a>(bytes: &'a [u8], at: &mut usize) -> (u8, &'a [u8]) {
     let tag = bytes[*at];
     let length = u64::from_le_bytes(bytes[*at + 1..*at + 9].try_into().unwrap()) as usize;
     let start = *at + 41;
     *at = start + length;
     (tag, &bytes[start..*at])
 }
-fn no_runtime_identity(value: &Value) {
+pub(super) fn no_runtime_identity(value: &Value) {
     match value {
         Value::Object(fields) => {
             for (key, value) in fields {

@@ -3339,6 +3339,8 @@ NativeCheckpointBranchObservation/Reference/Target, which implement the sealed
 DurableIdentity marker. The new image contains no runtime-qualified reference,
 runtime instance slot or root allocation identity. Fork provenance remains a
 reference observation, without an invented source truth version.
+Required-output origin basis and codec-retirement source descriptors use that
+same logical component projection; their other original meaning is preserved.
 
 This producer step does not change the selected Home package yet. No existing
 development Home stops opening at this step. The planned WSRCAI01 package will
@@ -3355,6 +3357,7 @@ Requirement map for the producer's public courts:
 | D12 independently authenticated projected meanings | original_checkpoint_capture_seals_each_projected_role_independently mutates each of the eight roles and the root directory separately |
 | D17 actual encoding/copy/scan work | The same court observes charged work covering those operations in addition to the declared hash work |
 | D17 durable identity representation | checkpoint_image_records_logical_reference_coordinates_across_runtime_instances compares original public coordinates, rejects runtime/root identity fields and compares independently allocated histories |
+| D17 required-output source identity | checkpoint_image_records_original_required_output_membership_with_logical_basis exercises a genuine installed publisher; value-only codec_retirement_projection_keeps_meaning_and_omits_runtime_identity_slots checks the retirement projection without constructing runtime authority |
 | D12 original source and cut binding | checkpoint_image_sealing_refuses_a_different_original_source_or_cut |
 | D17 typed stop and version preflight | checkpoint_image_framing_refuses_unknown_versions_and_stopped_requests |
 

@@ -5,6 +5,7 @@ use worth_execution::ExecutionRequestArrayBuilder;
 use worth_foundational::facade::{CheckpointAdmissionCut, CheckpointAdmissionScope, HomeIdentity};
 use RelationalCheckpointAdmissionRefusal as Refusal;
 mod references;
+mod required_outputs;
 
 fn cut(capture: &CompleteRelationalNativeCheckpoint) -> CheckpointAdmissionCut {
     CheckpointAdmissionCut::new(
