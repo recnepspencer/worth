@@ -20,6 +20,9 @@ for name in ('selected_checkpoint_without_captured_original_base_refuses_without
 for name in ('selected_embedded_capture_refuses_before_canonical_body_demand',):
  reservations['worth-court-relational-certification::worth_court_relational_certification\nrelational::durable_publication::source_initial_inputs::checkpoint_admission::capture_cost::'+name]=1
 reservations['worth-court-relational-certification::worth_court_relational_certification\ncost::relational::source_initial_inputs::checkpoint_admission::selected_state_recapture_work_does_not_follow_discarded_covered_update_bytes']=1
+# Each added materialization court has one Serial caller and no joined worker.
+for name in ('head_materialization_budget_survives_edit_and_last_basis_drop', 'full_materialization_budget_survives_mirror_edits_until_runtime_drop'):
+ reservations['worth-court-relational-certification::worth_court_relational_certification\nrelational::durable_publication::source_initial_inputs::checkpoint_admission::region_memory::'+name]=1
 (out/'reservations.json').write_text(json.dumps(reservations))
 env.update(WORTH_REPO=str(root),WORTH_TEST_COST_RESERVATIONS=str(out/'reservations.json'),
            WORTH_TEST_COST_ACCOUNTING_DIRECTORY=str(out/'cpu'),WORTH_TEST_COST_SETUP_DIRECTORY=str(out/'setup'))
