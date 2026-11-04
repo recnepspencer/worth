@@ -52,6 +52,12 @@ class MemberDoorTests(unittest.TestCase):
             self.assertIsNotNone(located, text)
             self.assertEqual(text[located[0]:field_at], prefix, text)
 
+    def test_tuple_indexes_stay_in_the_postfix_expression(self):
+        from src_door_sites import postfix_start
+        source = Source('let s = result.0.state.lock();')
+        dot = [k for k, tok in enumerate(source.stream) if tok.value == 'state'][0] - 1
+        self.assertEqual(source.value(postfix_start(source, dot)), 'result')
+
     def test_assignment_and_mutable_borrow(self):
         for text, expected in (('a.f = 1;', True), ('a.g == 2;', False), ('a.h += 3;', True),
                                ('a.k[0] ^= 1;', True), ('a.m <<= 1;', True)):

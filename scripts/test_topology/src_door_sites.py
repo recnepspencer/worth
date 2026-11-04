@@ -52,6 +52,9 @@ def postfix_start(source, dot):
         if value == '?':
             j -= 1
             continue
+        if value.isdigit() and source.value(j - 1) == '.' and source.value(j - 2) != '.':
+            start, j = j, j - 2  # a tuple index: its receiver comes next
+            continue
         if source.stream[j].kind == 'ident' and value not in KEYWORDS:
             start = j
             if source.value(j - 1) == '.' and source.value(j - 2) != '.':
