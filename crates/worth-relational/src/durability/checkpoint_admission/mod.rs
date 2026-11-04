@@ -1,7 +1,10 @@
 //! Verified-original projection and protected checkpoint-root admission.
 mod artifact;
 mod authentication;
+pub(crate) mod binary_encoding;
 mod refusal;
+mod root_positions;
+pub(crate) use refusal::native_stop;
 mod wire;
 
 pub use artifact::RelationalCheckpointAdmissionArtifact;

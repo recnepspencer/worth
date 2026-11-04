@@ -6,6 +6,7 @@ use worth_foundational::facade::{CheckpointAdmissionCut, CheckpointAdmissionScop
 use RelationalCheckpointAdmissionRefusal as Refusal;
 mod references;
 mod required_outputs;
+mod root_projection;
 
 fn cut(capture: &CompleteRelationalNativeCheckpoint) -> CheckpointAdmissionCut {
     CheckpointAdmissionCut::new(

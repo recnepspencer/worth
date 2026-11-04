@@ -187,8 +187,12 @@ fn encode(
     value: &impl Serialize,
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<ExecutionImmutableBytes, Denial> {
-    crate::durability::artifact_payload_emission::request::encode_named_charged(&[], value, request)
-        .map_err(crate::durability::checkpoint_history::capture::capture_stop)
+    crate::durability::artifact_payload_emission::request::encode_named_charged(
+        &[],
+        &crate::durability::checkpoint_admission::binary_encoding::BinaryFixedArrays(value),
+        request,
+    )
+    .map_err(crate::durability::checkpoint_history::capture::capture_stop)
 }
 fn digest(bytes: &[u8], request: &ExecutionRequest<'_, '_>) -> Result<[u8; 32], Denial> {
     crate::durability::checkpoint_admission::capture_digest(bytes, request)

@@ -9,7 +9,7 @@ pub(in super::super) fn encode(
 ) -> Result<ExecutionImmutableBytes, Refusal> {
     let cut = crate::durability::artifact_payload_emission::request::encode_named_charged(
         &[],
-        cut,
+        &super::super::binary_encoding::BinaryFixedArrays(cut),
         request,
     )
     .map_err(super::super::refusal::native_stop)?;

@@ -73,7 +73,7 @@ pub(super) const CANONICAL_MEANINGS: [CheckpointAdmissionMeaning; 8] = [
     CheckpointAdmissionMeaning::Outputs,
 ];
 
-pub(super) fn native_stop(
+pub(crate) fn native_stop(
     cause: crate::durability::data::RelationalRecoveryStop,
 ) -> RelationalCheckpointAdmissionRefusal {
     use crate::durability::data::RelationalRecoveryStop as Stop;

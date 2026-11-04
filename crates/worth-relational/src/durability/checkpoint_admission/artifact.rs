@@ -3,7 +3,8 @@ use super::{wire, RelationalCheckpointAdmissionRefusal as Refusal};
 use std::ops::Range;
 use std::sync::Arc;
 use worth_execution::{
-    ExecutionArray, ExecutionImmutableBytes, ExecutionMemoryReservation, ExecutionRequest,
+    ExecutionArray, ExecutionImmutableBytes, ExecutionMemoryReservation, ExecutionOrderedMap,
+    ExecutionRequest,
 };
 use worth_foundational::facade::{BoundaryProtocolIdentity, CheckpointAdmissionCut};
 
@@ -19,6 +20,11 @@ struct ArtifactBacking {
     cut: CheckpointAdmissionCut,
     roots: Range<usize>,
     rows: ExecutionArray<wire::AdmissionRowIndex>,
+    commits: ExecutionOrderedMap<u64, usize>,
+    positions: ExecutionOrderedMap<
+        crate::history::data::CommitId,
+        crate::history::data::RequiredOutputPublicationPositions,
+    >,
     _memory: Option<ExecutionMemoryReservation>,
 }
 
@@ -47,6 +53,8 @@ impl RelationalCheckpointAdmissionArtifact {
             cut: decoded.cut,
             roots: decoded.roots,
             rows: decoded.rows,
+            commits: decoded.commits,
+            positions: decoded.positions,
             _memory: memory,
         })))
     }
