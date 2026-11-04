@@ -27,24 +27,21 @@ fn original_query_cancellation_and_deadline_survive_native_component_entry() {
         let visits = Rc::new(Cell::new(0));
         let observed = Rc::clone(&visits);
         let advancing_time = time.clone();
-        CHECKPOINT.with(|slot| {
-            *slot.borrow_mut() = Some(Box::new(move |subject| {
-                // Definition validation precedes acquisition. Stop only after the
-                // genuine Native component reader was entered, at its own control.
-                if subject != "Shells" || native_entries() == entered {
-                    return;
+        let _checkpoint = observe_checkpoints_for_test(Box::new(move |subject| {
+            // Definition validation precedes acquisition. Stop only after the
+            // genuine Native component reader was entered, at its own control.
+            if subject != "Shells" || native_entries() == entered {
+                return;
+            }
+            observed.set(observed.get() + 1);
+            if observed.get() == 1 {
+                if deadline_stop {
+                    advancing_time.advance(Duration::from_secs(1)).unwrap();
+                } else {
+                    cancellation.cancel();
                 }
-                observed.set(observed.get() + 1);
-                if observed.get() == 1 {
-                    if deadline_stop {
-                        advancing_time.advance(Duration::from_secs(1)).unwrap();
-                    } else {
-                        cancellation.cancel();
-                    }
-                }
-            }))
-        });
-        let _checkpoint = CheckpointGuard;
+            }
+        }));
         let host = worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request();
         let result = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::declared_queries::read::execute(
             &world,
