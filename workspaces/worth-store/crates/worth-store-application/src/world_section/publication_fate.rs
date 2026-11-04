@@ -1,7 +1,7 @@
 //! Only actual task terminals classify a submitted World journal publication.
 use worth_foundational::facade::{CanonicalDigestId, WorldDurableJournal};
 use worth_runtime_world::facade::{
-    WorldDurableMediumDenial as Denial, WorldPublicationObservation,
+    WorldDurableMediumDenial as Denial, WorldPublicationCompletion, WorldPublicationObservation,
 };
 use worth_store::physical_runtime::*;
 
@@ -12,16 +12,19 @@ pub(super) fn committed(committed: &OrderedJournalCommitted) -> WorldPublication
         "world.occurrences" => WorldDurableJournal::Occurrences,
         "world.custody" => WorldDurableJournal::Custody,
         _ => {
-            return WorldPublicationObservation::Indeterminate {
-                detail: Denial::PublicationUnresolved,
-            }
+            return WorldPublicationObservation::Finished(
+                WorldPublicationCompletion::indeterminate(Denial::PublicationUnresolved),
+            )
         }
     };
-    WorldPublicationObservation::Committed {
+    let Some(position) = std::num::NonZeroU64::new(committed.entry().position()) else {
+        return WorldPublicationObservation::EvidenceRequired;
+    };
+    WorldPublicationObservation::Finished(WorldPublicationCompletion::committed(
         journal,
-        position: committed.entry().position(),
-        digest: CanonicalDigestId::new(committed.entry().payload_sha256()),
-    }
+        position,
+        CanonicalDigestId::new(committed.entry().payload_sha256()),
+    ))
 }
 
 pub(super) fn terminal(
@@ -32,13 +35,19 @@ pub(super) fn terminal(
     }
     let detail = Denial::Storage(format!("{terminal:?}"));
     let fate = if terminal.failure().is_some() {
-        WorldPublicationObservation::Indeterminate { detail }
+        WorldPublicationObservation::Finished(WorldPublicationCompletion::indeterminate(detail))
     } else {
         match terminal.physical_outcome() {
             Some(PhysicalMutationOutcome::ProvenNoEffect(_)) => {
-                WorldPublicationObservation::ProvenNoEffect { detail }
+                WorldPublicationObservation::Finished(WorldPublicationCompletion::proven_no_effect(
+                    detail,
+                ))
             }
-            _ => WorldPublicationObservation::Indeterminate { detail },
+            Some(PhysicalMutationOutcome::Completed(_))
+            | Some(PhysicalMutationOutcome::Indeterminate(_))
+            | None => WorldPublicationObservation::Finished(
+                WorldPublicationCompletion::indeterminate(detail),
+            ),
         }
     };
     fate
@@ -70,8 +79,8 @@ pub(super) fn start_failure(
             )
     );
     if no_effect {
-        WorldPublicationObservation::ProvenNoEffect { detail }
+        WorldPublicationObservation::Finished(WorldPublicationCompletion::proven_no_effect(detail))
     } else {
-        WorldPublicationObservation::Indeterminate { detail }
+        WorldPublicationObservation::Finished(WorldPublicationCompletion::indeterminate(detail))
     }
 }

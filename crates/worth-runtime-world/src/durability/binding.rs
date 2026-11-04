@@ -4,6 +4,7 @@ use super::{
 };
 use std::sync::{Arc, Mutex};
 use worth_execution::ExecutionRequest;
+use worth_foundational::facade::DurablePublicationFate;
 use worth_foundational::facade::WorldDurableJournal;
 use worth_proof::AuthorityMarker;
 mod capture_reservation;
@@ -197,41 +198,48 @@ impl WorldDurableMediumBinding {
                     flight.barrier = Some(PublicationBarrier::EvidenceRequired);
                     Err(WorldDurablePublicationStop::EvidenceRequired)
                 }
-                WorldPublicationObservation::Committed {
-                    journal,
-                    position,
-                    digest,
-                } => {
-                    if journal != subject.journal() || position == 0 {
-                        flight.barrier = Some(PublicationBarrier::PhysicalIndeterminate);
-                        Err(WorldDurablePublicationStop::Unresolved)
-                    } else {
-                        match committed::matches_digest(subject, digest, execution) {
-                            Ok(true) => {
-                                let original = flight
-                                    .subject
-                                    .take()
-                                    .expect("registered original publication");
-                                Ok(WorldCommittedPublication::new(original, position, digest))
-                            }
-                            Ok(false) => {
+                WorldPublicationObservation::Finished(completion) => {
+                    let (fate, location) = completion.into_parts();
+                    match fate {
+                        DurablePublicationFate::Committed => {
+                            let (journal, position, digest) = location
+                                .expect("committed constructor retains its actual location");
+                            let position = position.get();
+                            if journal != subject.journal() {
                                 flight.barrier = Some(PublicationBarrier::PhysicalIndeterminate);
                                 Err(WorldDurablePublicationStop::Unresolved)
-                            }
-                            Err(_) => {
-                                flight.barrier = Some(PublicationBarrier::EvidenceRequired);
-                                Err(WorldDurablePublicationStop::EvidenceRequired)
+                            } else {
+                                match committed::matches_digest(subject, digest, execution) {
+                                    Ok(true) => {
+                                        let original = flight
+                                            .subject
+                                            .take()
+                                            .expect("registered original publication");
+                                        Ok(WorldCommittedPublication::new(
+                                            original, position, digest,
+                                        ))
+                                    }
+                                    Ok(false) => {
+                                        flight.barrier =
+                                            Some(PublicationBarrier::PhysicalIndeterminate);
+                                        Err(WorldDurablePublicationStop::Unresolved)
+                                    }
+                                    Err(_) => {
+                                        flight.barrier = Some(PublicationBarrier::EvidenceRequired);
+                                        Err(WorldDurablePublicationStop::EvidenceRequired)
+                                    }
+                                }
                             }
                         }
+                        DurablePublicationFate::ProvenNoEffect { detail } => {
+                            flight.subject = None;
+                            Err(WorldDurablePublicationStop::Refused(detail))
+                        }
+                        DurablePublicationFate::Indeterminate { detail: _ } => {
+                            flight.barrier = Some(PublicationBarrier::PhysicalIndeterminate);
+                            Err(WorldDurablePublicationStop::Unresolved)
+                        }
                     }
-                }
-                WorldPublicationObservation::ProvenNoEffect { detail } => {
-                    flight.subject = None;
-                    Err(WorldDurablePublicationStop::Refused(detail))
-                }
-                WorldPublicationObservation::Indeterminate { detail: _ } => {
-                    flight.barrier = Some(PublicationBarrier::PhysicalIndeterminate);
-                    Err(WorldDurablePublicationStop::Unresolved)
                 }
             }
         };

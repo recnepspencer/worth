@@ -8,9 +8,9 @@ pub use crate::durability::{
     WorldCheckpointOriginRetirement, WorldCheckpointOriginRetirementDenial, WorldCheckpointPort,
     WorldCheckpointReadSource, WorldCheckpointReadView, WorldCheckpointSelection,
     WorldCheckpointSubject, WorldDurableArtifact, WorldDurableFrameDenial, WorldDurableHomeBinding,
-    WorldDurableMediumDenial, WorldPublicationObservation, WorldPublicationTaskPosture,
-    WorldReadmissionDenial, WORLD_ARTIFACT_PROTOCOL, WORLD_ARTIFACT_VERSION,
-    WORLD_CHECKPOINT_PROTOCOL, WORLD_CHECKPOINT_VERSION,
+    WorldDurableMediumDenial, WorldPublicationCompletion, WorldPublicationObservation,
+    WorldPublicationTaskPosture, WorldReadmissionDenial, WORLD_ARTIFACT_PROTOCOL,
+    WORLD_ARTIFACT_VERSION, WORLD_CHECKPOINT_PROTOCOL, WORLD_CHECKPOINT_VERSION,
 };
 
 // Public signatures below name the already-issued component owner bundles and
