@@ -6,6 +6,33 @@ thread_local! {
     static PUBLICATION_RECORDS: RefCell<std::collections::BTreeMap<(u64, worth_relational::facade::identity::EntityId), u64>> = const { RefCell::new(std::collections::BTreeMap::new()) };
 }
 
+thread_local! {
+    static CALLER_PASSES: RefCell<Vec<(Result<(), crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind>, u64)>> = const { RefCell::new(Vec::new()) };
+}
+/// Observes pass results without adding an execution scope or changing control flow.
+pub fn caller_pass_reports_on_this_thread_for_test() -> Vec<(
+    Result<(), crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind>,
+    u64,
+)>{
+    CALLER_PASSES.with(|passes| std::mem::take(&mut *passes.borrow_mut()))
+}
+pub(super) fn record_caller_pass_for_test<R>(
+    result: &Result<R, crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial>,
+) {
+    if !crate::domain_computation::execution_observation::is_installed() {
+        return;
+    }
+    if CLEANUP_REGISTERED.with(|registered| !registered.replace(true)) {
+        crate::domain_computation::execution_observation::register_cleanup(clear_observations);
+    }
+    CALLER_PASSES.with(|passes| {
+        passes.borrow_mut().push((
+            result.as_ref().map(|_| ()).map_err(|denial| denial.kind()),
+            worth_signal::facade::observed_signal_request_work_on_this_thread_for_test(),
+        ))
+    });
+}
+
 pub(super) fn observe_publication(
     published: bool,
     recorded: bool,
@@ -83,4 +110,5 @@ fn clear_observations() {
     CLEANUP_REGISTERED.with(|registered| registered.set(false));
     PUBLICATIONS.with(|records| *records.borrow_mut() = Default::default());
     PUBLICATION_RECORDS.with(|records| *records.borrow_mut() = Default::default());
+    CALLER_PASSES.with(|records| records.borrow_mut().clear());
 }

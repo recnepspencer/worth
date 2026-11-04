@@ -232,9 +232,8 @@ pub(in crate::domain_computation::primary_graph) mod observation;
 
 pub use observation::{
     advancement_observations_on_this_thread_for_test, advancement_requests_on_this_thread_for_test,
-    caller_pass_reports_on_this_thread_for_test, WorthQueryAdvancementEventForTest,
-    WorthQueryAdvancementEventKindForTest, WorthQueryAdvancementIdentityForTest,
-    WorthQueryAdvancementObservationForTest,
+    WorthQueryAdvancementEventForTest, WorthQueryAdvancementEventKindForTest,
+    WorthQueryAdvancementIdentityForTest, WorthQueryAdvancementObservationForTest,
 };
 
 pub fn with_test_advancement<R>(
@@ -264,8 +263,6 @@ pub fn with_test_bootstrap_advancement<R>(
     })
     .expect("the declared fixture bootstrap allowance admits authoring")
 }
-
-pub(in crate::domain_computation::primary_graph) use observation::record_caller_pass_for_test;
 
 pub(crate) mod test_host_policy;
 pub(crate) use test_host_policy::TestHostRequest;

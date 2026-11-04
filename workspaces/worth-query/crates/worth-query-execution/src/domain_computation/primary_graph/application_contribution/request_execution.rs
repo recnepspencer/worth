@@ -253,9 +253,8 @@ impl QueryDispatch<'_> {
 
 pub use advancement::{
     advancement_observations_on_this_thread_for_test, advancement_requests_on_this_thread_for_test,
-    caller_pass_reports_on_this_thread_for_test, WorthQueryAdvancementEventForTest,
-    WorthQueryAdvancementEventKindForTest, WorthQueryAdvancementIdentityForTest,
-    WorthQueryAdvancementObservationForTest,
+    WorthQueryAdvancementEventForTest, WorthQueryAdvancementEventKindForTest,
+    WorthQueryAdvancementIdentityForTest, WorthQueryAdvancementObservationForTest,
 };
 
 pub(crate) use advancement::{
@@ -265,8 +264,6 @@ pub(crate) use advancement::{
 pub use advancement::{with_bootstrap_advancement, with_bootstrap_advancement_from_request};
 
 pub use advancement::WorthQueryBootstrapAdvancementPhase;
-
-pub(in crate::domain_computation::primary_graph) use advancement::record_caller_pass_for_test;
 
 pub(in crate::domain_computation::primary_graph) use advancement::observation::record_event;
 

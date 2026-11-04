@@ -341,6 +341,6 @@ pub fn denial(
     WorthQueryOutputDemandDenial::new(kind, subject)
 }
 
-mod caller_pass_observation;
+pub(in crate::domain_computation::primary_graph) mod caller_pass_observation;
 
 mod court_doors_for_test;

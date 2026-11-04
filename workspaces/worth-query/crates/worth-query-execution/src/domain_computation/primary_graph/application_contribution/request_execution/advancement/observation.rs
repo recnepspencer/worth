@@ -160,33 +160,6 @@ pub(in crate::domain_computation::primary_graph) fn record_event(
     });
 }
 
-thread_local! {
-    static CALLER_PASSES: RefCell<Vec<(Result<(), crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind>, u64)>> = const { RefCell::new(Vec::new()) };
-}
-/// Observes pass results without adding an execution scope or changing control flow.
-pub fn caller_pass_reports_on_this_thread_for_test() -> Vec<(
-    Result<(), crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind>,
-    u64,
-)>{
-    CALLER_PASSES.with(|passes| std::mem::take(&mut *passes.borrow_mut()))
-}
-pub(in crate::domain_computation::primary_graph) fn record_caller_pass_for_test<R>(
-    result: &Result<R, crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial>,
-) {
-    if !crate::domain_computation::execution_observation::is_installed() {
-        return;
-    }
-    if CLEANUP_REGISTERED.with(|registered| !registered.replace(true)) {
-        crate::domain_computation::execution_observation::register_cleanup(clear_observations);
-    }
-    CALLER_PASSES.with(|passes| {
-        passes.borrow_mut().push((
-            result.as_ref().map(|_| ()).map_err(|denial| denial.kind()),
-            worth_signal::facade::observed_signal_request_work_on_this_thread_for_test(),
-        ))
-    });
-}
-
 pub(super) fn record_panicked(report: Option<ExecutionReport>) {
     if let Some(report) = report {
         finish(report, Some(WorthQueryAdvancementDenial::Panicked));
@@ -211,7 +184,6 @@ fn clear_observations() {
     CLEANUP_REGISTERED.with(|registered| registered.set(false));
     REQUESTS.with(|records| records.borrow_mut().clear());
     ACTIVE.with(|active| *active.borrow_mut() = None);
-    CALLER_PASSES.with(|records| records.borrow_mut().clear());
 }
 
 impl crate::domain_computation::execution_observation::WorthQueryExecutionObservation {

@@ -116,11 +116,12 @@ pub(in crate::domain_computation::primary_graph) use partitioned_computation::ob
 
 pub(in crate::domain_computation::primary_graph) use request_execution::advancement_denial;
 
+pub use producer::demand::progression::caller_pass_observation::caller_pass_reports_on_this_thread_for_test;
+
 pub use request_execution::{
     advancement_observations_on_this_thread_for_test, advancement_requests_on_this_thread_for_test,
-    caller_pass_reports_on_this_thread_for_test, WorthQueryAdvancementEventForTest,
-    WorthQueryAdvancementEventKindForTest, WorthQueryAdvancementIdentityForTest,
-    WorthQueryAdvancementObservationForTest,
+    WorthQueryAdvancementEventForTest, WorthQueryAdvancementEventKindForTest,
+    WorthQueryAdvancementIdentityForTest, WorthQueryAdvancementObservationForTest,
 };
 
 pub(crate) use request_execution::{

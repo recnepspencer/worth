@@ -41,6 +41,7 @@ pub(crate) mod worker_custody;
 pub use member_execution::WorthQueryMemberExecution;
 mod decision_plan;
 mod denial;
+mod execution_refusal;
 mod preparation_loans;
 pub(crate) mod prepared_request;
 pub(crate) mod wave_dispatch;
@@ -48,10 +49,10 @@ pub(crate) mod wave_dispatch;
 pub use checkpoint::{
     WorthQueryManagedComputationCheckpoint, WorthQueryManagedComputationExecution,
 };
-pub use denial::{
-    WorthQueryManagedComputationCheckpointDenial, WorthQueryManagedComputationDenial,
-    WorthQueryManagedComputationInterruption, WorthQueryManagedComputationResourceDenial,
-    WorthQueryMemoryLimitLevel,
+pub use denial::WorthQueryManagedComputationDenial;
+pub use execution_refusal::{
+    WorthQueryManagedComputationCheckpointDenial, WorthQueryManagedComputationInterruption,
+    WorthQueryManagedComputationResourceDenial, WorthQueryMemoryLimitLevel,
 };
 
 pub struct WorthQueryInstalledManagedComputation<Schema, Feature, Computation, Owner> {

@@ -92,7 +92,7 @@ where
                 commit_authority.clone(),
                 &mut disclosure,
             );
-            super::super::super::super::request_execution::record_caller_pass_for_test(&result);
+            super::caller_pass_observation::record_caller_pass_for_test(&result);
             match result {
                 Ok(AdvancePassProgress::Answer(answer)) => {
                     if matches!(&answer, WorthQueryOutputDemandAdvance::Settled(_)) {
