@@ -90,16 +90,22 @@ class DoorBodyTests(unittest.TestCase):
         from src_door_writes import door_keys, normalized_doors
         one = 'impl<R = A> Set<R> {\n    pub fn get_for_test(&self) {}\n}\n'
         two = 'impl Set<B> {\n    pub fn get_for_test(&self) {}\n}\n'
-        self.assertEqual(door_keys(one), {('<R> Set<R>', 'get_for_test')})
+        self.assertEqual(door_keys(one), {(None, '<R> Set<R>', 'get_for_test')})
         self.assertNotEqual(door_keys(one), door_keys(two))
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             (root / 'a').mkdir()
+            (root / 'set.rs').write_text('pub struct Set<R>(R);\n')
             (root / 'a' / 'court_doors_for_test.rs').write_text(one)
             (root / 'b_court_doors_for_test.rs').write_text(one + '\n' + two)
+            # A different `Set` in its own module keeps its door.
+            (root / 'other').mkdir()
+            (root / 'other' / 'set.rs').write_text('pub struct Set<R>(R);\n')
+            (root / 'other' / 'court_doors_for_test.rs').write_text(one.replace('<R = A>', '<R>'))
             changed = normalized_doors(root)
             self.assertEqual(changed[root / 'a' / 'court_doors_for_test.rs'], one.replace('<R = A>', '<R>'))
             self.assertEqual(changed[root / 'b_court_doors_for_test.rs'], '\n' + two)
+            self.assertNotIn(root / 'other' / 'court_doors_for_test.rs', changed)
             for path, text in changed.items():
                 path.write_text(text)
             self.assertEqual(normalized_doors(root), {})

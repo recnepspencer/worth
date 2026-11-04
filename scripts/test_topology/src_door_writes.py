@@ -120,10 +120,42 @@ def header_key(header):
     return header
 
 
-def door_keys(text):
-    """{(exact impl header, door name)} of the `impl` blocks in door text."""
-    return {(header_key(block.group(1)), name) for block in IMPL_BLOCK.finditer(text)
-            for name in re.findall(r'\bpub fn (\w+_for_test)\b', block.group(2))}
+_DEFINITIONS = {}
+DEFINES = re.compile(r'\b(?:struct|enum|union|type)\s+([A-Z]\w*)')
+
+
+def type_owner(library, header, door_path):
+    """The file defining the impl's self type, so two types spelled alike stay apart. A name
+    defined more than once resolves to the definition nearest the door file (longest shared
+    path); an unknown name to the door's own directory."""
+    library = Path(library)
+    if library not in _DEFINITIONS:
+        table = defaultdict(list)
+        for path in sorted(library.rglob('*.rs')):
+            if not path.name.endswith('court_doors_for_test.rs') and 'court_doors_for_test' not in path.parts:
+                for name in set(DEFINES.findall(path.read_text(encoding='utf-8'))):
+                    table[name].append(path)
+        _DEFINITIONS[library] = table
+    rest = re.sub(r'^\s*<.*?>\s', ' ', header + ' ', count=1, flags=re.S) if header.lstrip().startswith('<') else header
+    self_type = re.match(r'\s*&?\s*((?:[\w]+::)*)(\w+)', rest)
+    if self_type is None:
+        return str(Path(door_path).parent)
+    candidates = _DEFINITIONS[library].get(self_type.group(2), [])
+    if not candidates:
+        return str(Path(door_path).parent)
+    door = Path(door_path).parts
+    return str(max(candidates, key=lambda c: (len([1 for a, b in zip(c.parts, door) if a == b]), -len(c.parts))))
+
+
+def door_keys(text, door_path=None, library=None):
+    """{(self type owner, exact impl header, door name)} of the `impl` blocks in door text. The
+    owner is the file defining the self type when `library` is given."""
+    keys = set()
+    for block in IMPL_BLOCK.finditer(text):
+        owner = type_owner(library, block.group(1), door_path) if library is not None else None
+        keys |= {(owner, header_key(block.group(1)), name)
+                 for name in re.findall(r'\bpub fn (\w+_for_test)\b', block.group(2))}
+    return keys
 
 
 def door_files(library):
@@ -132,8 +164,8 @@ def door_files(library):
 
 def normalized_doors(library):
     """{door file: text} with defaults stripped from impl headers and a door that repeats an
-    (exact header, name) seen earlier (in path order) removed: an inherent method name is one
-    namespace per type across the crate."""
+    (self type's defining file, exact header, name) seen earlier (in path order) removed: an
+    inherent method name is one namespace per type across the crate."""
     from src_door_members_text import without_defaults
     seen, result = set(), {}
     for path in door_files(library):
@@ -142,7 +174,8 @@ def normalized_doors(library):
         def keep(block):
             header = block.group(1)
             names = set(re.findall(r'\bpub fn (\w+_for_test)\b', block.group(2)))
-            keys = {(header_key(header), n) for n in names}
+            owner = type_owner(library, header, path)
+            keys = {(owner, header_key(header), n) for n in names}
             if keys and keys <= seen:
                 return ''
             seen.update(keys)
@@ -160,17 +193,18 @@ def door_texts(plan):
     """{door file path: (new full text, mount edit or None)} for every module given doors."""
     result = {}
     # One inherent namespace per type across the crate: keys already in any door file count.
-    present = set()
+    present, library = set(), None
     if plan.doors:
-        for path in door_files(door_file_path(plan.index[()], plan.index).parent):
-            present |= door_keys(path.read_text(encoding='utf-8'))
+        library = door_file_path(plan.index[()], plan.index).parent
+        for path in door_files(library):
+            present |= door_keys(path.read_text(encoding='utf-8'), path, library)
     for names, entries in sorted(plan.doors.items()):
         node = plan.index[names]
         path = door_file_path(node, plan.index)
         existing = path.read_text(encoding='utf-8') if path.exists() else HEADER
         added = []
         for _key, text in sorted(entries.items()):
-            keys = door_keys(text)
+            keys = door_keys(text, path, library)
             if text not in existing and not keys <= present:
                 added.append(text)
                 present |= keys
