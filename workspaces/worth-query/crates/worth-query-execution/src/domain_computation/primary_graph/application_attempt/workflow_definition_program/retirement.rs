@@ -25,7 +25,7 @@ use super::super::{
 use super::lineage::{lineage_denial, lineage_identity_facts, text, CURRENT_DEFINITION_WORK_LIMIT};
 use super::{denial, intent_identity, PublishedWorkflowDefinitionRef};
 use crate::basis::WorthQueryProductBranchReadIdentity;
-use crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout;
+use crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout;
 
 mod outcome;
 

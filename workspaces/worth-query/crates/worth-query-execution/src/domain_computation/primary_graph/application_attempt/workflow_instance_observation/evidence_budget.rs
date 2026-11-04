@@ -4,9 +4,7 @@
 //! Back, a yield or a duplicate delivery neither spends nor restores it.
 
 use super::{ObservedWorkflowInstance, ObservedWorkflowTransition};
-use crate::domain_computation::primary_graph::workflow::instance::{
-    WorkflowTransitionLocator, WorkflowTransitionProgressObservation,
-};
+use {crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowTransitionLocator, crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowTransitionProgressObservation};
 
 impl ObservedWorkflowInstance {
     pub(in crate::domain_computation::primary_graph::application_attempt) fn lineage_evidence_bytes(

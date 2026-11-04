@@ -24,7 +24,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         .transition
         .executor
         .observe(runtime, execution, snapshot, transition, kind, facts)?;
-    let applicable = crate::domain_computation::primary_graph::workflow::actor::record::validate_actor_applicability;
+    let applicable = crate::domain_computation::primary_graph::application_attempt::workflow::actor::record::validate_actor_applicability;
     applicable(advancer, true)?;
     applicable(executor, has_operation_receipt)?;
     let Some(advancer) = advancer else {

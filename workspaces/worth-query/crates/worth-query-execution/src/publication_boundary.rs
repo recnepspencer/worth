@@ -106,20 +106,11 @@ pub mod signed_creation {
 
 pub mod workflow_definition_publication {
 
-    pub use crate::domain_computation::primary_graph::{
-        PerformedWorkflowDefinitionPublication, PreparedWorkflowDefinitionPublication,
-        PublishedWorkflowDefinitionRef, WorkflowDefinitionBindingDenial,
-        WorkflowDefinitionExpectedPredecessor, WorkflowDefinitionPreparationDenial,
-        WorkflowDefinitionPublicationOutcome, WorthQueryWorkflowDefinitionPublicationAdapter,
-    };
+    pub use {crate::domain_computation::primary_graph::PerformedWorkflowDefinitionPublication, crate::domain_computation::primary_graph::PreparedWorkflowDefinitionPublication, crate::domain_computation::primary_graph::PublishedWorkflowDefinitionRef, crate::domain_computation::primary_graph::application_attempt::workflow::WorkflowDefinitionBindingDenial, crate::domain_computation::primary_graph::WorkflowDefinitionExpectedPredecessor, crate::domain_computation::primary_graph::application_attempt::workflow::WorkflowDefinitionPreparationDenial, crate::domain_computation::primary_graph::WorkflowDefinitionPublicationOutcome, crate::domain_computation::primary_graph::application_attempt::workflow::WorthQueryWorkflowDefinitionPublicationAdapter};
 }
 
 pub mod workflow_definition_retirement {
-    pub use crate::domain_computation::primary_graph::{
-        PerformedWorkflowDefinitionRetirement, PreparedWorkflowDefinitionRetirement,
-        PublishedWorkflowDefinitionRef, WorkflowDefinitionPreparationDenial,
-        WorkflowDefinitionRetirementOutcome, WorthQueryWorkflowDefinitionRetirementAdapter,
-    };
+    pub use {crate::domain_computation::primary_graph::PerformedWorkflowDefinitionRetirement, crate::domain_computation::primary_graph::PreparedWorkflowDefinitionRetirement, crate::domain_computation::primary_graph::PublishedWorkflowDefinitionRef, crate::domain_computation::primary_graph::application_attempt::workflow::WorkflowDefinitionPreparationDenial, crate::domain_computation::primary_graph::WorkflowDefinitionRetirementOutcome, crate::domain_computation::primary_graph::application_attempt::workflow::WorthQueryWorkflowDefinitionRetirementAdapter};
 }
 
 pub mod workflow_instance {
@@ -137,18 +128,7 @@ pub mod workflow_instance {
 pub mod workflow_advance {
     pub use crate::domain_computation::primary_graph::application_attempt::WorthQueryGuardedWorkflowOperationCustody;
     pub use crate::domain_computation::primary_graph::application_attempt::WorthQueryWorkflowActorContext;
-    pub use crate::domain_computation::primary_graph::{
-        PerformedWorkflowApproval, PerformedWorkflowAssessmentEvidence,
-        PerformedWorkflowTransition, PreparedWorkflowAdvance, PreparedWorkflowAssessment,
-        PreparedWorkflowOperation, PublishedWorkflowInstanceRef, PublishedWorkflowProposalRef,
-        RequiredWorkflowActor, RequiredWorkflowApproval, RequiredWorkflowAssessment,
-        RequiredWorkflowCondition, RequiredWorkflowEvidence, RequiredWorkflowOperation,
-        RequiredWorkflowProposal, WorkflowApprovalBodyDenial, WorkflowApprovalBodyPreparation,
-        WorkflowApprovalDecision, WorkflowConditionOperand, WorkflowLocalActionKind,
-        WorkflowOperationAuthority, WorkflowOperationAuthoritySlot, WorkflowProgressOutcome,
-        WorkflowTransitionBindingDenial, WorkflowTransitionPreparationDenial,
-        WorthQueryWorkflowAdvanceAdapter, WorthQueryWorkflowConditionSources,
-    };
+    pub use {crate::domain_computation::primary_graph::PerformedWorkflowApproval, crate::domain_computation::primary_graph::PerformedWorkflowAssessmentEvidence, crate::domain_computation::primary_graph::PerformedWorkflowTransition, crate::domain_computation::primary_graph::PreparedWorkflowAdvance, crate::domain_computation::primary_graph::PreparedWorkflowAssessment, crate::domain_computation::primary_graph::PreparedWorkflowOperation, crate::domain_computation::primary_graph::PublishedWorkflowInstanceRef, crate::domain_computation::primary_graph::PublishedWorkflowProposalRef, crate::domain_computation::primary_graph::RequiredWorkflowActor, crate::domain_computation::primary_graph::RequiredWorkflowApproval, crate::domain_computation::primary_graph::RequiredWorkflowAssessment, crate::domain_computation::primary_graph::RequiredWorkflowCondition, crate::domain_computation::primary_graph::RequiredWorkflowEvidence, crate::domain_computation::primary_graph::RequiredWorkflowOperation, crate::domain_computation::primary_graph::RequiredWorkflowProposal, crate::domain_computation::primary_graph::WorkflowApprovalBodyDenial, crate::domain_computation::primary_graph::WorkflowApprovalBodyPreparation, crate::domain_computation::primary_graph::WorkflowApprovalDecision, crate::domain_computation::primary_graph::application_attempt::workflow::definition::WorkflowConditionOperand, crate::domain_computation::primary_graph::WorkflowLocalActionKind, crate::domain_computation::primary_graph::WorkflowOperationAuthority, crate::domain_computation::primary_graph::WorkflowOperationAuthoritySlot, crate::domain_computation::primary_graph::WorkflowProgressOutcome, crate::domain_computation::primary_graph::WorkflowTransitionBindingDenial, crate::domain_computation::primary_graph::WorkflowTransitionPreparationDenial, crate::domain_computation::primary_graph::WorthQueryWorkflowAdvanceAdapter, crate::domain_computation::primary_graph::WorthQueryWorkflowConditionSources};
 }
 
 pub mod workflow_birth {
@@ -170,10 +150,7 @@ pub mod workflow_proposal {
         PublishedWorkflowProposalRef, WorkflowProposalBindingDenial, WorkflowProposalOutcome,
         WorkflowProposalPreparationDenial, WorthQueryWorkflowProposalAdapter,
     };
-    pub use crate::domain_computation::primary_graph::{
-        PreparedWorkflowCapturedInput, WorkflowCapturedInputContract, WorkflowCapturedInputDenial,
-        WorkflowCapturedInputSource, WorkflowCapturedInputs,
-    };
+    pub use {crate::domain_computation::primary_graph::application_attempt::workflow::captured_input::PreparedWorkflowCapturedInput, crate::domain_computation::primary_graph::application_attempt::workflow::captured_input::WorkflowCapturedInputContract, crate::domain_computation::primary_graph::application_attempt::workflow::captured_input::WorkflowCapturedInputDenial, crate::domain_computation::primary_graph::application_attempt::workflow::captured_input::WorkflowCapturedInputSource, crate::domain_computation::primary_graph::application_attempt::workflow::captured_input::WorkflowCapturedInputs};
 }
 
 /// Opaque original-discovery evidence for Publication's complete-set guard.

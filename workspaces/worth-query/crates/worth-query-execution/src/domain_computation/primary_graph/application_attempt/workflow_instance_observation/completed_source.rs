@@ -5,7 +5,7 @@ use super::{
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
     WorthQueryApplicationObservedFact,
 };
-use crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout;
+use crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout;
 use worth_relational::facade::{
     identity::EntityId, runtime::RelationalRuntime, snapshots::SnapshotHandle,
 };

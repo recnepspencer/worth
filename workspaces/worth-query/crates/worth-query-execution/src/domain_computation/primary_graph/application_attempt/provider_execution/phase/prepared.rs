@@ -131,7 +131,7 @@ impl<'a, 'phase, 'request, Schema, Operation, Input, Scope>
 }
 
 struct WorthQueryProviderAttemptPreparation {
-    workflow_origin: Option<crate::domain_computation::primary_graph::workflow::operation_output::WorkflowOperationOrigin>,
+    workflow_origin: Option<crate::domain_computation::primary_graph::application_attempt::workflow::operation_output::WorkflowOperationOrigin>,
     local_action_settlement: Option<super::super::super::workflow_transition_program::LocalActionSettlementProof>,
     body_external_emission: Option<crate::domain_computation::primary_graph::operation_body::emission::BodyExternalEffectSelection>,
     required_output_demand: Option<crate::domain_computation::primary_graph::RequiredOutputDemandContext>,

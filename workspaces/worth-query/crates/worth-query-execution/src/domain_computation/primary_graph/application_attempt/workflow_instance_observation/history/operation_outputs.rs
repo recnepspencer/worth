@@ -1,12 +1,6 @@
 //! Reconstruct native correspondence closure without consulting today's business selection.
 use super::{budget::HistoryReconstructionCharge, denial, WorthQueryApplicationAttemptDenial};
-use crate::domain_computation::primary_graph::{
-    application_attempt::{
-        observe_adjacency, observe_field_value,
-        WorthQueryApplicationAdjacencyDirection as Direction,
-    },
-    workflow::schema::WorthQueryWorkflowLayout,
-};
+use {crate::domain_computation::primary_graph::application_attempt::observe_adjacency, crate::domain_computation::primary_graph::application_attempt::observe_field_value, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAdjacencyDirection as Direction, crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout};
 use std::collections::BTreeMap;
 use worth_foundational::facade::{AspectFieldLocator, AspectValue, InternedString};
 use worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture as Posture;
@@ -111,7 +105,7 @@ impl OutputContextReader<'_, '_, '_> {
                 field,
             )
         };
-        crate::domain_computation::primary_graph::workflow::operation_output::decode_transition_output_context(
+        crate::domain_computation::primary_graph::application_attempt::workflow::operation_output::decode_transition_output_context(
             read(&layout.protocol_version)?,
             read(&layout.output_binding)?,
             read(&layout.output_count)?,

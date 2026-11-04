@@ -3,11 +3,7 @@ use super::{
     reference::{ProposalText, PublishedWorkflowProposalRef},
     *,
 };
-use crate::domain_computation::primary_graph::{
-    application_attempt::workflow_instance_observation::read_fields::{identity, ReadFields},
-    application_discovery::WorthQueryWorkflowReadDenial as Denial,
-    workflow::schema::WorthQueryWorkflowLayout,
-};
+use {crate::domain_computation::primary_graph::application_attempt::workflow_instance_observation::read_fields::identity, crate::domain_computation::primary_graph::application_attempt::workflow_instance_observation::read_fields::ReadFields, crate::domain_computation::primary_graph::application_discovery::WorthQueryWorkflowReadDenial as Denial, crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout};
 pub(in crate::domain_computation::primary_graph) fn observe(
     fields: &ReadFields<'_, '_, '_>,
     layout: &WorthQueryWorkflowLayout,
@@ -26,8 +22,8 @@ pub(in crate::domain_computation::primary_graph) fn observe(
     }
     let kind = layout.proposal.entity_kind;
     match fields.u64(entity, kind, &layout.proposal.protocol_version)? {
-        super::super::super::super::workflow::schema::version::WORKFLOW_FACT_PROTOCOL_VERSION => {},
-        super::super::super::super::workflow::schema::version::WORKFLOW_CAPTURED_PROPOSAL_PROTOCOL_VERSION => {
+        crate::domain_computation::primary_graph::application_attempt::workflow::schema::version::WORKFLOW_FACT_PROTOCOL_VERSION => {},
+        crate::domain_computation::primary_graph::application_attempt::workflow::schema::version::WORKFLOW_CAPTURED_PROPOSAL_PROTOCOL_VERSION => {
             let captured = fields.text(entity, kind, &layout.proposal.captured_identity)?;
             identity(captured.bytes())?;
             if fields.u64(entity, kind, &layout.proposal.captured_count)? == 0 { return Err(Denial::Corrupt); }
@@ -51,13 +47,13 @@ pub(in crate::domain_computation::primary_graph) fn observe(
         &layout.transition.protocol_version,
     )?;
     let node =
-        crate::domain_computation::primary_graph::workflow::definition::retained_descriptor::node(
+        crate::domain_computation::primary_graph::application_attempt::workflow::definition::retained_descriptor::node(
             fields,
             layout,
             definition,
             native_node,
         )?;
-    let selected=crate::domain_computation::primary_graph::workflow::instance::SelectedWorkflowProposal::from_node(&node).ok_or(Denial::Corrupt)?;
+    let selected=crate::domain_computation::primary_graph::application_attempt::workflow::instance::SelectedWorkflowProposal::from_node(&node).ok_or(Denial::Corrupt)?;
     if !selected.matches_recorded(
         std::str::from_utf8(operation.bytes()).map_err(|_| Denial::Corrupt)?,
         std::str::from_utf8(input_type.bytes()).map_err(|_| Denial::Corrupt)?,

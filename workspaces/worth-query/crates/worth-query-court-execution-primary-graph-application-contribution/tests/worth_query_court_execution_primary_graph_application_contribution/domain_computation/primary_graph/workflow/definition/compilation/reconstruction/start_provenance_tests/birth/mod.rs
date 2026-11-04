@@ -1,7 +1,7 @@
 //! Complete native birth producer/read regression, not a public mutation-authorization journey.
 use crate::domain_computation::primary_graph::workflow::definition::compilation::reconstruction::start_provenance_tests::*;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::model::WorthQueryApplicationCreationPartition;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::instance::facts::visit_instance_birth_facts;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow::instance::facts::visit_instance_birth_facts;
 use std::collections::BTreeMap;
 use worth_query_declaration::facade::application_program::ApplicationWorkflowComponentLimits;
 use worth_query_declaration::facade::application_schema::ApplicationEntityMarkerIdentity;
@@ -75,7 +75,7 @@ fn birth_subject_provenance_and_start_actor_remain_readable() {
     let value = graph
         .integration_handle_for_test()
         .with_runtime(&execution, |runtime| {
-            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::instance::start_provenance::admit(&execution, runtime, &before.0, &revision).unwrap()
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow::instance::start_provenance::admit(&execution, runtime, &before.0, &revision).unwrap()
         });
     let mut effects = vec![Effect::CreateEntity {
         kind: subject_kind,

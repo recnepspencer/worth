@@ -3,12 +3,12 @@ use worth_foundational::facade::AspectValue;
 use super::*;
 
 pub(super) fn prepare(
-    layout: &crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
-    meaning: &crate::domain_computation::primary_graph::workflow::WorkflowApprovalMeaning,
+    layout: &crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
+    meaning: &crate::domain_computation::primary_graph::application_attempt::workflow::WorkflowApprovalMeaning,
     basis: &worth_relational::facade::branch::AdmittedRelationalBranchBasis,
-    admitted_text: &crate::domain_computation::primary_graph::workflow::WorkflowApprovalFieldText,
+    admitted_text: &crate::domain_computation::primary_graph::application_attempt::workflow::WorkflowApprovalFieldText,
 ) -> Result<publication::PreparedWorkflowApprovalProjection, WorthQueryApplicationAttemptDenial> {
-    let mut fields = crate::domain_computation::primary_graph::workflow::workflow_approval_fields(
+    let mut fields = crate::domain_computation::primary_graph::application_attempt::workflow::workflow_approval_fields(
         layout,
         meaning,
         basis,

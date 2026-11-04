@@ -3,10 +3,7 @@ use super::{
     WorthQueryApplicationAdjacencyDirection, WorthQueryApplicationAttemptDenial,
     WorthQueryApplicationObservedFact,
 };
-use crate::domain_computation::primary_graph::workflow::{
-    definition::CompiledWorkflowDefinition, instance::WorkflowPerformedEffect,
-    schema::WorthQueryWorkflowLayout,
-};
+use {crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition, crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowPerformedEffect, crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout};
 use worth_foundational::facade::{AspectValue, InternedString};
 use worth_query_installation::facade::WorthQueryWorkflowHistoryReconstructionBudget;
 use worth_relational::facade::identity::EntityId;

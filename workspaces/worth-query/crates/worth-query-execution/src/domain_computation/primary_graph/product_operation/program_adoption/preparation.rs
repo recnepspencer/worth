@@ -232,7 +232,7 @@ pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
     expected_requirements: &WorthQueryProgramAdoptionRequirements,
     migration: Option<WorthQueryPreparedProgramMigration>,
     workflow: Option<
-        crate::domain_computation::primary_graph::workflow::WorthQueryWorkflowDispositions,
+        crate::domain_computation::primary_graph::application_attempt::workflow::WorthQueryWorkflowDispositions,
     >,
     maximum_selection_work: usize,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,

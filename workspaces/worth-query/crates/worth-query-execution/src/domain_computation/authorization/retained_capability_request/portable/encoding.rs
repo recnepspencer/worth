@@ -1,6 +1,6 @@
 //! Borrowed view of the original admitted request; JSON bytes own their payer.
 use super::*;
-use crate::domain_computation::primary_graph::workflow::actor::encoding::{self, FundedActorText};
+use {crate::domain_computation::primary_graph::application_attempt::workflow::actor::encoding, crate::domain_computation::primary_graph::application_attempt::workflow::actor::encoding::FundedActorText};
 
 #[derive(Serialize)]
 struct Request<'a> {
@@ -80,7 +80,7 @@ impl WorthQueryRetainedCapabilityRequest {
             .as_ref()
             .map(|actor| actor.encode(execution, MAXIMUM_PORTABLE_BYTES))
             .transpose()?;
-        encoding::encode(
+        crate::domain_computation::primary_graph::application_attempt::workflow::actor::encoding::encode(
             execution,
             &Request {
                 version: PORTABLE_VERSION,

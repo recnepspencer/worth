@@ -14,7 +14,7 @@ use super::{
     WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationObservedFact,
     WorthQueryCompleteApplicationReadSet,
 };
-use crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout;
+use crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout;
 use crate::domain_computation::runtime_time::WorthQueryRuntimeClock;
 
 /// Deadlines are recorded as Unix-epoch milliseconds on the installed clock.

@@ -5,10 +5,7 @@ use super::{
     adjacency_with_kind, denial, exact, observed_text, observed_u64,
     WorthQueryApplicationObservedFact,
 };
-use crate::domain_computation::primary_graph::{
-    application_attempt::WorthQueryApplicationAttemptDenial,
-    workflow::schema::WorthQueryWorkflowLayout,
-};
+use {crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial, crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout};
 
 #[allow(clippy::too_many_arguments)]
 pub(in crate::domain_computation::primary_graph::application_attempt) fn observe_retained_approval_binding(
@@ -51,7 +48,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         kind,
         &layout.approval.protocol_version,
         AspectValue::UInt64(
-            crate::domain_computation::primary_graph::workflow::schema::version::WORKFLOW_FACT_PROTOCOL_VERSION,
+            crate::domain_computation::primary_graph::application_attempt::workflow::schema::version::WORKFLOW_FACT_PROTOCOL_VERSION,
         ),
         facts,
     )?;
@@ -103,7 +100,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         |principal| {
             crate::domain_computation::authorization::decode_principal(execution, principal)
                 .map_err(|cause| {
-                    crate::domain_computation::primary_graph::workflow::actor::decoded_denial(
+                    crate::domain_computation::primary_graph::application_attempt::workflow::actor::decoded_denial(
                         cause,
                         "workflow approval principal evidence is invalid",
                     )

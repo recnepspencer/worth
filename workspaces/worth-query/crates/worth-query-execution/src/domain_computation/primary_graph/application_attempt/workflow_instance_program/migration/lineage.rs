@@ -8,7 +8,7 @@ use worth_relational::facade::snapshots::SnapshotHandle;
 use super::super::super::{
     observe_adjacency, observe_field_value, WorthQueryApplicationAdjacencyDirection,
 };
-use crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout;
+use crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout;
 
 /// The identity of the one successor a migrated source links from.
 pub fn successor_identity(

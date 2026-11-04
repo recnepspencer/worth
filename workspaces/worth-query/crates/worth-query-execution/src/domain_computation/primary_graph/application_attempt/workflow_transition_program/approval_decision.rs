@@ -71,7 +71,7 @@ where
             instance.definition_entity_id(),
             instance.definition_content_identity().clone(),
         );
-        let (mut compiled, mut facts) = crate::domain_computation::primary_graph::workflow::definition::reconstruct_compiled_definition(execution,
+        let (mut compiled, mut facts) = crate::domain_computation::primary_graph::application_attempt::workflow::definition::reconstruct_compiled_definition(execution,
                 self.lease.handle(),
                 self.lease.snapshot(),
                 &layout,
@@ -81,7 +81,7 @@ where
                 installed.support_identity_bytes(),
                 usize::from(installed.resources().maximum_definition_nodes()),
                 usize::from(installed.resources().maximum_definition_connections()),
-                crate::domain_computation::primary_graph::workflow::definition::WorkflowDefinitionCompilationPosture::Retained,
+                crate::domain_computation::primary_graph::application_attempt::workflow::definition::WorkflowDefinitionCompilationPosture::Retained,
         )?;
         let subject = self.admission.scope_entity_id();
         let maximum_transitions = usize::try_from(
@@ -140,7 +140,7 @@ where
         )?;
         let field_basis = self.lease.product().relational_basis().clone();
         let admitted_text = self.lease.handle().with_runtime(execution, |runtime| {
-            crate::domain_computation::primary_graph::workflow::WorkflowApprovalFieldText::admit(
+            crate::domain_computation::primary_graph::application_attempt::workflow::WorkflowApprovalFieldText::admit(
                 runtime,
                 execution,
                 &field_basis,
@@ -172,7 +172,7 @@ where
                 transition.settlement.node() == approval_node
                     && transition.settlement.occurrence() == required.occurrence()
             }).map(|transition| {
-                crate::domain_computation::primary_graph::workflow::instance::WorkflowTransitionLocator::new(
+                crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowTransitionLocator::new(
                     transition.entity, transition.settlement,
                 )
             })

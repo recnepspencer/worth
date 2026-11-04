@@ -17,7 +17,7 @@ use super::PreparedWorkflowTransitionReplays;
 
 pub struct PreparedWorkflowOperation<Schema, Operation, Input, Scope> {
     pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) admitted:
-        crate::domain_computation::primary_graph::workflow::instance::AdmittedWorkflowTransition<
+        crate::domain_computation::primary_graph::application_attempt::workflow::instance::AdmittedWorkflowTransition<
             Schema,
             Operation,
             Input,
@@ -26,7 +26,7 @@ pub struct PreparedWorkflowOperation<Schema, Operation, Input, Scope> {
     pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) required:
         RequiredWorkflowOperation,
     pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) layout:
-        crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
+        crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
     pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) program_revision:
         ApplicationProgramRevision,
     pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) replays:
@@ -49,7 +49,7 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowOperation<Schema, Operatio
 pub struct RequiredWorkflowOperation {
     pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) local_action: Option<super::super::local_actions::LocalActionDescriptor>,
     pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) captured_input:
-        Option<crate::domain_computation::primary_graph::WorkflowCapturedInputContract>,
+        Option<crate::domain_computation::primary_graph::application_attempt::workflow::captured_input::WorkflowCapturedInputContract>,
     pub(super) branch: crate::basis::WorthQueryProductBranch,
     pub(super) instance: worth_relational::facade::identity::EntityId,
     original_instance: super::super::super::PublishedWorkflowInstanceRef,
@@ -76,7 +76,7 @@ pub struct WorkflowOperationAuthoritySlot {
 
 pub struct WorkflowOperationAuthority {
     pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) captured_input:
-        Option<crate::domain_computation::primary_graph::WorkflowCapturedInputContract>,
+        Option<crate::domain_computation::primary_graph::application_attempt::workflow::captured_input::WorkflowCapturedInputContract>,
     pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) operation:
         String,
     pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) binding:
@@ -95,9 +95,9 @@ pub struct WorkflowOperationAuthority {
     /// The instance's deadline; the operation commits only before it.
     pub(in crate::domain_computation::primary_graph::application_attempt) deadline: Option<u64>,
     pub(in crate::domain_computation::primary_graph::application_attempt) settlement_basis:
-        crate::domain_computation::primary_graph::workflow::instance::WorkflowOperationSettlementBasis,
+        crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowOperationSettlementBasis,
     pub(in crate::domain_computation::primary_graph::application_attempt) workflow_layout:
-        crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
+        crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
     pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) approval_authority:
         Option<crate::domain_computation::authorization::WorthQueryWorkflowApprovalAuthorityBasis>,
     pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) workflow_execution_requirements:
@@ -153,7 +153,7 @@ impl RequiredWorkflowOperation {
         transition_identity: String,
         transition_identity_bytes: [u8; 32],
         occurrence: u64,
-        selected: crate::domain_computation::primary_graph::workflow::instance::SelectedWorkflowOperation,
+        selected: crate::domain_computation::primary_graph::application_attempt::workflow::instance::SelectedWorkflowOperation,
         input_identity: [u8; 32],
         authority: Option<WorkflowOperationAuthority>,
     ) -> Self {
@@ -190,7 +190,7 @@ impl RequiredWorkflowOperation {
     pub fn captured_input_contract(
         &self,
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
-    ) -> Option<&crate::domain_computation::primary_graph::WorkflowCapturedInputContract> {
+    ) -> Option<&crate::domain_computation::primary_graph::application_attempt::workflow::captured_input::WorkflowCapturedInputContract> {
         self.captured_input.as_ref()
     }
 
@@ -250,9 +250,9 @@ impl WorkflowOperationAuthority {
         observation: WorthQueryProductBranchReadIdentity,
         facts: Vec<WorthQueryApplicationObservedFact>,
         settlement_basis:
-            crate::domain_computation::primary_graph::workflow::instance::WorkflowOperationSettlementBasis,
+            crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowOperationSettlementBasis,
         workflow_layout:
-            crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
+            crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
         approval_authority: Option<
             crate::domain_computation::authorization::WorthQueryWorkflowApprovalAuthorityBasis,
         >,

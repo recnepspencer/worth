@@ -17,15 +17,15 @@ where
     pub(super) fn materialize_assessment_requirement(
         mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        layout: &crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
-        compiled: &crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowDefinition,
+        layout: &crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
+        compiled: &crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition,
         instance: super::super::PublishedWorkflowInstanceRef,
-        selected: crate::domain_computation::primary_graph::workflow::instance::SelectedWorkflowTransition,
+        selected: crate::domain_computation::primary_graph::application_attempt::workflow::instance::SelectedWorkflowTransition,
         live_membership: worth_relational::facade::identity::RelationId,
         retire_live_membership: bool,
         mut facts: Vec<super::super::WorthQueryApplicationObservedFact>,
-        assessment: crate::domain_computation::primary_graph::workflow::instance::SelectedWorkflowAssessment,
-        progress: &crate::domain_computation::primary_graph::workflow::instance::WorkflowInstanceProgress,
+        assessment: crate::domain_computation::primary_graph::application_attempt::workflow::instance::SelectedWorkflowAssessment,
+        progress: &crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowInstanceProgress,
         evidence_allowance: u64,
         allowance: crate::domain_computation::primary_graph::application_attempt::WorkflowStepAllowance,
     ) -> Result<
@@ -40,7 +40,7 @@ where
         })?;
         if !matches!(
             node.kind(),
-            crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowNodeKind::Assessment {
+            crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowNodeKind::Assessment {
                 subject,
                 ..
             } if subject == &assessment.subject
@@ -211,10 +211,10 @@ where
     fn materialize_reused_assessment_transition(
         mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        layout: &crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
+        layout: &crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
         program_revision: worth_query_declaration::facade::application_program::ApplicationProgramRevision,
         instance: super::super::PublishedWorkflowInstanceRef,
-        selected: crate::domain_computation::primary_graph::workflow::instance::SelectedWorkflowTransition,
+        selected: crate::domain_computation::primary_graph::application_attempt::workflow::instance::SelectedWorkflowTransition,
         live_membership: worth_relational::facade::identity::RelationId,
         retire_live_membership: bool,
         facts: Vec<super::super::WorthQueryApplicationObservedFact>,

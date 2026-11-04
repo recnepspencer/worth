@@ -8,9 +8,9 @@ use worth_query_testkit_execution_primary_graph_application_contribution::domain
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::AccountStatus;
 use crate::domain_computation::primary_graph::tests::authorization::workflow_approval_revalidation::*;
 use worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::publication_denial::WorthQueryProductPublicationOutcome as Publication;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::approval::workflow_approval_fields;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::approval::field_text::WorkflowApprovalFieldText;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::approval::WorkflowApprovalMeaning;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow::approval::workflow_approval_fields;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow::approval::field_text::WorkflowApprovalFieldText;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow::approval::WorkflowApprovalMeaning;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationAttemptDenialKind as AttemptKind;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommittedChanges;
 use std::collections::BTreeMap;
@@ -74,7 +74,7 @@ pub fn originals(meaning: &WorkflowApprovalMeaning) -> [String; 5] {
     .map(|text| text.as_str_for_test().to_owned())
 }
 pub fn locators(
-    layout: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::schema::layout::WorthQueryWorkflowLayout,
+    layout: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow::schema::layout::WorthQueryWorkflowLayout,
 ) -> [&AspectFieldLocator; 5] {
     [
         &(*(*layout.approval_for_test()).authorization_request_for_test()),

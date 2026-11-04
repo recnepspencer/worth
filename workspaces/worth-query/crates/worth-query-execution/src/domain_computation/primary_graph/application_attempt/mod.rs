@@ -86,6 +86,7 @@ pub(in crate::domain_computation::primary_graph) use workflow_instance_observati
 pub(crate) mod workflow_instance_program;
 mod workflow_proposal_program;
 pub(crate) mod workflow_transition_program;
+pub(crate) mod workflow;
 pub(in crate::domain_computation) use snapshot_lease::{
     WorthQueryApplicationSnapshotLease, WorthQueryApplicationSnapshotLeaseDenial,
     WorthQueryApplicationSnapshotRelease,

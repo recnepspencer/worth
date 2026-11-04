@@ -9,20 +9,7 @@ use super::{
     PreparedWorkflowAdvance, PreparedWorkflowOperation, RequiredWorkflowOperation,
     WorkflowOperationAuthority,
 };
-use crate::domain_computation::primary_graph::{
-    application_attempt::workflow_instance_observation::{
-        instance_binding, observe_retained_transition,
-    },
-    workflow::instance::WorkflowInstanceProgress,
-    workflow::{
-        definition::{CompiledWorkflowDefinition, CompiledWorkflowNodeKind},
-        proposal::observe_workflow_operation_input,
-    },
-    WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
-    WorthQueryApplicationCommitReceipt, WorthQueryApplicationEffectProgram,
-    WorthQueryApplicationObservedFact, WorthQueryCompleteApplicationReadSet,
-    WorthQueryPrimaryGraphApplicationRuntime, WorthQueryProjectedApplicationMutation,
-};
+use {crate::domain_computation::primary_graph::application_attempt::workflow_instance_observation::instance_binding, crate::domain_computation::primary_graph::application_attempt::workflow_instance_observation::observe_retained_transition, crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowInstanceProgress, crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition, crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowNodeKind, crate::domain_computation::primary_graph::application_attempt::workflow::proposal::observe_workflow_operation_input, crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial, crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind, crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt, crate::domain_computation::primary_graph::WorthQueryApplicationEffectProgram, crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact, crate::domain_computation::primary_graph::WorthQueryCompleteApplicationReadSet, crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime, crate::domain_computation::primary_graph::WorthQueryProjectedApplicationMutation};
 
 mod authority_binding;
 mod evidence;
@@ -52,16 +39,16 @@ where
     pub(super) fn materialize_operation_requirement(
         mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        layout: &crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
+        layout: &crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
         compiled: &CompiledWorkflowDefinition,
         instance: super::super::PublishedWorkflowInstanceRef,
-        selected: crate::domain_computation::primary_graph::workflow::instance::SelectedWorkflowTransition,
+        selected: crate::domain_computation::primary_graph::application_attempt::workflow::instance::SelectedWorkflowTransition,
         live_membership: worth_relational::facade::identity::RelationId,
         retire_live_membership: bool,
         mut facts: Vec<WorthQueryApplicationObservedFact>,
         mut authority_facts: Vec<WorthQueryApplicationObservedFact>,
         progress: &WorkflowInstanceProgress,
-        operation: crate::domain_computation::primary_graph::workflow::instance::SelectedWorkflowOperation,
+        operation: crate::domain_computation::primary_graph::application_attempt::workflow::instance::SelectedWorkflowOperation,
         allowance: crate::domain_computation::primary_graph::application_attempt::WorkflowStepAllowance,
     ) -> Result<
         PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
@@ -147,7 +134,7 @@ where
                 )
                 .ok_or_else(|| mismatch("captured workflow input support changed"))?;
             let contract = self.lease.handle().with_runtime(execution, |runtime| {
-                crate::domain_computation::primary_graph::workflow::proposal::observe_captured_workflow_input(
+                crate::domain_computation::primary_graph::application_attempt::workflow::proposal::observe_captured_workflow_input(
                     execution, runtime, self.lease.snapshot(), layout, input_observation.proposal,
                     &input_observation.proposal_identity, selected.node_path(), self.admission.scope_entity_id(),
                     &mut input_observation.facts,
@@ -251,7 +238,7 @@ where
         let graph_layout = std::sync::Arc::clone(&self.lease.layout);
         let deadline = self.workflow_deadline;
         let admitted =
-            crate::domain_computation::primary_graph::workflow::instance::admit_workflow_transition(
+            crate::domain_computation::primary_graph::application_attempt::workflow::instance::admit_workflow_transition(
                 self,
                 selected,
                 instance.entity_id(),

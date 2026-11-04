@@ -12,16 +12,7 @@ use super::{
     WorthQueryApplicationEffectProgram, WorthQueryApplicationObservedFact,
     WorthQueryCompleteApplicationReadSet, WorthQueryProjectedApplicationMutation,
 };
-use crate::domain_computation::primary_graph::workflow::{
-    definition::{reconstruct_compiled_definition, WorkflowDefinitionCompilationPosture},
-    instance::{
-        admit_workflow_transition, select_proposal_replay_transition, select_proposal_transition,
-    },
-    proposal::{
-        derive_captured_workflow_proposal, derive_workflow_proposal_context_identity,
-        observe_workflow_proposal, visit_workflow_proposal_facts, WorkflowProposalCoverageMeaning,
-    },
-};
+use {crate::domain_computation::primary_graph::application_attempt::workflow::definition::reconstruct_compiled_definition, crate::domain_computation::primary_graph::application_attempt::workflow::definition::WorkflowDefinitionCompilationPosture, crate::domain_computation::primary_graph::application_attempt::workflow::instance::admit_workflow_transition, crate::domain_computation::primary_graph::application_attempt::workflow::instance::select_proposal_replay_transition, crate::domain_computation::primary_graph::application_attempt::workflow::instance::select_proposal_transition, crate::domain_computation::primary_graph::application_attempt::workflow::proposal::derive_captured_workflow_proposal, crate::domain_computation::primary_graph::application_attempt::workflow::proposal::derive_workflow_proposal_context_identity, crate::domain_computation::primary_graph::application_attempt::workflow::proposal::observe_workflow_proposal, crate::domain_computation::primary_graph::application_attempt::workflow::proposal::visit_workflow_proposal_facts, crate::domain_computation::primary_graph::application_attempt::workflow::proposal::WorkflowProposalCoverageMeaning};
 
 mod preparation;
 mod publication;
@@ -55,7 +46,7 @@ where
         instance: super::PublishedWorkflowInstanceRef,
         input_identity: [u8; 32],
         source_identity: Option<[u8; 32]>,
-        mut captured: crate::domain_computation::primary_graph::WorkflowCapturedInputs,
+        mut captured: crate::domain_computation::primary_graph::application_attempt::workflow::captured_input::WorkflowCapturedInputs,
         clock: &crate::domain_computation::runtime_time::WorthQueryRuntimeClock,
     ) -> Result<
         PreparedWorkflowProposal<Schema, Operation, Input, Scope>,
@@ -181,7 +172,7 @@ where
             source_identity,
             selected.node_path(),
             coverages,
-        crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor::from_admission(&self.admission).entity(),
+        crate::domain_computation::primary_graph::application_attempt::workflow::actor::record::WorkflowAdmittedActor::from_admission(&self.admission).entity(),
         captured.identity,
     );
         proposal.captured = captured.targets;
@@ -268,17 +259,17 @@ where
     fn recover_proposal_replay(
         &self,
 execution: &worth_execution::ExecutionRequest<'_, '_>,
-        layout: &crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
-        compiled: &crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowDefinition,
+        layout: &crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
+        compiled: &crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition,
         observed: &super::workflow_instance_observation::ObservedWorkflowInstance,
         operation: &str,
         input_type: &str,
         input_identity: [u8; 32],
         source_identity: Option<[u8; 32]>,
-        captured: &crate::domain_computation::primary_graph::WorkflowCapturedInputs,
+        captured: &crate::domain_computation::primary_graph::application_attempt::workflow::captured_input::WorkflowCapturedInputs,
     ) -> Result<
         (
-            crate::domain_computation::primary_graph::workflow::instance::SelectedWorkflowTransition,
+            crate::domain_computation::primary_graph::application_attempt::workflow::instance::SelectedWorkflowTransition,
             Vec<WorthQueryApplicationObservedFact>,
         ),
         WorthQueryApplicationAttemptDenial,
@@ -316,7 +307,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
                 source_identity,
                 selected.node_path(),
                 self.proposal_coverages(compiled, selected.node())?,
-        crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor::from_admission(&self.admission).entity(),
+        crate::domain_computation::primary_graph::application_attempt::workflow::actor::record::WorkflowAdmittedActor::from_admission(&self.admission).entity(),
         captured.identity,
     );
             let proposal_facts = self.lease.handle().with_runtime(execution, |runtime| {
@@ -356,7 +347,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
 
     fn proposal_coverages(
         &self,
-        compiled: &crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowDefinition,
+        compiled: &crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition,
         proposal_node: worth_relational::facade::identity::EntityId,
     ) -> Result<Vec<WorkflowProposalCoverageMeaning>, WorthQueryApplicationAttemptDenial> {
         compiled

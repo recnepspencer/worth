@@ -14,9 +14,7 @@ use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryApplicationObservedFact,
 };
 use crate::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout;
-use crate::domain_computation::primary_graph::workflow::definition::{
-    CompiledWorkflowAssessmentApplicability, CompiledWorkflowNode, CompiledWorkflowNodeKind,
-};
+use {crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowAssessmentApplicability, crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowNode, crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowNodeKind};
 
 pub(super) struct ObservedAssessmentApplicability {
     pub(super) applicable: bool,

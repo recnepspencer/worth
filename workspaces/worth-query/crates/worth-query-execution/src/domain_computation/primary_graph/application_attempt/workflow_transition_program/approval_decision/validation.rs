@@ -51,14 +51,14 @@ where
 }
 
 pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) fn validate_requirement_definition(
-    compiled: &crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowDefinition,
+    compiled: &crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition,
     required: &RequiredWorkflowApproval,
 ) -> Result<worth_relational::facade::identity::EntityId, WorthQueryApplicationAttemptDenial> {
     let mut matches = compiled.nodes_with_path(required.node_path()).iter();
     let (Some(node), None) = (matches.next(), matches.next()) else {
         return Err(affinity("approval requirement node is not singular"));
     };
-    let crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowNodeKind::Approval {
+    let crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowNodeKind::Approval {
         capability,
         capability_type,
         operation,
@@ -71,7 +71,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt::workflow_t
         compiled.approval_authority_targets(node.entity()),
         "authority target",
     )?;
-    let crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowNodeKind::Operation {
+    let crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowNodeKind::Operation {
         operation: target_operation,
         requires_workflow_authority: true,
         ..
@@ -91,10 +91,10 @@ pub(in crate::domain_computation::primary_graph::application_attempt::workflow_t
 }
 
 pub(super) fn unique<'a>(
-    mut nodes: impl Iterator<Item = &'a crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowNode>,
+    mut nodes: impl Iterator<Item = &'a crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowNode>,
     kind: &str,
 ) -> Result<
-    &'a crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowNode,
+    &'a crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowNode,
     WorthQueryApplicationAttemptDenial,
 > {
     match (nodes.next(), nodes.next()) {

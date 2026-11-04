@@ -44,8 +44,8 @@ pub struct RetainedCapabilityRequestData {
     context: RetainedContext,
     // Payload fields are destroyed before their original admission.
     _codec_funding: Option<(
-        Arc<crate::domain_computation::primary_graph::workflow::actor::ActorCodecFunding>,
-        Arc<crate::domain_computation::primary_graph::workflow::actor::ActorCodecFunding>,
+        Arc<crate::domain_computation::primary_graph::application_attempt::workflow::actor::ActorCodecFunding>,
+        Arc<crate::domain_computation::primary_graph::application_attempt::workflow::actor::ActorCodecFunding>,
     )>,
 }
 

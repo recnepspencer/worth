@@ -3,11 +3,8 @@ use super::{
     publication, ApplicationOperationMarkerIdentity, ApplicationSchema, PreparedWorkflowAdvance,
     WorthQueryCompleteApplicationReadSet, WorthQueryProjectedApplicationMutation,
 };
-use crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout;
-use crate::domain_computation::primary_graph::{
-    application_attempt::workflow_instance_observation::ObservedWorkflowInstance,
-    workflow::instance::SelectedWorkflowProposal,
-};
+use crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout;
+use {crate::domain_computation::primary_graph::application_attempt::workflow_instance_observation::ObservedWorkflowInstance, crate::domain_computation::primary_graph::application_attempt::workflow::instance::SelectedWorkflowProposal};
 impl<Schema, Operation, Input, Scope>
     WorthQueryCompleteApplicationReadSet<
         Schema,

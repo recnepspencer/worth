@@ -3,7 +3,7 @@ use super::admission::WorthQueryWorkflowReadDenial as Denial;
 use super::text;
 use crate::domain_computation::primary_graph::index_currency::ensure_selected_field_indexes_admitted;
 use crate::domain_computation::primary_graph::index_currency::SelectedFieldIndexAdmissionStop;
-use crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout;
+use crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout;
 use worth_foundational::facade::AspectValue;
 use worth_foundational::facade::InternedString;
 use worth_query_declaration::facade::application_program::ApplicationWorkflowSpec;
@@ -58,7 +58,7 @@ pub(super) fn lineage<Spec: ApplicationWorkflowSpec>(
     let Some(lineage) = hit.candidate_entity_ids().first().copied() else {
         return Ok(None);
     };
-    let protocol=crate::domain_computation::primary_graph::application_attempt::observe_field_value_borrowed(runtime,execution,snapshot,lineage,layout.lineage.entity_kind,&layout.lineage.protocol_version,|value|value==Some(&AspectValue::UInt64(crate::domain_computation::primary_graph::workflow::schema::version::WORKFLOW_FACT_PROTOCOL_VERSION))).map_err(Denial::Relational)?;
+    let protocol=crate::domain_computation::primary_graph::application_attempt::observe_field_value_borrowed(runtime,execution,snapshot,lineage,layout.lineage.entity_kind,&layout.lineage.protocol_version,|value|value==Some(&AspectValue::UInt64(crate::domain_computation::primary_graph::application_attempt::workflow::schema::version::WORKFLOW_FACT_PROTOCOL_VERSION))).map_err(Denial::Relational)?;
     if protocol != Some(true) {
         return Err(Denial::Corrupt);
     }

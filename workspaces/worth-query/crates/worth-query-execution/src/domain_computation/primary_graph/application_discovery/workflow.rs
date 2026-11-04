@@ -38,7 +38,7 @@ use super::super::application_attempt::{
     observe_adjacency, observe_field_value, PublishedWorkflowDefinitionRef,
     WorthQueryApplicationAdjacencyDirection,
 };
-use super::super::workflow::schema::WorthQueryWorkflowLayout;
+use crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout;
 
 /// A lineage is unique per definition identity, so a second candidate is
 /// already a corrupt branch.

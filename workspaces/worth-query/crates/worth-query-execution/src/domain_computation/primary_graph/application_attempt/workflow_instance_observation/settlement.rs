@@ -10,13 +10,7 @@ use super::{adjacency_with_kind, denial, exact, exact_u64, text};
 use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationObservedFact,
 };
-use crate::domain_computation::primary_graph::workflow::{
-    instance::{
-        decode_transition_outcome, encode_transition_outcome, SettledWorkflowTransition,
-        WorkflowTransitionLocator,
-    },
-    schema::WorthQueryWorkflowLayout,
-};
+use {crate::domain_computation::primary_graph::application_attempt::workflow::instance::decode_transition_outcome, crate::domain_computation::primary_graph::application_attempt::workflow::instance::encode_transition_outcome, crate::domain_computation::primary_graph::application_attempt::workflow::instance::SettledWorkflowTransition, crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowTransitionLocator, crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout};
 
 mod approval;
 pub(crate) mod dependency;
@@ -222,7 +216,7 @@ pub(super) fn observe_assessment_evidence(
         kind,
         &layout.assessment_evidence.protocol_version,
         AspectValue::UInt64(
-            crate::domain_computation::primary_graph::workflow::schema::version::WORKFLOW_FACT_PROTOCOL_VERSION,
+            crate::domain_computation::primary_graph::application_attempt::workflow::schema::version::WORKFLOW_FACT_PROTOCOL_VERSION,
         ),
         facts,
     )?;

@@ -18,12 +18,12 @@ pub(super) struct ValidatedApprovalInputs {
 #[allow(clippy::too_many_arguments)]
 pub(super) fn observe(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    compiled: &crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowDefinition,
-    layout: &crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
+    compiled: &crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition,
+    layout: &crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
     graph_layout: &crate::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout,
     resource: worth_relational::facade::identity::EntityId,
     instance: &super::super::super::PublishedWorkflowInstanceRef,
-    progress: &crate::domain_computation::primary_graph::workflow::instance::WorkflowInstanceProgress,
+    progress: &crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowInstanceProgress,
     approval: worth_relational::facade::identity::EntityId,
     proposal: Option<&super::super::super::PublishedWorkflowProposalRef>,
     handle: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle,
@@ -57,7 +57,7 @@ pub(super) fn observe(
     let evidence_source = unique(compiled.approval_evidence_sources(approval), "evidence")?;
     if !matches!(
         evidence_source.kind(),
-        crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowNodeKind::EvidenceJoin { .. }
+        crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowNodeKind::EvidenceJoin { .. }
     ) {
         return Err(affinity("approval evidence source is not a join"));
     }

@@ -2,10 +2,8 @@
 //! admission of the caller's dispositions against a fresh read.
 
 use super::WorthQueryBranchAdoptionPreparationDenial;
-use crate::domain_computation::primary_graph::workflow::adoption::WorkflowAdoptionReadDenial;
-use crate::domain_computation::primary_graph::workflow::{
-    WorthQueryWorkflowAdoptionInventory, WorthQueryWorkflowDispositions,
-};
+use crate::domain_computation::primary_graph::application_attempt::workflow::adoption::WorkflowAdoptionReadDenial;
+use {crate::domain_computation::primary_graph::application_attempt::workflow::WorthQueryWorkflowAdoptionInventory, crate::domain_computation::primary_graph::application_attempt::workflow::WorthQueryWorkflowDispositions};
 
 /// Resolve explicit intent against the complete fresh PRIVATE inventory.
 pub(super) fn admit_workflow_dispositions(
@@ -14,7 +12,7 @@ pub(super) fn admit_workflow_dispositions(
     branch: crate::basis::WorthQueryProductBranch,
 ) -> Result<
     Option<
-        crate::domain_computation::primary_graph::workflow::adoption::AdmittedWorkflowDispositions,
+        crate::domain_computation::primary_graph::application_attempt::workflow::adoption::AdmittedWorkflowDispositions,
     >,
     WorthQueryBranchAdoptionPreparationDenial,
 > {

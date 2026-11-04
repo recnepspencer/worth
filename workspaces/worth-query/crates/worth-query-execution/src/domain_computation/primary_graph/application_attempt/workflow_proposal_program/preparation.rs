@@ -62,7 +62,7 @@ where
         admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         input_identity: [u8; 32],
         source_identity: Option<[u8; 32]>,
-        captured: crate::domain_computation::primary_graph::WorkflowCapturedInputs,
+        captured: crate::domain_computation::primary_graph::application_attempt::workflow::captured_input::WorkflowCapturedInputs,
     ) -> Result<
         PreparedWorkflowProposal<Schema, Operation, Input, Scope>,
         WorkflowProposalPreparationDenial,
@@ -160,7 +160,7 @@ impl WorthQueryWorkflowProposalAdapter {
             admission,
             idempotency,
             instance,
-            &crate::domain_computation::primary_graph::WorkflowCapturedInputs::empty(),
+            &crate::domain_computation::primary_graph::application_attempt::workflow::captured_input::WorkflowCapturedInputs::empty(),
         )
     }
 
@@ -170,7 +170,7 @@ impl WorthQueryWorkflowProposalAdapter {
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
         instance: PublishedWorkflowInstanceRef,
-        captured: &crate::domain_computation::primary_graph::WorkflowCapturedInputs,
+        captured: &crate::domain_computation::primary_graph::application_attempt::workflow::captured_input::WorkflowCapturedInputs,
     ) -> Result<Option<WorkflowProposalOutcome>, WorthQueryApplicationIdempotencyResolutionDenial>
     where
         Schema: ApplicationSchema,
@@ -222,7 +222,7 @@ impl WorthQueryWorkflowProposalAdapter {
             instance,
             admission,
             idempotency,
-            crate::domain_computation::primary_graph::WorkflowCapturedInputs::empty(),
+            crate::domain_computation::primary_graph::application_attempt::workflow::captured_input::WorkflowCapturedInputs::empty(),
         )
     }
 
@@ -234,7 +234,7 @@ impl WorthQueryWorkflowProposalAdapter {
         instance: PublishedWorkflowInstanceRef,
         admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         idempotency: &WorthQueryApplicationIdempotencyBinding,
-        captured: crate::domain_computation::primary_graph::WorkflowCapturedInputs,
+        captured: crate::domain_computation::primary_graph::application_attempt::workflow::captured_input::WorkflowCapturedInputs,
     ) -> Result<
         PreparedWorkflowProposal<Schema, Operation, Input, Scope>,
         WorkflowProposalPreparationDenial,

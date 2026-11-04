@@ -1,17 +1,6 @@
 //! Resolve on the admitted mutation basis and compile its actual retained pin once.
 use super::WorkflowSuccessionTarget;
-use crate::domain_computation::primary_graph::{
-    application_attempt::{
-        PublishedWorkflowDefinitionRef, PublishedWorkflowInstanceRef,
-        WorthQueryApplicationAttemptDenial, WorthQueryApplicationObservedFact,
-        WorthQueryCompleteApplicationReadSet, WorthQueryProjectedApplicationMutation,
-    },
-    program_occurrence::WorthQueryInstalledProgramSupport,
-    workflow::definition::{
-        reconstruct_compiled_definition, CompiledWorkflowDefinition,
-        WorkflowDefinitionCompilationPosture,
-    },
-};
+use {crate::domain_computation::primary_graph::application_attempt::PublishedWorkflowDefinitionRef, crate::domain_computation::primary_graph::application_attempt::PublishedWorkflowInstanceRef, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact, crate::domain_computation::primary_graph::application_attempt::WorthQueryCompleteApplicationReadSet, crate::domain_computation::primary_graph::application_attempt::WorthQueryProjectedApplicationMutation, crate::domain_computation::primary_graph::program_occurrence::WorthQueryInstalledProgramSupport, crate::domain_computation::primary_graph::application_attempt::workflow::definition::reconstruct_compiled_definition, crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition, crate::domain_computation::primary_graph::application_attempt::workflow::definition::WorkflowDefinitionCompilationPosture};
 use worth_query_declaration::facade::{
     application_program::ApplicationWorkflowSpec,
     application_schema::ApplicationOperationMarkerIdentity,

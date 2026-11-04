@@ -26,11 +26,11 @@ impl WorkflowRecordedActorObservation {
     ) -> Result<(), crate::domain_computation::authorization::WorkflowApprovalRequestDecodingDenial>
     {
         let quote = encoded.len().checked_mul(4).ok_or(())?;
-        let _funding = crate::domain_computation::primary_graph::workflow::actor::fund_actor_codec(
+        let _funding = crate::domain_computation::primary_graph::application_attempt::workflow::actor::fund_actor_codec(
             execution, quote,
         )?;
         let parsed = Self::parse_encoding(encoded);
-        crate::domain_computation::primary_graph::workflow::actor::encoding::check_live(execution)?;
+        crate::domain_computation::primary_graph::application_attempt::workflow::actor::encoding::check_live(execution)?;
         parsed.map(|_| ()).map_err(Into::into)
     }
     fn parse_encoding(encoded: &str) -> Result<RecordedRole, ()> {
@@ -49,7 +49,7 @@ impl WorkflowRecordedActorObservation {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         maximum: usize,
     ) -> Result<
-        crate::domain_computation::primary_graph::workflow::actor::encoding::FundedActorText,
+        crate::domain_computation::primary_graph::application_attempt::workflow::actor::encoding::FundedActorText,
         crate::domain_computation::authorization::WorkflowApprovalRequestEncodingDenial,
     > {
         #[derive(Serialize)]
@@ -61,7 +61,7 @@ impl WorkflowRecordedActorObservation {
             source_version: u16,
             record: ActorState,
         }
-        crate::domain_computation::primary_graph::workflow::actor::encoding::encode(
+        crate::domain_computation::primary_graph::application_attempt::workflow::actor::encoding::encode(
             execution,
             &Role {
                 version: 1, requirement: self.requirement.persistence_identity(),
@@ -87,11 +87,11 @@ impl WorkflowRecordedActorObservation {
         // bounded by the original JSON bytes (byte Vec capacity <2*elements).
         let quote = encoded.len().checked_mul(4).ok_or_else(invalid)?;
         let _parse_funding =
-            crate::domain_computation::primary_graph::workflow::actor::fund_actor_codec(
+            crate::domain_computation::primary_graph::application_attempt::workflow::actor::fund_actor_codec(
                 execution, quote,
             )?;
         let value = Self::parse_encoding(encoded).map_err(|_| invalid())?;
-        crate::domain_computation::primary_graph::workflow::actor::encoding::check_live(execution)?;
+        crate::domain_computation::primary_graph::application_attempt::workflow::actor::encoding::check_live(execution)?;
         let requirement =
             Requirement::from_persistence_identity(&value.requirement).ok_or_else(invalid)?;
         let dependencies = WorkflowActorDependencies::restore(execution, &value.sources)?;

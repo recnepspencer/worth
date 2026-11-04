@@ -35,9 +35,9 @@ pub struct WorthQueryPrimaryGraph {
     output_lineage: Arc<Mutex<super::output_lineage::WorthQueryApplicationOutputLineage>>,
     managed_derived_views: Arc<super::application_query::derived_view::ManagedDerivedViewRegistry>,
     workflow_compilation_reuse:
-        Arc<Mutex<super::workflow::definition::WorkflowDefinitionCompilationReuse>>,
+        Arc<Mutex<crate::domain_computation::primary_graph::application_attempt::workflow::definition::WorkflowDefinitionCompilationReuse>>,
     workflow_instance_progress_retention:
-        Arc<[Mutex<super::workflow::instance::WorkflowInstanceProgressRetention>]>,
+        Arc<[Mutex<crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowInstanceProgressRetention>]>,
     truth_partition_role: Option<worth_foundational::facade::TruthPartitionRole>,
 }
 
@@ -123,7 +123,7 @@ impl WorthQueryPrimaryGraph {
             managed_derived_views,
             workflow_compilation_reuse: Arc::new(Mutex::new(Default::default())),
             workflow_instance_progress_retention:
-                super::workflow::instance::default_progress_retention_shards(),
+                crate::domain_computation::primary_graph::application_attempt::workflow::instance::default_progress_retention_shards(),
             truth_partition_role: None,
         })
     }
@@ -223,9 +223,9 @@ pub struct WorthQueryPrimaryGraphIntegrationHandle {
     pub(in crate::domain_computation::primary_graph) managed_derived_views:
         Arc<super::application_query::derived_view::ManagedDerivedViewRegistry>,
     pub(in crate::domain_computation::primary_graph) workflow_compilation_reuse:
-        Arc<Mutex<super::workflow::definition::WorkflowDefinitionCompilationReuse>>,
+        Arc<Mutex<crate::domain_computation::primary_graph::application_attempt::workflow::definition::WorkflowDefinitionCompilationReuse>>,
     pub(in crate::domain_computation::primary_graph) workflow_instance_progress_retention:
-        Arc<[Mutex<super::workflow::instance::WorkflowInstanceProgressRetention>]>,
+        Arc<[Mutex<crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowInstanceProgressRetention>]>,
     pub(super) truth_partition_role: Option<worth_foundational::facade::TruthPartitionRole>,
 }
 
@@ -239,7 +239,7 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
     #[doc(hidden)]
     pub fn workflow_compilation_reuse_counters(
         &self,
-    ) -> super::WorthQueryWorkflowCompilationReuseCounters {
+    ) -> crate::domain_computation::primary_graph::application_attempt::workflow::definition::WorthQueryWorkflowCompilationReuseCounters {
         let reuse = self
             .workflow_compilation_reuse
             .lock()
@@ -249,7 +249,7 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
 
     pub(in crate::domain_computation::primary_graph) fn with_workflow_compilation_reuse_mut<T>(
         &self,
-        mutate: impl FnOnce(&mut super::workflow::definition::WorkflowDefinitionCompilationReuse) -> T,
+        mutate: impl FnOnce(&mut crate::domain_computation::primary_graph::application_attempt::workflow::definition::WorkflowDefinitionCompilationReuse) -> T,
     ) -> T {
         let mut reuse = self
             .workflow_compilation_reuse
@@ -261,8 +261,8 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
     #[doc(hidden)]
     pub fn workflow_instance_progress_counters(
         &self,
-    ) -> super::WorthQueryWorkflowInstanceProgressCounters {
-        let mut counters = super::WorthQueryWorkflowInstanceProgressCounters::default();
+    ) -> crate::domain_computation::primary_graph::application_attempt::workflow::WorthQueryWorkflowInstanceProgressCounters {
+        let mut counters = crate::domain_computation::primary_graph::application_attempt::workflow::WorthQueryWorkflowInstanceProgressCounters::default();
         for shard in self.workflow_instance_progress_retention.iter() {
             let shard = shard
                 .lock()
@@ -274,8 +274,8 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
 
     pub(in crate::domain_computation::primary_graph) fn with_workflow_instance_progress_mut<T>(
         &self,
-        key: super::workflow::instance::WorkflowInstanceProgressKey,
-        mutate: impl FnOnce(&mut super::workflow::instance::WorkflowInstanceProgressRetention) -> T,
+        key: crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowInstanceProgressKey,
+        mutate: impl FnOnce(&mut crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowInstanceProgressRetention) -> T,
     ) -> T {
         let shard = &self.workflow_instance_progress_retention[key.shard_index()];
         let mut retention = shard

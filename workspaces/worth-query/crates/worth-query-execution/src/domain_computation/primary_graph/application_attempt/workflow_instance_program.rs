@@ -14,10 +14,7 @@ use super::{
     WorthQueryApplicationEffectProgram, WorthQueryApplicationObservedFact,
     WorthQueryCompleteApplicationReadSet, WorthQueryProjectedApplicationMutation,
 };
-use crate::domain_computation::primary_graph::workflow::{
-    definition::{reconstruct_compiled_definition, WorkflowDefinitionCompilationPosture},
-    instance::{visit_instance_start_facts, WorkflowLineageCarry},
-};
+use {crate::domain_computation::primary_graph::application_attempt::workflow::definition::reconstruct_compiled_definition, crate::domain_computation::primary_graph::application_attempt::workflow::definition::WorkflowDefinitionCompilationPosture, crate::domain_computation::primary_graph::application_attempt::workflow::instance::visit_instance_start_facts, crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowLineageCarry};
 use crate::domain_computation::runtime_time::WorthQueryRuntimeClock;
 
 mod birth;
@@ -106,7 +103,7 @@ where
                 },
             )?;
         let start_revision = self.lease.handle().with_runtime(execution, |runtime| {
-            crate::domain_computation::primary_graph::workflow::instance::start_provenance::admit(
+            crate::domain_computation::primary_graph::application_attempt::workflow::instance::start_provenance::admit(
                 execution,
                 runtime,
                 self.lease.product().relational_basis(),
@@ -123,7 +120,7 @@ where
             branch_occurrence,
             subject,
             carry,
-            crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor::from_admission(&self.admission),
+            crate::domain_computation::primary_graph::application_attempt::workflow::actor::record::WorkflowAdmittedActor::from_admission(&self.admission),
             |effect| {
                 effects.push(effect);
                 Ok::<(), WorthQueryApplicationAttemptDenial>(())

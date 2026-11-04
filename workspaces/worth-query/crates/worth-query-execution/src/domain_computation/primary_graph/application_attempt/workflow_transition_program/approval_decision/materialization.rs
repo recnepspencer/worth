@@ -1,12 +1,12 @@
 use super::*;
 
 pub(super) fn materialize_decision<Schema, Operation, Input, Scope>(
-    layout: &crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
+    layout: &crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
     program_revision: worth_query_declaration::facade::application_program::ApplicationProgramRevision,
-    admitted: crate::domain_computation::primary_graph::workflow::instance::AdmittedWorkflowTransition<Schema, Operation, Input, Scope>,
-    meaning: crate::domain_computation::primary_graph::workflow::WorkflowApprovalMeaning,
+    admitted: crate::domain_computation::primary_graph::application_attempt::workflow::instance::AdmittedWorkflowTransition<Schema, Operation, Input, Scope>,
+    meaning: crate::domain_computation::primary_graph::application_attempt::workflow::WorkflowApprovalMeaning,
     basis: &worth_relational::facade::branch::AdmittedRelationalBranchBasis,
-    admitted_text: &crate::domain_computation::primary_graph::workflow::WorkflowApprovalFieldText,
+    admitted_text: &crate::domain_computation::primary_graph::application_attempt::workflow::WorkflowApprovalFieldText,
     evidence_currentness: super::super::super::OutputCurrentnessFacts,
     approval_projection: publication::PreparedWorkflowApprovalProjection,
 ) -> Result<
@@ -21,7 +21,7 @@ where
     let instance = admitted.instance();
     let node_path = admitted.node_path().to_owned();
     let mut effects = Vec::new();
-    crate::domain_computation::primary_graph::workflow::visit_workflow_approval_facts(
+    crate::domain_computation::primary_graph::application_attempt::workflow::visit_workflow_approval_facts(
         layout,
         &admitted,
         &meaning,

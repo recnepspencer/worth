@@ -73,7 +73,7 @@ pub(in crate::domain_computation::primary_graph) fn observe(
                 )
             })
             .transpose()?;
-        let approver=approval_entity.map(|id|role(fields,&crate::domain_computation::primary_graph::workflow::actor::record::WorkflowActorFields {partition:layout.approval.approver_partition.clone(),slot:layout.approval.approver_slot.clone(),generation:layout.approval.approver_generation.clone()},id,layout.approval.entity_kind,&mut facts)).transpose()?;
+        let approver=approval_entity.map(|id|role(fields,&crate::domain_computation::primary_graph::application_attempt::workflow::actor::record::WorkflowActorFields {partition:layout.approval.approver_partition.clone(),slot:layout.approval.approver_slot.clone(),generation:layout.approval.approver_generation.clone()},id,layout.approval.entity_kind,&mut facts)).transpose()?;
         Audit::Visible {
             advancer: Actor::observed(roles.advancer),
             executor: roles.executor.map(Actor::observed),
@@ -117,7 +117,7 @@ fn observe_approval(
     }
     // Producer encoding names this full native EntityId, not the start-intent digest field.
     let expected_instance =
-        crate::domain_computation::primary_graph::workflow::workflow_approval_instance_identity(
+        crate::domain_computation::primary_graph::application_attempt::workflow::workflow_approval_instance_identity(
             instance,
         );
     let approved_instance = fields.text(approval, kind, &layout.approval.instance_identity)?;
@@ -137,7 +137,7 @@ fn observe_approval(
     if expected_definition.bytes() != recorded_definition.bytes() {
         return Err(Denial::Corrupt);
     }
-    let descriptor=crate::domain_computation::primary_graph::workflow::definition::retained_descriptor::approval(fields,layout,definition,approval_node,maximum_connections)?;
+    let descriptor=crate::domain_computation::primary_graph::application_attempt::workflow::definition::retained_descriptor::approval(fields,layout,definition,approval_node,maximum_connections)?;
     let operation = fields.text(approval, kind, &layout.approval.approval_operation)?;
     let target_operation = fields.text(approval, kind, &layout.approval.target_operation)?;
     let capability = fields.text(
@@ -188,7 +188,7 @@ fn observe_approval(
 }
 fn role(
     fields: &ReadFields<'_, '_, '_>,
-    locators:&crate::domain_computation::primary_graph::workflow::actor::record::WorkflowActorFields,
+    locators:&crate::domain_computation::primary_graph::application_attempt::workflow::actor::record::WorkflowActorFields,
     entity: EntityId,
     kind: worth_relational::facade::identity::KindId,
     facts: &mut Vec<WorthQueryApplicationObservedFact>,
@@ -203,6 +203,6 @@ fn role(
             facts,
         )
         .map_err(Denial::Execution)?;
-    let actor=crate::domain_computation::primary_graph::workflow::actor::record::validate_actor_applicability(actor,true).map_err(Denial::Execution)?.ok_or(Denial::Corrupt)?;
+    let actor=crate::domain_computation::primary_graph::application_attempt::workflow::actor::record::validate_actor_applicability(actor,true).map_err(Denial::Execution)?.ok_or(Denial::Corrupt)?;
     Ok(Actor::observed(actor))
 }

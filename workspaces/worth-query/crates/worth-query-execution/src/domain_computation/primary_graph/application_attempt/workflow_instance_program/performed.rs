@@ -13,10 +13,7 @@ use super::super::{
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
     WorthQueryApplicationObservedFact,
 };
-use crate::domain_computation::primary_graph::workflow::{
-    definition::CompiledWorkflowDefinition, instance::WorkflowPerformedEffect,
-    schema::WorthQueryWorkflowLayout,
-};
+use {crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition, crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowPerformedEffect, crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout};
 
 /// The instance's own transitions that settled an operation receipt, each at
 /// the path of its node in `compiled`.

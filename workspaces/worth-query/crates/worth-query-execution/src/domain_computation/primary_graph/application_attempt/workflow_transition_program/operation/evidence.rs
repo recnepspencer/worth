@@ -1,17 +1,9 @@
 //! Resolve additional evidence without confusing its absence with unavailable
 //! approval authority. Common occurrence binding remains the operation owner's job.
 
-use super::{
-    check_request_live, mismatch, observe_retained_transition, ApplicationOperationMarkerIdentity,
-    ApplicationSchema, CompiledWorkflowDefinition, CompiledWorkflowNodeKind,
-    WorkflowInstanceProgress, WorthQueryApplicationAttemptDenial,
-    WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationObservedFact,
-    WorthQueryCompleteApplicationReadSet, WorthQueryProjectedApplicationMutation,
-};
+use {super::check_request_live, super::mismatch, super::observe_retained_transition, super::ApplicationOperationMarkerIdentity, super::ApplicationSchema, crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition, crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowNodeKind, crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowInstanceProgress, super::WorthQueryApplicationAttemptDenial, super::WorthQueryApplicationAttemptDenialKind, super::WorthQueryApplicationObservedFact, super::WorthQueryCompleteApplicationReadSet, super::WorthQueryProjectedApplicationMutation};
 use crate::domain_computation::authorization::WorthQueryWorkflowApprovalAuthorityBasis;
-use crate::domain_computation::primary_graph::workflow::instance::{
-    SelectedWorkflowOperation, SelectedWorkflowTransition,
-};
+use {crate::domain_computation::primary_graph::application_attempt::workflow::instance::SelectedWorkflowOperation, crate::domain_computation::primary_graph::application_attempt::workflow::instance::SelectedWorkflowTransition};
 
 pub(super) enum WorkflowOperationEvidence {
     Satisfied(Option<WorthQueryWorkflowApprovalAuthorityBasis>),
@@ -36,7 +28,7 @@ where
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         compiled: &CompiledWorkflowDefinition,
-        layout: &crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
+        layout: &crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
         instance: &super::super::super::PublishedWorkflowInstanceRef,
         selected: &SelectedWorkflowTransition,
         progress: &WorkflowInstanceProgress,

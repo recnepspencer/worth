@@ -150,7 +150,7 @@ impl<'a, 'e, 'r> ReadFields<'a, 'e, 'r> {
         kind: KindId,
         field: &AspectFieldLocator,
     ) -> Result<(), Denial> {
-        if self.u64(entity,kind,field)?!=crate::domain_computation::primary_graph::workflow::schema::version::WORKFLOW_FACT_PROTOCOL_VERSION {return Err(Denial::Corrupt);}
+        if self.u64(entity,kind,field)?!=crate::domain_computation::primary_graph::application_attempt::workflow::schema::version::WORKFLOW_FACT_PROTOCOL_VERSION {return Err(Denial::Corrupt);}
         Ok(())
     }
 }
@@ -158,6 +158,6 @@ pub(in crate::domain_computation::primary_graph) fn identity(
     value: &[u8],
 ) -> Result<[u8; 32], Denial> {
     let text = std::str::from_utf8(value).map_err(|_| Denial::Corrupt)?;
-    crate::domain_computation::primary_graph::workflow::proposal::decode_identity(text)
+    crate::domain_computation::primary_graph::application_attempt::workflow::proposal::decode_identity(text)
         .ok_or(Denial::Corrupt)
 }

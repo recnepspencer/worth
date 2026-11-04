@@ -10,7 +10,7 @@ use super::super::{
 };
 use super::*;
 use crate::domain_computation::authorization::WorthQueryAdmittedApplicationOperation;
-use crate::domain_computation::primary_graph::WorthQueryWorkflowDispositions;
+use crate::domain_computation::primary_graph::application_attempt::workflow::WorthQueryWorkflowDispositions;
 use worth_query_installation::facade::WorthQueryProgramAdoptionRequirements;
 pub(in crate::domain_computation::primary_graph) enum AdoptionEffect<'a> {
     Read,

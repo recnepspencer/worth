@@ -35,9 +35,9 @@ pub fn observe<Schema>(
     resources: WorthQueryApplicationWorkflowResourceCeiling,
 ) -> Result<WorkflowRecord, Denial> {
     // Historical data is decoded against the admitted roster, NOT re-authorized as active.
-    let original_start_revision=crate::domain_computation::primary_graph::workflow::instance::start_provenance::read(
+    let original_start_revision=crate::domain_computation::primary_graph::application_attempt::workflow::instance::start_provenance::read(
         execution,runtime,snapshot,layout,instance,support).map_err(|cause| {
-            use crate::domain_computation::primary_graph::workflow::instance::start_provenance::StartProvenanceReadDenial as Native;
+            use crate::domain_computation::primary_graph::application_attempt::workflow::instance::start_provenance::StartProvenanceReadDenial as Native;
             match cause {Native::Corrupt=>Denial::Corrupt,Native::UnsupportedProtocol(version)=>Denial::UnsupportedInstanceProtocol(version),Native::Execution(cause)=>Denial::Relational(cause)}
         })?;
     let kind = layout.instance.entity_kind;

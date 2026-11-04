@@ -14,7 +14,7 @@ pub(super) fn successor_effects(
     subject: EntityId,
     (source, live_membership, carry): (EntityId, RelationId, WorkflowLineageCarry),
     performed: &[WorkflowPerformedEffect],
-    advancer: crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor,
+    advancer: crate::domain_computation::primary_graph::application_attempt::workflow::actor::record::WorkflowAdmittedActor,
 ) -> Result<Vec<WorthQueryApplicationRealizedEffect>, WorthQueryApplicationAttemptDenial> {
     let mut effects = Vec::new();
     let successor = visit_instance_start_facts(

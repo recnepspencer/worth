@@ -28,7 +28,7 @@ pub(in crate::domain_computation::primary_graph) fn recover_settled_live_members
     for (locator, expected) in [
         (
             &layout.transition.protocol_version,
-            crate::domain_computation::primary_graph::workflow::schema::version::WORKFLOW_FACT_PROTOCOL_VERSION,
+            crate::domain_computation::primary_graph::application_attempt::workflow::schema::version::WORKFLOW_FACT_PROTOCOL_VERSION,
         ),
         (&layout.transition.occurrence, expected_occurrence),
         (

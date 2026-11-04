@@ -18,7 +18,7 @@ mod output_contract;
 mod published_causality;
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphApplicationAttempt {
-    workflow_origin: Option<crate::domain_computation::primary_graph::workflow::operation_output::WorkflowOperationOrigin>,
+    workflow_origin: Option<crate::domain_computation::primary_graph::application_attempt::workflow::operation_output::WorkflowOperationOrigin>,
     required_output_demand: Option<crate::domain_computation::primary_graph::RequiredOutputDemandContext>,
     affinity: WorthQueryApplicationAttemptAffinity,
     outcome_identity: WorthQueryApplicationCommitOutcomeIdentity,
@@ -62,7 +62,7 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
 
     pub(in crate::domain_computation::primary_graph) fn workflow_origin(
         &self,
-    ) -> Option<&crate::domain_computation::primary_graph::workflow::operation_output::WorkflowOperationOrigin>{
+    ) -> Option<&crate::domain_computation::primary_graph::application_attempt::workflow::operation_output::WorkflowOperationOrigin>{
         self.workflow_origin.as_ref()
     }
     pub(in crate::domain_computation::primary_graph) fn take_required_output_demand(

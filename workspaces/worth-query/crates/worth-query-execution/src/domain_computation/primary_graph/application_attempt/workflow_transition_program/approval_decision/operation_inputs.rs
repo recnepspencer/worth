@@ -5,12 +5,12 @@ use worth_query_admission::facade::authenticated_principal::WorthQueryRequestSco
 #[allow(clippy::too_many_arguments)]
 pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) fn observe_operation_approval_inputs(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    compiled: &crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowDefinition,
-    layout: &crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
+    compiled: &crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition,
+    layout: &crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
     graph_layout: &crate::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout,
     resource: worth_relational::facade::identity::EntityId,
     instance: &super::super::super::PublishedWorkflowInstanceRef,
-    progress: &crate::domain_computation::primary_graph::workflow::instance::WorkflowInstanceProgress,
+    progress: &crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowInstanceProgress,
     approval: worth_relational::facade::identity::EntityId,
     target_operation: &str,
     handle: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle,

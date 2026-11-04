@@ -5,7 +5,7 @@ use worth_query_declaration::facade::application_program::ApplicationProgramRevi
 use worth_relational::facade::identity::EntityId;
 
 use crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload;
-use crate::domain_computation::primary_graph::workflow::instance::PreparedWorkflowProgressUpdate;
+use crate::domain_computation::primary_graph::application_attempt::workflow::instance::PreparedWorkflowProgressUpdate;
 use worth_query_admission::facade::{
     authenticated_principal::{WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope},
     authentication_event::{

@@ -4,9 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 mod parse_inventory;
 use super::WorkflowApprovalRequestDecodingDenial as DecodeDenial;
-use crate::domain_computation::primary_graph::workflow::actor::{
-    fund_actor_codec, ActorCodecFunding,
-};
+use {crate::domain_computation::primary_graph::application_attempt::workflow::actor::fund_actor_codec, crate::domain_computation::primary_graph::application_attempt::workflow::actor::ActorCodecFunding};
 use worth_relational::facade::{runtime::RelationalRuntime, snapshots::SnapshotHandle};
 
 use super::{
@@ -40,7 +38,7 @@ pub(in crate::domain_computation) fn encode_workflow_approval_dependencies(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     authorization: &WorthQueryRetainedCapabilityAuthorization,
 ) -> Result<
-    crate::domain_computation::primary_graph::workflow::actor::encoding::FundedActorText,
+    crate::domain_computation::primary_graph::application_attempt::workflow::actor::encoding::FundedActorText,
     WorkflowApprovalRequestEncodingDenial,
 > {
     #[derive(Serialize)]
@@ -59,7 +57,7 @@ pub(in crate::domain_computation) fn encode_workflow_approval_dependencies(
             .map(|support| support.decision().retained_durable_dependencies(execution))
             .transpose()?,
     };
-    crate::domain_computation::primary_graph::workflow::actor::encoding::encode(
+    crate::domain_computation::primary_graph::application_attempt::workflow::actor::encoding::encode(
         execution,
         &dependencies,
         MAXIMUM_APPROVAL_DEPENDENCY_BYTES,
@@ -91,7 +89,7 @@ impl WorthQueryWorkflowApprovalDependencies {
                 .ok_or(())?,
         )?;
         let dependencies: Dependencies = serde_json::from_str(encoded).map_err(|_| ())?;
-        crate::domain_computation::primary_graph::workflow::actor::encoding::check_live(execution)?;
+        crate::domain_computation::primary_graph::application_attempt::workflow::actor::encoding::check_live(execution)?;
         if dependencies.version != VERSION {
             return Err(().into());
         }

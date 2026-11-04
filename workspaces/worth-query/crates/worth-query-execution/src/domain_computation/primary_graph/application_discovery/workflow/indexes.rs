@@ -1,5 +1,5 @@
 //! Native derived index identities used by bounded governed instance pages.
-use crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout;
+use crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout;
 use worth_relational::facade::indexes::{
     DerivedIndexDefinition, DerivedIndexId, DerivedIndexKind, RelatedEntityEndpoint,
     RelatedEntityOrderingDirection, RelatedEntityOrderingField,

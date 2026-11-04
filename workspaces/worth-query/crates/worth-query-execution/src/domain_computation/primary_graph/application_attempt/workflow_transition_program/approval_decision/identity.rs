@@ -62,7 +62,7 @@ pub(super) fn authentication_intent(
 
 pub(super) fn derive<Schema, Operation, Input, Scope>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    compiled: &crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowDefinition,
+    compiled: &crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition,
     required: &RequiredWorkflowApproval,
     proposal: &super::super::super::PublishedWorkflowProposalRef,
     decision: WorkflowApprovalDecision,
@@ -74,7 +74,7 @@ pub(super) fn derive<Schema, Operation, Input, Scope>(
     >,
     evidence_observations: &[ObservedApprovalEvidence],
 ) -> Result<
-    crate::domain_computation::primary_graph::workflow::WorkflowApprovalMeaning,
+    crate::domain_computation::primary_graph::application_attempt::workflow::WorkflowApprovalMeaning,
     WorthQueryApplicationAttemptDenial,
 > {
     let authority = admission
@@ -167,10 +167,10 @@ pub(super) fn derive<Schema, Operation, Input, Scope>(
     }
     let identity: [u8; 32] = digest.finalize().into();
     Ok(
-        crate::domain_computation::primary_graph::workflow::WorkflowApprovalMeaning {
+        crate::domain_computation::primary_graph::application_attempt::workflow::WorkflowApprovalMeaning {
             identity,
             identity_text: hex(identity),
-            instance_identity: crate::domain_computation::primary_graph::workflow::workflow_approval_instance_identity(required.instance()),
+            instance_identity: crate::domain_computation::primary_graph::application_attempt::workflow::workflow_approval_instance_identity(required.instance()),
             definition_content_identity: compiled.content_identity().to_string(),
             program_revision: compiled.program_revision().to_string(),
             proposal: proposal.entity_id(),

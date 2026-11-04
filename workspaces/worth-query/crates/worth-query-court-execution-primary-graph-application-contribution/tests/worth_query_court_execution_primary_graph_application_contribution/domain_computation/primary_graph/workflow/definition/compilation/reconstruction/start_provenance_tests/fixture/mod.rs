@@ -1,7 +1,7 @@
 //! Installed native publication fixtures; none of these values grant workflow authority.
 use crate::domain_computation::primary_graph::workflow::definition::compilation::reconstruction::start_provenance_tests::*;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::resource_lifecycle::basis_registry::lease::WorthQueryApplicationBasisLease;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::schema::layout::WorthQueryWorkflowLayout;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow::schema::layout::WorthQueryWorkflowLayout;
 use std::collections::BTreeMap;
 use std::num::NonZeroUsize;
 use worth_foundational::facade::AspectFieldLocator;
@@ -222,7 +222,7 @@ pub fn publish_instance(
         identity,
         actor,
         |runtime, basis| {
-            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::instance::start_provenance::admit(execution, runtime, basis, &revision).unwrap()
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow::instance::start_provenance::admit(execution, runtime, basis, &revision).unwrap()
         },
     )
 }

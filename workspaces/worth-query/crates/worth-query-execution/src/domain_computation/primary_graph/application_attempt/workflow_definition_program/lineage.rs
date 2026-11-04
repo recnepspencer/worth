@@ -7,8 +7,8 @@ use super::super::{
     WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationObservedFact,
 };
 use super::WorkflowDefinitionExpectedPredecessor;
-use crate::domain_computation::primary_graph::workflow::definition::WorkflowLineagePublicationTarget;
-use crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout;
+use crate::domain_computation::primary_graph::application_attempt::workflow::definition::WorkflowLineagePublicationTarget;
+use crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout;
 
 const LINEAGE_LOOKUP_LIMIT: usize = 2;
 pub(super) const CURRENT_DEFINITION_WORK_LIMIT: usize = 2;
@@ -158,7 +158,7 @@ pub(super) fn lineage_identity_facts(
             layout.lineage.entity_kind,
             layout.lineage.protocol_version.clone(),
             AspectValue::UInt64(
-                crate::domain_computation::primary_graph::workflow::schema::version::WORKFLOW_FACT_PROTOCOL_VERSION,
+                crate::domain_computation::primary_graph::application_attempt::workflow::schema::version::WORKFLOW_FACT_PROTOCOL_VERSION,
             ),
             subject,
         )?,

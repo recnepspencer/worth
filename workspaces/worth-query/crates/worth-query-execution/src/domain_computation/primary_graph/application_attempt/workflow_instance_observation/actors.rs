@@ -14,7 +14,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
     facts: &mut Vec<WorthQueryApplicationObservedFact>,
 ) -> Result<WorkflowInstanceRoles, WorthQueryApplicationAttemptDenial> {
     let kind = layout.instance.entity_kind;
-    let applicable = crate::domain_computation::primary_graph::workflow::actor::record::validate_actor_applicability;
+    let applicable = crate::domain_computation::primary_graph::application_attempt::workflow::actor::record::validate_actor_applicability;
     let start_actor = layout
         .instance
         .start_advancer

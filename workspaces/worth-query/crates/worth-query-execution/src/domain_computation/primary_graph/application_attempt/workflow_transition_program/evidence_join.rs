@@ -20,13 +20,13 @@ where
     pub(super) fn materialize_evidence_join(
         mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        layout: &crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
-        compiled: crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowDefinition,
+        layout: &crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
+        compiled: crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition,
         instance: super::super::PublishedWorkflowInstanceRef,
-        selected: crate::domain_computation::primary_graph::workflow::instance::SelectedWorkflowTransition,
+        selected: crate::domain_computation::primary_graph::application_attempt::workflow::instance::SelectedWorkflowTransition,
         live_membership: worth_relational::facade::identity::RelationId,
         mut facts: Vec<super::super::WorthQueryApplicationObservedFact>,
-        progress: &crate::domain_computation::primary_graph::workflow::instance::WorkflowInstanceProgress,
+        progress: &crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowInstanceProgress,
         policy: worth_query_declaration::facade::application_program::ApplicationWorkflowEvidenceJoinPolicy,
         allowance: crate::domain_computation::primary_graph::application_attempt::WorkflowStepAllowance,
     ) -> Result<
@@ -210,11 +210,11 @@ where
         let transition_instance = admitted.instance();
         let node_path = admitted.node_path().to_owned();
         let mut effects = Vec::new();
-        crate::domain_computation::primary_graph::workflow::instance::visit_workflow_transition_facts(
+        crate::domain_computation::primary_graph::application_attempt::workflow::instance::visit_workflow_transition_facts(
         layout,
         &admitted,
         outcome,
-        crate::domain_computation::primary_graph::workflow::instance::WorkflowInstanceState::Ready,
+        crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowInstanceState::Ready,
         |effect| {
             effects.push(effect);
             Ok::<(), WorthQueryApplicationAttemptDenial>(())

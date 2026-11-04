@@ -16,10 +16,10 @@ where
     #[allow(clippy::too_many_arguments)]
     pub(super) fn materialize_terminal_transition(
         mut self,
-        layout: &crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
-        compiled: crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowDefinition,
+        layout: &crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
+        compiled: crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition,
         instance: super::super::PublishedWorkflowInstanceRef,
-        selected: crate::domain_computation::primary_graph::workflow::instance::SelectedWorkflowTransition,
+        selected: crate::domain_computation::primary_graph::application_attempt::workflow::instance::SelectedWorkflowTransition,
         live_membership: worth_relational::facade::identity::RelationId,
         retire_live_membership: bool,
         facts: Vec<super::super::WorthQueryApplicationObservedFact>,

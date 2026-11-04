@@ -3,9 +3,7 @@ use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
     WorthQueryApplicationObservedFact,
 };
-use crate::domain_computation::primary_graph::workflow::{
-    instance::WorkflowAssessmentEvidenceLocator, schema::WorthQueryWorkflowLayout,
-};
+use {crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowAssessmentEvidenceLocator, crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout};
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 
 use super::super::ObservedWorkflowAssessmentEvidence;

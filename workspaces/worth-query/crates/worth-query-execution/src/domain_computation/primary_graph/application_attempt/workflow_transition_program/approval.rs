@@ -2,10 +2,8 @@ use crate::domain_computation::primary_graph::application_attempt::check_request
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::{PreparedWorkflowAdvance, RequiredWorkflowApproval};
-use crate::domain_computation::primary_graph::workflow::instance::{
-    SelectedWorkflowApproval, SelectedWorkflowTransition,
-};
-use crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout;
+use {crate::domain_computation::primary_graph::application_attempt::workflow::instance::SelectedWorkflowApproval, crate::domain_computation::primary_graph::application_attempt::workflow::instance::SelectedWorkflowTransition};
+use crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout;
 use crate::domain_computation::primary_graph::{
     PublishedWorkflowInstanceRef, WorthQueryApplicationAttemptDenial,
     WorthQueryApplicationObservedFact, WorthQueryCompleteApplicationReadSet,

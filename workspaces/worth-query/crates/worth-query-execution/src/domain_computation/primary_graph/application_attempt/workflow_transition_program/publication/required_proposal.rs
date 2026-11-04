@@ -1,5 +1,5 @@
 //! A descriptive proposal slot, never permission to propose or execute.
-use crate::domain_computation::primary_graph::workflow::instance::SelectedWorkflowProposal;
+use crate::domain_computation::primary_graph::application_attempt::workflow::instance::SelectedWorkflowProposal;
 use worth_relational::facade::identity::EntityId;
 
 /// The current native node needs a proposal of this declared operation/input.

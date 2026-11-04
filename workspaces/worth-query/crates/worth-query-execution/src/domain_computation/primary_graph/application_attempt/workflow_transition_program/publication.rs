@@ -55,7 +55,7 @@ pub enum PreparedWorkflowAdvance<Schema, Operation, Input, Scope> {
         supporting_identity: Option<[u8; 32]>,
         operation_receipt_identity: Option<[u8; 32]>,
         progress_update: Option<
-            crate::domain_computation::primary_graph::workflow::instance::PreparedWorkflowProgressUpdate,
+            crate::domain_computation::primary_graph::application_attempt::workflow::instance::PreparedWorkflowProgressUpdate,
         >,
         approval: Option<PreparedWorkflowApprovalProjection>,
         approval_identity: Option<[u8; 32]>,
@@ -164,7 +164,7 @@ pub struct PreparedWorkflowAssessmentProjection {
 
 pub struct PreparedWorkflowAssessment<Schema, Operation, Input, Scope> {
     pub(super) admitted:
-        crate::domain_computation::primary_graph::workflow::instance::AdmittedWorkflowTransition<
+        crate::domain_computation::primary_graph::application_attempt::workflow::instance::AdmittedWorkflowTransition<
             Schema,
             Operation,
             Input,
@@ -174,7 +174,7 @@ pub struct PreparedWorkflowAssessment<Schema, Operation, Input, Scope> {
     pub(super) applicability_dependencies:
         Vec<crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact>,
     pub(super) layout:
-        crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
+        crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
     pub(super) program_revision: ApplicationProgramRevision,
     pub(super) replays: PreparedWorkflowTransitionReplays,
     /// Evidence bytes the lineage may still retain when this settles.
@@ -183,7 +183,7 @@ pub struct PreparedWorkflowAssessment<Schema, Operation, Input, Scope> {
 
 pub struct PreparedWorkflowCondition<Schema, Operation, Input, Scope> {
     pub(super) admitted:
-        crate::domain_computation::primary_graph::workflow::instance::AdmittedWorkflowTransition<
+        crate::domain_computation::primary_graph::application_attempt::workflow::instance::AdmittedWorkflowTransition<
             Schema,
             Operation,
             Input,
@@ -191,7 +191,7 @@ pub struct PreparedWorkflowCondition<Schema, Operation, Input, Scope> {
         >,
     pub(super) required: RequiredWorkflowCondition,
     pub(super) layout:
-        crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
+        crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
     pub(super) program_revision: ApplicationProgramRevision,
     pub(super) replays: PreparedWorkflowTransitionReplays,
 }
@@ -226,7 +226,7 @@ pub struct RequiredWorkflowCondition {
     pub(super) transition_identity: String,
     pub(super) occurrence: u64,
     pub(super) condition:
-        crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowCondition,
+        crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowCondition,
 }
 
 impl RequiredWorkflowCondition {
@@ -235,7 +235,7 @@ impl RequiredWorkflowCondition {
         node_path: String,
         transition_identity: String,
         occurrence: u64,
-        selected: crate::domain_computation::primary_graph::workflow::instance::SelectedWorkflowCondition,
+        selected: crate::domain_computation::primary_graph::application_attempt::workflow::instance::SelectedWorkflowCondition,
     ) -> Self {
         Self {
             instance,
@@ -261,7 +261,7 @@ impl RequiredWorkflowCondition {
     /// Operands in name order.
     pub fn operands(
         &self,
-    ) -> &[crate::domain_computation::primary_graph::workflow::definition::WorkflowConditionOperand]
+    ) -> &[crate::domain_computation::primary_graph::application_attempt::workflow::definition::WorkflowConditionOperand]
     {
         &self.condition.operands
     }

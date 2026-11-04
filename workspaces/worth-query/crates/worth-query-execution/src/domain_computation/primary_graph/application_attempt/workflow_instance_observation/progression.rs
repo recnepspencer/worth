@@ -8,14 +8,9 @@ use super::{
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
     WorthQueryApplicationObservedFact,
 };
-use crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowDefinition;
-use crate::domain_computation::primary_graph::workflow::instance::{
-    select_settled_replay_transition, RetainedWorkflowInstanceProgressProjection,
-    WorkflowInstanceProgress, WorkflowInstanceProgressKey, WorkflowInstanceProgressRetentionDenial,
-    WorkflowTransitionProgressBasis, WorkflowTransitionProgressObservation,
-    WorkflowTransitionReplayProjection, WorkflowTransitionReplayRetention,
-};
-use crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout;
+use crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition;
+use {crate::domain_computation::primary_graph::application_attempt::workflow::instance::select_settled_replay_transition, crate::domain_computation::primary_graph::application_attempt::workflow::instance::RetainedWorkflowInstanceProgressProjection, crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowInstanceProgress, crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowInstanceProgressKey, crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowInstanceProgressRetentionDenial, crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowTransitionProgressBasis, crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowTransitionProgressObservation, crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowTransitionReplayProjection, crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowTransitionReplayRetention};
+use crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle;
 
 pub(super) struct WorkflowProgressObservation {

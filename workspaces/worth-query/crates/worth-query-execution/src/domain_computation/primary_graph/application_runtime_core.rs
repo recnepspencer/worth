@@ -50,7 +50,7 @@ pub struct WorthQueryApplicationRuntimeCore {
     pub(in crate::domain_computation::primary_graph) output_demands: super::super::application_output_demand::WorthQueryOutputDemandRegistry,
     pub(in crate::domain_computation::primary_graph) recovered_outputs: super::super::application_output_demand::WorthQueryRecoveredOutputs,
     pub(in crate::domain_computation::primary_graph) workflow_coverage:
-        super::super::workflow::adoption::WorkflowVocabularyCoverageRegistry,
+        crate::domain_computation::primary_graph::application_attempt::workflow::adoption::WorkflowVocabularyCoverageRegistry,
     pub(in crate::domain_computation::primary_graph) installed_operations: Arc<worth_query_installation::facade::InstalledOperationCatalog>,
 }
 
@@ -165,7 +165,7 @@ impl WorthQueryApplicationRuntimeCore {
 impl WorthQueryApplicationRuntimeCore {
     pub(in crate::domain_computation) fn workflow_compilation_reuse_counters(
         &self,
-    ) -> super::super::WorthQueryWorkflowCompilationReuseCounters {
+    ) -> crate::domain_computation::primary_graph::application_attempt::workflow::definition::WorthQueryWorkflowCompilationReuseCounters {
         self.retain_primary_graph_integration_handle()
             .expect("a published application runtime retains its primary graph")
             .workflow_compilation_reuse_counters()
@@ -175,7 +175,7 @@ impl WorthQueryApplicationRuntimeCore {
 impl WorthQueryApplicationRuntimeCore {
     pub(in crate::domain_computation) fn workflow_instance_progress_counters(
         &self,
-    ) -> super::super::WorthQueryWorkflowInstanceProgressCounters {
+    ) -> crate::domain_computation::primary_graph::application_attempt::workflow::WorthQueryWorkflowInstanceProgressCounters {
         self.retain_primary_graph_integration_handle()
             .expect("a published application runtime retains its primary graph")
             .workflow_instance_progress_counters()

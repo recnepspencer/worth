@@ -24,11 +24,7 @@ use super::super::super::{
 };
 use super::super::{performed, PublishedWorkflowInstanceRef};
 use super::HISTORY;
-use crate::domain_computation::primary_graph::workflow::{
-    definition::{reconstruct_compiled_definition, WorkflowDefinitionCompilationPosture},
-    instance::{WorkflowInstanceState, WorkflowPerformedEffect},
-    schema::WorthQueryWorkflowLayout,
-};
+use {crate::domain_computation::primary_graph::application_attempt::workflow::definition::reconstruct_compiled_definition, crate::domain_computation::primary_graph::application_attempt::workflow::definition::WorkflowDefinitionCompilationPosture, crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowInstanceState, crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowPerformedEffect, crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout};
 
 /// The writes that end a live instance, what it performed, and the facts
 /// they rest on.
@@ -142,7 +138,7 @@ where
                 locator: layout.instance.cancellation_identity.clone(),
             });
             let mut actor_fields = BTreeMap::new();
-            crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor::from_admission(&self.admission)
+            crate::domain_computation::primary_graph::application_attempt::workflow::actor::record::WorkflowAdmittedActor::from_admission(&self.admission)
                 .append_fields(&layout.instance.end_advancer, &mut actor_fields);
             let effects = vec![
                 WorthQueryApplicationRealizedEffect::UpdateEntity {

@@ -4,7 +4,7 @@ use super::*;
 use crate::domain_computation::authorization::{
     WorkflowApprovalRequestEncodingDenial, MAXIMUM_PORTABLE_BYTES,
 };
-use crate::domain_computation::primary_graph::workflow::actor::encoding::{self, FundedActorText};
+use {crate::domain_computation::primary_graph::application_attempt::workflow::actor::encoding, crate::domain_computation::primary_graph::application_attempt::workflow::actor::encoding::FundedActorText};
 
 impl WorthQueryAdmittedOperation {
     /// Original live native admission identity, across ordinary and capability lanes.
@@ -60,7 +60,7 @@ impl WorthQueryAdmittedOperation {
                 if !authorization.principal().durable_is_portable() {
                     return Err(WorkflowApprovalRequestEncodingDenial::NonPortableValue);
                 }
-                encoding::encode(execution, &principal, MAXIMUM_PORTABLE_BYTES)
+                crate::domain_computation::primary_graph::application_attempt::workflow::actor::encoding::encode(execution, &principal, MAXIMUM_PORTABLE_BYTES)
             })
             .transpose()
     }
@@ -73,7 +73,7 @@ impl WorthQueryAdmittedOperation {
             .as_ref()
             .and_then(WorthQueryRetainedAuthorizationDecisionFacts::capability_authorization)
             .map(|authorization| {
-                encoding::encode(
+                crate::domain_computation::primary_graph::application_attempt::workflow::actor::encoding::encode(
                     execution,
                     &authorization.decision().durable_lineage_view(),
                     MAXIMUM_PORTABLE_BYTES,

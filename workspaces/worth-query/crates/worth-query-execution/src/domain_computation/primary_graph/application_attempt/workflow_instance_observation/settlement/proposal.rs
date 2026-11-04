@@ -7,8 +7,8 @@ use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
     WorthQueryApplicationObservedFact,
 };
-use crate::domain_computation::primary_graph::workflow::instance::WorkflowTransitionLocator;
-use crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout;
+use crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowTransitionLocator;
+use crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout;
 
 pub(in crate::domain_computation::primary_graph::application_attempt) fn observe_retained_workflow_proposal_identity(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

@@ -15,7 +15,7 @@ use crate::domain_computation::authorization::{
     WorthQueryOperationAuthorizationDenial, WorthQueryOperationScopeBinding,
     WorthQueryRetainedAuthorizationDecisionFacts,
 };
-use crate::domain_computation::primary_graph::workflow::actor::encoding::FundedActorText;
+use crate::domain_computation::primary_graph::application_attempt::workflow::actor::encoding::FundedActorText;
 use crate::domain_computation::primary_graph::WorthQueryBoundMutationPreconditions;
 
 impl<Schema, Operation, Input, Scope>

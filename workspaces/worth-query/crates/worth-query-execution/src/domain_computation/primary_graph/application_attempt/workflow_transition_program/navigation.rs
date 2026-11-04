@@ -21,9 +21,9 @@ where
 {
     pub(super) fn navigation_replay_denial(
         self,
-        layout: &crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
+        layout: &crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
         instance: worth_relational::facade::identity::EntityId,
-        replays: crate::domain_computation::primary_graph::workflow::instance::WorkflowTransitionReplayRetention,
+        replays: crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowTransitionReplayRetention,
         denial: WorthQueryApplicationAttemptDenial,
     ) -> PreparedWorkflowAdvance<Schema, Operation, Input, Scope> {
         self.replay_only_denial(
@@ -38,7 +38,7 @@ where
     /// replays its outcome.
     pub(super) fn replay_only_denial(
         self,
-        layout: &crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
+        layout: &crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
         instance: worth_relational::facade::identity::EntityId,
         replays: publication::PreparedWorkflowTransitionReplays,
         denial: WorthQueryApplicationAttemptDenial,
@@ -57,10 +57,10 @@ where
 
     pub(super) fn materialize_navigation_back(
         mut self,
-        layout: &crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
-        compiled: crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowDefinition,
+        layout: &crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
+        compiled: crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition,
         instance: super::super::PublishedWorkflowInstanceRef,
-        selected: crate::domain_computation::primary_graph::workflow::instance::SelectedWorkflowTransition,
+        selected: crate::domain_computation::primary_graph::application_attempt::workflow::instance::SelectedWorkflowTransition,
         live_membership: RelationId,
         facts: Vec<super::super::WorthQueryApplicationObservedFact>,
         allowance: crate::domain_computation::primary_graph::application_attempt::WorkflowStepAllowance,

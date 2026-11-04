@@ -7,7 +7,7 @@ impl WorthQueryWorkflowActorContext {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         handle: &WorthQueryPrimaryGraphIntegrationHandle,
         snapshot: &SnapshotHandle,
-        layout: &crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
+        layout: &crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
         compiled: &CompiledWorkflowDefinition,
         requirement: Requirement,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
@@ -145,7 +145,7 @@ impl WorthQueryWorkflowActorContext {
                 }
                 if let Some(expected) = &required.captured_input {
                     let actual = handle.with_runtime(execution, |runtime| {
-                        crate::domain_computation::primary_graph::workflow::proposal::observe_captured_workflow_input(
+                        crate::domain_computation::primary_graph::application_attempt::workflow::proposal::observe_captured_workflow_input(
                             execution, runtime, snapshot, layout, originals.proposal, &originals.proposal_identity,
                             &required.node_path, expected.resource, facts,
                         )
@@ -194,7 +194,7 @@ impl WorthQueryWorkflowActorContext {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         handle: &WorthQueryPrimaryGraphIntegrationHandle,
         snapshot: &SnapshotHandle,
-        layout: &crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
+        layout: &crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
         source: &CompiledWorkflowNode,
         transition: WorkflowTransitionLocator,
         transition_identity: &str,
@@ -204,10 +204,10 @@ impl WorthQueryWorkflowActorContext {
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
         facts: &mut Vec<WorthQueryApplicationObservedFact>,
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
-        let crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowNodeKind::Operation { operation, input_type, .. } = source.kind()
+        let crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowNodeKind::Operation { operation, input_type, .. } = source.kind()
             else { return Err(affinity("proposal source is not an operation")); };
         let input = handle.with_runtime(execution, |runtime|
-            crate::domain_computation::primary_graph::workflow::proposal::observe_workflow_operation_input(
+            crate::domain_computation::primary_graph::application_attempt::workflow::proposal::observe_workflow_operation_input(
                 execution, runtime, snapshot, layout, transition.entity(), transition_identity,
                 operation, input_type, source.path(), request))?;
         if input.proposal != proposal

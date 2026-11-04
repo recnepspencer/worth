@@ -4,15 +4,7 @@ mod approval;
 mod portable;
 mod sources;
 use super::actor_context::{Command, WorthQueryWorkflowActorContext};
-use crate::domain_computation::primary_graph::{
-    workflow::{
-        actor::{record::WorkflowActorFields, WorkflowActorDependencies},
-        definition::{CompiledWorkflowDefinition, CompiledWorkflowNode},
-        instance::WorkflowTransitionLocator,
-    },
-    WorthQueryApplicationObservedFact, WorthQueryPrimaryGraphIntegrationHandle,
-    WorthQueryPrimaryGraphLayout,
-};
+use {crate::domain_computation::primary_graph::application_attempt::workflow::actor::record::WorkflowActorFields, crate::domain_computation::primary_graph::application_attempt::workflow::actor::WorkflowActorDependencies, crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition, crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowNode, crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowTransitionLocator, crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact, crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle, crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout};
 use approval::approval_actor;
 use worth_query_declaration::facade::application_capability::{
     ApplicationCapabilityRecordedActorRequirement as Requirement,
@@ -155,7 +147,7 @@ impl WorthQueryWorkflowActorContext {
                         layout.proposal.entity_kind,
                         &mut facts,
                     )
-                    .and_then(|actor| crate::domain_computation::primary_graph::workflow::actor::record::validate_actor_applicability(actor, true)),
+                    .and_then(|actor| crate::domain_computation::primary_graph::application_attempt::workflow::actor::record::validate_actor_applicability(actor, true)),
                 None => Ok(None),
             },
             Source::BoundTransition => match transition {
@@ -178,7 +170,7 @@ impl WorthQueryWorkflowActorContext {
                     )?;
                     let required = requirement.role() == Role::Advancer
                         || transition.settlement().operation_receipt_identity().is_some();
-                    crate::domain_computation::primary_graph::workflow::actor::record::validate_actor_applicability(actor, required)
+                    crate::domain_computation::primary_graph::application_attempt::workflow::actor::record::validate_actor_applicability(actor, required)
                 }
                 None => Ok(None),
             },

@@ -92,7 +92,7 @@ impl WorthQueryRetainedCapabilityRequest {
         }
         let text_bytes = encoded.len().checked_mul(3).ok_or(())?;
         let text_funding =
-            crate::domain_computation::primary_graph::workflow::actor::fund_actor_codec(
+            crate::domain_computation::primary_graph::application_attempt::workflow::actor::fund_actor_codec(
                 execution, text_bytes,
             )
             .map_err(|cause| WorkflowApprovalRequestDecodingDenial::Actor(Box::new(cause)))?;
@@ -120,12 +120,12 @@ impl WorthQueryRetainedCapabilityRequest {
             })
             .ok_or(())?;
         let context_funding =
-            crate::domain_computation::primary_graph::workflow::actor::fund_actor_codec(
+            crate::domain_computation::primary_graph::application_attempt::workflow::actor::fund_actor_codec(
                 execution, bytes,
             )
             .map_err(|cause| WorkflowApprovalRequestDecodingDenial::Actor(Box::new(cause)))?;
         let portable: PortableRequest = serde_json::from_str(encoded).map_err(|_| ())?;
-        crate::domain_computation::primary_graph::workflow::actor::encoding::check_live(execution)?;
+        crate::domain_computation::primary_graph::application_attempt::workflow::actor::encoding::check_live(execution)?;
         validate_portable(&portable).map_err(|_| ())?;
         let context = super::context::RetainedContext::decoded(portable.context).map_err(|_| ())?;
         let related_relation = portable.related_relation.map(|parts| {

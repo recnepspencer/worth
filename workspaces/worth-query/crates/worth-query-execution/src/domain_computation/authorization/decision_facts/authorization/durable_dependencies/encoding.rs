@@ -1,9 +1,7 @@
 //! Borrowed native dependency descriptions; only recursive view nodes allocate.
 use super::*;
 use crate::domain_computation::authorization::WorkflowApprovalRequestEncodingDenial as Denial;
-use crate::domain_computation::primary_graph::workflow::actor::{
-    encoding::FundedActorText, fund_actor_codec, ActorCodecFunding,
-};
+use {crate::domain_computation::primary_graph::application_attempt::workflow::actor::encoding::FundedActorText, crate::domain_computation::primary_graph::application_attempt::workflow::actor::fund_actor_codec, crate::domain_computation::primary_graph::application_attempt::workflow::actor::ActorCodecFunding};
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
 
@@ -53,7 +51,7 @@ pub(super) fn capture<'a>(
     execution: &ExecutionRequest<'_, '_>,
 ) -> Result<DurableDependenciesView<'a>, Denial> {
     use super::super::delegation::WorthQueryDelegationDecisionFact as Native;
-    crate::domain_computation::primary_graph::workflow::actor::encoding::check_live(execution)
+    crate::domain_computation::primary_graph::application_attempt::workflow::actor::encoding::check_live(execution)
         .map_err(|cause| Denial::Native(Box::new(cause)))?;
     let primary = fact
         .native_dependencies

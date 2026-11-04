@@ -16,13 +16,13 @@ where
     #[allow(clippy::too_many_arguments)]
     pub(super) fn materialize_inbound_wait_transition(
         mut self,
-        layout: &crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
-        compiled: crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowDefinition,
+        layout: &crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
+        compiled: crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition,
         instance: super::super::PublishedWorkflowInstanceRef,
-        selected: crate::domain_computation::primary_graph::workflow::instance::SelectedWorkflowTransition,
+        selected: crate::domain_computation::primary_graph::application_attempt::workflow::instance::SelectedWorkflowTransition,
         live_membership: worth_relational::facade::identity::RelationId,
         facts: Vec<super::super::WorthQueryApplicationObservedFact>,
-        inbound: crate::domain_computation::primary_graph::workflow::instance::SelectedWorkflowInbound,
+        inbound: crate::domain_computation::primary_graph::application_attempt::workflow::instance::SelectedWorkflowInbound,
         allowance: crate::domain_computation::primary_graph::application_attempt::WorkflowStepAllowance,
     ) -> Result<
         PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,

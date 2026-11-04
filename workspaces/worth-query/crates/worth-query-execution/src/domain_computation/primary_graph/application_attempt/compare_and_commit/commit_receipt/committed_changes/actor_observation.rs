@@ -14,7 +14,7 @@ impl WorthQueryApplicationCommittedChanges {
         Option<EntityId>,
         crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
     > {
-        let invalid = crate::domain_computation::primary_graph::workflow::actor::record::actor_record_corruption;
+        let invalid = crate::domain_computation::primary_graph::application_attempt::workflow::actor::record::actor_record_corruption;
         use ApplicationWorkflowRecordedRole::*;
         let (aspect, role) = match role {
             Proposer => ("workflow-proposal", "proposer"),
@@ -22,7 +22,7 @@ impl WorthQueryApplicationCommittedChanges {
             Executor => ("workflow-transition", "executor"),
             Approver => ("workflow-approval", "approver"),
         };
-        let fields = crate::domain_computation::primary_graph::workflow::actor::record::WorkflowActorFields::planned(aspect, role).map_err(|_| invalid())?;
+        let fields = crate::domain_computation::primary_graph::application_attempt::workflow::actor::record::WorkflowActorFields::planned(aspect, role).map_err(|_| invalid())?;
         let values = [&fields.partition, &fields.slot, &fields.generation]
             .map(|locator| self.committed_field_value(entity, locator));
         let mut components = [None; 3];
@@ -33,7 +33,7 @@ impl WorthQueryApplicationCommittedChanges {
                 _ => return Err(invalid()),
             };
         }
-        crate::domain_computation::primary_graph::workflow::actor::record::decode_actor_components(
+        crate::domain_computation::primary_graph::application_attempt::workflow::actor::record::decode_actor_components(
             components,
         )
         .map_err(|_| invalid())
@@ -161,7 +161,7 @@ impl WorthQueryApplicationCommittedChanges {
         Option<EntityId>,
         crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
     > {
-        let invalid = crate::domain_computation::primary_graph::workflow::actor::record::actor_record_corruption;
+        let invalid = crate::domain_computation::primary_graph::application_attempt::workflow::actor::record::actor_record_corruption;
         let original = self
             .workflow_actor_fields_for_test(entity, role)
             .map_err(|_| invalid())?;
@@ -177,7 +177,7 @@ impl WorthQueryApplicationCommittedChanges {
         } else {
             components[0] = None;
         }
-        let actor = crate::domain_computation::primary_graph::workflow::actor::record::decode_actor_components(components)
+        let actor = crate::domain_computation::primary_graph::application_attempt::workflow::actor::record::decode_actor_components(components)
             .map_err(|_| invalid())?;
         let required = match role {
             ApplicationWorkflowRecordedRole::Executor => {
@@ -191,6 +191,6 @@ impl WorthQueryApplicationCommittedChanges {
             }
             _ => true,
         };
-        crate::domain_computation::primary_graph::workflow::actor::record::validate_actor_applicability(actor, required)
+        crate::domain_computation::primary_graph::application_attempt::workflow::actor::record::validate_actor_applicability(actor, required)
     }
 }

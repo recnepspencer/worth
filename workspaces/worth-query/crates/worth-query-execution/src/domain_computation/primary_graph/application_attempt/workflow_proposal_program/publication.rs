@@ -9,7 +9,7 @@ use super::super::{
     WorthQueryApplicationIdempotencyBinding, WorthQueryApplicationIdempotencyResolution,
     WorthQueryApplicationIdempotencyResolutionDenial, WorthQueryApplicationUncommitted,
 };
-use crate::domain_computation::primary_graph::workflow::proposal::derive_workflow_proposal_context_identity;
+use crate::domain_computation::primary_graph::application_attempt::workflow::proposal::derive_workflow_proposal_context_identity;
 use crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
@@ -28,7 +28,7 @@ pub struct PreparedWorkflowProposal<Schema, Operation, Input, Scope> {
     pub(super) source_identity: Option<[u8; 32]>,
     pub(super) captured_identity: Option<[u8; 32]>,
     pub(super) progress_update: Option<
-        crate::domain_computation::primary_graph::workflow::instance::PreparedWorkflowProgressUpdate,
+        crate::domain_computation::primary_graph::application_attempt::workflow::instance::PreparedWorkflowProgressUpdate,
     >,
 }
 

@@ -6,9 +6,7 @@ use super::{
     publication::PreparedWorkflowAssessmentProjection, PreparedWorkflowAdvance,
     PreparedWorkflowAssessment,
 };
-use crate::domain_computation::primary_graph::workflow::{
-    visit_workflow_assessment_facts, WorkflowAssessmentEvidenceMeaning,
-};
+use {crate::domain_computation::primary_graph::application_attempt::workflow::visit_workflow_assessment_facts, crate::domain_computation::primary_graph::application_attempt::workflow::WorkflowAssessmentEvidenceMeaning};
 use crate::domain_computation::primary_graph::{
     RequiredWorkflowAssessment, WorthQueryApplicationAttemptDenial,
     WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationEffectProgram,
@@ -307,7 +305,7 @@ where
 }
 
 fn projection(
-    layout: &crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
+    layout: &crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
     meaning: WorkflowAssessmentEvidenceMeaning,
 ) -> PreparedWorkflowAssessmentProjection {
     projection_with_locator(&layout.assessment_evidence.identity, meaning)

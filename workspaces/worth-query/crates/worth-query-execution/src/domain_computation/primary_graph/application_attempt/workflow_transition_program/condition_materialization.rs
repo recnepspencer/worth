@@ -16,14 +16,14 @@ where
     #[allow(clippy::too_many_arguments)]
     pub(super) fn materialize_condition_requirement(
         mut self,
-        layout: &crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
+        layout: &crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
         program_revision: worth_query_declaration::facade::application_program::ApplicationProgramRevision,
         instance: super::super::PublishedWorkflowInstanceRef,
-        selected: crate::domain_computation::primary_graph::workflow::instance::SelectedWorkflowTransition,
+        selected: crate::domain_computation::primary_graph::application_attempt::workflow::instance::SelectedWorkflowTransition,
         live_membership: worth_relational::facade::identity::RelationId,
         retire_live_membership: bool,
         facts: Vec<super::super::WorthQueryApplicationObservedFact>,
-        condition: crate::domain_computation::primary_graph::workflow::instance::SelectedWorkflowCondition,
+        condition: crate::domain_computation::primary_graph::application_attempt::workflow::instance::SelectedWorkflowCondition,
         allowance: crate::domain_computation::primary_graph::application_attempt::WorkflowStepAllowance,
     ) -> Result<
         PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,

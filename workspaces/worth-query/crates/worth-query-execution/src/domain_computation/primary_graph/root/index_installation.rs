@@ -145,7 +145,7 @@ pub fn register_primary_graph_indexes(
             })?
             .index_id;
     }
-    super::super::workflow::schema::register_indexes(layout.workflow_mut(), |definition| {
+    crate::domain_computation::primary_graph::application_attempt::workflow::schema::register_indexes(layout.workflow_mut(), |definition| {
         installation.install(definition)
     })?;
     let read_indexes = super::super::application_discovery::WorkflowReadIndexes::install(

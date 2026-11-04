@@ -1,11 +1,11 @@
 //! Real declaration validation, complete fact production and native compiler binding.
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::definition::compilation::publication_binding::separate_compiled_definition;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::definition::compilation::publication_binding::ColdCompiledWorkflowDefinition;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::definition::compilation::publication_binding::WorkflowDefinitionPublicationRevisions;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow::definition::compilation::publication_binding::separate_compiled_definition;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow::definition::compilation::publication_binding::ColdCompiledWorkflowDefinition;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow::definition::compilation::publication_binding::WorkflowDefinitionPublicationRevisions;
 use crate::domain_computation::primary_graph::workflow::definition::compilation::reconstruction::start_provenance_tests::*;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::definition::facts::visit_definition_facts;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::definition::facts::WorkflowLineagePublicationTarget;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::schema::layout::WorthQueryWorkflowLayout;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow::definition::facts::visit_definition_facts;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow::definition::facts::WorkflowLineagePublicationTarget;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow::schema::layout::WorthQueryWorkflowLayout;
 use worth_query_declaration::facade::application_program::*;
 use worth_relational::facade::identity::PartitionId;
 
@@ -104,7 +104,7 @@ pub fn publish_definition(
     let retained = selected(world, execution);
     let compiled_node = handle.with_runtime(execution, |runtime| {
         let mut observed = Vec::new();
-        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::definition::compilation::reconstruction::node::compile_node(
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow::definition::compilation::reconstruction::node::compile_node(
             execution,
             runtime,
             retained.1.snapshot_handle(),

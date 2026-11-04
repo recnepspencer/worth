@@ -67,7 +67,7 @@ where
             self.required.local_action.is_some().then(|| {
                 super::LocalActionSettlementProof::from_performed(&self.required, &performed)
             });
-        let executor = crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor::from_performed_receipt(&performed);
+        let executor = crate::domain_computation::primary_graph::application_attempt::workflow::actor::record::WorkflowAdmittedActor::from_performed_receipt(&performed);
         let mut effects = Vec::new();
         let basis = match self.required.local_action_kind() {
             Some(super::super::WorkflowLocalActionKind::Return) => self
@@ -82,7 +82,7 @@ where
         };
         let terminal = self.required.local_action_kind()
             == Some(super::super::WorkflowLocalActionKind::Terminate);
-        let transition = crate::domain_computation::primary_graph::workflow::instance::visit_workflow_operation_settlement_facts(
+        let transition = crate::domain_computation::primary_graph::application_attempt::workflow::instance::visit_workflow_operation_settlement_facts(
             &self.layout,
             &basis,
             &receipt_identity,
@@ -92,7 +92,7 @@ where
                 Ok::<(), WorthQueryApplicationAttemptDenial>(())
             },
         )?;
-        crate::domain_computation::primary_graph::workflow::operation_output::append_operation_outputs(
+        crate::domain_computation::primary_graph::application_attempt::workflow::operation_output::append_operation_outputs(
             &self.layout, transition, self.required.binding().expect("validated operation binding"),
             performed.outputs().native_witness_roles().map(|(role, posture, entity, target)|
                 (role, posture, entity, worth_relational::facade::transactions::EntityReference::Existing(target))),

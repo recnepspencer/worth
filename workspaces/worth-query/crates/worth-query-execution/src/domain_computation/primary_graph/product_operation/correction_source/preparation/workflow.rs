@@ -1,8 +1,6 @@
 //! Workflow-owned continuation selection from the genuine source occurrence.
 use super::super::*;
-use crate::domain_computation::primary_graph::workflow::correction::{
-    retain_current_continuation, unavailable, PreparedWorkflowCorrection,
-};
+use {crate::domain_computation::primary_graph::application_attempt::workflow::correction::retain_current_continuation, crate::domain_computation::primary_graph::application_attempt::workflow::correction::unavailable, crate::domain_computation::primary_graph::application_attempt::workflow::correction::PreparedWorkflowCorrection};
 
 pub(in crate::domain_computation::primary_graph::product_operation::correction_source) fn prepare_workflow<
     S,

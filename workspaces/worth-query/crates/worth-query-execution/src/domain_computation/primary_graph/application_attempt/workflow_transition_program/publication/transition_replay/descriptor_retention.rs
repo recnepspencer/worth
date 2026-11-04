@@ -1,6 +1,4 @@
-use crate::domain_computation::primary_graph::workflow::instance::{
-    WorkflowTransitionReplayProjection, WorkflowTransitionReplayRetention,
-};
+use {crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowTransitionReplayProjection, crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowTransitionReplayRetention};
 
 #[derive(Clone, Default)]
 #[doc(hidden)]

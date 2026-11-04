@@ -16,12 +16,8 @@ use super::{
 };
 use crate::domain_computation::primary_graph::product_operation::WorthQuerySelectedProductOperation;
 use crate::domain_computation::primary_graph::program_occurrence::program_revision_rendering;
-use crate::domain_computation::primary_graph::workflow::adoption::{
-    inventory_workflows, stage_workflow_dispositions, WorkflowAdoptionInventoryRequest,
-};
-use crate::domain_computation::primary_graph::workflow::{
-    WorthQueryWorkflowAdoptionInventory, WorthQueryWorkflowDispositions,
-};
+use {crate::domain_computation::primary_graph::application_attempt::workflow::adoption::inventory_workflows, crate::domain_computation::primary_graph::application_attempt::workflow::adoption::stage_workflow_dispositions, crate::domain_computation::primary_graph::application_attempt::workflow::adoption::WorkflowAdoptionInventoryRequest};
+use {crate::domain_computation::primary_graph::application_attempt::workflow::WorthQueryWorkflowAdoptionInventory, crate::domain_computation::primary_graph::application_attempt::workflow::WorthQueryWorkflowDispositions};
 
 fn map_relational_preparation_denial(
     denial: worth_relational::facade::transactions::TransactionCommitError,
@@ -176,7 +172,7 @@ pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
         Some(inventory) => admit_workflow_dispositions(inventory, workflow.as_ref(), selected.product().product_branch())?
             .map(|choices| {
                 stage_workflow_dispositions(graph.layout.workflow(), inventory, &choices, target,
-                    crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor::from_admission(&admission))
+                    crate::domain_computation::primary_graph::application_attempt::workflow::actor::record::WorkflowAdmittedActor::from_admission(&admission))
             })
             .unwrap_or_default(),
         None => Vec::new(),

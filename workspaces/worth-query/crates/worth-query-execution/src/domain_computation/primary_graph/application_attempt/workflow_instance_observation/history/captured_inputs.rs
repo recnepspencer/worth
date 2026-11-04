@@ -1,6 +1,6 @@
 //! Cold support is rebuilt from performed native proposal rows, within history's budget.
 use super::*;
-use crate::domain_computation::primary_graph::workflow::captured_input::WorkflowCapturedInputSupport;
+use crate::domain_computation::primary_graph::application_attempt::workflow::captured_input::WorkflowCapturedInputSupport;
 
 pub(super) fn observe(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -22,7 +22,7 @@ pub(super) fn observe(
     charge.reserve_inventory(count)?;
     let resource =
         super::super::subject::read_subject(execution, runtime, snapshot, layout, instance, facts)?;
-    crate::domain_computation::primary_graph::workflow::proposal::observe_captured_workflow_history(
+    crate::domain_computation::primary_graph::application_attempt::workflow::proposal::observe_captured_workflow_history(
         execution,
         runtime,
         snapshot,

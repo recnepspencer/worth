@@ -80,7 +80,7 @@ pub(super) fn decode_lineage(
         ));
     }
     crate::domain_computation::authorization::decode_lineage(execution, lineage).map_err(|cause| {
-        crate::domain_computation::primary_graph::workflow::actor::decoded_denial(
+        crate::domain_computation::primary_graph::application_attempt::workflow::actor::decoded_denial(
             cause,
             "workflow approval capability lineage is invalid",
         )

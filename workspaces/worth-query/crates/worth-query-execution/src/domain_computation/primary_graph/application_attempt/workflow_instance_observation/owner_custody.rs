@@ -1,8 +1,6 @@
 //! A selected ordinary occurrence may recover itself, never replace a different pending owner.
 use super::*;
-use crate::domain_computation::primary_graph::{
-    workflow::instance::SelectedWorkflowTransition, WorthQueryPrimaryGraphIntegrationHandle,
-};
+use {crate::domain_computation::primary_graph::application_attempt::workflow::instance::SelectedWorkflowTransition, crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle};
 use worth_relational::facade::snapshots::SnapshotHandle;
 impl ObservedWorkflowInstance {
     /// Retains absence too: a custody commit after preparation must stale this candidate.
@@ -23,7 +21,7 @@ impl ObservedWorkflowInstance {
         })?;
         if let Some(custody) = custody {
             let same_occurrence=selected.is_some_and(|selected| selected.identity()==custody
-                && matches!(selected.kind(),crate::domain_computation::primary_graph::workflow::instance::SelectedWorkflowTransitionKind::Operation(_)));
+                && matches!(selected.kind(),crate::domain_computation::primary_graph::application_attempt::workflow::instance::SelectedWorkflowTransitionKind::Operation(_)));
             if !same_occurrence {
                 handle.with_runtime(execution, |runtime| {
                     self.ensure_history(

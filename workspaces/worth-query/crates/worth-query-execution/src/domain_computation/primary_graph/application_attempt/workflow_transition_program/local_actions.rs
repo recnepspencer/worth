@@ -3,18 +3,7 @@ use super::{
     PreparedWorkflowAdvance, PreparedWorkflowOperation, RequiredWorkflowOperation,
     WorkflowLocalActionKind, WorkflowOperationAuthority,
 };
-use crate::domain_computation::primary_graph::{
-    application_attempt::{PublishedWorkflowInstanceRef, WorkflowStepAllowance},
-    workflow::{
-        definition::CompiledWorkflowDefinition,
-        instance::{
-            admit_workflow_transition, SelectedWorkflowOperation, SelectedWorkflowTransition,
-        },
-        schema::WorthQueryWorkflowLayout,
-    },
-    WorthQueryApplicationAttemptDenial, WorthQueryApplicationObservedFact,
-    WorthQueryCompleteApplicationReadSet, WorthQueryProjectedApplicationMutation,
-};
+use {crate::domain_computation::primary_graph::application_attempt::PublishedWorkflowInstanceRef, crate::domain_computation::primary_graph::application_attempt::WorkflowStepAllowance, crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition, crate::domain_computation::primary_graph::application_attempt::workflow::instance::admit_workflow_transition, crate::domain_computation::primary_graph::application_attempt::workflow::instance::SelectedWorkflowOperation, crate::domain_computation::primary_graph::application_attempt::workflow::instance::SelectedWorkflowTransition, crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout, crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial, crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact, crate::domain_computation::primary_graph::WorthQueryCompleteApplicationReadSet, crate::domain_computation::primary_graph::WorthQueryProjectedApplicationMutation};
 use worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::identity::RelationId;
@@ -172,8 +161,8 @@ where
         })?;
         observed.facts.push(custody);
         let select = match kind {
-            WorkflowLocalActionKind::Terminate => crate::domain_computation::primary_graph::workflow::instance::select_termination_action_transition,
-            WorkflowLocalActionKind::Return => crate::domain_computation::primary_graph::workflow::instance::select_back_action_transition,
+            WorkflowLocalActionKind::Terminate => crate::domain_computation::primary_graph::application_attempt::workflow::instance::select_termination_action_transition,
+            WorkflowLocalActionKind::Return => crate::domain_computation::primary_graph::application_attempt::workflow::instance::select_back_action_transition,
         };
         select(
             compiled,

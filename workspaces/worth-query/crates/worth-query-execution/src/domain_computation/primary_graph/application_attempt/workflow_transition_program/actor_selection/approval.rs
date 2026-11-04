@@ -4,7 +4,7 @@ pub(super) fn approval_actor(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &SnapshotHandle,
-    layout: &crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
+    layout: &crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
     transition: Option<WorkflowTransitionLocator>,
     proposal: Option<EntityId>,
     instance: EntityId,
@@ -69,7 +69,7 @@ pub(super) fn approval_actor(
     }
     exact(execution, runtime, snapshot, entity, layout.approval.entity_kind,
         &layout.approval.protocol_version, worth_foundational::facade::AspectValue::UInt64(
-            crate::domain_computation::primary_graph::workflow::schema::version::WORKFLOW_FACT_PROTOCOL_VERSION), facts)?;
+            crate::domain_computation::primary_graph::application_attempt::workflow::schema::version::WORKFLOW_FACT_PROTOCOL_VERSION), facts)?;
     for (original, retained) in [
         (
             &layout.instance.identity,
@@ -119,6 +119,6 @@ pub(super) fn approval_actor(
         layout.approval.entity_kind,
         facts,
     )?;
-    let actor = crate::domain_computation::primary_graph::workflow::actor::record::validate_actor_applicability(actor, true)?;
+    let actor = crate::domain_computation::primary_graph::application_attempt::workflow::actor::record::validate_actor_applicability(actor, true)?;
     Ok((actor, Some(entity)))
 }

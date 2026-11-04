@@ -34,17 +34,7 @@ use super::super::{
 use super::{
     intent_identity, performed, PreparedWorkflowInstanceStart, PublishedWorkflowInstanceRef,
 };
-use crate::domain_computation::primary_graph::workflow::{
-    definition::{
-        reconstruct_compiled_definition, CompiledWorkflowDefinition,
-        WorkflowDefinitionCompilationPosture,
-    },
-    instance::{
-        admit_workflow_migration, visit_instance_start_facts, WorkflowInstanceState,
-        WorkflowLineageCarry, WorkflowPerformedEffect, WorkflowSuccession,
-    },
-    schema::WorthQueryWorkflowLayout,
-};
+use {crate::domain_computation::primary_graph::application_attempt::workflow::definition::reconstruct_compiled_definition, crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition, crate::domain_computation::primary_graph::application_attempt::workflow::definition::WorkflowDefinitionCompilationPosture, crate::domain_computation::primary_graph::application_attempt::workflow::instance::admit_workflow_migration, crate::domain_computation::primary_graph::application_attempt::workflow::instance::visit_instance_start_facts, crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowInstanceState, crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowLineageCarry, crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowPerformedEffect, crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowSuccession, crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout};
 use crate::domain_computation::runtime_time::WorthQueryRuntimeClock;
 use lineage::successor_identity;
 mod successor;
@@ -274,7 +264,7 @@ where
                 };
                 facts.extend(observed.facts);
                 let start_revision = self.lease.handle().with_runtime(execution, |runtime|
-                    crate::domain_computation::primary_graph::workflow::instance::start_provenance::admit(
+                    crate::domain_computation::primary_graph::application_attempt::workflow::instance::start_provenance::admit(
                         execution, runtime, self.lease.product().relational_basis(), resumed.program_revision()))?;
                 successor_effects(
                     &layout,
@@ -285,7 +275,7 @@ where
                     subject,
                     (source.entity_id(), live_membership, carry),
                     &performed,
-                    crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor::from_admission(&self.admission),
+                    crate::domain_computation::primary_graph::application_attempt::workflow::actor::record::WorkflowAdmittedActor::from_admission(&self.admission),
                 )?
             }
         };

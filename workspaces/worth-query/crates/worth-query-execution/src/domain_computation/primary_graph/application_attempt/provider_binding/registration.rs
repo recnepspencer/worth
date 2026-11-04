@@ -11,7 +11,7 @@ pub(in crate::domain_computation::primary_graph) use provider_registration::Wort
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationAttemptRegistration<'a>
 {
-    workflow_origin: Option<crate::domain_computation::primary_graph::workflow::operation_output::WorkflowOperationOrigin>,
+    workflow_origin: Option<crate::domain_computation::primary_graph::application_attempt::workflow::operation_output::WorkflowOperationOrigin>,
     required_output_demand: Option<crate::domain_computation::primary_graph::RequiredOutputDemandContext>,
     effect_owner: WorthQueryProviderEffectRegistrationSeal,
     affinity: super::super::provider_execution::WorthQueryApplicationAttemptAffinity,

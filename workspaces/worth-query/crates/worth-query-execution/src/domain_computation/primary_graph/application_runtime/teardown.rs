@@ -1,9 +1,6 @@
 //! Ordered destruction of concrete custody interleaved with typed registries.
 use super::WorthQueryApplicationRuntimeCore;
-use crate::domain_computation::primary_graph::{
-    application_contribution, application_output_demand, provider::WorthQueryPrimaryGraphProvider,
-    workflow,
-};
+use {crate::domain_computation::primary_graph::application_contribution, crate::domain_computation::primary_graph::application_output_demand, crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider, crate::domain_computation::primary_graph::application_attempt::workflow};
 
 // These owners followed the typed conditional registry before the core split.
 // Move exclusive custody and retain shared backing before cleanup can unwind.
@@ -81,7 +78,7 @@ impl Drop for ApplicationOutputTeardown {
 
 #[derive(Default)]
 pub(super) struct ApplicationWorkflowTeardown {
-    coverage: Option<workflow::adoption::WorkflowVocabularyCoverageRegistry>,
+    coverage: Option<crate::domain_computation::primary_graph::application_attempt::workflow::adoption::WorkflowVocabularyCoverageRegistry>,
 }
 
 impl ApplicationWorkflowTeardown {

@@ -4,7 +4,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) struct Wor
 {
     /// Facts added only by workflow authority; overlapping handler reads stay outside.
     pub authority_fact_range: std::ops::Range<usize>,
-    pub captured_input: Option<crate::domain_computation::primary_graph::WorkflowCapturedInputContract>,
+    pub captured_input: Option<crate::domain_computation::primary_graph::application_attempt::workflow::captured_input::WorkflowCapturedInputContract>,
     pub(in crate::domain_computation::primary_graph::application_attempt) binding: String,
     pub(in crate::domain_computation::primary_graph::application_attempt) transition_identity:
         [u8; 32],
@@ -14,9 +14,9 @@ pub(in crate::domain_computation::primary_graph::application_attempt) struct Wor
     pub(in crate::domain_computation::primary_graph::application_attempt) workflow_execution_requirements:
         worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements,
     pub(in crate::domain_computation::primary_graph::application_attempt) settlement_basis:
-        crate::domain_computation::primary_graph::workflow::instance::WorkflowOperationSettlementBasis,
+        crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowOperationSettlementBasis,
     pub(in crate::domain_computation::primary_graph::application_attempt) workflow_layout:
-        crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
+        crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
 }
 
 pub(in crate::domain_computation::primary_graph::application_attempt) struct MutationHandlerBindingProof

@@ -289,7 +289,7 @@ fn canonical_envelope_native_backing_keeps_its_charge_until_last_clone() {
     .unwrap();
     let retained = {
         let execution = worth_execution::ExecutionRequest::leased(&lease);
-        let encoded = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::actor::encoding::encode(
+        let encoded = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow::actor::encoding::encode(
             &execution,
             &("actor\n", [1u8, 2]),
             MAXIMUM_PORTABLE_BYTES,
@@ -331,7 +331,7 @@ fn envelope_count_bound_precedes_exact_native_payload_refusal() {
     let execution = worth_execution::ExecutionRequest::leased(&lease);
     let original = "original";
     let encode =
-        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::actor::encoding::encode;
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow::actor::encoding::encode;
     assert!(matches!(
         encode(&execution, &original, 1),
         Err(WorkflowApprovalRequestEncodingDenial::TooLarge)

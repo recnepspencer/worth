@@ -37,7 +37,7 @@ pub fn decode_principal(
     }
     let funding = fund_actor_codec(execution, encoded.len().checked_mul(3).ok_or(())?)?;
     let value = serde_json::from_str(encoded).map_err(|_| ())?;
-    crate::domain_computation::primary_graph::workflow::actor::encoding::check_live(execution)?;
+    crate::domain_computation::primary_graph::application_attempt::workflow::actor::encoding::check_live(execution)?;
     Ok(DecodedApprovalPrincipal {
         value,
         _funding: funding,
@@ -64,7 +64,7 @@ pub fn decode_lineage(
             .ok_or(())?,
     )?;
     let value = serde_json::from_str(encoded).map_err(|_| ())?;
-    crate::domain_computation::primary_graph::workflow::actor::encoding::check_live(execution)?;
+    crate::domain_computation::primary_graph::application_attempt::workflow::actor::encoding::check_live(execution)?;
     Ok(DecodedApprovalLineage {
         value,
         _text_funding: text_funding,

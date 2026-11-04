@@ -6,7 +6,7 @@ use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryApplicationAdjacencyDirection, WorthQueryApplicationAttemptDenial,
     WorthQueryApplicationObservedFact,
 };
-use crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout;
+use crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_relational::facade::identity::EntityId;
 use worth_relational::facade::runtime::{RelationalAdjacencyDirection, RelationalAdjacencyVisit};

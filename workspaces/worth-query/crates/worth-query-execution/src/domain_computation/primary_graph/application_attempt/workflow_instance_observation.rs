@@ -24,11 +24,9 @@ use super::{
     WorthQueryApplicationAdjacencyDirection, WorthQueryApplicationAttemptDenial,
     WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationObservedFact,
 };
-use crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowDefinition;
-use crate::domain_computation::primary_graph::workflow::instance::{
-    SettledWorkflowTransition, WorkflowInstanceState, WorkflowTransitionProgressBasis,
-};
-use crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout;
+use crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition;
+use {crate::domain_computation::primary_graph::application_attempt::workflow::instance::SettledWorkflowTransition, crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowInstanceState, crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowTransitionProgressBasis};
+use crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout;
 
 mod completed_source;
 mod evidence_budget;
@@ -63,7 +61,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) struct Obs
     pub(in crate::domain_computation::primary_graph::application_attempt) progress_basis:
         WorkflowTransitionProgressBasis,
     pub(in crate::domain_computation::primary_graph::application_attempt) replays:
-        crate::domain_computation::primary_graph::workflow::instance::WorkflowTransitionReplayRetention,
+        crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowTransitionReplayRetention,
     history_materialized: bool,
     history_budget: worth_query_installation::facade::WorthQueryWorkflowHistoryReconstructionBudget,
     purpose: WorkflowInstanceObservationPurpose,
@@ -74,7 +72,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) struct Obs
 
 pub(in crate::domain_computation::primary_graph::application_attempt) struct ObservedWorkflowTransition
 {
-    pub(super) captured_inputs: Option<std::sync::Arc<crate::domain_computation::primary_graph::workflow::captured_input::WorkflowCapturedInputSupport>>,
+    pub(super) captured_inputs: Option<std::sync::Arc<crate::domain_computation::primary_graph::application_attempt::workflow::captured_input::WorkflowCapturedInputSupport>>,
     pub(in crate::domain_computation::primary_graph::application_attempt) entity: EntityId,
     pub(in crate::domain_computation::primary_graph::application_attempt) identity: String,
     pub(in crate::domain_computation::primary_graph::application_attempt) settlement:

@@ -23,9 +23,7 @@ use super::provider_inbound_completion::{
 };
 use super::{kind_space_exhausted, WorthQueryPrimaryGraphInstallationDenial};
 use crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxLayout;
-use crate::domain_computation::primary_graph::workflow::schema::{
-    lower_workflow, WorthQueryWorkflowLayout,
-};
+use {crate::domain_computation::primary_graph::application_attempt::workflow::schema::lower_workflow, crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout};
 
 /// Every platform-owned record layout one lowered application graph carries.
 pub(super) struct WorthQueryPlatformEntityLayouts {

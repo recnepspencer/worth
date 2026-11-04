@@ -13,10 +13,8 @@ use crate::domain_computation::primary_graph::application_attempt::{
     observation::{observe_field, WorthQueryApplicationFieldObservation},
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationObservedFact,
 };
-use crate::domain_computation::primary_graph::workflow::evidence_dependency::{
-    decode_direction, WorkflowEvidenceDependencyKind,
-};
-use crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout;
+use {crate::domain_computation::primary_graph::application_attempt::workflow::evidence_dependency::decode_direction, crate::domain_computation::primary_graph::application_attempt::workflow::evidence_dependency::WorkflowEvidenceDependencyKind};
+use crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout;
 
 pub(in crate::domain_computation::primary_graph::application_attempt) fn observe_evidence_dependencies(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

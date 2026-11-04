@@ -24,7 +24,7 @@ use super::{
 };
 
 pub struct WorthQueryPreparedApplicationProviderAttempt {
-    workflow_origin: Option<crate::domain_computation::primary_graph::workflow::operation_output::WorkflowOperationOrigin>,
+    workflow_origin: Option<crate::domain_computation::primary_graph::application_attempt::workflow::operation_output::WorkflowOperationOrigin>,
     local_action_settlement: Option<super::workflow_transition_program::LocalActionSettlementProof>,
     required_output_demand: Option<crate::domain_computation::primary_graph::RequiredOutputDemandContext>,
     installed_read_scopes: crate::domain_computation::primary_graph::application_attempt::CompletedReadScopes,
@@ -54,7 +54,7 @@ impl WorthQueryPreparedApplicationProviderAttempt {
 
     pub(in crate::domain_computation::primary_graph::application_attempt) fn with_workflow_origin(
         mut self,
-        origin: Option<crate::domain_computation::primary_graph::workflow::operation_output::WorkflowOperationOrigin>,
+        origin: Option<crate::domain_computation::primary_graph::application_attempt::workflow::operation_output::WorkflowOperationOrigin>,
     ) -> Self {
         self.workflow_origin = origin;
         self

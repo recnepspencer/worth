@@ -1,10 +1,10 @@
 use worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome;
 use worth_relational::facade::identity::EntityId;
 use im::OrdMap;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::instance::progression::SettledWorkflowTransition;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::instance::progression::WorkflowInstanceProgress;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::instance::progression::locator::WorkflowTransitionLocator;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::instance::progression::locator::WorkflowTransitionProgressObservation;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow::instance::progression::SettledWorkflowTransition;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow::instance::progression::WorkflowInstanceProgress;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow::instance::progression::locator::WorkflowTransitionLocator;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow::instance::progression::locator::WorkflowTransitionProgressObservation;
 use worth_relational::facade::identity::PartitionId;
 
 pub fn entity(slot: u64) -> EntityId {

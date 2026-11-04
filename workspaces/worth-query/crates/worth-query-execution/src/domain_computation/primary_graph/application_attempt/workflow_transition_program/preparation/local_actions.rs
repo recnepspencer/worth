@@ -1,8 +1,6 @@
 //! A local business action uses its installed binding's native admission, never Advance.
 use super::*;
-use crate::domain_computation::primary_graph::{
-    workflow::instance::SelectedWorkflowOperation, WorthQueryApplicationAttemptDenialKind,
-};
+use {crate::domain_computation::primary_graph::application_attempt::workflow::instance::SelectedWorkflowOperation, crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind};
 use worth_query_declaration::facade::application_operation::{
     ApplicationMutationAdmissionBinding, ApplicationMutationIdentities,
 };

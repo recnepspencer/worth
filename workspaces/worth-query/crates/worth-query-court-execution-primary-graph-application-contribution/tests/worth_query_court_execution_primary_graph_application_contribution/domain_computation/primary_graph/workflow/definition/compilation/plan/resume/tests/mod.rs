@@ -10,22 +10,22 @@ use worth_query_declaration::facade::application_schema::ApplicationInboundOccur
 use worth_query_declaration::facade::application_schema::ApplicationInboundOccurrenceProtocol;
 use worth_relational::facade::identity::PartitionId;
 
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::definition::compilation::plan::CompiledWorkflowConnectionKind;
-    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::definition::compilation::plan::CompiledWorkflowDefinition;
-    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::definition::compilation::plan::CompiledWorkflowNode;
-    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::definition::compilation::plan::CompiledWorkflowNodeKind;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow::definition::compilation::plan::CompiledWorkflowConnectionKind;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow::definition::compilation::plan::CompiledWorkflowDefinition;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow::definition::compilation::plan::CompiledWorkflowNode;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow::definition::compilation::plan::CompiledWorkflowNodeKind;
     use worth_relational::facade::identity::EntityId;
     use crate::domain_computation::primary_graph::workflow::definition::compilation::plan::resume::tests;
     use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow_instance_observation::step_budget::WorkflowStepAllowance;
     use worth_query_execution::facade::domain_computation::WorthQueryApplicationAttemptDenialKind;
     use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::program_roster::rostered_program_revision;
-    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::definition::compilation::plan::CompiledWorkflowConnection;
-    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::definition::compilation::plan::dispatch::CompiledWorkflowDispatch;
-    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::definition::compilation::plan::CompiledWorkflowNodeMeaning;
-    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::definition::compilation::plan::CompiledWorkflowPublicationPlan;
-    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::definition::compilation::plan::CompiledWorkflowSemanticConnection;
-    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::instance::migration::admit_workflow_migration;
-    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::instance::migration::WorkflowSuccession;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow::definition::compilation::plan::CompiledWorkflowConnection;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow::definition::compilation::plan::dispatch::CompiledWorkflowDispatch;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow::definition::compilation::plan::CompiledWorkflowNodeMeaning;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow::definition::compilation::plan::CompiledWorkflowPublicationPlan;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow::definition::compilation::plan::CompiledWorkflowSemanticConnection;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow::instance::migration::admit_workflow_migration;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow::instance::migration::WorkflowSuccession;
 
 #[test]
 fn inbound_origin_blocks_migration_and_fork_resume_at_wait_but_allows_prior_operation() {

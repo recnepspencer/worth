@@ -1,19 +1,6 @@
 //! Native original-intent lookup after command admission; no governed-read grant is borrowed.
 use super::*;
-use crate::{
-    basis::WorthQueryProductBranch,
-    domain_computation::primary_graph::{
-        application_attempt::{
-            fact::{observe_indexed_entity_selection, WorthQueryIndexedSelectionRefusal},
-            observe_adjacency, observe_field_value,
-            workflow_instance_observation::observe_subject,
-            WorthQueryApplicationAdjacencyDirection as Direction,
-            WorthQueryApplicationAttemptDenialKind as Kind,
-            WorthQueryWorkflowInstanceDiscoveryIntent,
-        },
-        workflow::{instance::start_provenance, schema::WorthQueryWorkflowLayout},
-    },
-};
+use {crate::basis::WorthQueryProductBranch, crate::domain_computation::primary_graph::application_attempt::fact::observe_indexed_entity_selection, crate::domain_computation::primary_graph::application_attempt::fact::WorthQueryIndexedSelectionRefusal, crate::domain_computation::primary_graph::application_attempt::observe_adjacency, crate::domain_computation::primary_graph::application_attempt::observe_field_value, crate::domain_computation::primary_graph::application_attempt::workflow_instance_observation::observe_subject, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAdjacencyDirection as Direction, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenialKind as Kind, crate::domain_computation::primary_graph::application_attempt::WorthQueryWorkflowInstanceDiscoveryIntent, crate::domain_computation::primary_graph::application_attempt::workflow::instance::start_provenance, crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout};
 use worth_foundational::facade::{AspectFieldLocator, AspectValue, InternedString};
 use worth_query_declaration::facade::application_program::{
     ApplicationProgramRevision, ApplicationWorkflowDefinitionContentIdentity,
@@ -85,11 +72,11 @@ pub(super) fn observe<Schema: ApplicationSchema, Spec: ApplicationWorkflowSpec<S
     )?;
     let content = ApplicationWorkflowDefinitionContentIdentity::from_recorded(&content)
         .ok_or_else(|| super::super::super::mismatch("original predecessor pin is malformed"))?;
-    let original_revision = start_provenance::read(
+    let original_revision = crate::domain_computation::primary_graph::application_attempt::workflow::instance::start_provenance::read(
         execution, runtime, snapshot, layout, instance, support,
     )
     .map_err(|cause| match cause {
-        start_provenance::StartProvenanceReadDenial::Execution(cause) => {
+        crate::domain_computation::primary_graph::application_attempt::workflow::instance::start_provenance::StartProvenanceReadDenial::Execution(cause) => {
             WorthQueryApplicationAttemptDenial::relational_read_stopped(
                 cause,
                 "original predecessor provenance",

@@ -4,9 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 pub(crate) mod decoding;
 mod lineage_inventory;
-use crate::domain_computation::primary_graph::workflow::actor::{
-    fund_actor_codec, ActorCodecFunding,
-};
+use {crate::domain_computation::primary_graph::application_attempt::workflow::actor::fund_actor_codec, crate::domain_computation::primary_graph::application_attempt::workflow::actor::ActorCodecFunding};
 use decoding::{DecodedApprovalLineage, DecodedApprovalPrincipal};
 use worth_relational::facade::identity::EntityId;
 
@@ -105,7 +103,7 @@ pub(in crate::domain_computation) fn encode_workflow_approval_support(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     authorization: &WorthQueryRetainedCapabilityAuthorization,
 ) -> Result<
-    crate::domain_computation::primary_graph::workflow::actor::encoding::FundedActorText,
+    crate::domain_computation::primary_graph::application_attempt::workflow::actor::encoding::FundedActorText,
     WorkflowApprovalRequestEncodingDenial,
 > {
     let request = authorization
@@ -151,7 +149,7 @@ pub(in crate::domain_computation) fn encode_workflow_approval_support(
             })
         })
         .transpose()?;
-    crate::domain_computation::primary_graph::workflow::actor::encoding::encode(
+    crate::domain_computation::primary_graph::application_attempt::workflow::actor::encoding::encode(
         execution,
         &portable,
         MAXIMUM_PORTABLE_BYTES,
@@ -183,7 +181,7 @@ pub fn decode_workflow_approval_support(
     )?;
     let portable: Option<PortableApprovalSupport> =
         serde_json::from_str(encoded).map_err(|_| ())?;
-    crate::domain_computation::primary_graph::workflow::actor::encoding::check_live(execution)?;
+    crate::domain_computation::primary_graph::application_attempt::workflow::actor::encoding::check_live(execution)?;
     portable
         .map(|support| {
             if support.capability_authority_identity.is_empty() {

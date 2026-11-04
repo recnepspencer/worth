@@ -52,7 +52,7 @@ pub(in crate::domain_computation::primary_graph) use unique_fields::{
     WorthQueryUniqueFieldIndex, WorthQueryUniqueFields,
 };
 
-use super::workflow::schema::WorthQueryWorkflowLayout;
+use crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout;
 use crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxLayout;
 use application_layout_lowering::{field_capability_keys, lower_fields, lower_relation_layouts};
 use capability_grant_join::{lower_capability_grant_joins, WorthQueryCapabilityGrantJoinLayout};

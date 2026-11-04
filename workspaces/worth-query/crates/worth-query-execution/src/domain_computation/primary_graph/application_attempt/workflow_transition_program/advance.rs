@@ -167,7 +167,7 @@ where
             }
         };
         let proposal = if matches!(request_kind, WorkflowTransitionRequestKind::Advance) {
-            crate::domain_computation::primary_graph::workflow::instance::select_current_proposal_need(
+            crate::domain_computation::primary_graph::application_attempt::workflow::instance::select_current_proposal_need(
                 &compiled, &observed.progress_basis,
             )?
         } else {

@@ -10,7 +10,7 @@ pub use worth_query_declaration::facade::application_operation::ApplicationMutat
 pub use worth_relational::facade::runtime::RelationalRuntime;
 pub use worth_relational::facade::snapshots::SnapshotHandle;
 pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationAttemptDenial;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::schema::layout::WorthQueryWorkflowLayout;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow::schema::layout::WorthQueryWorkflowLayout;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::adjacency::observe_adjacency;
 pub use crate::domain_computation::primary_graph::application_attempt::workflow_instance_observation::history::operation_outputs::tests;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow_instance_observation::history::operation_outputs::text;
@@ -23,8 +23,8 @@ pub use worth_query_testkit_execution_primary_graph_application_contribution::do
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::product_publication::publish_relational_mutation;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::authorization_world_installation::AuthorizationWorld;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::operation_output::publication::append_operation_outputs;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow::actor::record::WorkflowAdmittedActor;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow::operation_output::publication::append_operation_outputs;
 pub use worth_relational::facade::symbols::ClientKey;
 pub use worth_relational::facade::transactions::*;
 

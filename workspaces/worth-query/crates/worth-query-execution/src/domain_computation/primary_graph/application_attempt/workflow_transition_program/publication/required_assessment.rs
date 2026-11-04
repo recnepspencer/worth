@@ -21,7 +21,7 @@ impl RequiredWorkflowAssessment {
         node_path: String,
         transition_identity: String,
         occurrence: u64,
-        selected: crate::domain_computation::primary_graph::workflow::instance::SelectedWorkflowAssessment,
+        selected: crate::domain_computation::primary_graph::application_attempt::workflow::instance::SelectedWorkflowAssessment,
         proposal_identity: String,
         coverage_identity: String,
         program_revision: String,

@@ -32,18 +32,18 @@ pub(super) struct OriginalActorSources {
     pub(super) proposal: worth_relational::facade::identity::EntityId,
     pub(super) proposal_identity: String,
     pub(super) transition:
-        crate::domain_computation::primary_graph::workflow::instance::WorkflowTransitionLocator,
+        crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowTransitionLocator,
     pub(super) transition_identity: String,
     pub(super) approval_parent: Option<worth_relational::facade::identity::EntityId>,
     pub(super) approval: Option<
-        crate::domain_computation::primary_graph::workflow::instance::WorkflowTransitionLocator,
+        crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowTransitionLocator,
     >,
 }
 
 #[derive(Clone, Debug)]
 pub(super) struct OperationActorCommand {
     pub(super) captured_input:
-        Option<crate::domain_computation::primary_graph::WorkflowCapturedInputContract>,
+        Option<crate::domain_computation::primary_graph::application_attempt::workflow::captured_input::WorkflowCapturedInputContract>,
     pub(super) instance: worth_relational::facade::identity::EntityId,
     pub(super) branch: crate::basis::WorthQueryProductBranch,
     pub(super) node_path: String,

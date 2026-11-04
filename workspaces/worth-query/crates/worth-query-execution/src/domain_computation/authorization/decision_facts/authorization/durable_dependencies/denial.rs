@@ -3,9 +3,7 @@ use crate::domain_computation::authorization::{
     WorkflowApprovalRequestDecodingDenial as Decode,
     WorthQueryOperationAuthorizationDenial as Admission,
 };
-use crate::domain_computation::primary_graph::{
-    workflow::actor, WorthQueryApplicationAttemptDenial as Attempt,
-};
+use {crate::domain_computation::primary_graph::application_attempt::workflow::actor, crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial as Attempt};
 use worth_relational::facade::authorization::RelationalAuthorizationDependencyDenial as Native;
 
 pub(super) fn decode(cause: Native) -> Decode {
@@ -14,7 +12,7 @@ pub(super) fn decode(cause: Native) -> Decode {
             cause,
             "authorization durable dependency wire",
         ))),
-        Native::Allocation(cause) => Decode::Actor(Box::new(actor::storage_denial(
+        Native::Allocation(cause) => Decode::Actor(Box::new(crate::domain_computation::primary_graph::application_attempt::workflow::actor::storage_denial(
             cause,
             "authorization durable dependency wire",
         ))),

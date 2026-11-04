@@ -7,12 +7,12 @@ use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationCommitOutcomeIdentity,
     WorthQueryApplicationRealizedEffect,
 };
-use crate::domain_computation::primary_graph::workflow::instance::visit_workflow_operation_settlement_facts;
+use crate::domain_computation::primary_graph::application_attempt::workflow::instance::visit_workflow_operation_settlement_facts;
 use crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation;
 
 pub struct LocalWorkflowSettlementPublication {
     progress_update:
-        crate::domain_computation::primary_graph::workflow::instance::PreparedWorkflowProgressUpdate,
+        crate::domain_computation::primary_graph::application_attempt::workflow::instance::PreparedWorkflowProgressUpdate,
     transition_identity: String,
     identity_locator: worth_foundational::facade::AspectFieldLocator,
 }
@@ -68,7 +68,7 @@ impl WorthQueryProviderAttemptPreparation {
             admission.operation_authority_identity_bytes(),
         );
         self.workflow_origin = Some(
-            crate::domain_computation::primary_graph::workflow::operation_output::WorkflowOperationOrigin::from_settlement(
+            crate::domain_computation::primary_graph::application_attempt::workflow::operation_output::WorkflowOperationOrigin::from_settlement(
                 &binding.settlement_basis, &binding.workflow_layout, binding.authority_fact_range.clone(), receipt_identity,
             ),
         );
@@ -94,13 +94,13 @@ impl WorthQueryProviderAttemptPreparation {
                 &binding.workflow_layout,
                 &binding.settlement_basis,
                 &receipt_identity,
-                crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor::from_admission(admission),
+                crate::domain_computation::primary_graph::application_attempt::workflow::actor::record::WorkflowAdmittedActor::from_admission(admission),
                 |effect| {
                     settlement_effects.push(effect);
                     Ok::<(), WorthQueryApplicationAttemptDenial>(())
                 },
             )?;
-            crate::domain_computation::primary_graph::workflow::operation_output::append_operation_outputs(
+            crate::domain_computation::primary_graph::application_attempt::workflow::operation_output::append_operation_outputs(
                 &binding.workflow_layout, transition, &binding.binding,
                 self.output_correspondence.native_publication_roles()
                     .map(|(role, posture, entity, target)| (role, posture, entity, target.clone())),

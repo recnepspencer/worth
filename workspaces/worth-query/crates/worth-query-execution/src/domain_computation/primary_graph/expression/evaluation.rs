@@ -4,7 +4,7 @@ use worth_foundational::expression_api::{
 };
 use worth_query_declaration::facade::application_program::ApplicationWorkflowCondition;
 
-use crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowConditionExpression;
+use crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowConditionExpression;
 
 /// Evaluates a published condition over its operand values, given in name
 /// order with the types their installed queries publish. The draft is

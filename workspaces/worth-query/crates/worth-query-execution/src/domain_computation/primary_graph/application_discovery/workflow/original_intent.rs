@@ -96,7 +96,7 @@ where
             BoundedIndexParityMode::Production,&execution).map_err(|cause| Denial::Index(cause.kind()))?;
         if selected.overflowed() || selected.candidate_entity_ids().len()>1 { return Err(Denial::Corrupt); }
         let Some(instance)=selected.candidate_entity_ids().first().copied() else { return Ok(None); };
-        for (field,expected) in [(&layout.instance.protocol_version,crate::domain_computation::primary_graph::workflow::schema::version::WORKFLOW_INSTANCE_FACT_PROTOCOL_VERSION),
+        for (field,expected) in [(&layout.instance.protocol_version,crate::domain_computation::primary_graph::application_attempt::workflow::schema::version::WORKFLOW_INSTANCE_FACT_PROTOCOL_VERSION),
             (&layout.instance.subject_partition,u64::from(original.subject_entity_id().partition_value())),
             (&layout.instance.subject_slot,original.subject_entity_id().local_slot_value()),
             (&layout.instance.subject_generation,u64::from(original.subject_entity_id().generation_value()))] {

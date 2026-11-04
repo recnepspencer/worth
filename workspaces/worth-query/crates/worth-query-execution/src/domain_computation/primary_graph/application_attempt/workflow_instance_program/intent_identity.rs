@@ -3,7 +3,7 @@ use sha2::{Digest, Sha256};
 use worth_relational::facade::identity::EntityId;
 
 use crate::domain_computation::canonical_operation_material;
-use crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowDefinition;
+use crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition;
 
 pub(super) fn instance_identity<Schema>(
     compiled: &CompiledWorkflowDefinition,
