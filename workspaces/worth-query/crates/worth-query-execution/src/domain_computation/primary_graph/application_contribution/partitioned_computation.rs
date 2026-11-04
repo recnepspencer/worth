@@ -185,7 +185,6 @@ impl<Reduced> WorthQueryDeterministicReducer<Reduced> {
     }
 }
 
-#[cfg(test)]
 mod tests;
 
 pub(in crate::domain_computation) use incremental::observe_discarded;

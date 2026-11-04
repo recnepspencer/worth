@@ -70,7 +70,6 @@ impl WorthQueryApplicationRuntimeCore {
             .expect("a live application owns its source meanings")
     }
 
-    #[cfg(test)]
     pub(in crate::domain_computation) fn execution_mut(
         &mut self,
     ) -> &mut WorthQueryExecutionRuntime {

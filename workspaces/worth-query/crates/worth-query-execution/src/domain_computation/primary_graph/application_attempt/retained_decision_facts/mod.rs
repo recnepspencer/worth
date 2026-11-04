@@ -40,7 +40,6 @@ pub enum StoreDenial {
     ConflictingBody,
     ContentInconsistency,
     Content(worth_relational::facade::content::RelationalContentDenial),
-    #[cfg(test)]
     InvalidOrdinal,
 }
 
@@ -117,7 +116,6 @@ impl worth_execution::ChargedBytes for StoreDenial {
             | Self::PhysicalAllocation
             | Self::ContentInconsistency
             | Self::Content(_) => 0,
-            #[cfg(test)]
             Self::InvalidOrdinal => 0,
         }
     }

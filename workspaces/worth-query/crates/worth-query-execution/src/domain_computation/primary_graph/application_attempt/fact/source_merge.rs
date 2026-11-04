@@ -295,7 +295,6 @@ fn comparison_fault(
     }
 }
 
-#[cfg(test)]
 mod content_tests {
     #[test]
     fn native_comparison_refusals_keep_literal_attempt_categories_and_causes() {

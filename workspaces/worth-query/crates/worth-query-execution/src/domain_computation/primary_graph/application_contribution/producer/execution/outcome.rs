@@ -290,7 +290,6 @@ fn refused_preflight(
     )
 }
 
-#[cfg(test)]
 mod invariant_refusal_tests;
 
 #[cfg(test)]
