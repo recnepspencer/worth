@@ -10,7 +10,7 @@ use super::semantic_names::{
     StrategyOutputSchemaName,
 };
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct CommitStrategyDescriptorDigest(pub [u8; 32]);
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -241,5 +241,17 @@ mod tests {
 
         assert_ne!(original_digest, recomputed.digest());
         assert_eq!(forged.digest(), original_digest);
+    }
+}
+
+impl Serialize for CommitStrategyDescriptorDigest {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        worth_foundational::CanonicalDigestId::new(self.0).serialize(serializer)
+    }
+}
+impl<'de> Deserialize<'de> for CommitStrategyDescriptorDigest {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        worth_foundational::CanonicalDigestId::deserialize(deserializer)
+            .map(|digest| Self(*digest.bytes()))
     }
 }

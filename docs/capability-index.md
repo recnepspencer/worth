@@ -105,6 +105,12 @@ capture with the provider. The one-shot `admit` discards capture on refusal.
 Pass the admitted capture into the authorized action. See
 [external input on an action](build-an-application.md#32-attach-actions-to-features).
 
+Signing provenance and supersession parts use the descriptive
+`application_schema::CanonicalDigestId`, available through `worth-query-decl`.
+Construct it from the actual 32 digest bytes; binary codecs emit a fixed byte
+string and human-readable codecs emit 64 hexadecimal digits. Retired digest
+integer arrays refuse decoding. The value grants no signing or runtime authority.
+
 Program validation admits finite canonicalization work through
 `ApplicationProgramDefinition::CANONICAL_REVISION_BUDGET` and the program facade's
 `CanonicalDigestWorkBudget`. The default covers 4096 entries and 1 MiB; override

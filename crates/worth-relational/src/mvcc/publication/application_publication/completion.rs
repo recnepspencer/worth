@@ -99,7 +99,7 @@ impl RequiredOutputPublication {
                     .required_output_origin
                     .as_ref()
                     .expect("Native custody retains its canonical publication");
-                (&origin.producer, origin.dependency_identity)
+                (&origin.producer, *origin.dependency_identity.bytes())
             }
         }
     }

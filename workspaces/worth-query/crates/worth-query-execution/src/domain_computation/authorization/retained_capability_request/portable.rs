@@ -24,7 +24,7 @@ pub(in crate::domain_computation) const MAXIMUM_PORTABLE_BYTES: usize = 64 * 102
 struct PortableRequest<Entries = Vec<(WorthQueryCapabilityContextKey, EntityId)>> {
     version: u8,
     recorded_actor: RecordedActorRequest,
-    capability_identity: [u8; 32],
+    capability_identity: worth_foundational::CanonicalDigestId,
     principal: EntityId,
     resource: EntityId,
     resource_entity: String,
@@ -147,7 +147,7 @@ impl WorthQueryRetainedCapabilityRequest {
                 RecordedActorRequest::Native(_) => return Err(WorkflowApprovalRequestDecodingDenial::InvalidRequest),
             },
             principal: portable.principal,
-            capability_identity: portable.capability_identity,
+            capability_identity: *portable.capability_identity.bytes(),
             resource: portable.resource,
             data: Arc::new(super::RetainedCapabilityRequestData {
             _codec_funding: Some((text_funding, context_funding)),

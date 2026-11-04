@@ -198,7 +198,10 @@ fn retired_wake_expiry_is_opt_in_and_preserves_active_frontiers() {
     assert!(temporal_replay_parity_report(&expected, &forked).parity);
     assert_eq!(expected.expired_retired_wake_count, 2);
     let mut corrupted_omission = expected.clone();
-    corrupted_omission.expired_retired_wake_digest[0] ^= 1;
+    let mut altered_digest = *corrupted_omission.expired_retired_wake_digest.bytes();
+    altered_digest[0] ^= 1;
+    corrupted_omission.expired_retired_wake_digest =
+        worth_foundational::CanonicalDigestId::new(altered_digest);
     let omission_mismatch = temporal_replay_parity_report(&expected, &corrupted_omission);
     assert!(!omission_mismatch.parity);
     assert!(omission_mismatch

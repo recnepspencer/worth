@@ -270,7 +270,7 @@ impl CanonicalCommitEnvelopeBody {
             commit: self.commit.clone(),
             basis: recorded_basis,
             producer: producer.to_owned(),
-            dependency_identity,
+            dependency_identity: worth_foundational::CanonicalDigestId::new(dependency_identity),
             outputs,
             relations,
             meaning: meaning.clone(),
@@ -296,7 +296,10 @@ impl CanonicalCommitEnvelopeBody {
             birth: previous.map_or(self.commit.commit_id, |prior| prior.birth),
             birth_producer: previous
                 .map_or_else(|| producer.to_owned(), |prior| prior.birth_producer.clone()),
-            birth_dependency: previous.map_or(dependency_identity, |prior| prior.birth_dependency),
+            birth_dependency: previous.map_or(
+                worth_foundational::CanonicalDigestId::new(dependency_identity),
+                |prior| prior.birth_dependency,
+            ),
             issuer: Some(installed.authority.clone()),
             _funding: Some(memory),
         }));

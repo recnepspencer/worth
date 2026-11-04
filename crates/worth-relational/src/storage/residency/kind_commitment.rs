@@ -7,16 +7,20 @@ use sha2::{Digest, Sha256};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) struct RelationalRegionKindCommitment {
-    pub(crate) head: [u8; 32],
-    pub(crate) history: [u8; 32],
+    pub(crate) head: worth_foundational::CanonicalDigestId,
+    pub(crate) history: worth_foundational::CanonicalDigestId,
 }
 
-pub(super) fn digest(projection: &[RegionRelationProjection]) -> Result<[u8; 32], Cause> {
+pub(super) fn digest(
+    projection: &[RegionRelationProjection],
+) -> Result<worth_foundational::CanonicalDigestId, Cause> {
     let mut hash = Sha256::new();
     hash.update(b"worth.relational.region-kind-authority.v2\0");
     rmp_serde::encode::write(&mut KindHashWriter(&mut hash), projection)
         .map_err(|_| Cause::Damaged)?;
-    Ok(hash.finalize().into())
+    Ok(worth_foundational::CanonicalDigestId::new(
+        hash.finalize().into(),
+    ))
 }
 
 struct KindHashWriter<'a>(&'a mut Sha256);
@@ -33,7 +37,7 @@ impl std::io::Write for KindHashWriter<'_> {
 pub(super) fn digest_full(
     projection: &super::kind_projection::full::FullKindProjection,
     request: &worth_execution::ExecutionRequest<'_, '_>,
-) -> Result<[u8; 32], super::RegionContentFailure> {
+) -> Result<worth_foundational::CanonicalDigestId, super::RegionContentFailure> {
     let encoding = FullProjectionEncoding {
         projection,
         request: *request,
@@ -46,7 +50,9 @@ pub(super) fn digest_full(
         return Err(super::RegionContentFailure::Request(cause));
     }
     result.map_err(|_| super::RegionContentFailure::Adjacency)?;
-    Ok(hash.finalize().into())
+    Ok(worth_foundational::CanonicalDigestId::new(
+        hash.finalize().into(),
+    ))
 }
 
 type Stop = std::cell::Cell<Option<crate::execution::RelationalExecutionDenialCause>>;
@@ -165,7 +171,7 @@ impl Serialize for SlotsEncoding<'_, '_, '_> {
 
 pub(super) fn verify(
     projection: &[RegionRelationProjection],
-    expected: [u8; 32],
+    expected: worth_foundational::CanonicalDigestId,
 ) -> Result<(), Cause> {
     if digest(projection)? != expected {
         return Err(Cause::IntegrityMismatch);

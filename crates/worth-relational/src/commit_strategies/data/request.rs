@@ -57,7 +57,7 @@ impl NativeStrategyCommitRequest {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct CanonicalStrategyInputDigest(pub [u8; 32]);
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -156,4 +156,16 @@ pub enum StrategyCommitRequestError {
     UnknownStrategyName {
         strategy_name: CommitStrategySemanticName,
     },
+}
+
+impl Serialize for CanonicalStrategyInputDigest {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        worth_foundational::CanonicalDigestId::new(self.0).serialize(serializer)
+    }
+}
+impl<'de> Deserialize<'de> for CanonicalStrategyInputDigest {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        worth_foundational::CanonicalDigestId::deserialize(deserializer)
+            .map(|digest| Self(*digest.bytes()))
+    }
 }

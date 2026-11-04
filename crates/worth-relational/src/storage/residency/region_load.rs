@@ -133,7 +133,7 @@ pub(super) fn load_full(
         partition_id: cold.partition_id,
         schema_carrier_digest: cold.schema_carrier_digest,
         row_index: 0,
-        kind_commitment: cold.kind_authority.history,
+        kind_commitment: *cold.kind_authority.history.bytes(),
     };
     let mut folder = super::history_fold::HistoryFolder::new(execution, cold.partition_id, limit);
     let history = folder.read(source.as_ref(), &cold.history_members, &reference)?;
@@ -243,7 +243,7 @@ fn install_history_prefixes<K: crate::storage::substrate::RecordKind>(
                     history_opening: crate::storage::substrate::StorageAllocation::new(
                         crate::storage::substrate::RecordHistoryOpening {
                             frontier: opening,
-                            kind_commitment: cold.kind_authority.history,
+                            kind_commitment: *cold.kind_authority.history.bytes(),
                             historical_relations: historical
                                 .remove(&(slot as usize))
                                 .unwrap_or_default(),

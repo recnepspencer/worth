@@ -47,7 +47,7 @@ pub enum RecordedRelationalComponentTarget {
 pub struct RecordedRelationalCanonicalComponent {
     receipt: RelationalCommitReceipt,
     position: PatchStreamPosition,
-    artifact_digest: [u8; 32],
+    artifact_digest: worth_foundational::CanonicalDigestId,
     roots: RelationalBranchRootDescriptor,
 }
 
@@ -99,7 +99,7 @@ impl RecordedRelationalCanonicalComponent {
     }
 
     pub fn artifact_digest(&self) -> &[u8; 32] {
-        &self.artifact_digest
+        self.artifact_digest.bytes()
     }
 
     pub fn roots(&self) -> &RelationalBranchRootDescriptor {

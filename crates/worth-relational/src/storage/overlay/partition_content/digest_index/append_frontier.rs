@@ -15,7 +15,7 @@ impl DigestIndex {
                 siblings.push(HistoryFrontierSibling {
                     key: children[0].key,
                     bit: children[0].bit,
-                    digest: children[0].digest,
+                    digest: worth_foundational::CanonicalDigestId::new(children[0].digest),
                     parent_bit: node.bit,
                 });
                 current = Some(&children[1]);
@@ -34,7 +34,7 @@ impl DigestIndex {
                 }
                 return Some(HistoryAppendFrontier {
                     siblings,
-                    last: Some((node.key, value)),
+                    last: Some((node.key, worth_foundational::CanonicalDigestId::new(value))),
                 });
             }
         }
@@ -49,6 +49,7 @@ impl DigestIndex {
         let Some((key, value)) = frontier.last else {
             return frontier.siblings.is_empty().then(Self::default);
         };
+        let value = *value.bytes();
         // The cold prefix need not fit this process's address space, but its
         // carried next position must be representable before any append.
         key.checked_add(1)?;
@@ -73,7 +74,7 @@ impl DigestIndex {
             let left = Arc::new(Node {
                 key: sibling.key,
                 bit: sibling.bit,
-                digest: sibling.digest,
+                digest: *sibling.digest.bytes(),
                 children: None,
                 nodes: 1,
                 _memory: None,

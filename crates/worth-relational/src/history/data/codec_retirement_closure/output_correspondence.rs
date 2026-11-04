@@ -96,7 +96,7 @@ pub(crate) fn validate_codec_output_correspondence(
                         && member.role == role.role && member.entity_name == role.entity_name) {
                         return Err("output role differs from complete performed native correspondence".into());
                     }
-                    if origin.producer != producer || &origin.dependency_identity != dependency || &origin.meaning != meaning {
+                    if origin.producer != producer || origin.dependency_identity.bytes() != dependency || &origin.meaning != meaning {
                         return Err(
                             "output correspondence producer association differs from native publication"
                                 .into(),

@@ -110,8 +110,8 @@ fn cold_region_union_refuses_without_demanding_any_payload() {
         length: 0,
     };
     let kind_authority = RelationalRegionKindCommitment {
-        head: [0; 32],
-        history: [0; 32],
+        head: worth_foundational::CanonicalDigestId::new([0; 32]),
+        history: worth_foundational::CanonicalDigestId::new([0; 32]),
     };
     let cell = RelationalRegionResidency::cold(RelationalColdRegion {
         source: Some(source.clone()),

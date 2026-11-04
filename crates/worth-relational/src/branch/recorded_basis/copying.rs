@@ -80,7 +80,9 @@ impl RecordedRelationalComponentReference {
                 RecordedRelationalComponentTarget::Canonical(RecordedRelationalCanonicalComponent {
                     receipt: target.receipt.clone(),
                     position: target.position,
-                    artifact_digest: target.artifact_digest,
+                    artifact_digest: worth_foundational::CanonicalDigestId::new(
+                        target.artifact_digest,
+                    ),
                     roots: target.roots.clone(),
                 })
             }

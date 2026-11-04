@@ -171,7 +171,7 @@ impl RelationalRuntime {
             installed,
             basis,
             &origin.producer,
-            &origin.dependency_identity,
+            origin.dependency_identity.bytes(),
             &origin.meaning,
             &roles,
         )

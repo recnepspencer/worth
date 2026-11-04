@@ -264,7 +264,7 @@ fn strategy_merge_descriptor_carries_typed_intent_scope_targets() {
             true,
             true,
         ),
-        lowering_summary_digest: [9; 32],
+        lowering_summary_digest: worth_foundational::CanonicalDigestId::new([9; 32]),
     };
 
     assert_eq!(descriptor.intent_scope_targets(), &[target]);
