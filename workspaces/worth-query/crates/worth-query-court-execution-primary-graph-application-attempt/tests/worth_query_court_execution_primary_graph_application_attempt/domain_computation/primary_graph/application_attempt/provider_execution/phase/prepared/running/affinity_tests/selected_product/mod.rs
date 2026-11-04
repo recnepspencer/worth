@@ -152,11 +152,13 @@ fn foreign_installed_phase_refuses_provider_readmission_before_read_or_charge() 
         a.application
             .with_application_advancement(&scope, |phase| {
                 let before = reads();
+                // Read before the running run is borrowed mutably.
+                let product = (*brun.lease_for_test()).product().retained_clone_for_test();
                 let plan = (*brun
                     .running_mut_for_test())
                     .admit_provider_execution_plan(&(*b.application.primary_graph_authority_for_test()))
                     .unwrap()
-                    .bind_application_product_for_test((*brun.lease_for_test()).product().retained_clone_for_test())
+                    .bind_application_product_for_test(product)
                     .unwrap();
                 let refusal = match plan.readmit(&phase) {
                     Err(refusal) => refusal,
@@ -177,11 +179,13 @@ fn foreign_installed_phase_refuses_provider_readmission_before_read_or_charge() 
         a.application
             .with_application_advancement(&scope, |phase| {
                 let before = reads();
+                // Read before the running run is borrowed mutably.
+                let product = (*arun.lease_for_test()).product().retained_clone_for_test();
                 let session = real_terminal_session(
                     &phase,
                     &a,
                     &mut (*arun.running_mut_for_test()),
-                    (*arun.lease_for_test()).product().retained_clone_for_test(),
+                    product,
                 );
                 assert_eq!(session.counters().provider_calls(), 2);
                 // The primary provider's readmission and preparation only mint and
@@ -191,8 +195,12 @@ fn foreign_installed_phase_refuses_provider_readmission_before_read_or_charge() 
                 let _ = session.abort();
             })
             .unwrap();
-        finish_uncommitted(arun.mutation_run_into_for_test(), arun.running_into_for_test(), arun.lease_into_for_test());
-        finish_uncommitted(brun.mutation_run_into_for_test(), brun.running_into_for_test(), brun.lease_into_for_test());
+        let (_a_admission, a_lease, _a_attempt, _a_outcome, _a_settlement, _a_authorization, _a_idempotency, a_running,
+            a_mutation_run, _a_basis, _a_causality) = arun.into_parts_for_test();
+        finish_uncommitted(a_mutation_run, a_running, a_lease);
+        let (_b_admission, b_lease, _b_attempt, _b_outcome, _b_settlement, _b_authorization, _b_idempotency, b_running,
+            b_mutation_run, _b_basis, _b_causality) = brun.into_parts_for_test();
+        finish_uncommitted(b_mutation_run, b_running, b_lease);
         place(previous);
     }
 }
