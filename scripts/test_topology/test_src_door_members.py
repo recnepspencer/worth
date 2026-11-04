@@ -78,6 +78,32 @@ class LiteralSiteTests(unittest.TestCase):
 
 
 class DoorBodyTests(unittest.TestCase):
+    def test_impl_headers_drop_generic_defaults(self):
+        from src_door_members_text import impl_header, without_defaults
+        self.assertEqual(without_defaults('<T, U = Vec<u8>, const N: usize = 3>'), '<T, U, const N: usize>')
+        self.assertEqual(without_defaults('<F: Fn(u8) -> u8, S = ()>'), '<F: Fn(u8) -> u8, S>')
+        self.assertEqual(impl_header('<R = Ready>', 'Set<R>', ''), 'impl<R> Set<R> {\n')
+
+    def test_doors_are_keyed_by_exact_header_and_never_repeated(self):
+        import tempfile
+        from pathlib import Path
+        from src_door_writes import door_keys, normalized_doors
+        one = 'impl<R = A> Set<R> {\n    pub fn get_for_test(&self) {}\n}\n'
+        two = 'impl Set<B> {\n    pub fn get_for_test(&self) {}\n}\n'
+        self.assertEqual(door_keys(one), {('<R> Set<R>', 'get_for_test')})
+        self.assertNotEqual(door_keys(one), door_keys(two))
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'a').mkdir()
+            (root / 'a' / 'court_doors_for_test.rs').write_text(one)
+            (root / 'b_court_doors_for_test.rs').write_text(one + '\n' + two)
+            changed = normalized_doors(root)
+            self.assertEqual(changed[root / 'a' / 'court_doors_for_test.rs'], one.replace('<R = A>', '<R>'))
+            self.assertEqual(changed[root / 'b_court_doors_for_test.rs'], '\n' + two)
+            for path, text in changed.items():
+                path.write_text(text)
+            self.assertEqual(normalized_doors(root), {})
+
     def test_only_generated_door_rewrites_are_reversed(self):
         from src_door_bodies import without_doors
         renames = {'get_for_test': ('get', 'method'), 'f_for_test': ('f', 'field')}

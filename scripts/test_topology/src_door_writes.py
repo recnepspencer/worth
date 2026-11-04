@@ -108,29 +108,74 @@ def owning_field_door(index, field):
     return found[0] if len(found) == 1 else None
 
 
+IMPL_BLOCK = re.compile(r'(?ms)^impl\b(.*?)\{\n(.*?)^\}\n?')
+
+
+def header_key(header):
+    from src_door_members_text import without_defaults
+    header = re.sub(r'\s+', ' ', header).strip()
+    generics = re.match(r'(<.*?>)\s', header + ' ') if header.startswith('<') else None
+    if generics:
+        header = without_defaults(generics.group(1)) + header[generics.end(1):]
+    return header
+
+
 def door_keys(text):
-    """{(self type, door name)} of the `impl` blocks in door text."""
-    keys = set()
-    for block in re.finditer(r'impl(?:<[^{]*?>)?\s+([\w:]+)[^{]*\{(.*?)\n\}', text, re.S):
-        keys |= {(block.group(1), n) for n in re.findall(r'\bpub fn (\w+_for_test)\b', block.group(2))}
-    return keys
+    """{(exact impl header, door name)} of the `impl` blocks in door text."""
+    return {(header_key(block.group(1)), name) for block in IMPL_BLOCK.finditer(text)
+            for name in re.findall(r'\bpub fn (\w+_for_test)\b', block.group(2))}
+
+
+def door_files(library):
+    return sorted(set(Path(library).rglob('court_doors_for_test.rs')) | set(Path(library).rglob('*_court_doors_for_test.rs')))
+
+
+def normalized_doors(library):
+    """{door file: text} with defaults stripped from impl headers and a door that repeats an
+    (exact header, name) seen earlier (in path order) removed: an inherent method name is one
+    namespace per type across the crate."""
+    from src_door_members_text import without_defaults
+    seen, result = set(), {}
+    for path in door_files(library):
+        text = path.read_text(encoding='utf-8')
+
+        def keep(block):
+            header = block.group(1)
+            names = set(re.findall(r'\bpub fn (\w+_for_test)\b', block.group(2)))
+            keys = {(header_key(header), n) for n in names}
+            if keys and keys <= seen:
+                return ''
+            seen.update(keys)
+            stripped = re.sub(r'^(\s*)(<.*?>)(?=\s)', lambda m: m.group(1) + without_defaults(m.group(2)),
+                              header, count=1, flags=re.S)
+            return 'impl' + stripped + '{\n' + block.group(2) + '}\n'
+        new = IMPL_BLOCK.sub(keep, text)
+        new = re.sub(r'\n{3,}', '\n\n', new)
+        if new != text:
+            result[path] = new
+    return result
 
 
 def door_texts(plan):
     """{door file path: (new full text, mount edit or None)} for every module given doors."""
     result = {}
+    # One inherent namespace per type across the crate: keys already in any door file count.
+    present = set()
+    if plan.doors:
+        for path in door_files(door_file_path(plan.index[()], plan.index).parent):
+            present |= door_keys(path.read_text(encoding='utf-8'))
     for names, entries in sorted(plan.doors.items()):
         node = plan.index[names]
         path = door_file_path(node, plan.index)
         existing = path.read_text(encoding='utf-8') if path.exists() else HEADER
-        present, added = door_keys(existing), []
+        added = []
         for _key, text in sorted(entries.items()):
             keys = door_keys(text)
             if text not in existing and not keys <= present:
                 added.append(text)
                 present |= keys
         if added:
-            result[path] = (existing.rstrip('\n') + '\n\n' + '\n\n'.join(added) + '\n', mount_edit(node))
+            result[path] = (existing.rstrip('\n') + '\n\n' + '\n\n'.join(added) + '\n', mount_edit(node, plan.index))
     return result
 
 

@@ -20,8 +20,39 @@ def from_child(text):
     return re.sub(r'(?<![\w:])self::', 'super::', text)
 
 
+def without_defaults(generics):
+    """`<T, U = X, const N: usize = 3>` -> `<T, U, const N: usize>`: defaults are not allowed on
+    impl or fn generics."""
+    if not generics:
+        return generics
+    from src_door_sites import Source
+    source = Source(generics)
+    out, depth, skipping = [], 0, False
+    for k, token in enumerate(source.stream):
+        value = token.value
+        arrow = value == '>' and k and source.value(k - 1) == '-' and source.adjacent(k - 1, k)
+        if value in ('<', '(', '['):
+            depth += 1
+        elif value in ('>', ')', ']') and not arrow:
+            depth -= 1
+        if depth == 1 and value == '=' and not skipping:
+            skipping = True
+            continue
+        if skipping and ((depth == 1 and value == ',') or depth == 0):
+            skipping = False
+        if not skipping:
+            out.append(token)
+    text, previous = '', None
+    for token in out:
+        if previous is not None and token.start > previous.end and not generics[previous.end:token.start].strip():
+            text += ' '
+        text += token.value
+        previous = token
+    return text.replace(' ,', ',').replace(' >', '>').replace('< ', '<')
+
+
 def impl_header(generics, self_type, where):
-    return from_child(f'impl{generics} {self_type}' + (f' {where}' if where else '')) + ' {\n'
+    return from_child(f'impl{without_defaults(generics)} {self_type}' + (f' {where}' if where else '')) + ' {\n'
 
 
 def method_door(header, name):
@@ -158,7 +189,7 @@ def constructor_door(shape, order=None):
 
 
 def module_directory(node, index):
-    """Directory rustc resolves `node`'s child module files in."""
+    """(directory rustc resolves `node`'s child module files in, path-mounted file stem or None)."""
     inline, current = [], node
     while current.declaration is not None and current.declaration.body is not None:
         inline.append(current.names[-1])
@@ -167,17 +198,22 @@ def module_directory(node, index):
     path_mounted = current.declaration is not None and getattr(current.declaration, 'path', None)
     mod_rs = source.name in ('mod.rs', 'lib.rs') or path_mounted
     base = source.parent if mod_rs else source.parent / source.stem
-    return base.joinpath(*reversed(inline))
+    stem = source.stem if path_mounted and source.name != 'mod.rs' and not inline else None
+    return base.joinpath(*reversed(inline)), stem
 
 
 def door_file_path(node, index):
-    return module_directory(node, index) / 'court_doors_for_test.rs'
+    """A path-mounted module shares its directory with its parent, so its door file is named
+    for it (`<stem>_court_doors_for_test.rs`) and mounted by `#[path]`."""
+    directory, stem = module_directory(node, index)
+    return directory / (f'{stem}_court_doors_for_test.rs' if stem else 'court_doors_for_test.rs')
 
 
-def mount_edit(node):
+def mount_edit(node, index=None):
     """(source, change) that mounts the door module at the end of the module, once."""
-    # `own_text` drops child module declarations, the door's own included.
     if re.search(r'(?m)^\s*mod court_doors_for_test;', node.text):
         return None
+    path = door_file_path(node, index) if index is not None else None
+    attribute = f'#[path = "{path.name}"]\n' if path is not None and path.name != 'court_doors_for_test.rs' else ''
     end = node.offset + len(node.text)
-    return node.source, (end, end, '\nmod court_doors_for_test;\n')
+    return node.source, (end, end, f'\n{attribute}mod court_doors_for_test;\n')

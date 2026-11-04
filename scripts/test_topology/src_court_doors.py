@@ -6,6 +6,7 @@ Usage:
     python scripts/test_topology/src_court_doors.py interface CHECK.json [--root .] [--report DIR]
     python scripts/test_topology/src_court_doors.py members CHECK.json [--dry-run] [--root .] [--report DIR]
     python scripts/test_topology/src_court_doors.py bodies [--base REV] [--root .] [--report DIR]
+    python scripts/test_topology/src_court_doors.py normalize [--root .]
     python scripts/test_topology/src_court_doors.py callers [--root .]
 
 `items` re-exports every library item the courts and testkits name, once, from
@@ -137,7 +138,7 @@ def write_report(report, name, data):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('step', choices=('items', 'interface', 'members', 'bodies', 'callers'))
+    parser.add_argument('step', choices=('items', 'interface', 'members', 'normalize', 'bodies', 'callers'))
     parser.add_argument('--base', default='038ff2869d')
     parser.add_argument('--dry-run', action='store_true', help='members: write nothing, report and validate')
     parser.add_argument('check', nargs='?', type=Path)
@@ -147,6 +148,12 @@ def main(argv=None):
     root = args.root.resolve()
     if args.step == 'items':
         print(f'{items(root, args.report)} item doors')
+    elif args.step == 'normalize':
+        from src_door_writes import normalized_doors
+        changed = normalized_doors((root / LIB).parent)
+        for path, text in changed.items():
+            path.write_text(text, encoding='utf-8', newline='\n')
+        print(f'{len(changed)} door files normalized')
     elif args.step == 'callers':
         from src_door_callers import update_callers
         print(f'{update_callers(root)} control-callers lines added')
