@@ -2,8 +2,9 @@
 
 Rewriting a court's two paths to one item (a library re-export and the item's own crate path)
 can leave the same `use` line twice in one file. A file-scope (column 0) single-line `use`
-that exactly repeats an earlier one in the same file is dropped; an attributed `use` (the line
-before it is `#[..]`) is left alone; nothing else changes.
+that exactly repeats an earlier one in the same file is dropped. A glob import (`::*`, which
+may repeat) and an attributed `use` (the line before it is `#[..]`) are left alone; nothing
+else changes.
 """
 from pathlib import Path
 import re
@@ -24,7 +25,7 @@ def without_repeats(text):
     for line in text.splitlines(keepends=True):
         bare = line.rstrip('\n')
         attributed = bool(out) and out[-1].startswith('#[')
-        if USE.fullmatch(bare) and not attributed:
+        if USE.fullmatch(bare) and not attributed and not bare.endswith('::*;'):
             if bare in seen:
                 continue
             seen.add(bare)

@@ -84,9 +84,10 @@ class CourtDoorTests(unittest.TestCase):
     def test_repeated_file_scope_imports_are_dropped_once(self):
         from src_door_uses import without_repeats
         text = ('use a::X;\nuse b::Y;\nuse a::X;\n#[cfg(test)]\nuse b::Y;\nmod m {\n    use a::X;\n}\n'
-                'pub(crate) use c::Z;\npub(crate) use c::Z;\n')
+                'pub(crate) use c::Z;\npub(crate) use c::Z;\nuse d::*;\nuse d::*;\n')
         self.assertEqual(without_repeats(text),
-                         'use a::X;\nuse b::Y;\n#[cfg(test)]\nuse b::Y;\nmod m {\n    use a::X;\n}\npub(crate) use c::Z;\n')
+                         'use a::X;\nuse b::Y;\n#[cfg(test)]\nuse b::Y;\nmod m {\n    use a::X;\n}\npub(crate) use c::Z;\n'
+                         'use d::*;\nuse d::*;\n')
 
 
 if __name__ == '__main__':
