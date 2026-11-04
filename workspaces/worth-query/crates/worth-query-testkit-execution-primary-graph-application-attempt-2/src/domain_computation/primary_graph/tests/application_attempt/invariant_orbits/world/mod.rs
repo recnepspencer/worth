@@ -139,7 +139,7 @@ pub fn install_with_visibility<const O: bool>(
                 worth_relational::facade::runtime::RelationalRuntimeApi::builder()
                     .build()
                     .expect("valid native fixture configuration"),
-                worth_query_execution::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(clock.clone()),
+                worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(clock.clone()),
                 factories,
             )
             .unwrap();

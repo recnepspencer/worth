@@ -3,7 +3,7 @@ use worth_query_declaration::facade::application_operation::ApplicationMutationB
 use worth_query_installation::facade::ApplicationSchema;
 use std::sync::Arc;
 use worth_query_execution::facade::domain_computation::OperationHandler;
-use worth_query_execution::domain_computation::primary_graph::handler::registry::TypedHandlerSlot;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::handler::registry::TypedHandlerSlot;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::IdentityExecutionSchema;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::ProgramRequiredMutationBinding;

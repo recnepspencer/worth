@@ -61,7 +61,7 @@ fn foreign_installed_seal_is_stale_at_migration_before_work() {
     let _observation =
         worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation::install_on_this_thread();
     let consults = observe_consults_for_test(|_| {});
-    let result=worth_query_execution::domain_computation::primary_graph::application_attempt::migration::prepare_program_migration_effects(&world.application,program);
+    let result=worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::migration::prepare_program_migration_effects(&world.application,program);
     let Err(WorthQueryProgramMigrationPreparationDenial::Candidate(denial)) = result else {
         panic!("foreign seal must refuse at migration");
     };

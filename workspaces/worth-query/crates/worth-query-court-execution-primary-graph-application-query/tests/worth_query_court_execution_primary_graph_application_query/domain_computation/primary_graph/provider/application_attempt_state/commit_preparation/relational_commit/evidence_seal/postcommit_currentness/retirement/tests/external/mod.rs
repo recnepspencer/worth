@@ -165,7 +165,7 @@ fn external_pair_and_adjacency_remain_current_after_owned_endpoint_retirement() 
 
 #[test]
 fn a_retired_entity_changes_each_revision_fact_read_without_its_entity_fact() {
-    use worth_query_execution::domain_computation::primary_graph::application_attempt::fact::movement::Movement;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::movement::Movement;
     let world = installed_authorization_world(
         true,
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),

@@ -38,7 +38,7 @@ pub fn installed_world_with_policy_fact(
         let binding = schema
             .principal_binding(IdentityBinding::reference())
             .unwrap();
-        let mut bootstrap = authority.prepare_primary_graph(&phase.bootstrap_for_test(), &runtime, &schema, worth_query_execution::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system())).unwrap();
+        let mut bootstrap = authority.prepare_primary_graph(&phase.bootstrap_for_test(), &runtime, &schema, worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system())).unwrap();
         for (ordinal, (subject, status)) in rows.iter().enumerate() {
             bootstrap
                 .bind_principal(
@@ -120,7 +120,7 @@ pub fn restored_world(
         &runtime,
         &schema,
         worth_relational::facade::runtime::RelationalRuntimeApi::builder().build().expect("valid native runtime configuration"),
-        worth_query_execution::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()),
+        worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()),
         worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantFactories::for_installed_schema(&schema),
         &decoded,
         false,

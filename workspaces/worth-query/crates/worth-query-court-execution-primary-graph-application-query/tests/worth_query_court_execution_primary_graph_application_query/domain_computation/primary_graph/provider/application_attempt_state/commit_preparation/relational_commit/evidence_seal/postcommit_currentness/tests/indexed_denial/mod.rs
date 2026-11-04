@@ -216,7 +216,7 @@ fn sparse_indexed_rebase_keeps_complete_dependencies_without_work_estimates() {
         let graph = world.application.runtime.primary_graph().unwrap();
         let observed = world.application.with_host_advancement(|phase| {   let borrowed_execution = phase.execution_request_for(&world.application.runtime.product_runtime).expect("fixture borrows its runtime request"); let execution = &borrowed_execution; graph.integration_handle().with_runtime(&phase.borrowed_request_for_test(), |runtime| {
         let snapshot = selected.application_basis().snapshot_handle();
-        let observed = worth_query_execution::domain_computation::primary_graph::application_attempt::fact::indexed_entity_selection::observe_indexed_entity_selection(
+        let observed = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::indexed_entity_selection::observe_indexed_entity_selection(
             runtime,execution,  snapshot, *index_id, *entity_kind, locator.clone(), value.clone(), 100_001,
         ).expect("the installed index supplies a genuine complete sparse observation");
         assert!(matches!(&observed,

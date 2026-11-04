@@ -51,7 +51,7 @@ use worth_query_decl::facade::worth_query_portable_type;
 use worth_query_decl::facade::worth_query_structured_value_binding;
 use worth_query_decl::facade::worth_query_unit;
 
-pub use worth_query_execution::domain_computation::primary_graph;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph;
 pub use worth_query_execution::facade as runtime_api;
 pub use worth_query_execution::facade::domain_computation::CandidateWriter;
 pub use worth_query_execution::facade::domain_computation::DecisionReader;
@@ -128,7 +128,7 @@ pub use worth_query_testkit_execution_decl::domain_computation::primary_graph::o
 pub use worth_query_testkit_execution_decl::domain_computation::primary_graph::output_lineage::ownership_oracle::planar_read::*;
 pub use worth_query_testkit_execution_decl::domain_computation::primary_graph::output_lineage::ownership_oracle::region_output::*;
 pub use worth_query_testkit_execution_decl::domain_computation::primary_graph::output_lineage::ownership_oracle::output_producer::*;
-use worth_query_execution::domain_computation::primary_graph;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph;
 use worth_query_execution::facade as runtime_api;
 use worth_query_execution::facade::domain_computation::CandidateWriter;
 use worth_query_execution::facade::domain_computation::DecisionReader;

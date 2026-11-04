@@ -22,8 +22,8 @@ fn post_effect_rebase_door_preserves_stops_at_every_consult() {
 
 #[test]
 fn selected_native_rebase_preserves_stops_at_every_consult() {
-    use worth_query_execution::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl;
-    use worth_query_execution::domain_computation::primary_graph::application_checkpoint::facts::payload::native::NativeFactPayloadBuilder;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::payload::native::NativeFactPayloadBuilder;
     let world = installed_authorization_world(
         true,
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),

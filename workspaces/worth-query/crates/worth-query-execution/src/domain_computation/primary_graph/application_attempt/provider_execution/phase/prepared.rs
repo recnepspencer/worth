@@ -25,7 +25,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedApplicationOperation, WorthQueryPrimaryGraphApplicationRuntime,
 };
 
-mod entry_custody;
+pub(crate) mod entry_custody;
 pub(in crate::domain_computation::primary_graph) use entry_custody::{
     CurrentCommitProgram, ReadmittedCommitProgram,
 };

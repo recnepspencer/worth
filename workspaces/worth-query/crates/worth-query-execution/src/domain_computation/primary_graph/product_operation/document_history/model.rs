@@ -5,7 +5,7 @@ use worth_relational::facade::identity::{EntityId, KindId};
 
 /// Copied identity correspondence, never a retained permission or replacement lookup.
 #[derive(Clone, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) struct HistoryModelIdentity {
+pub struct HistoryModelIdentity {
     entity: EntityId,
     kind: KindId,
     runtime: WorthQueryRuntimeAuthorityIdentity,

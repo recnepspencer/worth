@@ -37,7 +37,7 @@ struct PendingMutationHandler {
     value: Arc<dyn Any + Send + Sync>,
 }
 
-struct TypedHandlerSlot<Schema, Binding>
+pub struct TypedHandlerSlot<Schema, Binding>
 where
     Schema: ApplicationSchema,
     Binding: ApplicationMutationBinding<Schema>,

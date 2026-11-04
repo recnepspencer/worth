@@ -12,7 +12,7 @@ pub use std::cell::RefCell;
 pub use std::rc::Rc;
 pub use std::sync::Mutex;
 pub use std::time::Duration;
-pub use worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy;
 pub use worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource;
 
 pub struct ResultValue {

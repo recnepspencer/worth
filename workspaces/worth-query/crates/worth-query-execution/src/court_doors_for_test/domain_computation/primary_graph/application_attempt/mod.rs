@@ -9,6 +9,8 @@ pub mod effect_program;
 pub mod effect_validation;
 #[path = "fact/mod.rs"]
 pub mod fact;
+#[path = "migration/mod.rs"]
+pub mod migration;
 #[path = "observation/mod.rs"]
 pub mod observation;
 #[path = "provider_binding/mod.rs"]

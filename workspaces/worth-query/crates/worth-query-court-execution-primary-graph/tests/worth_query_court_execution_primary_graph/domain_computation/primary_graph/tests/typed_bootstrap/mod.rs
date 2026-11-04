@@ -53,7 +53,7 @@ fn authenticated_bootstrap_registers_the_exact_installed_native_contract() {
             .unwrap()
             .0;
 
-        let bootstrap = authority.prepare_primary_graph(&phase.bootstrap_for_test(), &runtime, &schema, worth_query_execution::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system())).unwrap();
+        let bootstrap = authority.prepare_primary_graph(&phase.bootstrap_for_test(), &runtime, &schema, worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system())).unwrap();
         let registered = bootstrap
             .graph
             .registered_entity_aspect(
@@ -134,7 +134,7 @@ fn provider_identity_exhaustion_denies_before_relational_installation() {
             .bind_application_schema(declaration)
             .unwrap();
         let denial = authority
-        .prepare_primary_graph(&phase.bootstrap_for_test(), &runtime, &schema, worth_query_execution::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()))
+        .prepare_primary_graph(&phase.bootstrap_for_test(), &runtime, &schema, worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()))
         .err()
         .unwrap();
 
@@ -241,7 +241,7 @@ fn duplicate_typed_principal_identity_denies_without_poisoning_bootstrap() {
         let binding = schema
             .principal_binding(IdentityBinding::reference())
             .unwrap();
-        let mut bootstrap = authority.prepare_primary_graph(&phase.bootstrap_for_test(), &runtime, &schema, worth_query_execution::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system())).unwrap();
+        let mut bootstrap = authority.prepare_primary_graph(&phase.bootstrap_for_test(), &runtime, &schema, worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system())).unwrap();
 
         bootstrap
             .bind_principal(

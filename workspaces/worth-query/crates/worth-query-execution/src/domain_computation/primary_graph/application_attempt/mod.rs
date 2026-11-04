@@ -38,7 +38,7 @@ mod idempotency_resolution;
 mod mandatory_review_outcome;
 mod mandatory_review_program;
 mod mandatory_review_replay;
-mod migration;
+pub(crate) mod migration;
 pub(crate) mod observation;
 pub(in crate::domain_computation::primary_graph) use observation::observe_aspect_presence;
 pub(in crate::domain_computation::primary_graph) use observation::take_native_field_contacts;

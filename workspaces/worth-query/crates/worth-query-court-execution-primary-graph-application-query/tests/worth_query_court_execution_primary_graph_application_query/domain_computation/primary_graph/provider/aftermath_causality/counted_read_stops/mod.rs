@@ -19,7 +19,7 @@ fn aftermath_resolution_preserves_stops_at_every_consult() {
             let selected = world.selected_product(&phase.test_host_request());
             let basis = selected.product().relational_basis();
             let snapshot = provider.graph.with_runtime_mut(&execution, |runtime| {
-                worth_query_execution::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(runtime, basis).unwrap()
+                worth_query_execution::court_doors_for_test::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(runtime, basis).unwrap()
             });
             let read = |request: &worth_execution::ExecutionRequest<'_, '_>| {
                 (*provider.graph_for_test()).with_runtime_mut_for_test(request, |runtime| {

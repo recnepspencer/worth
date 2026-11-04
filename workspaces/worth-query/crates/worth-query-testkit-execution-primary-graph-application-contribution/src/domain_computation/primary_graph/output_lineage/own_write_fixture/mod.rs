@@ -55,7 +55,7 @@ pub fn commit_own_write(
     ),
 ) {
     let product_resources =
-        worth_query_execution::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
+        worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     let resources = product_resources.invalidation_resources();
     let world = crate::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world_with_product_resources(product_resources);
     world.declare_output_contract::<OwnWriteOutputs>("OwnWriteOutputs");

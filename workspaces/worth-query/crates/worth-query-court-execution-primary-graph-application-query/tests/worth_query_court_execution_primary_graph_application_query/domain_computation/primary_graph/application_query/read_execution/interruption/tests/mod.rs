@@ -141,7 +141,7 @@ fn deadline_is_checked_at_kernel_safe_points() {
         cancellation.token(),
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
-    let denial = worth_query_execution::domain_computation::primary_graph::application_query::read_execution::interruption::checkpoint(&request, "root/relation[0]").unwrap_err();
+    let denial = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::read_execution::interruption::checkpoint(&request, "root/relation[0]").unwrap_err();
     assert_eq!(
         denial.kind(),
         worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::read_execution::denial::WorthQueryApplicationReadExecutionDenialKind::DeadlineExceeded

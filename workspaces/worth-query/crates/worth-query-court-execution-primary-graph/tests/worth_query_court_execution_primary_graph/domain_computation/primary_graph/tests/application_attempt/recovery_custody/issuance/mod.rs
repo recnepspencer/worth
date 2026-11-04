@@ -19,7 +19,7 @@ fn cancelled_admission_can_issue_recovery_authority_for_its_live_handle() {
         .application
         .admit_recovery_effect_authority(&handle, &admission)
         .expect("interruption cannot add a new recovery issuance refusal");
-    worth_query_execution::domain_computation::application_aftermath::recovery_progression::authority::require_fresh_effect_authority(
+    worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::recovery_progression::authority::require_fresh_effect_authority(
         &handle, &authority,
     )
     .expect("the issued authority belongs to this genuinely live handle");

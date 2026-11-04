@@ -26,7 +26,7 @@ pub use group::{
     WorthQueryHistoryGroupCandidateCreation, WorthQueryHistoryGroupMemberAdmission,
 };
 mod journal;
-mod model;
+pub(crate) mod model;
 pub(crate) mod navigation;
 #[doc(hidden)]
 pub use navigation::WorthQueryHistoryNavigationPauseForTest;

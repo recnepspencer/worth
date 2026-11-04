@@ -90,7 +90,7 @@ pub struct PreparedAuthorizationWorld {
 
 pub fn install_authorization_world(spec: AuthorizationWorldSpec<'_>) -> AuthorizationWorld {
     let resources =
-        worth_query_execution::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(
+        worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(
             spec.admission_clock.clone(),
         );
     install_authorization_world_with_product_resources(spec, resources)

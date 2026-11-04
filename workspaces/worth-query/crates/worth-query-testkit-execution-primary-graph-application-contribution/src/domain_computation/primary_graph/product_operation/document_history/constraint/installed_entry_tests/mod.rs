@@ -1,6 +1,6 @@
 //! History constraints retain real source/model facts and reject altered admission seals.
 use worth_query_execution::publication_boundary::document_history::WorthQueryDocumentHistoryDenial as Denial;
-use worth_query_execution::domain_computation::primary_graph::product_operation::document_history::model::HistoryModelIdentity;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::product_operation::document_history::model::HistoryModelIdentity;
 use worth_query_execution::publication_boundary::document_history::WorthQueryDocumentHistoryOperationConstraint;
 use worth_query_execution::publication_boundary::WorthQueryProgramPublicationAccess;
 use worth_query_execution::facade::domain_computation::WorthQueryOperationAuthorizationDenialKind as Kind;

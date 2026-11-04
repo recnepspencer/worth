@@ -226,7 +226,7 @@ fn every_edit_retains_what_a_fresh_full_run_retains() {
 #[test]
 fn every_record_absence_rebuilds_the_same_state_as_a_fresh_run() {
     let _observation = QueryObservation::install_on_this_thread();
-    use worth_query_execution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::prior_absence::PriorAbsence;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::prior_absence::PriorAbsence;
     let world = installed_authorization_world(
         true,
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
@@ -300,10 +300,10 @@ fn every_record_absence_rebuilds_the_same_state_as_a_fresh_run() {
 #[test]
 fn a_missing_call_measurement_is_recorded_as_unmeasured_at_the_discard() {
     let _observation = QueryObservation::install_on_this_thread();
-    use worth_query_execution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::recording::FullRecording;
-    use worth_query_execution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::prior_absence::CompletedComputationRetention;
-    use worth_query_execution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::prior_absence::PriorAbsence;
-    use worth_query_execution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::RetainedBasisToken;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::recording::FullRecording;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::prior_absence::CompletedComputationRetention;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::prior_absence::PriorAbsence;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::RetainedBasisToken;
     let world = installed_authorization_world(
         true,
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),

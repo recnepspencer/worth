@@ -223,7 +223,7 @@ fn worker_only_partition_run_retains_facts_reuses_and_observes_a_real_source_edi
     use worth_relational::facade::transactions::WorkerIntentBatch;
     let _observation = QueryObservation::install_on_this_thread();
     let world = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world_with_product_resources(
-        worth_query_execution::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system())
+        worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system())
             .with_execution_policy(policy()),
     );
     let base = installed(StatusRead::Gather(1), sum);

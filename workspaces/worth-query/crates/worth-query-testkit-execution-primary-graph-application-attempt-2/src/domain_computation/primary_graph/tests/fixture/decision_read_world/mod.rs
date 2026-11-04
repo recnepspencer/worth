@@ -83,7 +83,7 @@ pub fn installed_decision_read_world() -> DecisionReadWorld {
                 &phase.bootstrap_for_test(),
                 &runtime,
                 &schema,
-                worth_query_execution::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()),
+                worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()),
             )
             .unwrap();
         bootstrap

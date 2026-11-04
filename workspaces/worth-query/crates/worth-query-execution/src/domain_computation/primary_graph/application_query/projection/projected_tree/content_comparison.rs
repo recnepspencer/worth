@@ -1,7 +1,7 @@
 //! Exact Source support equality; disclosed-row equality has different meaning.
 use super::*;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum ProjectionContentComparisonFault {
+pub enum ProjectionContentComparisonFault {
     CapacityOverflow,
     AllocationFailed,
     ContentInconsistency,
