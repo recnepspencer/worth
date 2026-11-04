@@ -6,7 +6,8 @@ From `cargo check` diagnostics over the courts and testkits:
   named `*_for_test` is only made `pub`);
 - E0616 (private field): `<f>_for_test(&self) -> &T`, read at the site as `(*expr.f_for_test())`,
   or `<f>_mut_for_test` where the site assigns or borrows mutably (E0596/E0594 later switch a
-  read site), or `<f>_into_for_test(self)` where the site moves the field out (E0507);
+  read site), or `<f>_into_for_test(self)` where the site moves the field out (E0507); a
+  switched site whose owner is ambiguous by field name gets its door from the E0599 it raises;
 - E0451 / E0423 (struct literal over private fields): `new_for_test(..)` in the first literal's
   field order; a functional update sets its fields through mutable doors instead;
 - E0599 at a site already naming a door that was never written: the door alone
@@ -120,23 +121,27 @@ def field(plan, root, diagnostic, site, source, span):
 
 
 def read_door_in(source, span):
-    """(token index, field) of the first `f_for_test()` read door inside a span."""
+    """(token index, field) of the outermost `f_for_test()` read door inside a span: in a postfix
+    chain that is the last one."""
+    found = None
     for k, token in enumerate(source.stream):
         if span[0] <= token.start < span[1] and token.kind == 'ident' and token.value.endswith('_for_test') \
                 and not token.value.endswith(('_mut_for_test', '_into_for_test')) \
                 and source.value(k - 1) == '.' and source.value(k + 1) == '(' and source.value(k + 2) == ')':
-            return k, token.value[:-len('_for_test')]
-    return None
+            found = k, token.value[:-len('_for_test')]
+    return found
 
 
 def mutable_read(plan, root, diagnostic, site, source, span):
     found = read_door_in(source, span)
-    owner = owning_field_door(plan.index, found[1]) if found else None
-    if owner is None:
+    if found is None:
         return False
-    node, shape = owner
+    owner = owning_field_door(plan.index, found[1])
     token = source.stream[found[0]]
-    plan.door(node.names, ('field_mut', found[1], shape['name']), field_door(shape, found[1], True))
+    if owner is not None:
+        node, shape = owner
+        plan.door(node.names, ('field_mut', found[1], shape['name']), field_door(shape, found[1], True))
+    # An ambiguous owner gets its door from the E0599 the switched site raises, which names the type.
     plan.change(site, (token.start, token.end, found[1] + '_mut_for_test'))
     return True
 
@@ -153,11 +158,13 @@ def moved_read(plan, root, diagnostic, site, source, span):
     if source.value(door - 1) != '.' or not source.value(door).endswith('_for_test'):
         return False
     name = source.value(door)[:-len('_for_test')]
-    owner = owning_field_door(plan.index, name)
-    if owner is None:
+    if name.endswith(('_mut', '_into')):
         return False
-    node, shape = owner
-    plan.door(node.names, ('field_into', name, shape['name']), field_door(shape, name, 'into'))
+    owner = owning_field_door(plan.index, name)
+    if owner is not None:
+        node, shape = owner
+        plan.door(node.names, ('field_into', name, shape['name']), field_door(shape, name, 'into'))
+    # As for mutable reads, an ambiguous owner is resolved through the E0599 that follows.
     expression = source.span_text(first + 2, door - 2)
     plan.change(site, (span[0], span[1], f'{expression}.{name}_into_for_test()'))
     return True

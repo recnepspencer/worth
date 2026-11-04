@@ -154,6 +154,12 @@ class DoorBodyTests(unittest.TestCase):
         sites = [tok.start for tok in source.stream if tok.value == 'work_for_test']
         self.assertEqual([field_site(source, (s, s + 13)) for s in sites], [True, False])
 
+    def test_mutable_reads_switch_the_outermost_door(self):
+        from src_door_members import read_door_in
+        source = Source('(*(*a.x_for_test()).y_for_test()).push(1);')
+        found = read_door_in(source, (0, len('(*(*a.x_for_test()).y_for_test())')))
+        self.assertEqual(found[1], 'y')
+
     def test_only_generated_door_rewrites_are_reversed(self):
         from src_door_bodies import without_doors
         renames = {'get_for_test': ('get', 'method'), 'f_for_test': ('f', 'field')}
