@@ -246,3 +246,34 @@ impl<Key, Item, Reduced> RetainedPartitions<Key, Item, Reduced> {
         &mut self.partitions
     }
 }
+
+impl<Key, Item, Reduced> RetainedPartitions<Key, Item, Reduced> {
+    #[doc(hidden)]
+    pub fn into_parts_for_test(
+        self,
+    ) -> (
+        Items<Item>,
+        ItemDigests,
+        RetainedCall,
+        Arc<worth_execution::ExecutionOrderedMap<PartitionItemId, RetainedCall>>,
+        Arc<
+            crate::domain_computation::primary_graph::invariant_projection::ComputationCallSequence,
+        >,
+        Arc<ComputationPartitionRouting>,
+        super::super::partition_metadata::PartitionMetadata<Key>,
+        worth_execution::ExecutionRetainedRun<Reduced>,
+        NativeReductionTree<Reduced, fn(&Reduced, &Reduced) -> Reduced>,
+    ) {
+        (
+            self.items,
+            self.digests,
+            self.membership,
+            self.item_keys,
+            self.call_sequence,
+            self.routing,
+            self.partitions,
+            self.native_run,
+            self.tree,
+        )
+    }
+}

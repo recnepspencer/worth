@@ -69,3 +69,31 @@ impl<Schema, Operation, Input, Scope>
         self.lease
     }
 }
+
+impl<Schema, Operation, Input, Scope>
+    WorthQueryRunningApplicationCommit<Schema, Operation, Input, Scope>
+{
+    #[doc(hidden)]
+    pub fn into_parts_for_test(self) -> (crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<
+        Schema,
+        Operation,
+        Input,
+        Scope,
+    >, WorthQueryApplicationSnapshotLease, WorthQueryPreparedApplicationProviderAttempt, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitOutcomeIdentity, Option<LocalWorkflowSettlementPublication>, crate::domain_computation::authorization::WorthQueryProviderCommitAuthorization, WorthQueryApplicationIdempotencyBinding, crate::domain_computation::WorthQueryRunningDirectRun, crate::domain_computation::provider_session::WorthQueryMutationRunBinding, WorthQueryApplicationAttemptBasis, Option<
+        crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
+    >,){
+        (
+            self.admission,
+            self.lease,
+            self.provider_attempt,
+            self.outcome_identity,
+            self.workflow_settlement_publication,
+            self.authorization,
+            self.idempotency,
+            self.running,
+            self.mutation_run,
+            self.attempt_basis,
+            self.aftermath_causality,
+        )
+    }
+}

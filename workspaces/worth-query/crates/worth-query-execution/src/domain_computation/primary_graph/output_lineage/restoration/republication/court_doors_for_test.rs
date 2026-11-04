@@ -139,3 +139,24 @@ impl RepublishedRecord {
         self.predecessor
     }
 }
+
+impl RepublishedRecord {
+    #[doc(hidden)]
+    pub fn into_parts_for_test(
+        self,
+    ) -> (
+        Arc<RecordedSettlementIdentity>,
+        Arc<RecordedSettlementIdentity>,
+        super::super::super::RetainedSourceFacts,
+        Arc<[ConsumedOutputEvidence]>,
+        Arc<OnceLock<SealedNativeOutputWitness>>,
+    ) {
+        (
+            self.identity,
+            self.predecessor,
+            self.facts,
+            self.consumed_outputs,
+            self.witness,
+        )
+    }
+}

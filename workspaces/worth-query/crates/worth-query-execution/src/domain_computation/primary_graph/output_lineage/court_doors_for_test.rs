@@ -314,3 +314,34 @@ impl WorthQueryExactRecordedOutput {
         self.schema
     }
 }
+
+impl WorthQueryExactRecordedOutput {
+    #[doc(hidden)]
+    pub fn into_parts_for_test(
+        self,
+    ) -> (
+        Option<worth_relational::facade::mvcc::RequiredOutputProducingImplementation>,
+        Arc<WorthQueryApplicationOutputCorrespondence>,
+        RecordedSourceIdentity,
+        [u8; 32],
+        Option<[u8; 32]>,
+        [u8; 32],
+        u64,
+        ApplicationSchemaBindingIdentity,
+        crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+        RetainedSourceFacts,
+    ) {
+        (
+            self.producing_implementation,
+            self.correspondence,
+            self.source_identity,
+            self.source_partition_identity,
+            self.producer_dependency_identity,
+            self.idempotency_key_identity,
+            self.runtime_authority,
+            self.schema,
+            self.scope,
+            self.observed_source_facts,
+        )
+    }
+}

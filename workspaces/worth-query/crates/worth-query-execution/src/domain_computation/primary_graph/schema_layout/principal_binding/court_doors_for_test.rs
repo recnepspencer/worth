@@ -82,3 +82,28 @@ impl WorthQueryPrimaryPrincipalBindingLayout {
         self.status_locator
     }
 }
+
+impl WorthQueryPrimaryPrincipalBindingLayout {
+    #[doc(hidden)]
+    pub fn into_parts_for_test(
+        self,
+    ) -> (
+        KindId,
+        AspectFieldLocator,
+        AspectFieldLocator,
+        KindId,
+        KindId,
+        AspectFieldLocator,
+        DerivedIndexId,
+    ) {
+        (
+            self.mapping_kind,
+            self.identity_locator,
+            self.status_locator,
+            self.relation_kind,
+            self.principal_kind,
+            self.principal_identity_locator,
+            self.index_id,
+        )
+    }
+}
