@@ -59,3 +59,14 @@ impl QueryDispatch<'_> {
         Self::map::<T, K, R, E, Kernel>(self, ceiling, map, inputs, kernel)
     }
 }
+
+impl<'a> QueryRequestExecution<'a> {
+    #[doc(hidden)]
+    pub fn open_control_for_test(
+        placement: RuntimeWorldExecutionPlacement<'a>,
+        cancellation: worth_execution::CancellationToken,
+        deadline: Option<worth_execution::MonotonicDeadline>,
+    ) -> Self {
+        Self::open_control(placement, cancellation, deadline)
+    }
+}

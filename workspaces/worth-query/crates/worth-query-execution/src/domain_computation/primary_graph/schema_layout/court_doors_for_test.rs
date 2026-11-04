@@ -105,3 +105,15 @@ impl WorthQueryPrimaryFieldLayout {
         &mut self.equality_index_id
     }
 }
+
+impl WorthQueryPrimaryGraphLayout {
+    #[doc(hidden)]
+    pub fn lower_for_test(
+        schema: &ErasedApplicationSchemaDeclaration,
+        native_contracts: &WorthQueryInstalledApplicationSchemaContractCatalog,
+        existing_registry: &RelationalSchemaRegistry,
+        value_bindings: &worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
+    ) -> Result<(Self, RelationalSchemaRegistry), WorthQueryPrimaryGraphInstallationDenial> {
+        Self::lower(schema, native_contracts, existing_registry, value_bindings)
+    }
+}
