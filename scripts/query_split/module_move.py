@@ -313,7 +313,14 @@ class ModuleMove:
             if any(a <= start < b for a, b in skip):
                 continue
             scope = scope_of('pub(' + inner + ')', node.names)
-            if scope == 'pub' or inside(scope, self.old):
+            if scope == 'pub':
+                continue
+            if inside(scope, self.old):
+                # a restriction inside the subtree moves with it; only a `crate::` spelling
+                # names the old place
+                if inner.replace(' ', '').startswith('incrate'):
+                    self.edit(node.source, node.offset + start, node.offset + end,
+                              stated(self.new + tuple(scope[len(self.old):])))
                 continue
             item_module = self.new + node.names[len(self.old):]
             if inside(item_module, scope):
