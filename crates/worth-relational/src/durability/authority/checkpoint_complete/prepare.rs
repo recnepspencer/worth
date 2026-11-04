@@ -71,10 +71,11 @@ pub(super) fn prepare(
                 .then(|| original_root.retained_schema_authority())
         })
         .ok_or(Denial::OriginalAuthorityUnavailable)?;
+    let (schema_images, carriers) = schemas.into_parts();
     let (mut draft, member_map) = super::draft::assemble(
         &frozen,
         &canonical,
-        schemas.into_images(),
+        schema_images,
         lineage.basis.clone(),
         metadata,
         execution,
@@ -116,13 +117,11 @@ pub(super) fn prepare(
             .transpose()
             .map_err(stop)?
     };
-    // None of the all-prefix decode, lookup or root-build scratch is output
-    // custody. Only actual N, component obligations and rebuilt cells cross.
+    // Borrowed lookup scratch ends before the verified originals move into
+    // their thin owning phase. The image consumes the same protected prefix.
     drop(lineage);
     drop(branches);
-    drop(roots);
     drop(dictionary);
-    drop(commits);
     drop(canonical);
     let original_read = frozen.original.take_original_read();
     let holds = frozen.components.into_holds();
@@ -163,9 +162,24 @@ pub(super) fn prepare(
             execution,
         )
         .map_err(initial_stop)?;
+    let verified = super::verified_originals::VerifiedCheckpointOriginals::from_verified(
+        super::verified_originals::VerifiedOriginalCustody {
+            checkpoint,
+            source_artifact,
+            manifest,
+            commits,
+            roots,
+            original: frozen.original,
+            carriers,
+        },
+        execution,
+    )?;
+    let admission_image = super::admission_projection::capture(&verified, execution)?;
+    let (checkpoint, source_artifact) = verified.consume(|originals| originals.into_parts());
     Ok(CompleteRelationalNativeCheckpoint {
         checkpoint,
         source_artifact,
+        admission_image,
         initial_predecessor: initial.predecessor,
     })
 }

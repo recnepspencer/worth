@@ -76,8 +76,10 @@ impl<'a> CompleteSchemas<'a> {
             .get(&(authority as *const RelationalBranchRootSchemaAuthority as usize))
             .copied()
     }
-    pub(super) fn into_images(self) -> CheckpointSchemaImages {
-        self.images
+    pub(super) fn into_parts(
+        self,
+    ) -> (CheckpointSchemaImages, ExecutionOrderedMap<usize, [u8; 32]>) {
+        (self.images, self.original)
     }
 }
 fn record(

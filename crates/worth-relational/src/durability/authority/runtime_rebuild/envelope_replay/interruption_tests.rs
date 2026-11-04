@@ -304,6 +304,9 @@ fn corrupt_replay_keeps_its_durability_failure() {
     )
     .unwrap_err();
     match error {
+        RelationalRecoveryStop::AdmissionImage(cause) => {
+            panic!("corrupt original evidence became image refusal: {cause:?}")
+        }
         RelationalRecoveryStop::Durability(error) => {
             assert_eq!(error.class, RecoveryFailureClass::ReplayFailure)
         }

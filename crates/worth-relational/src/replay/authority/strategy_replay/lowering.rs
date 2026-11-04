@@ -100,6 +100,9 @@ pub(super) fn lower_strategy_replay(
                 let detail = format!("strategy replay re-validation failed: {error:?}");
                 let error = crate::execution::allocation_commit_error(error);
                 match crate::durability::authority::replay_commit_stop(error, detail.clone()) {
+                    RelationalRecoveryStop::AdmissionImage(cause) => {
+                        return Err(RelationalRecoveryStop::AdmissionImage(cause))
+                    }
                     RelationalRecoveryStop::Request(cause) => {
                         return Err(RelationalRecoveryStop::Request(cause))
                     }

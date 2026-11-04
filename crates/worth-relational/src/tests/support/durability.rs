@@ -8,6 +8,9 @@ pub(crate) fn expect_durability_failure(
     stop: crate::durability::data::RelationalRecoveryStop,
 ) -> crate::durability::data::DurabilityError {
     match stop {
+        crate::durability::data::RelationalRecoveryStop::AdmissionImage(cause) => {
+            panic!("expected failed durable evidence, received admission image refusal: {cause:?}")
+        }
         crate::durability::data::RelationalRecoveryStop::Durability(error) => error,
         crate::durability::data::RelationalRecoveryStop::Allocation(cause) => {
             panic!("expected failed durable evidence, received allocation stop: {cause:?}")

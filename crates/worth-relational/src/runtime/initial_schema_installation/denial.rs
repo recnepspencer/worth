@@ -108,6 +108,7 @@ impl RelationalInitialSchemaInstallationDenial {
             | Cause::Missing
             | Cause::UnsupportedVersion(_)
             | Cause::Native(crate::durability::data::RelationalRecoveryStop::Durability(_))
+            | Cause::Native(crate::durability::data::RelationalRecoveryStop::AdmissionImage(_))
             | Cause::Payload(_) => {
                 RelationalInitialSchemaInstallationDenialKind::InitialInputsRejected
             }
