@@ -36,19 +36,6 @@ use worth_query_declaration::facade::application_schema::ApplicationOperationDef
 use worth_query_declaration::facade::application_schema::ApplicationOperationRef;
 use worth_query_declaration::facade::application_schema::ApplicationSchemaDeclarationBuilder;
 
-pub fn without_external_effect_or_aftermath<Operation, Input>(
-    operation: ApplicationOperationRef<IdentityExecutionSchema, Operation, Input>,
-) -> ApplicationOperationDefinition<IdentityExecutionSchema, Operation, Input>
-where
-    Input: worth_query_declaration::facade::portable_identity::WorthQueryPortableType,
-{
-    operation
-        .definition()
-        .no_external_effect()
-        .no_aftermath()
-        .finish()
-}
-
 use crate::domain_computation::primary_graph::tests::fixture::capability::declaration::CapabilityAction;
 use crate::domain_computation::primary_graph::tests::fixture::capability::declaration::CapabilityActionBinding;
 use crate::domain_computation::primary_graph::tests::fixture::capability::declaration::CapabilityActionField;
@@ -241,25 +228,6 @@ pub fn install(
     crate::domain_computation::primary_graph::tests::fixture::capability::elevated::contract::review::install(schema)
 }
 
-pub fn elevated_contract() -> ApplicationCapabilityContract<
-    IdentityExecutionSchema,
-    ElevatedTouchAccountCapability,
-    ElevatedCapabilityTouchOperation,
-    ElevatedCapabilityTouchInput,
-> {
-    ApplicationCapabilityContractBuilder::new(
-        ElevatedTouchAccountCapability::reference(),
-        ElevatedCapabilityTouchOperation::reference(),
-        CapabilityGrant::reference(),
-    )
-    .target(target())
-    .constraints(constraints())
-    .delegation(delegation())
-    .composition(composition())
-    .elevation(crate::domain_computation::primary_graph::tests::fixture::capability::elevated::contract::elevation::definition())
-    .build()
-}
-
 pub fn target() -> ApplicationCapabilityTargetDefinition {
     ApplicationCapabilityTargetDefinition::new(
         ApplicationCapabilityValueBinding::new(
@@ -386,42 +354,12 @@ pub fn command_composition() -> ApplicationCapabilityComposition {
     composition_with_propagation(command_propagation())
 }
 
-pub fn composition_with_propagation(
-    propagation: ApplicationCapabilityPropagationComposition,
-) -> ApplicationCapabilityComposition {
-    let grantor = ApplicationAuthorizationPathBuilder::from_principal(Principal::reference())
-        .forward(CapabilityGrantor::reference())
-        .forward(CapabilityResource::reference())
-        .allow(Account::reference());
-    let custodian = ApplicationAuthorizationPathBuilder::from_principal(Principal::reference())
-        .forward(CapabilityCustodian::reference())
-        .forward(CapabilityResource::reference())
-        .allow(Account::reference());
-    let conflict = ApplicationAuthorizationPathBuilder::from_principal(Principal::reference())
-        .forward(CapabilityConflictingBeneficiary::reference())
-        .deny(Account::reference());
-    ApplicationCapabilityComposition::new(
-        ApplicationCapabilityDecisionComposition::new(
-            ApplicationCapabilityAllowRule::new(ApplicationCapabilityGraphRule::any([
-                ApplicationCapabilityGraphClause::new(grantor),
-                ApplicationCapabilityGraphClause::new(custodian),
-            ])),
-            ApplicationCapabilityDenyRule::not_applicable(),
-            ApplicationCapabilityConflictRule::when(ApplicationCapabilityGraphRule::any([
-                ApplicationCapabilityGraphClause::new(conflict),
-            ])),
-        ),
-        ApplicationCapabilityActorComposition::new(
-            ApplicationCapabilitySeparationOfDutyRule::not_applicable(),
-            ApplicationCapabilityDistinctActorRule::not_applicable(), worth_query_declaration::facade::application_capability::ApplicationCapabilityRecordedActorRule::not_applicable()),
-        propagation,
-    )
-}
-
 #[path = "approval/mod.rs"]
 pub mod approval;
 #[path = "close/mod.rs"]
 pub mod close;
+#[path = "elevated_composition/mod.rs"]
+pub mod elevated_composition;
 #[path = "elevation/mod.rs"]
 pub mod elevation;
 #[path = "propagation/mod.rs"]
@@ -430,3 +368,6 @@ pub mod propagation;
 pub mod request;
 #[path = "review/mod.rs"]
 pub mod review;
+use elevated_composition::composition_with_propagation;
+use elevated_composition::elevated_contract;
+use elevated_composition::without_external_effect_or_aftermath;

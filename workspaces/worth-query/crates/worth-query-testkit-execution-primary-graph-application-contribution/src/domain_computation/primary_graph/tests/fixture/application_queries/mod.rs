@@ -172,52 +172,6 @@ pub fn label_result_field<Query>() -> ApplicationQueryResultFieldRef<
     ApplicationQueryResultFieldRef::new("label", AccountLabel::reference())
 }
 
-pub fn account_summary_definition() -> ApplicationQueryDefinition<
-    IdentityExecutionSchema,
-    AccountSummaryQuery,
-    AccountSummaryParameters,
-    AccountSummaryResult,
-    Account,
-> {
-    definition(
-        AccountSummaryQuery::reference(),
-        ApplicationQueryDisclosureContract::public(),
-        false,
-        true,
-        true,
-    )
-}
-
-pub fn scoped_account_summary_definition() -> ApplicationQueryDefinition<
-    IdentityExecutionSchema,
-    ScopedAccountSummaryQuery,
-    AccountSummaryParameters,
-    AccountSummaryResult,
-    Account,
-> {
-    let shape = ApplicationQueryResultShapeBuilder::<
-        IdentityExecutionSchema,
-        ScopedAccountSummaryQuery,
-        Account,
-        AccountSummaryResult,
-        ScopedAccountSummaryQueryResultBinding,
-    >::new(Account::reference())
-    .field(status_result_field::<ScopedAccountSummaryQuery>())
-    .field(label_result_field::<ScopedAccountSummaryQuery>())
-    .build();
-    ApplicationQueryDefinitionBuilder::declare(ScopedAccountSummaryQuery::reference())
-        .root(Account::reference())
-        .scope(Account::reference())
-        .result_shape(shape)
-        .cardinality(ApplicationQueryCardinality::ExactlyOne)
-        .disclosure(ApplicationQueryDisclosureContract::public())
-        .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
-        .lanes(ApplicationQueryLaneEligibility::one_shot())
-        .requires_ability(ViewAccount::reference())
-        .build()
-        .unwrap()
-}
-
 pub fn cross_root_definition(
     status: &str,
 ) -> ApplicationQueryDefinition<
@@ -266,56 +220,6 @@ pub fn cross_root_definition(
         )
         .build()
         .unwrap()
-}
-
-pub fn governed_account_summary_definition() -> ApplicationQueryDefinition<
-    IdentityExecutionSchema,
-    GovernedAccountSummaryQuery,
-    AccountSummaryParameters,
-    AccountSummaryResult,
-    Account,
-> {
-    definition(
-        GovernedAccountSummaryQuery::reference(),
-        ApplicationQueryDisclosureContract::governed_by(
-            "account-holder",
-            TouchAccountCapability::reference(),
-        )
-        .use_field_by(
-            AccountStatus::reference(),
-            encoded_disclosure(CapabilityDisclosure::AccountActivity),
-            ApplicationQueryInfluenceContract::permit_all(),
-        )
-        .disclose_field_by(
-            status_result_field::<GovernedAccountSummaryQuery>(),
-            encoded_disclosure(CapabilityDisclosure::AccountActivity),
-            ApplicationQueryInfluenceContract::forbid_all(),
-        )
-        .disclose_field_by(
-            label_result_field::<GovernedAccountSummaryQuery>(),
-            encoded_disclosure(CapabilityDisclosure::AccountActivity),
-            ApplicationQueryInfluenceContract::forbid_all(),
-        ),
-        false,
-        false,
-        false,
-    )
-}
-
-pub fn ordered_account_summary_definition() -> ApplicationQueryDefinition<
-    IdentityExecutionSchema,
-    OrderedAccountSummaryQuery,
-    AccountSummaryParameters,
-    AccountSummaryResult,
-    Account,
-> {
-    definition(
-        OrderedAccountSummaryQuery::reference(),
-        ApplicationQueryDisclosureContract::public(),
-        true,
-        false,
-        false,
-    )
 }
 
 pub fn definition<
@@ -411,6 +315,8 @@ pub fn encoded_string(value: &str) -> EncodedString {
     ApplicationEncodedScalarValue::try_new(value.to_owned()).expect("fixture string must encode")
 }
 
+#[path = "account_summary/mod.rs"]
+pub mod account_summary;
 #[path = "markers/mod.rs"]
 pub mod markers;
 #[path = "parameter_reference/mod.rs"]
