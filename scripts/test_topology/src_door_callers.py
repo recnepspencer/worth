@@ -137,7 +137,8 @@ def relocated_caller(root, files, kind, stale):
 
 
 def relocate_certification_callers(root):
-    """Move closed certification-construction callers the move relocated; returns the count."""
+    """Move closed certification-construction callers the move relocated, and give a registered
+    caller's child module files that name the factory the same entry; returns lines written."""
     path = root / CERTIFICATION
     files = [str(f.relative_to(root)) for f in moved_files(root)]
     out, moved = [], 0
@@ -148,6 +149,19 @@ def relocate_certification_callers(root):
             if target is not None:
                 line, moved = f'{parts[0]} {target}', moved + 1
         out.append(line)
+    # A registered caller split into child files stays one caller: each child module file inside
+    # its module directory that names the class's factory gets the same entry, beside it.
+    registered = [(i, line.split()) for i, line in enumerate(out) if len(line.split()) == 2 and not line.startswith('#')]
+    present = {tuple(parts) for _, parts in registered}
+    for index, (kind, caller) in reversed(registered):
+        directory = re.sub(r'(/mod)?\.rs$', '', caller) + '/'
+        names = FACTORIES.get(kind, set())
+        children = sorted(f for f in files if f.startswith(directory) and (kind, f) not in present
+                          and names & {t.value for t in tokens((root / f).read_text(encoding='utf-8'))})
+        for child in reversed(children):
+            out.insert(index + 1, f'{kind} {child}')
+            present.add((kind, child))
+            moved += 1
     path.write_text('\n'.join(out) + '\n', encoding='utf-8', newline='\n')
     return moved
 

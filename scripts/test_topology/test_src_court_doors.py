@@ -153,6 +153,23 @@ class CourtDoorTests(unittest.TestCase):
             self.assertEqual((root / DOCS[0]).read_text(),
                              f'[w](../{CRATES}/worth-query-court-execution/tests/c/domain_computation/a/walks/mod.rs#L3)')
 
+    def test_split_certification_callers_keep_their_entry(self):
+        import tempfile
+        from pathlib import Path
+        from src_door_callers import CERTIFICATION, CRATES, relocate_certification_callers
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            base = f'{CRATES}/worth-query-court-execution/tests/c/domain_computation/a'
+            for rel, text in [('mod.rs', 'fn t() {}'), ('part/mod.rs', 'fn t() { certification_query(); }'),
+                              ('other/mod.rs', 'fn t() {}')]:
+                (root / base / rel).parent.mkdir(parents=True, exist_ok=True)
+                (root / base / rel).write_text(text)
+            (root / CERTIFICATION).parent.mkdir(parents=True)
+            (root / CERTIFICATION).write_text(f'installation {base}/mod.rs\n')
+            self.assertEqual(relocate_certification_callers(root), 1)
+            self.assertEqual((root / CERTIFICATION).read_text(),
+                             f'installation {base}/mod.rs\ninstallation {base}/part/mod.rs\n')
+
 
 if __name__ == '__main__':
     unittest.main()
