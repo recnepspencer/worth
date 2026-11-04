@@ -39,7 +39,7 @@ fn full_compiler_preserves_every_named_composition_rule_and_path() {
     assert_eq!(plan.rules().len(), expected.len());
 
     let decision_indices = [
-        (*plan.decision_rules().grant_for_test()),
+        (*plan.decision_rules().grant_field_for_test()),
         (*plan.decision_rules().allow_for_test()),
         (*plan.decision_rules().deny_for_test()).expect("deny rule"),
         (*plan.decision_rules().conflict_for_test()).expect("conflict rule"),

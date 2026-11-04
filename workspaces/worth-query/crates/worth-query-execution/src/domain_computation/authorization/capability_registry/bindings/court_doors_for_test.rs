@@ -30,8 +30,9 @@ impl WorthQueryCapabilityDecisionRuleBindings {
 }
 
 impl WorthQueryCapabilityDecisionRuleBindings {
+    /// Not the plain field name: the store's physical backend owns that control name.
     #[doc(hidden)]
-    pub fn grant_for_test(&self) -> &usize {
+    pub fn grant_field_for_test(&self) -> &usize {
         &self.grant
     }
 }
