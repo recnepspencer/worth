@@ -1,3 +1,97 @@
+FUNDING IN PROGRESS - Query regression committed03cd58269c; cold private-file grant pending.
+
+Latest source commit03cd58269c fixes only Query existing.rs zero-publication/
+zero-definition precondition, using actual owner data. Fresh independent
+review accepts this guard; unchanged Host refusal, journal-only and selected
+restart pass3/0/0. Final Query check/Clippy pass with logged warnings.
+Lifecycle coordination: only granted application_installation/home_preparation/
+existing.rs changed; no open request, Host opening, transitions or fences.
+
+Cold funding design has fresh APPROVE after lifetime/basis-cache/bound fixes.
+Its four private quote/test files remain ungranted, absent, and no residency
+source has changed. This part stops at the coordinator's exact-file clause.
+All earlier funding source WIP is preserved, uncommitted.
+
+Own nested-cost placement was wrong. Growth now mounts under top-level
+cost::relational::source_initial_inputs::checkpoint_admission, with unchanged
+assertions, workload and budgets. Root check and moved growth PASS1/0/0.
+Final dirty line caps PASS63files; final generated-context check PASS after
+owner-tool generation (only Host context changed). Final boundary FAIL exactly
+three queued P-A Native BC9002 sites. No baseline or boundary widening.
+
+Fresh full handoff reviewer REJECTS FUNDING: counted cold Full emission and
+ordinary materialization memory/work funding both remain unimplemented. Agree
+with both HIGH findings; no rebuttal. Native3, Host2, Store recovery, cold zero-
+covered-read and final CDC/recovery qualification remain unrun this resume.
+Full Root/Store Clippy also unrun. Decoder/D13/digest/BC9002 queue unentered.
+No FUNDING landing; checkpoint_complete stays P-A. No ignored/exhaustive/
+scenario/query-scale tests, cleanup, other-worktree edits, merge or push.
+
+Evidence: cold-funding-resume-lanes.md (all17lanes), cold-region-funding-design.md,
+cold-funding-handoff-independent-review.md, cold-funding-review-resolutions.md.
+All logs record852154d4c4 plus dirty source; commits do not retroactively change
+that qualification identity. C: remains above the25GiB safety floor.
+
+--- Earlier chronological notes, superseded where stated above ---
+
+FUNDING IN PROGRESS - cold owner design APPROVE; four private-file grant pending.
+
+Resume852154d4c4. No storage/residency source changed. Exact requested files:
+region_load/materialization_funding.rs and its region_image.rs, aspect_state.rs,
+tests.rs children. User exact-six-file clause requires stopping that part until
+this placement extension is granted. First design REJECT resolved in revised
+funded Head/image/row custody and one-time basis cache; fresh design APPROVE.
+General Full charges input/output/prefix visits/compared basis volume; actual
+Home proof uses prefix-free Complete emission and flat-only covered carry.
+
+Initializer-refusal regression belongs to this slice. Minimal granted Query
+existing.rs owner guard now uses actual catalog frontier plus actual index
+inventory, never public RecoveryOutcome summary. No fresh index defaults,
+checkpoint suppression or World reorder. Query owner/court checks PASS;
+Query Clippy PASS with recorded warnings. Unchanged Host refusal, journal-only
+and selected-checkpoint controls PASS3/0/0 under actual2-slot configuration.
+
+Boundary initially found5BC9002: my nested cost placement2 plus queued Native
+cold_source/protected_reads/runtime_attachment3. Growth court moved unchanged
+under cost::relational::source_initial_inputs::checkpoint_admission. Root court
+check PASS; its sole moved growth case is running. No baseline expansion.
+Generated context tool required Host refresh; own generate command ran, only
+Host AGENT_CONTEXT.md changed. Final boundary/context validation pending.
+Initial line-cap launch selected unavailable WSL Bash; explicit Git Bash PASS
+for63files; final scope pass running after cost move. C: remains well above25GiB.
+
+Remaining P-A work: implement reviewed cold owner funding after exact extension,
+Native3/Host2/Store recovery failures, cold zero-covered-read proof and final
+CDC/recovery selection; full funding review/commit. Decoder/D13/digests/BC9002
+queue unentered. No FUNDING landing or whole-funding approval claimed. All prior
+source WIP retained. checkpoint_complete remains with P-A.
+
+--- Earlier chronological notes, superseded where stated above ---
+
+FUNDING IN PROGRESS - cold owner design APPROVE; exact private-file extension pending.
+
+Resume852154d4c4. C: has about345GiB free after user cleanup; no cleanup by P-A.
+Ruling1 grants both ordinary Full loaders and DATA-emitter owner. Initial
+independent design REJECT exposed Head-cache/escaping-image funding lifetimes
+and repeated directory traversal; revised design has explicit funded owners,
+once-derived direct-base cache and honest Home versus general graph bounds.
+Fresh reviewer APPROVES final design. Four private quote/test files requested;
+no storage source changed without that exact extension.
+
+Ruling2 accepted as this slice's regression: shared Home upkeep now checkpoints
+the zero-write partial Home whose earlier close retained only tails. Minimal
+existing.rs precondition uses actual Native catalog frontier and actual index
+inventory; zero/empty binds no nonexistent definitions, while any publication
+or inventory retains exact recovered-definition requirements. No fresh index
+registration, World selection reorder or partial-Home checkpoint suppression.
+Independent local source inspection APPROVE; focused evidence underway.
+
+Query/Host/court check passed; final actual-frontier revision owner check is
+running. All prior source WIP remains. No FUNDING landing, cold qualification,
+final gates or queue completion claimed. checkpoint_complete remains P-A.
+
+--- Earlier chronological notes, superseded where stated above ---
+
 FUNDING IN PROGRESS - no source landing; cold DATA handoff and disk headroom required.
 
 Latest resume based on03eb43385c. Granted lineage carry and selected Embedded

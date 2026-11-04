@@ -25,6 +25,8 @@ for name in ('journal_only_killed_home_reopens_original_inputs_and_commits_witho
  reservations['worth-query-court-query-decl-host::worth_query_court_query_decl_host\nhost::application_home::reopening::checkpoint_restart::'+name]=2
 for name in ('host::application_home::reopening::same_directory_reopens_reads_and_commits_without_replaying_initializer_or_old_key', 'host::application_home::reopening::flushed_and_pending_multibatch_homes_readmit_their_completed_publication', 'host::application_home::reopening::separate_process::separate_processes_readmit_old_keys_and_restore_the_actual_outcome_frontier'):
  reservations['worth-query-court-query-decl-host::worth_query_court_query_decl_host\n'+name]=2
+# Initializer-refusal close now joins the same Home upkeep worker as ordinary close.
+reservations['worth-query-court-query-decl-host::worth_query_court_query_decl_host\nhost::application_home::reopening::refusals::initializer_refusal_reopens_at_missing_world_origin_without_replaying_initializer']=2
 (out/'reservations.json').write_text(json.dumps(reservations))
 env.update(WORTH_REPO=str(root),WORTH_TEST_COST_RESERVATIONS=str(out/'reservations.json'),
            WORTH_TEST_COST_ACCOUNTING_DIRECTORY=str(out/'cpu'),WORTH_TEST_COST_SETUP_DIRECTORY=str(out/'setup'))
