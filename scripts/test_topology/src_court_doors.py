@@ -10,6 +10,7 @@ Usage:
     python scripts/test_topology/src_court_doors.py callers [--root .]
     python scripts/test_topology/src_court_doors.py inventory [--root .] [--report DIR]
     python scripts/test_topology/src_court_doors.py uses [--root .]
+    python scripts/test_topology/src_court_doors.py parts --types NAME... [--dry-run] [--root .]
 
 `items` re-exports every library item the courts and testkits name, once, from
 `worth_query_execution::court_doors_for_test::<path>` (src_door_items), makes it `pub` with
@@ -140,9 +141,10 @@ def write_report(report, name, data):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('step', choices=('items', 'interface', 'members', 'normalize', 'bodies', 'callers', 'inventory', 'uses'))
+    parser.add_argument('step', choices=('items', 'interface', 'members', 'normalize', 'bodies', 'callers', 'inventory', 'uses', 'parts'))
     parser.add_argument('--base', default='038ff2869d')
-    parser.add_argument('--dry-run', action='store_true', help='members: write nothing, report and validate')
+    parser.add_argument('--dry-run', action='store_true', help='members, parts: write nothing, report and validate')
+    parser.add_argument('--types', nargs='*', default=[], help='parts: the structs given destructuring doors')
     parser.add_argument('check', nargs='?', type=Path)
     parser.add_argument('--root', type=Path, default=Path.cwd())
     parser.add_argument('--report', type=Path)
@@ -163,6 +165,11 @@ def main(argv=None):
         (args.report / 'src-court-doors-inventory.json').write_text(json.dumps(data, indent=2) + '\n', encoding='utf-8')
         (args.report / 'src-court-doors-inventory.md').write_text(markdown(data), encoding='utf-8')
         print({k: v for k, v in data.items() if not isinstance(v, list)})
+    elif args.step == 'parts':
+        from src_door_parts import parts
+        written, problems = parts(root, args.types, args.dry_run)
+        print(f'{written} parts doors' + (f'; problems: {problems}' if problems else ''))
+        return 1 if problems else 0
     elif args.step == 'uses':
         from src_door_uses import dedupe_uses
         print(f'{dedupe_uses(root)} files lost repeated imports')
