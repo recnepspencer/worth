@@ -146,7 +146,7 @@ pub(super) fn terminal_projection(
     home: &OracleHome,
     key: u64,
     value: u64,
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    _execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> super::protocol::ReleasedOriginalProjection {
     let original = match requests::resolve_original(home.runtime(), key, value).unwrap() {
         Resolution::ReleasedOriginal(original) => original,
@@ -158,21 +158,7 @@ pub(super) fn terminal_projection(
     ));
     assert_retry_refused(home, key, value);
     let source = original.original_effect();
-    let binding_copy_scale = original
-        .semantic_result()
-        .created_entities()
-        .iter()
-        .map(|created| {
-            source
-                .created_entity(execution, created.assigned)
-                .unwrap()
-                .unwrap()
-                .owned_allocation_capacity_bytes()
-        })
-        .max()
-        .expect("the genuine original includes its keyed row");
     super::protocol::ReleasedOriginalProjection {
-        binding_copy_scale,
         identity: source.identity().ordinal(),
         attempt: source.attempt_identity().ordinal(),
         expected: host_observation::projection::HeadProjection::observe(source.expected_product()),
@@ -203,4 +189,31 @@ pub(super) fn terminal_projection(
             .recorded_code()
             .expect("actual encoded original row"),
     }
+}
+
+// Allocation quotes size the refusal probe; they are not durable receipt meaning.
+pub(super) fn original_copy_scale(
+    home: &OracleHome,
+    key: u64,
+    value: u64,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> u64 {
+    let original = match requests::resolve_original(home.runtime(), key, value).unwrap() {
+        Resolution::ReleasedOriginal(original) => original,
+        other => panic!("terminal original must remain observable: {other:?}"),
+    };
+    let source = original.original_effect();
+    original
+        .semantic_result()
+        .created_entities()
+        .iter()
+        .map(|created| {
+            source
+                .created_entity(execution, created.assigned)
+                .unwrap()
+                .unwrap()
+                .owned_allocation_capacity_bytes()
+        })
+        .max()
+        .expect("the genuine original includes its keyed row")
 }

@@ -141,6 +141,16 @@ fn host_oracle_service_child() {
                     ),
                 ));
             }
+            Request::ObserveReleasedCopyScale { key, value } => {
+                disposition = Some(super::protocol::Disposition::OriginalBindingCopyScale(
+                    super::released_original::original_copy_scale(
+                        home.as_ref().unwrap(),
+                        key,
+                        value,
+                        &execution,
+                    ),
+                ));
+            }
             Request::AbandonOriginal { key, value } => {
                 let home = home.as_ref().unwrap();
                 let before = host_observation::projection::observe(home.runtime(), &execution);

@@ -10,7 +10,7 @@ use worth_store_application::{
     ApplicationHomeOpeningEdge as Edge, ApplicationHomeOpeningStage as Stage,
 };
 
-pub(super) fn retry(location: &Path, originals: &[ReleasedOriginalProjection]) {
+pub(super) fn retry(location: &Path, originals: &[ReleasedOriginalProjection], scale: u64) {
     let lease = Arc::new(checkpoint_capture::lease(128 * 1024 * 1024));
     let held = Arc::new(Mutex::new(None));
     let controlled = lease.clone();
@@ -51,12 +51,6 @@ pub(super) fn retry(location: &Path, originals: &[ReleasedOriginalProjection]) {
         panic!("only actual D8 refusal proves this prefix");
     };
     drop(held.lock().unwrap().take());
-    let scale = originals
-        .iter()
-        .map(|o| o.binding_copy_scale)
-        .max()
-        .unwrap()
-        .max(1);
     let mut bytes = scale;
     let ceiling = scale
         .checked_mul((originals.len() as u64).checked_mul(8).unwrap())

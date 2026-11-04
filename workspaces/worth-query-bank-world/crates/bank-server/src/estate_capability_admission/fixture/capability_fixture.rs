@@ -73,6 +73,8 @@ impl CapabilityFixture {
             Resolution::RecoveredCommitted(receipt) => receipt,
             other @ (Resolution::Unseen
             | Resolution::IntentDrift
+            | Resolution::ReleasedOriginal(_)
+            | Resolution::ProductUnpublished(_)
             | Resolution::ProductPreparationPending(_)) => {
                 panic!("the original lifecycle key must resolve to data only: {other:?}")
             }

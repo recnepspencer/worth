@@ -12,11 +12,12 @@ const KEYS: [u64; 4] = [0x8810, 0x8811, 0x8812, 0x8813];
 fn partial_released_key_admission_retries_same_home_without_duplicate_retention() {
     let root = tempfile::tempdir().unwrap();
     let location = root.path().join("home");
-    let originals = originals(&location, root.path());
-    readmission::retry(&location, &originals);
+    let (originals, scale) = originals(&location, root.path());
+    readmission::retry(&location, &originals, scale);
 }
-fn originals(location: &Path, root: &Path) -> Vec<ReleasedOriginalProjection> {
+fn originals(location: &Path, root: &Path) -> (Vec<ReleasedOriginalProjection>, u64) {
     let mut originals = Vec::new();
+    let mut scale = 1;
     for (index, key) in KEYS.into_iter().enumerate() {
         let (mut session, _) = Session::start(location, &root.join(format!("original-{index}")), 0);
         let actual = session.send(Request::AbandonOriginal { key, value: key });
@@ -39,8 +40,13 @@ fn originals(location: &Path, root: &Path) -> Vec<ReleasedOriginalProjection> {
         assert!(originals
             .iter()
             .all(|prior: &ReleasedOriginalProjection| prior.identity != original.identity));
+        let quote = session.send(Request::ObserveReleasedCopyScale { key, value: key });
+        let Some(Disposition::OriginalBindingCopyScale(bytes)) = quote.disposition else {
+            panic!("actual original row-copy quote");
+        };
+        scale = scale.max(bytes);
         originals.push(original);
         session.kill();
     }
-    originals
+    (originals, scale)
 }

@@ -9,6 +9,10 @@ pub(super) enum Request {
         key: u64,
         value: u64,
     },
+    ObserveReleasedCopyScale {
+        key: u64,
+        value: u64,
+    },
     AbandonOriginal {
         key: u64,
         value: u64,
@@ -36,6 +40,7 @@ pub(super) struct Response {
 #[derive(Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 pub(super) enum Disposition {
     ReleasedOriginal(ReleasedOriginalProjection),
+    OriginalBindingCopyScale(u64),
     Continued(MutationProjection),
     Released(usize),
     ContinuedReleaseRefused,
@@ -43,7 +48,6 @@ pub(super) enum Disposition {
 
 #[derive(Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 pub(super) struct ReleasedOriginalProjection {
-    pub binding_copy_scale: u64,
     pub identity: u64,
     pub attempt: u64,
     pub expected: host_observation::projection::HeadProjection,

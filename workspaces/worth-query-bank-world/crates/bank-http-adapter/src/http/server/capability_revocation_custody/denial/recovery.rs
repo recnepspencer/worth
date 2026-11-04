@@ -29,6 +29,11 @@ fn world(cause: RuntimeWorldRecoveryDenial) -> BankHttpDenial {
             unavailable()
         }
         D::RecoveredCustodyRequired
+        | D::ContinuationAlreadyCommitted
+        | D::ContinuationAlreadyStarted
+        | D::ReleaseAlreadyStarted
+        | D::OriginalSourceUnavailable
+        | D::OriginalSourceMismatch
         | D::ReopenRequired
         | D::OwnerUnavailable(_)
         | D::ForeignHandle
