@@ -110,12 +110,35 @@ impl<'de> Visitor<'de> for SignalValueVisitor {
     }
 
     fn visit_map<A: MapAccess<'de>>(self, mut map: A) -> Result<SignalValue, A::Error> {
+        let Some(first_key) = map.next_key::<String>()? else {
+            return Ok(SignalValue::Object(Vec::new()));
+        };
+        if first_key == SERDE_JSON_NUMBER_TOKEN {
+            return decimal_number(map.next_value::<String>()?);
+        }
         // Canonical key order; a repeated key keeps its last value.
         let mut fields = BTreeMap::new();
+        fields.insert(first_key, map.next_value::<SignalValue>()?);
         while let Some((key, value)) = map.next_entry::<String, SignalValue>()? {
             fields.insert(key, value);
         }
         Ok(SignalValue::Object(fields.into_iter().collect()))
+    }
+}
+
+/// serde_json's `arbitrary_precision` presents every number as a one-entry map
+/// under this key, holding the number's decimal text. Feature unification can
+/// turn it on for any build that links serde_json, so the decoder reads it as
+/// the number it is rather than as an object.
+const SERDE_JSON_NUMBER_TOKEN: &str = "$serde_json::private::Number";
+
+fn decimal_number<E: de::Error>(digits: String) -> Result<SignalValue, E> {
+    match digits.parse::<f64>() {
+        Ok(value) if value.is_finite() => Ok(SignalValue::Number(value)),
+        _ => Err(E::invalid_value(
+            Unexpected::Str(&digits),
+            &"a finite JSON number",
+        )),
     }
 }
 
