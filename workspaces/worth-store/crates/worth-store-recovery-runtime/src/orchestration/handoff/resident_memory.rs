@@ -78,13 +78,19 @@ fn shared_history_bytes(reopened: &ReopenedPhysicalRecovery) -> Option<u64> {
     let histories: [Option<&VerifiedOrderedRootHistory>; 2] = [
         match &state.custody {
             crate::progression::CustodyState::Pending { claim, .. } => claim.ordered_history(),
-            _ => None,
+            crate::progression::CustodyState::NoCheckpoint
+            | crate::progression::CustodyState::NoRelease(_)
+            | crate::progression::CustodyState::SourceHeads(_)
+            | crate::progression::CustodyState::OrderedCompleted { .. } => None,
         },
         match &state.custody {
             crate::progression::CustodyState::OrderedCompleted { claim, .. } => {
                 Some(claim.history())
             }
-            _ => None,
+            crate::progression::CustodyState::NoCheckpoint
+            | crate::progression::CustodyState::NoRelease(_)
+            | crate::progression::CustodyState::SourceHeads(_)
+            | crate::progression::CustodyState::Pending { .. } => None,
         },
     ];
     let mut bytes = 0_u64;
