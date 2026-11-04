@@ -301,7 +301,7 @@ fn canonical_envelope_native_backing_keeps_its_charge_until_last_clone() {
             MAXIMUM_PORTABLE_BYTES,
         )
         .unwrap();
-        assert_eq!(encoded.as_str(), r#"["actor\n",[1,2]]"#);
+        assert_eq!(encoded.as_str_for_test(), r#"["actor\n",[1,2]]"#);
         assert_eq!(lease.charged_memory_bytes(), encoded.len() as u64);
         let retained = encoded.clone();
         drop(encoded);
