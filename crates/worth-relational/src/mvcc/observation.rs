@@ -93,7 +93,7 @@ impl RelationalBranchObservation {
     }
 
     pub fn commit_receipt(&self) -> Option<&crate::history::data::RelationalCommitReceipt> {
-        self.canonical_commit().map(|envelope| &envelope.commit)
+        self.inner.root.commit_receipt()
     }
 
     pub fn canonical_patch(

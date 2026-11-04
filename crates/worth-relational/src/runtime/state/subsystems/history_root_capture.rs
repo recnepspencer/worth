@@ -11,9 +11,22 @@ use crate::history::data::CanonicalCommitEnvelope;
 use super::HistorySubsystem;
 
 impl HistorySubsystem {
+    pub(crate) fn readmit_checkpoint_region_directory(
+        &self,
+        regions: worth_execution::ExecutionArray<crate::branch::RelationalRootRegionCheckpoint>,
+        commit: crate::durability::checkpoint_admission::CheckpointAdmittedCommit,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Arc<RelationalBranchRoot>, RelationalBranchRootCaptureDenial> {
+        RelationalBranchRoot::readmit_checkpoint_region_directory(
+            &self.root_identity_issuer,
+            regions,
+            commit,
+            request,
+        )
+    }
     pub(crate) fn readmit_branch_region_directory(
         &self,
-        regions: Vec<crate::branch::RelationalRootRegionCheckpoint>,
+        regions: worth_execution::ExecutionArray<crate::branch::RelationalRootRegionCheckpoint>,
         envelope: Arc<CanonicalCommitEnvelope>,
         descriptor: crate::branch::RelationalBranchRootDescriptor,
         schema: Arc<crate::branch::RelationalBranchRootSchemaAuthority>,

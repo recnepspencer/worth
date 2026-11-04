@@ -49,10 +49,7 @@ impl super::RelationalBranchRetentionOwner {
                 let Some((root, historical, branches)) = snapshot else {
                     return false;
                 };
-                if root
-                    .canonical_envelope()
-                    .map(|envelope| envelope.commit.version_id)
-                    != Some(version)
+                if root.commit_receipt().map(|receipt| receipt.version_id) != Some(version)
                     || root.schema_authority().schema_version() != schema
                 {
                     return false;

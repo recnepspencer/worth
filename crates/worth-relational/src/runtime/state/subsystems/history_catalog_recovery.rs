@@ -8,6 +8,8 @@ use crate::history::RelationalCommitCatalog;
 
 use super::HistorySubsystem;
 
+#[path = "history_catalog_recovery/checkpoint_root.rs"]
+mod checkpoint_root;
 #[path = "history_catalog_recovery/source_binding.rs"]
 mod source_binding;
 
@@ -31,16 +33,18 @@ impl HistorySubsystem {
                         format!("recovered canonical catalog synchronization denied: {denial:?}")
                     })?;
             }
-            ledger.commit_envelopes = commits
-                .iter()
-                .map(|commit| {
-                    let id = commit.commit.commit_id;
-                    let artifact = ledger.commit_catalog.get(id).ok_or_else(|| {
-                        "recovered canonical inventory has no catalog entry".to_owned()
-                    })?;
-                    Ok((id, artifact.envelope_residency()))
-                })
-                .collect::<Result<_, String>>()?;
+            ledger.commit_envelopes.extend(
+                commits
+                    .iter()
+                    .map(|commit| {
+                        let id = commit.commit.commit_id;
+                        let artifact = ledger.commit_catalog.get(id).ok_or_else(|| {
+                            "recovered canonical inventory has no catalog entry".to_owned()
+                        })?;
+                        Ok((id, artifact.envelope_residency()))
+                    })
+                    .collect::<Result<Vec<_>, String>>()?,
+            );
             Ok::<_, String>(())
         })?;
         let admitted = commits
@@ -105,6 +109,16 @@ impl HistorySubsystem {
                 let commit_id = root
                     .commit_id()
                     .ok_or_else(|| "live recovery root has no commit identity".to_owned())?;
+                if self.is_readmitted_checkpoint_root(&root)? {
+                    if roots
+                        .get(&commit_id)
+                        .is_some_and(|actual| !Arc::ptr_eq(actual, &root))
+                    {
+                        return Err("recovery carries competing checkpoint root owners".to_owned());
+                    }
+                    roots.insert(commit_id, root);
+                    continue;
+                }
                 let canonical = self.recorded_commit_envelope(commit_id).ok_or_else(|| {
                     format!("live recovery root `{}` has no envelope", commit_id.0)
                 })?;

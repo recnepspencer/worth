@@ -15,6 +15,9 @@ use worth_execution::{ExecutionRequest, MapKernelContext, MapKernelStop};
 pub(crate) struct RelationalBranchVisibilityCommitment([u8; 32]);
 
 impl RelationalBranchVisibilityCommitment {
+    pub(crate) const fn from_checkpoint(digest: [u8; 32]) -> Self {
+        Self(digest)
+    }
     pub(super) fn for_root(
         envelope: &CanonicalCommitEnvelope,
         storage_root: [u8; 32],

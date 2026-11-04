@@ -2,12 +2,14 @@ use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, Weak};
 mod retirement;
+mod snapshot_shape;
 pub(crate) use retirement::RelationalBasisRegistryRetirementCustody;
 #[cfg(test)]
 pub(crate) use retirement::{
     assert_original_registry_busy, assert_pruned_original_registration,
     assert_successor_registration_preserved,
 };
+use snapshot_shape::RetainedBasisSnapshotShape;
 #[cfg(test)]
 mod retirement_tests;
 
@@ -41,6 +43,12 @@ impl From<&RelationalBranchBasisDescriptor> for RelationalRetainedBasisKey {
             visibility_commitment: descriptor.visibility_commitment(),
         }
     }
+}
+
+pub(crate) enum RelationalRetainedBasisSnapshotStop<Payment> {
+    Payment(Payment),
+    Buffer(worth_execution::ExecutionRequestArrayDenial),
+    Changed,
 }
 
 /// Weak owner index for exact admitted roots.
@@ -161,6 +169,49 @@ impl RelationalBranchBasisRegistry {
         }
         self.metrics.record_insert();
         Ok(basis)
+    }
+
+    /// Pay and allocate without the registry lock. Copy only Weak DATA under it;
+    /// upgrades, strong-owner drops and projections happen after the lock is gone.
+    pub(crate) fn snapshot_retained_for_request<E>(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        pay_scan: impl FnOnce(usize) -> Result<(), E>,
+    ) -> Result<
+        worth_execution::ExecutionArray<Weak<AdmittedRelationalBranchBasisInner>>,
+        RelationalRetainedBasisSnapshotStop<E>,
+    > {
+        use RelationalRetainedBasisSnapshotStop as Stop;
+        let paid = {
+            let retained = self
+                .retained
+                .lock()
+                .unwrap_or_else(|error| error.into_inner());
+            RetainedBasisSnapshotShape {
+                elements: retained.entries.len(),
+                buckets: retained.entries.capacity(),
+            }
+        };
+        pay_scan(paid.buckets).map_err(Stop::Payment)?;
+        let mut entries =
+            worth_execution::ExecutionRequestArrayBuilder::allocate(*request, paid.elements)
+                .map_err(Stop::Buffer)?;
+        {
+            let retained = self
+                .retained
+                .lock()
+                .unwrap_or_else(|error| error.into_inner());
+            if !paid.covers(RetainedBasisSnapshotShape {
+                elements: retained.entries.len(),
+                buckets: retained.entries.capacity(),
+            }) {
+                return Err(Stop::Changed);
+            }
+            for entry in retained.entries.values() {
+                entries.push(entry.basis.clone()).map_err(Stop::Buffer)?;
+            }
+        }
+        entries.seal().map_err(Stop::Buffer)
     }
 
     pub(crate) fn readmit_retained(

@@ -45,7 +45,7 @@ fn birth_checkpoint_reopens_with_archived_empty_installation_tail_at_zero_commit
     assert_eq!(installed.source_artifact().covered().0, 0);
     assert_eq!(installed.source_artifact().initial_coordinate().0, 2);
     assert_eq!(installed.initial_predecessor(), Some(birth_coordinate.1));
-    let input = home_input(&medium, birth.source_artifact().clone(), &request).unwrap();
+    let input = home_image_input(&medium, &birth, &request).unwrap();
     drop((installed, birth, runtime));
     let mut receiver = receiver(&medium);
     let plan = receiver

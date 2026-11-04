@@ -4,7 +4,7 @@ use super::RelationalBranchReferenceCell;
 
 impl RelationalBranchReferenceCell {
     pub(crate) fn root(&self) -> Option<Arc<super::super::RelationalBranchRoot>> {
-        self.state_snapshot().root
+        self.state().root.clone()
     }
 
     pub(crate) fn install_root(&mut self, root: Arc<super::super::RelationalBranchRoot>) {
@@ -19,6 +19,20 @@ impl RelationalBranchReferenceCell {
         super::super::RelationalBranchBasisDenial,
     > {
         self.basis_registry.register(basis)
+    }
+
+    pub(crate) fn retained_bases_for_request<E>(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        pay_scan: impl FnOnce(usize) -> Result<(), E>,
+    ) -> Result<
+        worth_execution::ExecutionArray<
+            std::sync::Weak<super::super::AdmittedRelationalBranchBasisInner>,
+        >,
+        super::super::RelationalRetainedBasisSnapshotStop<E>,
+    > {
+        self.basis_registry
+            .snapshot_retained_for_request(request, pay_scan)
     }
 
     pub(crate) fn readmit_retained_basis(

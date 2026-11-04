@@ -115,7 +115,7 @@ fn traversal(bytes: usize, request: &ExecutionRequest<'_, '_>) -> Result<(), Ref
         .map_err(super::refusal::native_stop)
 }
 
-fn projected_stop(
+pub(crate) fn projected_stop(
     cause: crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal,
 ) -> Refusal {
     match cause {

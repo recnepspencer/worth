@@ -236,7 +236,8 @@ fn expand_regions(
         .ok_or_else(|| corrupt("missing region schema carrier"))?;
     let contracts =
         CheckpointAspectContractCatalog::from_contracts(schema.retained_aspect_contracts())?;
-    let authority = Arc::new(crate::storage::residency::RelationalRegionKindAuthority::default());
+    let authority =
+        crate::storage::residency::RelationalRegionKindAuthority::for_request(execution)?;
     let cells = regions
         .iter()
         .map(|leaf| {
@@ -258,9 +259,7 @@ fn expand_regions(
             Ok((leaf.partition_id, cell))
         })
         .collect::<Result<Vec<_>, crate::storage::data::RelationalStorageUnavailable>>()?;
-    authority
-        .bind(cells.iter().cloned())
-        .map_err(|cause| corrupt(format!("region authority: {cause:?}")))?;
+    authority.bind_for_request(cells.iter().cloned(), execution)?;
     let admitted = cells
         .into_iter()
         .map(|(_, cell)| {

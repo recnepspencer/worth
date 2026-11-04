@@ -14,6 +14,7 @@ mod basis_identity_validation;
 mod basis_observation;
 mod basis_readmission;
 mod basis_registry;
+pub(crate) use basis_registry::RelationalRetainedBasisSnapshotStop;
 #[cfg(test)]
 pub(crate) use basis_registry::{
     assert_original_registry_busy, assert_pruned_original_registration,
@@ -47,7 +48,8 @@ mod root_partition_access;
 mod root_region;
 mod root_regions;
 pub(crate) use root::{
-    RelationalRootAllocationVisitor, RelationalRootAuthoritativeAllocationObservation,
+    RelationalBranchVisibilityCommitment, RelationalRootAllocationVisitor,
+    RelationalRootAuthoritativeAllocationObservation, RelationalRootCommitEvidence,
     RelationalRootRegionObservation,
 };
 pub(crate) use root_regions::RelationalPartitionVisit;

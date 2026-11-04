@@ -158,7 +158,7 @@ impl BranchHeadVersionIndexAuthority {
 
 fn head_basis(root: &RelationalBranchRoot) -> Option<HeadBasis> {
     Some((
-        root.canonical_envelope()?.commit.version_id,
+        root.commit_receipt()?.version_id,
         root.schema_authority().schema_version(),
     ))
 }

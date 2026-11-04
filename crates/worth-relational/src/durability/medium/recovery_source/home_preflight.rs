@@ -135,19 +135,14 @@ impl RelationalDurableRecoverySource {
             .checkpoint
             .as_ref()
             .map(|source| {
-                preflight_covered_versions(
-                    source.checkpoint().bytes(),
-                    &self.cold_source,
-                    request,
-                )?;
-                let checkpoint =
-                    crate::durability::log::native_checkpoint_codec::decode_checkpoint_from_source(
-                        request,
-                        source.checkpoint().bytes(),
-                        Some(self.cold_source.clone()),
-                    )
-                    .map_err(Refusal::Native)?
-                    .checkpoint;
+                let image = source.admission_image().cloned().ok_or_else(|| Refusal::Native(
+                    crate::durability::data::RelationalRecoveryStop::AdmissionImage(
+                        crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal::MissingArtifact,
+                    ),
+                ))?;
+                let checkpoint = crate::durability::log::native_checkpoint_codec::decode_checkpoint_with_image(
+                    request, source.checkpoint().bytes(), self.cold_source.clone(), image,
+                ).map_err(Refusal::Native)?.checkpoint;
                 if crate::durability::access::checkpoint_coverage(&checkpoint) != source.covered()
                     || checkpoint.coverage.up_to_branch_transition != source.covered_transitions()
                 {
@@ -168,63 +163,5 @@ impl RelationalDurableRecoverySource {
             request,
         )?));
         Ok(())
-    }
-}
-
-fn preflight_covered_versions(
-    bytes: &[u8],
-    source: &Arc<dyn super::super::RelationalDurableColdSource>,
-    request: &ExecutionRequest<'_, '_>,
-) -> Result<(), Refusal> {
-    use crate::durability::canonical_commit_artifact::borrowed_payload::BorrowedPayload;
-    let payload = bytes
-        .strip_prefix(crate::durability::log::native_checkpoint_codec::CHECKPOINT_MAGIC)
-        .ok_or(Refusal::Malformed)?;
-    let roster = BorrowedPayload(payload)
-        .field("manifest", request)
-        .map_err(Refusal::Payload)?
-        .field("canonical_members", request)
-        .map_err(Refusal::Payload)?;
-    let original = source
-        .checkpoint_selected_read_protection(request)
-        .map_err(Refusal::Source)?;
-    let mut stopped = None;
-    let mut position = 0u64;
-    let result = roster.elements(request, |row| {
-        let entry: crate::durability::checkpoint_history::inventory::CanonicalCheckpointMember =
-            rmp_serde::from_slice(row.0).map_err(|_| malformed())?;
-        position = position.checked_add(1).ok_or_else(malformed)?;
-        if entry.position.0 != position {
-            return Err(malformed());
-        }
-        let prefix =
-            match source.read_member_prefix_owned(request, original.as_ref(), entry.member, 10) {
-                Ok(prefix) => prefix,
-                Err(cause) => {
-                    stopped = Some(Refusal::Source(cause));
-                    return Err(malformed());
-                }
-            };
-        if let Err(cause) =
-            crate::durability::canonical_commit_artifact::validate_frame_version(prefix.bytes())
-        {
-            stopped = Some(Refusal::Source(
-                super::super::RelationalDurableOwnedReadRefusal::CanonicalFrame(cause),
-            ));
-            return Err(malformed());
-        }
-        Ok(())
-    });
-    if let Some(cause) = stopped {
-        return Err(cause);
-    }
-    result.map_err(Refusal::Payload)?;
-    Ok(())
-}
-
-fn malformed(
-) -> crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal {
-    crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal::PayloadDecode {
-        detail: "Complete source canonical roster is malformed".into(),
     }
 }

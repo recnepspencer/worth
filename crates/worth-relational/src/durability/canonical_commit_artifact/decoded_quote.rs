@@ -4,7 +4,9 @@ use super::RelationalCanonicalCommitArtifactRefusal as Refusal;
 use worth_execution::ExecutionRequest;
 
 mod admission;
+mod checkpoint_effect;
 pub(super) use admission::admit_canonical;
+pub(crate) use checkpoint_effect::{decode_checkpoint_effect, CheckpointEffectData};
 mod aspects;
 mod branches;
 pub(super) mod codec_retirements;

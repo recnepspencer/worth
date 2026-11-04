@@ -12,8 +12,8 @@ impl IndexAuthority<'_> {
         let root = after.selected_root().expect(/* Proof: Maintenance admission requires an exact selected root before constructing this private pass; exact read bounds and metadata are available for that root. */ "validated exact root");
         let schema_version = root.schema_authority().schema_version();
         let authoring = root
-            .canonical_envelope()
-            .map(|envelope| &envelope.branch_context);
+            .commit_evidence()
+            .map(|evidence| evidence.authoring_branch());
         let mut prepared = Vec::new();
         let mut pending_fields = Vec::new();
         let mut reused = Vec::new();
@@ -104,7 +104,7 @@ impl IndexAuthority<'_> {
             });
             let (entries, changes, old) = if let Some(prior) = prior {
                 if patch_changes.is_none() {
-                    patch_changes = Some(changes::ChangedRecords::patch(root, work)?);
+                    patch_changes = Some(changes::ChangedRecords::patch(root, work, execution)?);
                 }
                 (
                     prior.entries.clone(),

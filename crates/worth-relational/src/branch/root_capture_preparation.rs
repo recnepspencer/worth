@@ -91,7 +91,7 @@ pub(super) fn prepare(
                 axes.storage_root,
                 axes.schema_root,
             ),
-            canonical_envelope: envelope,
+            evidence: super::RelationalRootCommitEvidence::Original(envelope),
             axes,
             publication_cost,
         }),

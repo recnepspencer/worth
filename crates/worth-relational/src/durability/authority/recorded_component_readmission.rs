@@ -73,10 +73,11 @@ impl RecoveredRelationalRuntimeAuthority {
                 ) && root.id() == 0
                     && root.descriptor().is_none() => {}
             Target::Canonical(target) => {
-                let envelope = root
-                    .canonical_envelope()
+                let evidence = root
+                    .commit_evidence()
                     .ok_or_else(|| refused(Cause::RecordedTargetMismatch))?;
-                if &envelope.commit != target.receipt() || root.descriptor() != Some(target.roots())
+                if evidence.receipt() != target.receipt()
+                    || root.descriptor() != Some(target.roots())
                 {
                     return Err(refused(Cause::RecordedTargetMismatch));
                 }
@@ -84,7 +85,7 @@ impl RecoveredRelationalRuntimeAuthority {
                     .history
                     .commit_artifact(target.receipt().commit_id)
                     .ok_or_else(|| refused(Cause::MissingRecoveredImage))?;
-                let (entry, _) = artifact
+                let (entry, source) = artifact
                     .envelope_residency()
                     .source_placement()
                     .ok_or_else(|| refused(Cause::MemoryOnly))?;
@@ -95,16 +96,28 @@ impl RecoveredRelationalRuntimeAuthority {
                 {
                     return Err(refused(Cause::RecordedTargetMismatch));
                 }
-                let admitted = artifact
-                    .envelope_residency()
-                    .readmit_original_positioned(execution)
-                    .map_err(|cause| refused(Cause::Source(cause)))?;
-                if !crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::matches_positioned_payload(
-                    &admitted, envelope,
-                ).map_err(|cause| refused(Cause::CanonicalEncoding {
-                    detail: cause.to_string(),
-                }))? {
-                    return Err(refused(Cause::RecordedTargetMismatch));
+                match evidence {
+                    crate::branch::RelationalRootCommitEvidence::Original(envelope) => {
+                        let admitted = artifact
+                            .envelope_residency()
+                            .readmit_original_positioned(execution)
+                            .map_err(|cause| refused(Cause::Source(cause)))?;
+                        if !crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::matches_positioned_payload_for_request(
+                            &admitted, envelope, execution,
+                        ).map_err(|cause| refused(Cause::Source(cause)))? {
+                            return Err(refused(Cause::RecordedTargetMismatch));
+                        }
+                    }
+                    crate::branch::RelationalRootCommitEvidence::Checkpoint(commit) => {
+                        if !runtime
+                            .durability
+                            .checkpoint_selection()
+                            .matches_admitted_source(commit, &source)
+                            || commit.index() != entry.as_ref()
+                        {
+                            return Err(refused(Cause::RecordedTargetMismatch));
+                        }
+                    }
                 }
             }
             _ => return Err(refused(Cause::RecordedTargetMismatch)),

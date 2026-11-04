@@ -1,4 +1,5 @@
 mod mutation_input;
+mod selected_directory;
 mod source_retirement;
 pub(crate) use mutation_input::{MutationSymbolMeanings, OriginalSymbolMeanings};
 mod cold_pages;
@@ -21,6 +22,7 @@ pub(crate) struct RuntimeSymbolTable {
     state: Arc<RwLock<RuntimeSymbolState>>,
     cold: Arc<RwLock<Option<Arc<super::symbol_residency::RuntimeSymbolResidency>>>>,
     reservations: Arc<std::sync::Mutex<reservations::SymbolReservationDirectory>>,
+    _memory: Option<Arc<worth_execution::ExecutionMemoryReservation>>,
 }
 
 impl Default for RuntimeSymbolTable {
@@ -29,6 +31,7 @@ impl Default for RuntimeSymbolTable {
             state: Arc::default(),
             cold: Arc::new(RwLock::new(None)),
             reservations: Arc::default(),
+            _memory: None,
         }
     }
 }
@@ -39,6 +42,7 @@ impl Clone for RuntimeSymbolTable {
             state: Arc::clone(&self.state),
             cold: self.cold.clone(),
             reservations: self.reservations.clone(),
+            _memory: self._memory.clone(),
         }
     }
 }
@@ -89,6 +93,7 @@ impl RuntimeSymbolTable {
             state: Arc::new(RwLock::new(state)),
             reservations: Arc::default(),
             cold: Arc::new(RwLock::new(cold)),
+            _memory: None,
         }
     }
     pub(crate) fn normalize_client_keys(

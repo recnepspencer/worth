@@ -14,6 +14,7 @@ use crate::storage::residency::RelationalResidencyDemandFailure as Failure;
 use crate::symbols::data::Symbol;
 
 mod member_export;
+mod selected_directory;
 mod source_retirement;
 use source_retirement::SymbolPageState;
 mod page_shape;
@@ -25,9 +26,10 @@ mod tests;
 #[derive(Debug)]
 pub(super) struct RuntimeSymbolResidency {
     regions: Mutex<HashSet<crate::storage::residency::RelationalRegionSymbolAdmissionIdentity>>,
-    by_id: Vec<RelationalCheckpointPage>,
-    by_value: Vec<RelationalCheckpointSymbolBucket>,
+    by_id: crate::durability::data::CheckpointPages,
+    by_value: crate::durability::data::CheckpointSymbolBuckets,
     pages: Mutex<SymbolPageState>,
+    _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
 impl RuntimeSymbolResidency {
@@ -74,14 +76,15 @@ impl RuntimeSymbolResidency {
             })?;
         Ok(Self {
             regions: Mutex::new(HashSet::new()),
-            by_id,
-            by_value,
+            by_id: crate::durability::data::CheckpointPages::from_ordinary(by_id),
+            by_value: crate::durability::data::CheckpointSymbolBuckets::from_ordinary(by_value),
             pages: Mutex::new(SymbolPageState {
                 data: BTreeMap::new(),
                 physical: crate::durability::medium::NativeSourceMemberState::new(
                     source, placement,
                 ),
             }),
+            _memory: None,
         })
     }
 
@@ -100,6 +103,7 @@ impl RuntimeSymbolResidency {
                     data: pages.data.clone(),
                     physical: pages.physical.retain_serving(),
                 }),
+                _memory: None,
             },
             owner,
         )

@@ -11,6 +11,7 @@ mod encoding;
 mod folding;
 mod framing;
 mod graph;
+mod home_admission;
 mod image;
 mod origin;
 pub(crate) use origin::{

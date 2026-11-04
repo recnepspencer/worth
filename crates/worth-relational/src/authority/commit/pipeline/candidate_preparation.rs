@@ -173,10 +173,10 @@ fn require_parent_publication_settled(
     runtime: &crate::runtime::RelationalPreparationRuntime,
     expected_root: &std::sync::Arc<crate::branch::RelationalBranchRoot>,
 ) -> Result<(), TransactionCommitError> {
-    let Some(parent) = expected_root.canonical_envelope() else {
+    let Some(parent) = expected_root.commit_receipt() else {
         return Ok(());
     };
-    let commit_id = parent.commit.commit_id;
+    let commit_id = parent.commit_id;
     if !runtime.history.publication_requires_settlement(commit_id) {
         return Ok(());
     }

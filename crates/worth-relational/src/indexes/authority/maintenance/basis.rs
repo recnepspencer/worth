@@ -7,6 +7,7 @@ pub(super) fn validate(
     observation: &RelationalBranchObservation,
     before: Option<&VisibilityProjectionView>,
     after: &VisibilityProjectionView,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<(), Denial> {
     if observation.commit_id() != Some(request.source_commit_id)
         || observation.identity().branch_id() != &request.branch_id
@@ -14,11 +15,10 @@ pub(super) fn validate(
         return Err(Denial::CommitMismatch);
     }
     let root = after.selected_root().ok_or(Denial::CommitMismatch)?;
-    let envelope = root.canonical_envelope().ok_or(Denial::CommitMismatch)?;
-    if envelope.commit.commit_id != request.source_commit_id {
+    if root.commit_id() != Some(request.source_commit_id) {
         return Err(Denial::CommitMismatch);
     }
-    validate_before(envelope, before)
+    validate_before_root(root, before, execution)
 }
 
 pub(super) fn validate_prepared(
@@ -35,6 +35,72 @@ pub(super) fn validate_prepared(
         return Err(Denial::CommitMismatch);
     }
     validate_before(envelope, before)
+}
+
+fn validate_before_root(
+    root: &crate::branch::RelationalBranchRoot,
+    before: Option<&VisibilityProjectionView>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> Result<(), Denial> {
+    let Some(before) = before else {
+        return Ok(());
+    };
+    match root.commit_evidence().ok_or(Denial::CommitMismatch)? {
+        crate::branch::RelationalRootCommitEvidence::Original(envelope) => {
+            validate_before(envelope, Some(before))
+        }
+        crate::branch::RelationalRootCommitEvidence::Checkpoint(commit) => {
+            let prior = before.selected_root().ok_or(Denial::BeforeRootMismatch)?;
+            commit
+                .require_index_predecessor(prior, before.version_id(), execution)
+                .map_err(|cause| image_stop(cause, Denial::BeforeRootMismatch))
+        }
+    }
+}
+
+pub(super) fn image_stop(
+    cause: crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal,
+    mismatch: Denial,
+) -> Denial {
+    use crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal as Refusal;
+    match cause {
+        Refusal::Request(cause) => Denial::Execution(cause),
+        Refusal::Allocation(cause) => allocation_stop(cause),
+        Refusal::Buffer(cause) => buffer_stop(cause),
+        Refusal::CapacityOverflow => Denial::WorkBudgetExceeded,
+        Refusal::MissingArtifact
+        | Refusal::PredecessorFormat { .. }
+        | Refusal::UnsupportedVersion(_)
+        | Refusal::InvalidVersion
+        | Refusal::Malformed
+        | Refusal::BindingMismatch(_)
+        | Refusal::AuthenticationMismatch(_)
+        | Refusal::MissingRootImage
+        | Refusal::InvalidProjectedMeaning
+        | Refusal::MissingCaptureOrigin
+        | Refusal::OwnerUnavailable
+        | Refusal::Native(_) => mismatch,
+    }
+}
+
+pub(super) fn buffer_stop(cause: worth_execution::ExecutionRequestArrayDenial) -> Denial {
+    match cause {
+        worth_execution::ExecutionRequestArrayDenial::Request(cause) => {
+            Denial::Execution(cause.into())
+        }
+        worth_execution::ExecutionRequestArrayDenial::Allocation(cause) => allocation_stop(cause),
+    }
+}
+
+fn allocation_stop(cause: worth_execution::ExecutionAllocationDenial) -> Denial {
+    match cause.classify() {
+        worth_execution::ExecutionAllocationDenialClass::Request(cause) => {
+            Denial::Execution(cause.into())
+        }
+        worth_execution::ExecutionAllocationDenialClass::Physical(_) => {
+            Denial::Execution(crate::execution::RelationalExecutionDenialCause::AllocationFailed)
+        }
+    }
 }
 
 fn validate_before(

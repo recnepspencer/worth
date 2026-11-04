@@ -66,13 +66,28 @@ pub enum RelationalAssociatedEffectSettlement {
 pub struct ReadmittedRelationalAssociatedEffect {
     subject: RelationalAssociatedEffectSubject,
     semantic: RecoveredRelationalSemanticResult,
-    positioned: crate::history::data::PositionedCanonicalCommit,
+    origin: ReadmittedEffectOrigin,
     settlement: RelationalAssociatedEffectSettlement,
 }
 
+#[derive(Debug)]
+pub(super) enum ReadmittedEffectOrigin {
+    Original(crate::history::data::PositionedCanonicalCommit),
+    Checkpoint {
+        commit: crate::durability::checkpoint_admission::CheckpointAdmittedCommit,
+        data: crate::durability::canonical_commit_artifact::CheckpointEffectData,
+    },
+}
+
 impl ReadmittedRelationalAssociatedEffect {
-    pub(super) fn source_envelope(&self) -> &crate::history::data::CanonicalCommitEnvelope {
-        self.positioned.envelope()
+    pub(super) fn branch(&self) -> &crate::history::data::BranchId {
+        match &self.origin {
+            ReadmittedEffectOrigin::Original(positioned) => &positioned.envelope().branch_context,
+            ReadmittedEffectOrigin::Checkpoint { commit, .. } => &commit.index().commit.branch_id,
+        }
+    }
+    pub(super) fn origin(&self) -> &ReadmittedEffectOrigin {
+        &self.origin
     }
     pub fn subject(&self) -> &RelationalAssociatedEffectSubject {
         &self.subject

@@ -208,9 +208,7 @@ impl<'runtime> HistoryAccess<'runtime> {
     pub(crate) fn branch_head(&self, branch_id: &BranchId) -> Option<RelationalCommitReceipt> {
         let cell = self.runtime.history.branch_cell(branch_id)?;
         if let Some(root) = cell.root() {
-            return root
-                .canonical_envelope()
-                .map(|envelope| envelope.commit.clone());
+            return root.commit_receipt().cloned();
         }
         // Rootless cells exist only in legacy recovery fixtures. Operational
         // cells always select their head through the immutable root above.

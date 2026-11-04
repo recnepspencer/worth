@@ -2,8 +2,8 @@
 use super::{verified_originals::VerifiedCheckpointOriginals, Denial};
 use crate::durability::checkpoint_admission::{AdmissionRowKey, EncodedAdmissionRow};
 mod outputs;
-mod reference;
-mod root_directory;
+pub(in crate::durability) mod reference;
+pub(in crate::durability) mod root_directory;
 use serde::{ser::SerializeSeq, Serialize, Serializer};
 use worth_execution::{
     ExecutionArray, ExecutionImmutableBytes, ExecutionRequest, ExecutionRequestArrayBuilder,
@@ -34,6 +34,32 @@ impl std::fmt::Debug for CapturedRelationalCheckpointAdmissionImage {
 }
 
 impl CapturedRelationalCheckpointAdmissionImage {
+    pub fn seal_home(
+        &self,
+        home: worth_foundational::facade::HomeIdentity,
+        world_through: [u64; 3],
+        world_image_digest: [u8; 32],
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<
+        crate::durability::checkpoint_admission::RelationalCheckpointAdmissionArtifact,
+        crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal,
+    > {
+        self.seal_home_cut(
+            &CheckpointAdmissionCut::new(
+                CheckpointAdmissionScope::Home {
+                    home,
+                    native_origin: self.initial_digest,
+                    complete_source_digest: self.source_digest,
+                    world_through,
+                    world_image_digest,
+                },
+                self.covered,
+                self.transitions,
+                self.checkpoint_digest,
+            ),
+            request,
+        )
+    }
     pub fn seal_home_cut(
         &self,
         cut: &CheckpointAdmissionCut,

@@ -19,6 +19,9 @@ mod axes;
 mod capture;
 #[path = "root_capture_preparation.rs"]
 mod capture_preparation;
+#[path = "root_commit_evidence.rs"]
+mod commit_evidence;
+pub(crate) use commit_evidence::RelationalRootCommitEvidence;
 #[cfg(test)]
 #[path = "root_content_tests.rs"]
 mod content_tests;
@@ -120,7 +123,7 @@ pub(crate) struct RelationalBranchRootAxes {
 #[derive(Debug, Clone)]
 struct RelationalCommittedBranchRoot {
     descriptor: RelationalBranchRootDescriptor,
-    canonical_envelope: Arc<CanonicalCommitEnvelope>,
+    evidence: RelationalRootCommitEvidence,
     axes: RelationalBranchRootAxes,
     publication_cost: RelationalBranchRootPublicationCost,
 }
@@ -278,26 +281,25 @@ impl RelationalBranchRoot {
         else {
             return false;
         };
-        let canonical_schema_root = crate::schema::data::schema_authority_snapshot_digest_bytes(
-            &committed.canonical_envelope.schema_authority,
-        );
-        let reconstructed_visibility = RelationalBranchVisibilityCommitment::for_root(
-            &committed.canonical_envelope,
-            reconstructed_root,
-            canonical_schema_root,
-            committed.axes.correctness_index,
-        );
+        let canonical_schema_root = self.schema_authority.authority_digest();
+        let reconstructed_visibility = match &committed.evidence {
+            RelationalRootCommitEvidence::Original(envelope) => {
+                RelationalBranchVisibilityCommitment::for_root(
+                    envelope,
+                    reconstructed_root,
+                    canonical_schema_root,
+                    committed.axes.correctness_index,
+                )
+            }
+            RelationalRootCommitEvidence::Checkpoint(commit) => commit.visibility(),
+        };
         committed.axes.storage_root == reconstructed_root
             && self.content_accumulator == reconstructed_accumulator
             && committed.axes.storage_root == *committed.descriptor.truth_root()
             && committed.axes.schema_root == *committed.descriptor.schema_root()
             && committed.axes.schema_root == canonical_schema_root
-            && self
-                .schema_authority
-                .matches(&committed.canonical_envelope.schema_authority)
-            && self.schema_authority.descriptor_semantics_version()
-                == committed.canonical_envelope.descriptor_semantics_version
-            && committed.axes.storage_version == committed.canonical_envelope.commit.version_id.0
+            && committed.evidence.matches_schema(&self.schema_authority)
+            && committed.axes.storage_version == committed.evidence.receipt().version_id.0
             && committed.axes.storage_root != [0; 32]
             && committed.axes.visibility == reconstructed_visibility
     }
@@ -305,11 +307,21 @@ impl RelationalBranchRoot {
     pub(crate) fn commit_id(&self) -> Option<CommitId> {
         self.committed
             .as_ref()
-            .map(|root| root.canonical_envelope.commit.commit_id)
+            .map(|root| root.evidence.receipt().commit_id)
     }
 
     pub(crate) fn canonical_envelope(&self) -> Option<&Arc<CanonicalCommitEnvelope>> {
-        self.committed.as_ref().map(|root| &root.canonical_envelope)
+        self.commit_evidence()
+            .and_then(RelationalRootCommitEvidence::original)
+    }
+
+    pub(crate) fn commit_evidence(&self) -> Option<&RelationalRootCommitEvidence> {
+        self.committed.as_ref().map(|root| &root.evidence)
+    }
+
+    pub(crate) fn commit_receipt(&self) -> Option<&crate::history::data::RelationalCommitReceipt> {
+        self.commit_evidence()
+            .map(RelationalRootCommitEvidence::receipt)
     }
 
     pub(crate) fn schema_authority(&self) -> &RelationalBranchRootSchemaAuthority {
@@ -362,7 +374,9 @@ impl RelationalBranchRoot {
 
     pub(crate) fn links_envelope(&self, envelope: &Arc<CanonicalCommitEnvelope>) -> bool {
         self.committed.as_ref().is_some_and(|root| {
-            Arc::ptr_eq(&root.canonical_envelope, envelope)
+            root.evidence
+                .original()
+                .is_some_and(|original| Arc::ptr_eq(original, envelope))
                 && root.axes.storage_root == *root.descriptor.truth_root()
                 && root.axes.schema_root == *root.descriptor.schema_root()
                 && root.axes.visibility
@@ -377,9 +391,7 @@ impl RelationalBranchRoot {
 
     pub(crate) fn shares_canonical_envelope_with(&self, source: &Self) -> bool {
         match (&self.committed, &source.committed) {
-            (Some(target), Some(source)) => {
-                Arc::ptr_eq(&target.canonical_envelope, &source.canonical_envelope)
-            }
+            (Some(target), Some(source)) => target.evidence.shares_owner(&source.evidence),
             (None, None) => true,
             _ => false,
         }

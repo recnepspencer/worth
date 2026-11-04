@@ -39,7 +39,7 @@ fn equal_envelope_bytes_cannot_replace_exact_physical_catalog_custody() {
     let mut root = (*RelationalBranchRoot::empty()).clone();
     root.committed = Some(RelationalCommittedBranchRoot {
         descriptor,
-        canonical_envelope: Arc::clone(&envelope),
+        evidence: RelationalRootCommitEvidence::Original(Arc::clone(&envelope)),
         axes,
         publication_cost: Default::default(),
     });
@@ -50,11 +50,9 @@ fn equal_envelope_bytes_cannot_replace_exact_physical_catalog_custody() {
     )
     .unwrap();
     let mut distinct_custody = (*root).clone();
-    distinct_custody
-        .committed
-        .as_mut()
-        .unwrap()
-        .canonical_envelope = Arc::new(envelope.copy_original_for_test(execution));
+    distinct_custody.committed.as_mut().unwrap().evidence = RelationalRootCommitEvidence::Original(
+        Arc::new(envelope.copy_original_for_test(execution)),
+    );
     let distinct_custody = Arc::new(distinct_custody);
     assert!(artifact.links_root(&root));
     assert!(!artifact.links_root(&distinct_custody));

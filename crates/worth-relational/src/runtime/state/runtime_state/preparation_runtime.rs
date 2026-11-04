@@ -251,9 +251,9 @@ impl RelationalPreparationRuntime {
             }
             worth_foundational::FoundationalBranchTarget::Basis(target) => cell
                 .root()
-                .and_then(|root| root.canonical_envelope().cloned())
-                .filter(|envelope| envelope.commit.commit_id.0 == target.selected_commit_id())
-                .map(|envelope| envelope.commit.version_id),
+                .and_then(|root| root.commit_receipt().cloned())
+                .filter(|receipt| receipt.commit_id.0 == target.selected_commit_id())
+                .map(|receipt| receipt.version_id),
         }
     }
 

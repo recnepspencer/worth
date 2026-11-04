@@ -61,12 +61,18 @@ pub(super) struct Component<'a> {
 pub(super) fn component(descriptor: &RelationalBranchBasisDescriptor) -> Component<'_> {
     Component {
         descriptor_version: descriptor.descriptor_version(),
-        reference: Reference::from_recorded(
-            observation(&descriptor.branch_id().0, descriptor.reference()),
-            descriptor.truth_version().as_u64(),
-        ),
+        reference: recorded_reference(descriptor),
         schema_commitment: descriptor.schema_commitment(),
         visibility_commitment: descriptor.visibility_commitment(),
         posture: descriptor.posture(),
     }
+}
+
+pub(in crate::durability) fn recorded_reference(
+    descriptor: &RelationalBranchBasisDescriptor,
+) -> Reference<'_> {
+    Reference::from_recorded(
+        observation(&descriptor.branch_id().0, descriptor.reference()),
+        descriptor.truth_version().as_u64(),
+    )
 }

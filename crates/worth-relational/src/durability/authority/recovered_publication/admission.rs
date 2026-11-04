@@ -30,9 +30,14 @@ impl RecoveredRelationalRuntimeAuthority {
         let Some(_operation) = runtime.owner_binding().admit() else {
             return Err(partial.refuse(Cause::OwnerUnavailable));
         };
-        if let Err(cause) =
-            super::subject::validate(self, runtime, &partial.effect, predecessor, successor)
-        {
+        if let Err(cause) = super::subject::validate(
+            execution,
+            self,
+            runtime,
+            &partial.effect,
+            predecessor,
+            successor,
+        ) {
             return Err(partial.refuse(cause));
         }
         partial.predecessor = match self.admit_recorded_component(execution, runtime, predecessor) {
@@ -70,9 +75,14 @@ impl RecoveredRelationalRuntimeAuthority {
         if let Err(cause) = crate::execution::check_request(execution) {
             return Err(partial.refuse(Cause::Request(cause)));
         }
-        if let Err(cause) =
-            super::subject::validate(self, runtime, &partial.effect, predecessor, successor)
-        {
+        if let Err(cause) = super::subject::validate(
+            execution,
+            self,
+            runtime,
+            &partial.effect,
+            predecessor,
+            successor,
+        ) {
             return Err(partial.refuse(cause));
         }
         partial

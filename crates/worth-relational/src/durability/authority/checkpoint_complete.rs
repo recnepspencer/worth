@@ -1,5 +1,5 @@
 //! Original-source reconstruction is DATA processing under one admitted operation.
-mod admission_projection;
+pub(in crate::durability) mod admission_projection;
 mod branches;
 pub use admission_projection::CapturedRelationalCheckpointAdmissionImage;
 mod canonical;

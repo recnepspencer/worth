@@ -47,10 +47,9 @@ impl Axes {
         commit.0 == target.selected_commit_id()
             && roots.get(commit).is_some_and(|root| {
                 root.root.descriptor() == Some(target.roots())
-                    && root.root.canonical_envelope().is_some_and(|body| {
-                        body.commit.version_id.0 == target.version_id()
-                            && body
-                                .commit
+                    && root.root.commit_receipt().is_some_and(|receipt| {
+                        receipt.version_id.0 == target.version_id()
+                            && receipt
                                 .parents
                                 .iter()
                                 .map(|id| id.0)

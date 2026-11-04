@@ -30,6 +30,7 @@ pub struct QueryPlanContextId {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum QueryPlanEvidenceBasis {
     CanonicalCommitEnvelope { commit_id: CommitId },
+    CheckpointAdmissionImage { commit_id: CommitId },
     GenesisRuntimeBootstrap,
 }
 

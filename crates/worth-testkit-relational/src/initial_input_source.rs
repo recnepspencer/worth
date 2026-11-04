@@ -78,8 +78,54 @@ pub fn home_input(
     artifact: RelationalCompleteSourceArtifact,
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<RelationalDurableRecoverySource, RelationalInitialInputsRefusal> {
-    let covered = artifact.covered();
-    let through = artifact.covered_transitions();
+    home_checkpoint_input(
+        medium,
+        RelationalDurableCheckpointSource::from_complete_artifact(artifact)?,
+        request,
+    )
+}
+
+pub fn home_image_input(
+    medium: &Arc<TestDurableMedium>,
+    capture: &CompleteRelationalNativeCheckpoint,
+    request: &ExecutionRequest<'_, '_>,
+) -> Result<RelationalDurableRecoverySource, RelationalInitialInputsRefusal> {
+    let source = home_image_checkpoint(capture, capture.source_artifact().clone(), request)?;
+    home_checkpoint_input(medium, source, request)
+}
+
+pub fn home_image_checkpoint(
+    capture: &CompleteRelationalNativeCheckpoint,
+    artifact: RelationalCompleteSourceArtifact,
+    request: &ExecutionRequest<'_, '_>,
+) -> Result<RelationalDurableCheckpointSource, RelationalInitialInputsRefusal> {
+    let image = capture
+        .admission_image()
+        .seal_home(
+            worth_foundational::facade::HomeIdentity::from_observed_bytes([1; 16]).unwrap(),
+            [0; 3],
+            [2; 32],
+            request,
+        )
+        .map_err(|cause| {
+            RelationalInitialInputsRefusal::Native(RelationalRecoveryStop::AdmissionImage(cause))
+        })?;
+    let source = RelationalDurableCheckpointSource::from_checkpoint_admission_image(
+        artifact, image, request,
+    )
+    .map_err(|cause| {
+        RelationalInitialInputsRefusal::Native(RelationalRecoveryStop::AdmissionImage(cause))
+    })?;
+    Ok(source)
+}
+
+fn home_checkpoint_input(
+    medium: &Arc<TestDurableMedium>,
+    checkpoint: RelationalDurableCheckpointSource,
+    request: &ExecutionRequest<'_, '_>,
+) -> Result<RelationalDurableRecoverySource, RelationalInitialInputsRefusal> {
+    let covered = checkpoint.covered();
+    let through = checkpoint.covered_transitions();
     let source: Arc<dyn RelationalDurableColdSource> = medium.clone();
     let cut = RelationalDurableReadProtection::capture(&source, request).unwrap();
     let bounds = cut.bounds();
@@ -121,9 +167,7 @@ pub fn home_input(
         .read_initial_inputs_owned(&source, request, 1 << 30)
         .unwrap();
     RelationalDurableRecoverySource::from_home_original_bytes(
-        Some(RelationalDurableCheckpointSource::from_complete_artifact(
-            artifact,
-        )?),
+        Some(checkpoint),
         initial,
         canonical.seal().unwrap(),
         transitions.seal().unwrap(),

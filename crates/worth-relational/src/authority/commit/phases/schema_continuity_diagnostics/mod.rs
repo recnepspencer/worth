@@ -7,12 +7,11 @@ use crate::diagnostics::data::{
     DeterminismExpectation, DiagnosticCode, DiagnosticsArtifactKind, DiagnosticsScope,
     RelationalDiagnosticArtifact, RelationalDiagnosticsEntry,
 };
-use crate::history::data::CanonicalCommitEnvelope;
 use crate::schema::data::{SchemaTransitionArtifact, SchemaTransitionSummary};
 use crate::schema::SchemaContinuityBundleIssue;
 use crate::transactions::data::{CommitConflict, ConflictClass, TransactionCommitError};
 
-use super::SchemaContinuityPlan;
+use super::{SchemaContinuityPlan, SchemaContinuityPrior};
 use diagnostic_fields::diagnostics_fields;
 use field_shapes::{
     schema_diff_atom_trace_fields, SchemaContinuityFailureFields, SchemaTransitionRejectedFields,
@@ -72,7 +71,7 @@ pub(super) fn emit_schema_continuity_failure_diagnostic(
     runtime: &crate::runtime::RelationalPreparationRuntime,
     branch_id: &crate::history::data::BranchId,
     proposed_transition: Option<FailureTransitionView<'_>>,
-    previous_envelope: Option<&CanonicalCommitEnvelope>,
+    previous_envelope: Option<&SchemaContinuityPrior<'_>>,
     conflict: &CommitConflict,
 ) {
     let mut entries = vec![schema_continuity_failure_entry(
@@ -191,7 +190,7 @@ fn schema_continuity_conflict_class(
 
 fn schema_continuity_failure_entry(
     branch_id: &crate::history::data::BranchId,
-    previous_envelope: Option<&CanonicalCommitEnvelope>,
+    previous_envelope: Option<&SchemaContinuityPrior<'_>>,
     conflict: &CommitConflict,
 ) -> RelationalDiagnosticsEntry {
     RelationalDiagnosticsEntry::new(

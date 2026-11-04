@@ -81,6 +81,7 @@ pub enum RelationalRecoveredPublicationAdmissionCause {
     OwnerUnavailable,
     SubjectMismatch,
     MissingOriginalPredecessor,
+    AdmissionImage(crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal),
     PendingSettlement,
     MissingSettlementEvidence,
     Component(Box<RefusedRelationalRecordedComponent>),

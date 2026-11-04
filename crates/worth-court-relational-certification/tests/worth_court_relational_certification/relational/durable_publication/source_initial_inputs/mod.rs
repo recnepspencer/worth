@@ -34,7 +34,7 @@ fn complete_source_recovery_restores_original_inputs_for_another_complete_captur
     medium.file_checkpoint(complete.checkpoint().clone());
     let later = create_entity_outcome(&request, &runtime, "tail");
     release_test_commit_snapshot(&runtime, &later);
-    let input = home_input(&medium, complete.source_artifact().clone(), &request).unwrap();
+    let input = home_image_input(&medium, &complete, &request).unwrap();
     drop((complete, runtime));
     let mut receiver = receiver(&medium);
     let plan = receiver
@@ -60,7 +60,7 @@ fn complete_source_recovery_restores_original_inputs_for_another_complete_captur
         2
     );
     medium.file_checkpoint(second.checkpoint().clone());
-    let input = home_input(&medium, second.source_artifact().clone(), &request).unwrap();
+    let input = home_image_input(&medium, &second, &request).unwrap();
     assert!(receiver
         .durability()
         .recovery_plan_from_source(

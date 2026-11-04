@@ -72,8 +72,7 @@ impl HistorySubsystem {
             self.branch_cell(&basis.branch_id)
                 .and_then(|cell| cell.root())
                 .is_some_and(|root| {
-                    root.canonical_envelope()
-                        .map(|envelope| envelope.commit.version_id)
+                    root.commit_receipt().map(|receipt| receipt.version_id)
                         == Some(basis.version_id)
                         && root.schema_authority().schema_version() == basis.schema_version
                 })
@@ -104,11 +103,11 @@ impl HistorySubsystem {
             let branch = cell.identity().branch_id().clone();
             roots.latest_branches.insert(branch.clone());
             if let Some(root) = cell.root()
-                && let Some(envelope) = root.canonical_envelope()
+                && let Some(receipt) = root.commit_receipt()
             {
                 roots.live.insert((
                     branch,
-                    envelope.commit.version_id,
+                    receipt.version_id,
                     root.schema_authority().schema_version(),
                 ));
             }

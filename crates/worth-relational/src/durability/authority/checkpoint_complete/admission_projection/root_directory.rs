@@ -96,3 +96,71 @@ struct Empty<'a> {
     descriptor: reference::Component<'a>,
     schema: [u8; 32],
 }
+
+/// Join authenticated projections to the SAME CHK18 directory. The manifest's
+/// serialized canonical leaf is not used to authenticate these meanings.
+pub(in crate::durability) fn validate_manifest(
+    roots: &[u8],
+    manifest: &RelationalCheckpointManifest,
+    request: &ExecutionRequest<'_, '_>,
+) -> Result<(), crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal> {
+    use crate::durability::canonical_commit_artifact::borrowed_payload::BorrowedPayload;
+    use crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal as Refusal;
+    let select = |name| {
+        crate::durability::artifact_payload_emission::request::account_work(
+            request,
+            roots.len() as u64,
+        )
+        .map_err(crate::durability::checkpoint_admission::native_stop)?;
+        BorrowedPayload(roots)
+            .field(name, request)
+            .map_err(crate::durability::checkpoint_admission::projected_stop)
+    };
+    require_projection(&manifest.schemas, select("schemas")?.0, request)?;
+    require_projection(&EmptyRows(manifest), select("empty")?.0, request)?;
+    let mut ordinal = 0;
+    let mut refused = None;
+    select("roots")?.elements(request, |row| {
+        let result = (|| {
+            let header = manifest.roots.get(ordinal).ok_or(Refusal::InvalidProjectedMeaning)?;
+            let mut first = None;
+            row.elements(request, |value| { if first.is_none() { first = Some(value); } Ok(()) })
+                .map_err(crate::durability::checkpoint_admission::projected_stop)?;
+            require_projection(&Header {
+                commit: header.commit_id, components: Components(&header.recorded_components),
+                schema: header.schema_carrier_digest, regions: &header.regions,
+            }, first.ok_or(Refusal::InvalidProjectedMeaning)?.0, request)?;
+            ordinal += 1;
+            Ok(())
+        })();
+        if let Err(cause) = result {
+            refused = Some(cause);
+            return Err(crate::durability::canonical_commit_artifact::borrowed_payload::malformed());
+        }
+        Ok(())
+    }).map_err(|cause| refused.take().unwrap_or_else(|| match cause {
+        crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal::Request(cause) => Refusal::Request(cause),
+        _ => Refusal::InvalidProjectedMeaning,
+    }))?;
+    if ordinal != manifest.roots.len() {
+        return Err(Refusal::InvalidProjectedMeaning);
+    }
+    Ok(())
+}
+
+fn require_projection(
+    value: &impl Serialize,
+    actual: &[u8],
+    request: &ExecutionRequest<'_, '_>,
+) -> Result<(), crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal> {
+    let expected = crate::durability::artifact_payload_emission::request::encode_named_charged(
+        &[],
+        &crate::durability::checkpoint_admission::binary_encoding::BinaryFixedArrays(value),
+        request,
+    )
+    .map_err(crate::durability::checkpoint_admission::native_stop)?;
+    if expected.as_ref() != actual {
+        return Err(crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal::InvalidProjectedMeaning);
+    }
+    Ok(())
+}
