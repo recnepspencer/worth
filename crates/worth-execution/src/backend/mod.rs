@@ -57,11 +57,9 @@ pub(crate) use port::{
     run_checked_batch_with_charge, run_owned_batch_taking, BackendKind, BatchOutcome,
 };
 pub(crate) use prepared::{prepare_batch_resources, PreparedBatchResources};
-#[cfg(test)]
-pub(crate) use scope::run_scope_within;
 pub(crate) use scope::{
-    run_checkpoint_stage, run_scope, run_scope_holding, run_scope_measured,
-    run_scope_native_within, run_scope_unit_within, ScopeHold,
+    run_scope, run_scope_holding, run_scope_measured, run_scope_native_within, run_scope_within,
+    ScopeHold,
 };
 pub use scope::{ScopeOutcome, ScopeStop};
 

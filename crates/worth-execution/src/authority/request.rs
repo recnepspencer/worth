@@ -27,17 +27,6 @@ impl<'request, 'authority> ExecutionRequest<'request, 'authority> {
         }
     }
 
-    /// Charge a closed, zero-result fragment stage on this original request.
-    /// Every call freshly admits and releases its scopes and observes the
-    /// original controls. No meter, reservation or allowance survives a call.
-    /// `E` carries the caller's actual typed denial through its scope handoff.
-    pub fn checkpoint_stage<E>(self, work: u64) -> Result<(), E>
-    where
-        E: From<WorkCeilingDenial> + From<crate::MapKernelStop>,
-    {
-        crate::backend::run_checkpoint_stage(self, work)
-    }
-
     /// Run using the original worker and control authority, without a payload
     /// or cost contract. Deliberately accounted ancestors remain authoritative.
     pub fn run_native<R>(
@@ -148,25 +137,15 @@ impl<'request, 'authority> ExecutionRequest<'request, 'authority> {
             &mut crate::MapKernelContext<'_, '_>,
         ) -> Result<R, crate::backend::KernelFailure<E>>,
     ) -> crate::backend::ScopeOutcome<R, E> {
-        self.with_scope_backing(|lease, serial| {
-            crate::backend::run_scope_native_within(lease, true, ceiling, serial, operation)
-        })
-    }
-
-    pub(crate) fn with_scope_backing<R>(
-        self,
-        operation: impl FnOnce(Option<&ExecutionResourceLease<'authority>>, Option<&SerialRequest>) -> R,
-    ) -> R {
         let active = match self.form {
             RequestBacking::Leased(lease) => lease.current_descendant(),
             RequestBacking::Serial(_) => None,
         };
-        match self.form {
-            RequestBacking::Leased(lease) => {
-                operation(Some(active.as_ref().unwrap_or(lease)), None)
-            }
-            RequestBacking::Serial(serial) => operation(None, Some(serial)),
-        }
+        let (lease, serial) = match self.form {
+            RequestBacking::Leased(lease) => (Some(active.as_ref().unwrap_or(lease)), None),
+            RequestBacking::Serial(serial) => (None, Some(serial)),
+        };
+        crate::backend::run_scope_native_within(lease, true, ceiling, serial, operation)
     }
 
     pub fn leased(lease: &'request ExecutionResourceLease<'authority>) -> Self {

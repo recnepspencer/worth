@@ -1,7 +1,7 @@
 //! The common scope execution, control, admission and settlement lifecycle,
 //! compiled once. Caller code runs only through [`ScopeBody`], always under the
 //! panic boundary.
-use super::admission::{admit_scope, AdmittedScope, ScopeRequest, ScopeStorage};
+use super::admission::{admit_scope, AdmittedScope, ScopeRequest};
 use super::body::{KernelVerdict, ScopeBody, ScopeVerdict};
 use super::settlement::{
     admit_measured_payload, discard_payload, settle_hold, settle_measured_hold, weigh_payload,
@@ -40,12 +40,11 @@ fn run_admitted_scope(
         memory_bytes,
         max_result_bytes,
         charge_parent,
-        storage,
+        measures_result,
         mut hold,
         reservation,
         serial_reservation,
     } = admitted;
-    let measures_result = storage != ScopeStorage::Native && max_result_bytes.is_none();
     if measures_result {
         hold.as_deref_mut()
             .expect("measured scope retains its original reservation")
@@ -68,11 +67,7 @@ fn run_admitted_scope(
         .map(|reservation| crate::ExecutionResultMemory::new(reservation, memory_bytes));
     let invoked = invoke_kernel(&mut context, result_memory, body);
     let invoked = apply_control_stops(&context, invoked, body);
-    let (invoked, payload_bytes) = if storage == ScopeStorage::Metered {
-        weigh_payload(invoked, max_result_bytes, body)
-    } else {
-        (invoked, 0)
-    };
+    let (invoked, payload_bytes) = weigh_payload(invoked, max_result_bytes, body);
     // Measured scopes have reserved known input/framework bytes already. The callback's
     // actual heap is admitted before framework retention/publication. Cooperating
     // callback owners still reserve their allocations before cloning or growth.

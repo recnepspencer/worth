@@ -5,10 +5,6 @@ use crate::{
 
 mod admission;
 mod body;
-mod checkpoint_stage;
-pub(crate) use checkpoint_stage::run_checkpoint_stage;
-#[cfg(test)]
-pub(crate) mod cost;
 mod execution;
 mod native_payload;
 mod settlement;
@@ -139,15 +135,6 @@ where
         |context, _| kernel(context),
         PayloadStorage::<(), R, E>::metered(),
     )
-}
-
-pub(crate) fn run_scope_unit_within(
-    lease: Option<&ExecutionResourceLease<'_>>,
-    work_ceiling: Option<u64>,
-    serial: Option<&SerialRequest>,
-    kernel: impl FnOnce(&mut KernelContext<'_, '_>) -> Result<(), KernelFailure<()>>,
-) -> ScopeOutcome<(), ()> {
-    body::run_unit_scope(lease, work_ceiling, serial, kernel)
 }
 
 pub(crate) fn run_scope_measured<R: ChargedBytes, E: ChargedBytes>(

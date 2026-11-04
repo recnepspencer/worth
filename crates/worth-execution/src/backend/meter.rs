@@ -52,9 +52,6 @@ mod framework_bytes;
 mod interruption_view;
 mod invoking_scope;
 pub(crate) use invoking_scope::{run_invoking_preparation, run_invoking_scope};
-mod cancellation_lineage;
-#[cfg(test)]
-mod cost;
 mod nested;
 mod nested_stop;
 mod prepared_context;
@@ -109,7 +106,7 @@ impl<E> From<KernelStop> for KernelFailure<E> {
 #[derive(Clone)]
 pub(crate) struct RunLimits {
     work_loan_affinity: Option<Arc<work_loan::WorkLoanAffinity>>,
-    tokens: cancellation_lineage::CancellationLineage,
+    tokens: Vec<CancellationToken>,
     deadline: Option<crate::MonotonicDeadline>,
     ceiling: Option<u64>,
     ceiling_owner: NestedStopOwner,

@@ -28,13 +28,11 @@ impl RunLimits {
             .as_ref()
             .map_or(0, |meter| meter.borrow().limits.tokens.len());
         let lease_tokens = lease.map_or(0, ExecutionResourceLease::lineage_depth);
-        parent_tokens
-            .checked_add(lease_tokens)
-            .expect("checked framework context token count");
-        let tokens = match &parent {
-            Some(parent) => parent.borrow().limits.tokens.clone(),
-            None => super::cancellation_lineage::CancellationLineage::default(),
-        };
+        let mut tokens = Vec::with_capacity(
+            parent_tokens
+                .checked_add(lease_tokens)
+                .expect("checked framework context token count"),
+        );
         let (
             deadline,
             ceiling,
@@ -47,6 +45,7 @@ impl RunLimits {
             serial_memory,
         ) = if let Some(parent) = parent {
             let parent = parent.borrow();
+            tokens.extend(parent.limits.tokens.iter().cloned());
             (
                 parent.limits.deadline.clone(),
                 parent
@@ -95,9 +94,7 @@ impl RunLimits {
             accounted: true,
         };
         if let Some(lease) = lease {
-            limits
-                .tokens
-                .extend(&mut lease.cancellation_lineage(), lease_tokens);
+            limits.tokens.extend(lease.cancellation_lineage());
             limits.deadline = match (limits.deadline, lease.deadline()) {
                 (Some(parent), Some(child)) => Some(parent.meet(child)),
                 (Some(parent), None) => Some(parent),

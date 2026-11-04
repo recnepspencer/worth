@@ -169,11 +169,6 @@ impl SerialMemoryBudget {
 impl SerialMemoryBudget {
     /// Retain the child's own limit and draw every reservation from its parent.
     pub(crate) fn within_parent(&self, parent: &Self) -> Self {
-        if Arc::ptr_eq(&self.ledgers, &parent.ledgers) {
-            return self.clone();
-        }
-        #[cfg(test)]
-        cost::setup();
         let mut ledgers = self.ledgers.to_vec();
         for ledger in parent.ledgers.iter() {
             if !ledgers.iter().any(|own| Arc::ptr_eq(own, ledger)) {
@@ -195,42 +190,21 @@ impl SerialMemoryBudget {
     }
 
     fn resize(&self, from: u64, to: u64) -> Result<(), MemoryLimitDenial> {
-        // This transition cannot exceed any ceiling or counter, even if another
-        // holder fills the ledger. It neither admits nor releases any bytes.
-        if from == 0 && to == 0 {
-            return Ok(());
-        }
         // Requests can share budgets across threads. Issue order keeps overlapping
         // lineages deadlock-free; refusal order remains innermost policy first.
-        // A single ledger has no ordering problem. Keep its guard on the stack;
-        // both forms use the same refusal and atomic-update loop below.
-        let mut single;
-        let mut joined;
-        let charges = if self.ledgers.len() == 1 {
-            single = [(
-                0,
-                self.ledgers[0]
-                    .charged
-                    .lock()
-                    .unwrap_or_else(std::sync::PoisonError::into_inner),
-            )];
-            &mut single[..]
-        } else {
-            joined = self
-                .lock_order()
-                .into_iter()
-                .map(|(index, ledger)| {
-                    (
-                        index,
-                        ledger
-                            .charged
-                            .lock()
-                            .unwrap_or_else(std::sync::PoisonError::into_inner),
-                    )
-                })
-                .collect::<Vec<_>>();
-            &mut joined[..]
-        };
+        let order = self.lock_order();
+        let mut charges: Vec<_> = order
+            .iter()
+            .map(|(index, ledger)| {
+                (
+                    *index,
+                    ledger
+                        .charged
+                        .lock()
+                        .unwrap_or_else(std::sync::PoisonError::into_inner),
+                )
+            })
+            .collect();
         for (ancestor, ledger) in self.ledgers.iter().enumerate() {
             let charge = charges
                 .iter()
@@ -250,23 +224,19 @@ impl SerialMemoryBudget {
                 .checked_add(to)
                 .ok_or_else(|| MemoryLimitDenial::overflow(to, charged, level))?;
         }
-        for (_, charge) in charges {
+        for (_, charge) in &mut charges {
             **charge = **charge - from + to;
         }
         Ok(())
     }
 
     fn lock_order(&self) -> Vec<(usize, &Arc<SerialLedger>)> {
-        #[cfg(test)]
-        cost::setup();
         let mut order: Vec<_> = self.ledgers.iter().enumerate().collect();
         order.sort_unstable_by(|(_, a), (_, b)| a.issue_order.cmp(&b.issue_order));
         order
     }
 }
 
-#[cfg(test)]
-mod cost;
 #[cfg(test)]
 mod lock_order_tests;
 #[cfg(test)]

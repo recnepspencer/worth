@@ -25,7 +25,23 @@ impl RelationalCanonicalCommitArtifact {
                     return Err(std::io::Error::other("original digest request stopped"));
                 }
                 for chunk in bytes.chunks(4096) {
-                    if let Err(cause) = self.request.checkpoint_stage(chunk.len() as u64) {
+                    let mut stopped = None;
+                    let result = crate::execution::request_stage::optional_stage(
+                        &self.request,
+                        |context, _| {
+                            stopped = crate::execution::request_stage::checkpoint(
+                                context,
+                                chunk.len() as u64,
+                            )
+                            .err();
+                        },
+                        |_| 0,
+                    );
+                    let stop = match stopped {
+                        Some(cause) => Some(cause.into()),
+                        None => result.err(),
+                    };
+                    if let Some(cause) = stop {
                         self.stop = Some(Denial::Request(cause));
                         return Err(std::io::Error::other("original digest request stopped"));
                     }

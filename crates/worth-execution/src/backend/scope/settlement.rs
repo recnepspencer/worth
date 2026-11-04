@@ -27,8 +27,6 @@ pub(super) fn weigh_payload(
     capacity: Option<u64>,
     body: &mut dyn ScopeBody,
 ) -> (KernelVerdict, u64) {
-    #[cfg(test)]
-    super::cost::measured();
     if !holds_payload(&invoked) {
         return (invoked, 0);
     }
