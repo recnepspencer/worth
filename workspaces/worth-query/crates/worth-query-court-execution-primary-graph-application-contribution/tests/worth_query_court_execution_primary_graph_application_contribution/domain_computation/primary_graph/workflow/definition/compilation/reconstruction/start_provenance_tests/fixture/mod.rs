@@ -15,12 +15,17 @@ use worth_relational::facade::identity::KindId;
 use worth_relational::facade::identity::PartitionId;
 use worth_relational::facade::symbols::ClientKey;
 
+// A work ceiling the publications and their native checkpoint capture fit inside; no test here
+// is about exhaustion. Each checkpoint capture is charged as one stage of its request, so the
+// ceiling covers that stage too.
+const PAYER_WORK_CEILING: u64 = 100_000_000;
+
 pub fn payer() -> ExecutionResourceLease<'static> {
     ExecutionResourceLease::serial(LeaseRequest {
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::MIN, None, Some(1_000_000)),
+            ExecutionBudget::new(NonZeroUsize::MIN, None, Some(PAYER_WORK_CEILING)),
         ),
         deadline: None,
         cancellation: CancellationToken::new(),
