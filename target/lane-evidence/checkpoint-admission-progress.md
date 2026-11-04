@@ -1,3 +1,79 @@
+FUNDING IN PROGRESS - no source landing; cold DATA handoff and disk headroom required.
+
+Latest resume based on03eb43385c. Granted lineage carry and selected Embedded
+cutoff applied; selected recipes use real membership. Fresh independent review
+confirms those boundaries. Growth moved beneath real cost module, unchanged
+assertions/workload, current check and named run PASS1/0/0.
+
+Shared maintenance owner design flaw corrected: Query-only registration denied
+bare coupled Store close. Same worker now belongs to HomeCheckpointOwner; Host
+installs its Home-limits allowance, direct Store close lazily uses defaults.
+No caller funding, generic supplier callback, Root/basis or strong Home backedge.
+Design APPROVE; final reviewer locally APPROVES owner cutover. Fresh nine Host
+controls PASS9/0/0 with actual generated2-slot scheduling overrides. Both affected
+Store/Query checks pass.
+
+Full funding REJECT: Native changed cold recapture3 cases, Host killed image+tail
+and bounded-tail recapture, and Store observer-recovery capture refuse Region(0):
+SourceUnavailable. Full-only owner excludes backed regions; no request-funded
+replacement after replay removal. Ordinary unbudgeted Full loading is not a
+repair. Storage/residency/history-directory handoff requested, still ungranted;
+those sources untouched. Protected Query partial-initializer index/refusal order
+remains red and requires integration/Lifecycle. No assertion weakened.
+
+Temporary public Store Result diagnostic confirms Native capture refusal before
+anchor registration; exact court bytes restored with SHA evidence. Fully
+accounted prior head41 quote16,240,012 vs16,236,875 remains historical covered0
+baseline. Standalone Embedded export has three real Query production callers;
+see funding-finish-export-routing.md. No wire/version/new home cutoff this slice.
+
+Free C25,611,960,320 bytes (23.85GiB); no further builds/tests started at25GiB
+floor. No artifact cleanup, ignored/exhaustive/scenario/query-scale tests, other
+worktree edits, merge or push. Final gates and queue unrun. checkpoint_complete
+remains with P-A until funding actually lands. Source WIP remains uncommitted.
+Full logs/counts: funding-finish-lanes.md. Current hashes: funding-home-owner-
+final-source-leaves.json. Reviews and agreed unresolved findings are adjacent.
+
+--- Earlier chronological notes, superseded where stated above ---
+
+FUNDING IN PROGRESS - growth and live/automatic/close controls green; cold changed-region capture blocked.
+
+Current resume at03eb43385c + dirty source. Granted lineage-page carry applied;
+selected Embedded refuses before body demand. Actual-membership court recipes
+retain their second-Complete assertions. The operational recipe now seals the
+actual image before its selection ACK; its focused rerun passes.
+
+Host live/automatic-head41/close-exhaustion controls3/0/0. Discarded-branch
+growth1/0/0: same main state, at least512KiB larger original covered bodies,
+zero covered canonical body demand and broad comparative work headroom.
+Host reopen/kill/ACK/bounded lane6/3/0: ACK and journal-only/same-directory/
+selected reopen pass; changed cold image+tail and bounded-tail recapture fail
+Region(0):SourceUnavailable. Initializer-refusal court sees Query missing-index
+refusal before missing World origin. Assertions remain unchanged.
+
+Three Native changed-tail recaptures also remain SourceUnavailable. Existing
+Complete region emitter accepts only unbacked Full. Exact storage DATA emitter
+proposal remains unapplied pending owner handoff. Ordinary cold Full loading
+is not retained-request funded, so exposing the emitter alone cannot certify
+the full funding claim. Broader focused owner repair requested; no ungranted
+storage/residency or history-directory source edited.
+
+No source landing, no funding approval and no queue work. No source discarded,
+ignored/exhaustive/scenario/query-scale tests, merge or push.
+
+--- Earlier chronological notes, superseded where stated above ---
+
+FUNDING IN PROGRESS ? owner grants received; lineage carry and recipe cutover applied.
+
+03eb43385c accepted as handoff. Exact data-owner carry method and four consumers
+are applied. Selected Embedded refusal now occurs during the captured epoch,
+before read protection/index resolution/canonical demand. Selected court recipes
+use their actual prior member roster; fresh empty-members recipe stays fresh.
+New explicit selected-Embedded refusal court added. Root selected cargo check
+--tests is running before focused qualification. No Host opening/custody,
+Lifecycle/root, World or integration-owned bootstrap file edited this resume.
+No prior work discarded. Funding not landed; independent approval still needed.
+
 FUNDING IN PROGRESS ? no funding source commit or approval; two owner decisions pending.
 
 2026-11-04 final this resume: Host controls2/0/0, Native missing-base and long-

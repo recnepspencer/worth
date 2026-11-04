@@ -1,0 +1,94 @@
+command: python target/lane-evidence/owned_store_funding_probe.py funding-close-owner-store-court test(selected_checkpoint_survives_observer_drop_online_history_and_mutation_before_ack_recovery) 1
+HEAD: 03eb43385ce5cd29739a1ff5c4597bf7770aa973
+git_status_short_empty: false
+start_utc: 2026-11-04T19:15:38.567648+00:00
+environment: removed stale CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER override
+prebuild: cargo metadata --offline --format-version 1 --manifest-path "C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\Cargo.toml"
+prebuild: cargo test --message-format=json --no-run --package worth-store-court-application --test worth_store_court_application --profile dev --manifest-path "C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\Cargo.toml" --unit-graph -Z unstable-options
+prebuild: cargo nextest list --cargo-message-format=json --package worth-store-court-application --test worth_store_court_application --cargo-profile dev --manifest-path "C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\Cargo.toml" --list-type binaries-only --message-format json
+   Compiling worth-store-physical-backend v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-physical-backend)
+   Compiling worth-store-physical-isolation v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-physical-isolation)
+   Compiling worth-store-io-scheduler v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-io-scheduler)
+   Compiling worth-store-reclaim-policy v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-reclaim-policy)
+   Compiling worth-store-retention v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-retention)
+   Compiling worth-store-lsm-authority v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-lsm-authority)
+   Compiling worth-store-tiering v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-tiering)
+   Compiling worth-store-blob-chunks v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-blob-chunks)
+   Compiling worth-store-layout-indexes v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-layout-indexes)
+   Compiling worth-store v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store)
+   Compiling worth-store-recovery-runtime v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-recovery-runtime)
+   Compiling worth-store-relational v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-relational)
+   Compiling worth-store-application v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-application)
+   Compiling worth-query-host v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-query\crates\worth-query-host)
+   Compiling worth-store-testkit-application-oracle v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-testkit-application-oracle)
+   Compiling worth-query-testkit-host v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-query\crates\worth-query-testkit-host)
+   Compiling worth-store-court-application v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\workspaces\worth-store\crates\worth-store-court-application)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2m 41s
+prebuild: cargo nextest list --cargo-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\store\funding-close-owner-store-court\build\cargo-metadata.json" --binaries-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\store\funding-close-owner-store-court\build\binaries.json" --message-format json --ignore-default-filter -E test(selected_checkpoint_survives_observer_drop_online_history_and_mutation_before_ack_recovery)
+prebuild: cargo nextest run --cargo-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\store\funding-close-owner-store-court\build\cargo-metadata.json" --binaries-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\store\funding-close-owner-store-court\build\binaries.json" --profile ci --config-file "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\store\funding-close-owner-store-court\nextest.toml" --ignore-default-filter --no-fail-fast --no-tests=fail --message-format libtest-json -E test(selected_checkpoint_survives_observer_drop_online_history_and_mutation_before_ack_recovery)
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-store-funding-close-owner-store-court-build-cargo-meta-03eb43385ce5-202611041915398740800000-19cd43108fed.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-store-funding-close-owner-store-court-build-binaries-b-03eb43385ce5-202611041915405797670000-585d4026df9b.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-store-funding-close-owner-store-court-build-binaries-b-03eb43385ce5-202611041915414437290000-292697276884.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-store-funding-close-owner-store-court-build-request-se-03eb43385ce5-202611041918251893040000-a22b05d81ba1.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-store-funding-close-owner-store-court-run-selection.lo-03eb43385ce5-202611041918264876620000-451b3bdda11d.log
+info: experimental features enabled: wrapper-scripts
+────────────
+ Nextest run ID 79936807-679a-4e83-8c88-feb5bbc818da with nextest profile: ci
+    Starting 1 test across 1 binary (111 tests skipped)
+        FAIL [   7.281s] (1/1) worth-store-court-application::worth_store_court_application process::application::native_components::checkpoint::selected_checkpoint_survives_observer_drop_online_history_and_mutation_before_ack_recovery
+  output ───
+
+    running 1 test
+
+    thread '<unnamed>' (82708) panicked at crates\worth-store-court-application\tests\worth_store_court_application\process\application\native_components\checkpoint.rs:225:74:
+    called `Result::unwrap()` on an `Err` value: Timeout
+    note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+    thread 'process::application::native_components::checkpoint::selected_checkpoint_survives_observer_drop_online_history_and_mutation_before_ack_recovery' (36596) panicked at crates\worth-store-court-application\tests\worth_store_court_application\process\application\native_components\checkpoint.rs:243:33:
+    called `Result::unwrap()` on an `Err` value: Any { .. }
+    test process::application::native_components::checkpoint::selected_checkpoint_survives_observer_drop_online_history_and_mutation_before_ack_recovery ... FAILED
+
+    failures:
+
+    failures:
+        process::application::native_components::checkpoint::selected_checkpoint_survives_observer_drop_online_history_and_mutation_before_ack_recovery
+
+    test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 111 filtered out; finished in 6.50s
+
+
+{"type":"suite","event":"started","test_count":1}
+{"type":"test","event":"started","name":"worth-store-court-application::worth_store_court_application$process::application::native_components::checkpoint::selected_checkpoint_survives_observer_drop_online_history_and_mutation_before_ack_recovery"}
+{"type":"test","event":"failed","name":"worth-store-court-application::worth_store_court_application$process::application::native_components::checkpoint::selected_checkpoint_survives_observer_drop_online_history_and_mutation_before_ack_recovery","exec_time":7.2813457,"stdout":"\nthread '<unnamed>' (82708) panicked at crates\\worth-store-court-application\\tests\\worth_store_court_application\\process\\application\\native_components\\checkpoint.rs:225:74:\ncalled `Result::unwrap()` on an `Err` value: Timeout\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n\nthread 'process::application::native_components::checkpoint::selected_checkpoint_survives_observer_drop_online_history_and_mutation_before_ack_recovery' (36596) panicked at crates\\worth-store-court-application\\tests\\worth_store_court_application\\process\\application\\native_components\\checkpoint.rs:243:33:\ncalled `Result::unwrap()` on an `Err` value: Any { .. }\n"}
+{"type":"suite","event":"failed","passed":0,"failed":1,"ignored":0,"measured":0,"filtered_out":111,"exec_time":7.2813457}
+────────────
+     Summary [   7.284s] 1 test run: 0 passed, 1 failed, 111 skipped
+        FAIL [   7.281s] (1/1) worth-store-court-application::worth_store_court_application process::application::native_components::checkpoint::selected_checkpoint_survives_observer_drop_online_history_and_mutation_before_ack_recovery
+  output ───
+
+    running 1 test
+
+    thread '<unnamed>' (82708) panicked at crates\worth-store-court-application\tests\worth_store_court_application\process\application\native_components\checkpoint.rs:225:74:
+    called `Result::unwrap()` on an `Err` value: Timeout
+    note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+    thread 'process::application::native_components::checkpoint::selected_checkpoint_survives_observer_drop_online_history_and_mutation_before_ack_recovery' (36596) panicked at crates\worth-store-court-application\tests\worth_store_court_application\process\application\native_components\checkpoint.rs:243:33:
+    called `Result::unwrap()` on an `Err` value: Any { .. }
+    test process::application::native_components::checkpoint::selected_checkpoint_survives_observer_drop_online_history_and_mutation_before_ack_recovery ... FAILED
+
+    failures:
+
+    failures:
+        process::application::native_components::checkpoint::selected_checkpoint_survives_observer_drop_online_history_and_mutation_before_ack_recovery
+
+    test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 111 filtered out; finished in 6.50s
+
+
+error: test run failed
+
+EVIDENCE_TEST_COUNTS: 0,1,0
+
+end_utc: 2026-11-04T19:18:34.129503+00:00
+exit_code: 100
+tests_passed: 0
+tests_failed: 1
+tests_ignored: 0

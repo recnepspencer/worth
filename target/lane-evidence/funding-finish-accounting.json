@@ -1,0 +1,265 @@
+{
+  "observations": [
+    {
+      "lane": "funding-finish-host-live-auto-close",
+      "path": "target\\test-cost\\query\\funding-finish-host-live-auto-close\\cpu\\152c062fdaea18a366305e56eb0372ff89e89a3e8fbfa26fe873f915c914fba6-59612.json",
+      "observation": {
+        "accounting": "complete",
+        "binary": "worth-query-court-query-decl-host::worth_query_court_query_decl_host",
+        "cpu_seconds": 2.5625,
+        "declared_slots": 2,
+        "exit": 0,
+        "observation_errors": [],
+        "observation_posture": "complete",
+        "process_accounting": "complete",
+        "reserved_slots": 2,
+        "scheduler": "nextest",
+        "scheduler_pool_size": 32,
+        "test": "host::application_home::reopening::checkpoint_state::close_checkpoint_exhaustion_reports_failure_and_preserves_journal_reopen",
+        "type": "test-cost-cpu",
+        "wall_seconds": 6.150007700081915
+      }
+    },
+    {
+      "lane": "funding-finish-host-live-auto-close",
+      "path": "target\\test-cost\\query\\funding-finish-host-live-auto-close\\cpu\\a8f8506dec038e219e316b52cf9a95778da13fd86649b2688eaf456fe3f0df6e-19656.json",
+      "observation": {
+        "accounting": "complete",
+        "binary": "worth-query-court-query-decl-host::worth_query_court_query_decl_host",
+        "cpu_seconds": 30.0625,
+        "declared_slots": 2,
+        "exit": 0,
+        "observation_errors": [],
+        "observation_posture": "complete",
+        "process_accounting": "complete",
+        "reserved_slots": 2,
+        "scheduler": "nextest",
+        "scheduler_pool_size": 32,
+        "test": "host::application_home::reopening::checkpoint_state::automatic_capture_at_head_forty_one_preserves_ordinary_request_results",
+        "type": "test-cost-cpu",
+        "wall_seconds": 43.03937349980697
+      }
+    },
+    {
+      "lane": "funding-finish-host-live-auto-close",
+      "path": "target\\test-cost\\query\\funding-finish-host-live-auto-close\\cpu\\c8af4a44f216deefda25b60c02c54f44e437101aab55dc2b0a7326a8c05ff544-81940.json",
+      "observation": {
+        "accounting": "complete",
+        "binary": "worth-query-court-query-decl-host::worth_query_court_query_decl_host",
+        "cpu_seconds": 3.921875,
+        "declared_slots": 2,
+        "exit": 0,
+        "observation_errors": [],
+        "observation_posture": "complete",
+        "process_accounting": "complete",
+        "reserved_slots": 2,
+        "scheduler": "nextest",
+        "scheduler_pool_size": 32,
+        "test": "host::application_home::reopening::checkpoint_state::live_checkpoint_recapture_keeps_all_covered_canonical_bodies_cold",
+        "type": "test-cost-cpu",
+        "wall_seconds": 7.100205499911681
+      }
+    },
+    {
+      "lane": "funding-finish-discarded-branch-growth",
+      "path": "target\\test-cost\\root\\funding-finish-discarded-branch-growth\\cpu\\26c4d9cdf1a439e386f1a6a459bee35409d634813a59eac84667c32850f79792-7832.json",
+      "observation": {
+        "accounting": "complete",
+        "binary": "worth-court-relational-certification::worth_court_relational_certification",
+        "cpu_seconds": 1.59375,
+        "declared_slots": 1,
+        "exit": 0,
+        "observation_errors": [],
+        "observation_posture": "complete",
+        "process_accounting": "complete",
+        "reserved_slots": 1,
+        "scheduler": "nextest",
+        "scheduler_pool_size": 32,
+        "test": "relational::durable_publication::source_initial_inputs::checkpoint_admission::covered_history_growth::selected_state_recapture_work_does_not_follow_discarded_covered_update_bytes",
+        "type": "test-cost-cpu",
+        "wall_seconds": 1.701707199914381
+      }
+    },
+    {
+      "lane": "funding-finish-host-bounded-reopen-kill-ack",
+      "path": "target\\test-cost\\query\\funding-finish-host-bounded-reopen-kill-ack\\cpu\\218fd5f4eec6ec603eea753351b97978e18bc25ef9f241c29bb0f1fac05bb64a-20196.json",
+      "observation": {
+        "accounting": "complete",
+        "binary": "worth-query-court-query-decl-host::worth_query_court_query_decl_host",
+        "cpu_seconds": 7.4375,
+        "declared_slots": 1,
+        "exit": 0,
+        "observation_errors": [],
+        "observation_posture": "complete",
+        "process_accounting": "complete",
+        "reserved_slots": 1,
+        "scheduler": "nextest",
+        "scheduler_pool_size": 32,
+        "test": "host::application_home::reopening::same_directory_reopens_reads_and_commits_without_replaying_initializer_or_old_key",
+        "type": "test-cost-cpu",
+        "wall_seconds": 25.792843100149184
+      }
+    },
+    {
+      "lane": "funding-finish-host-bounded-reopen-kill-ack",
+      "path": "target\\test-cost\\query\\funding-finish-host-bounded-reopen-kill-ack\\cpu\\29048ef9a2a329eb0b23a5847a2704cc1a8c6c5ce599c18f7e8216dc37ec6add-52832.json",
+      "observation": {
+        "accounting": "complete",
+        "binary": "worth-query-court-query-decl-host::worth_query_court_query_decl_host",
+        "cpu_seconds": 8.46875,
+        "declared_slots": 2,
+        "exit": 101,
+        "observation_errors": [],
+        "observation_posture": "complete",
+        "process_accounting": "complete",
+        "reserved_slots": 2,
+        "scheduler": "nextest",
+        "scheduler_pool_size": 32,
+        "test": "host::application_home::reopening::checkpoint_restart::killed_home_reopens_normalized_image_plus_nonempty_tail",
+        "type": "test-cost-cpu",
+        "wall_seconds": 27.559951100032777
+      }
+    },
+    {
+      "lane": "funding-finish-host-bounded-reopen-kill-ack",
+      "path": "target\\test-cost\\query\\funding-finish-host-bounded-reopen-kill-ack\\cpu\\2bdc56eaf5708c7aae24dadc583ef7b22c3b09862ee39d35c584c92010eb23d8-80292.json",
+      "observation": {
+        "accounting": "complete",
+        "binary": "worth-query-court-query-decl-host::worth_query_court_query_decl_host",
+        "cpu_seconds": 8.40625,
+        "declared_slots": 2,
+        "exit": 0,
+        "observation_errors": [],
+        "observation_posture": "complete",
+        "process_accounting": "complete",
+        "reserved_slots": 2,
+        "scheduler": "nextest",
+        "scheduler_pool_size": 32,
+        "test": "host::application_home::reopening::checkpoint_restart::selected_complete_home_reopens_and_selects_another_complete_checkpoint",
+        "type": "test-cost-cpu",
+        "wall_seconds": 21.63632890000008
+      }
+    },
+    {
+      "lane": "funding-finish-host-bounded-reopen-kill-ack",
+      "path": "target\\test-cost\\query\\funding-finish-host-bounded-reopen-kill-ack\\cpu\\4135d31a1e945bbf64fadb91aad0a50cafd6eb503f51609b880be0b8785fd758-22688.json",
+      "observation": {
+        "accounting": "complete",
+        "binary": "worth-query-court-query-decl-host::worth_query_court_query_decl_host",
+        "cpu_seconds": 16.40625,
+        "declared_slots": 1,
+        "exit": 0,
+        "observation_errors": [],
+        "observation_posture": "complete",
+        "process_accounting": "complete",
+        "reserved_slots": 1,
+        "scheduler": "nextest",
+        "scheduler_pool_size": 32,
+        "test": "host::application_home::reopening::separate_process::separate_processes_readmit_old_keys_and_restore_the_actual_outcome_frontier",
+        "type": "test-cost-cpu",
+        "wall_seconds": 34.81753040011972
+      }
+    },
+    {
+      "lane": "funding-finish-host-bounded-reopen-kill-ack",
+      "path": "target\\test-cost\\query\\funding-finish-host-bounded-reopen-kill-ack\\cpu\\87bb071de20b4fa410749e5fcee89bd2532758c1e2cd624dc0d8de607ee4b07d-81084.json",
+      "observation": {
+        "accounting": "complete",
+        "binary": "worth-query-court-query-decl-host::worth_query_court_query_decl_host",
+        "cpu_seconds": 44.984375,
+        "declared_slots": 2,
+        "exit": 101,
+        "observation_errors": [],
+        "observation_posture": "complete",
+        "process_accounting": "complete",
+        "reserved_slots": 2,
+        "scheduler": "nextest",
+        "scheduler_pool_size": 32,
+        "test": "host::application_home::reopening::checkpoint_restart::automatic_checkpoints_bound_host_reopen_journal_reads_with_headroom",
+        "type": "test-cost-cpu",
+        "wall_seconds": 60.03314630012028
+      }
+    },
+    {
+      "lane": "funding-finish-host-bounded-reopen-kill-ack",
+      "path": "target\\test-cost\\query\\funding-finish-host-bounded-reopen-kill-ack\\cpu\\9d1df15799a02362c50472126ae78f82adf40258274feb6b32a61939373b2cf6-40724.json",
+      "observation": {
+        "accounting": "complete",
+        "binary": "worth-query-court-query-decl-host::worth_query_court_query_decl_host",
+        "cpu_seconds": 0.4375,
+        "declared_slots": 1,
+        "exit": 101,
+        "observation_errors": [],
+        "observation_posture": "complete",
+        "process_accounting": "complete",
+        "reserved_slots": 1,
+        "scheduler": "nextest",
+        "scheduler_pool_size": 32,
+        "test": "host::application_home::reopening::refusals::initializer_refusal_reopens_at_missing_world_origin_without_replaying_initializer",
+        "type": "test-cost-cpu",
+        "wall_seconds": 5.581742899958044
+      }
+    },
+    {
+      "lane": "funding-finish-host-bounded-reopen-kill-ack",
+      "path": "target\\test-cost\\query\\funding-finish-host-bounded-reopen-kill-ack\\cpu\\a07ed34a86d18e280f08ce5344957586f3bea5c9732c9114d4f6f5d686f20e39-48792.json",
+      "observation": {
+        "accounting": "complete",
+        "binary": "worth-query-court-query-decl-host::worth_query_court_query_decl_host",
+        "cpu_seconds": 13.921875,
+        "declared_slots": 2,
+        "exit": 0,
+        "observation_errors": [],
+        "observation_posture": "complete",
+        "process_accounting": "complete",
+        "reserved_slots": 2,
+        "scheduler": "nextest",
+        "scheduler_pool_size": 32,
+        "test": "host::application_home::reopening::checkpoint_restart::journal_only_killed_home_reopens_original_inputs_and_commits_without_initializing",
+        "type": "test-cost-cpu",
+        "wall_seconds": 28.59950100001879
+      }
+    },
+    {
+      "lane": "funding-finish-host-bounded-reopen-kill-ack",
+      "path": "target\\test-cost\\query\\funding-finish-host-bounded-reopen-kill-ack\\cpu\\a68a03781a78f9fc36d00e883265a542decfc78914fcc50c421596deda6f8e93-3636.json",
+      "observation": {
+        "accounting": "complete",
+        "binary": "worth-query-court-query-decl-host::worth_query_court_query_decl_host",
+        "cpu_seconds": 6.03125,
+        "declared_slots": 2,
+        "exit": 0,
+        "observation_errors": [],
+        "observation_posture": "complete",
+        "process_accounting": "complete",
+        "reserved_slots": 2,
+        "scheduler": "nextest",
+        "scheduler_pool_size": 32,
+        "test": "host::application_home::reopening::checkpoint_restart::interrupted_owner_ack_resumes_original_attempt_and_reopens_unacknowledged_selection",
+        "type": "test-cost-cpu",
+        "wall_seconds": 27.455732600064948
+      }
+    },
+    {
+      "lane": "funding-finish-host-bounded-reopen-kill-ack",
+      "path": "target\\test-cost\\query\\funding-finish-host-bounded-reopen-kill-ack\\cpu\\b01b90b8c452445419fd0c19f8dd0600058a06ce175e857d238b6e73b8f2916b-67392.json",
+      "observation": {
+        "accounting": "complete",
+        "binary": "worth-query-court-query-decl-host::worth_query_court_query_decl_host",
+        "cpu_seconds": 8.53125,
+        "declared_slots": 1,
+        "exit": 0,
+        "observation_errors": [],
+        "observation_posture": "complete",
+        "process_accounting": "complete",
+        "reserved_slots": 1,
+        "scheduler": "nextest",
+        "scheduler_pool_size": 32,
+        "test": "host::application_home::reopening::flushed_and_pending_multibatch_homes_readmit_their_completed_publication",
+        "type": "test-cost-cpu",
+        "wall_seconds": 31.64541419991292
+      }
+    }
+  ],
+  "limit": "Host bounded/reopen lane originally declared one slot for the three general reopen cases (same-directory, flushed, separate-process), despite their close worker. Results are functional evidence, not full footprint qualification for those cases. Exact future reservation rows corrected to two; no rerun yet. Restart cases, live/automatic/close controls and growth use correct footprint-derived slots."
+}

@@ -1,0 +1,63 @@
+command: python target/lane-evidence/owned_native_funding_finish_probe.py funding-finish-equal-state-growth test(selected_state_recapture_work_does_not_follow_discarded_covered_update_bytes) 1
+HEAD: 03eb43385ce5cd29739a1ff5c4597bf7770aa973
+git_status_short_empty: false
+start_utc: 2026-11-04T18:10:37.148639+00:00
+environment: removed stale CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER override
+prebuild: cargo metadata --offline --format-version 1 --manifest-path "C:\programming\worth worktees\worktrees\m3-p3-reopen\Cargo.toml"
+prebuild: cargo test --message-format=json --no-run --package worth-court-relational-certification --test worth_court_relational_certification --profile dev --manifest-path "C:\programming\worth worktees\worktrees\m3-p3-reopen\Cargo.toml" --unit-graph -Z unstable-options
+prebuild: cargo nextest list --cargo-message-format=json --package worth-court-relational-certification --test worth_court_relational_certification --cargo-profile dev --manifest-path "C:\programming\worth worktees\worktrees\m3-p3-reopen\Cargo.toml" --list-type binaries-only --message-format json
+   Compiling worth-court-relational-certification v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-court-relational-certification)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 12.34s
+prebuild: cargo nextest list --cargo-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\root\funding-finish-equal-state-growth\build\cargo-metadata.json" --binaries-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\root\funding-finish-equal-state-growth\build\binaries.json" --message-format json --ignore-default-filter -E test(selected_state_recapture_work_does_not_follow_discarded_covered_update_bytes)
+prebuild: cargo nextest run --cargo-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\root\funding-finish-equal-state-growth\build\cargo-metadata.json" --binaries-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\root\funding-finish-equal-state-growth\build\binaries.json" --profile ci --config-file "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\root\d12-retained-image-and-sparse-courts\nextest.toml" --ignore-default-filter --no-fail-fast --no-tests=fail --message-format libtest-json -E test(selected_state_recapture_work_does_not_follow_discarded_covered_update_bytes)
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-root-funding-finish-equal-state-growth-build-cargo-met-03eb43385ce5-202611041810383063180000-8132ffc7e1bc.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-root-funding-finish-equal-state-growth-build-binaries--03eb43385ce5-202611041810394164740000-32aa8964948a.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-root-funding-finish-equal-state-growth-build-binaries--03eb43385ce5-202611041810403497160000-92c9ab3fe243.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-root-funding-finish-equal-state-growth-build-request-s-03eb43385ce5-202611041810546196420000-e1505a96378d.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-root-funding-finish-equal-state-growth-run-selection.l-03eb43385ce5-202611041810559203480000-33228ba35e40.log
+
+thread 'relational::durable_publication::source_initial_inputs::checkpoint_admission::capture_cost::selected_state_recapture_work_does_not_follow_discarded_covered_update_bytes' (66784) panicked at crates\worth-court-relational-certification\tests\worth_court_relational_certification\relational\durable_publication\source_initial_inputs\checkpoint_admission\capture_cost.rs:110:5:
+selected current state excludes discarded input bytes: (1073341, 35, 1111665), (2121671, 35, 1111673)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+info: experimental features enabled: wrapper-scripts
+────────────
+ Nextest run ID 5d371cd7-9bd9-448d-8b91-2928b259716c with nextest profile: ci
+    Starting 1 test across 1 binary (190 tests skipped)
+{"type":"suite","event":"started","test_count":2}
+{"type":"test","event":"started","name":"worth-court-relational-certification::worth_court_relational_certification$cost::relational::relational_certification::scale_invariant_admission::large_runtime_keeps_global_enforcement_and_filters_graph_planning"}
+{"type":"suite","event":"ok","passed":0,"failed":0,"ignored":1,"measured":0,"filtered_out":189,"exec_time":0}
+        FAIL [   1.765s] (1/1) worth-court-relational-certification::worth_court_relational_certification relational::durable_publication::source_initial_inputs::checkpoint_admission::capture_cost::selected_state_recapture_work_does_not_follow_discarded_covered_update_bytes
+  output ───
+
+    running 1 test
+
+    thread 'relational::durable_publication::source_initial_inputs::checkpoint_admission::capture_cost::selected_state_recapture_work_does_not_follow_discarded_covered_update_bytes' (66784) panicked at crates\worth-court-relational-certification\tests\worth_court_relational_certification\relational\durable_publication\source_initial_inputs\checkpoint_admission\capture_cost.rs:110:5:
+    selected current state excludes discarded input bytes: (1073341, 35, 1111665), (2121671, 35, 1111673)
+    note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+    test relational::durable_publication::source_initial_inputs::checkpoint_admission::capture_cost::selected_state_recapture_work_does_not_follow_discarded_covered_update_bytes ... FAILED
+
+    failures:
+
+    failures:
+        relational::durable_publication::source_initial_inputs::checkpoint_admission::capture_cost::selected_state_recapture_work_does_not_follow_discarded_covered_update_bytes
+
+    test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 190 filtered out; finished in 1.06s
+
+
+{"type":"suite","event":"started","test_count":2}
+{"type":"test","event":"started","name":"worth-court-relational-certification::worth_court_relational_certification$relational::durable_publication::source_initial_inputs::checkpoint_admission::capture_cost::selected_state_recapture_work_does_not_follow_discarded_covered_update_bytes"}
+{"type":"test","event":"failed","name":"worth-court-relational-certification::worth_court_relational_certification$relational::durable_publication::source_initial_inputs::checkpoint_admission::capture_cost::selected_state_recapture_work_does_not_follow_discarded_covered_update_bytes","exec_time":1.7647547000000001,"stdout":"\nthread 'relational::durable_publication::source_initial_inputs::checkpoint_admission::capture_cost::selected_state_recapture_work_does_not_follow_discarded_covered_update_bytes' (66784) panicked at crates\\worth-court-relational-certification\\tests\\worth_court_relational_certification\\relational\\durable_publication\\source_initial_inputs\\checkpoint_admission\\capture_cost.rs:110:5:\nselected current state excludes discarded input bytes: (1073341, 35, 1111665), (2121671, 35, 1111673)\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n"}
+{"type":"suite","event":"failed","passed":0,"failed":1,"ignored":1,"measured":0,"filtered_out":189,"exec_time":1.7647547000000001}
+────────────
+     Summary [   1.766s] 1 test run: 0 passed, 1 failed, 190 skipped
+        FAIL [   1.765s] (1/1) worth-court-relational-certification::worth_court_relational_certification relational::durable_publication::source_initial_inputs::checkpoint_admission::capture_cost::selected_state_recapture_work_does_not_follow_discarded_covered_update_bytes
+error: test run failed
+
+EVIDENCE_TEST_COUNTS: 0,1,0
+
+end_utc: 2026-11-04T18:10:57.936233+00:00
+exit_code: 100
+tests_passed: 0
+tests_failed: 1
+tests_ignored: 0
