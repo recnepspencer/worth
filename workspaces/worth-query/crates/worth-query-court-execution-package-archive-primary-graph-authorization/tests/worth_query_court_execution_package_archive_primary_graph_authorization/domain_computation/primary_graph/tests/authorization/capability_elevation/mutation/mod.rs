@@ -36,13 +36,13 @@ pub fn set_status(
 ) {
     let elevation = world
         .application
-        .select_product_branch(
+        .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch(),
+            world.application.product_runtime().default_branch_for_test(),
         )
         .expect("the selected product branch remains admitted")
         .resolve_entity(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             CapabilityElevationIdentity::reference(),
             elevation_identity.to_owned(),
             &live_scope(),
@@ -50,7 +50,7 @@ pub fn set_status(
         )
         .unwrap();
     let field = CapabilityElevationStatusField::reference();
-    let graph = world.application.runtime.primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let locator = graph
         .layout()
         .field_locator(field.entity(), field.aspect(), field.field())
@@ -81,20 +81,20 @@ pub fn add_self_approver(
 ) {
     let elevation = world
         .application
-        .select_product_branch(
+        .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch(),
+            world.application.product_runtime().default_branch_for_test(),
         )
         .expect("the selected product branch remains admitted")
         .resolve_entity(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             CapabilityElevationIdentity::reference(),
             elevation_identity.to_owned(),
             &live_scope(),
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap();
-    let graph = world.application.runtime.primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let relation_kind = graph
         .layout()
         .relation(CapabilityElevationApprover::reference().name())
@@ -125,13 +125,13 @@ pub fn replace_elevation_resource(
 ) {
     let elevation = world
         .application
-        .select_product_branch(
+        .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch(),
+            world.application.product_runtime().default_branch_for_test(),
         )
         .expect("the selected product branch remains admitted")
         .resolve_entity(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             CapabilityElevationIdentity::reference(),
             elevation_identity.to_owned(),
             &live_scope(),
@@ -141,13 +141,13 @@ pub fn replace_elevation_resource(
     let replacement = replacement_account.map(|identity| {
         world
             .application
-            .select_product_branch(
+            .select_product_branch_for_test(
                 execution,
-                world.application.product_runtime().default_branch(),
+                world.application.product_runtime().default_branch_for_test(),
             )
             .expect("the selected product branch remains admitted")
             .resolve_entity(
-                &phase_custody.phase_for_application(&world.application),
+                &phase_custody.phase_for_application_for_test(&world.application),
                 AccountIdentity::reference(),
                 identity.to_owned(),
                 &live_scope(),
@@ -156,16 +156,16 @@ pub fn replace_elevation_resource(
             .unwrap()
             .entity_id()
     });
-    let graph = world.application.runtime.primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let relation_kind = graph
         .layout()
         .relation(CapabilityElevationResource::reference().name())
         .unwrap()
         .kind;
     let handle = graph.integration_handle();
-    let selected = world.selected_product(&(phase_custody).test_host_request());
+    let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
     let relation = handle.with_runtime_mut(execution, |runtime| {
-        let snapshot = selected.application_basis().snapshot_handle();
+        let snapshot = selected.application_basis_for_test().snapshot_handle();
 
         runtime
             .read_truth()
@@ -205,13 +205,13 @@ pub fn add_elevation_resource(
 ) {
     let elevation = world
         .application
-        .select_product_branch(
+        .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch(),
+            world.application.product_runtime().default_branch_for_test(),
         )
         .expect("the selected product branch remains admitted")
         .resolve_entity(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             CapabilityElevationIdentity::reference(),
             elevation_identity.to_owned(),
             &live_scope(),
@@ -220,20 +220,20 @@ pub fn add_elevation_resource(
         .unwrap();
     let account = world
         .application
-        .select_product_branch(
+        .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch(),
+            world.application.product_runtime().default_branch_for_test(),
         )
         .expect("the selected product branch remains admitted")
         .resolve_entity(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             AccountIdentity::reference(),
             account_identity.to_owned(),
             &live_scope(),
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap();
-    let graph = world.application.runtime.primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let relation_kind = graph
         .layout()
         .relation(CapabilityElevationResource::reference().name())

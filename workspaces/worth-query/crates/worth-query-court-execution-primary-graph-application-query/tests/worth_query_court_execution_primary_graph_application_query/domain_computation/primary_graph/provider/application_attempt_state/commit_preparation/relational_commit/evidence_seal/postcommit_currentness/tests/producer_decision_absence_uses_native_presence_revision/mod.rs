@@ -10,9 +10,9 @@ fn producer_decision_absence_uses_native_presence_revision() {
         .expect("the fixture read owns its installed host call");
     let fact = WorthQueryApplicationObservedFact::AbsentField {
         entity_id: entity,
-        kind: world
+        kind: (*world
             .application
-            .runtime
+            .runtime_for_test())
             .primary_graph()
             .unwrap()
             .layout
@@ -23,7 +23,7 @@ fn producer_decision_absence_uses_native_presence_revision() {
     let facts = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             rebase_at_current(
                 &phase,
                 &host_custody.borrowed_request_for_test(),
@@ -42,7 +42,7 @@ fn producer_decision_absence_uses_native_presence_revision() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             assert!(current(
                 &phase,
                 &host_custody.borrowed_request_for_test(),
@@ -63,7 +63,7 @@ fn producer_decision_absence_uses_native_presence_revision() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             set_note(
                 &host_custody.borrowed_request_for_test(),
                 &world,
@@ -76,7 +76,7 @@ fn producer_decision_absence_uses_native_presence_revision() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             assert!(!current(
                 &phase,
                 &host_custody.borrowed_request_for_test(),

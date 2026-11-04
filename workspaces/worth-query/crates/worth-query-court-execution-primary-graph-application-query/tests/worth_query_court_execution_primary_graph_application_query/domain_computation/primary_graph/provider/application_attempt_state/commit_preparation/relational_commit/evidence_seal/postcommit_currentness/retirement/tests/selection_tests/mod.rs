@@ -131,9 +131,9 @@ pub fn restored_role(
 ) -> WorthQueryApplicationOutputCorrespondence {
     struct CheckpointBinding;
     struct CheckpointOutputs;
-    WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles(
-        TypeId::of::<CheckpointBinding>(),
-        TypeId::of::<CheckpointOutputs>(),
+    WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles_for_test(
+        TypeId::of_for_test::<CheckpointBinding>(),
+        TypeId::of_for_test::<CheckpointOutputs>(),
         std::iter::empty(),
         &[WorthQueryCheckpointOutputRole {
             role: "output".into(),
@@ -141,7 +141,7 @@ pub fn restored_role(
             entity_name: "Account".into(),
             entity,
         }],
-        |_| Some(TypeId::of::<Account>()),
+        |_| Some(TypeId::of_for_test::<Account>()),
         &worth_execution::ExecutionRequest::serial(&worth_execution::SerialRequest::from_memory(
             worth_execution::SerialMemoryBudget::new(None),
             worth_execution::CancellationToken::new(),
@@ -159,22 +159,22 @@ pub fn sealed_rebase(
     correspondence: &WorthQueryApplicationOutputCorrespondence,
     changed: &[RecordRef],
 ) -> worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::payload::FactPayload{
-    let selected = world.selected_product(&(phase_custody).test_host_request());
-    world
+    let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
+    (*world
         .application
-        .runtime
+        .runtime_for_test())
         .primary_graph()
         .unwrap()
         .integration_handle()
         .with_runtime(execution, |runtime| {
-            exact(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::rebase_output(execution, runtime, selected.application_basis().snapshot_handle(), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::PreparedSourceFactRebase::admit(
+            exact(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::rebase_output(execution, runtime, selected.application_basis_for_test().snapshot_handle(), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::PreparedSourceFactRebase::admit_for_test(
                     facts,
                     [].into(),
-                    StorageControl::new(
+                    StorageControl::new_for_test(
                         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                         None,
                     ),
                 )
-                .unwrap(), correspondence, changed, true, worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new(execution.allocation_policy(), None)))
+                .unwrap(), correspondence, changed, true, worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new_for_test(execution.allocation_policy(), None)))
         })
 }

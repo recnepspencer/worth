@@ -20,7 +20,7 @@ pub static TEST_ALLOCATOR: &StatsAlloc<std::alloc::System> = &INSTRUMENTED_SYSTE
 #[test]
 fn allocated_capacity_includes_nested_variable_width_buffers() {
     let capacities = [64, 96, 128, 160, 192];
-    let mut sink = WorthQueryArtifactProjectionSink::new(
+    let mut sink = WorthQueryArtifactProjectionSink::new_for_test(
         fields(),
         1,
         WorthQueryArtifactNativeAlignment::new(1),
@@ -40,10 +40,10 @@ fn allocated_capacity_includes_nested_variable_width_buffers() {
     ])
     .unwrap();
 
-    let outer = sink
-        .values
+    let outer = (*sink
+        .values_for_test())
         .capacity()
-        .saturating_add(sink.pending_row.capacity())
+        .saturating_add((*sink.pending_row_for_test()).capacity())
         .saturating_mul(std::mem::size_of::<AspectValue>());
     assert_eq!(
         sink.allocated_capacity_bytes().saturating_sub(outer),
@@ -89,7 +89,7 @@ pub fn measured_sink_peak(max_rows: usize) -> usize {
         ScalarAspectType::Int64,
     )];
     let region = Region::new(TEST_ALLOCATOR);
-    let mut sink = WorthQueryArtifactProjectionSink::new(
+    let mut sink = WorthQueryArtifactProjectionSink::new_for_test(
         fields,
         max_rows,
         WorthQueryArtifactNativeAlignment::new(1),

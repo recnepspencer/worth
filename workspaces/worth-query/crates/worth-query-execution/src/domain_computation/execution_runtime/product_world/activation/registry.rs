@@ -340,3 +340,5 @@ impl Drop for WorthQueryProgramRetirementBarrier {
             .remove(&self.revision);
     }
 }
+
+mod court_doors_for_test;

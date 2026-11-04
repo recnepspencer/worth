@@ -23,20 +23,20 @@ fn native_preparation_cancellation_leaves_head_and_key_available_for_fresh_retry
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let head = world
         .application
         .with_host_advancement(|phase| {
             world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&(phase).test_host_request_for_test())
                 .product()
                 .selected_commit()
                 .clone()
@@ -73,16 +73,16 @@ fn native_preparation_cancellation_leaves_head_and_key_available_for_fresh_retry
             assert_eq!(
                 &head,
                 world
-                    .selected_product(&(phase).test_host_request(),)
+                    .selected_product(&(phase).test_host_request_for_test(),)
                     .product()
                     .selected_commit()
             )
         })
         .expect("the fixture read owns its installed host call");
     assert_eq!(
-        world
+        (*world
             .application
-            .primary_provider
+            .primary_provider_for_test())
             .published_application_commit_count(),
         0
     );
@@ -90,14 +90,14 @@ fn native_preparation_cancellation_leaves_head_and_key_available_for_fresh_retry
     let unchanged = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "open", &fresh)
+            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &fresh)
         })
         .expect("the fixture read owns its installed host call");
-    assert_eq!(unchanged.entity_id(), account.entity_id());
+    assert_eq!(unchanged.entity_id_for_test(), account.entity_id_for_test());
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &fresh)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &fresh)
         })
         .expect("the fixture read owns its installed host call");
     let retry = world
@@ -123,9 +123,9 @@ fn native_preparation_cancellation_leaves_head_and_key_available_for_fresh_retry
         "the cancelled preparation must not consume its idempotency key: {outcome:?}"
     );
     assert_eq!(
-        world
+        (*world
             .application
-            .primary_provider
+            .primary_provider_for_test())
             .published_application_commit_count(),
         1
     );
@@ -133,12 +133,12 @@ fn native_preparation_cancellation_leaves_head_and_key_available_for_fresh_retry
         .application
         .with_host_advancement(|phase| {
             resolved_account(
-                &(phase).test_host_request(),
+                &(phase).test_host_request_for_test(),
                 &world,
                 "native-prepared",
                 &live_scope(),
             )
         })
         .expect("the fixture read owns its installed host call");
-    assert_eq!(landed.entity_id(), account.entity_id());
+    assert_eq!(landed.entity_id_for_test(), account.entity_id_for_test());
 }

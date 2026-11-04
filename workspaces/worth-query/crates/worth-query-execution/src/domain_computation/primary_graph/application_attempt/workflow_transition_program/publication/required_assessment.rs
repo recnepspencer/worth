@@ -76,3 +76,6 @@ impl RequiredWorkflowAssessment {
         &self.program_revision
     }
 }
+
+#[path = "required_assessment_court_doors_for_test.rs"]
+mod court_doors_for_test;

@@ -45,16 +45,16 @@ impl Context {
             .with_host_advancement(|phase| {
                 let request = live_scope();
                 let principal =
-                    authenticated_principal(&phase.test_host_request(), &world, &request);
-                let scope = resolved_account(&phase.test_host_request(), &world, "open", &request);
+                    authenticated_principal(&phase.test_host_request_for_test(), &world, &request);
+                let scope = resolved_account(&phase.test_host_request_for_test(), &world, "open", &request);
                 let admitted = admitted_operation(&phase, &world, &principal, &scope, &request);
                 (
                     admitted.scope_entity_id(),
-                    WorkflowAdmittedActor::from_admission(&admitted),
+                    WorkflowAdmittedActor::from_admission_for_test(&admitted),
                 )
             })
             .unwrap();
-        let graph = world.application.runtime.primary_graph().unwrap();
+        let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
         let layout = graph.layout.workflow().clone();
         let account_kind = graph.layout.entity_kind("Account").unwrap();
         let before = inventory(&world, &execution, account_kind);
@@ -77,15 +77,15 @@ impl Context {
 
     pub fn check(&self) -> Result<(), WorthQueryApplicationAttemptDenial> {
         self.read(|execution, runtime, snapshot, layout| worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow_instance_observation::history::operation_outputs::observe(execution, runtime, snapshot, layout, self.transition,
-            &mut worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow_instance_observation::history::budget::HistoryReconstructionCharge::new(worth_query_installation::facade::WorthQueryWorkflowHistoryReconstructionBudget::standard())?).map(|_| ()))
+            &mut worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow_instance_observation::history::budget::HistoryReconstructionCharge::new_for_test(worth_query_installation::facade::WorthQueryWorkflowHistoryReconstructionBudget::standard())?).map(|_| ()))
     }
 
     pub fn targets(&self) -> Vec<(String, EntityId)> {
         self.read(|execution, runtime, snapshot, layout| {
             let output = &layout.operation_output;
-            let mut result = observe_adjacency(runtime, execution, snapshot, output.membership, self.transition, Direction::Outgoing, 8).unwrap().unwrap().into_iter().map(|entry| {
-                let role = text(execution, runtime, snapshot, entry.to, output.entity_kind, &output.role).unwrap();
-                let target = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::adjacency::observe_audit_outgoing_adjacency(runtime, execution, snapshot, output.target, entry.to, 4).unwrap().unwrap()[0].to;
+            let mut result = observe_adjacency(runtime, execution, snapshot, (*output.membership_for_test()), self.transition, Direction::Outgoing, 8).unwrap().unwrap().into_iter().map(|entry| {
+                let role = text(execution, runtime, snapshot, (*entry.to_for_test()), (*output.entity_kind_for_test()), &(*output.role_for_test())).unwrap();
+                let target = (*worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::adjacency::observe_audit_outgoing_adjacency(runtime, execution, snapshot, (*output.target_for_test()), (*entry.to_for_test()), 4).unwrap().unwrap()[0].to_for_test());
                 (role, target)
             }).collect::<Vec<_>>();
             result.sort(); result
@@ -118,13 +118,13 @@ impl Context {
         let (_, _, lease) = self
             .world
             .application
-            .select_product_branch(
+            .select_product_branch_for_test(
                 &execution,
-                self.world.application.product_runtime().default_branch(),
+                self.world.application.product_runtime().default_branch_for_test(),
             )
             .unwrap()
             .into_parts();
-        let graph = self.world.application.runtime.primary_graph().unwrap();
+        let graph = (*self.world.application.runtime_for_test()).primary_graph().unwrap();
         graph
             .integration_handle()
             .with_runtime(&execution, |runtime| {
@@ -145,15 +145,15 @@ pub fn inventory(
 ) -> Vec<EntityId> {
     let (_, _, lease) = world
         .application
-        .select_product_branch(
+        .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch(),
+            world.application.product_runtime().default_branch_for_test(),
         )
         .unwrap()
         .into_parts();
-    world
+    (*world
         .application
-        .runtime
+        .runtime_for_test())
         .primary_graph()
         .unwrap()
         .integration_handle()

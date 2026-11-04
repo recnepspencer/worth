@@ -24,7 +24,7 @@ fn workflow_checkpoint_failure_and_generation_disruption_become_cleanup_only_aut
             .inspection()
             .artifact_evidence()
             .production_generation();
-        let registry = yielded.artifacts.registry();
+        let registry = (*yielded.artifacts_for_test()).registry();
         *registry_slot
             .lock()
             .expect("workflow rollback fixture registry slot must remain available") =
@@ -32,7 +32,7 @@ fn workflow_checkpoint_failure_and_generation_disruption_become_cleanup_only_aut
 
         let recovery = {
             let fixture_phase_result = {
-                let installed_fixture_phase = yielded.fixture_phase(active_request);
+                let installed_fixture_phase = yielded.fixture_phase_for_test(active_request);
                 yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
             };
             match fixture_phase_result {
@@ -111,14 +111,14 @@ fn workflow_generation_mismatch_denies_before_fresh_authority_and_rolls_back_cle
             .inspection()
             .artifact_evidence()
             .production_generation();
-        let pending = yielded
-            .artifacts
+        let pending = (*yielded
+            .artifacts_for_test())
             .registry()
             .prepare_next_generation()
             .expect("test delta should place the registry in a pending generation");
         let denied = {
             let fixture_phase_result = {
-                let installed_fixture_phase = yielded.fixture_phase(active_request);
+                let installed_fixture_phase = yielded.fixture_phase_for_test(active_request);
                 yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
             };
             match fixture_phase_result {
@@ -149,7 +149,7 @@ fn workflow_generation_mismatch_denies_before_fresh_authority_and_rolls_back_cle
         );
         let active = {
             let fixture_phase_result = {
-                let installed_fixture_phase = yielded.fixture_phase(active_request);
+                let installed_fixture_phase = yielded.fixture_phase_for_test(active_request);
                 yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
             };
             match fixture_phase_result {
@@ -161,7 +161,7 @@ fn workflow_generation_mismatch_denies_before_fresh_authority_and_rolls_back_cle
         };
         let completion = {
             let fixture_phase_result = {
-                let installed_fixture_phase = active.fixture_phase(execution);
+                let installed_fixture_phase = active.fixture_phase_for_test(execution);
                 active.advance(&installed_fixture_phase)
             };
             match fixture_phase_result {

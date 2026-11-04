@@ -24,13 +24,13 @@ fn cancellation_during_compute_has_a_witness_and_a_safe_canonical_prefix() {
                     policy,
                 }
             });
-            let root = QueryRequestExecution::open(placement, &scope);
+            let root = QueryRequestExecution::open_for_test(placement, &scope);
             let members = (0..MEMBERS)
                 .map(|rank| {
                     let schedule = schedule.clone();
                     let cancellation = cancellation.clone();
                     PreparedMember {
-                        requests: vec![PreparedCompute::new(move |member| {
+                        requests: vec![PreparedCompute::new_for_test(move |member| {
                             let (state, wake) = &*schedule;
                             if rank == selected {
                                 let (mut held, waited) = wake
@@ -58,7 +58,7 @@ fn cancellation_during_compute_has_a_witness_and_a_safe_canonical_prefix() {
                                     .unwrap();
                                 state.watchdog |= waited.timed_out() && !state.fired;
                             }
-                            let (_, poll) = member.into_parts();
+                            let (_, poll) = member.into_parts_for_test();
                             let result = poll().map(|()| rank);
                             if result.is_ok() {
                                 state.lock().unwrap().completed[rank] = true;
@@ -106,7 +106,7 @@ fn cancellation_during_compute_has_a_witness_and_a_safe_canonical_prefix() {
                 .map(|result| {
                     result
                         .unwrap()
-                        .into_slots()
+                        .into_slots_for_test()
                         .pop()
                         .unwrap()
                         .into_value::<Result<usize, worth_execution::MapKernelStop>>()

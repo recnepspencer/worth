@@ -46,7 +46,7 @@ fn request_bound_fact_merge_keeps_generations_and_merges_complete_endpoint_bodie
         worth_execution::CancellationToken::new(),
         None,
     );
-    let control = SourceFactExpansionControl::in_request(ExecutionRequest::serial(&request), None);
+    let control = SourceFactExpansionControl::in_request_for_test(ExecutionRequest::serial(&request), None);
     let facts = merge_facts(
         vec![
             Fact::SourceEntity {
@@ -94,7 +94,7 @@ fn request_bound_fact_merge_keeps_generations_and_merges_complete_endpoint_bodie
 fn direct_fact_retention_preserves_original_execution_cancellation() {
     let stop = CancellationSource::new();
     let request = SerialRequest::from_memory(SerialMemoryBudget::new(None), stop.token(), None);
-    let control = SourceFactExpansionControl::in_request(ExecutionRequest::serial(&request), None);
+    let control = SourceFactExpansionControl::in_request_for_test(ExecutionRequest::serial(&request), None);
     stop.cancel();
     let refused = merge_facts(
         vec![Fact::SourceEntity {
@@ -117,7 +117,7 @@ fn direct_fact_retention_preserves_original_execution_cancellation() {
         vec![Fact::SourceEntity {
             entity_id: entity(1)
         }],
-        SourceFactExpansionControl::in_request(ExecutionRequest::serial(&fresh), None),
+        SourceFactExpansionControl::in_request_for_test(ExecutionRequest::serial(&fresh), None),
         "fresh"
     )
     .is_ok());

@@ -12,9 +12,9 @@ fn admission_refusal_has_a_zero_report_and_a_panic_closes_observer_custody() {
         worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation::install_on_this_thread();
     worth_query_execution::facade::domain_computation::advancement_observations_on_this_thread_for_test();
     let mut root = request();
-    root.declared_work = Some(0);
+    (*root.declared_work_mut_for_test()) = Some(0);
     assert!(root
-        .run_advancement(None, None, |_| panic!("refused before body"))
+        .run_advancement_for_test(None, None, |_| panic!("refused before body"))
         .is_err());
     let refused = worth_query_execution::facade::domain_computation::advancement_observations_on_this_thread_for_test();
     assert_eq!(refused.len(), 1);
@@ -33,7 +33,7 @@ fn admission_refusal_has_a_zero_report_and_a_panic_closes_observer_custody() {
     assert!(refused[0].applied.is_empty());
     let root = request();
     assert!(std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        root.run_advancement(None, None, |_| {
+        root.run_advancement_for_test(None, None, |_| {
             charged_request(root.execution_request().unwrap(), PREPARE);
             panic!("owner body panic")
         })
@@ -46,7 +46,7 @@ fn admission_refusal_has_a_zero_report_and_a_panic_closes_observer_custody() {
         Some(WorthQueryAdvancementDenial::Panicked)
     );
 
-    root.run_advancement(None, None, |_| ()).unwrap();
+    root.run_advancement_for_test(None, None, |_| ()).unwrap();
     assert_eq!(
         worth_query_execution::facade::domain_computation::advancement_observations_on_this_thread_for_test().len(),
         1
@@ -65,10 +65,10 @@ fn member_host_refusals_do_not_add_thread_dependent_observations() {
         let _restore = Restore(place(posture), bound(None));
         worth_query_execution::facade::domain_computation::advancement_observations_on_this_thread_for_test();
         let root = request();
-        root.run_advancement(None, None, |_| {
+        root.run_advancement_for_test(None, None, |_| {
             let members = (0..2)
                 .map(|_| PreparedMember {
-                    requests: vec![PreparedCompute::new(|_| {
+                    requests: vec![PreparedCompute::new_for_test(|_| {
                         with_bootstrap_advancement(
                             worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy(
                                 NonZeroUsize::MIN,
@@ -84,7 +84,7 @@ fn member_host_refusals_do_not_add_thread_dependent_observations() {
             for member in computed {
                 let refusal = member
                     .unwrap()
-                    .into_slots()
+                    .into_slots_for_test()
                     .pop()
                     .unwrap()
                     .into_value::<Result<(), WorthQueryAdvancementDenial>>();

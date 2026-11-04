@@ -27,10 +27,10 @@ pub fn sealed() -> SealedComputationFacts {
             )
         })
         .collect();
-    SealedComputationFacts::at_seal(reads, &facts)
+    SealedComputationFacts::at_seal_for_test(reads, &facts)
 }
 pub fn control() -> StorageControl<'static, 'static> {
-    StorageControl::new(
+    StorageControl::new_for_test(
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         None,
     )
@@ -42,7 +42,7 @@ fn moved_readers_replace_old_edges_preserving_shared_roles_original_ordinals_and
     let calls = BTreeSet::from([partition(7), partition(9)]);
     let fresh = BTreeMap::from([(partition(7), vec![&two]), (partition(9), vec![&one])]);
     let next = prior
-        .reattribute(&calls, &fresh, control())
+        .reattribute_for_test(&calls, &fresh, control())
         .unwrap()
         .unwrap();
     assert_eq!(
@@ -54,14 +54,14 @@ fn moved_readers_replace_old_edges_preserving_shared_roles_original_ordinals_and
         [partition(7)]
     );
     assert_eq!(
-        prior.metadata[&one].readers.partitions(),
+        (*prior.metadata_for_test())[&one].readers.partitions(),
         [PartitionIdentity::new(7)]
     );
     assert_eq!(next.index.keys(partition(7)).collect::<Vec<_>>(), [&two]);
     assert_eq!(next.index.keys(partition(9)).collect::<Vec<_>>(), [&one]);
     assert!(next.original.same_backing(&prior.original));
-    assert_eq!(next.layout, prior.layout);
-    assert_eq!(next.metadata[&one].ordinal, prior.metadata[&one].ordinal);
+    assert_eq!(next.layout, (*prior.layout_for_test()));
+    assert_eq!(next.metadata[&one].ordinal, (*prior.metadata_for_test())[&one].ordinal);
 }
 #[test]
 fn same_count_substitution_and_lost_last_reader_require_the_full_path() {
@@ -71,16 +71,16 @@ fn same_count_substitution_and_lost_last_reader_require_the_full_path() {
     let calls = BTreeSet::from([partition(9)]);
     let substituted = BTreeMap::from([(partition(9), vec![&other])]);
     assert!(prior
-        .reattribute(&calls, &substituted, control())
+        .reattribute_for_test(&calls, &substituted, control())
         .unwrap()
         .is_none());
     let removed = BTreeMap::from([(partition(9), vec![&one])]);
     assert!(prior
-        .reattribute(&calls, &removed, control())
+        .reattribute_for_test(&calls, &removed, control())
         .unwrap()
         .is_none());
     assert_eq!(
-        prior.index.keys(partition(9)).collect::<Vec<_>>(),
+        (*prior.index_for_test()).keys(partition(9)).collect::<Vec<_>>(),
         [&key(2)]
     );
 }
@@ -92,25 +92,25 @@ fn retired_and_inserted_calls_transfer_exact_keys_without_replacing_original_ord
     let calls = BTreeSet::from([partition(7), partition(9), partition(11)]);
     let fresh = BTreeMap::from([(partition(7), vec![&one]), (partition(11), vec![&two])]);
     let next = prior
-        .reattribute(&calls, &fresh, control())
+        .reattribute_for_test(&calls, &fresh, control())
         .unwrap()
         .unwrap();
     assert!(next.index.keys(partition(9)).next().is_none());
     assert!(!next.index.calls.contains_key(&partition(9)));
     assert_eq!(next.index.keys(partition(11)).collect::<Vec<_>>(), [&two]);
     for key in [&one, &two] {
-        assert_eq!(next.metadata[key].ordinal, prior.metadata[key].ordinal);
+        assert_eq!(next.metadata[key].ordinal, (*prior.metadata_for_test())[key].ordinal);
     }
     assert_eq!(
         next.metadata[&two].readers.partitions(),
         [PartitionIdentity::new(11)]
     );
     assert!(next.original.same_backing(&prior.original));
-    assert_eq!(prior.index.keys(partition(9)).collect::<Vec<_>>(), [&two]);
+    assert_eq!((*prior.index_for_test()).keys(partition(9)).collect::<Vec<_>>(), [&two]);
     let wrong = key(3);
     let substituted = BTreeMap::from([(partition(7), vec![&one]), (partition(11), vec![&wrong])]);
     assert!(prior
-        .reattribute(&calls, &substituted, control())
+        .reattribute_for_test(&calls, &substituted, control())
         .unwrap()
         .is_none());
 }

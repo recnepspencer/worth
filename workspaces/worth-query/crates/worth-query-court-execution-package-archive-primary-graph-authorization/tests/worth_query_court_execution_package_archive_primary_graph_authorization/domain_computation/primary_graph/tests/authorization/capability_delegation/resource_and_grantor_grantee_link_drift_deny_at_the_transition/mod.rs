@@ -10,7 +10,7 @@ fn resource_and_grantor_grantee_link_drift_deny_at_the_transition() {
         resource
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 replace_parent_resource(&host_custody, &resource)
             })
             .expect("the fixture read owns its installed host call");
@@ -18,14 +18,14 @@ fn resource_and_grantor_grantee_link_drift_deny_at_the_transition() {
         let principal = resource
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 authenticated_principal(&host_custody, &resource, &request)
             })
             .expect("the fixture read owns its installed host call");
         let Err(denial) = resource
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 admitted_capability_access(&host_custody, &resource, &principal, &request, 100)
             })
             .expect("the fixture read owns its installed host call")
@@ -44,7 +44,7 @@ fn resource_and_grantor_grantee_link_drift_deny_at_the_transition() {
         actors
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 replace_child_grantor_with_grantee(
                     &host_custody,
                     &host_custody.borrowed_request_for_test(),
@@ -56,14 +56,14 @@ fn resource_and_grantor_grantee_link_drift_deny_at_the_transition() {
         let principal = actors
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 authenticated_principal(&host_custody, &actors, &request)
             })
             .expect("the fixture read owns its installed host call");
         let Err(denial) = actors
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 admitted_capability_access(&host_custody, &actors, &principal, &request, 100)
             })
             .expect("the fixture read owns its installed host call")

@@ -31,13 +31,13 @@ fn omitted_work_budget_keeps_live_cancellation_through_native_validation() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let rejected = world
@@ -75,9 +75,9 @@ fn omitted_work_budget_keeps_live_cancellation_through_native_validation() {
         )
     );
     assert_eq!(
-        world
+        (*world
             .application
-            .primary_provider
+            .primary_provider_for_test())
             .published_application_commit_count(),
         0
     );
@@ -85,14 +85,14 @@ fn omitted_work_budget_keeps_live_cancellation_through_native_validation() {
     let unchanged = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "open", &fresh)
+            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &fresh)
         })
         .expect("the fixture read owns its installed host call");
-    assert_eq!(unchanged.entity_id(), account.entity_id());
+    assert_eq!(unchanged.entity_id_for_test(), account.entity_id_for_test());
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &fresh)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &fresh)
         })
         .expect("the fixture read owns its installed host call");
     let retry = world
@@ -123,12 +123,12 @@ fn omitted_work_budget_keeps_live_cancellation_through_native_validation() {
         .application
         .with_host_advancement(|phase| {
             resolved_account(
-                &(phase).test_host_request(),
+                &(phase).test_host_request_for_test(),
                 &world,
                 "after-staging",
                 &live_scope(),
             )
         })
         .expect("the fixture read owns its installed host call");
-    assert_eq!(landed.entity_id(), account.entity_id());
+    assert_eq!(landed.entity_id_for_test(), account.entity_id_for_test());
 }

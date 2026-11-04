@@ -31,7 +31,7 @@ fn lawful_request_approve_close_review_sequence_commits_exact_distinct_actors() 
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             assert_eq!(
                 crate::domain_computation::primary_graph::tests::authorization::capability_elevation::terminal_state::review_status(
                     &host_custody,
@@ -45,7 +45,7 @@ fn lawful_request_approve_close_review_sequence_commits_exact_distinct_actors() 
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             let borrowed_execution = host_custody.borrowed_request_for_test();
             let execution = &borrowed_execution;
             assert!(crate::domain_computation::primary_graph::tests::authorization::capability_elevation::terminal_state::has_exact_reviewer(
@@ -72,14 +72,14 @@ fn requester_and_approver_are_denied_by_installed_review_actor_composition() {
         let actor = world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 crate::domain_computation::primary_graph::tests::authorization::capability_elevation::approval_transition::authenticated(&host_custody, &world, subject, &request)
             })
             .expect("the fixture read owns its installed host call");
         let denial = world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 crate::domain_computation::primary_graph::tests::authorization::capability_elevation::terminal_lifecycle_support::review_access(
                     &host_custody,
                     &world,
@@ -105,7 +105,7 @@ fn concurrent_review_completion_stales_and_returned_obligation_cannot_be_reused(
     let reads = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             crate::domain_computation::primary_graph::tests::authorization::capability_elevation::terminal_lifecycle_support::review_reads(
                 &host_custody,
                 &world,
@@ -136,7 +136,7 @@ pub fn denied_concurrent_review() -> (
     let (reviewer, program) = world
         .application
         .with_application_advancement(&request, |phase| {
-            let custody = phase.test_host_request();
+            let custody = phase.test_host_request_for_test();
             let reviewer =
                 crate::domain_computation::primary_graph::tests::authorization::capability_elevation::approval_transition::authenticated(&custody, &world, "carol", &request);
             let program = crate::domain_computation::primary_graph::tests::authorization::capability_elevation::terminal_lifecycle_support::materialize_review(
@@ -148,13 +148,13 @@ pub fn denied_concurrent_review() -> (
     world
         .application
         .with_application_advancement(&request, |phase| {
-            let custody = phase.test_host_request();
+            let custody = phase.test_host_request_for_test();
             let phase_custody = &custody;
             crate::domain_computation::primary_graph::tests::authorization::capability_elevation::review_support_mutation::complete_review_out_of_band(
                 phase_custody,
                 &phase_custody.borrowed_request_for_test(),
                 &world,
-                reviewer.principal_entity_id(),
+                reviewer.principal_entity_id_for_test(),
             );
         })
         .expect("the concurrent mutation owns its host call");
@@ -186,7 +186,7 @@ fn mandatory_review_receipt_cannot_cross_runtime_authority() {
     let reviewer = target
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             crate::domain_computation::primary_graph::tests::authorization::capability_elevation::approval_transition::authenticated(
                 &host_custody,
                 &target,
@@ -198,7 +198,7 @@ fn mandatory_review_receipt_cannot_cross_runtime_authority() {
     let access = target
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             crate::domain_computation::primary_graph::tests::authorization::capability_elevation::terminal_lifecycle_support::review_access(
                 &host_custody,
                 &target,
@@ -219,7 +219,7 @@ fn mandatory_review_receipt_cannot_cross_runtime_authority() {
     let denial = target
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             target
                 .application
                 .authorize_mandatory_review(
@@ -253,14 +253,14 @@ fn mandatory_review_receipt_rejects_a_different_selected_review() {
     let reviewer = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             crate::domain_computation::primary_graph::tests::authorization::capability_elevation::approval_transition::authenticated(&host_custody, &world, "carol", &request)
         })
         .expect("the fixture read owns its installed host call");
     let access = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             crate::domain_computation::primary_graph::tests::authorization::capability_elevation::terminal_lifecycle_support::review_access_with_input(
                 &host_custody,
                 &world,
@@ -286,7 +286,7 @@ fn mandatory_review_receipt_rejects_a_different_selected_review() {
     let denial = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             world
                 .application
                 .authorize_mandatory_review(

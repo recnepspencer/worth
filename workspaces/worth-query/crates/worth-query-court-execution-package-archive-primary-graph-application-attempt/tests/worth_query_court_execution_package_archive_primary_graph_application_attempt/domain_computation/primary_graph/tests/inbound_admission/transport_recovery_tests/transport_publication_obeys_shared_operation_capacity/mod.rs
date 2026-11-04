@@ -18,15 +18,15 @@ fn transport_publication_obeys_shared_operation_capacity() {
     let correlation = *owner.record().correlation();
     let binding = world
         .application
-        .resolve_installed_transport_completion_binding(&owner)
+        .resolve_installed_transport_completion_binding_for_test(&owner)
         .unwrap();
     let admitted = world
         .application
-        .admit_external_dispatch_attempt(owner.clone())
+        .admit_external_dispatch_attempt_for_test(owner.clone())
         .unwrap();
-    let in_flight = world
+    let in_flight = (*world
         .application
-        .primary_provider
+        .primary_provider_for_test())
         .begin_external_dispatch_in_flight(&owner)
         .unwrap()
         .unwrap();
@@ -34,22 +34,22 @@ fn transport_publication_obeys_shared_operation_capacity() {
     let completed = dispatch_external_effect(&transport, admitted).unwrap();
     world
         .application
-        .record_installed_transport_completion(
-            InstalledTransportCompletion::from_observed_dispatch(owner, &completed).unwrap(),
+        .record_installed_transport_completion_for_test(
+            InstalledTransportCompletion::from_observed_dispatch_for_test(owner, &completed).unwrap(),
             in_flight,
         )
         .unwrap();
     let request = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
     let held = world
         .application
-        .reserve_installed_transport_publication(&binding)
+        .reserve_installed_transport_publication_for_test(&binding)
         .unwrap();
     world
         .application
         .with_host_advancement(|active_phase| {
             let phase = &active_phase;
             assert_eq!(
-                world.application.resume_installed_transport_completion(
+                world.application.resume_installed_transport_completion_for_test(
                     &phase.borrowed_request_for_test(),
                     phase,
                     &correlation,
@@ -68,7 +68,7 @@ fn transport_publication_obeys_shared_operation_capacity() {
         .with_host_advancement(|active_phase| {
             let phase = &active_phase;
             assert_eq!(
-                world.application.resume_installed_transport_completion(
+                world.application.resume_installed_transport_completion_for_test(
                     &phase.borrowed_request_for_test(),
                     phase,
                     &correlation,

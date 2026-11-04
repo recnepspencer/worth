@@ -10,7 +10,7 @@ fn a_failed_rebase_carries_out_what_its_effect_did_to_its_source_reads() {
         .with_host_advancement(|phase| {
             let borrowed = phase.borrowed_request_for_test();
             let execution = &borrowed;
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
 
             let (entity, locator) = account_note(
                 &host_custody.phase_for_application(&world.application),
@@ -19,9 +19,9 @@ fn a_failed_rebase_carries_out_what_its_effect_did_to_its_source_reads() {
             );
             let absent = |locator| WorthQueryApplicationObservedFact::AbsentField {
                 entity_id: entity,
-                kind: world
+                kind: (*world
                     .application
-                    .runtime
+                    .runtime_for_test())
                     .primary_graph()
                     .unwrap()
                     .layout
@@ -52,8 +52,8 @@ fn a_failed_rebase_carries_out_what_its_effect_did_to_its_source_reads() {
             };
             let before = vec![source_read.clone(), unrebasable.clone()];
             let past = vec![unrebasable.clone(), source_read.clone()];
-            let unmoved = OwnEffectOnReads(OwnEffect::Unmoved);
-            let moved = OwnEffectOnReads(OwnEffect::Moved);
+            let unmoved = OwnEffectOnReads::new_for_test(OwnEffect::Unmoved);
+            let moved = OwnEffectOnReads::new_for_test(OwnEffect::Moved);
             let original_effect = own_effect(before.clone());
             assert_eq!(original_effect, unmoved);
             assert_eq!(

@@ -42,16 +42,16 @@ fn original_projection_moves_disclosed_rows_and_shares_original_funding_until_fi
     let baseline = registry.observe().active();
     let (observation, sibling, weak) = world.application.with_host_advancement(|phase| {
         let ordinary = read(&world, &phase, "open", false, true).unwrap();
-        assert!(ordinary.result_set_observation().source().original_projection().is_none());
+        assert!(ordinary.result_set_observation().source().original_projection_for_test().is_none());
         let result = read(&world, &phase, "open", true, true).unwrap();
         assert_eq!(result.rows(), ordinary.rows(), "retention preserves ordinary decoding");
         let row = result.observed_sources()[0].retyped::<()>();
         let set = result.result_set_observation().source();
-        let body = row.original_projection().unwrap();
-        assert!(Arc::ptr_eq(body, set.original_projection().unwrap()));
-        assert!(Arc::ptr_eq(body, row.clone().original_projection().unwrap()));
+        let body = row.original_projection_for_test().unwrap();
+        assert!(Arc::ptr_eq(body, set.original_projection_for_test().unwrap()));
+        assert!(Arc::ptr_eq(body, row.clone().original_projection_for_test().unwrap()));
         assert_eq!(body.rows.len(), 1);
-        assert_eq!(body.rows[0].entity_id(), row.model_root);
+        assert_eq!(body.rows[0].entity_id(), (*row.model_root_for_test()));
         assert_eq!(body.rows[0].field(label.slot_type()).unwrap().value(),
             &worth_foundational::facade::AspectValue::String("primary".into()));
         assert_eq!(body.disclosure.len(), query.read_graph().projections().len()
@@ -66,7 +66,7 @@ fn original_projection_moves_disclosed_rows_and_shares_original_funding_until_fi
         let body_quote = body.rows.iter().fold(
             (body.rows.capacity() * std::mem::size_of::<worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::projection::projected_tree::WorthQueryApplicationProjectionNode>()) as u64,
             |bytes, row| bytes + row.retained_bytes() as u64,
-        ) + OriginalProjection::allocation_bytes();
+        ) + OriginalProjection::allocation_bytes_for_test();
         assert_eq!(body._memory.as_ref().unwrap().bytes(), body_quote);
         assert_eq!(body.disclosure.charged_payload_bytes(),
             Some((body.disclosure.len() * std::mem::size_of::<(
@@ -80,14 +80,14 @@ fn original_projection_moves_disclosed_rows_and_shares_original_funding_until_fi
         drop(row);
         set_label(&world, &phase, original.rows[0].entity_id(), label, "changed");
         let changed = read(&world, &phase, "open", true, true).unwrap();
-        let changed_body = changed.result_set_observation().source().original_projection().unwrap();
+        let changed_body = changed.result_set_observation().source().original_projection_for_test().unwrap();
         assert_eq!(original.rows[0].field(label.slot_type()).unwrap().value(),
             &worth_foundational::facade::AspectValue::String("primary".into()));
         assert_eq!(changed_body.rows[0].field(label.slot_type()).unwrap().value(),
             &worth_foundational::facade::AspectValue::String("changed".into()));
         set_label(&world, &phase, original.rows[0].entity_id(), label, "changed");
         let equal_rewrite = read(&world, &phase, "open", true, true).unwrap();
-        let equal_body = equal_rewrite.result_set_observation().source().original_projection().unwrap();
+        let equal_body = equal_rewrite.result_set_observation().source().original_projection_for_test().unwrap();
         assert_eq!(changed_body.rows[0].field(label.slot_type()).unwrap().value(),
             equal_body.rows[0].field(label.slot_type()).unwrap().value(),
             "a genuine equal-value Native rewrite does not imply a changed cell");
@@ -118,7 +118,7 @@ fn original_projection_retains_bound_empty_results_but_refuses_unbound_capture()
             assert!(ordinary
                 .result_set_observation()
                 .source()
-                .original_projection()
+                .original_projection_for_test()
                 .is_none());
             let result = read(&world, &phase, "no-match", true, true).unwrap();
             assert!(result.rows().is_empty());
@@ -126,7 +126,7 @@ fn original_projection_retains_bound_empty_results_but_refuses_unbound_capture()
             let body = result
                 .result_set_observation()
                 .source()
-                .original_projection()
+                .original_projection_for_test()
                 .unwrap();
             assert!(body.rows.is_empty());
             assert!(
@@ -135,7 +135,7 @@ fn original_projection_retains_bound_empty_results_but_refuses_unbound_capture()
             );
             assert_eq!(
                 body._memory.as_ref().unwrap().bytes(),
-                OriginalProjection::allocation_bytes()
+                OriginalProjection::allocation_bytes_for_test()
             );
             let weak = Arc::downgrade(body);
             let completed = result.into_admitted_disclosed().into_output_demand_source();
@@ -152,7 +152,7 @@ fn original_projection_retains_bound_empty_results_but_refuses_unbound_capture()
             assert!(unbound
                 .result_set_observation()
                 .source()
-                .original_projection()
+                .original_projection_for_test()
                 .is_none());
             (observation, weak)
         })

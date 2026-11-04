@@ -4,7 +4,20 @@ use super::*;
 impl SealedComputationFacts {
     #[doc(hidden)]
     pub fn replace_fact_for_test(
-        &mut self, key: &WorthQueryApplicationFactKey, fact: WorthQueryApplicationObservedFact) {
+        &mut self,
+        key: &WorthQueryApplicationFactKey,
+        fact: WorthQueryApplicationObservedFact,
+    ) {
         Self::replace_fact(self, key, fact)
+    }
+}
+
+impl SealedComputationFacts {
+    #[doc(hidden)]
+    pub fn at_seal_for_test(
+        attribution: ComputationFactAttribution,
+        observed: &BTreeMap<WorthQueryApplicationFactKey, WorthQueryApplicationObservedFact>,
+    ) -> Self {
+        Self::at_seal(attribution, observed)
     }
 }

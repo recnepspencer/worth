@@ -22,7 +22,7 @@ fn future_equivalent_grant_cannot_inherit_an_expired_access_context() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let (first, retry) = world

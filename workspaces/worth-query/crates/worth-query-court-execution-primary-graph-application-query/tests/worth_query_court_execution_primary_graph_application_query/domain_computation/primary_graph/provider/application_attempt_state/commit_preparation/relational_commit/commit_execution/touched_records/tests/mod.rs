@@ -65,13 +65,13 @@ pub fn native_prepared_records_are_admitted_before_effects_and_shared_until_last
                 let phase_custody = &phase;
 
                 world
-                    .selected_product(&(phase_custody).test_host_request())
+                    .selected_product(&(phase_custody).test_host_request_for_test())
                     .product()
                     .selected_commit()
                     .clone()
             })
             .expect("the fixture read owns its installed host call");
-        let graph = world.application.primary_provider.graph.clone();
+        let graph = (*world.application.primary_provider_for_test()).graph.clone();
         let kind = graph
             .layout
             .entity_kind(Account::reference().name())
@@ -115,8 +115,8 @@ pub fn native_prepared_records_are_admitted_before_effects_and_shared_until_last
                 let phase_custody = &phase;
 
                 world
-                    .selected_product(&(phase_custody).test_host_request())
-                    .into_parts()
+                    .selected_product(&(phase_custody).test_host_request_for_test())
+                    .into_parts_for_test()
             })
             .expect("the fixture read owns its installed host call");
         let candidate = world
@@ -167,7 +167,7 @@ pub fn native_prepared_records_are_admitted_before_effects_and_shared_until_last
         })
         .unwrap();
         let zero = authority.request_lease(request(0)).unwrap();
-        let denied = match PreparedTouchedRecords::prepare(
+        let denied = match PreparedTouchedRecords::prepare_for_test(
             &candidate,
             ExecutionAllocationPolicy::Execution(&zero),
         ) {
@@ -193,7 +193,7 @@ pub fn native_prepared_records_are_admitted_before_effects_and_shared_until_last
 
                 assert_eq!(
                     world
-                        .selected_product(&(phase_custody).test_host_request(),)
+                        .selected_product(&(phase_custody).test_host_request_for_test(),)
                         .product()
                         .selected_commit(),
                     &head
@@ -210,7 +210,7 @@ pub fn native_prepared_records_are_admitted_before_effects_and_shared_until_last
         stopped_request.cancellation = stop.token();
         let stopped = authority.request_lease(stopped_request).unwrap();
         stop.cancel();
-        let cancelled = match PreparedTouchedRecords::prepare(
+        let cancelled = match PreparedTouchedRecords::prepare_for_test(
             &candidate,
             ExecutionAllocationPolicy::Execution(&stopped),
         ) {
@@ -230,7 +230,7 @@ pub fn native_prepared_records_are_admitted_before_effects_and_shared_until_last
 
                 assert_eq!(
                     world
-                        .selected_product(&(phase_custody).test_host_request(),)
+                        .selected_product(&(phase_custody).test_host_request_for_test(),)
                         .product()
                         .selected_commit(),
                     &head
@@ -241,12 +241,12 @@ pub fn native_prepared_records_are_admitted_before_effects_and_shared_until_last
 
         let parent = authority.request_lease(request(quote)).unwrap();
         let child = parent.child(request(quote)).unwrap();
-        let prepared = PreparedTouchedRecords::prepare(
+        let prepared = PreparedTouchedRecords::prepare_for_test(
             &candidate,
             ExecutionAllocationPolicy::Execution(&child),
         )
         .unwrap_or_else(|_| panic!("exact layout fits"));
-        let retained = Arc::clone(&prepared.records);
+        let retained = Arc::clone(&(*prepared.records_for_test()));
         assert_eq!(retained.charged_payload_bytes(), Some(quote));
         drop(child);
         assert!(matches!(
@@ -262,7 +262,7 @@ pub fn native_prepared_records_are_admitted_before_effects_and_shared_until_last
             .with_application_advancement(&live_scope(), |phase| {
                 publication.execute(
                     phase
-                        .execution_request_for(world.application.product_runtime())
+                        .execution_request_for_for_test(world.application.product_runtime())
                         .unwrap(),
                 )
             })
@@ -281,7 +281,7 @@ pub fn native_prepared_records_are_admitted_before_effects_and_shared_until_last
             committed.envelope().descriptive_touches(),
             "the SAME candidate performs the prepared native touch graph"
         );
-        let published = prepared.verify_performed(&committed.changed_records);
+        let published = prepared.verify_performed_for_test(&committed.changed_records);
         drop(performed.consume());
         assert!(Arc::ptr_eq(&published, &retained));
         assert_eq!(

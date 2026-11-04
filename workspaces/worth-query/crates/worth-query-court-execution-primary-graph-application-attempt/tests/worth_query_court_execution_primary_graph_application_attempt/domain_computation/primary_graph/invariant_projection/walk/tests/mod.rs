@@ -64,12 +64,12 @@ fn snapshot_walks_mint_local_identities_without_rereading_metadata() {
                             .closure(Next::reference(), RelationDirection::Forward, &[])
                             .unwrap();
                         assert!(empty.is_empty());
-                        assert!(empty.issued_at(reader.snapshot, reader.authority_identity));
+                        assert!(empty.issued_at_for_test((*reader.snapshot_for_test()), (*reader.authority_identity_for_test())));
                         assert!(!empty
-                            .issued_at(reader.snapshot, reader.authority_identity.wrapping_add(1)));
-                        assert!(walk.issued_at(reader.snapshot, reader.authority_identity));
+                            .issued_at_for_test((*reader.snapshot_for_test()), (*reader.authority_identity_for_test()).wrapping_add(1)));
+                        assert!(walk.issued_at_for_test((*reader.snapshot_for_test()), (*reader.authority_identity_for_test())));
                         assert!(!walk
-                            .issued_at(reader.snapshot, reader.authority_identity.wrapping_add(1)));
+                            .issued_at_for_test((*reader.snapshot_for_test()), (*reader.authority_identity_for_test()).wrapping_add(1)));
                         let closure = reader
                             .closure(
                                 Next::reference(),
@@ -106,9 +106,9 @@ pub fn basis(
 ) -> worth_relational::facade::branch::AdmittedRelationalBranchBasis {
     world
         .application
-        .select_product_branch(
+        .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch(),
+            world.application.product_runtime().default_branch_for_test(),
         )
         .unwrap()
         .product()
@@ -174,7 +174,7 @@ fn snapshot_walk_refuses_foreign_roots_and_a_swallowed_partial_stop() {
     let selected = basis(&world, &execution);
     let denial = world
         .invariant
-        .project_with_work_limit(
+        .project_with_work_limit_for_test(
             &execution,
             Some(80),
             selected,
@@ -208,7 +208,7 @@ fn snapshot_walk_refuses_foreign_roots_and_a_swallowed_partial_stop() {
         let before = std::cell::Cell::new(None);
         let denial = world
             .invariant
-            .project_with_work_limit(
+            .project_with_work_limit_for_test(
                 &execution,
                 None,
                 selected,
@@ -261,7 +261,7 @@ fn snapshot_walk_keeps_scope_payment_after_result_drop_and_spends_cumulative_ser
     let before = memory.charged_memory_bytes();
     let completed = world
         .invariant
-        .project_with_work_limit(
+        .project_with_work_limit_for_test(
             &execution,
             None,
             selected.clone(),
@@ -286,7 +286,7 @@ fn snapshot_walk_keeps_scope_payment_after_result_drop_and_spends_cumulative_ser
 
     let run = |count, ceiling| {
         execution.run(ExecutionWorkCeiling::new(ceiling), |_| {
-            world.invariant.project_with_work_limit(
+            world.invariant.project_with_work_limit_for_test(
                 &execution,
                 None,
                 selected.clone(),

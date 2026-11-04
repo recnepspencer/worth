@@ -16,29 +16,29 @@ fn unrelated_product_drift_preserves_the_prepared_attempt_and_changed_facts_stal
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let unrelated = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "unrelated", &request)
+            resolved_account(&(phase).test_host_request_for_test(), &world, "unrelated", &request)
         })
         .expect("the fixture read owns its installed host call");
     let selected = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
         .expect("the fixture read owns its installed host call");
     let commit_count = || {
-        world
+        (*world
             .application
-            .primary_provider
+            .primary_provider_for_test())
             .graph
             .with_runtime(request_execution, |runtime| {
                 runtime.history().immutable_commit_count()
@@ -92,7 +92,7 @@ fn unrelated_product_drift_preserves_the_prepared_attempt_and_changed_facts_stal
     );
     let current = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
         .expect("the fixture read owns its installed host call");
     assert_ne!(
         selected.product().selected_commit(),
@@ -113,7 +113,7 @@ fn unrelated_product_drift_preserves_the_prepared_attempt_and_changed_facts_stal
         .with_host_advancement(|phase| {
             assert_ne!(
                 world
-                    .selected_product(&(phase).test_host_request(),)
+                    .selected_product(&(phase).test_host_request_for_test(),)
                     .product()
                     .selected_commit(),
                 current.product().selected_commit()

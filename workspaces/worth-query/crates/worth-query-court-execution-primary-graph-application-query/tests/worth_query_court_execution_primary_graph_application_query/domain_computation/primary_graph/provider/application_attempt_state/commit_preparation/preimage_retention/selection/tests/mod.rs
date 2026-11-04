@@ -51,7 +51,7 @@ pub fn demand(field: &str) -> InstalledPreImageDemand {
 }
 
 pub fn observed(field: &str, value: AspectValue, slot: u64) -> WorthQueryObservedPreImageCandidate {
-    WorthQueryObservedPreImageCandidate::from_observed_field(
+    WorthQueryObservedPreImageCandidate::from_observed_field_for_test(
         worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::application_aftermath::aftermath_schema_fixture::freeze_account_fields_read_scope(field),
         locator("IdentityAspect", field),
         value,
@@ -97,7 +97,7 @@ pub fn retain_from_exact_mutations(
 >{
     retain_matching(demand, candidates, mutation.is_empty(), |candidate| {
         mutation.iter().any(|(record, locator)| {
-            record == candidate.target_record() && locator == candidate.locator()
+            record == candidate.target_record_for_test() && locator == candidate.locator_for_test()
         })
     })
 }
@@ -108,7 +108,7 @@ fn real_decision_fact_and_owner_footprint_reach_selection() {
         let (demand, fact, footprint, entity) = owner_path_fixture();
         let retained = retain_from_attempt(&demand, std::iter::once(&fact), &footprint)
             .expect("real owner inputs retain exact prior truth")
-            .into_parts()
+            .into_parts_for_test()
             .0;
         assert_eq!(
             retained
@@ -152,7 +152,7 @@ fn wrong_field_locus_and_record_cannot_supply_prior_truth() {
             mutating("note", [1]),
         ),
         (
-            WorthQueryObservedPreImageCandidate::from_observed_field(
+            WorthQueryObservedPreImageCandidate::from_observed_field_for_test(
                 worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::application_aftermath::aftermath_schema_fixture::freeze_account_fields_read_scope("note"),
                 locator("IdentityAspect", "note"),
                 AspectValue::String("foreign".into()),

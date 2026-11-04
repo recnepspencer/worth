@@ -15,12 +15,12 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             world
                 .application
-                .select_product_branch(
+                .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch(),
+                    world.application.product_runtime().default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_authenticated_principal(
@@ -36,12 +36,12 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             world
                 .application
-                .select_product_branch(
+                .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch(),
+                    world.application.product_runtime().default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
@@ -65,7 +65,7 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
         .application
         .with_host_advancement(|phase| {
             world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&(phase).test_host_request_for_test())
                 .admit_application_query(
                     &phase,
                     &query,
@@ -137,18 +137,18 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
             .expect("every row retains its own path witness"),
     );
     assert!(!std::sync::Arc::ptr_eq(&first, &second));
-    assert_eq!(first.aspects.len(), 1);
+    assert_eq!((*first.aspects_for_test()).len(), 1);
     assert_eq!(first.adjacencies.len(), 1);
     assert_eq!(second.adjacencies.len(), 1);
-    assert!(!first
-        .entities
-        .contains(&result.observed_sources()[1].footprint_for_test().root));
-    assert!(!second
-        .entities
-        .contains(&result.observed_sources()[0].footprint_for_test().root));
+    assert!(!(*first
+        .entities_for_test())
+        .contains(&(*result.observed_sources()[1].footprint_for_test().root_for_test())));
+    assert!(!(*second
+        .entities_for_test())
+        .contains(&(*result.observed_sources()[0].footprint_for_test().root_for_test())));
     assert_eq!(
-        first.adjacencies[0].relation_kind,
-        second.adjacencies[0].relation_kind
+        (*first.adjacencies[0].relation_kind_for_test()),
+        (*second.adjacencies[0].relation_kind_for_test())
     );
 
     let result = result.into_admitted_disclosed().into_output_demand_source();
@@ -156,7 +156,7 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
         .application
         .with_host_advancement(|phase| {
             world
-                .selected_product(&phase.test_host_request())
+                .selected_product(&phase.test_host_request_for_test())
                 .retain_query_dependencies(
                     &phase,
                     &worth_query_execution::publication_boundary::program_publication_access(),
@@ -168,10 +168,10 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
     world
         .application
         .with_host_advancement(|phase| {
-            let selected = world.selected_product(&phase.test_host_request());
+            let selected = world.selected_product(&phase.test_host_request_for_test());
             let serial_retained = dependencies.assert_storage_custody_for_test(
                 phase
-                    .checked_execution_request_for(&world.application.product_runtime)
+                    .checked_execution_request_for(&(*world.application.product_runtime_for_test()))
                     .unwrap(),
             );
             selected
@@ -210,21 +210,21 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
         &dependencies,
         &worth_query_execution::publication_boundary::program_publication_access(),
     );
-    let graph = world.application.runtime.primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let observed_source = &result.observed_sources()[0];
-    let worth_query_execution::facade::domain_computation::WorthQueryApplicationBasisSelectionIdentity::Product(product) = &observed_source.selection else {
+    let worth_query_execution::facade::domain_computation::WorthQueryApplicationBasisSelectionIdentity::Product(product) = &(*observed_source.selection_for_test()) else {
         panic!("the product query must retain its selected branch identity");
     };
     let source_facts = observed_source
         .clone()
-        .validate_and_into_facts(
-            observed_source.runtime_authority,
-            &observed_source.schema_binding,
-            &observed_source.branch,
-            observed_source.model_root,
+        .validate_and_into_facts_for_test(
+            (*observed_source.runtime_authority_for_test()),
+            &(*observed_source.schema_binding_for_test()),
+            &(*observed_source.branch_for_test()),
+            (*observed_source.model_root_for_test()),
             product,
-            &observed_source.query_identifier,
-            &observed_source.query_identity,
+            &(*observed_source.query_identifier_for_test()),
+            &(*observed_source.query_identity_for_test()),
             &graph.layout,
             None,
             request_execution,
@@ -245,15 +245,15 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
         WorthQueryApplicationObservedFact::SourceFieldRevision { entity_id, .. }
             if *entity_id == account.entity_id()
     )));
-    let kind = first.adjacencies[0].relation_kind;
+    let kind = (*first.adjacencies[0].relation_kind_for_test());
     let selected = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
         .expect("the fixture read owns its installed host call");
     let (relation_id, target) = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             graph
                 .integration_handle()
                 .with_runtime(request_execution, |runtime| {
@@ -262,7 +262,7 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
                         .visible_relations_of_kind(
                             &host_custody.borrowed_request_for_test(),
                             kind,
-                            selected.application_basis().snapshot_handle().version_id(),
+                            selected.application_basis_for_test().snapshot_handle().version_id(),
                         )
                         .expect("fixture read request remains live")
                         .into_iter()
@@ -276,7 +276,7 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::product_publication::publish_relational_mutation(
                 &host_custody.borrowed_request_for_test(),
                 &world,
@@ -300,32 +300,32 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
     let observed = first
         .adjacencies
         .iter()
-        .find(|adjacency| adjacency.relation_kind == kind)
+        .find(|adjacency| (*adjacency.relation_kind_for_test()) == kind)
         .unwrap();
     let fact = WorthQueryApplicationObservedFact::SourceAdjacencyRevision {
-        relation_kind: observed.relation_kind,
-        anchor: observed.anchor,
+        relation_kind: (*observed.relation_kind_for_test()),
+        anchor: (*observed.anchor_for_test()),
         direction: observed.direction,
-        native_revision: observed.native_revision,
-        comparison_work_limit: observed.comparison_work_limit,
+        native_revision: (*observed.native_revision_for_test()),
+        comparison_work_limit: (*observed.comparison_work_limit_for_test()),
         endpoints: worth_query_execution::facade::domain_computation::WorthQueryApplicationSourceAdjacencyEndpoints::from_observed(&[target], worth_execution::ExecutionAllocationPolicy::SystemAllocation, None).unwrap(),
     };
     let current = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
         .expect("the fixture read owns its installed host call");
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             assert!(
                 !graph
                     .integration_handle()
                     .with_runtime(request_execution, |runtime| {
-                        fact.source_currentness_in(
+                        fact.source_currentness_in_for_test(
                             runtime,
                             &host_custody.borrowed_request_for_test(),
-                            current.application_basis().snapshot_handle(),
+                            current.application_basis_for_test().snapshot_handle(),
                         )
                         .unwrap()
                         .unwrap()

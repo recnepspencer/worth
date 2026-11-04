@@ -35,22 +35,22 @@ fn same_semantic_direct_peers_bind_distinct_report_histories() {
         );
         let left_started = {
             let fixture_state = left_fixture.admit();
-            let installed_fixture_phase = fixture_state.fixture_phase(execution);
+            let installed_fixture_phase = fixture_state.fixture_phase_for_test(execution);
             fixture_state.begin_iteration(&installed_fixture_phase, request("same-report-scope"))
         }
         .unwrap_or_else(|_| panic!("left direct peer must begin"));
         let right_started = {
             let fixture_state = right_fixture.admit();
-            let installed_fixture_phase = fixture_state.fixture_phase(execution);
+            let installed_fixture_phase = fixture_state.fixture_phase_for_test(execution);
             fixture_state.begin_iteration(&installed_fixture_phase, request("same-report-scope"))
         }
         .unwrap_or_else(|_| panic!("right direct peer must begin"));
         let left = direct_terminal({
-            let installed_fixture_phase = left_started.fixture_phase(execution);
+            let installed_fixture_phase = left_started.fixture_phase_for_test(execution);
             left_started.advance(&installed_fixture_phase)
         });
         let right = direct_terminal({
-            let installed_fixture_phase = right_started.fixture_phase(execution);
+            let installed_fixture_phase = right_started.fixture_phase_for_test(execution);
             right_started.advance(&installed_fixture_phase)
         });
 
@@ -86,7 +86,7 @@ fn same_stage_workflow_peers_bind_distinct_report_histories() {
         );
         let left_started = {
             let fixture_state = left_fixture.admit();
-            let installed_fixture_phase = fixture_state.fixture_phase(execution);
+            let installed_fixture_phase = fixture_state.fixture_phase_for_test(execution);
             fixture_state.begin_stage_iteration(
                 &installed_fixture_phase,
                 WORKFLOW_STAGE,
@@ -96,7 +96,7 @@ fn same_stage_workflow_peers_bind_distinct_report_histories() {
         .unwrap_or_else(|_| panic!("left workflow peer must begin"));
         let right_started = {
             let fixture_state = right_fixture.admit();
-            let installed_fixture_phase = fixture_state.fixture_phase(execution);
+            let installed_fixture_phase = fixture_state.fixture_phase_for_test(execution);
             fixture_state.begin_stage_iteration(
                 &installed_fixture_phase,
                 WORKFLOW_STAGE,
@@ -105,11 +105,11 @@ fn same_stage_workflow_peers_bind_distinct_report_histories() {
         }
         .unwrap_or_else(|_| panic!("right workflow peer must begin"));
         let left = workflow_terminal({
-            let installed_fixture_phase = left_started.fixture_phase(execution);
+            let installed_fixture_phase = left_started.fixture_phase_for_test(execution);
             left_started.advance(&installed_fixture_phase)
         });
         let right = workflow_terminal({
-            let installed_fixture_phase = right_started.fixture_phase(execution);
+            let installed_fixture_phase = right_started.fixture_phase_for_test(execution);
             right_started.advance(&installed_fixture_phase)
         });
 

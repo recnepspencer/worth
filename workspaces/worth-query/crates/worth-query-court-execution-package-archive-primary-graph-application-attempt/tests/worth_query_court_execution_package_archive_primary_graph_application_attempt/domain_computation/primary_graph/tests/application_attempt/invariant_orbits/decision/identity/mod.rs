@@ -53,7 +53,7 @@ fn aggregate_identity_changes_are_distinct_from_membership_and_incidental_histor
             same
         );
         assert_eq!(
-            old.same_truth_with_poll(&current.body, || Ok::<_, ()>(()))
+            old.same_truth_with_poll_for_test(&current.body, || Ok::<_, ()>(()))
                 .unwrap(),
             same
         );

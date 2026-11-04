@@ -10,12 +10,12 @@ fn frozen_deep_rows_keep_original_funding_through_take_retain_clear_and_last_dro
     crate::domain_computation::primary_graph::application_query::managed_index::invocation::tests::with_original_content_scope(|execution, memory, cancel| {
     let allocation = SourceFactsAllocation::open(execution).unwrap();
     let depth = 128;
-    let disposal = ProjectionDisposal::admitted(execution, &allocation, depth + 1).unwrap();
+    let disposal = ProjectionDisposal::admitted_for_test(execution, &allocation, depth + 1).unwrap();
     let key = slot("owned");
     let mut root = shape(&key);
     for _ in 1..depth {
         let mut parent = shape(&key);
-        parent.relations[0].rows[0] = root;
+        (*parent.relations_for_test())[0].rows[0] = root;
         root = parent;
     }
     let rows = vec![root];
@@ -32,12 +32,12 @@ fn frozen_deep_rows_keep_original_funding_through_take_retain_clear_and_last_dro
         .seal()
         .unwrap();
     let mut tree = WorthQueryApplicationDisclosedProjectionTree::from_managed(
-        OwnedProjectionRows::managed(rows, disposal, payload, Arc::clone(&allocation)),
+        OwnedProjectionRows::managed_for_test(rows, disposal, payload, Arc::clone(&allocation)),
     );
     drop(allocation);
     assert_eq!(tree.additional_charged_bytes(), payload as u64);
-    let mut taken = tree.take();
-    tree.clear();
+    let mut taken = tree.take_for_test();
+    tree.clear_for_test();
     let original = taken.retain_projection(disclosure, None).unwrap();
     let last_share = Arc::clone(&original);
     taken.clear();

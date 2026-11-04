@@ -22,12 +22,12 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
     let product = world
         .application
         .product_runtime()
-        .admit_product_branch(world.application.product_runtime().default_branch())
+        .admit_product_branch_for_test(world.application.product_runtime().default_branch_for_test())
         .expect("the fixture's default product occurrence is live");
     let observation = product.observation();
-    let runtime_authority = world.application.runtime.authority_identity().as_u64();
-    let schema = world.application.installed_schema.binding_identity();
-    let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity(
+    let runtime_authority = (*world.application.runtime_for_test()).authority_identity().as_u64();
+    let schema = (*world.application.installed_schema_for_test()).binding_identity();
+    let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(
         worth_relational::facade::identity::EntityId::new(
             worth_relational::facade::identity::PartitionId::main(),
             1,
@@ -40,12 +40,12 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
     let sibling = Arc::new(WorthQueryApplicationOutputCorrespondence::default());
     let mut lineage = WorthQueryApplicationOutputLineage::default();
     lineage.fixture_binding(
-        TypeId::of::<RestoredOutputBinding>(),
+        TypeId::of_for_test::<RestoredOutputBinding>(),
         "RestoredOutputBinding",
     );
 
-    lineage.record_restoration(
-        TypeId::of::<RestoredOutputBinding>(),
+    lineage.record_restoration_for_test(
+        TypeId::of_for_test::<RestoredOutputBinding>(),
         runtime_authority,
         schema.clone(),
         scope,
@@ -55,13 +55,13 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
         first_partition,
         None,
         [0x41; 32],
-            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false).retain_facts(source_facts()),
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false).retain_facts_for_test(source_facts()),
         None,
         None,
         None,
     );
-    lineage.record_restoration(
-        TypeId::of::<RestoredOutputBinding>(),
+    lineage.record_restoration_for_test(
+        TypeId::of_for_test::<RestoredOutputBinding>(),
         runtime_authority,
         schema.clone(),
         scope,
@@ -71,13 +71,13 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
         sibling_partition,
         Some([0x52; 32]),
         [0x42; 32],
-            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false).retain_facts(source_facts()),
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false).retain_facts_for_test(source_facts()),
         None,
         None,
         None,
     );
-    lineage.record_restoration(
-        TypeId::of::<RestoredOutputBinding>(),
+    lineage.record_restoration_for_test(
+        TypeId::of_for_test::<RestoredOutputBinding>(),
         runtime_authority,
         schema.clone(),
         scope,
@@ -87,7 +87,7 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
         first_partition,
         None,
         [0x41; 32],
-            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false).retain_facts(source_facts()),
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false).retain_facts_for_test(source_facts()),
         None,
         None,
         None,
@@ -97,39 +97,39 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
         runtime_authority,
         schema,
         scope,
-        output_binding: OutputBindingIdentity::declared("RestoredOutputBinding"),
+        output_binding: OutputBindingIdentity::declared_for_test("RestoredOutputBinding"),
     };
-    let history = &lineage.by_source[&source][&observation.lifecycle_incarnation()];
+    let history = &(*lineage.by_source_for_test())[&source][&observation.lifecycle_incarnation()];
     let maximum_generation = observation.reference_generation().get();
     let coordinate = ProductCoordinate {
         occurrence: observation.lifecycle_incarnation(),
         generation: maximum_generation,
     };
     let selected_first = lineage
-        .latest_output_in_partition(&source, coordinate, first_partition)
+        .latest_output_in_partition_for_test(&source, coordinate, first_partition)
         .unwrap();
     let selected_sibling = lineage
-        .latest_output_in_partition(&source, coordinate, sibling_partition)
+        .latest_output_in_partition_for_test(&source, coordinate, sibling_partition)
         .unwrap();
     let matching_sibling = latest_output_matching(history, maximum_generation, |recorded| {
-        recorded.source_partition_identity == Some(sibling_partition)
+        (*recorded.source_partition_identity_for_test()) == Some(sibling_partition)
     })
     .unwrap();
 
     assert!(Arc::ptr_eq(&selected_first.correspondence, &first));
     assert!(Arc::ptr_eq(&selected_sibling.correspondence, &sibling));
-    assert!(Arc::ptr_eq(&matching_sibling.correspondence, &sibling));
+    assert!(Arc::ptr_eq(&(*matching_sibling.correspondence_for_test()), &sibling));
     assert_eq!(history[&maximum_generation].len(), 2);
 
-    lineage.install_output_families(std::collections::BTreeMap::from([(
+    lineage.install_output_families_for_test(std::collections::BTreeMap::from([(
         "partitioned-family".to_owned().into(),
-        vec![(TypeId::of::<RestoredOutputBinding>(), "output".to_owned())],
+        vec![(TypeId::of_for_test::<RestoredOutputBinding>(), "output".to_owned())],
     )]));
     let resolve = || {
-        lineage.resolve_current_family(
+        lineage.resolve_current_family_for_test(
             execution,
             runtime_authority,
-            &source.schema,
+            &(*source.schema_for_test()),
             scope,
             "partitioned-family",
             observation.lifecycle_incarnation(),
@@ -143,17 +143,17 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
     assert!(Arc::ptr_eq(&family.candidates[1].correspondence, &sibling));
 
     let current_checkpoint =
-        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryCheckpointSourceIdentity::new([0x31; 32]);
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryCheckpointSourceIdentity::new_for_test([0x31; 32]);
     let current_runtime =
-        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryRuntimeSourceIdentity::new([0x99; 32]);
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryRuntimeSourceIdentity::new_for_test([0x99; 32]);
     let candidates = lineage
-        .retained_output_candidates_metered(
+        .retained_output_candidates_metered_for_test(
             runtime_authority,
-            &source.schema,
+            &(*source.schema_for_test()),
             scope,
             observation.lifecycle_incarnation(),
             maximum_generation,
-            &[TypeId::of::<RestoredOutputBinding>()],
+            &[TypeId::of_for_test::<RestoredOutputBinding>()],
             first_partition,
             &worth_execution::ExecutionRequest::serial(
                 &worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request(),
@@ -167,9 +167,9 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
     );
     assert_eq!(
         lineage
-            .qualified_output::<RestoredOutputBinding>(
+            .qualified_output_for_test::<RestoredOutputBinding>(
                 runtime_authority,
-                &source.schema,
+                &(*source.schema_for_test()),
                 scope,
                 observation.lifecycle_incarnation(),
                 maximum_generation,
@@ -191,12 +191,12 @@ fn recovered_prior_correspondence_is_not_currentness_evidence_until_exact_readmi
     let product = world
         .application
         .product_runtime()
-        .admit_product_branch(world.application.product_runtime().default_branch())
+        .admit_product_branch_for_test(world.application.product_runtime().default_branch_for_test())
         .expect("the fixture's default product occurrence is live");
     let observation = product.observation();
-    let runtime_authority = world.application.runtime.authority_identity().as_u64();
-    let schema = world.application.installed_schema.binding_identity();
-    let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity(
+    let runtime_authority = (*world.application.runtime_for_test()).authority_identity().as_u64();
+    let schema = (*world.application.installed_schema_for_test()).binding_identity();
+    let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(
         worth_relational::facade::identity::EntityId::new(
             worth_relational::facade::identity::PartitionId::main(),
             1,
@@ -205,12 +205,12 @@ fn recovered_prior_correspondence_is_not_currentness_evidence_until_exact_readmi
     );
     let partition = [0x11; 32];
     let source_identity = checkpoint_identity([0x31; 32]);
-    let runtime_identity = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryRuntimeSourceIdentity::new([0x99; 32]);
-    let checkpoint_identity = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryCheckpointSourceIdentity::new([0x31; 32]);
+    let runtime_identity = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryRuntimeSourceIdentity::new_for_test([0x99; 32]);
+    let checkpoint_identity = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryCheckpointSourceIdentity::new_for_test([0x31; 32]);
     let correspondence = Arc::new(
-        WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles(
-            TypeId::of::<RestoredOutputBinding>(),
-            TypeId::of::<()>(),
+        WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles_for_test(
+            TypeId::of_for_test::<RestoredOutputBinding>(),
+            TypeId::of_for_test::<()>(),
             std::iter::empty(),
             &[],
             |_| None,
@@ -226,12 +226,12 @@ fn recovered_prior_correspondence_is_not_currentness_evidence_until_exact_readmi
     );
     let mut lineage = WorthQueryApplicationOutputLineage::default();
     lineage.fixture_binding(
-        TypeId::of::<RestoredOutputBinding>(),
+        TypeId::of_for_test::<RestoredOutputBinding>(),
         "RestoredOutputBinding",
     );
 
-    lineage.record_recovered_prior_output(
-        TypeId::of::<RestoredOutputBinding>(),
+    lineage.record_recovered_prior_output_for_test(
+        TypeId::of_for_test::<RestoredOutputBinding>(),
         runtime_authority,
         schema.clone(),
         scope,
@@ -244,8 +244,8 @@ fn recovered_prior_correspondence_is_not_currentness_evidence_until_exact_readmi
         [0x41; 32],
         None,
     );
-    lineage.record_recovered_prior_output(
-        TypeId::of::<RestoredOutputBinding>(),
+    lineage.record_recovered_prior_output_for_test(
+        TypeId::of_for_test::<RestoredOutputBinding>(),
         runtime_authority,
         schema.clone(),
         scope,
@@ -262,16 +262,16 @@ fn recovered_prior_correspondence_is_not_currentness_evidence_until_exact_readmi
         runtime_authority,
         schema: schema.clone(),
         scope,
-        output_binding: OutputBindingIdentity::declared("RestoredOutputBinding"),
+        output_binding: OutputBindingIdentity::declared_for_test("RestoredOutputBinding"),
     };
     assert_eq!(
-        lineage.by_source[&semantic_source][&observation.lifecycle_incarnation()].len(),
+        (*lineage.by_source_for_test())[&semantic_source][&observation.lifecycle_incarnation()].len(),
         1,
         "repeated recovery must not become a newer output"
     );
 
     assert!(lineage
-        .qualified_output::<RestoredOutputBinding>(
+        .qualified_output_for_test::<RestoredOutputBinding>(
             runtime_authority,
             &schema,
             scope,
@@ -282,8 +282,8 @@ fn recovered_prior_correspondence_is_not_currentness_evidence_until_exact_readmi
         )
         .is_none());
 
-    lineage.record_restoration(
-        TypeId::of::<RestoredOutputBinding>(),
+    lineage.record_restoration_for_test(
+        TypeId::of_for_test::<RestoredOutputBinding>(),
         runtime_authority,
         schema.clone(),
         scope,
@@ -293,7 +293,7 @@ fn recovered_prior_correspondence_is_not_currentness_evidence_until_exact_readmi
         partition,
         None,
         [0x41; 32],
-            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false).retain_facts(Arc::<[worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact]>::from([])),
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false).retain_facts_for_test(Arc::<[worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact]>::from([])),
         None,
         None,
         None,
@@ -301,7 +301,7 @@ fn recovered_prior_correspondence_is_not_currentness_evidence_until_exact_readmi
 
     assert!(
         lineage
-            .qualified_output::<RestoredOutputBinding>(
+            .qualified_output_for_test::<RestoredOutputBinding>(
                 runtime_authority,
                 &schema,
                 scope,
@@ -314,8 +314,8 @@ fn recovered_prior_correspondence_is_not_currentness_evidence_until_exact_readmi
         "an exact restored identity without consumed facts is not currentness evidence"
     );
 
-    lineage.record_restoration(
-        TypeId::of::<RestoredOutputBinding>(),
+    lineage.record_restoration_for_test(
+        TypeId::of_for_test::<RestoredOutputBinding>(),
         runtime_authority,
         schema.clone(),
         scope,
@@ -325,14 +325,14 @@ fn recovered_prior_correspondence_is_not_currentness_evidence_until_exact_readmi
         partition,
         None,
         [0x41; 32],
-            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false).retain_facts(source_facts()),
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false).retain_facts_for_test(source_facts()),
         None,
         None,
         None,
     );
 
     assert!(lineage
-        .qualified_output::<RestoredOutputBinding>(
+        .qualified_output_for_test::<RestoredOutputBinding>(
             runtime_authority,
             &schema,
             scope,
@@ -346,7 +346,7 @@ fn recovered_prior_correspondence_is_not_currentness_evidence_until_exact_readmi
 
 pub fn checkpoint_identity(identity: [u8; 32]) -> RecordedSourceIdentity {
     RecordedSourceIdentity::Checkpoint(
-        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryCheckpointSourceIdentity::new(identity),
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryCheckpointSourceIdentity::new_for_test(identity),
     )
 }
 
@@ -376,9 +376,9 @@ fn family_inventory_visits_follow_declared_names() {
                 declarations.reverse();
             }
             let mut lineage = WorthQueryApplicationOutputLineage::default();
-            lineage.install_output_families(BTreeMap::from(declarations));
-            let visits: Vec<_> = lineage
-                .output_families
+            lineage.install_output_families_for_test(BTreeMap::from(declarations));
+            let visits: Vec<_> = (*lineage
+                .output_families_for_test())
                 .keys()
                 .map(|family| family.as_str())
                 .collect();

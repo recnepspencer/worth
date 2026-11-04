@@ -75,7 +75,7 @@ fn invariant_execution_control_stops_keep_stage_cause_and_terminal_posture() {
         (Interruption::Cancelled, Control::Cancelled),
         (Interruption::TimedOut, Control::TimedOut),
     ] {
-        let denial = Denial::invariant_execution_denied(
+        let denial = Denial::invariant_execution_denied_for_test(
             Stage::InvariantExecution,
             Failure::new(
                 Invariant::RequestInterrupted(stop),
@@ -100,7 +100,7 @@ fn preparation_control_stops_retry_at_provider_commit() {
     use worth_query_execution::facade::domain_computation::WorthQueryProviderSessionCommitControlStopped as Stopped;
     for kind in [Control::Cancelled, Control::TimedOut] {
         let Progression::Denied(denial) =
-            control_stopped_outcome(Stopped::execution_preparation(kind, "owner control stop"))
+            control_stopped_outcome(Stopped::execution_preparation_for_test(kind, "owner control stop"))
         else {
             panic!("preparation control lost its denial");
         };

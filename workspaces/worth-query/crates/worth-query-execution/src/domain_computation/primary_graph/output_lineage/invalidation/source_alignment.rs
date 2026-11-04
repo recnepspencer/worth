@@ -327,3 +327,5 @@ impl<'selected> SnapshotAlignedMarkState<'selected> {
         }
     }
 }
+
+mod court_doors_for_test;

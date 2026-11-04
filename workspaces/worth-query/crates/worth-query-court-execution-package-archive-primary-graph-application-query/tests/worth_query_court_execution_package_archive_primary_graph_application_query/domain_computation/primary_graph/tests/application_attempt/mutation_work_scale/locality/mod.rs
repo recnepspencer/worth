@@ -90,7 +90,7 @@ pub fn run_locality(count: usize) -> LocalityRun {
             .with_host_advancement(|phase| {
                 grow_unrelated_accounts(
                     &phase
-                        .execution_request_for(&world.application.product_runtime)
+                        .execution_request_for_for_test(&(*world.application.product_runtime_for_test()))
                         .unwrap(),
                     &world,
                     count,
@@ -104,7 +104,7 @@ pub fn run_locality(count: usize) -> LocalityRun {
     let (principal, source_query_before, program) = world
         .application
         .with_host_advancement(|phase| {
-            let custody = phase.test_host_request();
+            let custody = phase.test_host_request_for_test();
             let phase_custody = &custody;
             let principal =
                 authenticated_principal(&(phase_custody).test_host_request(), &world, &request);
@@ -146,7 +146,7 @@ pub fn run_locality(count: usize) -> LocalityRun {
         source_query_after: world
             .application
             .with_host_advancement(|phase| {
-                source_query_work(&phase.test_host_request(), &world, &principal, &request)
+                source_query_work(&phase.test_host_request_for_test(), &world, &principal, &request)
             })
             .expect("the fixture source read owns its host call"),
         mutation_decision_facts: mutation.decision_fact_count(),
@@ -173,7 +173,7 @@ pub fn source_query_work(
     >,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
 ) -> usize {
-    let account = resolved_account(&(phase_custody).test_host_request(), world, "open", request);
+    let account = resolved_account(&(phase_custody).test_host_request_for_test(), world, "open", request);
     let query = world
         .application
         .installed_schema()
@@ -181,9 +181,9 @@ pub fn source_query_work(
         .expect("the source query is installed");
     let access = WorthQueryApplicationQueryAccessContext::new(principal, &account);
     let plan = world
-        .selected_product(&(phase_custody).test_host_request())
+        .selected_product(&(phase_custody).test_host_request_for_test())
         .admit_application_query(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             &query,
             &access,
             ApplicationQueryParameterSet::new()
@@ -195,7 +195,7 @@ pub fn source_query_work(
     let result = world
         .application
         .execute_application_query_one_shot(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             plan,
         )
         .expect("the source query executes at every population scale");

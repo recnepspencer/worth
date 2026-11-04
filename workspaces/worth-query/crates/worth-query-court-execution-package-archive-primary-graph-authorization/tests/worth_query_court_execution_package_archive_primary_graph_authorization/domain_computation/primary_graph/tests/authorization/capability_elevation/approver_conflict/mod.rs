@@ -25,14 +25,14 @@ fn exact_conflicted_approver_cannot_open_elevation_authority() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             authenticated_principal(&host_custody, &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             add_approver_conflict(
                 &host_custody,
                 &host_custody.borrowed_request_for_test(),
@@ -44,7 +44,7 @@ fn exact_conflicted_approver_cannot_open_elevation_authority() {
     let Err(denial) = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             crate::domain_computation::primary_graph::tests::authorization::capability_elevation::admit(
                 &host_custody,
                 &world,
@@ -74,14 +74,14 @@ fn approver_conflict_drift_stales_admitted_elevation_authority() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             authenticated_principal(&host_custody, &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let access = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             crate::domain_computation::primary_graph::tests::authorization::capability_elevation::admit(
                 &host_custody,
                 &world,
@@ -96,7 +96,7 @@ fn approver_conflict_drift_stales_admitted_elevation_authority() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             add_approver_conflict(
                 &host_custody,
                 &host_custody.borrowed_request_for_test(),
@@ -113,7 +113,7 @@ fn approver_conflict_drift_stales_admitted_elevation_authority() {
     let Err(denial) = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             world.application.authorize_capability_operation(
                 &host_custody.phase_for_application(&world.application),
                 access,
@@ -142,13 +142,13 @@ pub fn add_approver_conflict(
     let scope = live_scope();
     let approver = world
         .application
-        .select_product_branch(
+        .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch(),
+            world.application.product_runtime().default_branch_for_test(),
         )
         .expect("the selected product branch remains admitted")
         .resolve_entity(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             PrincipalIdentityField::reference(),
             2_u64,
             &scope,
@@ -157,20 +157,20 @@ pub fn add_approver_conflict(
         .unwrap();
     let account = world
         .application
-        .select_product_branch(
+        .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch(),
+            world.application.product_runtime().default_branch_for_test(),
         )
         .expect("the selected product branch remains admitted")
         .resolve_entity(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             AccountIdentity::reference(),
             "account-1".to_owned(),
             &scope,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap();
-    let graph = world.application.runtime.primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let relation_kind = graph
         .layout()
         .relation(CapabilityConflictingBeneficiary::reference().name())

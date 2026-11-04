@@ -12,7 +12,7 @@ fn changed_parameter_denies_before_basis_acquisition() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             context.issue(&host_custody)
         })
         .expect("the fixture read owns its installed host call");
@@ -23,7 +23,7 @@ fn changed_parameter_denies_before_basis_acquisition() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             context.readmit_denial(&host_custody, continuation, "account-2", &request, 1)
         })
         .expect("the fixture read owns its installed host call");
@@ -43,7 +43,7 @@ fn stale_installed_generation_denies_before_basis_reacquisition() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             context.issue(&host_custody)
         })
         .expect("the fixture read owns its installed host call");
@@ -55,7 +55,7 @@ fn stale_installed_generation_denies_before_basis_reacquisition() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             context.readmit_denial(&host_custody, continuation, "account-1", &request, 1)
         })
         .expect("the fixture read owns its installed host call");
@@ -77,11 +77,11 @@ fn wrong_provider_descriptor_denies_before_fresh_admission() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             context.issue(&host_custody)
         })
         .expect("the fixture read owns its installed host call");
-    continuation.provider_identity.push_str(".foreign");
+    (*continuation.provider_identity_for_test()).push_str(".foreign");
     let acquisitions = context.basis_acquisitions();
     let request = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
 
@@ -89,7 +89,7 @@ fn wrong_provider_descriptor_denies_before_fresh_admission() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             context.readmit_denial(&host_custody, continuation, "account-1", &request, 1)
         })
         .expect("the fixture read owns its installed host call");
@@ -109,11 +109,11 @@ fn changed_continuation_contract_denies_as_stale_meaning() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             context.issue(&host_custody)
         })
         .expect("the fixture read owns its installed host call");
-    continuation.continuation_contract_digest =
+    (*continuation.continuation_contract_digest_mut_for_test()) =
         worth_foundational::facade::CanonicalDigestId::new([0xCC; 32]);
     let acquisitions = context.basis_acquisitions();
     let request = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
@@ -122,7 +122,7 @@ fn changed_continuation_contract_denies_as_stale_meaning() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             context.readmit_denial(&host_custody, continuation, "account-1", &request, 1)
         })
         .expect("the fixture read owns its installed host call");
@@ -142,7 +142,7 @@ fn retained_and_disposed_tokens_own_no_runtime_resource_types() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             context.issue(&host_custody)
         })
         .expect("the fixture read owns its installed host call");

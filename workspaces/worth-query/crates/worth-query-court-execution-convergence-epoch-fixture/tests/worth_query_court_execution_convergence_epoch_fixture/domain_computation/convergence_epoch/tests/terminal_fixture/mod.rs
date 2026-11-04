@@ -24,7 +24,7 @@ pub fn direct_terminal_outcome(
     let started = {
         let fixture_phase_result = {
             let fixture_target = epoch;
-            let installed_fixture_phase = fixture_target.fixture_phase(execution);
+            let installed_fixture_phase = fixture_target.fixture_phase_for_test(execution);
             fixture_target.begin_iteration(
                 &installed_fixture_phase,
                 WorthQueryManagedGraphCallRequest::new(
@@ -41,7 +41,7 @@ pub fn direct_terminal_outcome(
     {
         let fixture_phase_result = {
             let fixture_target = started;
-            let installed_fixture_phase = fixture_target.fixture_phase(execution);
+            let installed_fixture_phase = fixture_target.fixture_phase_for_test(execution);
             fixture_target.advance(&installed_fixture_phase)
         };
         match fixture_phase_result {
@@ -119,7 +119,7 @@ pub fn workflow_terminal_outcome(
     let started = {
         let fixture_phase_result = {
             let fixture_target = epoch;
-            let installed_fixture_phase = fixture_target.fixture_phase(execution);
+            let installed_fixture_phase = fixture_target.fixture_phase_for_test(execution);
             fixture_target.begin_stage_iteration(
                 &installed_fixture_phase,
                 WORKFLOW_STAGE,
@@ -137,7 +137,7 @@ pub fn workflow_terminal_outcome(
     {
         let fixture_phase_result = {
             let fixture_target = started;
-            let installed_fixture_phase = fixture_target.fixture_phase(execution);
+            let installed_fixture_phase = fixture_target.fixture_phase_for_test(execution);
             fixture_target.advance(&installed_fixture_phase)
         };
         match fixture_phase_result {

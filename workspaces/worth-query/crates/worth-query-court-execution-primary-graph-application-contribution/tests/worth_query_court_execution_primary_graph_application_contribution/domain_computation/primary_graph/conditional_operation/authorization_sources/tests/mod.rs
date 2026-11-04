@@ -31,7 +31,7 @@ fn governed_temporal_operation_uses_real_capability_progression() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             let borrowed_execution = host_custody.borrowed_request_for_test();
             let execution = &borrowed_execution;
             let principal = authenticated_principal(
@@ -92,7 +92,7 @@ fn governed_temporal_reconstruction_uses_real_capability_progression() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             let borrowed_execution = host_custody.borrowed_request_for_test();
             let execution = &borrowed_execution;
             let principal = authenticated_principal(
@@ -125,14 +125,14 @@ fn governed_temporal_reconstruction_uses_real_capability_progression() {
             let selected = world.selected_product(
                 &(host_custody.phase_for_application(&world.application)).test_host_request(),
             );
-            let (_, product, application_basis) = selected.into_parts();
+            let (_, product, application_basis) = selected.into_parts_for_test();
             let plan = authorization
         .admit(execution,
             &world.application,
             &query,
             &access,
             worth_query_declaration::facade::application_query::ApplicationQueryParameterSet::new(),
-            WorthQueryApplicationQueryControls::product_one_shot(product, application_basis, NonZeroUsize::new(1).unwrap(), &request),
+            WorthQueryApplicationQueryControls::product_one_shot_for_test(product, application_basis, NonZeroUsize::new(1).unwrap(), &request),
         )
         .expect("current capability must admit temporal reconstruction");
             assert!(plan.graph_work_capability_identity().is_some());

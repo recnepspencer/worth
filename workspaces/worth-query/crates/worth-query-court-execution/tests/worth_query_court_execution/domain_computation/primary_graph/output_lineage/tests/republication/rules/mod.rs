@@ -56,25 +56,25 @@ fn a_republication_continues_the_suspended_performed_record() {
         let suspended = suspended.get().unwrap();
         assert!(Arc::ptr_eq(
             &continued.predecessor,
-            &suspended.settlement_identity
+            &(*suspended.settlement_identity_for_test())
         ));
         assert!(continued
             .facts
             .for_comparison()
             .unwrap()
-            .facts()
+            .facts_for_test()
             .same_backing(&Arc::clone(&facts).into()));
         assert!(Arc::ptr_eq(&continued.consumed_outputs, &consumed));
         assert!(Arc::ptr_eq(&continued.witness, &restored_witness));
 
         let restored = stage.restored();
         assert!(Arc::ptr_eq(
-            &restored.settlement_identity,
+            &(*restored.settlement_identity_for_test()),
             &continued.identity
         ));
-        assert!(Arc::ptr_eq(&restored.consumed_outputs, &consumed));
+        assert!(Arc::ptr_eq(&(*restored.consumed_outputs_for_test()), &consumed));
         assert!(restored
-            .observed_source_facts()
+            .observed_source_facts_for_test()
             .unwrap()
             .for_comparison()
             .unwrap()
@@ -82,7 +82,7 @@ fn a_republication_continues_the_suspended_performed_record() {
             .same_backing(&Arc::clone(&facts).into()));
         // The row is an origin of its own over the re-created entities.
         assert!(Arc::ptr_eq(
-            restored.native_output_witness_cell().unwrap(),
+            restored.native_output_witness_cell_for_test().unwrap(),
             &restored_witness
         ));
 
@@ -96,9 +96,9 @@ fn a_republication_continues_the_suspended_performed_record() {
             .expect("the suspended record still continues")
             .is_none());
         let restored = stage.restored();
-        assert_eq!(restored.verification_requirement(), None);
+        assert_eq!(restored.verification_requirement_for_test(), None);
         assert!(Arc::ptr_eq(
-            restored.native_output_witness_cell().unwrap(),
+            restored.native_output_witness_cell_for_test().unwrap(),
             &restored_witness
         ));
     });
@@ -117,15 +117,15 @@ fn a_restored_row_without_performed_proof_stays_fresh_until_verified() {
         checkpoint_row
             .get()
             .unwrap()
-            .require_verification(FullVerificationReason::CheckpointRestore);
+            .require_verification_for_test(FullVerificationReason::CheckpointRestore);
 
         assert!(stage
             .republish(suspended_generation, &facts, &restored_witness)
             .is_none());
-        stage.lineage.record_restoration(
-            stage.lineage.binding_type(&stage.source.output_binding),
-            stage.source.runtime_authority,
-            stage.source.schema.clone(),
+        stage.lineage.record_restoration_for_test(
+            stage.lineage.binding_type_for_test(&(*stage.source.output_binding_for_test())),
+            (*stage.source.runtime_authority_for_test()),
+            (*stage.source.schema_for_test()).clone(),
             stage.source.scope,
             stage.observation,
             Arc::clone(&stage.correspondence),
@@ -133,20 +133,20 @@ fn a_restored_row_without_performed_proof_stays_fresh_until_verified() {
             PARTITION,
             None,
             IDEMPOTENCY_KEY,
-            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false).retain_facts(Arc::clone(&facts)),
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false).retain_facts_for_test(Arc::clone(&facts)),
             None,
             None,
             None,
         );
         let restored = stage.restored();
         assert_eq!(
-            restored.verification_requirement(),
+            restored.verification_requirement_for_test(),
             Some(FullVerificationReason::CheckpointRestore)
         );
-        assert!(restored.completed_handler_facts.is_none());
-        assert!(restored.completed_decision_reuse.is_none());
-        assert!(restored.prepared_input_reuse_key.is_none());
-        assert!(restored.native_output_witness_cell().is_none());
+        assert!((*restored.completed_handler_facts_for_test()).is_none());
+        assert!((*restored.completed_decision_reuse_for_test()).is_none());
+        assert!((*restored.prepared_input_reuse_key_for_test()).is_none());
+        assert!(restored.native_output_witness_cell_for_test().is_none());
     });
 }
 
@@ -175,7 +175,7 @@ fn a_republished_stable_alias_holds_the_performed_sequence() {
         let projection = performed_witness
             .get()
             .unwrap()
-            .prepare_fact_projection()
+            .prepare_fact_projection_for_test()
             .unwrap()
             .unwrap();
         let mut combined = Vec::with_capacity(projection.count() + 2);
@@ -197,9 +197,9 @@ fn a_republished_stable_alias_holds_the_performed_sequence() {
                     prepared_input_reuse_key: Some(input_key(&selection, ALIAS_INPUT)),
                     ..row
                 };
-                let spans = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::input_cutoff::stable_publication::fact_spans::StableFactSpans::new(
+                let spans = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::input_cutoff::stable_publication::fact_spans::StableFactSpans::new_for_test(
                     alias_facts.clone().into(), 1, alias_facts.len() - 2).unwrap();
-                let mutable = row.mutable.get_mut().unwrap();
+                let mutable = (*row.mutable_for_test()).get_mut().unwrap();
                 // Local representation proof: real witness projection above,
                 // no source/currentness authority is manufactured by spans.
                 mutable.set_stable_fact_spans(spans);
@@ -212,21 +212,21 @@ fn a_republished_stable_alias_holds_the_performed_sequence() {
             .republish(suspended_generation, &alias_facts, &restored_witness)
             .expect("an alias continues its origin's proof")
             .expect("the restoration's address takes the republication");
-        assert_eq!(continued.facts.len(), 2);
+        assert_eq!(continued.facts.len_for_test(), 2);
         assert!(selects(&continued.facts.for_comparison().unwrap()[0], 1));
         assert!(selects(&continued.facts.for_comparison().unwrap()[1], 3));
         assert!(Arc::ptr_eq(&continued.consumed_outputs, &consumed));
 
         let restored = stage.restored();
         assert!(restored
-            .observed_source_facts()
+            .observed_source_facts_for_test()
             .unwrap()
             .for_comparison()
             .unwrap()
             .facts()
-            .same_backing(continued.facts.for_comparison().unwrap().facts()));
+            .same_backing(continued.facts.for_comparison().unwrap().facts_for_test()));
         assert!(Arc::ptr_eq(
-            restored.native_output_witness_cell().unwrap(),
+            restored.native_output_witness_cell_for_test().unwrap(),
             &restored_witness
         ));
 
@@ -272,13 +272,13 @@ fn a_stable_alias_is_compared_by_the_witness_of_its_origin() {
 
         let candidates = stage
             .lineage
-            .retained_output_candidates_metered(
-                stage.source.runtime_authority,
-                &stage.source.schema,
+            .retained_output_candidates_metered_for_test(
+                (*stage.source.runtime_authority_for_test()),
+                &(*stage.source.schema_for_test()),
                 stage.source.scope,
                 stage.observation.lifecycle_incarnation(),
                 alias_generation,
-                &[stage.lineage.binding_type(&stage.source.output_binding)],
+                &[stage.lineage.binding_type_for_test(&(*stage.source.output_binding_for_test()))],
                 PARTITION,
                 request_execution,
             )
@@ -339,9 +339,9 @@ fn a_republication_whose_predecessor_holds_no_mark_row_is_verified_in_full() {
         assert_eq!(reason, FullVerificationReason::MissingSettlement);
         stage
             .lineage
-            .require_settlement_verification(&continued.identity, reason);
+            .require_settlement_verification_for_test(&continued.identity, reason);
         assert_eq!(
-            stage.restored().verification_requirement(),
+            stage.restored().verification_requirement_for_test(),
             Some(FullVerificationReason::MissingSettlement)
         );
     });

@@ -21,7 +21,7 @@ fn bounded_provider_fixture_opener_refuses_before_direct_and_workflow_readmissio
         let _restore = Restore(place(placement), bound(None));
         let (yielded, bridge, runtime) = host
             .run_provider_fixture(|phase| {
-                let custody = phase.test_host_request();
+                let custody = phase.test_host_request_for_test();
                 let bootstrap = custody.bootstrap_for_test();
                 worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::managed_run::tests::readmission_direct::yielded_direct(&custody, bootstrap.execution_request())
             })
@@ -29,10 +29,10 @@ fn bounded_provider_fixture_opener_refuses_before_direct_and_workflow_readmissio
         let mut direct = Some(yielded);
         let (yielded, workflow_bridge, workflow_runtime, _) = host
             .run_provider_fixture(|phase| {
-                let fixture_custody = phase.test_host_request();
+                let fixture_custody = phase.test_host_request_for_test();
                 let bootstrap = fixture_custody.bootstrap_for_test();
                 worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::managed_run::tests::readmission_workflow::yielded_workflow(
-                    &phase.test_host_request(),
+                    &phase.test_host_request_for_test(),
                     worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::managed_run::tests::yield_fixture::YieldProvider::installed(5),
                     bootstrap.execution_request(),
                 )
@@ -49,7 +49,7 @@ fn bounded_provider_fixture_opener_refuses_before_direct_and_workflow_readmissio
             let direct_stop = host
                 .run_provider_fixture(|phase| {
                     let yielded = direct.take().unwrap();
-                    let installed = yielded.fixture_phase(&phase.test_host_request());
+                    let installed = yielded.fixture_phase_for_test(&phase.test_host_request_for_test());
                     yielded.readmit_same_runtime(&installed, &runtime, &bridge)
                 })
                 .err()
@@ -57,7 +57,7 @@ fn bounded_provider_fixture_opener_refuses_before_direct_and_workflow_readmissio
             let workflow_stop = host
                 .run_provider_fixture(|phase| {
                     let yielded = workflow.take().unwrap();
-                    let installed = yielded.fixture_phase(&phase.test_host_request());
+                    let installed = yielded.fixture_phase_for_test(&phase.test_host_request_for_test());
                     yielded.readmit_same_runtime(&installed, &workflow_runtime, &workflow_bridge)
                 })
                 .err()
@@ -88,7 +88,7 @@ fn bounded_provider_fixture_opener_refuses_before_direct_and_workflow_readmissio
         let direct = host
             .run_provider_fixture(|phase| {
                 let yielded = direct.take().unwrap();
-                let installed = yielded.fixture_phase(&phase.test_host_request());
+                let installed = yielded.fixture_phase_for_test(&phase.test_host_request_for_test());
                 yielded.readmit_same_runtime(&installed, &runtime, &bridge)
             })
             .unwrap();
@@ -106,7 +106,7 @@ fn bounded_provider_fixture_opener_refuses_before_direct_and_workflow_readmissio
         let workflow = host
             .run_provider_fixture(|phase| {
                 let yielded = workflow.take().unwrap();
-                let installed = yielded.fixture_phase(&phase.test_host_request());
+                let installed = yielded.fixture_phase_for_test(&phase.test_host_request_for_test());
                 yielded.readmit_same_runtime(&installed, &workflow_runtime, &workflow_bridge)
             })
             .unwrap();

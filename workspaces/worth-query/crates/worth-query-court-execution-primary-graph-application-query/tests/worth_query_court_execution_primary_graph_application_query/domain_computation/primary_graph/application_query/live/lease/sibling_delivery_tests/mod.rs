@@ -24,7 +24,7 @@ fn sibling_commit_wakes_only_its_exact_product_partition() {
         .application
         .with_host_advancement(|phase| {
             world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&(phase).test_host_request_for_test())
                 .resolve_authenticated_principal(
                     &phase,
                     &world.binding,
@@ -38,7 +38,7 @@ fn sibling_commit_wakes_only_its_exact_product_partition() {
     let source = world
         .application
         .product_runtime()
-        .admit_product_branch(world.application.product_runtime().default_branch())
+        .admit_product_branch_for_test(world.application.product_runtime().default_branch_for_test())
         .unwrap();
     let intent = worth_runtime_world::facade::ProductBranchCreationIntent::from_source(
         "live-delivery-sibling",
@@ -53,7 +53,7 @@ fn sibling_commit_wakes_only_its_exact_product_partition() {
     let created = world
         .application
         .product_runtime()
-        .create_product_branch(
+        .create_product_branch_for_test(
             execution,
             &source,
             None,
@@ -72,7 +72,7 @@ fn sibling_commit_wakes_only_its_exact_product_partition() {
         .application
         .with_host_advancement(|phase| {
             world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&(phase).test_host_request_for_test())
                 .resolve_entity(
                     &phase,
                     AccountIdentity::reference(),
@@ -92,7 +92,7 @@ fn sibling_commit_wakes_only_its_exact_product_partition() {
         .application
         .with_host_advancement(|phase| {
             world
-        .selected_product(&(phase).test_host_request(), )
+        .selected_product(&(phase).test_host_request_for_test(), )
         .open_application_query_live::<
             LiveAccountActivityQuery,
             AccountSummaryParameters,
@@ -116,10 +116,10 @@ fn sibling_commit_wakes_only_its_exact_product_partition() {
     let sibling_account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             world
                 .application
-                .select_product_branch(&host_custody.borrowed_request_for_test(), &sibling)
+                .select_product_branch_for_test(&host_custody.borrowed_request_for_test(), &sibling)
                 .unwrap()
                 .resolve_entity(
                     &phase,
@@ -139,10 +139,10 @@ fn sibling_commit_wakes_only_its_exact_product_partition() {
     let mut sibling_live = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             world
         .application
-        .select_product_branch(&host_custody.borrowed_request_for_test(), &sibling)
+        .select_product_branch_for_test(&host_custody.borrowed_request_for_test(), &sibling)
         .unwrap()
         .open_application_query_live::<
             LiveAccountActivityQuery,

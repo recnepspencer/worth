@@ -19,7 +19,7 @@ fn certified_alias_chain_discharge_is_exact_and_later_native_change_repends() {
     let world = installed_authorization_world(true);
     let selected = world
         .application
-        .with_host_advancement(|host_phase| world.selected_product(&host_phase.test_host_request()))
+        .with_host_advancement(|host_phase| world.selected_product(&host_phase.test_host_request_for_test()))
         .expect("installed host call opens");
     let entity = world
         .application
@@ -33,15 +33,15 @@ fn certified_alias_chain_discharge_is_exact_and_later_native_change_repends() {
                     WorthQueryPrincipalResolutionMode::Ordinary,
                 )
                 .unwrap()
-                .entity_id()
+                .entity_id_for_test()
         })
         .expect("installed host call opens");
-    let (_, product, _) = selected.into_parts();
+    let (_, product, _) = selected.into_parts_for_test();
     let coordinate = ProductCoordinate {
         occurrence: product.observation().lifecycle_incarnation(),
         generation: product.observation().reference_generation().get(),
     };
-    let graph = world.application.runtime.primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let handle = graph.integration_handle();
     let owner = &handle.source_owner.invalidation_owner;
     let status_ref = AccountStatus::reference();
@@ -58,28 +58,28 @@ fn certified_alias_chain_discharge_is_exact_and_later_native_change_repends() {
         .clone();
     let source = |output_binding| {
         SemanticSource {
-        runtime_authority: world.application.runtime.authority_identity().as_u64(),
-        schema: world.application.installed_schema.binding_identity().clone(),
-        scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity(entity),
+        runtime_authority: (*world.application.runtime_for_test()).authority_identity().as_u64(),
+        schema: (*world.application.installed_schema_for_test()).binding_identity().clone(),
+        scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity),
         output_binding,
     }
     };
-    let a_source = source(OutputBindingIdentity::declared("StatusOutput"));
-    let a0 = RecordedSettlementIdentity::retain(&a_source, coordinate, 0);
-    let a1 = RecordedSettlementIdentity::retain(&a_source, coordinate, 1);
-    let a2 = RecordedSettlementIdentity::retain(&a_source, coordinate, 2);
-    let b = RecordedSettlementIdentity::retain(
-        &source(OutputBindingIdentity::declared("DownstreamOutput")),
+    let a_source = source(OutputBindingIdentity::declared_for_test("StatusOutput"));
+    let a0 = RecordedSettlementIdentity::retain_for_test(&a_source, coordinate, 0);
+    let a1 = RecordedSettlementIdentity::retain_for_test(&a_source, coordinate, 1);
+    let a2 = RecordedSettlementIdentity::retain_for_test(&a_source, coordinate, 2);
+    let b = RecordedSettlementIdentity::retain_for_test(
+        &source(OutputBindingIdentity::declared_for_test("DownstreamOutput")),
         coordinate,
         0,
     );
-    let c = RecordedSettlementIdentity::retain(
-        &source(OutputBindingIdentity::declared("LateOutput")),
+    let c = RecordedSettlementIdentity::retain_for_test(
+        &source(OutputBindingIdentity::declared_for_test("LateOutput")),
         coordinate,
         0,
     );
-    let other = RecordedSettlementIdentity::retain(
-        &source(OutputBindingIdentity::declared("OtherUpstream")),
+    let other = RecordedSettlementIdentity::retain_for_test(
+        &source(OutputBindingIdentity::declared_for_test("OtherUpstream")),
         coordinate,
         0,
     );
@@ -106,8 +106,8 @@ fn certified_alias_chain_discharge_is_exact_and_later_native_change_repends() {
         assert!(matches!(currentness(owner, &changed, &b), SourceSettlementCurrentness::Clean));
         assert_pending(owner, &changed, &c, &b);
         assert_pending(owner, &changed, &c, &other);
-        let prior = SnapshotAlignedMarkState::observe_image(&historical_image, &changed).unwrap();
-        assert!(matches!(prior.currentness(&b), SettlementCurrentness::PendingUpstream(edges) if edges.contains(&a0)));
+        let prior = SnapshotAlignedMarkState::observe_image_for_test(&historical_image, &changed).unwrap();
+        assert!(matches!(prior.currentness_for_test(&b), SettlementCurrentness::PendingUpstream(edges) if edges.contains(&a0)));
         assert_source_only_alias_verification(request_execution, owner, runtime, &changed_handle, &changed, &before, &a0, &old_a_fact);
         // Late registration consumes the already-certified clean successor,
         // rather than recreating a pending edge from the dirty predecessor.
@@ -129,9 +129,9 @@ fn certified_alias_chain_discharge_is_exact_and_later_native_change_repends() {
             SourceSettlementCurrentness::Dirty(_)
         ));
         assert_eq!(
-            ConsumedOutputEvidence::verify_candidate_with_admission(
+            ConsumedOutputEvidence::verify_candidate_with_admission_for_test(
 request_execution,                &a0,
-                &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts::for_test(false, Arc::from([old_a_fact.clone()])).for_comparison().unwrap(),
+                &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts::for_test_for_test(false, Arc::from([old_a_fact.clone()])).for_comparison().unwrap(),
                 &[],
                 None,
                 &before,
@@ -156,7 +156,7 @@ fn unchanged_own_evidence_waits_for_a_pending_equal_successor() {
     let world = installed_authorization_world(true);
     let selected = world
         .application
-        .with_host_advancement(|host_phase| world.selected_product(&host_phase.test_host_request()))
+        .with_host_advancement(|host_phase| world.selected_product(&host_phase.test_host_request_for_test()))
         .expect("installed host call opens");
     let entity = world
         .application
@@ -170,15 +170,15 @@ fn unchanged_own_evidence_waits_for_a_pending_equal_successor() {
                     WorthQueryPrincipalResolutionMode::Ordinary,
                 )
                 .unwrap()
-                .entity_id()
+                .entity_id_for_test()
         })
         .expect("installed host call opens");
-    let (_, product, _) = selected.into_parts();
+    let (_, product, _) = selected.into_parts_for_test();
     let coordinate = ProductCoordinate {
         occurrence: product.observation().lifecycle_incarnation(),
         generation: product.observation().reference_generation().get(),
     };
-    let graph = world.application.runtime.primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let handle = graph.integration_handle();
     let owner = &handle.source_owner.invalidation_owner;
     let status_ref = AccountStatus::reference();
@@ -195,15 +195,15 @@ fn unchanged_own_evidence_waits_for_a_pending_equal_successor() {
         .clone();
     let source = |output_binding| {
         SemanticSource {
-        runtime_authority: world.application.runtime.authority_identity().as_u64(),
-        schema: world.application.installed_schema.binding_identity().clone(),
-        scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity(entity),
+        runtime_authority: (*world.application.runtime_for_test()).authority_identity().as_u64(),
+        schema: (*world.application.installed_schema_for_test()).binding_identity().clone(),
+        scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity),
         output_binding,
     }
     };
-    let a_source = source(OutputBindingIdentity::declared("StatusOutput"));
-    let a0 = RecordedSettlementIdentity::retain(&a_source, coordinate, 0);
-    let a1 = RecordedSettlementIdentity::retain(&a_source, coordinate, 1);
+    let a_source = source(OutputBindingIdentity::declared_for_test("StatusOutput"));
+    let a0 = RecordedSettlementIdentity::retain_for_test(&a_source, coordinate, 0);
+    let a1 = RecordedSettlementIdentity::retain_for_test(&a_source, coordinate, 1);
     handle.with_runtime_mut(request_execution, |runtime| {
         let (before_handle, before) = snapshot(runtime);
         let unchanged_fact = field_fact(request_execution, runtime, &before_handle, entity, label);
@@ -216,9 +216,9 @@ fn unchanged_own_evidence_waits_for_a_pending_equal_successor() {
         let (later_handle, later) = snapshot(runtime);
         assert!(matches!(owner.consumed_output_currentness(&later, &a0).unwrap(),
             worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::derived::ConsumedOutputCurrentness::PendingEqualSuccessor));
-        assert_eq!(ConsumedOutputEvidence::verify_candidate_with_admission(
+        assert_eq!(ConsumedOutputEvidence::verify_candidate_with_admission_for_test(
 request_execution,            &a0,
-            &RetainedSourceFacts::for_test(false, Arc::from([unchanged_fact])).for_comparison().unwrap(),
+            &RetainedSourceFacts::for_test_for_test(false, Arc::from([unchanged_fact])).for_comparison().unwrap(),
             &[], None, &before, owner, runtime, &later_handle, &later,
         ), Err(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::consumed_output::verification::ConsumedOutputVerificationStop::PendingUpstream));
         for handle in [before_handle, alias_handle, later_handle] {
@@ -238,18 +238,18 @@ pub fn register_alias(
     predecessor: &Arc<RecordedSettlementIdentity>,
     successor: &Arc<RecordedSettlementIdentity>,
 ) {
-    let relation = StableEqualityConsequence::native_actor_fixture(
+    let relation = StableEqualityConsequence::native_actor_fixture_for_test(
         Arc::clone(predecessor),
         Arc::clone(successor),
         selected,
     );
     let prepared = owner
-        .prepare_current_stable_settlement(
+        .prepare_current_stable_settlement_for_test(
             SettlementRegistration {
                 computation: None,
                 work_membership: None,
                 identity: Arc::clone(successor),
-                facts: RetainedSourceFacts::for_test(
+                facts: RetainedSourceFacts::for_test_for_test(
                     false,
                     Arc::from([field_fact(execution, runtime, handle, entity, locator)]),
                 ),
@@ -294,10 +294,10 @@ pub fn assert_source_only_alias_verification(
     old_fact: &WorthQueryApplicationObservedFact,
 ) {
     let verify = || {
-        ConsumedOutputEvidence::verify_candidate_with_admission(
+        ConsumedOutputEvidence::verify_candidate_with_admission_for_test(
             execution,
             old_identity,
-            &RetainedSourceFacts::for_test(false, Arc::from([old_fact.clone()]))
+            &RetainedSourceFacts::for_test_for_test(false, Arc::from([old_fact.clone()]))
                 .for_comparison()
                 .unwrap(),
             &[],
@@ -311,7 +311,7 @@ pub fn assert_source_only_alias_verification(
     };
     assert_eq!(verify(), Ok(ConsumedOutputVerification::Current));
     let _oracle =
-        worth_query_execution::facade::domain_computation::WorthQueryInvalidationEquivalenceForTest::arm_for_invalidation_resources_for_test(&owner.resources);
+        worth_query_execution::facade::domain_computation::WorthQueryInvalidationEquivalenceForTest::arm_for_invalidation_resources_for_test(&(*owner.resources_for_test()));
     assert_eq!(
         verify(),
         Err(ConsumedOutputVerificationStop::Unavailable),

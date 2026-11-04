@@ -76,9 +76,9 @@ impl RelationalPublicationCompanion for TwoCellHints {
         if index == 1 {
             self.gate.main_linked.wait()?;
         }
-        let branch = RequiredWorkMembership::prepared_native_branch(context.branch_id().clone());
+        let branch = RequiredWorkMembership::prepared_native_branch_for_test(context.branch_id().clone());
         self.member
-            .prepare_hint(RequiredWorkMembership::prepared_native_hint(
+            .prepare_hint_for_test(RequiredWorkMembership::prepared_native_hint_for_test(
                 observer, branch,
             ));
         if index == 0 {
@@ -105,7 +105,7 @@ fn two_branch_cells_preserve_prepared_fences_and_selected_branch_identity() {
             let (entity, product) = world
                 .application
                 .with_host_advancement(|phase| {
-                    let host_custody = phase.test_host_request();
+                    let host_custody = phase.test_host_request_for_test();
 
                     let selected = world.selected_product(
                         &(host_custody.phase_for_application(&world.application))
@@ -120,8 +120,8 @@ fn two_branch_cells_preserve_prepared_fences_and_selected_branch_identity() {
                             WorthQueryPrincipalResolutionMode::Ordinary,
                         )
                         .unwrap()
-                        .entity_id();
-                    let (_, product, _) = selected.into_parts();
+                        .entity_id_for_test();
+                    let (_, product, _) = selected.into_parts_for_test();
                     (entity, product)
                 })
                 .expect("the fixture source read owns its host call");
@@ -131,9 +131,9 @@ fn two_branch_cells_preserve_prepared_fences_and_selected_branch_identity() {
             world
                 .application
                 .with_host_advancement(|phase| {
-                    let host_custody = phase.test_host_request();
+                    let host_custody = phase.test_host_request_for_test();
                     let execution = &host_custody.borrowed_request_for_test();
-                    let graph = world.application.runtime.primary_graph().unwrap();
+                    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
                     let handle = graph.integration_handle();
                     let owner = &handle.source_owner.invalidation_owner;
                     let status_ref = AccountStatus::reference();
@@ -233,7 +233,7 @@ fn two_branch_cells_preserve_prepared_fences_and_selected_branch_identity() {
                 assert_eq!(performed, allowed_hints);
 
 let mut selected_main = registry
-                    .next_required_claim_for_selected(
+                    .next_required_claim_for_selected_for_test(
                         product.read_lease_ref(),
                         &main_root,
                         owner,
@@ -243,11 +243,11 @@ let mut selected_main = registry
 
 
 
-                let selected_main = registry.select_required_claim(&mut selected_main, &main_root)
+                let selected_main = registry.select_required_claim_for_test(&mut selected_main, &main_root)
                     .unwrap().expect("the main branch claim selects its actual native hint");
                 assert!(matches!(
                     selected_main.kind(),
-                    SelectedRequiredWorkKind::Native { branch, .. } if branch.branch_id() == &main
+                    SelectedRequiredWorkKind::Native { branch, .. } if branch.branch_id_for_test() == &main
                 ));
                 assert!(selected_main.acknowledge_fixture().is_some());
                 port.remove_required(&registration).unwrap();
@@ -257,17 +257,17 @@ let mut selected_main = registry
 
 
 let first = registry
-                            .next_required_work(owner)
+                            .next_required_work_for_test(owner)
                             .unwrap()
                             .expect("fork-cell hint remains after main acknowledgement");
 assert!(matches!(
                             first.kind(),
                             SelectedRequiredWorkKind::Native { branch, .. }
-                                if branch.branch_id() == &BranchId("hint-fork".to_owned())
+                                if branch.branch_id_for_test() == &BranchId("hint-fork".to_owned())
                         ));
                         registry.fixture_requeue_admitted_work(&interest);
 let stale = registry
-                            .next_required_work(owner)
+                            .next_required_work_for_test(owner)
                             .unwrap()
                             .expect("one native hint can have two selected readers");
 
@@ -275,7 +275,7 @@ let stale = registry
                         assert!(matches!(
                             stale.kind(),
                             SelectedRequiredWorkKind::Native { branch, .. }
-                                if branch.branch_id() == &BranchId("hint-fork".to_owned())
+                                if branch.branch_id_for_test() == &BranchId("hint-fork".to_owned())
                         ));
                         assert!(first.acknowledge_fixture().is_some());
 
@@ -285,7 +285,7 @@ let stale = registry
 
 
 let initial = registry
-                        .next_required_work(owner)
+                        .next_required_work_for_test(owner)
                         .unwrap()
                         .expect("the original required interest is unresolved");
 assert!(matches!(
@@ -294,7 +294,7 @@ assert!(matches!(
                     ));
                     assert!(initial.acknowledge_fixture().is_some());
                     assert!(registry
-                        .next_required_work(owner)
+                        .next_required_work_for_test(owner)
                         .unwrap()
                         .is_none());
                     drop(interest);

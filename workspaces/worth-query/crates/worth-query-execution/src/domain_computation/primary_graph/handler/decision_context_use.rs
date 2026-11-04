@@ -60,7 +60,7 @@ impl DecisionContextUse {
         self.request_context()
     }
 
-    pub(in crate::domain_computation::primary_graph) const fn raw_reader_for_test(self) -> Self {
+    pub const fn raw_reader_for_test(self) -> Self {
         self.opaque_reader()
     }
 

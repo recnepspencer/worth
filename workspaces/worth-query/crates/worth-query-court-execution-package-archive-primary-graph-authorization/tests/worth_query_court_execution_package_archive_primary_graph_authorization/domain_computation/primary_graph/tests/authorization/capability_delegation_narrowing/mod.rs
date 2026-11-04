@@ -56,7 +56,7 @@ fn every_stored_narrowing_axis_is_enforced_by_production_admission() {
         world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 break_narrowing_axis(
                     &host_custody.phase_for_application(&world.application),
                     &world,
@@ -68,7 +68,7 @@ fn every_stored_narrowing_axis_is_enforced_by_production_admission() {
         let principal = world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 authenticated_principal(
                     &(host_custody.phase_for_application(&world.application)).test_host_request(),
                     &world,
@@ -80,7 +80,7 @@ fn every_stored_narrowing_axis_is_enforced_by_production_admission() {
         let Err(denial) = world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 admitted_capability_access(
                     &(host_custody.phase_for_application(&world.application)).test_host_request(),
                     &world,
@@ -172,25 +172,25 @@ pub fn replace_parent_related_relationship(
     world: &worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::authorization_world_installation::AuthorizationWorld,
 ) {
     let parent = grant(
-        &(phase_custody).test_host_request(),
+        &(phase_custody).test_host_request_for_test(),
         &phase_custody.borrowed_request_for_test(),
         world,
         "capability-parent",
     );
     replace_relation_target(
-        &(phase_custody).test_host_request(),
+        &(phase_custody).test_host_request_for_test(),
         &phase_custody.borrowed_request_for_test(),
         world,
         relation_kind(world, CapabilityRelated::reference().name()),
         parent,
         account(
-            &(phase_custody).test_host_request(),
+            &(phase_custody).test_host_request_for_test(),
             &phase_custody.borrowed_request_for_test(),
             world,
             "account-2",
         ),
         account(
-            &(phase_custody).test_host_request(),
+            &(phase_custody).test_host_request_for_test(),
             &phase_custody.borrowed_request_for_test(),
             world,
             "account-1",

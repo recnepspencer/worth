@@ -48,7 +48,7 @@ fn a_terminal_delivery_stop_releases_the_head_with_a_peer_still_present() {
     let branch = world
         .application
         .product_runtime()
-        .admit_product_branch(world.application.product_runtime().default_branch())
+        .admit_product_branch_for_test(world.application.product_runtime().default_branch_for_test())
         .unwrap();
     let occurrence = branch.observation().lifecycle_incarnation();
     let root = worth_relational::facade::identity::EntityId::new(
@@ -56,16 +56,16 @@ fn a_terminal_delivery_stop_releases_the_head_with_a_peer_still_present() {
         1,
         1,
     );
-    let key = WorthQueryOutputDemandKey::new("terminal-delivery-family", "terminal-delivery".into(),
+    let key = WorthQueryOutputDemandKey::new_for_test("terminal-delivery-family", "terminal-delivery".into(),
         worth_query_execution::facade::application_contribution::WorthQueryProducerApplicability::new("terminal-delivery", worth_query_execution::facade::application_contribution::WorthQueryProducerLifecyclePosture::Preserve),
-        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::WorthQueryObservedSourceEpoch::new([1;32], [2;32], root, occurrence, 1, [3;32]));
-    let registry = &world.application.output_demands;
-    let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity(root);
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::WorthQueryObservedSourceEpoch::new_for_test([1;32], [2;32], root, occurrence, 1, [3;32]));
+    let registry = &(*world.application.output_demands_for_test());
+    let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(root);
     let request = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
     // Build a genuine lowering, with no dependencies. The foreign root is
     // refused before this lowering or its compute can be used.
     let mut builder = BridgeConditionalRuntimeBuilder::with_owned_signal_graph(
-        world.application.bridge.ordinary().clone(),
+        (*world.application.bridge_for_test()).ordinary().clone(),
         worth_signal::facade::runtime::SignalConditionalEvaluationBudget::development(),
     )
     .unwrap();
@@ -92,14 +92,14 @@ fn a_terminal_delivery_stop_releases_the_head_with_a_peer_still_present() {
         registry.finish_scheduling(&owner, None, &mut Ok(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryOutputSchedulingResult::Scheduled));
         let finish = registry.prepare_selected_execution_finish(&owner).unwrap();
         assert!(matches!(registry.begin(&owner), Admission::Execute { .. }));
-        assert!(RunningSelectedExecution::new(finish).publish(Checkpoint::Published {
+        assert!(RunningSelectedExecution::new(finish).publish_for_test(Checkpoint::Published {
             receipt: foreign_receipt, delivery: Delivery::Change(change),
-            ready_backing: PreparedReadyBacking::for_registry_test(),
+            ready_backing: PreparedReadyBacking::for_registry_test_for_test(),
         }).is_ok());
         assert_eq!(registry.publication_counts_for_registry_test(), (1, 1));
         let (finish, claim, checkpoint) = registry.prepare_selected_checkpoint_finish(&owner).unwrap().claim().unwrap().unwrap();
         let Checkpoint::Published { receipt, delivery, ready_backing } = checkpoint else { panic!("published checkpoint") };
-        let stop = world.application.deliver_output_checkpoint_with_finish(&phase, "terminal-delivery",
+        let stop = world.application.deliver_output_checkpoint_with_finish_for_test(&phase, "terminal-delivery",
             receipt, delivery, ready_backing, true, Some(PreparedSelectedDelivery { lowering: &lowering, ordinal: 0, preserved: false }),
             |checkpoint, denial| {
                 assert!(finish.finish(claim, checkpoint, denial.as_ref()).is_ok());

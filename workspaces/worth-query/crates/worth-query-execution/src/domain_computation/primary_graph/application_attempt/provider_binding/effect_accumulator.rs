@@ -317,3 +317,5 @@ mod tests {
         assert_eq!(accumulator.mutation_partition, issued);
     }
 }
+
+mod court_doors_for_test;

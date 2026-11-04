@@ -15,7 +15,7 @@ fn a_tree_stop_keeps_no_kernel_completion_receipt_with_reuse_either_way() {
     let first = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tests::projected_attempt::attempt_billed(
         &world,
         &installed,
-        Some(ComputationPrior::new(edition(), Err(Cause::FirstRun), None)),
+        Some(ComputationPrior::new_for_test(edition(), Err(Cause::FirstRun), None)),
         &request,
         placement,
         None,

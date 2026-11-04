@@ -71,16 +71,16 @@ pub fn read_partial_adjacency(
     let execution = ExecutionRequest::serial(&host);
     let selected = world
         .application
-        .select_product_branch(
+        .select_product_branch_for_test(
             &execution,
-            world.application.product_runtime().default_branch(),
+            world.application.product_runtime().default_branch_for_test(),
         )
         .unwrap();
     let product = selected.product().publication_binding();
     let stopped = Cell::new(None);
     let denial = world
         .invariant
-        .project_with_work_limit(
+        .project_with_work_limit_for_test(
             &execution,
             Some(5),
             product.observation().basis().relational_basis().clone(),
@@ -115,33 +115,33 @@ fn acquired_endpoint_metadata_counts_even_when_its_kind_is_rejected() {
                         let principal = reader
                             .resolve_entity(PrincipalIdentityField::reference(), 1_u64)
                             .unwrap();
-                        let principal_kind = reader
-                            .layout
+                        let principal_kind = (*reader
+                            .layout_for_test())
                             .entity_kind(Principal::reference().name())
                             .unwrap();
-                        let account_kind = reader
-                            .layout
+                        let account_kind = (*reader
+                            .layout_for_test())
                             .entity_kind(Account::reference().name())
                             .unwrap();
-                        let before = reader.work.endpoint_records_read();
+                        let before = (*reader.work_for_test()).endpoint_records_read();
                         reader
-                            .endpoint::<Principal>(
-                                reader.execution,
+                            .endpoint_for_test::<Principal>(
+                                (*reader.execution_for_test()),
                                 principal.entity_id(),
                                 principal_kind,
                                 "Principal",
                             )
                             .unwrap();
-                        let first = reader.work.endpoint_records_read();
+                        let first = (*reader.work_for_test()).endpoint_records_read();
                         let rejected = reader
-                            .endpoint::<Principal>(
-                                reader.execution,
+                            .endpoint_for_test::<Principal>(
+                                (*reader.execution_for_test()),
                                 principal.entity_id(),
                                 account_kind,
                                 "Principal",
                             )
                             .unwrap_err();
-                        let second = reader.work.endpoint_records_read();
+                        let second = (*reader.work_for_test()).endpoint_records_read();
                         (first - before, second - first, rejected.kind())
                     },
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -170,14 +170,14 @@ fn cancellation_before_endpoint_acquisition_records_no_endpoint_read() {
     let execution = ExecutionRequest::serial(&host);
     let selected = world
         .application
-        .select_product_branch(
+        .select_product_branch_for_test(
             &execution,
-            world.application.product_runtime().default_branch(),
+            world.application.product_runtime().default_branch_for_test(),
         )
         .unwrap();
     let product = selected.product().publication_binding();
     let observed = Cell::new(None);
-    let denied = world.invariant.project_with_work_limit(
+    let denied = world.invariant.project_with_work_limit_for_test(
         &execution,
         None,
         product.observation().basis().relational_basis().clone(),

@@ -159,3 +159,5 @@ pub(super) fn rebuild_cause<E>(
         ) => Ok(Cause::EditDenied),
     }
 }
+
+mod court_doors_for_test;

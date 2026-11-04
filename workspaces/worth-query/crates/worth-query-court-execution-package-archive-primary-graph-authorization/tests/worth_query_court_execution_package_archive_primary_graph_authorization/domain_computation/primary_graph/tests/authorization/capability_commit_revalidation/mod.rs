@@ -49,7 +49,7 @@ fn equivalent_retry_denies_before_receipt_after_grant_revocation() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let (first, retry) = world
@@ -76,7 +76,7 @@ fn equivalent_retry_denies_before_receipt_after_capability_expiry() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let (first, retry) = world
@@ -100,7 +100,7 @@ fn equivalent_retry_denies_before_receipt_after_resource_workflow_drift() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let (first, retry) = world
@@ -197,7 +197,7 @@ pub fn revoke_grant(
 ) {
     let request = live_scope();
     let grant = world
-        .selected_product(&(phase_custody).test_host_request())
+        .selected_product(&(phase_custody).test_host_request_for_test())
         .resolve_entity(
             phase_custody,
             CapabilityIdentity::reference(),
@@ -211,7 +211,7 @@ pub fn revoke_grant(
     update_field(
         &phase_custody.borrowed_request_for_test(),
         world,
-        grant.entity_id(),
+        grant.entity_id_for_test(),
         locator,
         CapabilityStatusBinding::encode(&CapabilityStatus::Revoked).unwrap(),
         "revoke-capability-grant",
@@ -223,7 +223,7 @@ pub fn disable_mapping(
     world: &World,
     mapping: EntityId,
 ) {
-    let graph = world.application.runtime.primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let layout = graph
         .layout()
         .principal_binding(world.binding.binding())
@@ -246,7 +246,7 @@ pub fn enable_mapping(
     world: &World,
     mapping: EntityId,
 ) {
-    let graph = world.application.runtime.primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let layout = graph
         .layout()
         .principal_binding(world.binding.binding())
@@ -306,7 +306,7 @@ pub fn change_account_field(
 ) {
     let request = live_scope();
     let account = world
-        .selected_product(&(phase_custody).test_host_request())
+        .selected_product(&(phase_custody).test_host_request_for_test())
         .resolve_entity(
             phase_custody,
             worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::AccountIdentity::reference(),
@@ -319,7 +319,7 @@ pub fn change_account_field(
     update_field(
         &phase_custody.borrowed_request_for_test(),
         world,
-        account.entity_id(),
+        account.entity_id_for_test(),
         locator,
         value,
         reason,
@@ -332,9 +332,9 @@ pub fn installed_field(
     aspect: &str,
     field: &str,
 ) -> AspectFieldLocator {
-    world
+    (*world
         .application
-        .runtime
+        .runtime_for_test())
         .primary_graph()
         .unwrap()
         .layout()

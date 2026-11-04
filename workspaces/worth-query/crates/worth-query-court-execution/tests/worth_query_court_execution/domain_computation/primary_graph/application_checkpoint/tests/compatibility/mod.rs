@@ -9,7 +9,7 @@ pub fn refusal(body: Vec<u8>, expected: Kind) {
     let original = checkpoint.bytes().to_vec();
     let backing = checkpoint.bytes().as_ptr();
     let denial = checkpoint
-        .decode()
+        .decode_for_test()
         .err()
         .expect("unsupported header refuses");
     assert_eq!(denial.into_installation_denial().kind(), expected);
@@ -61,7 +61,7 @@ fn malformed_current_header_remains_corruption_not_unsupported() {
     let mut corrupt = checkpoint.bytes().to_vec();
     *corrupt.last_mut().unwrap() ^= 1;
     let denial = worth_query_execution::facade::application_installation::WorthQueryApplicationCheckpoint::from_untrusted_bytes(corrupt)
-        .decode()
+        .decode_for_test()
         .err()
         .expect("checksum must refuse");
     assert_eq!(

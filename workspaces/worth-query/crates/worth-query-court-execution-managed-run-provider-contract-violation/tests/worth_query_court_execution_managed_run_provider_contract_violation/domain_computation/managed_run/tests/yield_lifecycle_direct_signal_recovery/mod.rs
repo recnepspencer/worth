@@ -17,7 +17,7 @@ fn signal_terminalized_after_safe_point_cannot_be_relabelled_as_yielded() {
             YieldProvider::installed(5),
             resource_request,
         );
-        let installed_running_phase = execution.phase_for_direct(&running);
+        let installed_running_phase = execution.phase_for_direct_for_test(&running);
 
         let active = running
             .begin_graph_execution(
@@ -33,8 +33,8 @@ fn signal_terminalized_after_safe_point_cannot_be_relabelled_as_yielded() {
             WorthQueryDirectGraphStepOutcome::Continue(paused) => paused,
             _ => panic!("provider did not pause"),
         };
-        paused
-            .active
+        (*paused
+            .active_for_test())
             .request_cancellation(BridgeManagedExecutionCancellationReason::HostRequested)
             .expect("host should terminalize the exact Signal attempt");
         let recovery = match paused.yield_run() {
@@ -87,8 +87,8 @@ fn timeout_and_rejection_after_safe_point_cannot_mint_yielded_authority() {
         timeout_bridge
             .advance_managed_execution_clock(1)
             .expect("host clock should advance");
-        timed_out
-            .active
+        (*timed_out
+            .active_for_test())
             .admit_ready_timeout()
             .expect("ready timeout should terminalize the exact Signal attempt");
         assert_preterminalized_yield_recovery(
@@ -98,8 +98,8 @@ fn timeout_and_rejection_after_safe_point_cannot_mint_yielded_authority() {
 
         let (rejected, _) =
             paused_direct_yield_target(execution, "direct-yield-rejection-race", resource_request);
-        rejected
-        .active
+        (*rejected
+        .active_for_test())
         .reject_execution(
             worth_runtime_bridge::facade::BridgeManagedExecutionRejectionReason::SemanticFailure,
         )
@@ -125,7 +125,7 @@ pub fn paused_direct_yield_target(
         YieldProvider::installed(5),
         resource_request,
     );
-    let installed_running_phase = execution.phase_for_direct(&running);
+    let installed_running_phase = execution.phase_for_direct_for_test(&running);
 
     let active = running
         .begin_graph_execution(

@@ -4,8 +4,8 @@ pub fn stopped_ready() -> DemandState {
     let DemandState::Output(mut output) = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::closed_retirement::ready() else {
         panic!("Ready")
     };
-    output.stop(
-        worth_query_execution::facade::domain_computation::WorthQueryOutputDemandDenial::new(
+    output.stop_for_test(
+        worth_query_execution::facade::domain_computation::WorthQueryOutputDemandDenial::new_for_test(
             WorthQueryOutputDemandDenialKind::Superseded,
             "newer",
         ),
@@ -19,12 +19,12 @@ fn registry_drop_closed_claim_release_is_two_rows_without_a_registry_pass() {
     for neighbors in [1, 64] {
         let registry = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryOutputDemandRegistry::default();
         let old: Vec<_> = (1..=5).map(|slot| key("quota-chain", 1, slot)).collect();
-        let mut state = registry.state.lock().unwrap();
+        let mut state = (*registry.state_for_test()).lock().unwrap();
         for (index, key) in old.iter().enumerate() {
             let mut row = record(occurrence(), stopped_ready(), usize::from(index == 0));
-            row.framework_required_count = usize::from(index != 0);
+            (*row.framework_required_count_mut_for_test()) = usize::from(index != 0);
             if let Some(upstream) = old.get(index + 1) {
-                row.prerequisites.push(Arc::new(upstream.clone()));
+                (*row.prerequisites_for_test()).push(Arc::new(upstream.clone()));
             }
             state.records.insert(key.clone(), row);
             let member = state.prepare_required_member(key).unwrap();
@@ -54,7 +54,7 @@ fn registry_drop_closed_claim_release_is_two_rows_without_a_registry_pass() {
             worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::record_map::whole_rows().expect("bounded registry observation"),
             whole
         );
-        let state = registry.state.lock().unwrap();
+        let state = (*registry.state_for_test()).lock().unwrap();
         for key in &old[..2] {
             assert!(!state.records[key].has_cached_ready());
             assert!(state.records[key].closed_cleanup.queued());

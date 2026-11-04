@@ -314,7 +314,7 @@ pub fn observed_facts(
     ];
     assert!(facts
         .iter()
-        .all(|fact| fact.remains_equal_in(runtime, execution, snapshot).unwrap()));
+        .all(|fact| fact.remains_equal_in_for_test(runtime, execution, snapshot).unwrap()));
     facts
 }
 

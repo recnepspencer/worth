@@ -63,3 +63,5 @@ impl<Query> WorthQueryObservedResultSet<Query> {
             .expect("result-set evidence retains native selection facts")
     }
 }
+
+mod court_doors_for_test;

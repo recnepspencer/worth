@@ -18,7 +18,7 @@ pub fn close_reads(
     let admission = world
         .application
         .authorize_elevation_close(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             approved,
             access,
             &operation,
@@ -28,7 +28,7 @@ pub fn close_reads(
     let (_, projection, _) = world
         .invariant
         .project_admitted_operation(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             &admission,
             |reader, _| {
                 seal_lifecycle_facts(reader);
@@ -49,14 +49,14 @@ pub fn close_reads(
     world
         .application
         .begin_projected_application_read_attempt(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             admission,
             projection,
             AllocationPolicy::SystemAllocation,
         )
         .unwrap()
         .complete_projected_dependencies(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap()

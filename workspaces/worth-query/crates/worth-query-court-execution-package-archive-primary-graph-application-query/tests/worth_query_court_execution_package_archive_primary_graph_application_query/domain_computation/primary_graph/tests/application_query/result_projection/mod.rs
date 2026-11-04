@@ -31,12 +31,12 @@ fn root_result_limit_does_not_cap_nested_dependency_records() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             world
                 .application
-                .select_product_branch(
+                .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch(),
+                    world.application.product_runtime().default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_authenticated_principal(
@@ -52,12 +52,12 @@ fn root_result_limit_does_not_cap_nested_dependency_records() {
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             world
                 .application
-                .select_product_branch(
+                .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch(),
+                    world.application.product_runtime().default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
@@ -81,7 +81,7 @@ fn root_result_limit_does_not_cap_nested_dependency_records() {
         .application
         .with_host_advancement(|phase| {
             world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&(phase).test_host_request_for_test())
                 .admit_application_query(
                     &phase,
                     &query,
@@ -120,12 +120,12 @@ fn invented_selector_contract_denies_domain_projection() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             world
                 .application
-                .select_product_branch(
+                .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch(),
+                    world.application.product_runtime().default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_authenticated_principal(
@@ -141,12 +141,12 @@ fn invented_selector_contract_denies_domain_projection() {
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             world
                 .application
-                .select_product_branch(
+                .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch(),
+                    world.application.product_runtime().default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
@@ -165,7 +165,7 @@ fn invented_selector_contract_denies_domain_projection() {
         .application
         .with_host_advancement(|phase| {
             world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&(phase).test_host_request_for_test())
                 .admit_application_query(
                     &phase,
                     &query,
@@ -206,12 +206,12 @@ fn variable_width_scalar_projects_without_a_caller_byte_estimate() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             world
                 .application
-                .select_product_branch(
+                .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch(),
+                    world.application.product_runtime().default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_authenticated_principal(
@@ -227,12 +227,12 @@ fn variable_width_scalar_projects_without_a_caller_byte_estimate() {
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             world
                 .application
-                .select_product_branch(
+                .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch(),
+                    world.application.product_runtime().default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
@@ -251,7 +251,7 @@ fn variable_width_scalar_projects_without_a_caller_byte_estimate() {
         .application
         .with_host_advancement(|phase| {
             world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&(phase).test_host_request_for_test())
                 .admit_application_query(
                     &phase,
                     &query,

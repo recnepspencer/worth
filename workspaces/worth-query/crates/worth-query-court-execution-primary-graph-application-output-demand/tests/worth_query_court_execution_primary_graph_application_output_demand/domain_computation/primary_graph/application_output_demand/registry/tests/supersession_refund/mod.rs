@@ -13,7 +13,7 @@ fn an_incomparable_abandoned_publication_refunds_its_prerequisites() {
         let mut state = DemandRegistryState::default();
         let unrelated = crate::domain_computation::primary_graph::application_output_demand::registry::tests::reservation_baseline::install(&mut state, receipt.clone());
         let upstream = key("abandoned-upstream", 1, 2);
-        state.records.insert(
+        (*state.records_for_test()).insert(
             upstream.clone(),
             record(occurrence, DemandState::Admitted, 1),
         );
@@ -21,32 +21,32 @@ fn an_incomparable_abandoned_publication_refunds_its_prerequisites() {
         let abandoned = key_with_identity("abandoned-binding", 2, 1, 200);
         let incoming = key_with_identity("incoming-binding", 2, 1, 201);
         assert_eq!(
-            abandoned.replacement_order(&incoming),
+            abandoned.replacement_order_for_test(&incoming),
             None,
             "different Preserve bindings do not establish a succession"
         );
-        let backing = PreparedReadyBacking::new();
-        let output = WorthQueryOutputProgress::new(WorthQueryOutputCheckpoint::Published {
+        let backing = PreparedReadyBacking::new_for_test();
+        let output = WorthQueryOutputProgress::new_for_test(WorthQueryOutputCheckpoint::Published {
             receipt,
             delivery: WorthQueryPendingOutputDelivery::NoChange,
             ready_backing: backing,
         });
         let mut abandoned_record = record(occurrence, DemandState::Output(output), 0);
-        abandoned_record.prerequisites = vec![Arc::new(upstream.clone())];
+        (*abandoned_record.prerequisites_mut_for_test()) = vec![Arc::new(upstream.clone())];
 
-        state
-            .records
+        (*state
+            .records_for_test())
             .get_mut(&upstream)
             .unwrap()
             .framework_required_count = 1;
-        state.records.insert(abandoned.clone(), abandoned_record);
-        let member = state.prepare_required_member(&abandoned).unwrap();
-        state.install_required_member(member);
+        (*state.records_for_test()).insert(abandoned.clone(), abandoned_record);
+        let member = state.prepare_required_member_for_test(&abandoned).unwrap();
+        state.install_required_member_for_test(member);
         supersede_predecessors(&mut state, &incoming).unwrap();
-        assert!(state.records.contains_key(&unrelated));
-        assert!(!state.records.contains_key(&abandoned));
+        assert!((*state.records_for_test()).contains_key(&unrelated));
+        assert!(!(*state.records_for_test()).contains_key(&abandoned));
         assert_eq!(
-            state.records[&upstream].framework_required_count, 0,
+            (*state.records_for_test())[&upstream].framework_required_count, 0,
             "retiring the incomparable row releases its exact consumed edge"
         );
     });

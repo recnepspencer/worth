@@ -6,8 +6,8 @@ fn unchanged_source_after_unrelated_world_work_joins_the_active_demand() {
     let registry = WorthQueryOutputDemandRegistry::default();
     let older = key_with_identity("producer", 5, 1, 90);
     let later_same_source = key_with_identity("producer", 6, 1, 90);
-    let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity(root(1));
-    registry.state.lock().unwrap().records.insert(
+    let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(root(1));
+    (*registry.state_for_test()).lock().unwrap().records.insert(
         older.clone(),
         DemandRecord {
             source_scope: Some(scope),
@@ -16,7 +16,7 @@ fn unchanged_source_after_unrelated_world_work_joins_the_active_demand() {
     );
 
     let joined = registry
-        .admit(
+        .admit_for_test(
             later_same_source,
             None,
             scope,
@@ -28,7 +28,7 @@ fn unchanged_source_after_unrelated_world_work_joins_the_active_demand() {
         .expect("an unchanged semantic source joins its active demand")
         .0;
 
-    let state = registry.state.lock().unwrap();
+    let state = (*registry.state_for_test()).lock().unwrap();
     assert_eq!(state.records.len(), 1);
     assert_eq!(joined.key, older);
     assert_eq!(state.records[&older].interests, 2);
@@ -40,8 +40,8 @@ fn semantic_join_deterministically_selects_the_latest_active_generation() {
     let oldest = key_with_identity("producer", 5, 1, 90);
     let latest = key_with_identity("producer", 6, 1, 90);
     let requested = key_with_identity("producer", 7, 1, 90);
-    let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity(root(1));
-    let mut state = registry.state.lock().unwrap();
+    let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(root(1));
+    let mut state = (*registry.state_for_test()).lock().unwrap();
     for key in [&oldest, &latest] {
         state.records.insert(
             key.clone(),
@@ -54,7 +54,7 @@ fn semantic_join_deterministically_selects_the_latest_active_generation() {
     drop(state);
 
     let joined = registry
-        .admit(
+        .admit_for_test(
             requested,
             None,
             scope,
@@ -67,7 +67,7 @@ fn semantic_join_deterministically_selects_the_latest_active_generation() {
         .0;
 
     assert_eq!(joined.key, latest);
-    assert_eq!(registry.state.lock().unwrap().records[&latest].interests, 2);
+    assert_eq!((*registry.state_for_test()).lock().unwrap().records[&latest].interests, 2);
 }
 
 #[test]
@@ -76,8 +76,8 @@ fn changed_source_can_return_after_its_prior_cycle_was_superseded() {
     let source_a = key_with_identity("producer", 5, 1, 90);
     let source_b = key_with_identity("producer", 6, 1, 91);
     let returned_a = key_with_identity("producer", 7, 1, 90);
-    let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity(root(1));
-    registry.state.lock().unwrap().records.insert(
+    let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(root(1));
+    (*registry.state_for_test()).lock().unwrap().records.insert(
         source_a.clone(),
         DemandRecord {
             source_scope: Some(scope),
@@ -86,7 +86,7 @@ fn changed_source_can_return_after_its_prior_cycle_was_superseded() {
     );
 
     let _source_b_interest = registry
-        .admit(
+        .admit_for_test(
             source_b.clone(),
             None,
             scope,
@@ -98,7 +98,7 @@ fn changed_source_can_return_after_its_prior_cycle_was_superseded() {
         .expect("the changed source supersedes its predecessor")
         .0;
     let returned_interest = registry
-        .admit(
+        .admit_for_test(
             returned_a.clone(),
             None,
             scope,
@@ -110,7 +110,7 @@ fn changed_source_can_return_after_its_prior_cycle_was_superseded() {
         .expect("a later return is a new source cycle, not the stopped old record")
         .0;
 
-    let state = registry.state.lock().unwrap();
+    let state = (*registry.state_for_test()).lock().unwrap();
     assert!(matches!(
         &state.records[&source_a].state,
         DemandState::Failed(denial)
@@ -127,14 +127,14 @@ fn changed_source_can_return_after_its_prior_cycle_was_superseded() {
 
 #[test]
 fn unrelated_world_generation_does_not_order_equal_custody_sources() {
-    let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity(root(1));
+    let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(root(1));
     let older = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::BoundOutputSource {
         scope,
-        identity: key_with_identity("producer", 5, 1, 90).source,
+        identity: (*key_with_identity("producer", 5, 1, 90).source_for_test()),
     };
     let later_same_source = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::BoundOutputSource {
         scope,
-        identity: key_with_identity("producer", 6, 1, 90).source,
+        identity: (*key_with_identity("producer", 6, 1, 90).source_for_test()),
     };
 
     assert_eq!(
@@ -147,19 +147,19 @@ fn unrelated_world_generation_does_not_order_equal_custody_sources() {
 fn distinct_source_queries_are_not_ordered_or_semantically_joined() {
     let first = key_with_query_identity("producer", 5, 1, 90, 1);
     let second = key_with_query_identity("producer", 6, 1, 90, 2);
-    let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity(root(1));
+    let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(root(1));
     let first_root = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::BoundOutputSource {
         scope,
-        identity: first.source.clone(),
+        identity: (*first.source_for_test()).clone(),
     };
     let second_root = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::BoundOutputSource {
         scope,
-        identity: second.source.clone(),
+        identity: (*second.source_for_test()).clone(),
     };
 
-    assert!(!first.same_occurrence(&second));
-    assert!(!first.same_semantic_source(&second));
-    assert_eq!(first.replacement_order(&second), None);
+    assert!(!first.same_occurrence_for_test(&second));
+    assert!(!first.same_semantic_source_for_test(&second));
+    assert_eq!(first.replacement_order_for_test(&second), None);
     assert_eq!(
         worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::source_custody::root_revision_order(&first_root, &second_root),
         None
@@ -173,17 +173,17 @@ fn recovery_rejoins_the_older_key_that_retains_newer_semantic_custody() {
         .committed_product_publication()
         .composite_commit()
         .clone();
-    let occurrence = receipt.product_branch().occurrence();
+    let occurrence = receipt.product_branch().occurrence_for_test();
     let registry = WorthQueryOutputDemandRegistry::default();
     let older = key_with_identity("producer", 5, 1, 90);
     let retained = key_with_identity("producer", 6, 1, 90);
     let newer_non_owner = key_with_identity("producer", 7, 1, 90);
-    let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity(root(1));
+    let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(root(1));
     let mut retained_record = record(occurrence, DemandState::Scheduled, 0);
-    retained_record.required_interests = 1;
-    retained_record.source_scope = Some(scope);
-    retained_record.source_commits.push(commit.clone());
-    let mut state = registry.state.lock().unwrap();
+    (*retained_record.required_interests_mut_for_test()) = 1;
+    (*retained_record.source_scope_mut_for_test()) = Some(scope);
+    (*retained_record.source_commits_for_test()).push(commit.clone());
+    let mut state = (*registry.state_for_test()).lock().unwrap();
     state.records.insert(older.clone(), retained_record);
     state.records.insert(
         newer_non_owner.clone(),
@@ -197,16 +197,16 @@ fn recovery_rejoins_the_older_key_that_retains_newer_semantic_custody() {
         commit.clone(),
         worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::SourceCustody {
             occurrence,
-            root_kind: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::source_custody::PreparedOutputRootKind::Discovered(TypeId::of::<()>()),
+            root_kind: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::source_custody::PreparedOutputRootKind::Discovered(TypeId::of_for_test::<()>()),
             // Recovery consults retained ownership and consumed identities; a
             // performed source payload is deliberately unnecessary here.
             source: None,
             discovery: None,
             bound_sources: Some(vec![worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::BoundOutputSource {
                 scope,
-                identity: retained.source.clone(),
+                identity: (*retained.source_for_test()).clone(),
             }]),
-            consumed_sources: vec![retained.source.clone()],
+            consumed_sources: vec![(*retained.source_for_test()).clone()],
             retired_sources: Vec::new(),
             retired: None,
             token_count: 1,
@@ -217,7 +217,7 @@ fn recovery_rejoins_the_older_key_that_retains_newer_semantic_custody() {
     drop(state);
 
     let recovered = registry
-        .admit(
+        .admit_for_test(
             retained,
             None,
             scope,
@@ -229,7 +229,7 @@ fn recovery_rejoins_the_older_key_that_retains_newer_semantic_custody() {
         .expect("recovery finds the semantic record that owns retained custody")
         .0;
 
-    let state = registry.state.lock().unwrap();
+    let state = (*registry.state_for_test()).lock().unwrap();
     assert_eq!(recovered.key, older);
     assert_eq!(state.records.len(), 2);
     assert_eq!(state.records[&older].interests, 1);

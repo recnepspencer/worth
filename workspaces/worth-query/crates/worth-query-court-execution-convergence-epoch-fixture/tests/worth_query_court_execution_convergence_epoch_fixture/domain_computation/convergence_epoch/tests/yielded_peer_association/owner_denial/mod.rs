@@ -15,7 +15,7 @@ pub fn deny_cross_direct_owners(
     let denied = {
         let fixture_phase_result = {
             let fixture_target = yielded;
-            let installed_fixture_phase = fixture_target.fixture_phase(active_request);
+            let installed_fixture_phase = fixture_target.fixture_phase_for_test(active_request);
             fixture_target.readmit_same_runtime(
                 &installed_fixture_phase,
                 foreign_runtime,
@@ -35,7 +35,7 @@ pub fn deny_cross_direct_owners(
     let denied = {
         let fixture_phase_result = {
             let fixture_target = yielded;
-            let installed_fixture_phase = fixture_target.fixture_phase(active_request);
+            let installed_fixture_phase = fixture_target.fixture_phase_for_test(active_request);
             fixture_target.readmit_same_runtime(
                 &installed_fixture_phase,
                 owner_runtime,
@@ -69,7 +69,7 @@ pub fn deny_cross_workflow_owners(
     let denied = {
         let fixture_phase_result = {
             let fixture_target = yielded;
-            let installed_fixture_phase = fixture_target.fixture_phase(active_request);
+            let installed_fixture_phase = fixture_target.fixture_phase_for_test(active_request);
             fixture_target.readmit_same_runtime(
                 &installed_fixture_phase,
                 foreign_runtime,
@@ -89,7 +89,7 @@ pub fn deny_cross_workflow_owners(
     let denied = {
         let fixture_phase_result = {
             let fixture_target = yielded;
-            let installed_fixture_phase = fixture_target.fixture_phase(active_request);
+            let installed_fixture_phase = fixture_target.fixture_phase_for_test(active_request);
             fixture_target.readmit_same_runtime(
                 &installed_fixture_phase,
                 owner_runtime,

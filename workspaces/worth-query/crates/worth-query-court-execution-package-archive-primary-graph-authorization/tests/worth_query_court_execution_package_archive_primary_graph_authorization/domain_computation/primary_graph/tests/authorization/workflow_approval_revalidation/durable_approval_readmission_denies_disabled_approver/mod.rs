@@ -10,14 +10,14 @@ fn durable_approval_readmission_denies_disabled_approver() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let admission = world
         .application
         .with_host_advancement(|phase| {
             admitted_capability_operation(
-                &(phase).test_host_request(),
+                &(phase).test_host_request_for_test(),
                 &world,
                 &principal,
                 &request,
@@ -27,14 +27,14 @@ fn durable_approval_readmission_denies_disabled_approver() {
     let basis = world
         .application
         .with_host_advancement(|phase| {
-            let host = phase.test_host_request();
+            let host = phase.test_host_request_for_test();
             durable_approval_basis(&host.borrowed_request_for_test(), &admission)
         })
         .expect("the fixture envelope owns its installed host call");
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             world
                 .application
                 .readmit_workflow_approval_authority(
@@ -48,18 +48,18 @@ fn durable_approval_readmission_denies_disabled_approver() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             disable_mapping(
                 &host_custody.borrowed_request_for_test(),
                 &world,
-                principal.mapping_entity_id(),
+                principal.mapping_entity_id_for_test(),
             )
         })
         .expect("the fixture read owns its installed host call");
     let denial = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             world
                 .application
                 .readmit_workflow_approval_authority(

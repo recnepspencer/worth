@@ -11,7 +11,7 @@ fn native_projection_continuation_keeps_exact_bindings_and_rejects_source_races(
     let world = installed_authorization_world(true);
     let selected = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
         .expect("the fixture read owns its installed host call");
     let entity = world
         .application
@@ -25,22 +25,22 @@ fn native_projection_continuation_keeps_exact_bindings_and_rejects_source_races(
                     WorthQueryPrincipalResolutionMode::Ordinary,
                 )
                 .unwrap()
-                .entity_id()
+                .entity_id_for_test()
         })
         .expect("the fixture read owns its installed host call");
-    let (_, product, _) = selected.into_parts();
+    let (_, product, _) = selected.into_parts_for_test();
     let observation = product.observation();
     let coordinate = ProductCoordinate {
         occurrence: observation.lifecycle_incarnation(),
         generation: observation.reference_generation().get(),
     };
     let source = SemanticSource {
-        runtime_authority: world.application.runtime.authority_identity().as_u64(),
-        schema: world.application.installed_schema.binding_identity(),
-        scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity(entity),
-        output_binding: OutputBindingIdentity::declared("StatusOutput"),
+        runtime_authority: (*world.application.runtime_for_test()).authority_identity().as_u64(),
+        schema: (*world.application.installed_schema_for_test()).binding_identity(),
+        scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity),
+        output_binding: OutputBindingIdentity::declared_for_test("StatusOutput"),
     };
-    let graph = world.application.runtime.primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let handle = graph.integration_handle();
     let owner = &handle.source_owner.invalidation_owner;
     let status_ref = AccountStatus::reference();
@@ -61,7 +61,7 @@ fn native_projection_continuation_keeps_exact_bindings_and_rejects_source_races(
     let (before_handle, before, facts) = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             handle.with_runtime(request_execution, |runtime| {
                 let (snapshot, basis) = snapshot(runtime);
                 let facts: Arc<[_]> = Arc::from([field_fact(
@@ -76,13 +76,13 @@ fn native_projection_continuation_keeps_exact_bindings_and_rejects_source_races(
         })
         .expect("the fixture read owns its installed host call");
 
-    let first = RecordedSettlementIdentity::retain(&source, coordinate, 0);
+    let first = RecordedSettlementIdentity::retain_for_test(&source, coordinate, 0);
     owner
         .register_settlement(SettlementRegistration {
-            computation: Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::computation_changes::ComputationRegistration::retained()),
+            computation: Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::computation_changes::ComputationRegistration::retained_for_test()),
             work_membership: None,
             identity: first.clone(),
-            facts: RetainedSourceFacts::for_test(false, facts.clone()),
+            facts: RetainedSourceFacts::for_test_for_test(false, facts.clone()),
             output_facts: None,
             read_basis: before.clone(),
             stale_at_read_basis: OrdSet::new(),
@@ -103,7 +103,7 @@ fn native_projection_continuation_keeps_exact_bindings_and_rejects_source_races(
             .unwrap()
             .unwrap()
             .bind_original(original_body.clone());
-        let control = StorageControl::new(request_execution.allocation_policy(), None);
+        let control = StorageControl::new_for_test(request_execution.allocation_policy(), None);
         let carry = changes
             .carry(
                 &original_body,
@@ -160,12 +160,12 @@ fn native_projection_continuation_keeps_exact_bindings_and_rejects_source_races(
             .unwrap()
     });
 
-    let second = RecordedSettlementIdentity::retain(&source, coordinate, 1);
+    let second = RecordedSettlementIdentity::retain_for_test(&source, coordinate, 1);
     let registration = |identity, body, continuation| SettlementRegistration {
         computation: None,
         work_membership: None,
         identity,
-        facts: RetainedSourceFacts::for_test(false, body).with_posting_continuation(continuation),
+        facts: RetainedSourceFacts::for_test_for_test(false, body).with_posting_continuation_for_test(continuation),
         output_facts: None,
         read_basis: before.clone(),
         stale_at_read_basis: OrdSet::new(),
@@ -194,7 +194,7 @@ fn native_projection_continuation_keeps_exact_bindings_and_rejects_source_races(
         2
     );
     let unrelated = Arc::from(facts.to_vec().into_boxed_slice());
-    let third = RecordedSettlementIdentity::retain(&source, coordinate, 2);
+    let third = RecordedSettlementIdentity::retain_for_test(&source, coordinate, 2);
     owner
         .register_settlement(registration(
             third.clone(),
@@ -234,7 +234,7 @@ fn native_projection_continuation_keeps_exact_bindings_and_rejects_source_races(
         .settlements
         .contains_key(&second));
     // A prepared current image may not overwrite a real intervening native edit.
-    let fourth = RecordedSettlementIdentity::retain(&source, coordinate, 3);
+    let fourth = RecordedSettlementIdentity::retain_for_test(&source, coordinate, 3);
     let prepared = owner
         .prepare_settlement(registration(
             fourth.clone(),

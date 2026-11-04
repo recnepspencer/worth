@@ -56,3 +56,5 @@ impl FactMovement {
         Self::from_equal(*retained == observed.0)
     }
 }
+
+mod court_doors_for_test;

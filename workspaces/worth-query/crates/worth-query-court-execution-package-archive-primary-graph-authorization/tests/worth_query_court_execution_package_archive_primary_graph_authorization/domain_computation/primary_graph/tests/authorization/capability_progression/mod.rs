@@ -56,7 +56,7 @@ fn current_capability_progresses_through_the_real_application_commit() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let (program, evidence) = world
@@ -95,7 +95,7 @@ fn admitted_access_is_runtime_affine_at_operation_progression() {
     let access = source
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             let principal = authenticated_principal(&host_custody, &source, &request);
 
             admitted_capability_access(&host_custody, &source, &principal, &request, 100).unwrap()
@@ -104,7 +104,7 @@ fn admitted_access_is_runtime_affine_at_operation_progression() {
     target
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             let target_operation = target
                 .application
                 .installed_schema()
@@ -137,7 +137,7 @@ fn missing_grant_membership_mints_no_access_authority() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
 
@@ -145,7 +145,7 @@ fn missing_grant_membership_mints_no_access_authority() {
         .application
         .with_host_advancement(|phase| {
             admitted_capability_access(
-                &(phase).test_host_request(),
+                &(phase).test_host_request_for_test(),
                 &world,
                 &principal,
                 &request,
@@ -213,7 +213,7 @@ pub fn admitted_capability_program_for_input(
         .installed_operation(CapabilityTouchOperation::reference())
         .unwrap();
     let access = admitted_capability_access_for_input(
-        &(phase_custody).test_host_request(),
+        &(phase_custody).test_host_request_for_test(),
         world,
         principal,
         request,
@@ -260,7 +260,7 @@ pub fn build_touch_program(
     admission: Admission,
     replacement: &str,
 ) -> Program {
-    let account = resolved_account(&(phase_custody).test_host_request(), world, "open", request);
+    let account = resolved_account(&(phase_custody).test_host_request_for_test(), world, "open", request);
     let (_, projection, _) = world
         .invariant
         .project_admitted_operation(
@@ -330,9 +330,9 @@ pub fn admitted_capability_access_for_input(
         )
         .unwrap();
     world
-        .selected_product(&(phase_custody).test_host_request())
+        .selected_product(&(phase_custody).test_host_request_for_test())
         .admit_capability_access(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             principal,
             &capability,
             input,
@@ -369,7 +369,7 @@ pub fn admitted_capability_operation(
     world
         .application
         .authorize_capability_operation(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             access,
             &operation,
             Default::default(),

@@ -31,9 +31,9 @@ pub fn observe_case(
     }));
     let world = installed_authorization_world(true);
     world.application.with_host_advancement(|phase| {
-    let host_request = phase.test_host_request();
+    let host_request = phase.test_host_request_for_test();
     let phase_custody = &host_request;
-    let request_execution = phase.execution_request_for(world.application.product_runtime()).expect("the pair fixture lends its installed phase");
+    let request_execution = phase.execution_request_for_for_test(world.application.product_runtime()).expect("the pair fixture lends its installed phase");
     let execution = &request_execution;
 
     if count == 3 {
@@ -127,7 +127,7 @@ pub fn observe_case(
         .execute_application_query_one_shot(
             &phase_custody.phase_for_application(&world.application),
             selected
-                .retain_selection(execution)
+                .retain_selection_for_test(execution)
                 .unwrap()
                 .admit_application_query(
                     &phase_custody.phase_for_application(&world.application),
@@ -158,7 +158,7 @@ pub fn observe_case(
     let owner = std::thread::current().id();
     let mut canonical_roots = roots
         .iter()
-        .map(|root| root.entity_id())
+        .map(|root| root.entity_id_for_test())
         .collect::<Vec<_>>();
     canonical_roots.sort();
     canonical_roots.truncate(count);
@@ -176,7 +176,7 @@ pub fn observe_case(
         let root = canonical_roots[index];
         let earlier = canonical_roots[..index].to_vec();
         use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::read_execution::dispatch_witness::Interrupt;
-        witness.interrupt(if is_deadline {
+        witness.interrupt_for_test(if is_deadline {
             Interrupt::Deadline {
                 root,
                 earlier,
@@ -193,7 +193,7 @@ pub fn observe_case(
         use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::read_execution::dispatch_witness::Interrupt;
         let root = *canonical_roots.last().unwrap();
         let earlier = canonical_roots[..count - 1].to_vec();
-        witness.interrupt(match interruption {
+        witness.interrupt_for_test(match interruption {
             ScopeInterruption::Cancel => Interrupt::QueryCancel {
                 root,
                 earlier,
@@ -213,7 +213,7 @@ pub fn observe_case(
     let mut run = |failures: &[usize], owner_failure: bool| {
         projected.clear();
         prepared = 0;
-        witness.reset();
+        witness.reset_for_test();
         let result = request.run(ExecutionWorkCeiling::new(None), |_| {
             world
                 .application
@@ -228,7 +228,7 @@ pub fn observe_case(
                             .rev()
                             .map(|index| {
                                 (
-                                    roots[index].entity_id(),
+                                    roots[index].entity_id_for_test(),
                                     ["open", "unrelated", "third"][index].to_owned(),
                                 )
                             })
@@ -246,7 +246,7 @@ pub fn observe_case(
                             .position(|status| *status == member)
                             .unwrap();
                         let first = selected
-                            .retain_selection(execution)
+                            .retain_selection_for_test(execution)
                             .unwrap()
                             .admit_application_query(
                                 &phase_custody.phase_for_application(&world.application),
@@ -262,7 +262,7 @@ pub fn observe_case(
                             member.clone()
                         };
                         let second = selected
-                            .retain_selection(execution)
+                            .retain_selection_for_test(execution)
                             .unwrap()
                             .admit_application_query(
                                 &phase_custody.phase_for_application(&world.application),
@@ -298,14 +298,14 @@ pub fn observe_case(
                                 .iter()
                                 .position(|status| *status == first.status())
                                 .unwrap()]
-                            .entity_id(),
+                            .entity_id_for_test(),
                             value.clone(),
                         ));
                         SceneLabel(value)
                     },
                 )
         });
-        witness.assert_interruption_point();
+        witness.assert_interruption_point_for_test();
         result.unwrap()
     };
     let prior = if case.warm {

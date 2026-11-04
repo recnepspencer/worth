@@ -35,3 +35,5 @@ impl OriginalProjection {
             .size() as u64
     }
 }
+
+mod court_doors_for_test;

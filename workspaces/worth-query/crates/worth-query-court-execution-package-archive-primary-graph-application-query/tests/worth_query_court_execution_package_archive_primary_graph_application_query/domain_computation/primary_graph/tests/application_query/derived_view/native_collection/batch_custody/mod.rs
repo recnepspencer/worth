@@ -9,7 +9,7 @@ fn shared_pair_claims_survive_projection_and_late_refusal_is_atomic() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             let borrowed_execution = host_custody.borrowed_request_for_test();
             let request_execution = &borrowed_execution;
             let selected = world.selected_product(
@@ -80,13 +80,13 @@ fn shared_pair_claims_survive_projection_and_late_refusal_is_atomic() {
                 .unwrap();
             assert_eq!(membership.rows().len(), 1);
             assert_eq!(membership.rows()[0].tag, "open");
-            assert_eq!(membership.rows()[0].members, vec![open.entity_id()]);
+            assert_eq!(membership.rows()[0].members, vec![open.entity_id_for_test()]);
             let ordinary = world
                 .application
                 .execute_application_query_one_shot(
                     &host_custody.phase_for_application(&world.application),
                     selected
-                        .retain_selection(request_execution)
+                        .retain_selection_for_test(request_execution)
                         .unwrap()
                         .admit_application_query(
                             &host_custody.phase_for_application(&world.application),
@@ -126,7 +126,7 @@ fn shared_pair_claims_survive_projection_and_late_refusal_is_atomic() {
                     },
                     |_: &String| {
                         let first = selected
-                            .retain_selection(request_execution)
+                            .retain_selection_for_test(request_execution)
                             .unwrap()
                             .admit_application_query(
                                 &host_custody.phase_for_application(&world.application),
@@ -137,7 +137,7 @@ fn shared_pair_claims_survive_projection_and_late_refusal_is_atomic() {
                             )
                             .unwrap();
                         let second = selected
-                            .retain_selection(request_execution)
+                            .retain_selection_for_test(request_execution)
                             .unwrap()
                             .admit_application_query(
                                 &host_custody.phase_for_application(&world.application),
@@ -162,7 +162,7 @@ fn shared_pair_claims_survive_projection_and_late_refusal_is_atomic() {
             assert_eq!(keys.len(), 1);
             let key = keys[0].clone();
 
-            let graph = world.application.runtime.primary_graph().unwrap();
+            let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
             let field = AccountLabel::reference();
             let locator = graph
                 .layout
@@ -188,13 +188,13 @@ fn shared_pair_claims_survive_projection_and_late_refusal_is_atomic() {
             let prepared = graph.managed_derived_views().prepare_publication(
                 publication_basis(selected.product()),
                 &[ViewChange::Aspect(
-                    open.entity_id(),
+                    open.entity_id_for_test(),
                     locator.aspect().aspect_key().clone(),
                 )],
                 100_000,
             );
             drop(selected);
-            change_label(open.entity_id(), "primary-changed");
+            change_label(open.entity_id_for_test(), "primary-changed");
             let fresh = world.selected_product(
                 &(host_custody.phase_for_application(&world.application)).test_host_request(),
             );
@@ -306,7 +306,7 @@ fn shared_pair_claims_survive_projection_and_late_refusal_is_atomic() {
                 .application
                 .observe_managed_derived_view(&view)
                 .unwrap();
-            let (application, fresh_product, _) = fresh.into_parts();
+            let (application, fresh_product, _) = fresh.into_parts_for_test();
             crate::domain_computation::primary_graph::tests::application_query::derived_view::native_collection::batch_refresh::refuse_then_refresh(
                 || {
                     world
@@ -347,7 +347,7 @@ fn shared_pair_claims_survive_projection_and_late_refusal_is_atomic() {
                             batch,
                             |row: &AccountSummaryResult, _| {
                                 let selected = application
-                                    .on_product(request_execution, fresh_product.retained_clone())
+                                    .on_product(request_execution, fresh_product.retained_clone_for_test())
                                     .unwrap();
                                 let scope = selected
                                     .resolve_entity(

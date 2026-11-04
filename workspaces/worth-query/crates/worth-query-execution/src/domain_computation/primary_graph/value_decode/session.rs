@@ -202,3 +202,5 @@ impl<'a> ValueDecodeSession<'a> {
         self.decode_installed::<Binding>(binding, raw)
     }
 }
+
+mod court_doors_for_test;

@@ -20,20 +20,20 @@ fn publication_stop_transport_completion_remains_ready_without_redispatch() {
     let correlation = *owner.record().correlation();
     let admitted = world
         .application
-        .admit_external_dispatch_attempt(owner.clone())
+        .admit_external_dispatch_attempt_for_test(owner.clone())
         .unwrap();
-    let in_flight = world
+    let in_flight = (*world
         .application
-        .primary_provider
+        .primary_provider_for_test())
         .begin_external_dispatch_in_flight(&owner)
         .unwrap()
         .unwrap();
     let transport = CompletingTransport(AtomicUsize::new(0));
     let completed = dispatch_external_effect(&transport, admitted).unwrap();
-    let evidence = InstalledTransportCompletion::from_observed_dispatch(owner, &completed).unwrap();
+    let evidence = InstalledTransportCompletion::from_observed_dispatch_for_test(owner, &completed).unwrap();
     world
         .application
-        .record_installed_transport_completion(evidence, in_flight)
+        .record_installed_transport_completion_for_test(evidence, in_flight)
         .unwrap();
     let source = WorthQueryCancellationSource::new();
     let request = WorthQueryRequestScope::new(None, source.token());
@@ -41,7 +41,7 @@ fn publication_stop_transport_completion_remains_ready_without_redispatch() {
     let result = world
         .application
         .with_host_advancement(|phase| {
-            world.application.resume_installed_transport_completion(
+            world.application.resume_installed_transport_completion_for_test(
                 &phase.borrowed_request_for_test(),
                 &phase,
                 &correlation,
@@ -59,13 +59,13 @@ fn publication_stop_transport_completion_remains_ready_without_redispatch() {
     );
     assert!(world
         .application
-        .has_retained_installed_transport_completion(&correlation));
+        .has_retained_installed_transport_completion_for_test(&correlation));
     let live = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
     assert_eq!(
         world
             .application
             .with_host_advancement(
-                |phase| world.application.resume_installed_transport_completion(
+                |phase| world.application.resume_installed_transport_completion_for_test(
                     &phase.borrowed_request_for_test(),
                     &phase,
                     &correlation,

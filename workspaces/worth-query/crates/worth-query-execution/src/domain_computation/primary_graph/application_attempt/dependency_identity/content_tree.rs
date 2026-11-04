@@ -308,3 +308,5 @@ pub(super) fn dependency_identity(
         .identity(key)
         .map(|(digest, root)| (digest, work.combine(root)))
 }
+
+mod court_doors_for_test;

@@ -15,7 +15,7 @@ fn a_refused_author_host_call_completes_on_the_owner_and_applies_only_its_prefix
                 Some(Instant::now() + Duration::from_secs(60)),
                 cancel.token(),
             );
-            let execution = QueryRequestExecution::open(
+            let execution = QueryRequestExecution::open_for_test(
                 RuntimeWorldExecutionPlacement::Leased {
                     authority: test_authority(),
                     policy: test_policy(std::num::NonZeroUsize::new(workers).unwrap(), None),
@@ -24,7 +24,7 @@ fn a_refused_author_host_call_completes_on_the_owner_and_applies_only_its_prefix
             );
             let plans = (0_usize..3).map(|rank| {
                 let application = application.clone();
-                OwnerPlan::new(vec![PreparedCompute::new( move |_| {
+                OwnerPlan::new_for_test(vec![PreparedCompute::new_for_test( move |_| {
                     if rank == 1 {
                         if product {
                             application.product_runtime().with_advancement(|_| rank)
@@ -34,7 +34,7 @@ fn a_refused_author_host_call_completes_on_the_owner_and_applies_only_its_prefix
                     } else { Ok(rank) }
                 })], |mut slots| {
                     assert!(!worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::computation::worker_custody::active(), "completion stays on the owner");
-                    slots.pop().unwrap().into_value::<Result<usize, WorthQueryAdvancementDenial>>()
+                    slots.pop().unwrap().into_value_for_test::<Result<usize, WorthQueryAdvancementDenial>>()
                 })
             }).collect();
             let mut applied = Vec::new();
@@ -42,13 +42,13 @@ fn a_refused_author_host_call_completes_on_the_owner_and_applies_only_its_prefix
                 .execution_request()
                 .unwrap()
                 .run_native(|_| {
-                    let cursor = CanonicalApplyCursor::compute(
+                    let cursor = CanonicalApplyCursor::compute_for_test(
                         CanonicalUniqueVec::try_from_sorted_unique(vec![0_usize, 1, 2]).unwrap(),
                         plans,
                         &execution,
                     );
 
-                    cursor.apply(
+                    cursor.apply_for_test(
                         |key, value| {
                             let value = value?;
                             assert_eq!(key, value);

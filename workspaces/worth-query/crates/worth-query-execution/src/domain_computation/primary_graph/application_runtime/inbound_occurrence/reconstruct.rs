@@ -81,3 +81,5 @@ fn matches_receipt(
         && identity.version_id() == receipt.version_id
         && identity.authoring_branch() == &receipt.branch_id
 }
+
+mod court_doors_for_test;

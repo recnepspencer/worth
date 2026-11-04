@@ -24,10 +24,10 @@ fn family_publication_selection_preserves_ordered_heads_without_billing() {
         }
         let selected = court.resolve();
 
-        assert_eq!(selected.candidates.len(), usize::from(population));
-        for (candidate, expected) in selected.candidates.iter().zip(&expected) {
+        assert_eq!((*selected.candidates_for_test()).len(), usize::from(population));
+        for (candidate, expected) in (*selected.candidates_for_test()).iter().zip(&expected) {
             assert!(Arc::ptr_eq(&candidate.correspondence, expected));
         }
-        assert!(!selected.ambiguous_publication);
+        assert!(!(*selected.ambiguous_publication_for_test()));
     }
 }

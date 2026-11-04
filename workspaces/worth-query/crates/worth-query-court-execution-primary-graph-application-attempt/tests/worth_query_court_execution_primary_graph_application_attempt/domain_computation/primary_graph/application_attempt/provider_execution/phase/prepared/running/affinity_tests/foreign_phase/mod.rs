@@ -20,7 +20,7 @@ fn prepared_running_refuses_foreign_phase_with_the_same_typed_cause() {
                 &phase.borrowed_request_for_test(),
                 &phase,
                 &world.application,
-                WorthQueryApplicationCommitPreparationRequest::new(
+                WorthQueryApplicationCommitPreparationRequest::new_for_test(
                     retained_program(&phase, &world, "foreign-phase"),
                     idempotency(197, 198),
                     None,

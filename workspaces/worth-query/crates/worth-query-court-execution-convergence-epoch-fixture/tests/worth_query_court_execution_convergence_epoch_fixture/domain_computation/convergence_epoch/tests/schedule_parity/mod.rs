@@ -48,7 +48,7 @@ fn same_runtime_yield_and_readmission_preserve_the_semantic_convergence_result()
                 Err(_) => panic!("yield convergence authorities must admit"),
             };
 
-        let installed_fixture_phase = epoch.fixture_phase(execution);
+        let installed_fixture_phase = epoch.fixture_phase_for_test(execution);
         let execution = &installed_fixture_phase;
         let started = match epoch.begin_iteration(
             execution,
@@ -70,7 +70,7 @@ fn same_runtime_yield_and_readmission_preserve_the_semantic_convergence_result()
         };
         let resumed = {
             let fixture_phase_result = {
-                let installed_fixture_phase = yielded.fixture_phase(active_request);
+                let installed_fixture_phase = yielded.fixture_phase_for_test(active_request);
                 yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
             };
             match fixture_phase_result {
@@ -153,7 +153,7 @@ fn workflow_yield_and_readmission_preserve_the_semantic_convergence_result() {
             Err(_) => panic!("yield-capable workflow epoch must start"),
         };
 
-        let installed_fixture_phase = epoch.fixture_phase(execution);
+        let installed_fixture_phase = epoch.fixture_phase_for_test(execution);
         let execution = &installed_fixture_phase;
         let started = match epoch.begin_stage_iteration(
             execution,
@@ -176,7 +176,7 @@ fn workflow_yield_and_readmission_preserve_the_semantic_convergence_result() {
         };
         let resumed = {
             let fixture_phase_result = {
-                let installed_fixture_phase = yielded.fixture_phase(active_request);
+                let installed_fixture_phase = yielded.fixture_phase_for_test(active_request);
                 yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
             };
             match fixture_phase_result {
@@ -279,7 +279,7 @@ pub fn chunked_converged_terminal(
         resource_request,
     );
 
-    let installed_fixture_phase = epoch.fixture_phase(execution);
+    let installed_fixture_phase = epoch.fixture_phase_for_test(execution);
     let execution = &installed_fixture_phase;
     let started = match epoch.begin_stage_iteration(
         execution,

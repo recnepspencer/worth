@@ -55,8 +55,8 @@ fn a_fact_two_gathers_read_is_kept_for_both_partitions() {
     assert_eq!(
         readers.expect("one computation ran"),
         [
-            ComputationFactReaders::read_by(false, [], partitions),
-            ComputationFactReaders::read_by(false, [1, 2, 3], []),
+            ComputationFactReaders::read_by_for_test(false, [], partitions),
+            ComputationFactReaders::read_by_for_test(false, [1, 2, 3], []),
         ]
     );
 }
@@ -67,8 +67,8 @@ fn a_fact_the_membership_read_is_a_membership_fact() {
     assert_eq!(
         readers.expect("one computation ran"),
         [
-            ComputationFactReaders::read_by(false, [], partitions),
-            ComputationFactReaders::read_by(true, [], []),
+            ComputationFactReaders::read_by_for_test(false, [], partitions),
+            ComputationFactReaders::read_by_for_test(true, [], []),
         ]
     );
 }
@@ -81,8 +81,8 @@ fn a_fact_the_handler_also_read_stays_the_item_keys() {
     assert_eq!(
         readers.expect("one computation ran"),
         [
-            ComputationFactReaders::read_by(false, [], partitions),
-            ComputationFactReaders::read_by(false, [1, 2, 3], []),
+            ComputationFactReaders::read_by_for_test(false, [], partitions),
+            ComputationFactReaders::read_by_for_test(false, [1, 2, 3], []),
         ]
     );
 }

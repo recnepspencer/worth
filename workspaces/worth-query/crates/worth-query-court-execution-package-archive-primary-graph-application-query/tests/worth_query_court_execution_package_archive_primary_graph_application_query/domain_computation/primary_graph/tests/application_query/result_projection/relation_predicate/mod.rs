@@ -20,12 +20,12 @@ fn filters_siblings_before_child_projection() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             world
                 .application
-                .select_product_branch(
+                .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch(),
+                    world.application.product_runtime().default_branch_for_test(),
                 )
                 .unwrap()
                 .resolve_authenticated_principal(
@@ -41,12 +41,12 @@ fn filters_siblings_before_child_projection() {
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             world
                 .application
-                .select_product_branch(
+                .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch(),
+                    world.application.product_runtime().default_branch_for_test(),
                 )
                 .unwrap()
                 .resolve_entity(
@@ -74,7 +74,7 @@ fn filters_siblings_before_child_projection() {
         .application
         .with_host_advancement(|phase| {
             world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&(phase).test_host_request_for_test())
                 .admit_application_query(
                     &phase,
                     &query,
@@ -101,15 +101,15 @@ fn filters_siblings_before_child_projection() {
     assert_eq!(result.receipt().projected_field_count(), 1);
     assert!(result.receipt().work().predicate_work_units() >= 5);
     let source = result.observed_sources()[0].footprint_for_test();
-    assert_eq!(source.entities.len(), 3);
-    assert_eq!(source.aspects.len(), 4);
+    assert_eq!((*source.entities_for_test()).len(), 3);
+    assert_eq!((*source.aspects_for_test()).len(), 4);
     assert!(
-        source.aspects.iter().any(|aspect| {
+        (*source.aspects_for_test()).iter().any(|aspect| {
             aspect.entity == account.entity_id()
                 && aspect.aspect.as_str() == AccountStatus::reference().aspect()
         }),
         "the root predicate is a source dependency even when its field is not projected"
     );
     assert_eq!(source.adjacencies.len(), 1);
-    assert_eq!(source.adjacencies[0].endpoints.len(), 2);
+    assert_eq!((*source.adjacencies[0].endpoints_for_test()).len(), 2);
 }

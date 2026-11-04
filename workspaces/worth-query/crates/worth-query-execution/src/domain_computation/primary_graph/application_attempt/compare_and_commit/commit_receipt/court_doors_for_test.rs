@@ -17,9 +17,13 @@ impl WorthQueryApplicationCommitReceipt {
 
 impl WorthQueryApplicationCommitReceipt {
     #[doc(hidden)]
-    pub fn exact_output_settlement_mut_for_test(&mut self) -> &mut Option<std::sync::Arc<
-        crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity,
-    >> {
+    pub fn exact_output_settlement_mut_for_test(
+        &mut self,
+    ) -> &mut Option<
+        std::sync::Arc<
+            crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity,
+        >,
+    > {
         &mut self.exact_output_settlement
     }
 }
@@ -34,7 +38,8 @@ impl WorthQueryApplicationCommitReceipt {
 impl WorthQueryApplicationCommitReceipt {
     #[doc(hidden)]
     pub fn exact_output_settlement_for_test(
-        &self) -> Option<
+        &self,
+    ) -> Option<
         &std::sync::Arc<
             crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity,
         >,
@@ -45,7 +50,9 @@ impl WorthQueryApplicationCommitReceipt {
 
 impl WorthQueryApplicationCommitReceipt {
     #[doc(hidden)]
-    pub fn authority_binding_mut_for_test(&mut self) -> &mut WorthQueryApplicationCommitAuthorityBinding {
+    pub fn authority_binding_mut_for_test(
+        &mut self,
+    ) -> &mut WorthQueryApplicationCommitAuthorityBinding {
         &mut self.authority_binding
     }
 }
@@ -60,7 +67,17 @@ impl WorthQueryApplicationCommitReceipt {
 impl WorthQueryApplicationCommitReceipt {
     #[doc(hidden)]
     pub fn retain_output_correspondence_for_test(
-        &self) -> std::sync::Arc<WorthQueryApplicationOutputCorrespondence> {
+        &self,
+    ) -> std::sync::Arc<WorthQueryApplicationOutputCorrespondence> {
         Self::retain_output_correspondence(self)
+    }
+}
+
+impl WorthQueryApplicationCommitReceipt {
+    #[doc(hidden)]
+    pub fn runtime_authority_for_test(
+        &self,
+    ) -> crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity {
+        Self::runtime_authority(self)
     }
 }

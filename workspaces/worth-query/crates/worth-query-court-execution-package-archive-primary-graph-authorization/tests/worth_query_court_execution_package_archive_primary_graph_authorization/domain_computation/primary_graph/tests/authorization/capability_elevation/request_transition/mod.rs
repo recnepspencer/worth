@@ -55,14 +55,14 @@ fn ordinary_compare_and_commit_cannot_publish_a_lifecycle_program() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let ordinary = world
         .application
         .with_host_advancement(|phase| {
             request_reads(
-                &(phase).test_host_request(),
+                &(phase).test_host_request_for_test(),
                 &world,
                 &principal,
                 &request,
@@ -117,9 +117,9 @@ fn request_upper_bound_cannot_widen_scope_or_swap_purpose() {
             .application
             .with_host_advancement(|phase| {
                 let principal =
-                    authenticated_principal(&(phase).test_host_request(), &world, &request);
+                    authenticated_principal(&(phase).test_host_request_for_test(), &world, &request);
                 let access = request_access(
-                    &(phase).test_host_request(),
+                    &(phase).test_host_request_for_test(),
                     &world,
                     &principal,
                     &request,
@@ -147,7 +147,7 @@ fn proposed_grant_must_independently_authorize_the_governed_upper_bound() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
 
             let principal = authenticated_principal(
                 &(host_custody.phase_for_application(&world.application)).test_host_request(),
@@ -209,7 +209,7 @@ pub fn request_reads(
     let admission = world
         .application
         .authorize_elevation_request(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             access,
             &operation,
             Default::default(),
@@ -218,7 +218,7 @@ pub fn request_reads(
     let (_, projection, _) = world
         .invariant
         .project_admitted_operation(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             &admission,
             |reader, account| {
                 reader
@@ -232,14 +232,14 @@ pub fn request_reads(
     world
         .application
         .begin_projected_application_read_attempt(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             admission,
             projection,
             AllocationPolicy::SystemAllocation,
         )
         .unwrap()
         .complete_projected_dependencies(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap()
@@ -265,9 +265,9 @@ pub fn request_access(
         )
         .unwrap();
     world
-        .selected_product(&(phase_custody).test_host_request())
+        .selected_product(&(phase_custody).test_host_request_for_test())
         .admit_capability_access(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             principal,
             &capability,
             input,
@@ -321,13 +321,13 @@ pub fn resolve_created_identities(
 ) {
     world
         .application
-        .select_product_branch(
+        .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch(),
+            world.application.product_runtime().default_branch_for_test(),
         )
         .expect("the selected product branch remains admitted")
         .resolve_entity(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             CapabilityElevationIdentity::reference(),
             "elevation-2".to_owned(),
             request,
@@ -336,13 +336,13 @@ pub fn resolve_created_identities(
         .expect("committed request must create the exact elevation identity");
     world
         .application
-        .select_product_branch(
+        .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch(),
+            world.application.product_runtime().default_branch_for_test(),
         )
         .expect("the selected product branch remains admitted")
         .resolve_entity(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             CapabilityReviewIdentity::reference(),
             "review-2".to_owned(),
             request,

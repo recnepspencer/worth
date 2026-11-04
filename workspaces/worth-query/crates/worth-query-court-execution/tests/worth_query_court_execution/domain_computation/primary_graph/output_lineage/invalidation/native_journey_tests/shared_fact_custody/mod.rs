@@ -10,16 +10,16 @@ fn shared_original_facts_survive_restored_prerequisite_custody() {
     let _observation = worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation::install_on_this_thread();
     let world = installed_authorization_world(true);
     world.application.with_host_advancement(|phase| {
-        let custody = phase.test_host_request();
+        let custody = phase.test_host_request_for_test();
         let execution = custody.borrowed_request_for_test();
         let entity = resolved_account(&custody.test_host_request(), &world, "open", &live_scope())
-            .entity_id();
-        let (_, product, _) = world.selected_product(&custody.test_host_request()).into_parts();
+            .entity_id_for_test();
+        let (_, product, _) = world.selected_product(&custody.test_host_request()).into_parts_for_test();
         let coordinate = ProductCoordinate {
             occurrence: product.observation().lifecycle_incarnation(),
             generation: product.observation().reference_generation().get(),
         };
-        let graph = world.application.runtime.primary_graph().unwrap();
+        let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
         let handle = graph.integration_handle();
         let owner = &handle.source_owner.invalidation_owner;
         let status = AccountStatus::reference();
@@ -28,29 +28,29 @@ fn shared_original_facts_survive_restored_prerequisite_custody() {
         let (snapshot_handle, basis, identity, _facts, first, second) = handle.with_runtime_mut(&execution, |runtime| {
             let (snapshot_handle, basis) = snapshot(runtime);
             let basis = Arc::new(basis);
-            let identity = RecordedSettlementIdentity::retain(&SemanticSource {
-                runtime_authority: world.application.runtime.authority_identity().as_u64(),
-                schema: world.application.installed_schema.binding_identity(),
-                scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity(entity),
-                output_binding: OutputBindingIdentity::declared("StatusOutput"),
+            let identity = RecordedSettlementIdentity::retain_for_test(&SemanticSource {
+                runtime_authority: (*world.application.runtime_for_test()).authority_identity().as_u64(),
+                schema: (*world.application.installed_schema_for_test()).binding_identity(),
+                scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity),
+                output_binding: OutputBindingIdentity::declared_for_test("StatusOutput"),
             }, coordinate, 0);
-            let facts = RetainedSourceFacts::for_test(false, Arc::from([
+            let facts = RetainedSourceFacts::for_test_for_test(false, Arc::from([
                 field_fact(&execution, runtime, &snapshot_handle, entity, status),
             ])).for_comparison().unwrap();
             let witness = crate::domain_computation::primary_graph::output_lineage::invalidation::native_journey_tests::request_recording::account_witness(
                 &execution, &world, runtime, &snapshot_handle, entity,
             );
-            assert_eq!(ConsumedOutputEvidence::verify_at_observation(
+            assert_eq!(ConsumedOutputEvidence::verify_at_observation_for_test(
                 &execution, &identity, &facts, &[],
                 Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::mark_state::FullVerificationReason::CheckpointRestore),
                 &witness, owner, runtime, &snapshot_handle, &basis,
             ).unwrap(), ConsumedOutputVerification::Current);
 
 
-            let first = ConsumedOutputEvidence::restored_with_witness_for_test(Arc::clone(&identity), facts.facts().clone(), Arc::clone(&basis), Arc::clone(&witness));
+            let first = ConsumedOutputEvidence::restored_with_witness_for_test(Arc::clone(&identity), facts.facts_for_test().clone(), Arc::clone(&basis), Arc::clone(&witness));
 
 
-            let second = ConsumedOutputEvidence::restored_with_witness_for_test(Arc::clone(&identity), facts.facts().clone(), Arc::clone(&basis), witness);
+            let second = ConsumedOutputEvidence::restored_with_witness_for_test(Arc::clone(&identity), facts.facts_for_test().clone(), Arc::clone(&basis), witness);
 
             (snapshot_handle, basis, identity, facts, first, second)
         });
@@ -60,7 +60,7 @@ fn shared_original_facts_survive_restored_prerequisite_custody() {
             assert!(first.claim_verified_checkpoint_root(owner).unwrap(),
                 "actual restored prerequisite custody must be established, not bypassed");
         handle.with_runtime_mut(&execution, |runtime| {
-            assert_eq!(ConsumedOutputEvidence::verify_many_with_admission(
+            assert_eq!(ConsumedOutputEvidence::verify_many_with_admission_for_test(
                 &execution, &[first.clone(), second.clone()], owner, runtime, &snapshot_handle,
                 &basis,
             ).unwrap(), ConsumedOutputVerification::Current);

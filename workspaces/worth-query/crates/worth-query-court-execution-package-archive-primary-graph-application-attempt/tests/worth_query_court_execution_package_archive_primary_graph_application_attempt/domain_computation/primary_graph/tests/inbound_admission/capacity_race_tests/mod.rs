@@ -53,7 +53,7 @@ fn callback_terminal_defers_outstanding_capacity_turnover_until_physical_attempt
         let owner = world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 world
                     .application
                     .observe_committed_dispatch_outbox(
@@ -64,9 +64,9 @@ fn callback_terminal_defers_outstanding_capacity_turnover_until_physical_attempt
                     .unwrap()
             })
             .expect("the fixture read owns its installed host call");
-        let in_flight = world
+        let in_flight = (*world
             .application
-            .primary_provider
+            .primary_provider_for_test())
             .begin_external_dispatch_in_flight(&owner)
             .expect("exact original is committed")
             .expect("installed inbound effect reserves physical attempt");
@@ -82,9 +82,9 @@ fn callback_terminal_defers_outstanding_capacity_turnover_until_physical_attempt
                 .posture(),
             WorthQueryInboundReceiptPosture::Performed,
         );
-        assert!(world
+        assert!((*world
             .application
-            .primary_provider
+            .primary_provider_for_test())
             .lookup_completed_inbound(record.correlation())
             .unwrap()
             .is_some());
@@ -149,9 +149,9 @@ fn callback_winning_during_physical_send_keeps_capacity_until_completed_custody_
             ));
             let first_record = first_receipt.dispatch_outbox().unwrap();
             assert_eq!(first_record.correlation().bytes(), &token);
-            assert!(world
+            assert!((*world
                 .application
-                .primary_provider
+                .primary_provider_for_test())
                 .lookup_completed_inbound(first_record.correlation())
                 .unwrap()
                 .is_some());
@@ -172,7 +172,7 @@ fn transport_and_authenticated_publications_share_one_installed_operation_limit(
         let owner = world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 world
                     .application
                     .observe_committed_dispatch_outbox(
@@ -185,16 +185,16 @@ fn transport_and_authenticated_publications_share_one_installed_operation_limit(
             .expect("the fixture read owns its installed host call");
         let binding = world
             .application
-            .resolve_installed_transport_completion_binding(&owner)
+            .resolve_installed_transport_completion_binding_for_test(&owner)
             .unwrap();
         let permit = world
             .application
-            .reserve_installed_transport_publication(&binding)
+            .reserve_installed_transport_publication_for_test(&binding)
             .unwrap();
         assert!(matches!(
             world
                 .application
-                .reserve_installed_transport_publication(&binding),
+                .reserve_installed_transport_publication_for_test(&binding),
             Err(WorthQueryTransportPublicationPermitDenial::AtCapacity)
         ));
         let record = receipt.dispatch_outbox().unwrap();

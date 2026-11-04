@@ -149,3 +149,5 @@ fn allocation_failed() -> Denial {
         worth_relational::facade::transactions::RelationalExecutionDenialCause::AllocationFailed,
     )
 }
+
+mod court_doors_for_test;

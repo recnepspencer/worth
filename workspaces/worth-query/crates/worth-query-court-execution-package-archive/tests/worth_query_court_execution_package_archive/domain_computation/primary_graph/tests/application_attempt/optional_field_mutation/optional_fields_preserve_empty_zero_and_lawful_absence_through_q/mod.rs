@@ -8,14 +8,14 @@ fn optional_fields_preserve_empty_zero_and_lawful_absence_through_query() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::authenticated_principal(&(phase).test_host_request(), &world, &request)
+            worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
             worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::resolved_account(
-                &(phase).test_host_request(),
+                &(phase).test_host_request_for_test(),
                 &world,
                 "unrelated",
                 &request,
@@ -100,7 +100,7 @@ fn optional_fields_preserve_empty_zero_and_lawful_absence_through_query() {
         .application
         .with_host_advancement(|phase| {
             worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::resolved_account(
-                &(phase).test_host_request(),
+                &(phase).test_host_request_for_test(),
                 &world,
                 "unrelated",
                 &request,

@@ -72,7 +72,7 @@ fn current_facts_roundtrip_and_hostile_lengths_fail_before_allocation() {
     ];
     let bytes = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::encode(&expected).unwrap();
     let body = body_with_facts(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::FORMAT_VERSION, WIRE_VERSION, &bytes);
-    let decoded = checkpoint_from_body(body.clone()).decode().unwrap();
+    let decoded = checkpoint_from_body(body.clone()).decode_for_test().unwrap();
     assert_eq!(
         decoded.accepted_outputs[0]
             .producer_facts
@@ -92,7 +92,7 @@ fn current_facts_roundtrip_and_hostile_lengths_fail_before_allocation() {
             worth_execution::ExecutionAllocationPolicy::SystemAllocation
         )
         .unwrap()
-        .iter()
+        .iter_for_test()
         .cloned()
         .collect::<Vec<_>>(),
         expected.as_slice()
@@ -113,7 +113,7 @@ fn current_stable_posture_roundtrips_and_unknown_posture_is_rejected() {
     let posture_at = 8 + b"producer".len();
     stable[posture_at] = 1;
     let decoded = checkpoint_from_body(checkpoint_body(1, stable.clone()))
-        .decode()
+        .decode_for_test()
         .expect("current stable posture is descriptive and readable");
     assert_eq!(
         decoded.accepted_outputs[0].posture,
@@ -144,7 +144,7 @@ fn unsupported_fact_wire_refuses_before_interpreting_its_payload() {
         ));
         let retained = checkpoint.clone();
         let original = checkpoint.bytes().to_vec();
-        let denial = checkpoint.decode().err().expect("unsupported inner wire");
+        let denial = checkpoint.decode_for_test().err().expect("unsupported inner wire");
         assert_eq!(
             denial.into_installation_denial().kind(),
             Kind::UnsupportedCheckpointProducerFactVersion {

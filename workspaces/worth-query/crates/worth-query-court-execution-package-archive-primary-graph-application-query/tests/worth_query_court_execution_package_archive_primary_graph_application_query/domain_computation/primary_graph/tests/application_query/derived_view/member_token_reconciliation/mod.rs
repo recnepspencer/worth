@@ -12,7 +12,7 @@ fn changed_member_token_for_same_entity_refreshes_entry_and_duplicate_members_fa
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             let borrowed_execution = host_custody.borrowed_request_for_test();
             let request_execution = &borrowed_execution;
             let selected = world.selected_product(
@@ -157,7 +157,7 @@ fn changed_member_token_for_same_entity_refreshes_entry_and_duplicate_members_fa
                     members,
                     |_: &String| {
                         let first = selected
-                            .retain_selection(request_execution)
+                            .retain_selection_for_test(request_execution)
                             .unwrap()
                             .admit_application_query(
                                 &host_custody.phase_for_application(&world.application),
@@ -168,7 +168,7 @@ fn changed_member_token_for_same_entity_refreshes_entry_and_duplicate_members_fa
                             )
                             .unwrap();
                         let second = selected
-                            .retain_selection(request_execution)
+                            .retain_selection_for_test(request_execution)
                             .unwrap()
                             .admit_application_query(
                                 &host_custody.phase_for_application(&world.application),
@@ -203,7 +203,7 @@ fn changed_member_token_for_same_entity_refreshes_entry_and_duplicate_members_fa
                     members,
                     |_: &String| {
                         let first = selected
-                            .retain_selection(request_execution)
+                            .retain_selection_for_test(request_execution)
                             .unwrap()
                             .admit_application_query(
                                 &host_custody.phase_for_application(&world.application),
@@ -214,7 +214,7 @@ fn changed_member_token_for_same_entity_refreshes_entry_and_duplicate_members_fa
                             )
                             .unwrap();
                         let second = selected
-                            .retain_selection(request_execution)
+                            .retain_selection_for_test(request_execution)
                             .unwrap()
                             .admit_application_query(
                                 &host_custody.phase_for_application(&world.application),
@@ -246,7 +246,7 @@ fn changed_member_token_for_same_entity_refreshes_entry_and_duplicate_members_fa
                     .unwrap()
                     .unwrap()
             ));
-            let graph = world.application.runtime.primary_graph().unwrap();
+            let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
             let tag_field = AccountMembershipTag::reference();
             let tag_locator = graph
                 .layout

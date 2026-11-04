@@ -13,7 +13,7 @@ fn parallel_read_request_exhaustion_keeps_a_canonical_prefix_and_releases_memory
     let scope = live_scope();
     let selected = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
         .expect("the fixture read owns its installed host call");
     let external = world.authenticate("alice", Duration::from_secs(60), &scope);
     let principal = world
@@ -53,7 +53,7 @@ fn parallel_read_request_exhaustion_keeps_a_canonical_prefix_and_releases_memory
         .unwrap();
     for workers in [2, 4] {
         world.application.with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             for ceiling in [u64::MAX, 1] {
                 let lease = host_custody
                     .borrowed_request_for_test()
@@ -86,7 +86,7 @@ fn parallel_read_request_exhaustion_keeps_a_canonical_prefix_and_releases_memory
                     .map(|access| {
                         let admit = || {
                             selected
-                                .retain_selection(&host_custody.borrowed_request_for_test())
+                                .retain_selection_for_test(&host_custody.borrowed_request_for_test())
                                 .unwrap()
                                 .admit_application_query(
                                     &phase,
@@ -104,10 +104,10 @@ fn parallel_read_request_exhaustion_keeps_a_canonical_prefix_and_releases_memory
                     .in_scope(|lease| {
                         worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::derived_view::registration::collection::pair::reconstruction::owner_stage::run(lease, |context| {
                             for (pair, root) in plans.iter_mut().zip(&roots) {
-                                pair.admit(
+                                pair.admit_for_test(
                                     &host_custody.borrowed_request_for_test(),
                                     &world.application,
-                                    root.entity_id(),
+                                    root.entity_id_for_test(),
                                     context,
                                 )?;
                             }
@@ -118,7 +118,7 @@ fn parallel_read_request_exhaustion_keeps_a_canonical_prefix_and_releases_memory
                     .unwrap();
                 let (witness, _probe) =
             worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::read_execution::dispatch_witness::DispatchWitness::install(
-                Some(roots[1].entity_id()),
+                Some(roots[1].entity_id_for_test()),
             );
 
 let partitions = plans
@@ -130,7 +130,7 @@ let partitions = plans
                         (
                             PartitionIdentity::new(index as u64 + 1),
                             pair
-                                    .worker(&request,  root.entity_id())
+                                    .worker_for_test(&request,  root.entity_id_for_test())
                                     .unwrap(),
                         )
                     })
@@ -153,7 +153,7 @@ let partitions = plans
                                 identity,
                                 cause: worth_execution::MapKernelFailure::Domain(Denial::ReadDenied { root, denial }),
                             } if identity == PartitionIdentity::new(1)
-                                && root == roots[0].entity_id()
+                                && root == roots[0].entity_id_for_test()
                                 && matches!(denial.kind(),
                                     worth_query_execution::facade::domain_computation::WorthQueryApplicationOneShotDenialKind::ExecutionRequest(
                                         worth_query_execution::facade::domain_computation::WorthQueryProviderSessionDenialKind::ExecutionResource {
@@ -166,11 +166,11 @@ let partitions = plans
                         assert_eq!(ceiling, u64::MAX);
                         assert_eq!(values.len(), roots.len());
                         for (value, root) in values.iter().zip(&roots) {
-                            assert_eq!(value.first.raw.raw.rows.raw_rows()[0].entity_id(), root.entity_id());
+                            assert_eq!(value.first.raw.raw.rows.raw_rows()[0].entity_id(), root.entity_id_for_test());
                         }
                         let (entries, completions) = witness.observations();
                         assert_eq!(entries.len(), 2);
-                        assert_eq!(completions[0], roots[1].entity_id());
+                        assert_eq!(completions[0], roots[1].entity_id_for_test());
                     }
                 }
                 drop(lease.reserve_memory(16 << 20).unwrap());

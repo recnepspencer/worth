@@ -13,7 +13,7 @@ fn result_disclosure_rule_cannot_open_a_predicate_read() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
 
             let capability = admit_touch_account_capability(
                 &(host_custody.phase_for_application(&context.world.application))

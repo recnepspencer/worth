@@ -20,15 +20,15 @@ fn native_identity_describes_its_shared_key_without_changing_custody() {
             authority_identity: 19,
             _marker: PhantomData,
         };
-        let weak = Arc::downgrade(&identity.entity);
+        let weak = Arc::downgrade(&(*identity.entity_for_test()));
         let clone = identity.clone();
-        assert!(Arc::ptr_eq(&identity.entity, &clone.entity));
+        assert!(Arc::ptr_eq(&(*identity.entity_for_test()), &(*clone.entity_for_test())));
         assert_eq!(
             accepts_resident(&identity),
             ((2 * size_of::<usize>() + length).next_multiple_of(align_of::<usize>())) as u64
         );
         assert_eq!(accepts_resident(&identity), accepts_resident(&clone));
-        assert_eq!(clone.authority_identity, 19);
+        assert_eq!((*clone.authority_identity_for_test()), 19);
         drop(identity);
         assert!(weak.upgrade().is_some());
         drop(clone);

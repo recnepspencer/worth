@@ -295,7 +295,7 @@ pub fn padded(mut accepted: Vec<u8>) -> Vec<u8> {
 
 pub fn assert_denied(body: Vec<u8>, expected: &str) {
     let checkpoint = checkpoint_from_body(body);
-    let denial = match checkpoint.decode() {
+    let denial = match checkpoint.decode_for_test() {
         Err(denial) => denial,
         Ok(_) => panic!("hostile checkpoint payload must fail closed"),
     };

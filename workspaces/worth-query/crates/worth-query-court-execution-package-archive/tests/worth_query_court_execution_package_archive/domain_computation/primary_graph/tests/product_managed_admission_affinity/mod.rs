@@ -25,22 +25,22 @@ fn direct_admission_rejects_a_same_relational_different_signal_product() {
         .expect("the fixture read owns its installed host call");
     let plan = admitted_plan("direct-product-affinity", 8);
     let operation =
-        authority_for_product(direct_authority(&world.application.runtime, &plan), &exact);
-    let attempt = world
+        authority_for_product(direct_authority(&(*world.application.runtime_for_test()), &plan), &exact);
+    let attempt = (*world
         .application
-        .runtime
+        .runtime_for_test())
         .start_direct_resource_attempt(&operation, plan)
         .expect("the exact operation should reserve its resource attempt");
-    let bridge = world
+    let bridge = (*world
         .application
-        .bridge
+        .bridge_for_test())
         .ordinary()
         .fork_managed_request_lane();
 
-    let rejection = match world
+    let rejection = match (*world
         .application
-        .runtime
-        .managed_run_admission(&bridge, &world.application.product_runtime.source)
+        .runtime_for_test())
+        .managed_run_admission(&bridge, &(*world.application.product_runtime_for_test()).source)
         .admit_direct(
             &operation,
             attempt,
@@ -81,24 +81,24 @@ fn workflow_admission_rejects_a_same_relational_different_signal_product() {
         BTreeMap::from([("stage".to_owned(), stage_plan)]),
     );
     let operation = authority_for_product(
-        workflow_authority(&world.application.runtime, &resources),
+        workflow_authority(&(*world.application.runtime_for_test()), &resources),
         &exact,
     );
-    let attempt = world
+    let attempt = (*world
         .application
-        .runtime
+        .runtime_for_test())
         .start_workflow_resource_attempt(&operation, resources)
         .expect("the exact workflow should reserve its resource attempts");
-    let bridge = world
+    let bridge = (*world
         .application
-        .bridge
+        .bridge_for_test())
         .ordinary()
         .fork_managed_request_lane();
 
-    let rejection = match world
+    let rejection = match (*world
         .application
-        .runtime
-        .managed_run_admission(&bridge, &world.application.product_runtime.source)
+        .runtime_for_test())
+        .managed_run_admission(&bridge, &(*world.application.product_runtime_for_test()).source)
         .admit_workflow(
             &operation,
             attempt,
@@ -130,9 +130,9 @@ pub fn hostile_product_twins<Schema: worth_query_installation::facade::Applicati
     worth_query_execution::facade::domain_computation::WorthQueryProductBranchLease,
 ) {
     let root = application.current_world();
-    let exact = application
-        .product_runtime
-        .admit_product_occurrence(root.occurrence())
+    let exact = (*application
+        .product_runtime_for_test())
+        .admit_product_occurrence(root.occurrence_for_test())
         .expect("the root product remains admitted");
     let sibling = application
         .branches()
@@ -140,9 +140,9 @@ pub fn hostile_product_twins<Schema: worth_query_installation::facade::Applicati
         .components(|components| components.reuse_exact_relational_basis().fork_signal())
         .create(phase_custody)
         .expect("the hostile twin should reuse Relational and fork Signal");
-    let substitute = application
-        .product_runtime
-        .admit_product_occurrence(sibling.occurrence())
+    let substitute = (*application
+        .product_runtime_for_test())
+        .admit_product_occurrence(sibling.occurrence_for_test())
         .expect("the hostile twin remains admitted");
     assert_eq!(
         exact.relational_basis_descriptor(),

@@ -147,14 +147,14 @@ pub fn builder(
 #[test]
 fn typed_field_uses_complete_optional_aspect_and_real_nested_codec() {
     let installed = installed();
-    let field = FieldExpectation::declared(
+    let field = FieldExpectation::declared_for_test(
         installed.installed_declaration(),
         Record::reference::<Actual>(),
     )
     .unwrap();
-    field.seal(&installed).unwrap();
-    assert_eq!(field.aspect.absence(), AbsenceLaw::Optional);
-    let AspectShape::Struct(shape) = field.aspect.shape() else {
+    field.seal_for_test(&installed).unwrap();
+    assert_eq!((*field.aspect_for_test()).absence(), AbsenceLaw::Optional);
+    let AspectShape::Struct(shape) = (*field.aspect_for_test()).shape() else {
         panic!("struct aspect")
     };
     assert_eq!(shape.fields().len(), 2);
@@ -176,10 +176,10 @@ fn typed_field_uses_complete_optional_aspect_and_real_nested_codec() {
     );
     let changed = Changed::declaration().unwrap();
     let changed_field =
-        FieldExpectation::declared(changed.erased(), crate::domain_computation::primary_graph::application_contribution::conditional::output_readiness_contract::typed::tests::changed::Record::reference::<Changed>())
+        FieldExpectation::declared_for_test(changed.erased(), crate::domain_computation::primary_graph::application_contribution::conditional::output_readiness_contract::typed::tests::changed::Record::reference::<Changed>())
             .unwrap();
     assert_ne!(
-        field.aspect, changed_field.aspect,
+        (*field.aspect_for_test()), (*changed_field.aspect_for_test()),
         "nested rename changes consumed readiness contract"
     );
     let value = Payload {
@@ -206,9 +206,9 @@ fn actual_missing_changed_and_wrong_concrete_bindings_refuse_at_field_locus() {
         Changed::declaration().unwrap().into_erased(),
     ] {
         let denial =
-            FieldExpectation::declared(&declaration, Record::reference::<Actual>()).unwrap_err();
+            FieldExpectation::declared_for_test(&declaration, Record::reference::<Actual>()).unwrap_err();
         assert_eq!(
-            denial.field_locus(),
+            denial.field_locus_for_test(),
             Some(&schema::ApplicationFieldBindingLocus::new(
                 "Entity",
                 "Publication",
@@ -217,12 +217,12 @@ fn actual_missing_changed_and_wrong_concrete_bindings_refuse_at_field_locus() {
         );
     }
     // Portable bytes agree, but the actual installed Binding TypeId differs.
-    let twin = FieldExpectation::declared(
+    let twin = FieldExpectation::declared_for_test(
         installed.installed_declaration(),
         crate::domain_computation::primary_graph::application_contribution::conditional::output_readiness_contract::typed::tests::twin::Record::reference::<Actual>(),
     )
     .unwrap();
-    let denial = twin.seal(&installed).unwrap_err();
+    let denial = twin.seal_for_test(&installed).unwrap_err();
     assert_eq!(denial.field_locus().unwrap().field(), "Record");
     assert!(denial.detail().contains("installed value binding"));
 }
@@ -246,8 +246,8 @@ fn canonical_order_and_distinct_delivery_eligibility_are_preserved() {
         .unwrap()
         .build_typed::<(), (), ()>()
         .unwrap();
-    assert_eq!(first.fields, reversed.fields);
-    assert_eq!(first.delivery_fields, reversed.delivery_fields);
+    assert_eq!((*first.fields_for_test()), (*reversed.fields_for_test()));
+    assert_eq!((*first.delivery_fields_for_test()), (*reversed.delivery_fields_for_test()));
     assert_eq!(
         first.definition().clone().into_portable(),
         reversed.definition().clone().into_portable()
@@ -256,9 +256,9 @@ fn canonical_order_and_distinct_delivery_eligibility_are_preserved() {
     let ordinal = first
         .delivery_ordinal(&installed, node, Record::reference::<Actual>())
         .unwrap();
-    let expected = FieldExpectation::declared(declaration, Record::reference::<Actual>())
+    let expected = FieldExpectation::declared_for_test(declaration, Record::reference::<Actual>())
         .unwrap()
-        .dependency()
+        .dependency_for_test()
         .unwrap();
     assert_eq!(node.dependencies()[ordinal], expected);
     let distinct = builder(declaration)

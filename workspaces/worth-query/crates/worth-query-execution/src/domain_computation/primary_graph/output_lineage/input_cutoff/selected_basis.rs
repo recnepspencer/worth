@@ -41,3 +41,5 @@ impl<'snapshot> PreparedInputCutoffBasis<'snapshot> {
         Ok((self.snapshot, &self.positioned))
     }
 }
+
+mod court_doors_for_test;

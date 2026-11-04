@@ -9,7 +9,7 @@ fn external_pair_and_adjacency_remain_current_after_owned_endpoint_retirement() 
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             let borrowed_execution = host_custody.borrowed_request_for_test();
             let execution = &borrowed_execution;
             let selected = world.selected_product(
@@ -24,14 +24,14 @@ fn external_pair_and_adjacency_remain_current_after_owned_endpoint_retirement() 
                     WorthQueryPrincipalResolutionMode::Ordinary,
                 )
                 .unwrap()
-                .entity_id();
+                .entity_id_for_test();
             let (anchor, _, _) = reads(
                 &host_custody.phase_for_application(&world.application),
                 execution,
                 &world,
                 "account-1",
             );
-            let graph = world.application.runtime.primary_graph().unwrap();
+            let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
             let relation = graph
                 .layout
                 .relation(AccountAllActivity::reference().name())
@@ -45,7 +45,7 @@ fn external_pair_and_adjacency_remain_current_after_owned_endpoint_retirement() 
                 worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::adjacency::observe_adjacency(
                     runtime,
                     execution,
-                    selected.application_basis().snapshot_handle(),
+                    selected.application_basis_for_test().snapshot_handle(),
                     relation,
                     anchor,
                     WorthQueryApplicationAdjacencyDirection::Outgoing,
@@ -167,7 +167,7 @@ fn a_retired_entity_changes_each_revision_fact_read_without_its_entity_fact() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             let borrowed_execution = host_custody.borrowed_request_for_test();
             let execution = &borrowed_execution;
             let (entity, _, facts) = reads(
@@ -192,14 +192,14 @@ fn a_retired_entity_changes_each_revision_fact_read_without_its_entity_fact() {
                 let selected = world.selected_product(
                     &(host_custody.phase_for_application(&world.application)).test_host_request(),
                 );
-                let graph = world.application.runtime.primary_graph().unwrap();
+                let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
                 graph.integration_handle().with_runtime(
                     &phase.borrowed_request_for_test(),
                     |runtime| {
-                        fact.source_currentness_in(
+                        fact.source_currentness_in_for_test(
                             runtime,
                             execution,
-                            selected.application_basis().snapshot_handle(),
+                            selected.application_basis_for_test().snapshot_handle(),
                         )
                     },
                 )

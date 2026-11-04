@@ -14,7 +14,7 @@ fn current_source_registration_rejects_native_movement_while_ordinary_replay_rem
     let world = installed_authorization_world(true);
     let selected = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
         .expect("the fixture read owns its installed host call");
     let entity = world
         .application
@@ -28,22 +28,22 @@ fn current_source_registration_rejects_native_movement_while_ordinary_replay_rem
                     WorthQueryPrincipalResolutionMode::Ordinary,
                 )
                 .unwrap()
-                .entity_id()
+                .entity_id_for_test()
         })
         .expect("the fixture read owns its installed host call");
-    let (_, product, _) = selected.into_parts();
+    let (_, product, _) = selected.into_parts_for_test();
     let observation = product.observation();
     let coordinate = ProductCoordinate {
         occurrence: observation.lifecycle_incarnation(),
         generation: observation.reference_generation().get(),
     };
     let source = SemanticSource {
-        runtime_authority: world.application.runtime.authority_identity().as_u64(),
-        schema: world.application.installed_schema.binding_identity(),
-        scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity(entity),
-        output_binding: OutputBindingIdentity::declared("StatusOutput"),
+        runtime_authority: (*world.application.runtime_for_test()).authority_identity().as_u64(),
+        schema: (*world.application.installed_schema_for_test()).binding_identity(),
+        scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity),
+        output_binding: OutputBindingIdentity::declared_for_test("StatusOutput"),
     };
-    let graph = world.application.runtime.primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let handle = graph.integration_handle();
     let owner = &handle.source_owner.invalidation_owner;
     let status_ref = AccountStatus::reference();
@@ -64,7 +64,7 @@ fn current_source_registration_rejects_native_movement_while_ordinary_replay_rem
     let (before_handle, before, facts) = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             handle.with_runtime(request_execution, |runtime| {
                 let (snapshot, basis) = snapshot(runtime);
                 let facts: Arc<[_]> = Arc::from([field_fact(
@@ -78,12 +78,12 @@ fn current_source_registration_rejects_native_movement_while_ordinary_replay_rem
             })
         })
         .expect("the fixture read owns its installed host call");
-    let identity = RecordedSettlementIdentity::retain(&source, coordinate, 0);
+    let identity = RecordedSettlementIdentity::retain_for_test(&source, coordinate, 0);
     let registration = |identity| SettlementRegistration {
         work_membership: None,
         computation: None,
         identity,
-        facts: RetainedSourceFacts::for_test(false, Arc::clone(&facts)),
+        facts: RetainedSourceFacts::for_test_for_test(false, Arc::clone(&facts)),
         output_facts: None,
         read_basis: before.clone(),
         stale_at_read_basis: OrdSet::new(),
@@ -108,7 +108,7 @@ fn current_source_registration_rejects_native_movement_while_ordinary_replay_rem
         write_field(request_execution, runtime, entity, status, "closed")
     });
     let (after_handle, after) = handle.with_runtime(request_execution, snapshot);
-    let next = RecordedSettlementIdentity::retain(&source, coordinate, 1);
+    let next = RecordedSettlementIdentity::retain_for_test(&source, coordinate, 1);
     let stopped = owner.prepare_current_settlement(registration(Arc::clone(&next)), &before);
     assert!(matches!(
         stopped,
@@ -133,7 +133,7 @@ fn current_source_registration_rejects_native_movement_while_ordinary_replay_rem
     }
     // A registrant that already knows its own effect moved a fact it read
     // is not clean at the post-effect basis: no later delivery marks it.
-    let born_stale = RecordedSettlementIdentity::retain(&source, coordinate, 2);
+    let born_stale = RecordedSettlementIdentity::retain_for_test(&source, coordinate, 2);
     owner
         .register_settlement(SettlementRegistration {
             computation: None,

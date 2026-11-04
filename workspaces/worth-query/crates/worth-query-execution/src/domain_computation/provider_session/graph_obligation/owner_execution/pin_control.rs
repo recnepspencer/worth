@@ -59,3 +59,5 @@ pub(super) fn snapshot() -> Option<SnapshotHandle> {
         }
     })
 }
+
+mod court_doors_for_test;

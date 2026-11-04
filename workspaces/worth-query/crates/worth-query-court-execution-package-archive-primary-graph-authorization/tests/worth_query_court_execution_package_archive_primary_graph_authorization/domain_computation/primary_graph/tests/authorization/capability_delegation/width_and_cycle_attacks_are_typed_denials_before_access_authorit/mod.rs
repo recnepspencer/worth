@@ -11,7 +11,7 @@ fn width_and_cycle_attacks_are_typed_denials_before_access_authority() {
         width
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 add_parent(
                     &host_custody,
                     &width,
@@ -25,14 +25,14 @@ fn width_and_cycle_attacks_are_typed_denials_before_access_authority() {
         let principal = width
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 authenticated_principal(&host_custody, &width, &request)
             })
             .expect("the fixture read owns its installed host call");
         let Err(denial) = width
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 admitted_capability_access(&host_custody, &width, &principal, &request, 100)
             })
             .expect("the fixture read owns its installed host call")
@@ -51,7 +51,7 @@ fn width_and_cycle_attacks_are_typed_denials_before_access_authority() {
         cycle
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 add_parent(
                     &host_custody,
                     &cycle,
@@ -65,14 +65,14 @@ fn width_and_cycle_attacks_are_typed_denials_before_access_authority() {
         let principal = cycle
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 authenticated_principal(&host_custody, &cycle, &request)
             })
             .expect("the fixture read owns its installed host call");
         let Err(denial) = cycle
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 admitted_capability_access(&host_custody, &cycle, &principal, &request, 100)
             })
             .expect("the fixture read owns its installed host call")
@@ -91,7 +91,7 @@ fn width_and_cycle_attacks_are_typed_denials_before_access_authority() {
         depth
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 add_parent(
                     &host_custody,
                     &depth,
@@ -105,14 +105,14 @@ fn width_and_cycle_attacks_are_typed_denials_before_access_authority() {
         let principal = depth
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 authenticated_principal(&host_custody, &depth, &request)
             })
             .expect("the fixture read owns its installed host call");
         let Err(denial) = depth
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 admitted_capability_access(&host_custody, &depth, &principal, &request, 100)
             })
             .expect("the fixture read owns its installed host call")

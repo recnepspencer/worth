@@ -74,7 +74,7 @@ fn whole_structural_retirement_requires_complete_correspondence_and_keeps_extern
     missing.remove(
         retired
             .iter()
-            .find(|entity| **entity != observation.key().member())
+            .find(|entity| **entity != observation.key_for_test().member())
             .unwrap(),
     );
     let rebased = at_current(&world, &execution, |runtime, snapshot| {
@@ -105,10 +105,10 @@ fn whole_structural_retirement_requires_complete_correspondence_and_keeps_extern
             })
             .collect();
         for (old, new) in owned.iter().zip(&rebased) {
-            assert_eq!(old.locator_identity(), new.locator_identity());
+            assert_eq!(old.locator_identity_for_test(), new.locator_identity_for_test());
             assert!(matches!(new, Fact::RetiredOutputEntity { .. }));
             assert_eq!(
-                new.source_currentness_in(runtime, &execution, snapshot)
+                new.source_currentness_in_for_test(runtime, &execution, snapshot)
                     .unwrap()
                     .unwrap()
                     .movement(),
@@ -120,7 +120,7 @@ fn whole_structural_retirement_requires_complete_correspondence_and_keeps_extern
                 .unwrap()
                 .is_none());
             assert_eq!(
-                fact.source_currentness_in(runtime, &execution, snapshot)
+                fact.source_currentness_in_for_test(runtime, &execution, snapshot)
                     .unwrap()
                     .unwrap()
                     .movement(),
@@ -133,7 +133,7 @@ fn whole_structural_retirement_requires_complete_correspondence_and_keeps_extern
     let restored = decode_producer_facts(&encoded, None, Allocation::SystemAllocation).unwrap();
     use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::payload::sequence::FactSequence;
     assert_eq!(restored.iter().cloned().collect::<Vec<_>>(), rebased);
-    let edge = walk(&external).native().relations()[0];
+    let edge = walk(&external).native_for_test().relations()[0];
     worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::product_publication::publish_relational_mutation_on_application(
         &execution,
         &world.application,
@@ -148,7 +148,7 @@ fn whole_structural_retirement_requires_complete_correspondence_and_keeps_extern
     at_current(&world, &execution, |runtime, snapshot| {
         assert_eq!(
             external[1]
-                .source_currentness_in(runtime, &execution, snapshot)
+                .source_currentness_in_for_test(runtime, &execution, snapshot)
                 .unwrap()
                 .unwrap()
                 .movement(),
@@ -156,7 +156,7 @@ fn whole_structural_retirement_requires_complete_correspondence_and_keeps_extern
         );
         for fact in &rebased {
             assert_eq!(
-                fact.source_currentness_in(runtime, &execution, snapshot)
+                fact.source_currentness_in_for_test(runtime, &execution, snapshot)
                     .unwrap()
                     .unwrap()
                     .movement(),
@@ -180,7 +180,7 @@ fn retiring_the_selected_anchor_does_not_retire_the_surviving_group_read() {
     };
     let anchor = observation.native().anchor();
     let member = |facts: &[Fact]| match &facts[0] {
-        Fact::Aggregate { observation } => observation.key().member(),
+        Fact::Aggregate { observation } => observation.key_for_test().member(),
         _ => unreachable!(),
     };
     let facts = &candidates
@@ -198,13 +198,13 @@ fn retiring_the_selected_anchor_does_not_retire_the_surviving_group_read() {
     };
     let original_identity = observation.native().identity();
     let incoming = walk(facts)
-        .native()
+        .native_for_test()
         .relations()
         .iter()
         .find(|edge| edge.target == anchor)
         .unwrap();
     let outgoing = walk(facts)
-        .native()
+        .native_for_test()
         .relations()
         .iter()
         .find(|edge| edge.source == anchor)

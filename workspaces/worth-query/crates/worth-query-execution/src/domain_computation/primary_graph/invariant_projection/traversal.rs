@@ -225,3 +225,5 @@ fn work_budget_exceeded(relation: &str) -> WorthQueryInvariantProjectionTraversa
 }
 
 mod adjacency;
+
+mod court_doors_for_test;

@@ -31,7 +31,7 @@ fn reused_relation_key_is_denied_during_public_authoring() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             resolved_principal(
                 &phase,
                 &host_custody.borrowed_request_for_test(),
@@ -44,7 +44,7 @@ fn reused_relation_key_is_denied_during_public_authoring() {
     let open = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let operation = world
@@ -56,7 +56,7 @@ fn reused_relation_key_is_denied_during_public_authoring() {
         .application
         .with_host_advancement(|phase| {
             world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&(phase).test_host_request_for_test())
                 .authorize_operation(
                     &phase,
                     &actor,
@@ -136,7 +136,7 @@ fn two_real_relation_deletes_share_one_ordered_provisional_step_through_commit()
         let actor = world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 authenticated(
                     &host_custody.phase_for_application(&world.application),
                     &(host_custody.phase_for_application(&world.application))
@@ -153,7 +153,7 @@ fn two_real_relation_deletes_share_one_ordered_provisional_step_through_commit()
             let principal = world
                 .application
                 .with_host_advancement(|phase| {
-                    let host_custody = phase.test_host_request();
+                    let host_custody = phase.test_host_request_for_test();
                     resolved_principal(
                         &host_custody.phase_for_application(&world.application),
                         &host_custody.borrowed_request_for_test(),
@@ -166,7 +166,7 @@ fn two_real_relation_deletes_share_one_ordered_provisional_step_through_commit()
             let account = world
                 .application
                 .with_host_advancement(|phase| {
-                    let host_custody = phase.test_host_request();
+                    let host_custody = phase.test_host_request_for_test();
                     resolved_account(
                         &(host_custody.phase_for_application(&world.application))
                             .test_host_request(),
@@ -179,7 +179,7 @@ fn two_real_relation_deletes_share_one_ordered_provisional_step_through_commit()
             let program = world
                 .application
                 .with_host_advancement(|phase| {
-                    let host_custody = phase.test_host_request();
+                    let host_custody = phase.test_host_request_for_test();
                     link_program(
                         &host_custody.phase_for_application(&world.application),
                         &world,
@@ -205,7 +205,7 @@ fn two_real_relation_deletes_share_one_ordered_provisional_step_through_commit()
         let principal = world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 resolved_principal(
                     &host_custody.phase_for_application(&world.application),
                     &host_custody.borrowed_request_for_test(),
@@ -218,7 +218,7 @@ fn two_real_relation_deletes_share_one_ordered_provisional_step_through_commit()
         let open = world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 resolved_account(
                     &(host_custody.phase_for_application(&world.application)).test_host_request(),
                     &world,
@@ -230,7 +230,7 @@ fn two_real_relation_deletes_share_one_ordered_provisional_step_through_commit()
         let other = world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 resolved_account(
                     &(host_custody.phase_for_application(&world.application)).test_host_request(),
                     &world,
@@ -247,7 +247,7 @@ fn two_real_relation_deletes_share_one_ordered_provisional_step_through_commit()
         let admission = world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 world
                     .selected_product(
                         &(host_custody.phase_for_application(&world.application))
@@ -267,7 +267,7 @@ fn two_real_relation_deletes_share_one_ordered_provisional_step_through_commit()
         let (_, projection, _) = world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 world
                     .invariant
                     .project_admitted_operation(
@@ -287,7 +287,7 @@ fn two_real_relation_deletes_share_one_ordered_provisional_step_through_commit()
         let reads = world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 world
                     .application
                     .begin_projected_application_read_attempt(
@@ -309,10 +309,10 @@ fn two_real_relation_deletes_share_one_ordered_provisional_step_through_commit()
         let open = effects.existing_entity(&open).unwrap();
         let other = effects.existing_entity(&other).unwrap();
         effects
-            .unlink_observed(AccountOwner::reference(), &from, &open)
+            .unlink_observed_for_test(AccountOwner::reference(), &from, &open)
             .unwrap();
         effects
-            .unlink_observed(AccountOwner::reference(), &from, &other)
+            .unlink_observed_for_test(AccountOwner::reference(), &from, &other)
             .unwrap();
         let program = effects.finish().unwrap();
 
@@ -333,7 +333,7 @@ fn two_real_relation_deletes_share_one_ordered_provisional_step_through_commit()
         world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 assert_membership_absent(
                     &host_custody.phase_for_application(&world.application),
                     &world,
@@ -354,7 +354,7 @@ fn two_real_relation_deletes_share_one_ordered_provisional_step_through_commit()
         world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 assert_membership_absent(
                     &host_custody.phase_for_application(&world.application),
                     &world,

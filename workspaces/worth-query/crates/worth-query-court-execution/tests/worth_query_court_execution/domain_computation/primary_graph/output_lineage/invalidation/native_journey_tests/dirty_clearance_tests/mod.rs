@@ -22,7 +22,7 @@ fn native_reverification_clears_only_the_verified_live_image() {
     let world = installed_authorization_world(true);
     let selected = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
@@ -36,7 +36,7 @@ fn native_reverification_clears_only_the_verified_live_image() {
                     WorthQueryPrincipalResolutionMode::Ordinary,
                 )
                 .unwrap()
-                .entity_id()
+                .entity_id_for_test()
         })
         .expect("the fixture read owns its installed host call");
     let principal = world
@@ -51,15 +51,15 @@ fn native_reverification_clears_only_the_verified_live_image() {
                     WorthQueryPrincipalResolutionMode::Ordinary,
                 )
                 .unwrap()
-                .entity_id()
+                .entity_id_for_test()
         })
         .expect("the fixture read owns its installed host call");
-    let (_, product, _) = selected.into_parts();
+    let (_, product, _) = selected.into_parts_for_test();
     let coordinate = ProductCoordinate {
         occurrence: product.observation().lifecycle_incarnation(),
         generation: product.observation().reference_generation().get(),
     };
-    let graph = world.application.runtime.primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let handle = graph.integration_handle();
     let owner = &handle.source_owner.invalidation_owner;
     let kind = graph
@@ -73,16 +73,16 @@ fn native_reverification_clears_only_the_verified_live_image() {
         .field_locator(label_ref.entity(), label_ref.aspect(), label_ref.field())
         .unwrap()
         .clone();
-    let identity = RecordedSettlementIdentity::retain(&SemanticSource {
-        runtime_authority: world.application.runtime.authority_identity().as_u64(),
-        schema: world.application.installed_schema.binding_identity().clone(),
-        scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity(account),
-        output_binding: OutputBindingIdentity::declared("RelationAbsenceOutput"),
+    let identity = RecordedSettlementIdentity::retain_for_test(&SemanticSource {
+        runtime_authority: (*world.application.runtime_for_test()).authority_identity().as_u64(),
+        schema: (*world.application.installed_schema_for_test()).binding_identity().clone(),
+        scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(account),
+        output_binding: OutputBindingIdentity::declared_for_test("RelationAbsenceOutput"),
     }, coordinate, 0);
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             let request_execution = &host_custody.borrowed_request_for_test();
             handle.with_runtime_mut(request_execution, |runtime| {
                 write_field(request_execution, runtime, account, label.clone(), "prime");
@@ -96,12 +96,12 @@ fn native_reverification_clears_only_the_verified_live_image() {
                     )
                     .expect("fixture read request remains live")
                     .is_empty());
-                let tracked_facts = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts::for_test(false,
+                let tracked_facts = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts::for_test_for_test(false,
                     Arc::from([WorthQueryApplicationObservedFact::Relation {
                         relation_kind: kind, from: principal, to: account, matching_relations: Vec::new(),
                     }]));
                 owner.register_settlement(SettlementRegistration {
-                    computation: Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::computation_changes::ComputationRegistration::retained()),
+                    computation: Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::computation_changes::ComputationRegistration::retained_for_test()),
                     work_membership: None, identity: identity.clone(), facts: tracked_facts.clone(),
                     output_facts: None, read_basis: basis.clone(), stale_at_read_basis: OrdSet::new(),
                     requirement: None, upstream: OrdSet::new(),
@@ -231,9 +231,9 @@ fn native_reverification_clears_only_the_verified_live_image() {
                 let changes = owner.computation_changes(runtime, &latest_handle, &identity, &tracked_facts).unwrap().expect("ordinary clear preserves original computation frontier");
                 assert_eq!(changes.at_snapshot(runtime, &latest_handle).unwrap().iter().copied().collect::<Vec<_>>(), [0]);
                 assert!(changes.at_snapshot(runtime, &basis_handle).is_none(), "later evidence cannot bless an earlier source snapshot");
-                let original = tracked_facts.for_comparison().unwrap().facts().clone();
+                let original = tracked_facts.for_comparison().unwrap().facts_for_test().clone();
                 let changes = changes.bind_original(original.clone());
-                let control = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new(request_execution.allocation_policy(), None);
+                let control = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new_for_test(request_execution.allocation_policy(), None);
                 let carry = changes.carry(&original, 1, &OrdSet::new(), &latest_handle, control).unwrap().unwrap();
                 let empty = worth_relational::facade::history::RelationalDescriptiveTouchGraph::Exact(Vec::new());
                 let selected = carry.select(&empty, 1, &[], control).unwrap().unwrap().ordinals;
@@ -259,7 +259,7 @@ let old = owner.computation_changes(runtime, &basis_handle, &identity, &tracked_
 
 
                 assert!(old.at_snapshot(runtime, &basis_handle).unwrap().is_empty(), "historical native frontier stays immutable");
-                let different_backing = RetainedSourceFacts::for_test(false, Arc::from([]));
+                let different_backing = RetainedSourceFacts::for_test_for_test(false, Arc::from([]));
                 assert!(owner.computation_changes(runtime, &latest_handle, &identity,
                     &different_backing).unwrap().is_none(),
                     "a source-current row cannot lend its frontier to foreign fact backing");

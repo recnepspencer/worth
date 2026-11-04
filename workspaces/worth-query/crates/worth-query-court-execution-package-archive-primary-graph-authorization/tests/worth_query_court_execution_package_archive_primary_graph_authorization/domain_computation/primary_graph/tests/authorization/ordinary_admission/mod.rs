@@ -30,12 +30,12 @@ fn current_installed_membership_mints_exact_operation_admission() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             world
                 .application
-                .select_product_branch(
+                .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch(),
+                    world.application.product_runtime().default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_authenticated_principal(
@@ -51,12 +51,12 @@ fn current_installed_membership_mints_exact_operation_admission() {
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             world
                 .application
-                .select_product_branch(
+                .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch(),
+                    world.application.product_runtime().default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
@@ -79,7 +79,7 @@ fn current_installed_membership_mints_exact_operation_admission() {
         .application
         .with_host_advancement(|phase| {
             world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&(phase).test_host_request_for_test())
                 .authorize_operation(
                     &phase,
                     &principal,
@@ -95,7 +95,7 @@ fn current_installed_membership_mints_exact_operation_admission() {
         .application
         .with_host_advancement(|phase| {
             world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&(phase).test_host_request_for_test())
                 .authorize_operation(
                     &phase,
                     &principal,
@@ -111,16 +111,16 @@ fn current_installed_membership_mints_exact_operation_admission() {
     assert_eq!(admitted.operation(), "TouchAccountOperation");
     assert_eq!(admitted.authorization_requirement_count(), 1);
     assert_ne!(
-        admitted.graph_work_session_identity(),
-        retried.graph_work_session_identity()
+        admitted.graph_work_session_identity_for_test(),
+        retried.graph_work_session_identity_for_test()
     );
     assert_ne!(
-        admitted.graph_work_managed_run_identity(),
-        retried.graph_work_managed_run_identity()
+        admitted.graph_work_managed_run_identity_for_test(),
+        retried.graph_work_managed_run_identity_for_test()
     );
     assert_eq!(admitted.graph_work_branch(), retried.graph_work_branch());
     assert_eq!(
-        admitted.graph_work_decision_fact_count(),
+        admitted.graph_work_decision_fact_count_for_test(),
         admitted.authorization_decision_fact_count()
     );
     assert_eq!(
@@ -128,12 +128,12 @@ fn current_installed_membership_mints_exact_operation_admission() {
         principal.principal_entity_id()
     );
     assert_eq!(
-        admitted.graph_work_scope_entity_id(),
+        admitted.graph_work_scope_entity_id_for_test(),
         Some(account.entity_id())
     );
-    assert!(admitted.graph_work_capability_identity().is_none());
-    assert!(admitted.graph_work_runtime_ordinal() > 0);
-    assert!(!admitted.graph_work_provider().is_empty());
+    assert!(admitted.graph_work_capability_identity_for_test().is_none());
+    assert!(admitted.graph_work_runtime_ordinal_for_test() > 0);
+    assert!(!admitted.graph_work_provider_for_test().is_empty());
     assert_eq!(admitted.allowed_graph_contract(), operation.contracts());
     assert!(admitted.signal_dependency_count() >= 2);
     assert_eq!(
@@ -159,12 +159,12 @@ fn caller_marker_cannot_widen_the_installed_precondition_contract() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             world
                 .application
-                .select_product_branch(
+                .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch(),
+                    world.application.product_runtime().default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_authenticated_principal(
@@ -180,12 +180,12 @@ fn caller_marker_cannot_widen_the_installed_precondition_contract() {
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             world
                 .application
-                .select_product_branch(
+                .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch(),
+                    world.application.product_runtime().default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
@@ -215,7 +215,7 @@ fn caller_marker_cannot_widen_the_installed_precondition_contract() {
         .application
         .with_host_advancement(|phase| {
             world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&(phase).test_host_request_for_test())
                 .authorize_operation(
                     &phase,
                     &principal,
@@ -244,12 +244,12 @@ fn missing_membership_and_crossed_runtime_scope_open_no_operation_authority() {
     let principal = denied_world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             denied_world
                 .application
-                .select_product_branch(
+                .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    denied_world.application.product_runtime().default_branch(),
+                    denied_world.application.product_runtime().default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_authenticated_principal(
@@ -265,12 +265,12 @@ fn missing_membership_and_crossed_runtime_scope_open_no_operation_authority() {
     let account = denied_world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             denied_world
                 .application
-                .select_product_branch(
+                .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    denied_world.application.product_runtime().default_branch(),
+                    denied_world.application.product_runtime().default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
@@ -292,7 +292,7 @@ fn missing_membership_and_crossed_runtime_scope_open_no_operation_authority() {
         .application
         .with_host_advancement(|phase| {
             denied_world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&(phase).test_host_request_for_test())
                 .authorize_operation(
                     &phase,
                     &principal,
@@ -314,12 +314,12 @@ fn missing_membership_and_crossed_runtime_scope_open_no_operation_authority() {
     let foreign_account = foreign
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             foreign
                 .application
-                .select_product_branch(
+                .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    foreign.application.product_runtime().default_branch(),
+                    foreign.application.product_runtime().default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
@@ -336,7 +336,7 @@ fn missing_membership_and_crossed_runtime_scope_open_no_operation_authority() {
         .application
         .with_host_advancement(|phase| {
             denied_world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&(phase).test_host_request_for_test())
                 .authorize_operation(
                     &phase,
                     &principal,

@@ -33,7 +33,7 @@ fn production_fresh_attempt_operation_distinguishes_safe_redispatch() {
         let original_observation = world
             .application
             .observe_committed_dispatch_outbox(
-                &active_phase.phase_for_application(&world.application),
+                &active_phase.phase_for_application_for_test(&world.application),
                 &receipt,
             )
             .unwrap()
@@ -45,9 +45,9 @@ fn production_fresh_attempt_operation_distinguishes_safe_redispatch() {
         );
         let original = world
             .application
-            .perform_committed_external_dispatch(
+            .perform_committed_external_dispatch_for_test(
                 &phase.borrowed_request_for_test(),
-                &phase.phase_for_application(&world.application),
+                &phase.phase_for_application_for_test(&world.application),
                 &transport,
                 original_observation,
                 &live_scope(),
@@ -55,9 +55,9 @@ fn production_fresh_attempt_operation_distinguishes_safe_redispatch() {
             .expect("original dispatch");
         let retry = world
             .application
-            .perform_committed_external_dispatch(
+            .perform_committed_external_dispatch_for_test(
                 &phase.borrowed_request_for_test(),
-                &phase.phase_for_application(&world.application),
+                &phase.phase_for_application_for_test(&world.application),
                 &transport,
                 retry_observation,
                 &live_scope(),
@@ -86,7 +86,7 @@ fn foreign_owner_observation_denies_before_transport_and_preserves_cause() {
         let local = world
             .application
             .observe_committed_dispatch_outbox(
-                &active_phase.phase_for_application(&world.application),
+                &active_phase.phase_for_application_for_test(&world.application),
                 &local_receipt,
             )
             .unwrap()
@@ -94,7 +94,7 @@ fn foreign_owner_observation_denies_before_transport_and_preserves_cause() {
         let foreign = foreign_world
             .application
             .observe_committed_dispatch_outbox(
-                &active_phase.phase_for_application(&foreign_world.application),
+                &active_phase.phase_for_application_for_test(&foreign_world.application),
                 &foreign_receipt,
             )
             .unwrap()
@@ -112,9 +112,9 @@ fn foreign_owner_observation_denies_before_transport_and_preserves_cause() {
         );
 
         assert_eq!(
-            world.application.perform_committed_external_dispatch(
+            world.application.perform_committed_external_dispatch_for_test(
                 &phase.borrowed_request_for_test(),
-                &phase.phase_for_application(&world.application),
+                &phase.phase_for_application_for_test(&world.application),
                 &transport,
                 foreign,
                 &live_scope()
@@ -140,16 +140,16 @@ fn unavailable_runtime_time_is_a_typed_dispatch_preparation_denial() {
         let observation = world
             .application
             .observe_committed_dispatch_outbox(
-                &active_phase.phase_for_application(&world.application),
+                &active_phase.phase_for_application_for_test(&world.application),
                 &receipt,
             )
             .unwrap()
             .unwrap();
 
         assert_eq!(
-            world.application.perform_committed_external_dispatch(
+            world.application.perform_committed_external_dispatch_for_test(
                 &phase.borrowed_request_for_test(),
-                &phase.phase_for_application(&world.application),
+                &phase.phase_for_application_for_test(&world.application),
                 &transport,
                 observation,
                 &live_scope()

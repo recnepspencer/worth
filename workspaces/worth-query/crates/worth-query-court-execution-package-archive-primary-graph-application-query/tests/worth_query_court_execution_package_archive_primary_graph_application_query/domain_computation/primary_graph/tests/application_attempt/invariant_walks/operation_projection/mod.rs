@@ -25,7 +25,7 @@ fn operation_walks_preserve_pinned_results_and_exact_acquisitions() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host = phase.test_host_request();
+            let host = phase.test_host_request_for_test();
             let execution = host
                 .execution_request_for(world.application.product_runtime())
                 .unwrap();
@@ -150,7 +150,7 @@ fn operation_walks_keep_foreign_checks_and_original_cancellation() {
     let admission = world
         .application
         .with_host_advancement(|phase| {
-            let host = phase.test_host_request();
+            let host = phase.test_host_request_for_test();
             let execution = host
                 .execution_request_for(world.application.product_runtime())
                 .unwrap();
@@ -249,7 +249,7 @@ fn operation_walks_cannot_swallow_the_installed_limit() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host = phase.test_host_request();
+            let host = phase.test_host_request_for_test();
             let execution = host
                 .execution_request_for(world.application.product_runtime())
                 .unwrap();

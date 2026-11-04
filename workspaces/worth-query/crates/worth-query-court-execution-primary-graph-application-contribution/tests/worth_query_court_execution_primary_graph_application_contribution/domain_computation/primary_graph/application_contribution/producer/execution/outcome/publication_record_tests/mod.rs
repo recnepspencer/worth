@@ -12,7 +12,7 @@ fn only_a_new_commit_records_a_publication_in_this_advance() {
             WorthQueryApplicationCommitOutcome::AlreadyCommitted(receipt.clone()),
         )
         .unwrap_or_else(|_| panic!("a replay retains its receipt"));
-        replay.record_publication(|| recorded.set(recorded.get() + 1));
+        replay.record_publication_for_test(|| recorded.set(recorded.get() + 1));
         assert_eq!(
             recorded.get(),
             0,
@@ -23,7 +23,7 @@ fn only_a_new_commit_records_a_publication_in_this_advance() {
             WorthQueryApplicationCommitOutcome::Committed(receipt),
         )
         .unwrap_or_else(|_| panic!("a new commit retains its receipt"));
-        publication.record_publication(|| recorded.set(recorded.get() + 1));
+        publication.record_publication_for_test(|| recorded.set(recorded.get() + 1));
         assert_eq!(recorded.get(), 1, "the new effect marks exactly once");
     });
 }

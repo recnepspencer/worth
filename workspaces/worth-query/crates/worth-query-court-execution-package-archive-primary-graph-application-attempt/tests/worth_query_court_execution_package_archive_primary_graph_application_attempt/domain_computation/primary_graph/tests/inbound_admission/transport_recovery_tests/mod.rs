@@ -43,20 +43,20 @@ fn callback_winner_is_recognized_before_transport_world_publication() {
     let correlation = *owner.record().correlation();
     let admitted = world
         .application
-        .admit_external_dispatch_attempt(owner.clone())
+        .admit_external_dispatch_attempt_for_test(owner.clone())
         .unwrap();
-    let in_flight = world
+    let in_flight = (*world
         .application
-        .primary_provider
+        .primary_provider_for_test())
         .begin_external_dispatch_in_flight(&owner)
         .unwrap()
         .unwrap();
     let completed =
         dispatch_external_effect(&CompletingTransport(AtomicUsize::new(0)), admitted).unwrap();
-    let evidence = InstalledTransportCompletion::from_observed_dispatch(owner, &completed).unwrap();
+    let evidence = InstalledTransportCompletion::from_observed_dispatch_for_test(owner, &completed).unwrap();
     world
         .application
-        .record_installed_transport_completion(evidence, in_flight)
+        .record_installed_transport_completion_for_test(evidence, in_flight)
         .unwrap();
     let record = receipt.dispatch_outbox().unwrap();
     let envelope = signed_envelope(record, [0x96; 32], record.payload(), false);
@@ -69,9 +69,9 @@ fn callback_winner_is_recognized_before_transport_world_publication() {
             .posture(),
         WorthQueryInboundReceiptPosture::Performed,
     );
-    let before = world
+    let before = (*world
         .application
-        .primary_provider
+        .primary_provider_for_test())
         .lookup_completed_inbound(&correlation)
         .unwrap()
         .unwrap()
@@ -82,7 +82,7 @@ fn callback_winner_is_recognized_before_transport_world_publication() {
         .with_host_advancement(|active_phase| {
             let phase = &active_phase;
             assert_eq!(
-                world.application.resume_installed_transport_completion(
+                world.application.resume_installed_transport_completion_for_test(
                     &phase.borrowed_request_for_test(),
                     phase,
                     &correlation,
@@ -93,9 +93,9 @@ fn callback_winner_is_recognized_before_transport_world_publication() {
         })
         .expect("fixture owner admits its advancement");
 
-    let after = world
+    let after = (*world
         .application
-        .primary_provider
+        .primary_provider_for_test())
         .lookup_completed_inbound(&correlation)
         .unwrap()
         .unwrap()

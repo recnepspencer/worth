@@ -38,7 +38,7 @@ pub struct PriorComputationRecord {
 }
 
 impl PriorComputationRecord {
-    pub(super) fn from_recorded_cell_for_test(cell: Arc<OnceLock<RecordedOutput>>) -> Self {
+    pub fn from_recorded_cell_for_test(cell: Arc<OnceLock<RecordedOutput>>) -> Self {
         assert!(
             cell.get().is_some(),
             "the test prior has a real published record"
@@ -129,3 +129,5 @@ impl RecordedComputation {
 }
 
 mod ancestry;
+
+mod court_doors_for_test;

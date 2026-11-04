@@ -116,7 +116,7 @@ fn unretained_runs_serialize_neither_input_nor_items_for_digests() {
         world
             .application
             .with_application_advancement(&request, |phase| {
-                let custody = phase.test_host_request();
+                let custody = phase.test_host_request_for_test();
                 let principal = authenticated_principal(&custody, &world, &request);
                 let root = resolved_account(&custody, &world, "open", &request);
                 let operation = world
@@ -137,7 +137,7 @@ fn unretained_runs_serialize_neither_input_nor_items_for_digests() {
                     .unwrap();
                 INPUTS.store(0, Ordering::Relaxed);
                 ITEMS.store(0, Ordering::Relaxed);
-                ComputationPrior::hand_in_test(Some(ComputationPrior::new(
+                ComputationPrior::hand_in_test_for_test(Some(ComputationPrior::new_for_test(
                     edition(),
                     Err(Cause::FirstRun),
                     None,
@@ -149,10 +149,10 @@ fn unretained_runs_serialize_neither_input_nor_items_for_digests() {
                         &admitted,
                         |reader, root| {
                             let execution = phase
-                                .execution_for(&world.application.product_runtime)
+                                .execution_for_for_test(&(*world.application.product_runtime_for_test()))
                                 .expect("the installed fixture lends its computation execution");
                             installed
-                                .prepare_through(reader, execution, &Value(root.clone()))?
+                                .prepare_through_for_test(reader, execution, &Value(root.clone()))?
                                 .compute(WorthQueryManagedComputationExecution::new(execution))?
                                 .complete()
                         },
@@ -161,7 +161,7 @@ fn unretained_runs_serialize_neither_input_nor_items_for_digests() {
                     .unwrap()
                     .into_parts()
                     .0;
-                ComputationPrior::hand_in_test(None);
+                ComputationPrior::hand_in_test_for_test(None);
                 assert_eq!(result.unwrap(), (0..4).sum::<u64>());
             })
             .expect("the digest computation owns its host call");

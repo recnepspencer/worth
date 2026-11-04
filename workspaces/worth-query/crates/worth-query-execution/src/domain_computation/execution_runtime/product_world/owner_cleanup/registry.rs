@@ -354,3 +354,5 @@ impl Drop for WorthQueryProductBranchOwnerCleanupReservation {
 pub fn lock<T>(mutex: &Mutex<T>) -> std::sync::MutexGuard<'_, T> {
     mutex.lock().unwrap_or_else(|error| error.into_inner())
 }
+
+mod court_doors_for_test;

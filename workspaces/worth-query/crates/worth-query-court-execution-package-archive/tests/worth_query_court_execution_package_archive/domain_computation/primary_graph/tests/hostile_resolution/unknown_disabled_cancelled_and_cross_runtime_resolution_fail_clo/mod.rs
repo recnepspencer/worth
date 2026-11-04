@@ -10,7 +10,7 @@ fn unknown_disabled_cancelled_and_cross_runtime_resolution_fail_closed() {
     enabled
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             assert_eq!(
                 enabled
                     .selected_product(&host_custody,)
@@ -36,7 +36,7 @@ fn unknown_disabled_cancelled_and_cross_runtime_resolution_fail_closed() {
     disabled
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             assert_eq!(
                 disabled
                     .selected_product(&host_custody,)
@@ -66,7 +66,7 @@ fn unknown_disabled_cancelled_and_cross_runtime_resolution_fail_closed() {
     enabled
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             assert_eq!(
                 enabled
                     .selected_product(&host_custody,)
@@ -91,7 +91,7 @@ fn unknown_disabled_cancelled_and_cross_runtime_resolution_fail_closed() {
     foreign
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             assert_eq!(
                 foreign
                     .selected_product(&host_custody,)

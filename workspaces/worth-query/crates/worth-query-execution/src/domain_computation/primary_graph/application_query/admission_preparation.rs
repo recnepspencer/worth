@@ -249,3 +249,5 @@ fn denial(
 ) -> WorthQueryApplicationQueryAdmissionDenial {
     WorthQueryApplicationQueryAdmissionDenial::new(kind, subject)
 }
+
+mod court_doors_for_test;

@@ -394,3 +394,5 @@ fn denial(subject: &'static str) -> WorthQueryApplicationAttemptDenial {
 #[cfg(test)]
 #[path = "progression/tests.rs"]
 mod tests;
+
+mod court_doors_for_test;

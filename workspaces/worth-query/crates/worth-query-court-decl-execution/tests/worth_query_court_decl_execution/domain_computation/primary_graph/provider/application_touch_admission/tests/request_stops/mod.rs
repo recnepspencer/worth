@@ -27,7 +27,7 @@ fn touch_projection_preserves_request_stops_and_committed_truth() {
         let stopped = world
             .admit(&ExecutionRequest::serial(&host), &candidate, true)
             .unwrap_err()
-            .into_invariant_failure();
+            .into_invariant_failure_for_test();
         assert_eq!(
             stopped.kind(),
             Kind::ExecutionControlStopped(Control::Cancelled)
@@ -40,7 +40,7 @@ fn touch_projection_preserves_request_stops_and_committed_truth() {
         let stopped = world
             .admit(&ExecutionRequest::serial(&expired), &candidate, true)
             .unwrap_err()
-            .into_invariant_failure();
+            .into_invariant_failure_for_test();
         assert_eq!(
             stopped.kind(),
             Kind::ExecutionControlStopped(Control::TimedOut)
@@ -50,7 +50,7 @@ fn touch_projection_preserves_request_stops_and_committed_truth() {
         let (stopped, _) = worth_execution::ExecutionWorkCeiling::new(Some(1))
             .run_serial(&host, || world.admit(&original, &candidate, true))
             .expect("the original request enters its deliberately narrow work scope");
-        let stopped = stopped.unwrap_err().into_invariant_failure();
+        let stopped = stopped.unwrap_err().into_invariant_failure_for_test();
         assert!(matches!(stopped.kind(), Kind::ExecutionDenied(
             worth_query_execution::facade::domain_computation::WorthQueryProviderSessionDenialKind::ExecutionResource {
                 denial: worth_query_execution::facade::application_contribution::WorthQueryManagedComputationResourceDenial::WorkExhausted, .. })), "typed actual work stop: {stopped:?}");
@@ -86,7 +86,7 @@ fn touch_projection_preserves_memory_refusal_and_committed_truth() {
         let stopped = world
             .admit(&ExecutionRequest::serial(&host), &candidate, true)
             .unwrap_err()
-            .into_invariant_failure();
+            .into_invariant_failure_for_test();
         assert!(
             matches!(stopped.kind(), Kind::ExecutionDenied(
                 worth_query_execution::facade::domain_computation::WorthQueryProviderSessionDenialKind::ExecutionResource {

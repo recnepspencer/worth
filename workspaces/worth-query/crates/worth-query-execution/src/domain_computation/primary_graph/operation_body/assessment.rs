@@ -91,3 +91,5 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         findings.map_err(WorthQueryOperationBodyAssessmentDenial::Observation)
     }
 }
+
+mod court_doors_for_test;

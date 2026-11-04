@@ -59,7 +59,7 @@ fn handler_absence_selection_competes_at_the_real_commit_boundary() {
         .application
         .with_host_advancement(|phase| {
             world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&(phase).test_host_request_for_test())
                 .product()
                 .selected_commit()
                 .clone()
@@ -76,7 +76,7 @@ fn handler_absence_selection_competes_at_the_real_commit_boundary() {
         .with_host_advancement(|phase| {
             assert_eq!(
                 world
-                    .selected_product(&(phase).test_host_request(),)
+                    .selected_product(&(phase).test_host_request_for_test(),)
                     .product()
                     .selected_commit(),
                 &committed_head
@@ -87,7 +87,7 @@ fn handler_absence_selection_competes_at_the_real_commit_boundary() {
         .application
         .with_host_advancement(|phase| {
             resolved_account(
-                &(phase).test_host_request(),
+                &(phase).test_host_request_for_test(),
                 &world,
                 "pending-membership",
                 &live_scope(),
@@ -112,9 +112,9 @@ fn handler_predicate_rebases_and_its_codec_compares_against_the_reopened_world()
     let WorthQueryApplicationCommitOutcome::Committed(receipt) = outcome else {
         panic!("the indexed handler publishes through the production commit lane: {outcome:?}");
     };
-    let facts = world
+    let facts = (*world
         .application
-        .primary_provider
+        .primary_provider_for_test())
         .graph
         .output_lineage
         .lock()
@@ -124,7 +124,7 @@ fn handler_predicate_rebases_and_its_codec_compares_against_the_reopened_world()
         .unwrap();
     let subject = receipt
         .output_correspondence()
-        .outputs_of::<OptionalOutputs>()
+        .outputs_of_for_test::<OptionalOutputs>()
         .unwrap()
         .entity::<OptionalSubject>()
         .unwrap()
@@ -137,7 +137,7 @@ fn handler_predicate_rebases_and_its_codec_compares_against_the_reopened_world()
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             assert!(matches!(
                 selection(
                     &host_custody.borrowed_request_for_test(),
@@ -170,7 +170,7 @@ fn handler_predicate_rebases_and_its_codec_compares_against_the_reopened_world()
     reopened
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             assert!(matches!(
                 selection(
                     &host_custody.borrowed_request_for_test(),
@@ -184,7 +184,7 @@ fn handler_predicate_rebases_and_its_codec_compares_against_the_reopened_world()
     reopened
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             change_status(
                 &host_custody.borrowed_request_for_test(),
                 &reopened.application,
@@ -196,7 +196,7 @@ fn handler_predicate_rebases_and_its_codec_compares_against_the_reopened_world()
     reopened
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             assert!(matches!(
                 selection(
                     &host_custody.borrowed_request_for_test(),
@@ -215,10 +215,10 @@ pub fn selection(
     facts: &(impl FactSequence + ?Sized),
 ) -> OutputDependencySelection {
     let selected = application
-        .select_product_branch(execution, application.product_runtime().default_branch())
+        .select_product_branch_for_test(execution, application.product_runtime().default_branch_for_test())
         .unwrap();
-    application
-        .primary_provider
+    (*application
+        .primary_provider_for_test())
         .graph
         .with_runtime(execution, |runtime| {
             compare_retained_output_dependencies(
@@ -239,8 +239,8 @@ pub fn change_status(
     value: &str,
 ) {
     let field = AccountStatus::reference();
-    let locator = application
-        .runtime
+    let locator = (*application
+        .runtime_for_test())
         .primary_graph()
         .unwrap()
         .layout

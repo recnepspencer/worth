@@ -15,7 +15,7 @@ fn recovered_index_binding_stays_exact_as_unrelated_definition_inventory_grows()
             .build()
             .expect("valid native runtime configuration");
         let mut source_layout = installed_layout();
-        let unrelated_locator = source_layout.provider_idempotency().key_locator.clone();
+        let unrelated_locator = source_layout.provider_idempotency_for_test().key_locator.clone();
         for ordinal in 0..unrelated {
             runtime
                 .index_authority()
@@ -35,7 +35,7 @@ fn recovered_index_binding_stays_exact_as_unrelated_definition_inventory_grows()
             IndexInstallationPosture::Register,
         )
         .unwrap();
-        let (binding, installed) = source_layout.principal_bindings().next().unwrap();
+        let (binding, installed) = source_layout.principal_bindings_for_test().next().unwrap();
         let name = format!("application-principal.{binding}");
         let recovered_id = installed.index_id;
         assert!(recovered_id.0 > unrelated as u64);
@@ -64,7 +64,7 @@ fn recovered_index_binding_stays_exact_as_unrelated_definition_inventory_grows()
         );
         assert_eq!(
             recovered_layout
-                .principal_bindings()
+                .principal_bindings_for_test()
                 .next()
                 .unwrap()
                 .1
@@ -81,11 +81,11 @@ fn recovered_index_name_without_matching_kind_cannot_bind() {
         .build()
         .expect("valid native runtime configuration");
     let mut expected = installed_layout();
-    let (binding, principal) = expected.principal_bindings().next().unwrap();
+    let (binding, principal) = expected.principal_bindings_for_test().next().unwrap();
     let name = format!("application-principal.{binding}");
     assert_ne!(
         principal.identity_locator,
-        expected.provider_idempotency().key_locator
+        expected.provider_idempotency_for_test().key_locator
     );
     runtime
         .index_authority()
@@ -93,7 +93,7 @@ fn recovered_index_name_without_matching_kind_cannot_bind() {
             index_id: DerivedIndexId(0),
             name: name.clone(),
             kind: DerivedIndexKind::EntityField {
-                field_locator: expected.provider_idempotency().key_locator.clone(),
+                field_locator: expected.provider_idempotency_for_test().key_locator.clone(),
             },
             branch_scoped: false,
         })

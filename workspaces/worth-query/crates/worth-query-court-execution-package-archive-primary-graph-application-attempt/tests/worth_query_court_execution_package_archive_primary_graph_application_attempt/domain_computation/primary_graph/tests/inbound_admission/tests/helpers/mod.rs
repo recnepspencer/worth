@@ -6,9 +6,9 @@ pub fn owner_commits(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &InboundWorld,
 ) -> usize {
-    world
+    (*world
         .application
-        .primary_provider
+        .primary_provider_for_test())
         .graph
         .with_runtime(request_execution, |runtime| {
             runtime.history().immutable_commit_count()
@@ -21,7 +21,7 @@ pub fn product_commit(
     world
         .application
         .product_runtime()
-        .admit_product_branch(world.application.product_runtime().default_branch())
+        .admit_product_branch_for_test(world.application.product_runtime().default_branch_for_test())
         .unwrap()
         .selected_commit()
         .clone()
@@ -34,18 +34,18 @@ pub fn completion_records(
     let product = world
         .application
         .product_runtime()
-        .admit_product_branch(world.application.product_runtime().default_branch())
+        .admit_product_branch_for_test(world.application.product_runtime().default_branch_for_test())
         .unwrap();
-    let kind = world
+    let kind = (*world
         .application
-        .primary_provider
+        .primary_provider_for_test())
         .graph
         .layout
         .provider_inbound_completion()
         .kind;
-    world
+    (*world
         .application
-        .primary_provider
+        .primary_provider_for_test())
         .graph
         .with_runtime_mut(execution, |runtime| {
             let snapshot =

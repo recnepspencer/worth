@@ -363,3 +363,5 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowProposalLayout {
     pub(in crate::domain_computation::primary_graph) coverage_count: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) identity_index_id: DerivedIndexId,
 }
+
+mod court_doors_for_test;

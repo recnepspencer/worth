@@ -18,7 +18,7 @@ fn real_installed_direct_authorities_progress_to_converged_and_cleanup() {
 
         let epoch = direct_epoch_fixture(FixtureDisposition::Converged, resource_request);
 
-        let installed_fixture_phase = epoch.fixture_phase(execution);
+        let installed_fixture_phase = epoch.fixture_phase_for_test(execution);
         let execution = &installed_fixture_phase;
         let started = match epoch.begin_iteration(
             execution,
@@ -94,7 +94,7 @@ pub fn start_direct_peer(
 ) -> WorthQueryStartedDirectConvergenceIteration {
     let epoch = direct_epoch_fixture(FixtureDisposition::Converged, resource_request);
     {
-        let installed_fixture_phase = epoch.fixture_phase(execution);
+        let installed_fixture_phase = epoch.fixture_phase_for_test(execution);
         epoch.begin_iteration(
             &installed_fixture_phase,
             WorthQueryManagedGraphCallRequest::new(WorthQueryGraphProviderCallKind::Observe, scope),
@@ -109,7 +109,7 @@ pub fn complete_direct_peer(
 ) -> String {
     let outcome = {
         let fixture_phase_result = {
-            let installed_fixture_phase = started.fixture_phase(execution);
+            let installed_fixture_phase = started.fixture_phase_for_test(execution);
             started.advance(&installed_fixture_phase)
         };
         match fixture_phase_result {
@@ -147,7 +147,7 @@ fn epoch_owned_iteration_bound_terminalizes_continue_as_exhausted() {
 
         let mut epoch = direct_epoch_fixture(FixtureDisposition::Continue, resource_request);
         for ordinal in 1..=3 {
-            let installed_fixture_phase = epoch.fixture_phase(execution);
+            let installed_fixture_phase = epoch.fixture_phase_for_test(execution);
             let execution = &installed_fixture_phase;
             let started = match epoch.begin_iteration(
                 execution,

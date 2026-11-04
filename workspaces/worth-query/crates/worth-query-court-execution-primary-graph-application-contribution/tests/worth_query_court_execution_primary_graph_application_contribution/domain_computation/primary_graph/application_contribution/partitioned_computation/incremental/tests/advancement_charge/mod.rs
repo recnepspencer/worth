@@ -7,22 +7,22 @@ fn a_carried_stop_after_a_recomputed_slot_has_the_full_runs_bill() {
     for width in [1, 2] {
         let world = installed_authorization_world(true);
         let installed = installed(StatusRead::Gather(0), sum);
-        *installed.owner.steps.lock().unwrap() = Some([vec![1; 20], vec![1]]);
+        *(*installed.owner_for_test()).steps.lock().unwrap() = Some([vec![1; 20], vec![1]]);
         let request = live_scope();
         let policy = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy(std::num::NonZeroUsize::new(width).unwrap(), None);
         let billed = |prior, ceiling| {
             worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tests::projected_attempt::attempt_billed(&world, &installed, prior, &request, RuntimeWorldExecutionPlacement::Leased { authority: worth_query_execution::facade::domain_computation::query_test_execution_authority_for_test(), policy }, Some(ceiling))
         };
         let first = billed(
-            Some(ComputationPrior::new(edition(), Err(Cause::FirstRun), None)),
+            Some(ComputationPrior::new_for_test(edition(), Err(Cause::FirstRun), None)),
             u64::MAX,
         );
         let prior = prior_of(first, true);
-        let typed = prior
+        let typed = (*prior
             .retained
             .as_ref()
             .unwrap()
-            .typed
+            .typed_for_test())
             .downcast_ref::<worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::retained::RetainedPartitions<Parity, Number, u64>>()
             .unwrap();
         assert_eq!(
@@ -60,15 +60,15 @@ fn a_public_nested_map_cost_cannot_be_retained_as_owner_steps() {
         worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tests::projected_attempt::attempt_billed(
             &world,
             &installed,
-            Some(ComputationPrior::new(edition(), Err(Cause::FirstRun), None)),
+            Some(ComputationPrior::new_for_test(edition(), Err(Cause::FirstRun), None)),
             &request,
             RuntimeWorldExecutionPlacement::Serial(policy),
             None,
         )
     };
     let plain = billed();
-    installed
-        .owner
+    (*installed
+        .owner_for_test())
         .nested
         .store(true, std::sync::atomic::Ordering::Relaxed);
     let nested = billed();
@@ -113,7 +113,7 @@ fn carrying_every_partition_has_the_full_bill_and_the_same_one_unit_short_stop()
         )
     };
     let full = billed(
-        Some(ComputationPrior::new(edition(), Err(Cause::FirstRun), None)),
+        Some(ComputationPrior::new_for_test(edition(), Err(Cause::FirstRun), None)),
         u64::MAX,
     );
     let full_cost = (
@@ -171,7 +171,7 @@ fn a_ceiling_inside_carried_checkpoint_steps_has_the_full_runs_exact_stop() {
             // The even partition is carried, while the status-reading odd one
             // is gathered again. Each kernel must encounter the same local
             // ceiling before canonical settlement accepts or discards it.
-            *installed.owner.steps.lock().unwrap() = Some([vec![1], steps.clone()]);
+            *(*installed.owner_for_test()).steps.lock().unwrap() = Some([vec![1], steps.clone()]);
             let request = live_scope();
             let policy = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy(std::num::NonZeroUsize::MIN, None);
             let billed = |prior, ceiling| {
@@ -185,7 +185,7 @@ fn a_ceiling_inside_carried_checkpoint_steps_has_the_full_runs_exact_stop() {
                 )
             };
             let first = billed(
-                Some(ComputationPrior::new(edition(), Err(Cause::FirstRun), None)),
+                Some(ComputationPrior::new_for_test(edition(), Err(Cause::FirstRun), None)),
                 u64::MAX,
             );
             let retained = billed(Some(prior_of(first, true)), 16);

@@ -20,8 +20,8 @@ pub struct Retained {
 }
 
 pub fn retained(sealed: &SealedComputationRun) -> Retained {
-    let typed = sealed
-        .state
+    let typed = (*sealed
+        .state_for_test())
         .typed
         .downcast_ref::<RetainedPartitions<Parity, Number, u64>>()
         .expect("the run retains its partitions");
@@ -60,8 +60,8 @@ pub fn retained(sealed: &SealedComputationRun) -> Retained {
             .map(|identity| (*identity, typed.tree.leaf(*identity).copied()))
             .collect(),
         result: *typed.tree.result(),
-        facts: sealed
-            .state
+        facts: (*sealed
+            .state_for_test())
             .facts
             .facts()
             .map(|(key, fact, readers)| (key.clone(), fact.clone(), readers.clone()))

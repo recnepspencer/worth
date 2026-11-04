@@ -53,7 +53,7 @@ fn absent_optional_source_stays_current_across_sibling_edit_but_not_presence_cha
     let (_, absent_fact, account) = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             execute_with_note_fact(
                 &phase,
                 &host_custody.borrowed_request_for_test(),
@@ -76,7 +76,7 @@ fn absent_optional_source_stays_current_across_sibling_edit_but_not_presence_cha
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             assert!(current(
                 &phase,
                 &host_custody.borrowed_request_for_test(),
@@ -86,7 +86,7 @@ fn absent_optional_source_stays_current_across_sibling_edit_but_not_presence_cha
         })
         .expect("the fixture read owns its installed host call");
 
-    let graph = world.application.runtime.primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let label = AccountLabel::reference();
     let label_locator = graph
         .layout
@@ -96,7 +96,7 @@ fn absent_optional_source_stays_current_across_sibling_edit_but_not_presence_cha
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             set_string_field(
                 &host_custody.borrowed_request_for_test(),
                 &world,
@@ -109,7 +109,7 @@ fn absent_optional_source_stays_current_across_sibling_edit_but_not_presence_cha
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             assert!(
                 current(
                     &phase,
@@ -131,7 +131,7 @@ fn absent_optional_source_stays_current_across_sibling_edit_but_not_presence_cha
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             set_string_field(
                 &host_custody.borrowed_request_for_test(),
                 &world,
@@ -144,7 +144,7 @@ fn absent_optional_source_stays_current_across_sibling_edit_but_not_presence_cha
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             assert!(
                 !current(
                     &phase,
@@ -164,7 +164,7 @@ fn present_optional_source_denies_equal_value_after_aba() {
     let (before, fact, account) = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             execute_with_note_fact(
                 &phase,
                 &host_custody.borrowed_request_for_test(),
@@ -174,7 +174,7 @@ fn present_optional_source_denies_equal_value_after_aba() {
         })
         .expect("the fixture read owns its installed host call");
     assert_eq!(before.note(), Some("reviewed"));
-    let graph = world.application.runtime.primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let note = AccountNote::reference();
     let locator = graph
         .layout
@@ -184,7 +184,7 @@ fn present_optional_source_denies_equal_value_after_aba() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             set_string_field(
                 &host_custody.borrowed_request_for_test(),
                 &world,
@@ -197,7 +197,7 @@ fn present_optional_source_denies_equal_value_after_aba() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             set_string_field(
                 &host_custody.borrowed_request_for_test(),
                 &world,
@@ -219,7 +219,7 @@ fn present_optional_source_denies_equal_value_after_aba() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             assert!(
                 !current(
                     &phase,
@@ -239,15 +239,15 @@ pub fn current(
     world: &AuthorizationWorld,
     fact: &WorthQueryApplicationObservedFact,
 ) -> bool {
-    let selected = world.selected_product(&(phase_custody).test_host_request());
-    let graph = world.application.runtime.primary_graph().unwrap();
+    let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     graph
         .integration_handle()
         .with_runtime(execution, |runtime| {
-            fact.source_currentness_in(
+            fact.source_currentness_in_for_test(
                 runtime,
                 execution,
-                selected.application_basis().snapshot_handle(),
+                selected.application_basis_for_test().snapshot_handle(),
             )
             .unwrap()
             .unwrap()
@@ -307,9 +307,9 @@ pub fn execute_with_note_fact(
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
-        .select_product_branch(
+        .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch(),
+            world.application.product_runtime().default_branch_for_test(),
         )
         .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
@@ -322,9 +322,9 @@ pub fn execute_with_note_fact(
         .unwrap();
     let scope = world
         .application
-        .select_product_branch(
+        .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch(),
+            world.application.product_runtime().default_branch_for_test(),
         )
         .expect("the selected product branch remains admitted")
         .resolve_entity(
@@ -342,7 +342,7 @@ pub fn execute_with_note_fact(
         .unwrap();
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &scope);
     let plan = world
-        .selected_product(&(phase_custody).test_host_request())
+        .selected_product(&(phase_custody).test_host_request_for_test())
         .admit_application_query(
             phase_custody,
             &query,
@@ -363,16 +363,16 @@ pub fn execute_with_note_fact(
     assert_eq!(result.receipt().projected_field_count(), 4);
     assert!(result.receipt().disclosure().omitted().is_empty());
     let footprint = result.observed_sources()[0].footprint_for_test();
-    assert_eq!(footprint.aspects.len(), 4);
+    assert_eq!((*footprint.aspects_for_test()).len(), 4);
     assert_eq!(
         result.receipt().reads().field_reads(),
-        footprint.aspects.len(),
+        (*footprint.aspects_for_test()).len(),
         "every requested field was acquired, including each absent optional value"
     );
     assert_eq!(result.receipt().reads().index_candidates_examined(), 0);
     assert_eq!(
-        footprint
-            .aspects
+        (*footprint
+            .aspects_for_test())
             .iter()
             .filter(|aspect| aspect
                 .native_revision
@@ -382,8 +382,8 @@ pub fn execute_with_note_fact(
         if account == "account-1" { 2 } else { 3 },
         "each absent optional field must retain an explicit native absence revision"
     );
-    let note = footprint
-        .aspects
+    let note = (*footprint
+        .aspects_for_test())
         .iter()
         .find(|observed| observed.field.as_str() == AccountNote::reference().field())
         .expect("the optional note is a tracked source field");
@@ -396,5 +396,5 @@ pub fn execute_with_note_fact(
         ),
         native_revision: note.native_revision,
     };
-    (result.rows()[0].clone(), fact, footprint.root)
+    (result.rows()[0].clone(), fact, (*footprint.root_for_test()))
 }

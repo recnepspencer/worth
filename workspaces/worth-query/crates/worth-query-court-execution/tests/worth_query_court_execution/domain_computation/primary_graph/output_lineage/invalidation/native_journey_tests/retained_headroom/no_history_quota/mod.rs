@@ -9,7 +9,7 @@ use worth_query_execution::court_doors_for_test::domain_computation::primary_gra
 
 #[test]
 fn no_position_policy_preserves_funded_history_and_original_reader_currentness() {
-    let (_, clock, _, execution) = test_product_world_resources().into_parts();
+    let (_, clock, _, execution) = test_product_world_resources().into_parts_for_test();
     let resources = WorthQueryInvalidationResources::new();
     let configured = WorthQueryProductWorldResources::new(
         worth_runtime_world::facade::RuntimeWorldBudgets::without_policy_limits(),
@@ -23,23 +23,23 @@ fn no_position_policy_preserves_funded_history_and_original_reader_currentness()
     };
     let world = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world_with_product_resources(configured);
     world.application.with_host_advancement(|phase| {
-        let custody = phase.test_host_request();
+        let custody = phase.test_host_request_for_test();
         let selected = world.selected_product(&custody);
         let entity = selected.resolve_entity(&phase, AccountStatus::reference(),
-            "open".into(), &live_scope(), WorthQueryPrincipalResolutionMode::Ordinary).unwrap().entity_id();
-        let (_, product, _) = selected.into_parts();
+            "open".into(), &live_scope(), WorthQueryPrincipalResolutionMode::Ordinary).unwrap().entity_id_for_test();
+        let (_, product, _) = selected.into_parts_for_test();
         let coordinate = ProductCoordinate {
             occurrence: product.observation().lifecycle_incarnation(),
             generation: product.observation().reference_generation().get(),
         };
         let source = SemanticSource {
-            runtime_authority: world.application.runtime.authority_identity().as_u64(),
-            schema: world.application.installed_schema.binding_identity(),
-            scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity(entity),
-            output_binding: OutputBindingIdentity::declared("StatusOutput"),
+            runtime_authority: (*world.application.runtime_for_test()).authority_identity().as_u64(),
+            schema: (*world.application.installed_schema_for_test()).binding_identity(),
+            scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity),
+            output_binding: OutputBindingIdentity::declared_for_test("StatusOutput"),
         };
-        let row = RecordedSettlementIdentity::retain(&source, coordinate, 0);
-        let graph = world.application.runtime.primary_graph().unwrap();
+        let row = RecordedSettlementIdentity::retain_for_test(&source, coordinate, 0);
+        let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
         let status_ref = AccountStatus::reference();
         let status = graph.layout().field_locator(status_ref.entity(), status_ref.aspect(), status_ref.field()).unwrap().clone();
         let label_ref = AccountLabel::reference();

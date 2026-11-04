@@ -9,14 +9,14 @@ fn elevation_status_drift_after_admission_is_stale_at_operation_progression() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             authenticated_principal(&host_custody, &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let access = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             admit(
                 &host_custody,
                 &world,
@@ -31,7 +31,7 @@ fn elevation_status_drift_after_admission_is_stale_at_operation_progression() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             crate::domain_computation::primary_graph::tests::authorization::capability_elevation::mutation::set_status(
                 &host_custody,
                 &host_custody.borrowed_request_for_test(),
@@ -50,7 +50,7 @@ fn elevation_status_drift_after_admission_is_stale_at_operation_progression() {
     let Err(denial) = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             world.application.authorize_capability_operation(
                 &host_custody.phase_for_application(&world.application),
                 access,

@@ -11,12 +11,12 @@ use crate::domain_computation::primary_graph::application_output_demand::registr
 fn only_a_stop_intrinsic_to_the_head_row_fails_its_dependents() {
     let head = key("required-stop-head", 1, 1);
     let failed = |kind| {
-        let mut records = DemandRecords::new();
-        records.insert(
+        let mut records = DemandRecords::new_for_test();
+        records.insert_for_test(
             head.clone(),
             record(
                 occurrence(),
-                DemandState::Failed(WorthQueryOutputDemandDenial::new(kind, "")),
+                DemandState::Failed(WorthQueryOutputDemandDenial::new_for_test(kind, "")),
                 0,
             ),
         );
@@ -42,7 +42,7 @@ fn only_a_stop_intrinsic_to_the_head_row_fails_its_dependents() {
     );
 
     let mut recorded = failed(WorthQueryOutputDemandDenialKind::Cancelled);
-    recorded.get_mut(&head).unwrap().required_stop =
+    (*recorded.get_mut(&head).unwrap().required_stop_mut_for_test()) =
         Some(WorthQueryOutputDemandDenialKind::MissingApplicableProducer);
     assert_eq!(
         worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::required_stop::head_stop(&recorded, &head).map(|denial| denial.kind()),

@@ -18,8 +18,8 @@ fn portable_identity_ignores_runtime_occurrence_but_changes_with_source_meaning(
     let second = epoch(&registry, root, footprint(root, true), &second_selection);
 
     assert_ne!(
-        first.checkpoint_occurrence(),
-        second.checkpoint_occurrence()
+        first.checkpoint_occurrence_for_test(),
+        second.checkpoint_occurrence_for_test()
     );
     assert_eq!(first.checkpoint_identity(), second.checkpoint_identity());
 
@@ -43,9 +43,9 @@ pub fn epoch(
     selection: &WorthQueryApplicationBasisSelectionIdentity,
 ) -> WorthQueryObservedSourceEpoch {
     let meaning = registry
-        .intern(&[7; 32], &[8; 32], footprint, selection)
+        .intern_for_test(&[7; 32], &[8; 32], footprint, selection)
         .unwrap();
-    WorthQueryObservedSourceEpoch::from_observation(&[7; 32], &[8; 32], root, selection, meaning)
+    WorthQueryObservedSourceEpoch::from_observation_for_test(&[7; 32], &[8; 32], root, selection, meaning)
         .unwrap()
 }
 
@@ -68,10 +68,10 @@ pub fn product_selection() -> WorthQueryApplicationBasisSelectionIdentity {
     let product = world
         .application
         .product_runtime()
-        .admit_product_branch(world.application.product_runtime().default_branch())
+        .admit_product_branch_for_test(world.application.product_runtime().default_branch_for_test())
         .expect("the fixture product occurrence is live");
     WorthQueryApplicationBasisSelectionIdentity::Product(
-            worth_query_execution::facade::domain_computation::WorthQueryProductBranchReadIdentity::from_observation(
+            worth_query_execution::facade::domain_computation::WorthQueryProductBranchReadIdentity::from_observation_for_test(
                 product.observation(),
             ),
         )

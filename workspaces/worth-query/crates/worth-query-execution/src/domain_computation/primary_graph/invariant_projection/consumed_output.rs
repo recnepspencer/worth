@@ -186,3 +186,5 @@ impl ConsumedOutputEvidence {
         }
     }
 }
+
+mod court_doors_for_test;

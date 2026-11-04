@@ -17,19 +17,19 @@ fn partial_stream_and_sealed_product_drop_iteratively_on_a_small_stack() {
             let attempt = attempt();
             let call = call(&attempt, "iterative-drop");
 
-            let mut partial = WorthQueryGraphReadStreamAccumulator::new(&call);
+            let mut partial = WorthQueryGraphReadStreamAccumulator::new_for_test(&call);
             for _ in 0..MANY_CHUNKS {
-                partial.admit_chunk(WorthQueryGraphReadMaterial::new([]));
+                partial.admit_chunk_for_test(WorthQueryGraphReadMaterial::new([]));
             }
             drop(partial);
 
-            let mut sealed = WorthQueryGraphReadStreamAccumulator::new(&call);
-            sealed.admit_chunk(material("first"));
+            let mut sealed = WorthQueryGraphReadStreamAccumulator::new_for_test(&call);
+            sealed.admit_chunk_for_test(material("first"));
             for _ in 0..MANY_CHUNKS {
-                sealed.admit_chunk(WorthQueryGraphReadMaterial::new([]));
+                sealed.admit_chunk_for_test(WorthQueryGraphReadMaterial::new([]));
             }
-            sealed.admit_chunk(material("last"));
-            let evidence = sealed.finish(&call);
+            sealed.admit_chunk_for_test(material("last"));
+            let evidence = sealed.finish_for_test(&call);
             let expected = material_with_rows(["first", "last"]);
             assert!(evidence.product().rows().eq(expected.rows().iter()));
             drop(evidence);

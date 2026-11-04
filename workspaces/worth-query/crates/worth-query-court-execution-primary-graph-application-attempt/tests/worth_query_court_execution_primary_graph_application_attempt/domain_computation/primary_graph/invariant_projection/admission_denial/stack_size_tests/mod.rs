@@ -8,7 +8,7 @@ fn projection_request_stop_keeps_the_denial_stack_bound() {
     assert!(size_of::<WorthQueryInvariantProjectionDenial>() <= bound);
     let cause = worth_relational::facade::transactions::RelationalExecutionDenialCause::Cancelled;
     assert_eq!(
-        WorthQueryInvariantProjectionDenial::execution_request_stopped(cause, None).kind(),
+        WorthQueryInvariantProjectionDenial::execution_request_stopped_for_test(cause, None).kind(),
         WorthQueryInvariantProjectionDenialKind::ExecutionRequest(cause)
     );
 }

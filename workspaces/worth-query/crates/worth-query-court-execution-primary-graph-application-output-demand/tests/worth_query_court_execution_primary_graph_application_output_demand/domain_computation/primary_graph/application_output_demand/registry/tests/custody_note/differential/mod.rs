@@ -7,45 +7,45 @@ use worth_runtime_world::facade::CompositeCommitIdentity;
 
 pub fn eligible(state: &DemandRegistryState, commit: &CompositeCommitIdentity) -> bool {
     let entry = &state.source_custody[commit];
-    if entry.token_count != 0 {
+    if (*entry.token_count_for_test()) != 0 {
         return false;
     }
-    if entry.retired.is_some() {
+    if (*entry.retired_for_test()).is_some() {
         return true;
     }
-    let Some(bound) = &entry.bound_sources else {
+    let Some(bound) = &(*entry.bound_sources_for_test()) else {
         return false;
     };
     let replaced = !bound.is_empty()
         && bound
             .iter()
-            .all(|s| entry.source_denial(&s.identity).is_some());
-    if !entry.completed && !replaced {
+            .all(|s| entry.source_denial_for_test(&s.identity).is_some());
+    if !(*entry.completed_for_test()) && !replaced {
         return false;
     }
     if !bound.iter().all(|s| {
-        entry.consumed_sources.contains(&s.identity) || entry.source_denial(&s.identity).is_some()
+        (*entry.consumed_sources_for_test()).contains(&s.identity) || entry.source_denial_for_test(&s.identity).is_some()
     }) {
         return false;
     }
-    !state.records.iter().any(|(key, row)| {
+    !(*state.records_for_test()).iter().any(|(key, row)| {
         let in_source = bound
             .iter()
             .any(|s| key.source.occurrence_coordinate() == s.identity.occurrence_coordinate());
         if !in_source || !row.source_commits.contains(commit) {
             return false;
         }
-        let newer = state.records.iter().any(|(other, candidate)| {
+        let newer = (*state.records_for_test()).iter().any(|(other, candidate)| {
             key.same_occurrence(other)
                 && refresh_order(other, key) == Some(Ordering::Greater)
                 && !candidate.unpublished_new_key()
         });
         let awaited = !newer
-            && state.records.iter().any(|(other, candidate)| {
+            && (*state.records_for_test()).iter().any(|(other, candidate)| {
                 key.same_occurrence(other)
                     && refresh_order(other, key) == Some(Ordering::Less)
                     && superseded(candidate)
-                    && (candidate.interests != 0 || candidate.framework_required_count != 0)
+                    && ((*candidate.interests_for_test()) != 0 || (*candidate.framework_required_count_for_test()) != 0)
             });
         row.interests != 0
             || awaited
@@ -55,7 +55,7 @@ pub fn eligible(state: &DemandRegistryState, commit: &CompositeCommitIdentity) -
 }
 
 pub fn assert_noted(registry: &WorthQueryOutputDemandRegistry, step: &str, seed: u64) {
-    let state = registry.state.lock().unwrap();
+    let state = (*registry.state_for_test()).lock().unwrap();
     for (commit, entry) in &state.source_custody {
         assert!(
             !eligible(&state, commit) || entry.cleanup.queued,
@@ -65,7 +65,7 @@ pub fn assert_noted(registry: &WorthQueryOutputDemandRegistry, step: &str, seed:
 }
 pub fn eager(registry: &WorthQueryOutputDemandRegistry) {
     registry.drain_closed_cleanup_admitted().unwrap();
-    let mut state = registry.state.lock().unwrap();
+    let mut state = (*registry.state_for_test()).lock().unwrap();
     let removed: Vec<_> = state
         .source_custody
         .keys()
@@ -83,7 +83,7 @@ pub fn eager(registry: &WorthQueryOutputDemandRegistry) {
 pub fn value(
     registry: &WorthQueryOutputDemandRegistry,
 ) -> impl PartialEq + std::fmt::Debug + use<> {
-    let state = registry.state.lock().unwrap();
+    let state = (*registry.state_for_test()).lock().unwrap();
     let records: Vec<_> = state
         .records
         .iter()
@@ -153,12 +153,12 @@ fn registry_custody_note_full_entry_oracle_covers_held_unhold_steps() {
                 .take((seed / 4) as usize)
                 .map(|(_, r)| r.clone())
                 .collect();
-            let mut state = result.0.state.lock().unwrap();
+            let mut state = result.0(*.state_for_test()).lock().unwrap();
             worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::walk_bounds::add_custody_in_scope(&mut state, &foreign, 1 + seed % 3, scope);
             for (key, mut row) in &mut state.records {
                 if key.producer.starts_with("custody-unrelated-") {
                     row.interests = 0;
-                    row.state = DemandState::Failed(WorthQueryOutputDemandDenial::new(
+                    row.state = DemandState::Failed(WorthQueryOutputDemandDenial::new_for_test(
                         WorthQueryOutputDemandDenialKind::NoEffect,
                         "completed neighbor",
                     ));
@@ -170,7 +170,7 @@ fn registry_custody_note_full_entry_oracle_covers_held_unhold_steps() {
         let (registry, owner, dependent, newest) = make();
         let (reference, eager_owner, eager_dependent, _) = make();
         for reg in [&registry, &reference] {
-            let mut state = reg.state.lock().unwrap();
+            let mut state = (*reg.state_for_test()).lock().unwrap();
             if seed & 4 != 0 {
                 state.source_custody.get_mut(commit).unwrap().token_count = 1;
             }
@@ -178,7 +178,7 @@ fn registry_custody_note_full_entry_oracle_covers_held_unhold_steps() {
             // of the stale edge being released or transferred in this seed.
             let member = Arc::clone(state.required_keys.get(&newest).unwrap());
             let mut other = record(occurrence(), copy_ready(&ready), 0);
-            other.prerequisites.push(member);
+            (*other.prerequisites_for_test()).push(member);
 
             state
                 .records
@@ -202,7 +202,7 @@ fn registry_custody_note_full_entry_oracle_covers_held_unhold_steps() {
         drop(eager_owner);
         eager(&reference);
         assert_noted(&registry, "owner drop", seed);
-        registry.state.lock().unwrap().drain_next_foreign_custody();
+        (*registry.state_for_test()).lock().unwrap().drain_next_foreign_custody();
         eager(&reference);
         assert_noted(&registry, "admission while held", seed);
         let step = (seed % 4) as usize;
@@ -214,13 +214,13 @@ fn registry_custody_note_full_entry_oracle_covers_held_unhold_steps() {
             }
             1 => {
                 for (reg, dependent) in [(&registry, &dependent), (&reference, &eager_dependent)] {
-                    let mut state = reg.state.lock().unwrap();
-                    state.records.get_mut(&dependent.key).unwrap().state =
-                        DemandState::Failed(WorthQueryOutputDemandDenial::new(
+                    let mut state = (*reg.state_for_test()).lock().unwrap();
+                    state.records.get_mut(&(*dependent.key_for_test())).unwrap().state =
+                        DemandState::Failed(WorthQueryOutputDemandDenial::new_for_test(
                             WorthQueryOutputDemandDenialKind::NoEffect,
                             "done",
                         ));
-                    state.release_record_prerequisites(&dependent.key);
+                    state.release_record_prerequisites(&(*dependent.key_for_test()));
                 }
                 drop(dependent);
                 drop(eager_dependent);
@@ -253,20 +253,20 @@ fn registry_custody_note_full_entry_oracle_covers_held_unhold_steps() {
             seed,
         );
         if seed & 4 != 0 {
-            registry.release_prepared_token(commit);
-            reference.release_prepared_token(commit);
+            registry.release_prepared_token_for_test(commit);
+            reference.release_prepared_token_for_test(commit);
             eager(&reference);
             assert_noted(&registry, "token drop", seed);
         }
         registry.drain_closed_cleanup_admitted().unwrap();
         assert_noted(&registry, "paid claim transfer", seed);
-        let remaining = registry.state.lock().unwrap().custody_cleanup.len;
+        let remaining = (*registry.state_for_test()).lock().unwrap().custody_cleanup.len;
         for _ in 0..remaining {
-            registry.state.lock().unwrap().drain_next_foreign_custody();
+            (*registry.state_for_test()).lock().unwrap().drain_next_foreign_custody();
             assert_noted(&registry, "quiescent cleanup", seed);
         }
         eager(&reference);
-        assert!(!registry.state.lock().unwrap().pending_custody_prune());
+        assert!(!(*registry.state_for_test()).lock().unwrap().pending_custody_prune());
         assert_eq!(value(&registry), value(&reference), "seed {seed}");
     }
     assert!(visits.into_iter().all(|count| count != 0));

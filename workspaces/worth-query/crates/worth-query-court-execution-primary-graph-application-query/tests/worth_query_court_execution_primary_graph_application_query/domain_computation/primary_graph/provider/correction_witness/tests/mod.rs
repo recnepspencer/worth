@@ -50,9 +50,9 @@ fn performed_correction_capture_preserves_original_payer_and_preclone_refusal() 
                     )
                     .unwrap()
             });
-            let captured = world
+            let captured = (*world
                 .application
-                .primary_provider
+                .primary_provider_for_test())
                 .capture_correction_witness(execution, receipt);
             if saturate {
                 match captured {
@@ -104,9 +104,9 @@ fn performed_correction_capture_preserves_original_payer_and_preclone_refusal() 
         CancellationSource::new().token(),
         None,
     );
-    let witness = world
+    let witness = (*world
         .application
-        .primary_provider
+        .primary_provider_for_test())
         .capture_correction_witness(ExecutionRequest::serial(&retry), receipt)
         .unwrap()
         .unwrap();

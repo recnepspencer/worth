@@ -7,19 +7,19 @@ fn committed_live_cause_projects_with_bounded_result_buffer_evidence() {
     let request = live_scope();
     let retained_predecessor = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
         .expect("the fixture read owns its installed host call");
     let predecessor_commit = retained_predecessor.product().selected_commit().clone();
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             world
                 .application
-                .select_product_branch(
+                .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch(),
+                    world.application.product_runtime().default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_authenticated_principal(
@@ -40,12 +40,12 @@ fn committed_live_cause_projects_with_bounded_result_buffer_evidence() {
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             world
                 .application
-                .select_product_branch(
+                .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch(),
+                    world.application.product_runtime().default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
@@ -63,7 +63,7 @@ fn committed_live_cause_projects_with_bounded_result_buffer_evidence() {
         .application
         .with_host_advancement(|phase| {
             world
-        .selected_product(&(phase).test_host_request(), )
+        .selected_product(&(phase).test_host_request_for_test(), )
         .open_application_query_live::<
             LiveAccountActivityQuery,
             AccountSummaryParameters,

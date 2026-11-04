@@ -25,7 +25,7 @@ impl WorthQueryManagedComputationOwner<Schema, Feature, Computation> for Owner {
         prepared: &u64,
         checkpoint: &mut WorthQueryManagedComputationCheckpoint<'_>,
     ) -> Result<u64, WorthQueryManagedComputationDenial<Self::Stopped>> {
-        assert_eq!(checkpoint.charge.is_some(), self.accounted);
+        assert_eq!((*checkpoint.charge_for_test()).is_some(), self.accounted);
         checkpoint.poll()?;
         if self.accounted {
             checkpoint.advance(3)?;
@@ -55,17 +55,17 @@ fn installed_member_preserves_explicit_accounting_and_worker_only_polling() {
     for policy in [native, accounted(None), accounted(Some(2))] {
         let cancellation = WorthQueryCancellationSource::new();
         let scope = WorthQueryRequestScope::new(None, cancellation.token());
-        let execution = QueryRequestExecution::open(
+        let execution = QueryRequestExecution::open_for_test(
             worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(policy),
             &scope,
         );
         let installed =
-            WorthQueryInstalledManagedComputation::<Schema, Feature, Computation, _>::new(Owner {
+            WorthQueryInstalledManagedComputation::<Schema, Feature, Computation, _>::new_for_test(Owner {
                 accounted: policy.accounting().is_some(),
             });
         let result = installed
             .decision_plan(&7, HandlerResult::Completed)
-            .run(&execution);
+            .run_for_test(&execution);
         if policy.work_ceiling() == Some(2) {
             let HandlerResult::ExecutionDenied(denial) = result else {
                 panic!("an actual accounted exhaustion must refuse: {result:?}");

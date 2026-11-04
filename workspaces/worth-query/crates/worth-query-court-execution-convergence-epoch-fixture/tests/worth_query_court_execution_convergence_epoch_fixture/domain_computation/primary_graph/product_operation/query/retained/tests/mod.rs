@@ -53,9 +53,9 @@ fn retained_query_rejects_security_from_a_sibling_branch() {
     let denied = application
         .with_host_advancement(|phase| {
             let execution = phase
-                .execution_request_for(&application.product_runtime)
+                .execution_request_for_for_test(&(*application.product_runtime_for_test()))
                 .unwrap();
-            security.retained_query_controls(&execution, retained, "sibling", controls)
+            security.retained_query_controls_for_test(&execution, retained, "sibling", controls)
         })
         .expect("original fixture host call");
     assert!(matches!(

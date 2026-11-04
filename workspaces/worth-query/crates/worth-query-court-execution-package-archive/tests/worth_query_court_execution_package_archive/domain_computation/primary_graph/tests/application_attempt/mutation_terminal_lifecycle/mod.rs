@@ -24,13 +24,13 @@ fn committed_terminal() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let program = world
@@ -68,13 +68,13 @@ fn stale_terminal() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let winner = world
@@ -137,13 +137,13 @@ fn cancelled_terminal() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let program = world
@@ -301,9 +301,9 @@ pub fn program(
     replacement: &str,
 ) -> worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::program_fixture::Program{
     let request = live_scope();
-    let principal = authenticated_principal(&(phase_custody).test_host_request(), world, &request);
+    let principal = authenticated_principal(&(phase_custody).test_host_request_for_test(), world, &request);
     let account = resolved_account(
-        &(phase_custody).test_host_request(),
+        &(phase_custody).test_host_request_for_test(),
         world,
         "open",
         &request,
@@ -323,7 +323,7 @@ pub fn baselines(
     world: &worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::authorization_world_installation::AuthorizationWorld,
 ) -> (usize, usize) {
     (
-        world.invariant.active_snapshot_count(request_execution),
+        world.invariant.active_snapshot_count_for_test(request_execution),
         world.application.provider_session_resource_count_for_test(),
     )
 }
@@ -334,7 +334,7 @@ pub fn assert_baselines(
     expected: (usize, usize),
 ) {
     assert_eq!(
-        world.invariant.active_snapshot_count(request_execution),
+        world.invariant.active_snapshot_count_for_test(request_execution),
         expected.0
     );
     assert_eq!(

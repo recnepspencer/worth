@@ -289,7 +289,7 @@ fn rejected_workflow_admission_returns_its_reserved_attempt() {
         failure.kind(),
         worth_query_execution::facade::domain_computation::WorthQueryManagedWorkflowRunAdmissionFailureKind::QueryAuthority
     );
-    let released = failure.into_resource_attempt().release();
+    let released = failure.into_resource_attempt().release_for_test();
     assert_eq!(
         released.capacity().scope(),
         WorthQueryExecutionCapacityReservationScope::Workflow

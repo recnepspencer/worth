@@ -75,7 +75,7 @@ fn exhausted_native_fact_reads_preserve_the_request_stop() {
                 .zip([true, revision.is_some(), true, false, true])
                 .map(|(fact, expected)| {
                     (
-                        fact.remains_equal_in(runtime, execution, snapshot),
+                        fact.remains_equal_in_for_test(runtime, execution, snapshot),
                         expected,
                     )
                 })
@@ -104,7 +104,7 @@ fn exhausted_native_fact_reads_preserve_the_request_stop() {
                                 results
                                     .lock()
                                     .unwrap()
-                                    .push(fact.remains_equal_in(runtime, execution, snapshot));
+                                    .push(fact.remains_equal_in_for_test(runtime, execution, snapshot));
                             }
                             Ok(0)
                         },

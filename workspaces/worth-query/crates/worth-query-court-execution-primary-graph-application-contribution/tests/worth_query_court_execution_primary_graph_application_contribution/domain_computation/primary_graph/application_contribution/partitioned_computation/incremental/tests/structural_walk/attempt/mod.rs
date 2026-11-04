@@ -21,7 +21,7 @@ pub fn run(
     let admission = world
         .application
         .with_host_advancement(|phase| {
-            let host = phase.test_host_request();
+            let host = phase.test_host_request_for_test();
             let execution = host
                 .execution_request_for(world.application.product_runtime())
                 .unwrap();
@@ -51,24 +51,24 @@ pub fn run(
         )
     };
     let execution =
-        QueryRequestExecution::open(RuntimeWorldExecutionPlacement::Serial(policy), &request);
+        QueryRequestExecution::open_for_test(RuntimeWorldExecutionPlacement::Serial(policy), &request);
     assert_eq!(
-        execution.has_accounting(),
+        execution.has_accounting_for_test(),
         accounted,
         "the real computation request uses the tested posture"
     );
     let native = execution.execution_request().unwrap();
     assert_eq!(native.has_accounting(), accounted);
     worth_query_execution::facade::domain_computation::partitioned_computation_runs_on_this_thread_for_test();
-    ComputationPrior::hand_in_test(prior);
-    SealedComputationRun::keep_in_test(None);
+    ComputationPrior::hand_in_test_for_test(prior);
+    SealedComputationRun::keep_in_test_for_test(None);
     let completed = world
         .invariant
         .project_admitted_operation_with_request(
             &native,
             &admission,
             |reader, root| {
-                let prepared = installed.prepare_through(reader, &execution, root).unwrap();
+                let prepared = installed.prepare_through_for_test(reader, &execution, root).unwrap();
                 let computed = prepared
                     .compute(WorthQueryManagedComputationExecution::new(&execution))
                     .unwrap();
@@ -77,7 +77,7 @@ pub fn run(
             Allocation::SystemAllocation,
         )
         .unwrap();
-    ComputationPrior::hand_in_test(None);
+    ComputationPrior::hand_in_test_for_test(None);
     let (_, projection, _) = completed.into_parts();
     world
         .application
@@ -101,7 +101,7 @@ pub fn run(
         matches!(runs.as_slice(),[(Run::Full(actual),_)] if *actual==cause),
         "the actual comparator chose the required full cause: {runs:?}"
     );
-    SealedComputationRun::kept_in_test().expect("the real completed read sealed the owner run")
+    SealedComputationRun::kept_in_test_for_test().expect("the real completed read sealed the owner run")
 }
 
 pub fn run_aggregate(
@@ -115,7 +115,7 @@ pub fn run_aggregate(
     let admission = world
         .application
         .with_host_advancement(|phase| {
-            let host = phase.test_host_request();
+            let host = phase.test_host_request_for_test();
             let execution = host
                 .execution_request_for(world.application.product_runtime())
                 .unwrap();
@@ -140,24 +140,24 @@ pub fn run_aggregate(
         )
     };
     let execution =
-        QueryRequestExecution::open(RuntimeWorldExecutionPlacement::Serial(policy), &request);
+        QueryRequestExecution::open_for_test(RuntimeWorldExecutionPlacement::Serial(policy), &request);
     assert_eq!(
-        execution.has_accounting(),
+        execution.has_accounting_for_test(),
         accounted,
         "the real computation request uses the tested posture"
     );
     let native = execution.execution_request().unwrap();
     assert_eq!(native.has_accounting(), accounted);
     worth_query_execution::facade::domain_computation::partitioned_computation_runs_on_this_thread_for_test();
-    ComputationPrior::hand_in_test(prior);
-    SealedComputationRun::keep_in_test(None);
+    ComputationPrior::hand_in_test_for_test(prior);
+    SealedComputationRun::keep_in_test_for_test(None);
     let completed = world
         .invariant
         .project_admitted_operation_with_request(
             &native,
             &admission,
             |reader, root| {
-                let prepared = installed.prepare_through(reader, &execution, root).unwrap();
+                let prepared = installed.prepare_through_for_test(reader, &execution, root).unwrap();
                 let computed = prepared
                     .compute(WorthQueryManagedComputationExecution::new(&execution))
                     .unwrap();
@@ -166,7 +166,7 @@ pub fn run_aggregate(
             Allocation::SystemAllocation,
         )
         .unwrap();
-    ComputationPrior::hand_in_test(None);
+    ComputationPrior::hand_in_test_for_test(None);
     let (_, projection, _) = completed.into_parts();
     world
         .application
@@ -190,5 +190,5 @@ pub fn run_aggregate(
         matches!(runs.as_slice(),[(Run::Full(actual),_)] if *actual==cause),
         "the actual comparator chose the required full cause: {runs:?}"
     );
-    SealedComputationRun::kept_in_test().expect("the real completed read sealed the owner run")
+    SealedComputationRun::kept_in_test_for_test().expect("the real completed read sealed the owner run")
 }

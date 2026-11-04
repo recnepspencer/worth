@@ -218,3 +218,5 @@ mod projection_identity_tests {
         assert_eq!(state.next_posting_projection, u64::MAX);
     }
 }
+
+mod court_doors_for_test;

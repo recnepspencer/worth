@@ -25,7 +25,7 @@ fn revocation_after_a_queued_live_cause_terminates_delivery() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             context.elevated_access(&host_custody)
         })
         .expect("the fixture read owns its installed host call");
@@ -33,7 +33,7 @@ fn revocation_after_a_queued_live_cause_terminates_delivery() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             context
         .world
         .selected_product(&host_custody, )
@@ -69,7 +69,7 @@ fn revocation_after_a_queued_live_cause_terminates_delivery() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             assert_authorization_denied(
                 lease.next(
                     &host_custody.phase_for_application(&context.world.application),
@@ -86,7 +86,7 @@ fn revocation_after_a_queued_live_cause_terminates_delivery() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             assert!(matches!(
                 lease.next(
                     &host_custody.phase_for_application(&context.world.application),
@@ -112,7 +112,7 @@ fn query_time_expiry_after_a_queued_live_cause_terminates_delivery() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             context.elevated_access(&host_custody)
         })
         .expect("the fixture read owns its installed host call");
@@ -120,7 +120,7 @@ fn query_time_expiry_after_a_queued_live_cause_terminates_delivery() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             context
         .world
         .selected_product(&host_custody, )
@@ -154,7 +154,7 @@ fn query_time_expiry_after_a_queued_live_cause_terminates_delivery() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             assert_authorization_denied(
                 lease.next(
                     &host_custody.phase_for_application(&context.world.application),
@@ -171,7 +171,7 @@ fn query_time_expiry_after_a_queued_live_cause_terminates_delivery() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             assert!(matches!(
                 lease.next(
                     &host_custody.phase_for_application(&context.world.application),

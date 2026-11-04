@@ -29,7 +29,7 @@ fn cancellation_after_world_preparation_reaches_execution_before_owner_effects()
 
     cancellation.cancel();
     let outcome = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|phase| {
-        prepared.execute(phase.borrowed_request_for_test())
+        prepared.execute_for_test(phase.borrowed_request_for_test())
     });
     let Err(PublicationDenial::Stopped(stop)) = outcome else {
         panic!("cancellation after preparation must prevent owner effects")

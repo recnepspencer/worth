@@ -34,14 +34,14 @@ fn inbound_origin_blocks_migration_and_fork_resume_at_wait_but_allows_prior_oper
         (WorkflowSuccession::Migration, definition(200)),
         (WorkflowSuccession::ForkContinuation, source.clone()),
     ] {
-        let skipped = target.resumed_at("await").unwrap();
+        let skipped = target.resumed_at_for_test("await").unwrap();
         let denial = admit_workflow_migration(
             succession,
             &source,
             &skipped,
             &[],
             &[],
-            WorkflowStepAllowance::for_test(),
+            WorkflowStepAllowance::for_test_for_test(),
         )
         .expect_err("a successor cannot consume an origin it never ran");
         assert_eq!(
@@ -49,14 +49,14 @@ fn inbound_origin_blocks_migration_and_fork_resume_at_wait_but_allows_prior_oper
             WorthQueryApplicationAttemptDenialKind::WorkflowInstanceMigrationUnmapped,
         );
 
-        let prior = target.resumed_at("apply").unwrap();
+        let prior = target.resumed_at_for_test("apply").unwrap();
         admit_workflow_migration(
             succession,
             &source,
             &prior,
             &[],
             &[],
-            WorkflowStepAllowance::for_test(),
+            WorkflowStepAllowance::for_test_for_test(),
         )
         .expect("a successor that runs the origin before the wait remains lawful");
     }
@@ -126,9 +126,9 @@ pub fn definition(definition_slot: u64) -> CompiledWorkflowDefinition {
         .enumerate()
         .map(|(ordinal, semantic)| CompiledWorkflowConnection {
             entity: entity(definition_slot + ordinal as u64 + 1),
-            source: nodes[semantic.source].entity(),
-            target: nodes[semantic.target].entity(),
-            kind: Arc::clone(&semantic.kind),
+            source: nodes[(*semantic.source_for_test())].entity(),
+            target: nodes[(*semantic.target_for_test())].entity(),
+            kind: Arc::clone(&(*semantic.kind_for_test())),
         })
         .collect::<Vec<_>>();
     CompiledWorkflowDefinition {
@@ -140,14 +140,14 @@ pub fn definition(definition_slot: u64) -> CompiledWorkflowDefinition {
                 nodes
                     .iter()
                     .enumerate()
-                    .map(|(ordinal, node)| (node.entity(), ordinal))
+                    .map(|(ordinal, node)| (node.entity_for_test(), ordinal))
                     .collect::<Vec<_>>()
                     .into_boxed_slice(),
             ),
             nodes: nodes.into_boxed_slice(),
             connections: connections.into_boxed_slice(),
             global_actions: Arc::from([]),
-            dispatch: Arc::new(CompiledWorkflowDispatch::build(3, &semantic_connections)),
+            dispatch: Arc::new(CompiledWorkflowDispatch::build_for_test(3, &semantic_connections)),
         }),
         content_identity: ApplicationWorkflowDefinitionContentIdentity::from_recorded(
             &"00".repeat(32),

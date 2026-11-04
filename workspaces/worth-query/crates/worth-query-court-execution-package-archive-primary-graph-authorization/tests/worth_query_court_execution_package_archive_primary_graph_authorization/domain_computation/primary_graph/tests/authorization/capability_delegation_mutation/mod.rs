@@ -51,9 +51,9 @@ pub fn installed_field(
     aspect: &str,
     field: &str,
 ) -> AspectFieldLocator {
-    world
+    (*world
         .application
-        .runtime
+        .runtime_for_test())
         .primary_graph()
         .unwrap()
         .layout()
@@ -70,13 +70,13 @@ pub fn grant(
 ) -> EntityId {
     world
         .application
-        .select_product_branch(
+        .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch(),
+            world.application.product_runtime().default_branch_for_test(),
         )
         .expect("the selected product branch remains admitted")
         .resolve_entity(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             CapabilityIdentity::reference(),
             key.to_owned(),
             &live_scope(),
@@ -94,13 +94,13 @@ pub fn account(
 ) -> EntityId {
     world
         .application
-        .select_product_branch(
+        .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch(),
+            world.application.product_runtime().default_branch_for_test(),
         )
         .expect("the selected product branch remains admitted")
         .resolve_entity(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             AccountIdentity::reference(),
             key.to_owned(),
             &live_scope(),
@@ -118,7 +118,7 @@ pub fn update_grant_field(
     value: AspectValue,
 ) {
     let grant = grant(
-        &(phase_custody).test_host_request(),
+        &(phase_custody).test_host_request_for_test(),
         &phase_custody.borrowed_request_for_test(),
         world,
         key,
@@ -168,26 +168,26 @@ pub fn replace_parent(
     new_parent: &str,
 ) {
     let child = grant(
-        &(phase_custody).test_host_request(),
+        &(phase_custody).test_host_request_for_test(),
         &phase_custody.borrowed_request_for_test(),
         world,
         child,
     );
     let kind = relation_kind(world, CapabilityParent::reference().name());
     replace_relation_target(
-        &(phase_custody).test_host_request(),
+        &(phase_custody).test_host_request_for_test(),
         &phase_custody.borrowed_request_for_test(),
         world,
         kind,
         child,
         grant(
-            &(phase_custody).test_host_request(),
+            &(phase_custody).test_host_request_for_test(),
             &phase_custody.borrowed_request_for_test(),
             world,
             old_parent,
         ),
         grant(
-            &(phase_custody).test_host_request(),
+            &(phase_custody).test_host_request_for_test(),
             &phase_custody.borrowed_request_for_test(),
             world,
             new_parent,
@@ -197,9 +197,9 @@ pub fn replace_parent(
 }
 
 pub fn relation_kind(world: &AuthorizationWorld, name: &str) -> KindId {
-    world
+    (*world
         .application
-        .runtime
+        .runtime_for_test())
         .primary_graph()
         .unwrap()
         .layout()
@@ -215,12 +215,12 @@ pub fn relation_source(
     kind: KindId,
     target: EntityId,
 ) -> EntityId {
-    let graph = world.application.runtime.primary_graph().unwrap();
-    let selected = world.selected_product(&(phase_custody).test_host_request());
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
     graph
         .integration_handle()
         .with_runtime_mut(execution, |runtime| {
-            let snapshot = selected.application_basis().snapshot_handle();
+            let snapshot = selected.application_basis_for_test().snapshot_handle();
 
             runtime
                 .read_truth()
@@ -292,7 +292,7 @@ pub fn replace_relation_kind(
     key: &str,
 ) {
     let relation = current_relation(
-        &(phase_custody).test_host_request(),
+        &(phase_custody).test_host_request_for_test(),
         execution,
         world,
         old_kind,
@@ -310,12 +310,12 @@ pub fn current_relation(
     source: EntityId,
     target: EntityId,
 ) -> RelationId {
-    let graph = world.application.runtime.primary_graph().unwrap();
-    let selected = world.selected_product(&(phase_custody).test_host_request());
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
     graph
         .integration_handle()
         .with_runtime_mut(execution, |runtime| {
-            let snapshot = selected.application_basis().snapshot_handle();
+            let snapshot = selected.application_basis_for_test().snapshot_handle();
 
             runtime
                 .read_truth()

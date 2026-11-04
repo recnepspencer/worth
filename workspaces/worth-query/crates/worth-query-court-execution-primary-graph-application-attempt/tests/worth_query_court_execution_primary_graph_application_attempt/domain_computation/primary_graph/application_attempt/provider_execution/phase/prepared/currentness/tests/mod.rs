@@ -15,20 +15,20 @@ fn current_commit_basis_reclaims_an_abandoned_performed_observation() {
     let principal = world
         .application
         .with_host_advancement(|host_phase| {
-            worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::authenticated_principal(&host_phase.test_host_request(), &world, &request)
+            worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::authenticated_principal(&host_phase.test_host_request_for_test(), &world, &request)
         })
         .expect("installed host call opens");
     let account = world
         .application
         .with_host_advancement(|host_phase| {
-            worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::resolved_account(&host_phase.test_host_request(), &world, "open", &request)
+            worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::resolved_account(&host_phase.test_host_request_for_test(), &world, "open", &request)
         })
         .expect("installed host call opens");
     let program = world
         .application
         .with_host_advancement(|host_phase| {
             worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::preimage_evidence::retained_status_program(
-                &host_phase.test_host_request(),
+                &host_phase.test_host_request_for_test(),
                 &world,
                 &principal,
                 &account,
@@ -48,16 +48,16 @@ fn current_commit_basis_reclaims_an_abandoned_performed_observation() {
     else {
         panic!("the real performed write must commit");
     };
-    let occurrence = receipt.product_branch().occurrence();
+    let occurrence = receipt.product_branch().occurrence_for_test();
     let change = std::sync::Arc::new(receipt.take_performed_relational_product_change().unwrap());
     let observation = receipt
         .committed_product_publication()
-        .take_output_demand_observation()
+        .take_output_demand_observation_for_test()
         .unwrap();
     let retained_receipt = receipt.clone();
-    let registry = &world.application.output_demands;
+    let registry = &(*world.application.output_demands_for_test());
     let preparation = registry.begin_source_preparation(occurrence);
-    let kind = PreparedOutputRootKind::Required(TypeId::of::<()>());
+    let kind = PreparedOutputRootKind::Required(TypeId::of_for_test::<()>());
     let commit = registry
         .retain_performed_source(
             WorthQueryPerformedOutputDemandSource {
@@ -74,10 +74,10 @@ fn current_commit_basis_reclaims_an_abandoned_performed_observation() {
     registry.release_prepared_token(&commit);
     drop(preparation);
     let runtime = world.application.product_runtime();
-    let retained = runtime.admit_product_occurrence(occurrence).unwrap();
+    let retained = runtime.admit_product_occurrence_for_test(occurrence).unwrap();
     let mut held = Vec::new();
     loop {
-        match runtime.admit_product_occurrence(occurrence) {
+        match runtime.admit_product_occurrence_for_test(occurrence) {
             Ok(product) => held.push(product),
             Err(worth_query_execution::facade::domain_computation::WorthQueryProductBranchAdmissionDenial::Refused(
                 AdmissionRefusal::ObservationCapacityExhausted,
@@ -94,7 +94,7 @@ fn current_commit_basis_reclaims_an_abandoned_performed_observation() {
         assert_eq!(current.selected_commit(), retained.selected_commit());
         assert_eq!(registry.validate_recovery_root_kind(&retained_receipt, kind).unwrap_err().kind(),
             worth_query_execution::facade::domain_computation::WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable);
-        assert!(matches!(runtime.admit_product_occurrence(occurrence),
+        assert!(matches!(runtime.admit_product_occurrence_for_test(occurrence),
             Err(worth_query_execution::facade::domain_computation::WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::ObservationCapacityExhausted))),
             "the reclaimed slot funds the current basis while other observers stay held");
     }).unwrap();

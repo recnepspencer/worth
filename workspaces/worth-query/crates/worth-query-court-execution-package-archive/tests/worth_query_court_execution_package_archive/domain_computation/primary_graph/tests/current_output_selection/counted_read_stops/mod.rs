@@ -10,7 +10,7 @@ fn current_output_door_preserves_stops_at_every_consult() {
             let (request, principal, scope, operation) =
                 admitted_touch_parts(&phase, &phase.borrowed_request_for_test(), &world);
             world
-                .selected_product(&phase.test_host_request())
+                .selected_product(&phase.test_host_request_for_test())
                 .authorize_operation(
                     &phase,
                     &principal,
@@ -22,9 +22,9 @@ fn current_output_door_preserves_stops_at_every_consult() {
                 .unwrap()
         })
         .unwrap();
-    world
+    (*world
         .application
-        .runtime
+        .runtime_for_test())
         .primary_graph()
         .unwrap()
         .integration_handle()

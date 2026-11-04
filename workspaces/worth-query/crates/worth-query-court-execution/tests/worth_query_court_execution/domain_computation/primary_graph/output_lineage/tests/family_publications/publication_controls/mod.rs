@@ -21,15 +21,15 @@ fn newer_preserve_publication_supersedes_initial_even_without_initial_facts() {
         );
         let selected = court.resolve();
         assert_eq!(
-            selected.candidates.len(),
+            (*selected.candidates_for_test()).len(),
             1,
             "the obsolete binding must not supply a retry packet"
         );
         assert!(Arc::ptr_eq(
-            &selected.candidates[0].correspondence,
+            &(*selected.candidates_for_test())[0].correspondence,
             &preserve
         ));
-        assert!(!selected.ambiguous_publication);
+        assert!(!(*selected.ambiguous_publication_for_test()));
     }
 }
 
@@ -50,16 +50,16 @@ fn retirement_and_descriptive_heads_cannot_resurrect_the_initial_binding() {
         );
         court.publish::<Preserve>(3, Some(1), 2, posture, facts);
         let selected = court.resolve();
-        assert!(!selected.ambiguous_publication);
-        assert_eq!(selected.candidates.len(), usize::from(facts));
+        assert!(!(*selected.ambiguous_publication_for_test()));
+        assert_eq!((*selected.candidates_for_test()).len(), usize::from(facts));
         if facts {
             assert_eq!(
-                selected.candidates[0]
+                (*selected.candidates_for_test())[0]
                     .correspondence
                     .active_entity_for_role("output"),
                 None
             );
-            assert_eq!(selected.candidates[0].settlement_identity.address().1, 3);
+            assert_eq!((*selected.candidates_for_test())[0].settlement_identity.address().1, 3);
         }
     }
 }
@@ -81,12 +81,12 @@ fn distinct_partitions_entities_and_roles_remain_distinct_family_members() {
             true,
         );
         if other_role {
-            court
+            (*court
                 .lineage
-                .output_families
+                .output_families_for_test())
                 .get_mut("family")
                 .unwrap()
-                .push((TypeId::of::<OtherRole>(), "other".to_owned()));
+                .push((TypeId::of_for_test::<OtherRole>(), "other".to_owned()));
             court.publish::<OtherRole>(
                 3,
                 partition,
@@ -104,8 +104,8 @@ fn distinct_partitions_entities_and_roles_remain_distinct_family_members() {
             );
         }
         let selected = court.resolve();
-        assert_eq!(selected.candidates.len(), 2);
-        assert!(!selected.ambiguous_publication);
+        assert_eq!((*selected.candidates_for_test()).len(), 2);
+        assert!(!(*selected.ambiguous_publication_for_test()));
     }
 }
 
@@ -128,14 +128,14 @@ fn equal_publication_positions_refuse_selection_in_both_binding_orders() {
     );
     for _ in 0..2 {
         let selected = court.resolve();
-        assert!(selected.ambiguous_publication);
+        assert!((*selected.ambiguous_publication_for_test()));
         assert!(
-            selected.candidates.is_empty(),
+            (*selected.candidates_for_test()).is_empty(),
             "no iteration-order retry packet"
         );
-        court
+        (*court
             .lineage
-            .output_families
+            .output_families_for_test())
             .get_mut("family")
             .unwrap()
             .reverse();
@@ -155,7 +155,7 @@ fn selected_descendant_supersedes_ancestor_even_with_lower_generation() {
     let ancestor = court.coordinate;
     // Local index coordinates are descriptive; the real native branch identities
     // above supply the ancestry distinction without granting currentness.
-    court.lineage.origins.insert(court.child, ancestor);
+    (*court.lineage.origins_for_test()).insert(court.child, ancestor);
     court.coordinate = ProductCoordinate {
         occurrence: court.child,
         generation: 2,
@@ -168,11 +168,11 @@ fn selected_descendant_supersedes_ancestor_even_with_lower_generation() {
         true,
     );
     let selected = court.resolve();
-    assert_eq!(selected.candidates.len(), 1);
+    assert_eq!((*selected.candidates_for_test()).len(), 1);
     assert_eq!(
-        selected.candidates[0].settlement_identity.address().0,
+        (*selected.candidates_for_test())[0].settlement_identity.address().0,
         court.child
     );
-    assert_eq!(selected.candidates[0].settlement_identity.address().1, 1);
-    assert!(!selected.ambiguous_publication);
+    assert_eq!((*selected.candidates_for_test())[0].settlement_identity.address().1, 1);
+    assert!(!(*selected.ambiguous_publication_for_test()));
 }

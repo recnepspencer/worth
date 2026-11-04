@@ -9,7 +9,7 @@ use worth_query_testkit_execution_primary_graph_application_contribution::domain
 #[test]
 fn required_wave_selection_answers_its_stopped_request_by_value() {
     let mut world = installed_authorization_world(true);
-    world.application.program_support = Some(installed_program_support(
+    (*world.application.program_support_mut_for_test()) = Some(installed_program_support(
         world.application.installed_schema(),
     ));
     world

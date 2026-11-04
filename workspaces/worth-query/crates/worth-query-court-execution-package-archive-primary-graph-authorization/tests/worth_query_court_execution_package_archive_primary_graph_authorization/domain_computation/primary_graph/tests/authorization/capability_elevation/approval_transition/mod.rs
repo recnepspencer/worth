@@ -55,14 +55,14 @@ fn exact_request_approval_reobserves_lifecycle_and_commits_two_derived_effects()
     let approver = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             authenticated(&host_custody, &world, "bob", &request)
         })
         .expect("the fixture read owns its installed host call");
     let program = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             materialize_exact_approval(&host_custody, &world, &request, requested)
         })
         .expect("the fixture read owns its installed host call");
@@ -98,14 +98,14 @@ fn requester_and_conflicted_approver_cannot_enter_approval_progression() {
         let principal = world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 authenticated(&host_custody, &world, subject, &request)
             })
             .expect("the fixture read owns its installed host call");
         let denial = world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 approval_access(&host_custody, &world, &principal, &request)
                     .err()
                     .expect("actor policy must deny before lifecycle authority")
@@ -155,13 +155,13 @@ pub fn authenticated(
     let external = world.authenticate(subject, Duration::from_secs(60), request);
     world
         .application
-        .select_product_branch(
+        .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch(),
+            world.application.product_runtime().default_branch_for_test(),
         )
         .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             &world.binding,
             &external,
             request,
@@ -180,7 +180,7 @@ pub fn approval_access(
     worth_query_execution::facade::domain_computation::WorthQueryOperationAuthorizationDenial,
 > {
     approval_access_for_elevation(
-        &(phase_custody).test_host_request(),
+        &(phase_custody).test_host_request_for_test(),
         world,
         principal,
         request,
@@ -209,7 +209,7 @@ pub fn approval_access_for_elevation(
     world
         .selected_product(phase_custody)
         .admit_capability_access(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             principal,
             &capability,
             ApproveElevationInput {
@@ -299,7 +299,7 @@ pub fn seal_approval_facts(
 pub fn assert_approved(approved: &WorthQueryApprovedElevation, approver: &Authenticated) {
     assert_eq!(approved.approval_changed_record_count(), 3);
     assert_eq!(approved.approval_emitted_effect_count(), 0);
-    assert_eq!(approved.approver(), approver.principal_entity_id());
+    assert_eq!(approved.approver(), approver.principal_entity_id_for_test());
     assert_ne!(approved.requester(), approved.approver());
     assert!(approved.commits_share_branch());
 }
@@ -322,7 +322,7 @@ pub fn approve_exact_request(
     let program = world
         .application
         .with_application_advancement(request, |phase| {
-            let phase_custody = phase.test_host_request();
+            let phase_custody = phase.test_host_request_for_test();
             materialize_exact_approval(
                 &(phase_custody).test_host_request(),
                 world,
@@ -357,7 +357,7 @@ pub fn materialize_exact_approval(
     let admission = world
         .application
         .authorize_elevation_approval(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             requested,
             access,
             &operation,
@@ -367,7 +367,7 @@ pub fn materialize_exact_approval(
     let (_, projection, _) = world
         .invariant
         .project_admitted_operation(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             &admission,
             |reader, _| seal_approval_facts(reader),
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -377,14 +377,14 @@ pub fn materialize_exact_approval(
     world
         .application
         .begin_projected_application_read_attempt(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             admission,
             projection,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap()
         .complete_projected_dependencies(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap()

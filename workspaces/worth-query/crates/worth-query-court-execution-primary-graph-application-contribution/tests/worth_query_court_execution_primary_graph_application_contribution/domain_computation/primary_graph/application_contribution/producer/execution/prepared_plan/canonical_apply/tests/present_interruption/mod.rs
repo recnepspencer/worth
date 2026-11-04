@@ -23,14 +23,14 @@ fn interruption_present_at_dispatch_has_equal_original_stop_and_commits() {
                 policy,
             }
         });
-        let execution = QueryRequestExecution::open(placement, &scope);
+        let execution = QueryRequestExecution::open_for_test(placement, &scope);
         let mut commits = Vec::new();
         let mut outcome = None;
         let handoff = execution.execution_request().unwrap().run_native(|_| {
             let plans = (0..3)
                 .map(|rank| {
-                    OwnerPlan::new(
-                        vec![PreparedCompute::new(|_| {
+                    OwnerPlan::new_for_test(
+                        vec![PreparedCompute::new_for_test(|_| {
                             panic!("interrupted dispatch cannot compute")
                         })],
                         move |_| Ok::<_, Denial>(rank),
@@ -38,13 +38,13 @@ fn interruption_present_at_dispatch_has_equal_original_stop_and_commits() {
                 })
                 .collect();
             cancel.cancel();
-            let cursor = CanonicalApplyCursor::compute(
+            let cursor = CanonicalApplyCursor::compute_for_test(
                 CanonicalUniqueVec::try_from_sorted_unique(vec![0, 1, 2]).unwrap(),
                 plans,
                 &execution,
             );
 
-            outcome = Some(cursor.apply(
+            outcome = Some(cursor.apply_for_test(
                 |key, value| {
                     value?;
                     commits.push(key);

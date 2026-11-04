@@ -9,7 +9,7 @@ fn idempotency_inspection_denies_before_receipt_after_grant_revocation() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let first = world
@@ -22,7 +22,7 @@ fn idempotency_inspection_denies_before_receipt_after_grant_revocation() {
         .application
         .with_host_advancement(|phase| {
             admitted_capability_operation(
-                &(phase).test_host_request(),
+                &(phase).test_host_request_for_test(),
                 &world,
                 &principal,
                 &request,

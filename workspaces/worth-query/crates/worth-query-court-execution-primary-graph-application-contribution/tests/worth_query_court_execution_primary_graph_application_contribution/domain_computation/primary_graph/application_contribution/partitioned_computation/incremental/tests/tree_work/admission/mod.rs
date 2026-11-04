@@ -47,14 +47,14 @@ fn native_request_exhaustion_refuses_before_map_or_after_the_last_kernel() {
     let visits = crate::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tests::tree_work::shape::Shape::shape_work(&shape, PARTITIONS);
     for before_map in [true, false] {
         let request = live_scope();
-        let execution = QueryRequestExecution::open(
+        let execution = QueryRequestExecution::open_for_test(
             RuntimeWorldExecutionPlacement::Leased {
                 authority: query_test_execution_authority_for_test(),
                 policy: test_policy(NonZeroUsize::new(2).unwrap(), Some(MEMORY)),
             },
             &request,
         );
-        let dispatch = execution.dispatch().unwrap();
+        let dispatch = execution.dispatch_for_test().unwrap();
         let original_hold = dispatch.native_lease_for_test().charged_memory_bytes();
         let map =
             ExecutionMap::from_native_partitions(keys.iter().map(|id| (*id, 1_u64)).collect())

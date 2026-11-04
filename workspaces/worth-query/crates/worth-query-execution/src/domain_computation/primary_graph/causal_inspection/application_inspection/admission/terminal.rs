@@ -75,3 +75,5 @@ impl InspectionTerminal<'_> {
         Ok(CompletedInspection::from_terminal(completed, self.request))
     }
 }
+
+mod court_doors_for_test;

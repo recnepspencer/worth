@@ -88,7 +88,7 @@ fn workflow_pending_and_paused_abandonment_release_output_and_queue() {
         let execution = phase;
 
         let (running, graph) = workflow_abandon_world(resource_request);
-        let installed_running_phase = execution.phase_for_workflow(&running);
+        let installed_running_phase = execution.phase_for_workflow_for_test(&running);
 
         let active =
             begin_workflow_projection(execution, running, &graph, "workflow-pending-abandon");
@@ -102,7 +102,7 @@ fn workflow_pending_and_paused_abandonment_release_output_and_queue() {
         assert!(terminal.provider_work().peak_retained_bytes() > 0);
 
         let (running, graph) = workflow_abandon_world(resource_request);
-        let installed_running_phase = execution.phase_for_workflow(&running);
+        let installed_running_phase = execution.phase_for_workflow_for_test(&running);
         let active =
             begin_workflow_projection(execution, running, &graph, "workflow-paused-abandon");
         let pending = match active.advance(&installed_running_phase) {
@@ -175,7 +175,7 @@ pub fn begin_workflow_projection(
     identity: &str,
 ) -> worth_query_execution::facade::domain_computation::WorthQueryActiveWorkflowGraphExecution {
     {
-        let installed_fixture_phase = running.fixture_phase(execution);
+        let installed_fixture_phase = running.fixture_phase_for_test(execution);
         running.begin_stage_graph_execution(
             &installed_fixture_phase,
             "stage",

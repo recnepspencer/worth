@@ -10,7 +10,7 @@ pub fn assert_one_pass_reconstruction(
     unrelated: &Fact,
 ) {
     let reconstruct = |facts: &[Fact]| {
-        SealedNativeOutputWitness::from_checkpoint_facts(correspondence, layout, facts).unwrap()
+        SealedNativeOutputWitness::from_checkpoint_facts_for_test(correspondence, layout, facts).unwrap()
     };
     let forward = reconstruct(facts).expect("the complete original facts reconstruct");
     let reversed: Vec<_> = facts.iter().rev().cloned().collect();
@@ -18,7 +18,7 @@ pub fn assert_one_pass_reconstruction(
     assert!(forward
         .get()
         .unwrap()
-        .same_output_as(backward.get().unwrap())
+        .same_output_as_for_test(backward.get().unwrap())
         .unwrap());
     let Fact::Entity { entity_id, kind } = &facts[0] else {
         panic!("the real output names its entity first");

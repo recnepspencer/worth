@@ -118,7 +118,7 @@ pub fn paused_workflow_checkpoint_target(
         resources,
         resource_request,
     );
-    let installed_running_phase = execution.phase_for_workflow(&running);
+    let installed_running_phase = execution.phase_for_workflow_for_test(&running);
 
     let active = running
         .begin_stage_graph_execution(

@@ -279,7 +279,7 @@ pub fn admitted_from_fresh_runtime(
 fn correlation_digest_restore_is_exact() {
     let digest = CanonicalDigestId::new([0x42; 32]);
     assert_eq!(
-        ExternalEffectCorrelationIdentity::from_digest(digest).digest(),
+        ExternalEffectCorrelationIdentity::from_digest_for_test(digest).digest(),
         &digest
     );
 }

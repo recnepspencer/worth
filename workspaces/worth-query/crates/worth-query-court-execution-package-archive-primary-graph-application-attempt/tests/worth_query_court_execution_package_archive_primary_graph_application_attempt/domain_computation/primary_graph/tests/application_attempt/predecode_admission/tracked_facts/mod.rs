@@ -25,13 +25,13 @@ fn present_predecode_field_stales_after_a_competing_actual_change() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let admission = world
@@ -50,7 +50,7 @@ fn present_predecode_field_stales_after_a_competing_actual_change() {
                     &admission,
                     |reader, root| {
                         let value = reader
-                            .decision_field_with_predecode_admission(
+                            .decision_field_with_predecode_admission_for_test(
                                 root,
                                 AccountStatus::reference(),
                                 |_, _| Ok::<_, ()>(()),
@@ -166,9 +166,9 @@ pub fn optional_program(
     Account,
 > {
     let request = live_scope();
-    let principal = authenticated_principal(&(phase_custody).test_host_request(), world, &request);
+    let principal = authenticated_principal(&(phase_custody).test_host_request_for_test(), world, &request);
     let account = resolved_account(
-        &(phase_custody).test_host_request(),
+        &(phase_custody).test_host_request_for_test(),
         world,
         "unrelated",
         &request,
@@ -179,7 +179,7 @@ pub fn optional_program(
         .installed_operation(PatchAccountDraftOperation::reference())
         .unwrap();
     let admission = world
-        .selected_product(&(phase_custody).test_host_request())
+        .selected_product(&(phase_custody).test_host_request_for_test())
         .authorize_operation(
             phase_custody,
             &principal,
@@ -196,7 +196,7 @@ pub fn optional_program(
             &admission,
             |reader, root| {
                 let value = reader
-                    .decision_field_with_predecode_admission(
+                    .decision_field_with_predecode_admission_for_test(
                         root,
                         AccountNote::reference(),
                         |_, _| {

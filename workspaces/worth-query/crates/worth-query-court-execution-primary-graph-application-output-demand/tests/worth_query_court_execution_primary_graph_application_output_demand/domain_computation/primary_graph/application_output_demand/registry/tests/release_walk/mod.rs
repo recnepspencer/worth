@@ -16,20 +16,20 @@ fn a_released_claim_walks_each_released_key_once() {
         let dependent = key("closing-dependent", 1, 2);
         let mut stale_row = record(
             occurrence,
-            DemandState::Failed(WorthQueryOutputDemandDenial::new(
+            DemandState::Failed(WorthQueryOutputDemandDenial::new_for_test(
                 WorthQueryOutputDemandDenialKind::Superseded,
                 "",
             )),
             0,
         );
-        stale_row.framework_required_count = 1;
-        state.records.insert(stale.clone(), stale_row);
-        let backing = PreparedReadyBacking::new();
-        state.records.insert(
+        (*stale_row.framework_required_count_mut_for_test()) = 1;
+        (*state.records_for_test()).insert(stale.clone(), stale_row);
+        let backing = PreparedReadyBacking::new_for_test();
+        (*state.records_for_test()).insert(
             newest.clone(),
             record(
                 occurrence,
-                DemandState::Output(WorthQueryOutputProgress::new(
+                DemandState::Output(WorthQueryOutputProgress::new_for_test(
                     WorthQueryOutputCheckpoint::Published {
                         receipt,
                         delivery: WorthQueryPendingOutputDelivery::NoChange,
@@ -40,27 +40,27 @@ fn a_released_claim_walks_each_released_key_once() {
             ),
         );
         for key in [&stale, &newest] {
-            let member = state.prepare_required_member(key).unwrap();
-            state.install_required_member(member);
+            let member = state.prepare_required_member_for_test(key).unwrap();
+            state.install_required_member_for_test(member);
         }
         let mut row = record(
             occurrence,
-            DemandState::Failed(WorthQueryOutputDemandDenial::new(
+            DemandState::Failed(WorthQueryOutputDemandDenial::new_for_test(
                 WorthQueryOutputDemandDenialKind::Closed,
                 "",
             )),
             0,
         );
-        row.prerequisites = vec![Arc::new(stale.clone())];
+        (*row.prerequisites_mut_for_test()) = vec![Arc::new(stale.clone())];
 
-        state.records.insert(dependent.clone(), row);
-        let before = state.records.occurrence_visits_for_test();
-        drop(state.release_record_prerequisites(&dependent));
-        let visited = state.records.occurrence_visits_for_test() - before;
+        (*state.records_for_test()).insert(dependent.clone(), row);
+        let before = (*state.records_for_test()).occurrence_visits_for_test();
+        drop(state.release_record_prerequisites_for_test(&dependent));
+        let visited = (*state.records_for_test()).occurrence_visits_for_test() - before;
         // Two rows: one successor search and one awaited-owner walk for each
         // of the stale and newest keys. No defer or membership rewalk is owed.
         assert_eq!(visited, 2 + 2 + 2, "released-key occurrence contacts");
-        assert_eq!(state.records[&stale].framework_required_count, 0);
-        assert!(state.records[&newest].pending_cleanup_queued);
+        assert_eq!((*state.records_for_test())[&stale].framework_required_count, 0);
+        assert!((*state.records_for_test())[&newest].pending_cleanup_queued);
     });
 }

@@ -32,7 +32,7 @@ fn registration_memory_refusal_preserves_old_pair_and_funded_retry_releases_back
     let keys = world
         .application
         .with_host_advancement(|phase| {
-            let host = phase.test_host_request();
+            let host = phase.test_host_request_for_test();
             let selected = world.selected_product(&host);
             let scope = selected
                 .resolve_entity(
@@ -45,9 +45,9 @@ fn registration_memory_refusal_preserves_old_pair_and_funded_retry_releases_back
                 .unwrap();
             let key = |purpose| {
                 Key::storage_key_for_test(
-                    world.application.runtime.authority_identity(),
-                    selected.product().observation().lifecycle_incarnation(),
-                    scope.entity_id(),
+                    (*world.application.runtime_for_test()).authority_identity(),
+                    selected.product().observation_for_test().lifecycle_incarnation(),
+                    scope.entity_id_for_test(),
                     purpose,
                 )
             };
@@ -62,9 +62,9 @@ fn registration_memory_refusal_preserves_old_pair_and_funded_retry_releases_back
     let first: Arc<dyn Any + Send + Sync> = Arc::new(19u64);
     let second: Arc<dyn Any + Send + Sync> = Arc::new(23u64);
     let mut directory = ManagedIndexDirectory::default();
-    directory.insert(
+    directory.insert_for_test(
         1,
-        RegisteredIndex::prepare(&execution, keys[0], first.clone(), cleanup.clone()).unwrap(),
+        RegisteredIndex::prepare_for_test(&execution, keys[0], first.clone(), cleanup.clone()).unwrap(),
     );
     let before = memory.charged_memory_bytes();
     assert!(
@@ -77,7 +77,7 @@ fn registration_memory_refusal_preserves_old_pair_and_funded_retry_releases_back
         CancellationSource::new().token(),
         None,
     );
-    let refused = RegisteredIndex::prepare(
+    let refused = RegisteredIndex::prepare_for_test(
         &ExecutionRequest::serial(&denied),
         keys[1],
         second.clone(),
@@ -87,25 +87,25 @@ fn registration_memory_refusal_preserves_old_pair_and_funded_retry_releases_back
         refused,
         Err(Cause::PolicyMemoryExhausted { admitted: 0, .. })
     ));
-    assert_eq!(directory.len(), 1);
-    let (id, retained) = directory.get(&keys[0]).unwrap();
+    assert_eq!(directory.len_for_test(), 1);
+    let (id, retained) = directory.get_for_test(&keys[0]).unwrap();
     assert_eq!(id, 1);
     assert!(Arc::ptr_eq(&retained.state, &first));
-    assert!(directory.get(&keys[1]).is_none());
+    assert!(directory.get_for_test(&keys[1]).is_none());
     assert_eq!(memory.charged_memory_bytes(), before);
     assert_eq!(denied_memory.charged_memory_bytes(), 0);
-    directory.insert(
+    directory.insert_for_test(
         2,
-        RegisteredIndex::prepare(&execution, keys[1], second.clone(), cleanup.clone()).unwrap(),
+        RegisteredIndex::prepare_for_test(&execution, keys[1], second.clone(), cleanup.clone()).unwrap(),
     );
     cleanup.dispose(); // The public close receiver disposes before unregistering.
-    drop(directory.remove(1));
-    assert!(directory.get(&keys[0]).is_none());
-    let (id, retained) = directory.get(&keys[1]).unwrap();
+    drop(directory.remove_for_test(1));
+    assert!(directory.get_for_test(&keys[0]).is_none());
+    let (id, retained) = directory.get_for_test(&keys[1]).unwrap();
     assert_eq!(id, 2);
     assert!(Arc::ptr_eq(&retained.state, &second));
     assert!(memory.charged_memory_bytes() > 0);
-    directory.dispose();
+    directory.dispose_for_test();
     assert_eq!(cleanup.0.load(Ordering::SeqCst), 2);
     assert_eq!(memory.charged_memory_bytes(), 0);
 }

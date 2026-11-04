@@ -65,14 +65,14 @@ impl ContinuationTestContext {
             .with_host_advancement(|phase| {
                 let phase_custody = &phase;
                 let borrowed_execution = phase
-                    .execution_request_for(world.application.product_runtime())
+                    .execution_request_for_for_test(world.application.product_runtime())
                     .expect("the installed fixture lends its own phase");
                 let execution = &borrowed_execution;
                 let principal = world
                     .application
-                    .select_product_branch(
+                    .select_product_branch_for_test(
                         execution,
-                        world.application.product_runtime().default_branch(),
+                        world.application.product_runtime().default_branch_for_test(),
                     )
                     .expect("the selected product branch remains admitted")
                     .resolve_authenticated_principal(
@@ -85,9 +85,9 @@ impl ContinuationTestContext {
                     .unwrap();
                 let account = world
                     .application
-                    .select_product_branch(
+                    .select_product_branch_for_test(
                         execution,
-                        world.application.product_runtime().default_branch(),
+                        world.application.product_runtime().default_branch_for_test(),
                     )
                     .expect("the selected product branch remains admitted")
                     .resolve_entity(
@@ -125,7 +125,7 @@ impl ContinuationTestContext {
             .world
             .selected_product(phase_custody)
             .admit_application_query_continuation(
-                &phase_custody.phase_for_application(&self.world.application),
+                &phase_custody.phase_for_application_for_test(&self.world.application),
                 &self.query,
                 &access,
                 parameters("account-1"),
@@ -145,7 +145,7 @@ impl ContinuationTestContext {
             .world
             .application
             .execute_application_query_continuation_page(
-                &phase_custody.phase_for_application(&self.world.application),
+                &phase_custody.phase_for_application_for_test(&self.world.application),
                 plan,
             )
             .unwrap();
@@ -168,7 +168,7 @@ impl ContinuationTestContext {
         self.world
             .application
             .readmit_application_query_continuation(
-                &phase_custody.phase_for_application(&self.world.application),
+                &phase_custody.phase_for_application_for_test(&self.world.application),
                 &self.query,
                 &access,
                 parameters(parameter),
@@ -192,7 +192,7 @@ impl ContinuationTestContext {
         page_width: usize,
     ) -> (usize, bool) {
         let access = WorthQueryApplicationQueryAccessContext::new(&self.principal, &self.account);
-        let phase = phase_custody.phase_for_application(&self.world.application);
+        let phase = phase_custody.phase_for_application_for_test(&self.world.application);
         let plan = self
             .world
             .application
@@ -227,7 +227,7 @@ impl ContinuationTestContext {
     pub fn expire_authentication(&mut self) {
         self.world
             .application
-            .fix_authentication_time(self.principal.valid_until());
+            .fix_authentication_time_for_test(self.principal.valid_until());
     }
 
     pub fn assert_resource_baseline(&self) {
@@ -248,24 +248,24 @@ impl ContinuationTestContext {
 
     pub fn advance_installation(&mut self) {
         let successor = Arc::new(
-            self.world
+            (*self.world
                 .application
-                .runtime
+                .runtime_for_test())
                 .installed_packages()
                 .successor_generation(),
         );
-        self.world
+        (*self.world
             .application
-            .runtime
+            .runtime_for_test())
             .commit_successor_installation(successor)
             .unwrap();
     }
 
     pub fn stale_principal_mapping(&self, execution: &worth_execution::ExecutionRequest<'_, '_>) {
-        let graph = self
+        let graph = (*self
             .world
             .application
-            .runtime
+            .runtime_for_test())
             .primary_graph()
             .expect("test world publishes a primary graph");
         let layout = graph
@@ -276,7 +276,7 @@ impl ContinuationTestContext {
         mutate_field(
             execution,
             &self.world,
-            self.principal.mapping_entity_id(),
+            self.principal.mapping_entity_id_for_test(),
             layout.status_locator,
             WorthQueryPrincipalMappingStatusBinding::encode(
                 &WorthQueryPrincipalMappingStatus::Disabled,
@@ -287,10 +287,10 @@ impl ContinuationTestContext {
     }
 
     pub fn stale_scope_identity(&self, execution: &worth_execution::ExecutionRequest<'_, '_>) {
-        let graph = self
+        let graph = (*self
             .world
             .application
-            .runtime
+            .runtime_for_test())
             .primary_graph()
             .expect("test world publishes a primary graph");
         let field = AccountIdentity::reference();
@@ -302,7 +302,7 @@ impl ContinuationTestContext {
         mutate_field(
             execution,
             &self.world,
-            self.account.entity_id(),
+            self.account.entity_id_for_test(),
             locator,
             StringApplicationValueBinding::encode(&"account-renamed".to_owned()).unwrap(),
             "stale-continuation-scope",

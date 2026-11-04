@@ -57,7 +57,7 @@ fn inbound_publication_consumers_keep_real_execution_refusals_and_retry_posture(
                 let owner = world
                     .application
                     .with_host_advancement(|phase| {
-                        let host_custody = phase.test_host_request();
+                        let host_custody = phase.test_host_request_for_test();
 
                         world
                             .application
@@ -71,11 +71,11 @@ fn inbound_publication_consumers_keep_real_execution_refusals_and_retry_posture(
                     .expect("the fixture read owns its installed host call");
                 let admitted = world
                     .application
-                    .admit_external_dispatch_attempt(owner.clone())
+                    .admit_external_dispatch_attempt_for_test(owner.clone())
                     .unwrap();
                 let completed = dispatch_external_effect(&CompletingTransport, admitted).unwrap();
                 let evidence = Arc::new(
-                    InstalledTransportCompletion::from_observed_dispatch(owner, &completed)
+                    InstalledTransportCompletion::from_observed_dispatch_for_test(owner, &completed)
                         .unwrap(),
                 );
                 let source = CancellationSource::new();
@@ -119,7 +119,7 @@ fn inbound_publication_consumers_keep_real_execution_refusals_and_retry_posture(
                         };
                         assert_eq!(observed, expected_preparation);
                         let observed =
-                            PublicationDenial::CompletionPreparation(observed).retry_denial();
+                            PublicationDenial::CompletionPreparation(observed).retry_denial_for_test();
                         match (expected, observed.pending_reason()) {
                             (
                                 Ok(kind),
@@ -175,7 +175,7 @@ fn inbound_publication_consumers_keep_real_execution_refusals_and_retry_posture(
                             Arc::ptr_eq(&retained, &evidence),
                             "real dispatch evidence changed"
                         );
-                        let pending = denial.pending_reason();
+                        let pending = denial.pending_reason_for_test();
                         let recovery = worth_query_execution::facade::domain_computation::WorthQueryRecoveryHandleDenial::from(
                         pending.dispatch_preparation_denial().redispatch_denial(),
                     ).kind();

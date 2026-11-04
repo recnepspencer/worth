@@ -81,3 +81,5 @@ impl PreparedOutputLineageSlot {
         self.prepared_input_reuse_key = metadata.reuse.take();
     }
 }
+
+mod court_doors_for_test;

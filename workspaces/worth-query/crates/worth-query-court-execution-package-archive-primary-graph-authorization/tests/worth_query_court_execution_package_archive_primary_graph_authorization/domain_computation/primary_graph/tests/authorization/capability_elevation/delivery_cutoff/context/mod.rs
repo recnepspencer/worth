@@ -59,7 +59,7 @@ impl ElevatedQueryContext {
         worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::capability::elevated::ElevatedCapabilityTouchInput,
     >{
         crate::domain_computation::primary_graph::tests::authorization::capability_elevation::admit(
-            &(phase_custody).test_host_request(),
+            &(phase_custody).test_host_request_for_test(),
             &self.world,
             self.approved.as_ref().unwrap(),
             &self.principal,
@@ -87,10 +87,10 @@ pub fn context(live: bool) -> ElevatedQueryContext {
     let (principal, committer, account) = world
         .application
         .with_application_advancement(&request, |phase| {
-            let custody = phase.test_host_request();
+            let custody = phase.test_host_request_for_test();
             let phase_custody = &custody;
             let borrowed_execution = phase
-                .execution_request_for(&world.application.product_runtime)
+                .execution_request_for_for_test(&(*world.application.product_runtime_for_test()))
                 .expect("the context read belongs to its installed world");
             let execution = &borrowed_execution;
             let principal =
@@ -103,9 +103,9 @@ pub fn context(live: bool) -> ElevatedQueryContext {
             );
             let account = world
                 .application
-                .select_product_branch(
+                .select_product_branch_for_test(
                     execution,
-                    world.application.product_runtime().default_branch(),
+                    world.application.product_runtime().default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(

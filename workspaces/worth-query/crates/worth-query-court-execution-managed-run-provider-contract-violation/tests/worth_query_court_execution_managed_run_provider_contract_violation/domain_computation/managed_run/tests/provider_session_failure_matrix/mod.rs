@@ -70,7 +70,7 @@ fn staged_preparation_failures_abort_without_reaching_commit() {
                 point,
                 |running, graph| {
                     let failure = staged_session(execution, running, graph)
-                        .prepare_for_commit()
+                        .prepare_for_commit_for_test()
                         .expect_err("staged preparation failure must not mint a prepare outcome");
                     assert_failure(
                         &failure,
@@ -102,7 +102,7 @@ fn commit_failures_leave_recovery_required_and_drop_aborts_once() {
                 point,
                 |running, graph| {
                     let prepared = staged_session(execution, running, graph)
-                        .prepare_for_commit()
+                        .prepare_for_commit_for_test()
                         .expect("staged preparation should succeed");
                     let outcome = prepared.commit(
                         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -162,7 +162,7 @@ pub fn assert_early_failure(
     let observed = with_session(
         point,
         |running, graph| {
-            let installed_fixture_phase = running.fixture_phase(execution);
+            let installed_fixture_phase = running.fixture_phase_for_test(execution);
             let plan = running
                 .admit_provider_execution_plan(graph)
                 .expect("failure fixture plan should admit");

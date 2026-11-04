@@ -19,20 +19,20 @@ pub type Admission = WorthQueryAdmittedApplicationOperation<
 #[test]
 fn authorization_fact_keeps_the_stop_at_every_consult() {
     with_admitted_facts(|admission, runtime, execution, snapshot, source| {
-        admission.assert_cancelled_fact_dispatch(runtime, execution, snapshot, source)
+        admission.assert_cancelled_fact_dispatch_for_test(runtime, execution, snapshot, source)
     });
 }
 #[test]
 fn retained_activation_keeps_the_stop_at_every_consult() {
     with_admitted_facts(|admission, runtime, execution, snapshot, source| {
         admission
-            .assert_retained_activation_read_at_every_consult(runtime, execution, snapshot, source)
+            .assert_retained_activation_read_at_every_consult_for_test(runtime, execution, snapshot, source)
     });
 }
 #[test]
 fn retained_equality_dispatch_stop_oracle() {
     with_admitted_facts(|admission, runtime, execution, snapshot, _| {
-        admission.assert_fact_dispatch_stop_oracle(runtime, execution, snapshot)
+        admission.assert_fact_dispatch_stop_oracle_for_test(runtime, execution, snapshot)
     });
 }
 pub fn with_admitted_facts(
@@ -51,19 +51,19 @@ pub fn with_admitted_facts(
     let (admission, selected) = world
         .application
         .with_host_advancement(|phase| {
-            let principal = authenticated_principal(&phase.test_host_request(), &world, &request);
-            let account = resolved_account(&phase.test_host_request(), &world, "open", &request);
+            let principal = authenticated_principal(&phase.test_host_request_for_test(), &world, &request);
+            let account = resolved_account(&phase.test_host_request_for_test(), &world, "open", &request);
             let admission = admitted_operation(&phase, &world, &principal, &account, &request);
-            let selected = world.selected_product(&phase.test_host_request());
+            let selected = world.selected_product(&phase.test_host_request_for_test());
             (admission, selected)
         })
         .unwrap();
     let source = CancellationSource::new();
     let serial = SerialRequest::from_memory(SerialMemoryBudget::new(None), source.token(), None);
     let execution = ExecutionRequest::serial(&serial);
-    let outcome = world
+    let outcome = (*world
         .application
-        .primary_provider
+        .primary_provider_for_test())
         .graph
         .with_runtime(&execution, |runtime| {
             std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
@@ -71,7 +71,7 @@ pub fn with_admitted_facts(
                     &admission,
                     runtime,
                     &execution,
-                    selected.application_basis().snapshot_handle(),
+                    selected.application_basis_for_test().snapshot_handle(),
                     &source,
                 )
             }))
@@ -84,6 +84,6 @@ pub fn with_admitted_facts(
 #[test]
 fn cancelled_retained_activation_native_read_keeps_the_stop() {
     with_admitted_facts(|admission, runtime, execution, snapshot, source| {
-        admission.assert_cancelled_retained_activation_read(runtime, execution, snapshot, source)
+        admission.assert_cancelled_retained_activation_read_for_test(runtime, execution, snapshot, source)
     });
 }

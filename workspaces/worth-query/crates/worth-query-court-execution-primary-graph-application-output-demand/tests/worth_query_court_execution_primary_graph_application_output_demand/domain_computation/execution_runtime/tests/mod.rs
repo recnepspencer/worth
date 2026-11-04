@@ -76,11 +76,11 @@ fn successor_commit_requires_the_current_owner_and_a_new_identity() {
 #[test]
 fn successor_commit_revokes_prior_installed_domain_execution_authority() {
     let mut runtime = empty_runtime();
-    let authority = WorthQueryInstalledDomainExecutionAuthority::mint(
+    let authority = WorthQueryInstalledDomainExecutionAuthority::mint_for_test(
         runtime.authority_identity(),
         "test-domain",
         runtime.installed_packages().generation(),
-        runtime.retain_current_generation(),
+        runtime.retain_current_generation_for_test(),
     );
 
     assert!(authority.is_current_installation_generation());

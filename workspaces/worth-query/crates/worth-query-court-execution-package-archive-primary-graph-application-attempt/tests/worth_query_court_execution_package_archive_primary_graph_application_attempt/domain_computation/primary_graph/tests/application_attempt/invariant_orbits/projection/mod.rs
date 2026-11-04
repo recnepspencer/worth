@@ -36,9 +36,9 @@ fn projection_orbits_preserve_successor_order_name_and_all_member_scope() {
     let execution = ExecutionRequest::serial(&host);
     let selected = world
         .application
-        .select_product_branch(
+        .select_product_branch_for_test(
             &execution,
-            world.application.product_runtime().default_branch(),
+            world.application.product_runtime().default_branch_for_test(),
         )
         .unwrap();
     let completed = world
@@ -105,7 +105,7 @@ fn projection_orbits_preserve_successor_order_name_and_all_member_scope() {
             .collect::<Vec<_>>()
     );
     let (_lease, scope, _, _) =
-        snapshot.into_lease_and_realized_scope(selected.product().retained_clone());
+        snapshot.into_lease_and_realized_scope_for_test(selected.product().retained_clone());
     for member in orbit.members() {
         assert!(
             scope.contains(member.entity_id()),
@@ -150,7 +150,7 @@ pub fn inspect(
 ) {
     world
         .invariant
-        .project_operation_on_product::<ReplaceNext, _>(
+        .project_operation_on_product_for_test::<ReplaceNext, _>(
             execution,
             product,
             |reader| {
@@ -176,9 +176,9 @@ fn retained_selected_basis_keeps_its_orbit_after_an_actual_split() {
     let execution = ExecutionRequest::serial(&host);
     let original = world
         .application
-        .select_product_branch(
+        .select_product_branch_for_test(
             &execution,
-            world.application.product_runtime().default_branch(),
+            world.application.product_runtime().default_branch_for_test(),
         )
         .unwrap();
     let before = inspect(&world, &execution, original.product(), 0);
@@ -191,9 +191,9 @@ fn retained_selected_basis_keeps_its_orbit_after_an_actual_split() {
     ));
     let after = world
         .application
-        .select_product_branch(
+        .select_product_branch_for_test(
             &execution,
-            world.application.product_runtime().default_branch(),
+            world.application.product_runtime().default_branch_for_test(),
         )
         .unwrap();
     let left = inspect(&world, &execution, after.product(), 0);

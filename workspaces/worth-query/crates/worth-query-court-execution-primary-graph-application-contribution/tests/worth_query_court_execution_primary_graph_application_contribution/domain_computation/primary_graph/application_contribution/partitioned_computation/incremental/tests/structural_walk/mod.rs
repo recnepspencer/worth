@@ -13,8 +13,8 @@ pub use std::sync::Arc;
 pub fn body(
     run: &SealedComputationRun,
 ) -> Arc<worth_query_execution::court_doors_for_test::domain_computation::primary_graph::structural_walk::StructuralWalkObservation>{
-    let bodies: Vec<_> = run
-        .state
+    let bodies: Vec<_> = (*run
+        .state_for_test())
         .facts
         .facts()
         .filter_map(|(_, fact, _)| match fact {
@@ -39,7 +39,7 @@ fn actual_retained_walk_runs_fresh_before_incremental_shortcuts_in_both_postures
         let first = crate::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tests::structural_walk::attempt::run(
             &world,
             &installed,
-            Some(ComputationPrior::new(
+            Some(ComputationPrior::new_for_test(
                 worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tests::edition(),
                 Err(Cause::FirstRun),
                 None,
@@ -47,9 +47,9 @@ fn actual_retained_walk_runs_fresh_before_incremental_shortcuts_in_both_postures
             accounted,
             Cause::FirstRun,
         );
-        assert!(first.state.facts.has_structural_walk());
+        assert!((*first.state_for_test()).facts.has_structural_walk());
         let original = body(&first);
-        let prior = ComputationPrior::new(worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tests::edition(), Ok(Arc::new(first.state)), None);
+        let prior = ComputationPrior::new_for_test(worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tests::edition(), Ok(Arc::new((*first.state_for_test()))), None);
         let next = crate::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tests::structural_walk::attempt::run(
             &world,
             &installed,
@@ -58,7 +58,7 @@ fn actual_retained_walk_runs_fresh_before_incremental_shortcuts_in_both_postures
             Cause::StructuralWalkRead,
         );
         assert_eq!(
-            installed.owner.gathers.load(Ordering::Relaxed),
+            (*installed.owner_for_test()).gathers.load(Ordering::Relaxed),
             2,
             "the real gather ran again"
         );
@@ -68,8 +68,8 @@ fn actual_retained_walk_runs_fresh_before_incremental_shortcuts_in_both_postures
             "the current admission issued a fresh body"
         );
         assert_ne!(
-            original.source(),
-            current.source(),
+            original.source_for_test(),
+            current.source_for_test(),
             "the fresh projection owns its selected native pin"
         );
         assert_eq!(

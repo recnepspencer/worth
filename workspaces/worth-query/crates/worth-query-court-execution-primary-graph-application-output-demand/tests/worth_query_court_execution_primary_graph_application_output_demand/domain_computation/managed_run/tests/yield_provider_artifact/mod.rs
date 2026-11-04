@@ -194,7 +194,7 @@ fn yielded_cleanup_releases_artifacts_owned_by_the_provider_checkpoint() {
             resource_request,
         );
         let active = {
-            let installed_fixture_phase = running.fixture_phase(execution);
+            let installed_fixture_phase = running.fixture_phase_for_test(execution);
             running.begin_stage_graph_execution(
                 &installed_fixture_phase,
                 "producer",
@@ -208,7 +208,7 @@ fn yielded_cleanup_releases_artifacts_owned_by_the_provider_checkpoint() {
         .unwrap();
         let paused = {
             let fixture_phase_result = {
-                let installed_fixture_phase = active.fixture_phase(execution);
+                let installed_fixture_phase = active.fixture_phase_for_test(execution);
                 active.advance(&installed_fixture_phase)
             };
             match fixture_phase_result {

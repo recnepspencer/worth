@@ -114,3 +114,5 @@ impl SealedNativeOutputWitness {
         Ok(Some(cell))
     }
 }
+
+mod court_doors_for_test;

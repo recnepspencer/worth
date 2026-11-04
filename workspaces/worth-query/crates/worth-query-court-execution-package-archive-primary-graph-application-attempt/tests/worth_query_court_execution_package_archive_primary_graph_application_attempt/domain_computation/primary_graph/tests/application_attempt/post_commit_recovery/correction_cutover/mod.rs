@@ -9,11 +9,11 @@ fn pending_correction_cutover_never_looks_unseen_on_another_branch() {
     let world = installed_authorization_world(true);
     let selected = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&phase.test_host_request()))
+        .with_host_advancement(|phase| world.selected_product(&phase.test_host_request_for_test()))
         .unwrap();
-    let _delivery = world
+    let _delivery = (*world
         .application
-        .primary_provider
+        .primary_provider_for_test())
         .observe_application_commit_causality(selected.product());
     let request = live_scope();
     let sibling = world
@@ -37,20 +37,20 @@ fn pending_correction_cutover_never_looks_unseen_on_another_branch() {
                 .select(&phase)
                 .unwrap()
                 .product()
-                .observation()
+                .observation_for_test()
                 .clone()
         })
         .unwrap();
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&phase.test_host_request(), &world, &request)
+            authenticated_principal(&phase.test_host_request_for_test(), &world, &request)
         })
         .unwrap();
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&phase.test_host_request(), &world, "open", &request)
+            resolved_account(&phase.test_host_request_for_test(), &world, "open", &request)
         })
         .unwrap();
     let program = world
@@ -84,7 +84,7 @@ fn pending_correction_cutover_never_looks_unseen_on_another_branch() {
         ),
         "the held real post-commit boundary must leave pending custody: {outcome:?}"
     );
-    let provider = &world.application.primary_provider;
+    let provider = &(*world.application.primary_provider_for_test());
     assert!(
         matches!(provider.observe_correction_key(&sibling_observation, binding.key_identity()),
         Observed::Pending(Some(recorded)) if recorded.key_identity() == binding.key_identity())
@@ -111,7 +111,7 @@ fn pending_correction_cutover_never_looks_unseen_on_another_branch() {
         }
         Observed::Completed(recorded, committed) => {
             assert_eq!(recorded, receipt.authority_binding().idempotency_binding());
-            assert_eq!(committed.commit_reference(), receipt.commit_reference());
+            assert_eq!(committed.commit_reference_for_test(), receipt.commit_reference());
         }
         _ => panic!("cross-branch lookup must retain exact pending or completed evidence"),
     }
@@ -155,9 +155,9 @@ pub fn resolve(
     world
         .application
         .with_host_advancement(|phase| {
-            let principal = authenticated_principal(&phase.test_host_request(), world, request);
+            let principal = authenticated_principal(&phase.test_host_request_for_test(), world, request);
             let account = resolved_account(
-                &phase.test_host_request(),
+                &phase.test_host_request_for_test(),
                 world,
                 "pending-correction",
                 request,

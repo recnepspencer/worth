@@ -241,3 +241,5 @@ fn clone_bytes(
         .size();
     u64::try_from(arc).ok()?.checked_add(backing)
 }
+
+mod court_doors_for_test;

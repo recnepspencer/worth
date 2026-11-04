@@ -9,11 +9,11 @@ fn genuinely_interleaved_equivalent_sessions_validate_retry_cleanup_separately()
         .with_application_advancement(
             &worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope(),
             |active_phase| {
-                let host_custody = active_phase.test_host_request();
+                let host_custody = active_phase.test_host_request_for_test();
                 let phase = &active_phase;
                 let snapshot_baseline = world
                     .invariant
-                    .active_snapshot_count(&active_phase.borrowed_request_for_test());
+                    .active_snapshot_count_for_test(&active_phase.borrowed_request_for_test());
                 let (left, right) = equivalent_programs(
                     &host_custody.phase_for_application(&world.application),
                     &world,
@@ -41,7 +41,7 @@ fn genuinely_interleaved_equivalent_sessions_validate_retry_cleanup_separately()
                 assert_eq!(
                     world
                         .invariant
-                        .active_snapshot_count(&active_phase.borrowed_request_for_test()),
+                        .active_snapshot_count_for_test(&active_phase.borrowed_request_for_test()),
                     snapshot_baseline + 2
                 );
                 let left = finish_application_commit(
@@ -53,7 +53,7 @@ fn genuinely_interleaved_equivalent_sessions_validate_retry_cleanup_separately()
                 assert_eq!(
                     world
                         .invariant
-                        .active_snapshot_count(&active_phase.borrowed_request_for_test()),
+                        .active_snapshot_count_for_test(&active_phase.borrowed_request_for_test()),
                     snapshot_baseline + 1,
                     "finishing one attempt must preserve its interleaved peer's snapshot lease"
                 );
@@ -66,7 +66,7 @@ fn genuinely_interleaved_equivalent_sessions_validate_retry_cleanup_separately()
                 assert_eq!(
                     world
                         .invariant
-                        .active_snapshot_count(&active_phase.borrowed_request_for_test()),
+                        .active_snapshot_count_for_test(&active_phase.borrowed_request_for_test()),
                     snapshot_baseline
                 );
                 assert_eq!(
@@ -88,7 +88,7 @@ fn genuinely_interleaved_equivalent_sessions_validate_retry_cleanup_separately()
                     }
                 };
                 assert!(executed.is_same_authoritative_commit(&recovered));
-                assert_eq!(executed.retained_preimage(), recovered.retained_preimage());
+                assert_eq!(executed.retained_preimage_for_test(), recovered.retained_preimage_for_test());
                 assert_eq!(executed.dispatch_outbox(), recovered.dispatch_outbox());
                 let executed_output = executed
                     .outputs_of::<RetentionOutputs>()

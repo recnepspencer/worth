@@ -14,23 +14,23 @@ fn typed_emission_is_published_with_the_exact_provider_commit() {
     let world = installed_authorization_world(true);
     let selected = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
         .expect("the fixture read owns its installed host call");
-    let _live = world
+    let _live = (*world
         .application
-        .primary_provider
+        .primary_provider_for_test())
         .observe_application_commit_causality(selected.product());
     let request = live_scope();
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let program = world
@@ -58,9 +58,9 @@ fn typed_emission_is_published_with_the_exact_provider_commit() {
         panic!("typed emission attempt must commit");
     };
     assert_eq!(receipt.emitted_effect_count(), 1);
-    let emissions = world
+    let emissions = (*world
         .application
-        .primary_provider
+        .primary_provider_for_test())
         .committed_application_emissions(receipt.committed_product_publication());
     assert_eq!(emissions.len(), 1);
     assert_eq!(emissions[0].effect(), "AccountActivityEffect");
@@ -77,13 +77,13 @@ fn response_loss_recovers_emit_receipt_without_duplicate_publication() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let first = world
@@ -145,9 +145,9 @@ fn response_loss_recovers_emit_receipt_without_duplicate_publication() {
     );
     assert_eq!(recovered.emitted_effect_count(), 1);
     assert_eq!(
-        world
+        (*world
             .application
-            .primary_provider
+            .primary_provider_for_test())
             .published_application_commit_count(),
         1
     );
@@ -160,13 +160,13 @@ fn in_window_receipt_admits_its_exact_historical_basis() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let first = world
@@ -198,7 +198,7 @@ fn in_window_receipt_admits_its_exact_historical_basis() {
     let current_account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "historical", &request)
+            resolved_account(&(phase).test_host_request_for_test(), &world, "historical", &request)
         })
         .expect("the fixture read owns its installed host call");
     let advanced = world
@@ -227,16 +227,16 @@ fn in_window_receipt_admits_its_exact_historical_basis() {
     assert_ne!(advanced.commit_reference().version_id, exact_version);
 
     let historical_read =
-        WorthQueryApplicationHistoricalRead::at_application_commit(&external_clone);
+        WorthQueryApplicationHistoricalRead::at_application_commit_for_test(&external_clone);
     drop(external_clone);
     drop(receipt);
     let basis = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             world
                 .application
-                .admit_application_historical_basis(
+                .admit_application_historical_basis_for_test(
                     &host_custody.borrowed_request_for_test(),
                     historical_read,
                     &request,

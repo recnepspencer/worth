@@ -356,3 +356,5 @@ impl<'run> WorthQueryAdmittedProviderExecutionPlan<'run> {
 
 mod validation;
 use validation::{failure, retain_session_provider, undeclared_scope, validate_common_authority};
+
+mod court_doors_for_test;

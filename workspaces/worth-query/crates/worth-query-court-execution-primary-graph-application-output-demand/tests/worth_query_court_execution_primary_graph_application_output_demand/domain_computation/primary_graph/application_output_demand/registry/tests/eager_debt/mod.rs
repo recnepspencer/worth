@@ -28,7 +28,7 @@ fn registry_eager_binding_reads_the_closed_claim_without_an_admission() {
     world.drop_owner(1);
     world.drop_owner(2);
     world.bind();
-    let state = world.registry.state.lock().unwrap();
+    let state = (*world.registry.state_for_test()).lock().unwrap();
     let bound = state.source_custody[&context.commit(0)]
         .bound_sources
         .clone();
@@ -36,7 +36,7 @@ fn registry_eager_binding_reads_the_closed_claim_without_an_admission() {
         bound,
         Some(vec![worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::BoundOutputSource {
             scope: context.scope,
-            identity: world.keys[0].source.clone(),
+            identity: (*world.keys[0].source_for_test()).clone(),
         }])
     );
     assert!(state.source_custody[&context.commit(0)]
@@ -48,10 +48,10 @@ fn registry_eager_binding_reads_the_closed_claim_without_an_admission() {
 fn registry_eager_claimed_row_transition_itself_leaves_the_note() {
     let context = crate::domain_computation::primary_graph::application_output_demand::registry::tests::eager_debt::world::Context::new();
     let world = World::new(&context, 3);
-    let mut state = world.registry.state.lock().unwrap();
+    let mut state = (*world.registry.state_for_test()).lock().unwrap();
     assert_eq!(state.records[&world.keys[0]].framework_required_count, 1);
     state.records.get_mut(&world.keys[0]).unwrap().state =
-        DemandState::Failed(WorthQueryOutputDemandDenial::new(
+        DemandState::Failed(WorthQueryOutputDemandDenial::new_for_test(
             WorthQueryOutputDemandDenialKind::Superseded,
             "transition",
         ));
@@ -64,10 +64,10 @@ fn registry_eager_owned_closed_note_does_not_name_a_reused_key() {
     let registry = WorthQueryOutputDemandRegistry::default();
     let reused = key("reused-note", 1, 90);
     let old = {
-        let mut state = registry.state.lock().unwrap();
+        let mut state = (*registry.state_for_test()).lock().unwrap();
         let old = record(
             occurrence(),
-            DemandState::Failed(WorthQueryOutputDemandDenial::new(
+            DemandState::Failed(WorthQueryOutputDemandDenial::new_for_test(
                 WorthQueryOutputDemandDenialKind::Closed,
                 "old",
             )),
@@ -77,12 +77,12 @@ fn registry_eager_owned_closed_note_does_not_name_a_reused_key() {
         state.note_closed_row(&reused);
         let old = state.remove_record(&reused).unwrap();
         let mut new = record(occurrence(), DemandState::Admitted, 0);
-        new.source_scope = Some(context.scope);
+        (*new.source_scope_mut_for_test()) = Some(context.scope);
         state.records.insert(reused.clone(), new);
         old
     };
     let owner = registry
-        .admit(
+        .admit_for_test(
             reused.clone(),
             None,
             context.scope,
@@ -93,7 +93,7 @@ fn registry_eager_owned_closed_note_does_not_name_a_reused_key() {
         )
         .unwrap();
     {
-        let state = registry.state.lock().unwrap();
+        let state = (*registry.state_for_test()).lock().unwrap();
         assert_eq!(state.records[&reused].interests, 1);
         assert_eq!(state.closed_cleanup.len(), 0);
     }

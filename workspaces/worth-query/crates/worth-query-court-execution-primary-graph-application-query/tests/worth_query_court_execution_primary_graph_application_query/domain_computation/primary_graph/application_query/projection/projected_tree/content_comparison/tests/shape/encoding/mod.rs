@@ -2,10 +2,10 @@
 use crate::domain_computation::primary_graph::application_query::projection::projected_tree::content_comparison::tests::shape::*;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::projection::projected_tree::content::ContentWriter;
 pub fn encode(node: WorthQueryApplicationProjectionNode, nested: bool) -> [u8; 32] {
-    let entity = node.entity_id;
+    let entity = (*node.entity_id_for_test());
     let tree = tree(node);
     let mut admit = |_| Ok::<_, &'static str>(());
-    let mut writer = ContentWriter::new(&mut admit, &|| "overflow");
+    let mut writer = ContentWriter::new_for_test(&mut admit, &|| "overflow");
     writer
         .bytes(if nested {
             b"worth:projected-source-entry:v2"
@@ -40,31 +40,31 @@ fn shallow_entry_v1_keeps_literal_framed_bytes() {
 fn nested_framing_preserves_descendants_and_declared_empty_collections() {
     let key = slot("framed");
     let mut original = shape(&key);
-    original.relations[0].rows[0] = shape(&key);
+    (*original.relations_for_test())[0].rows[0] = shape(&key);
     let mut same = shape(&key);
-    same.relations[0].rows[0] = shape(&key);
+    (*same.relations_for_test())[0].rows[0] = shape(&key);
     let reference = encode(original, true);
     assert_eq!(reference, encode(same, true));
     let mut different = shape(&key);
-    different.relations[0].rows[0] = shape(&key);
-    different.relations[0].rows[0].fields[0].value =
+    (*different.relations_for_test())[0].rows[0] = shape(&key);
+    (*different.relations_for_test())[0].rows[0].fields[0].value =
         AspectValue::String("changed descendant".into());
     assert_ne!(reference, encode(different, true));
     let mut empty = shape(&key);
-    empty.relations[0].rows.clear();
+    (*empty.relations_for_test())[0].rows.clear();
     let mut another = shape(&key);
-    another.relations[0].rows.clear();
+    (*another.relations_for_test())[0].rows.clear();
     assert_ne!(
         encode(empty, true),
         encode(another, false),
         "compiled deep profile has its own domain even without live descendants"
     );
     let mut empty = shape(&key);
-    empty.relations[0].rows[0] = shape(&key);
-    empty.relations[0].rows[0].relations[0].rows.clear();
+    (*empty.relations_for_test())[0].rows[0] = shape(&key);
+    (*empty.relations_for_test())[0].rows[0].relations[0].rows.clear();
     let mut absent = shape(&key);
-    absent.relations[0].rows[0] = shape(&key);
-    absent.relations[0].rows[0].relations.clear();
+    (*absent.relations_for_test())[0].rows[0] = shape(&key);
+    (*absent.relations_for_test())[0].rows[0].relations.clear();
     assert_ne!(encode(empty, true), encode(absent, true));
 }
 #[test]
@@ -82,14 +82,14 @@ fn nested_encoding_preserves_original_work_memory_and_bound_refusals() {
                 Ok(())
             }
         };
-        let mut writer = ContentWriter::new(&mut admit, &|| "overflow");
+        let mut writer = ContentWriter::new_for_test(&mut admit, &|| "overflow");
         assert_eq!(
             tree.append_tree_content(&mut writer, 8, &mut |_| Ok(None), &mut |_| "physical"),
             Err("original-work")
         );
     }
     let mut admit = |_| Ok::<_, &'static str>(());
-    let mut writer = ContentWriter::new(&mut admit, &|| "overflow");
+    let mut writer = ContentWriter::new_for_test(&mut admit, &|| "overflow");
     assert_eq!(
         tree.append_tree_content(&mut writer, 8, &mut |_| Err("original-memory"), &mut |_| {
             "physical"

@@ -63,14 +63,14 @@ fn real_report_refusal_preserves_original_payer_until_owned_denial_closes() {
             let selected = world
                 .application
                 .on_branch(world.application.current_world())
-                .select_with_request(&execution)
+                .select_with_request_for_test(&execution)
                 .unwrap();
-            let result = world.application.with_fresh_retained_query_identities(
+            let result = world.application.with_fresh_retained_query_identities_for_test(
                 &execution,
                 &installed,
                 None,
                 &external,
-                &original.source,
+                &(*original.source_for_test()),
                 &selected,
                 &request,
                 |_, principal, scope| {
@@ -89,10 +89,10 @@ fn real_report_refusal_preserves_original_payer_until_owned_denial_closes() {
                     )
                     .unwrap_or_else(|_| panic!("genuine fresh preparation must succeed"));
                     drop(
-                        read.check(&execution)
+                        read.check_for_test(&execution)
                             .unwrap_or_else(|_| panic!("real currentness must precede filling")),
                     );
-                    let held = read.memory.as_ref().unwrap().bytes();
+                    let held = (*read.memory_for_test()).as_ref().unwrap().bytes();
                     assert!(held > 0);
                     held_before_report = Some(held);
                     let ExecutionAllocationPolicy::Execution(actual) =
@@ -111,10 +111,10 @@ fn real_report_refusal_preserves_original_payer_until_owned_denial_closes() {
                     // its real currentness check, with its real target and session.
                     let refusal = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::causal_inspection::application_inspection::report::materialize(
                         &execution,
-                        &read.target,
-                        &read.session,
+                        &(*read.target_for_test()),
+                        &(*read.session_for_test()),
                         worth_query_execution::court_doors_for_test::domain_computation::primary_graph::causal_inspection::application_inspection::identity::InspectionOriginalReference::After,
-                        read.memory,
+                        (*read.memory_for_test()),
                     )
                     .err()
                     .expect("report backing must refuse after its real frame admits");
@@ -131,7 +131,7 @@ fn real_report_refusal_preserves_original_payer_until_owned_denial_closes() {
         },
     );
     assert!(matches!(handoff, Ok(()) | Err(worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial::NestedStopped)));
-    let denial = WorthQueryApplicationInspectionDenial::new(
+    let denial = WorthQueryApplicationInspectionDenial::new_for_test(
         InspectionCause::Admission(failed.expect("the real report owner returned its refusal")),
         memory,
     );

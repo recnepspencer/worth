@@ -31,33 +31,33 @@ fn an_unbound_at_most_one_role_reads_as_none_and_a_bound_one_as_some() {
 
     let mut absent = prepared::<OptionalOutputs>();
     absent
-        .bind(
-            OutputRoleUse::fixed::<Subject>(),
+        .bind_for_test(
+            OutputRoleUse::fixed_for_test::<Subject>(),
             &existing_handle(subject, &program),
             &program,
         )
         .unwrap();
-    let absent = absent.seal_with(|_| None);
+    let absent = absent.seal_with_for_test(|_| None);
     let absent = absent.outputs_of::<OptionalOutputs>().unwrap();
     assert!(absent.entity::<Companion>().unwrap().is_none());
     assert_eq!(absent.entity::<Subject>().unwrap().entity_id(), subject);
 
     let mut present = prepared::<OptionalOutputs>();
     present
-        .bind(
-            OutputRoleUse::fixed::<Subject>(),
+        .bind_for_test(
+            OutputRoleUse::fixed_for_test::<Subject>(),
             &existing_handle(subject, &program),
             &program,
         )
         .unwrap();
     present
-        .bind(
-            OutputRoleUse::fixed::<Companion>(),
+        .bind_for_test(
+            OutputRoleUse::fixed_for_test::<Companion>(),
             &existing_handle(companion, &program),
             &program,
         )
         .unwrap();
-    let present = present.seal_with(|_| None);
+    let present = present.seal_with_for_test(|_| None);
     let present = present.outputs_of::<OptionalOutputs>().unwrap();
     assert_eq!(
         present
@@ -73,20 +73,20 @@ fn a_read_whose_cardinality_differs_from_the_declaration_is_refused() {
     let program = Arc::new(());
     let mut candidate = prepared::<OptionalOutputs>();
     candidate
-        .bind(
-            OutputRoleUse::fixed::<Subject>(),
+        .bind_for_test(
+            OutputRoleUse::fixed_for_test::<Subject>(),
             &existing_handle(EntityId::new(PartitionId::main(), 52, 1), &program),
             &program,
         )
         .unwrap();
     candidate
-        .bind(
-            OutputRoleUse::fixed::<Companion>(),
+        .bind_for_test(
+            OutputRoleUse::fixed_for_test::<Companion>(),
             &existing_handle(EntityId::new(PartitionId::main(), 53, 1), &program),
             &program,
         )
         .unwrap();
-    let committed = candidate.seal_with(|_| None);
+    let committed = candidate.seal_with_for_test(|_| None);
 
     for role in [companion_as_required(), subject_as_optional()] {
         assert_eq!(
@@ -114,7 +114,7 @@ fn a_write_whose_cardinality_differs_from_the_declaration_is_refused() {
     ] {
         assert_eq!(
             candidate
-                .bind(role, &existing, &program)
+                .bind_for_test(role, &existing, &program)
                 .unwrap_err()
                 .kind(),
             WorthQueryApplicationAttemptDenialKind::OutputRoleCardinalityMismatch
@@ -131,9 +131,9 @@ fn checkpoint_readmission_keeps_absence_a_value() {
     );
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let entity = EntityId::new(PartitionId::main(), 55, 1);
-    let readmitted = WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles(
-        TypeId::of::<Binding>(),
-        TypeId::of::<OptionalOutputs>(),
+    let readmitted = WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles_for_test(
+        TypeId::of_for_test::<Binding>(),
+        TypeId::of_for_test::<OptionalOutputs>(),
         ["companion"].into_iter(),
         &[WorthQueryCheckpointOutputRole {
             role: "preserved".into(),
@@ -141,22 +141,22 @@ fn checkpoint_readmission_keeps_absence_a_value() {
             entity_name: "entity".into(),
             entity,
         }],
-        |_| Some(TypeId::of::<Entity>()),
+        |_| Some(TypeId::of_for_test::<Entity>()),
         &execution,
     )
     .unwrap();
 
-    let outputs = readmitted.outputs_of::<OptionalOutputs>().unwrap();
+    let outputs = readmitted.outputs_of_for_test::<OptionalOutputs>().unwrap();
     assert!(outputs.entity::<Companion>().unwrap().is_none());
     assert_eq!(outputs.entity::<Subject>().unwrap().entity_id(), entity);
     assert_eq!(
-        readmitted.bound_entity(&companion_as_required()).err(),
+        readmitted.bound_entity_for_test(&companion_as_required()).err(),
         Some(WorthQueryApplicationOutputProjectionDenial::CardinalityMismatch)
     );
     // Reading it as another contract is refused once, at the typed view;
     // no read of that contract's roles is reached.
     assert_eq!(
-        readmitted.outputs_of::<Outputs>().err(),
+        readmitted.outputs_of_for_test::<Outputs>().err(),
         Some(WorthQueryApplicationOutputProjectionDenial::ForeignContract)
     );
 }

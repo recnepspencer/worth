@@ -26,12 +26,12 @@ fn hidden_ordering_material_is_consumed_before_domain_projection() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             world
                 .application
-                .select_product_branch(
+                .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch(),
+                    world.application.product_runtime().default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_authenticated_principal(
@@ -47,12 +47,12 @@ fn hidden_ordering_material_is_consumed_before_domain_projection() {
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             world
                 .application
-                .select_product_branch(
+                .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch(),
+                    world.application.product_runtime().default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
@@ -74,7 +74,7 @@ fn hidden_ordering_material_is_consumed_before_domain_projection() {
         .application
         .with_host_advancement(|phase| {
             admit_touch_account_capability(
-                &(phase).test_host_request(),
+                &(phase).test_host_request_for_test(),
                 &world,
                 &principal,
                 &request,
@@ -87,7 +87,7 @@ fn hidden_ordering_material_is_consumed_before_domain_projection() {
         .application
         .with_host_advancement(|phase| {
             world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&(phase).test_host_request_for_test())
                 .admit_governed_application_query(
                     &phase,
                     &query,
@@ -137,7 +137,7 @@ fn hidden_ordering_material_is_consumed_before_domain_projection() {
     assert_eq!(result.receipt().projected_field_count(), 4);
     for source in result.observed_sources() {
         let denial = source
-            .validate_completeness("GovernedHiddenOrderingQuery")
+            .validate_completeness_for_test("GovernedHiddenOrderingQuery")
             .expect_err("a protected internal ordering field cannot yield a complete source");
         assert_eq!(
             denial.kind(),

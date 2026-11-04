@@ -176,7 +176,7 @@ fn workflow_freezes_artifact_production_before_provider_suspension() {
             disposals: Arc::clone(&disposals),
         };
         let (running, graph, production) = freeze_probe_workflow(provider, resource_request);
-        let installed_running_phase = execution.phase_for_workflow(&running);
+        let installed_running_phase = execution.phase_for_workflow_for_test(&running);
 
         *authority
             .lock()

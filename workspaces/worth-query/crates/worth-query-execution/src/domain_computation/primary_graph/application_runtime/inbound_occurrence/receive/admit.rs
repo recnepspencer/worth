@@ -287,3 +287,5 @@ fn map_custody(
         WorthQueryInboundCustodyAdmission::CapacityExhausted => Err(Denial::CapacityExhausted),
     }
 }
+
+mod court_doors_for_test;

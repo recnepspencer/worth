@@ -30,7 +30,7 @@ pub fn colliding(
     kept: PartitionItemId,
     key: &Parity,
 ) -> ComputationPrior {
-    let typed = std::mem::replace(&mut sealed.state.typed, Arc::new(()))
+    let typed = std::mem::replace(&mut (*sealed.state_mut_for_test()).typed, Arc::new(()))
         .downcast::<RetainedPartitions<Parity, Number, u64>>()
         .expect("the run retains its partitions");
     let mut typed = Arc::try_unwrap(typed)
@@ -47,12 +47,12 @@ pub fn colliding(
                 digest_of(&partition.key)
             };
             routing
-                .route(item, digest, |_| Ok(()))
+                .route_for_test(item, digest, |_| Ok(()))
                 .expect("the item routes");
         }
     }
     typed.routing = Arc::new(routing);
-    sealed.state.typed = Arc::new(typed);
+    (*sealed.state_for_test()).typed = Arc::new(typed);
     moved_facts(sealed, false)
 }
 
@@ -65,15 +65,15 @@ fn a_collision_met_routing_again_makes_the_run_in_full() {
         Rerouted::default(),
         ComputationRetention::ProducerOperation,
     );
-    let fresh = || Some(ComputationPrior::new(edition(), Err(Cause::FirstRun), None));
-    *installed.owner.entries.lock().unwrap() = BTreeMap::from([(1, (0, 10)), (2, (1, 20))]);
+    let fresh = || Some(ComputationPrior::new_for_test(edition(), Err(Cause::FirstRun), None));
+    *(*installed.owner_for_test()).entries.lock().unwrap() = BTreeMap::from([(1, (0, 10)), (2, (1, 20))]);
     let first = attempt(&world, &installed, fresh())
         .sealed
         .unwrap()
         .unwrap();
     // Item 1 moves to key 2, where the prior holds item 2 under a foreign
     // digest; item 2 keeps its route.
-    *installed.owner.entries.lock().unwrap() = BTreeMap::from([(1, (2, 10)), (2, (1, 20))]);
+    *(*installed.owner_for_test()).entries.lock().unwrap() = BTreeMap::from([(1, (2, 10)), (2, (1, 20))]);
     let prior = colliding(first, PartitionItemId(2), &Parity(2));
     let next = attempt(&world, &installed, Some(prior));
     let full = attempt(&world, &installed, fresh());
@@ -102,14 +102,14 @@ fn replacing_a_sole_member_key_with_a_prefix_collision_matches_a_fresh_run() {
         Rerouted::default(),
         ComputationRetention::ProducerOperation,
     );
-    *installed.owner.key_only.lock().unwrap() = true;
-    *installed.owner.entries.lock().unwrap() = BTreeMap::from([(1, (0, 10))]);
-    let fresh = || Some(ComputationPrior::new(edition(), Err(Cause::FirstRun), None));
+    *(*installed.owner_for_test()).key_only.lock().unwrap() = true;
+    *(*installed.owner_for_test()).entries.lock().unwrap() = BTreeMap::from([(1, (0, 10))]);
+    let fresh = || Some(ComputationPrior::new_for_test(edition(), Err(Cause::FirstRun), None));
     let mut sealed = attempt(&world, &installed, fresh())
         .sealed
         .unwrap()
         .unwrap();
-    let typed = std::mem::replace(&mut sealed.state.typed, Arc::new(()))
+    let typed = std::mem::replace(&mut (*sealed.state_mut_for_test()).typed, Arc::new(()))
         .downcast::<RetainedPartitions<Parity, Number, u64>>()
         .unwrap();
     let mut typed = Arc::try_unwrap(typed).ok().unwrap();
@@ -125,7 +125,7 @@ fn replacing_a_sole_member_key_with_a_prefix_collision_matches_a_fresh_run() {
         gather: partition.gather.clone(),
     };
     let request = live_scope();
-    let execution = QueryRequestExecution::open(
+    let execution = QueryRequestExecution::open_for_test(
         RuntimeWorldExecutionPlacement::Serial(
             worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy(
                 std::num::NonZeroUsize::MIN, None,
@@ -138,27 +138,27 @@ fn replacing_a_sole_member_key_with_a_prefix_collision_matches_a_fresh_run() {
         .put(
             identity,
             replacement,
-            execution.allocation_policy().unwrap(),
+            execution.allocation_policy_for_test().unwrap(),
         )
         .unwrap();
     execution
-        .with_native_lease(|lease| {
+        .with_native_lease_for_test(|lease| {
             typed
                 .tree
-                .update_native(identity, 62, Some(lease), || execution.checkpoint())
+                .update_native(identity, 62, Some(lease), || execution.checkpoint_for_test())
         })
         .unwrap()
         .unwrap();
     let mut routing = ComputationPartitionRouting::default();
     routing
-        .route(PartitionItemId(1), a_digest, |_| Ok(()))
+        .route_for_test(PartitionItemId(1), a_digest, |_| Ok(()))
         .unwrap();
     typed.routing = Arc::new(routing);
-    sealed.state.typed = Arc::new(typed);
+    (*sealed.state_for_test()).typed = Arc::new(typed);
     // Only the key call read this fact. Membership, item value and gathering
     // stayed unchanged, so a compact-identity-only test would carry A's leaf.
-    let (key, fact) = sealed
-        .state
+    let (key, fact) = (*sealed
+        .state_for_test())
         .facts
         .facts()
         .find(|(_, _, readers)| {
@@ -171,11 +171,11 @@ fn replacing_a_sole_member_key_with_a_prefix_collision_matches_a_fresh_run() {
     let WorthQueryApplicationObservedFact::Field { entity_id, .. } = fact else {
         panic!("key field");
     };
-    sealed.state.facts.replace_fact(
+    (*sealed.state_for_test()).facts.replace_fact(
         &key,
         WorthQueryApplicationObservedFact::SourceEntity { entity_id },
     );
-    let prior = ComputationPrior::new(edition(), Ok(std::sync::Arc::new(sealed.state)), None);
+    let prior = ComputationPrior::new_for_test(edition(), Ok(std::sync::Arc::new((*sealed.state_for_test()))), None);
     let next = attempt(&world, &installed, Some(prior));
     let full = attempt(&world, &installed, fresh());
     assert_eq!(next.outcome, full.outcome, "B must not carry A's result");
@@ -183,8 +183,8 @@ fn replacing_a_sole_member_key_with_a_prefix_collision_matches_a_fresh_run() {
     let next = next.sealed.unwrap().unwrap();
     let full = full.sealed.unwrap().unwrap();
     let keys = |sealed: &SealedComputationRun| {
-        sealed
-            .state
+        (*sealed
+            .state_for_test())
             .typed
             .downcast_ref::<RetainedPartitions<Parity, Number, u64>>()
             .unwrap()

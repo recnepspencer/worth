@@ -37,9 +37,9 @@ fn refused_maintenance_cleanup_probe() {
     let _observation =
         worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation::install_on_this_thread();
     let world = installed_authorization_world(true);
-    let graph = world
+    let graph = (*world
         .application
-        .runtime
+        .runtime_for_test())
         .primary_graph()
         .unwrap()
         .integration_handle();
@@ -68,7 +68,7 @@ fn refused_maintenance_cleanup_probe() {
     let registry = WorthQueryApplicationBasisRegistry::default();
     let observer = registry.observer();
     let lease = registry
-        .register(&execution, basis, graph.clone())
+        .register_for_test(&execution, basis, graph.clone())
         .unwrap_or_else(|_| panic!("real exact basis must register"));
     assert_eq!(observer.observe().active(), 1);
     let stopped = execution.run(ExecutionWorkCeiling::new(Some(0)), |_| {

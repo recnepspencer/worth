@@ -24,20 +24,20 @@ fn producer_requirement_denies_before_first_publication_and_leaves_retry_clean()
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let candidate = world
         .application
         .with_host_advancement(|phase| {
             admitted_program(&phase, &world, &principal, &account, &request, "published")
-                .with_producer_required_invariants(REQUIRED)
+                .with_producer_required_invariants_for_test(REQUIRED)
         })
         .expect("the fixture read owns its installed host call");
     let outcome = world.application.compare_and_commit_application(
@@ -55,7 +55,7 @@ fn producer_requirement_denies_before_first_publication_and_leaves_retry_clean()
     let _predecessor = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "open", &live_scope())
+            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &live_scope())
         })
         .expect("the fixture read owns its installed host call");
 

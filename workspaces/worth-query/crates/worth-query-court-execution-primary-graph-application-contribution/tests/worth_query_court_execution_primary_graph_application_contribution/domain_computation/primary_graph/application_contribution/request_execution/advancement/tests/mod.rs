@@ -28,7 +28,7 @@ impl Drop for Restore {
 
 pub fn request() -> QueryRequestExecution<'static> {
     let policy = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy(NonZeroUsize::MIN, None);
-    QueryRequestExecution::open_control(
+    QueryRequestExecution::open_control_for_test(
         worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(policy),
         worth_execution::CancellationToken::new(),
         None,
@@ -75,7 +75,7 @@ fn nested_execution_phases_share_one_work_ceiling() {
     );
     let request = request();
     let stop = request
-        .run_advancement(None, None, |phase| {
+        .run_advancement_for_test(None, None, |phase| {
             assert!(matches!(
                 charged_request(phase.borrowed_request_for_test(), UNITS),
                 MapOutcome::Complete { .. }
@@ -104,7 +104,7 @@ fn zero_work_refuses_before_the_advancement_body() {
         place(Placement::Leased(NonZeroUsize::MIN)),
         bound(Some(ExecutionBudget::new(NonZeroUsize::MIN, None, Some(0)))),
     );
-    let result = request().run_advancement(None, None, |_| {
+    let result = request().run_advancement_for_test(None, None, |_| {
         panic!("a refused request cannot reach its reader")
     });
     assert_eq!(
@@ -140,7 +140,7 @@ fn reentrant_host_open_is_typed_at_serial_and_leased_placements() {
                 assert!(matches!(
                     charged_request(
                         phase
-                            .execution_request_for(&world.application.product_runtime)
+                            .execution_request_for_for_test(&(*world.application.product_runtime_for_test()))
                             .expect("the issuer accepts its own phase"),
                         1
                     ),

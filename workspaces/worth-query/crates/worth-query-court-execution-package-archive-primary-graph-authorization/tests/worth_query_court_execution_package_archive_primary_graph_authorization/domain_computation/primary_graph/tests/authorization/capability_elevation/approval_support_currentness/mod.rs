@@ -16,14 +16,14 @@ fn exact_support_revocation_after_materialization_denies_provider_commit() {
     let approver = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             crate::domain_computation::primary_graph::tests::authorization::capability_elevation::approval_transition::authenticated(&host_custody, &world, "bob", &request)
         })
         .expect("the fixture read owns its installed host call");
     let program = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             crate::domain_computation::primary_graph::tests::authorization::capability_elevation::approval_transition::materialize_exact_approval(
                 &host_custody,
                 &world,
@@ -35,7 +35,7 @@ fn exact_support_revocation_after_materialization_denies_provider_commit() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             revoke_current_capability(
                 &host_custody,
                 &host_custody.borrowed_request_for_test(),
@@ -62,13 +62,13 @@ fn exact_support_revocation_after_materialization_denies_provider_commit() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             assert_requested_without_approval(
                 &host_custody.phase_for_application(&world.application),
                 &host_custody.borrowed_request_for_test(),
                 &world,
                 &requested,
-                approver.principal_entity_id(),
+                approver.principal_entity_id_for_test(),
             )
         })
         .expect("the fixture read owns its installed host call");
@@ -81,7 +81,7 @@ fn unrelated_published_lifecycle_drift_stales_the_selected_product_mutation() {
     let program = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             crate::domain_computation::primary_graph::tests::authorization::capability_elevation::approval_transition::materialize_exact_approval(
                 &host_custody,
                 &world,
@@ -93,7 +93,7 @@ fn unrelated_published_lifecycle_drift_stales_the_selected_product_mutation() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             crate::domain_computation::primary_graph::tests::authorization::capability_elevation::mutation::set_status(
                 &host_custody,
                 &host_custody.borrowed_request_for_test(),
@@ -121,7 +121,7 @@ fn unrelated_published_lifecycle_drift_stales_the_selected_product_mutation() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             assert_eq!(
                 crate::domain_computation::primary_graph::tests::authorization::capability_elevation::terminal_state::elevation_status(
                     &(host_custody.phase_for_application(&world.application)).test_host_request(),
@@ -141,14 +141,14 @@ fn request_expiry_after_approval_materialization_denies_provider_commit() {
     let approver = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             crate::domain_computation::primary_graph::tests::authorization::capability_elevation::approval_transition::authenticated(&host_custody, &world, "bob", &request)
         })
         .expect("the fixture read owns its installed host call");
     let program = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             crate::domain_computation::primary_graph::tests::authorization::capability_elevation::approval_transition::materialize_exact_approval(
                 &host_custody,
                 &world,
@@ -179,13 +179,13 @@ fn request_expiry_after_approval_materialization_denies_provider_commit() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             assert_requested_without_approval(
                 &host_custody.phase_for_application(&world.application),
                 &host_custody.borrowed_request_for_test(),
                 &world,
                 &requested,
-                approver.principal_entity_id(),
+                approver.principal_entity_id_for_test(),
             )
         })
         .expect("the fixture read owns its installed host call");
@@ -198,14 +198,14 @@ fn exact_approval_authorization_carries_three_graph_facts_and_derive_only_the_go
     let approver = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             crate::domain_computation::primary_graph::tests::authorization::capability_elevation::approval_transition::authenticated(&host_custody, &world, "bob", &request)
         })
         .expect("the fixture read owns its installed host call");
     let access = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             crate::domain_computation::primary_graph::tests::authorization::capability_elevation::approval_transition::approval_access(&host_custody, &world, &approver, &request)
                 .unwrap()
         })
@@ -213,7 +213,7 @@ fn exact_approval_authorization_carries_three_graph_facts_and_derive_only_the_go
     let admission = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             world
                 .application
                 .authorize_elevation_approval(
@@ -228,7 +228,7 @@ fn exact_approval_authorization_carries_three_graph_facts_and_derive_only_the_go
         .expect("the fixture read owns its installed host call");
 
     assert_eq!(admission.authorization_decision_fact_count(), 3);
-    assert_eq!(admission.graph_work_decision_fact_count(), 3);
+    assert_eq!(admission.graph_work_decision_fact_count_for_test(), 3);
     let work = admission.canonical_work().admission();
     // The one canonical derivation is the governed input the admission encoded.
     assert_eq!(work.basis_preparations(), 0);
@@ -252,18 +252,18 @@ fn request_command_resource_can_differ_from_the_governed_resource_it_progresses(
     let approver = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             crate::domain_computation::primary_graph::tests::authorization::capability_elevation::approval_transition::authenticated(&host_custody, &world, "bob", &request)
         })
         .expect("the fixture read owns its installed host call");
 
     let approved = crate::domain_computation::primary_graph::tests::authorization::capability_elevation::approval_transition::approve_exact_request(&world, &request, requested);
 
-    assert_eq!(approved.approver(), approver.principal_entity_id());
+    assert_eq!(approved.approver(), approver.principal_entity_id_for_test());
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             assert_eq!(
                 crate::domain_computation::primary_graph::tests::authorization::capability_elevation::terminal_state::elevation_status(
                     &host_custody,
@@ -277,14 +277,14 @@ fn request_command_resource_can_differ_from_the_governed_resource_it_progresses(
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             let borrowed_execution = host_custody.borrowed_request_for_test();
             let execution = &borrowed_execution;
             assert!(crate::domain_computation::primary_graph::tests::authorization::capability_elevation::terminal_state::has_exact_approver(
                 &host_custody,
                 execution,
                 &world,
-                approver.principal_entity_id()
+                approver.principal_entity_id_for_test()
             ))
         })
         .expect("the fixture read owns its installed host call");
@@ -305,14 +305,14 @@ pub fn assert_requested_without_approval(
     );
     assert_eq!(
         crate::domain_computation::primary_graph::tests::authorization::capability_elevation::terminal_state::elevation_status(
-            &(phase_custody).test_host_request(),
+            &(phase_custody).test_host_request_for_test(),
             execution,
             world
         ),
         CapabilityElevationStatus::Requested
     );
     assert!(!crate::domain_computation::primary_graph::tests::authorization::capability_elevation::terminal_state::has_exact_approver(
-        &(phase_custody).test_host_request(),
+        &(phase_custody).test_host_request_for_test(),
         execution,
         world,
         approver

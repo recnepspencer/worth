@@ -8,7 +8,7 @@ use std::sync::Arc;
 #[test]
 fn only_a_settled_upstream_can_resolve_a_pending_mark() {
     with_committed_own_write(|_, _, cell, _| {
-        let identity = Arc::clone(&cell.get().unwrap().settlement_identity);
+        let identity = Arc::clone(&(*cell.get().unwrap().settlement_identity_for_test()));
         assert!(upstream_settled(
             ConsumedOutputCurrentness::CanonicallyEqualClean(identity)
         ));

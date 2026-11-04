@@ -180,7 +180,7 @@ pub fn prepared_target(
         resource_request,
     );
     let active = {
-        let installed_fixture_phase = running.fixture_phase(execution);
+        let installed_fixture_phase = running.fixture_phase_for_test(execution);
         running.begin_graph_execution(
             &installed_fixture_phase,
             &graph,
@@ -200,14 +200,14 @@ pub fn complete_target(
     active: worth_query_execution::facade::domain_computation::WorthQueryActiveDirectGraphExecution,
 ) -> worth_query_execution::facade::domain_computation::WorthQueryCompletedDirectGraphExecution {
     let mut outcome = {
-        let installed_fixture_phase = active.fixture_phase(execution);
+        let installed_fixture_phase = active.fixture_phase_for_test(execution);
         active.advance(&installed_fixture_phase)
     };
     loop {
         outcome = match outcome {
             WorthQueryDirectGraphStepOutcome::ChunkReady(pending) => pending.acknowledge(),
             WorthQueryDirectGraphStepOutcome::Continue(paused) => {
-                let installed_fixture_phase = paused.fixture_phase(execution);
+                let installed_fixture_phase = paused.fixture_phase_for_test(execution);
                 paused.advance(&installed_fixture_phase)
             }
             WorthQueryDirectGraphStepOutcome::Completed(completion) => return completion,

@@ -22,7 +22,7 @@ pub fn nested(
     units: u64,
 ) -> Result<MapOutcome<(), ()>, WorkCeilingDenial> {
     let dispatch = request
-        .dispatch()
+        .dispatch_for_test()
         .expect("a member dispatch has the parent's exact policy");
     dispatch.map(
         units,
@@ -55,8 +55,8 @@ fn wave_and_member_descendants_share_the_advancements_work_ceiling() {
         worth_query_execution::facade::domain_computation::advancement_requests_on_this_thread_for_test();
         let root = request();
         let outcome = root
-            .run_advancement(None, None, |_| {
-                let wave = root.wave();
+            .run_advancement_for_test(None, None, |_| {
+                let wave = root.wave_for_test();
                 wave.request()
                     .execution_request()
                     .unwrap()
@@ -102,8 +102,8 @@ fn a_partition_drawn_from_the_root_is_refused_inside_a_wave_member() {
     for workers in [NonZeroUsize::MIN, NonZeroUsize::new(4).unwrap()] {
         let _restore = Restore(place(Placement::Leased(workers)), bound(None));
         let root = request();
-        root.run_advancement(None, None, |_| {
-            let wave = root.wave();
+        root.run_advancement_for_test(None, None, |_| {
+            let wave = root.wave_for_test();
             wave.request()
                 .execution_request()
                 .unwrap()

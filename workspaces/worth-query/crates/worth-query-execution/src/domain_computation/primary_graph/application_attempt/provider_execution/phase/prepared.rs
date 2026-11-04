@@ -252,3 +252,5 @@ const fn terminal<Schema, Operation, Input, Scope>(
 ) -> WorthQueryApplicationCommitPreparation<Schema, Operation, Input, Scope> {
     WorthQueryApplicationCommitPreparation::Terminal(outcome)
 }
+
+mod court_doors_for_test;

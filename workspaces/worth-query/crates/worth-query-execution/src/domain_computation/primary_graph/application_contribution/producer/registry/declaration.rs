@@ -116,3 +116,5 @@ impl DeclaredProducerBinding {
             && self.provider_type == expected.provider_type
     }
 }
+
+mod court_doors_for_test;

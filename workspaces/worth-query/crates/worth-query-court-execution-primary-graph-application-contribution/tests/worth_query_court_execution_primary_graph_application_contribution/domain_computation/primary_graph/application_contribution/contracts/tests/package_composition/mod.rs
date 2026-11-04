@@ -18,8 +18,8 @@ fn generated_shared_domain_validates_distinct_bindings_and_keeps_runtime_entries
     let shared = crate::domain_computation::primary_graph::application_contribution::contracts::tests::package_composition::fixture::definition("composition-shared", "composition-v1");
     let [first, second] = crate::domain_computation::primary_graph::application_contribution::contracts::tests::package_composition::fixture::contracts(&shared, &shared);
     let expected = [
-        first.operation_binding().clone(),
-        second.operation_binding().clone(),
+        first.operation_binding_for_test().clone(),
+        second.operation_binding_for_test().clone(),
     ]
     .into_iter()
     .collect::<std::collections::BTreeSet<_>>();
@@ -28,7 +28,7 @@ fn generated_shared_domain_validates_distinct_bindings_and_keeps_runtime_entries
     let catalog = crate::domain_computation::primary_graph::application_contribution::contracts::tests::package_composition::fixture::catalog(vec![first.clone(), second, first]);
     let before = crate::domain_computation::primary_graph::application_contribution::contracts::tests::package_composition::fixture::snapshot(&catalog);
     let validated = catalog
-        .compose_package(crate::domain_computation::primary_graph::application_contribution::contracts::tests::package_composition::fixture::package())
+        .compose_package_for_test(crate::domain_computation::primary_graph::application_contribution::contracts::tests::package_composition::fixture::package())
         .validate()
         .unwrap();
     assert_eq!(validated.domain_operations(), &[shared.into_portable()]);
@@ -47,11 +47,11 @@ fn generated_shared_domain_validates_distinct_bindings_and_keeps_runtime_entries
         "all target/owner/type/producer scopes survive"
     );
     assert_eq!(
-        catalog.conditionals.len(),
+        (*catalog.conditionals_for_test()).len(),
         3,
         "portable reuse must not erase runtime registrations"
     );
-    assert_eq!(before[0].2.target(), before[2].2.target());
+    assert_eq!(before[0].2.target_for_test(), before[2].2.target_for_test());
     assert_ne!(before[0].3, before[2].3);
     assert_ne!(before[0].4, before[2].4);
 }
@@ -64,7 +64,7 @@ fn generated_domain_and_application_binding_conflicts_reach_package_validation()
     let contracts = crate::domain_computation::primary_graph::application_contribution::contracts::tests::package_composition::fixture::contracts(&original, &drifted);
     let catalog = crate::domain_computation::primary_graph::application_contribution::contracts::tests::package_composition::fixture::catalog(contracts.into());
     let denial = catalog
-        .compose_package(crate::domain_computation::primary_graph::application_contribution::contracts::tests::package_composition::fixture::package())
+        .compose_package_for_test(crate::domain_computation::primary_graph::application_contribution::contracts::tests::package_composition::fixture::package())
         .validate()
         .unwrap_err();
     assert_eq!(
@@ -84,7 +84,7 @@ fn generated_domain_and_application_binding_conflicts_reach_package_validation()
     let conflicting = crate::domain_computation::primary_graph::application_contribution::contracts::tests::package_composition::fixture::contracts(&other, &other)[0].clone();
     let catalog = crate::domain_computation::primary_graph::application_contribution::contracts::tests::package_composition::fixture::catalog(vec![first, conflicting]);
     let denial = catalog
-        .compose_package(crate::domain_computation::primary_graph::application_contribution::contracts::tests::package_composition::fixture::package())
+        .compose_package_for_test(crate::domain_computation::primary_graph::application_contribution::contracts::tests::package_composition::fixture::package())
         .validate()
         .unwrap_err();
     assert_eq!(denial.kind(), domain::WorthQueryPortablePackageValidationDenialKind::ConflictingConditionalApplicationOperation);
@@ -96,7 +96,7 @@ fn explicit_incoming_domain_and_binding_duplicates_remain_refusals() {
     let shared = crate::domain_computation::primary_graph::application_contribution::contracts::tests::package_composition::fixture::definition("composition-shared", "composition-v1");
     let [first, second] = crate::domain_computation::primary_graph::application_contribution::contracts::tests::package_composition::fixture::contracts(&shared, &shared);
     let portable = shared.into_portable();
-    let binding = first.operation_binding().clone();
+    let binding = first.operation_binding_for_test().clone();
     let catalog = crate::domain_computation::primary_graph::application_contribution::contracts::tests::package_composition::fixture::catalog(vec![first, second]);
     // One explicit component colliding with generated meaning, and duplicate
     // components already incoming, must both reach the ordinary validator.
@@ -105,7 +105,7 @@ fn explicit_incoming_domain_and_binding_duplicates_remain_refusals() {
         for _ in 0..copies {
             incoming = incoming.domain_operation(portable.clone());
         }
-        let denial = catalog.compose_package(incoming).validate().unwrap_err();
+        let denial = catalog.compose_package_for_test(incoming).validate().unwrap_err();
         assert_eq!(
             denial.kind(),
             domain::WorthQueryPortablePackageValidationDenialKind::DuplicateDefinition
@@ -120,7 +120,7 @@ fn explicit_incoming_domain_and_binding_duplicates_remain_refusals() {
         for _ in 0..copies {
             incoming = incoming.conditional_application_operation_erased(binding.clone());
         }
-        let denial = catalog.compose_package(incoming).validate().unwrap_err();
+        let denial = catalog.compose_package_for_test(incoming).validate().unwrap_err();
         assert_eq!(denial.kind(), domain::WorthQueryPortablePackageValidationDenialKind::DuplicateConditionalApplicationOperation);
         assert_eq!(denial.slot(), binding.application_operation());
     }

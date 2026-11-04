@@ -47,7 +47,7 @@ pub fn reject_legacy_codec(session: &ValueDecodeSession<'_>) {
     assert!(session
         .decode::<U64ApplicationValueBinding>("Source", "Value", "Number", &AspectValue::UInt64(1))
         .is_none());
-    assert_eq!(session.denial(), Some(Decode::BindingContractMismatch));
+    assert_eq!(session.denial_for_test(), Some(Decode::BindingContractMismatch));
 }
 pub fn controlled_cause(result: Result<(), WorthQueryManagedIndexWorkDenial>) -> Stop {
     match result {
@@ -125,7 +125,7 @@ fn original_content_reservation_keeps_its_payer_and_first_memory_or_cancel_refus
     let execution = ExecutionRequest::serial(&storage);
     let held = controlled(
         &execution,
-        |control| Ok(control.reserve_content_memory(64)?),
+        |control| Ok(control.reserve_content_memory_for_test(64)?),
     )
     .unwrap()
     .expect("actual accounted original reservation");
@@ -135,14 +135,14 @@ fn original_content_reservation_keeps_its_payer_and_first_memory_or_cancel_refus
 
     let expected = RefCell::new(None);
     let result = controlled(&execution, |control| {
-        let first = control.reserve_content_memory(ceiling + 1).unwrap_err();
+        let first = control.reserve_content_memory_for_test(ceiling + 1).unwrap_err();
         assert!(matches!(
             first,
             Stop::Request(WorkCeilingDenial::Admission(LeaseDenial::MemoryExhausted(
                 _
             )))
         ));
-        assert_eq!(control.reserve_content_memory(1).unwrap_err(), first);
+        assert_eq!(control.reserve_content_memory_for_test(1).unwrap_err(), first);
         *expected.borrow_mut() = Some(first);
         Ok(()) // original memory refusal cannot be swallowed by the caller
     });
@@ -154,7 +154,7 @@ fn original_content_reservation_keeps_its_payer_and_first_memory_or_cancel_refus
     let execution = ExecutionRequest::serial(&storage);
     let result = controlled(&execution, |control| {
         cancel.cancel();
-        assert!(control.reserve_content_memory(1).is_err());
+        assert!(control.reserve_content_memory_for_test(1).is_err());
         Ok(())
     });
     assert_eq!(

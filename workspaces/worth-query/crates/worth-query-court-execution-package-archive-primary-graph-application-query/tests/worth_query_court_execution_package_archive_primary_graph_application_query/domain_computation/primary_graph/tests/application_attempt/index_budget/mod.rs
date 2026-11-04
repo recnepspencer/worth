@@ -15,13 +15,13 @@ fn pre_effect_index_budget_denial_leaves_no_effect_and_retries_through_query() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let denied = world
@@ -59,16 +59,16 @@ fn pre_effect_index_budget_denial_leaves_no_effect_and_retries_through_query() {
         WorthQueryApplicationCommitDenialStage::ProviderCommit
     );
     assert_eq!(
-        world
+        (*world
             .application
-            .primary_provider
+            .primary_provider_for_test())
             .published_application_commit_count(),
         0
     );
     let _still_open = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "open", &live_scope())
+            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &live_scope())
         })
         .expect("the fixture read owns its installed host call");
 
@@ -105,7 +105,7 @@ fn pre_effect_index_budget_denial_leaves_no_effect_and_retries_through_query() {
         .application
         .with_host_advancement(|phase| {
             resolved_account(
-                &(phase).test_host_request(),
+                &(phase).test_host_request_for_test(),
                 &world,
                 "budget-replacement",
                 &live_scope(),

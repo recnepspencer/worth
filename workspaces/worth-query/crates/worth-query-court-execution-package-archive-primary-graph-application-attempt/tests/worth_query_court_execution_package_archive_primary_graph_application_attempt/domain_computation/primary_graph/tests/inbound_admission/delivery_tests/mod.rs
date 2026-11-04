@@ -15,9 +15,9 @@ fn performed_completion_reaches_the_canonical_subscription_once_and_terminal_tur
     let world = installed_world();
     let dispatch = { world.commit_dispatch(51, "route-observed-notice") };
     let outbox = dispatch.dispatch_outbox().unwrap();
-    let owner = &world
+    let owner = &(*world
         .application
-        .primary_provider
+        .primary_provider_for_test())
         .graph
         .source_owner
         .invalidation_owner;

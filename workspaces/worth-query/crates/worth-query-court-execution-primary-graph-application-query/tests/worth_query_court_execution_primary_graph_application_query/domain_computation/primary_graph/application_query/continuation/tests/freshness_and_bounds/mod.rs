@@ -14,7 +14,7 @@ fn authentication_expiry_denies_resume_without_a_basis() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             context.issue(&host_custody)
         })
         .expect("the fixture read owns its installed host call");
@@ -26,7 +26,7 @@ fn authentication_expiry_denies_resume_without_a_basis() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             context.readmit_denial(&host_custody, continuation, "account-1", &request, 1)
         })
         .expect("the fixture read owns its installed host call");
@@ -46,7 +46,7 @@ fn stale_principal_and_scope_deny_and_release_readmission_bases() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             principal_context.issue(&host_custody)
         })
         .expect("the fixture read owns its installed host call");
@@ -55,7 +55,7 @@ fn stale_principal_and_scope_deny_and_release_readmission_bases() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             principal_context.stale_principal_mapping(&host_custody.borrowed_request_for_test())
         })
         .expect("the fixture read owns its installed host call");
@@ -66,7 +66,7 @@ fn stale_principal_and_scope_deny_and_release_readmission_bases() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             principal_context.readmit_denial(
                 &host_custody,
                 principal_continuation,
@@ -92,7 +92,7 @@ fn stale_principal_and_scope_deny_and_release_readmission_bases() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             scope_context.issue(&host_custody)
         })
         .expect("the fixture read owns its installed host call");
@@ -101,7 +101,7 @@ fn stale_principal_and_scope_deny_and_release_readmission_bases() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             scope_context.stale_scope_identity(&host_custody.borrowed_request_for_test())
         })
         .expect("the fixture read owns its installed host call");
@@ -112,7 +112,7 @@ fn stale_principal_and_scope_deny_and_release_readmission_bases() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             scope_context.readmit_denial(
                 &host_custody,
                 scope_continuation,
@@ -141,7 +141,7 @@ fn cancellation_and_deadline_deny_resume_before_basis_acquisition() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             cancelled_context.issue(&host_custody)
         })
         .expect("the fixture read owns its installed host call");
@@ -156,7 +156,7 @@ fn cancellation_and_deadline_deny_resume_before_basis_acquisition() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             cancelled_context.readmit_denial(
                 &host_custody,
                 cancelled_continuation,
@@ -181,7 +181,7 @@ fn cancellation_and_deadline_deny_resume_before_basis_acquisition() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             deadline_context.issue(&host_custody)
         })
         .expect("the fixture read owns its installed host call");
@@ -193,7 +193,7 @@ fn cancellation_and_deadline_deny_resume_before_basis_acquisition() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             deadline_context.readmit_denial(
                 &host_custody,
                 deadline_continuation,
@@ -218,7 +218,7 @@ fn foreign_continuation_basis_denies_without_registering_a_lease() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             context.issue(&host_custody)
         })
         .expect("the fixture read owns its installed host call");
@@ -227,8 +227,8 @@ fn foreign_continuation_basis_denies_without_registering_a_lease() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            continuation.product = foreign.issue(&host_custody).product
+            let host_custody = phase.test_host_request_for_test();
+            (*continuation.product_mut_for_test()) = (*foreign.issue(&host_custody).product_for_test())
         })
         .expect("the fixture read owns its installed host call");
     let acquisitions = context.basis_acquisitions();
@@ -238,7 +238,7 @@ fn foreign_continuation_basis_denies_without_registering_a_lease() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             context.readmit_denial(&host_custody, continuation, "account-1", &request, 1)
         })
         .expect("the fixture read owns its installed host call");
@@ -258,7 +258,7 @@ fn unsupported_page_width_mints_no_resumed_plan_or_basis() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             width_context.issue(&host_custody)
         })
         .expect("the fixture read owns its installed host call");
@@ -268,7 +268,7 @@ fn unsupported_page_width_mints_no_resumed_plan_or_basis() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             width_context.readmit_denial(
                 &host_custody,
                 width_continuation,
@@ -290,7 +290,7 @@ fn unsupported_page_width_mints_no_resumed_plan_or_basis() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             work_context.issue(&host_custody)
         })
         .expect("the fixture read owns its installed host call");
@@ -303,7 +303,7 @@ fn unsupported_page_width_mints_no_resumed_plan_or_basis() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             work_context.readmit_page(&host_custody, work_continuation, &work_request, 1)
         })
         .expect("the fixture read owns its installed host call");

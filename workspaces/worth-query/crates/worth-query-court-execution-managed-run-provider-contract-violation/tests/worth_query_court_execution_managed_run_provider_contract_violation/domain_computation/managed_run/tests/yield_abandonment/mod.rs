@@ -55,7 +55,7 @@ fn dropping_yielded_workflow_closes_artifacts_despite_surviving_production_autho
             resources,
             resource_request,
         );
-        let installed_running_phase = execution.phase_for_workflow(&running);
+        let installed_running_phase = execution.phase_for_workflow_for_test(&running);
 
         let production = running
             .artifacts()

@@ -159,3 +159,5 @@ mod tests {
         assert_eq!(carried.consumed, usize::MAX);
     }
 }
+
+mod court_doors_for_test;

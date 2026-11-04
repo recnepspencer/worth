@@ -30,7 +30,7 @@ pub fn entity(n: u64) -> EntityId {
 fn original_watch_backing_is_shared_and_successor_allocation_refuses_without_releasing_it() {
     let lease = lease(Some(32 * 1024));
     let request = ExecutionRequest::leased(&lease);
-    let entries = WorthQueryConditionalCommitWatchSet::retain_entities(
+    let entries = WorthQueryConditionalCommitWatchSet::retain_entities_for_test(
         &request,
         None,
         [entity(1)].into_iter(),
@@ -46,7 +46,7 @@ fn original_watch_backing_is_shared_and_successor_allocation_refuses_without_rel
     assert!(held > 0);
     let clone = original.clone();
     assert_eq!(lease.charged_memory_bytes(), held);
-    let denied = WorthQueryConditionalCommitWatchSet::retain_entities(
+    let denied = WorthQueryConditionalCommitWatchSet::retain_entities_for_test(
         &request,
         Some(&original),
         [entity(2)].into_iter(),
@@ -55,7 +55,7 @@ fn original_watch_backing_is_shared_and_successor_allocation_refuses_without_rel
     );
     assert!(matches!(denied, Err(ref cause) if cause.kind() == Kind::RetentionCapacityExhausted));
     assert_eq!(
-        original.entities().iter().copied().collect::<Vec<_>>(),
+        original.entities_for_test().iter().copied().collect::<Vec<_>>(),
         [entity(1)]
     );
     assert_eq!(lease.charged_memory_bytes(), held);
@@ -65,7 +65,7 @@ fn original_watch_backing_is_shared_and_successor_allocation_refuses_without_rel
     let stop = CancellationSource::new();
     let child = lease.controlled_child(stop.token(), None);
     stop.cancel();
-    let cancelled = WorthQueryConditionalCommitWatchSet::retain_entities(
+    let cancelled = WorthQueryConditionalCommitWatchSet::retain_entities_for_test(
         &ExecutionRequest::leased(&child),
         Some(&original),
         [entity(2)].into_iter(),
@@ -77,7 +77,7 @@ fn original_watch_backing_is_shared_and_successor_allocation_refuses_without_rel
     );
     assert_eq!(lease.charged_memory_bytes(), 32 * 1024);
     drop(full);
-    let successor = WorthQueryConditionalCommitWatchSet::retain_entities(
+    let successor = WorthQueryConditionalCommitWatchSet::retain_entities_for_test(
         &request,
         Some(&original),
         [entity(2)].into_iter(),
@@ -86,7 +86,7 @@ fn original_watch_backing_is_shared_and_successor_allocation_refuses_without_rel
     )
     .unwrap();
     assert_eq!(
-        successor.entities.iter().copied().collect::<Vec<_>>(),
+        (*successor.entities_for_test()).iter().copied().collect::<Vec<_>>(),
         [entity(1), entity(2)]
     );
     assert!(lease.charged_memory_bytes() > held);

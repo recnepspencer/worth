@@ -100,3 +100,5 @@ pub(super) fn lower_principal_bindings(
     }
     Ok(bindings)
 }
+
+mod court_doors_for_test;

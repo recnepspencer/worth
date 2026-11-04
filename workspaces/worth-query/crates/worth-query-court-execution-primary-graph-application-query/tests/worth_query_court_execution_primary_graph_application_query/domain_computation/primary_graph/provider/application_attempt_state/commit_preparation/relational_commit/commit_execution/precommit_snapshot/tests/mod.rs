@@ -11,24 +11,24 @@ fn unwind_releases_only_its_precommit_snapshot() {
             );
     let selected = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
         .expect("the fixture read owns its installed host call");
-    let product = selected.product().publication_binding();
-    let graph = world.application.primary_provider.graph.clone();
+    let product = selected.product().publication_binding_for_test();
+    let graph = (*world.application.primary_provider_for_test()).graph.clone();
     let count = || {
         graph.with_runtime(request_execution, |runtime| {
             runtime.retention().active_snapshot_count()
         })
     };
     let baseline = count();
-    let peer = WorthQueryPrecommitSnapshot::acquire(
+    let peer = WorthQueryPrecommitSnapshot::acquire_for_test(
         request_execution,
         graph.clone(),
         product.observation().basis().relational_basis(),
     )
     .unwrap();
     let unwind = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        let _attempt = WorthQueryPrecommitSnapshot::acquire(
+        let _attempt = WorthQueryPrecommitSnapshot::acquire_for_test(
             request_execution,
             graph.clone(),
             product.observation().basis().relational_basis(),

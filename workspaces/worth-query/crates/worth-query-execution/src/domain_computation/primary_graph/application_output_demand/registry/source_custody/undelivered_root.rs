@@ -31,3 +31,5 @@ impl SourceCustody {
             .retain(|consumed| consumed != &bound.identity);
     }
 }
+
+mod court_doors_for_test;

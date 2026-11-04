@@ -16,7 +16,7 @@ pub fn read(id: u64) -> ComputationRead {
 #[test]
 fn insert_retire_changes_only_paths_preserving_order_history_range_and_fresh_closure() {
     let request = live_scope();
-    let execution = QueryRequestExecution::open(
+    let execution = QueryRequestExecution::open_for_test(
         worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(test_policy(
             std::num::NonZeroUsize::MIN,
             Some(1 << 24),
@@ -29,8 +29,8 @@ fn insert_retire_changes_only_paths_preserving_order_history_range_and_fresh_clo
         1,
         1,
     );
-    calls[3].1 .0.reached = Arc::from([entity]);
-    let prior = ComputationCallSequence::build(
+    calls[3].1 .0(*.reached_mut_for_test()) = Arc::from([entity]);
+    let prior = ComputationCallSequence::build_for_test(
         || {
             calls
                 .iter()
@@ -41,7 +41,7 @@ fn insert_retire_changes_only_paths_preserving_order_history_range_and_fresh_clo
     .unwrap();
     let charge = &calls[2].1 .0;
     let edit = prior
-        .shape()
+        .shape_for_test()
         .prepare_transition(
             &BTreeSet::from([read(8)]),
             &BTreeSet::from([read(1)]),
@@ -49,7 +49,7 @@ fn insert_retire_changes_only_paths_preserving_order_history_range_and_fresh_clo
         )
         .unwrap();
     let next = prior
-        .edited(
+        .edited_for_test(
             &edit,
             std::iter::once((read(8), charge, Some(17))),
             &execution,
@@ -65,13 +65,13 @@ fn insert_retire_changes_only_paths_preserving_order_history_range_and_fresh_clo
         assert_eq!(next.shape.call_at(ordinal), Some(*read));
     }
     assert_eq!(
-        prior.shape.calls().collect::<Vec<_>>(),
+        (*prior.shape_for_test()).calls().collect::<Vec<_>>(),
         calls.iter().map(|(read, _)| *read).collect::<Vec<_>>()
     );
     assert!(edit.maps(2..6, 1..5));
     assert!(!edit.maps(0..6, 0..6));
     assert!(!edit.maps(2..6, 2..6));
-    assert!(edit.matches_prior(prior.shape()));
+    assert!(edit.matches_prior(prior.shape_for_test()));
     assert!(!edit.matches_prior(next.shape()));
     assert!(edit.closes_fresh(&BTreeSet::from([read(8)])));
     assert!(!edit.closes_fresh(&BTreeSet::new()));
@@ -98,7 +98,7 @@ fn insert_retire_changes_only_paths_preserving_order_history_range_and_fresh_clo
                 summary.accounting.unwrap().consumed,
                 truth[start..end]
                     .iter()
-                    .map(|(_, (charge, _))| charge.accounting.unwrap().consumed)
+                    .map(|(_, (charge, _))| (*charge.accounting_for_test()).unwrap().consumed)
                     .sum::<usize>()
             );
         }
@@ -107,17 +107,17 @@ fn insert_retire_changes_only_paths_preserving_order_history_range_and_fresh_clo
     // rather than charging a carried summary beyond its native reader prefix.
     use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::work::WorthQueryInvariantProjectionWorkBudget as Budget;
     for remaining in 0..40 {
-        let mut full = Budget::bounded(remaining);
+        let mut full = Budget::bounded_for_test(remaining);
         let expected = truth.iter().position(|(_, (charge, _))| {
-            let charge = charge.accounting.unwrap();
-            if full.can_afford(charge.demand) {
-                assert!(full.consume(charge.consumed));
+            let charge = (*charge.accounting_for_test()).unwrap();
+            if full.can_afford_for_test(charge.demand) {
+                assert!(full.consume_for_test(charge.consumed));
                 false
             } else {
                 true
             }
         });
-        let mut ranged = Budget::bounded(remaining);
+        let mut ranged = Budget::bounded_for_test(remaining);
         let actual = next
             .visit(0..truth.len(), &BTreeSet::new(), &mut |visit| -> Result<
                 bool,
@@ -125,15 +125,15 @@ fn insert_retire_changes_only_paths_preserving_order_history_range_and_fresh_clo
             > {
                 match visit {
                     CallVisit::Range(_, sum) => {
-                        let cost = sum.accounting.unwrap();
-                        Ok(ranged.carry(cost.demand, cost.consumed))
+                        let cost = (*sum.accounting_for_test()).unwrap();
+                        Ok(ranged.carry_for_test(cost.demand, cost.consumed))
                     }
                     CallVisit::Leaf(at, _, charge, _) => {
-                        let charge = charge.accounting.unwrap();
-                        if !ranged.can_afford(charge.demand) {
+                        let charge = (*charge.accounting_for_test()).unwrap();
+                        if !ranged.can_afford_for_test(charge.demand) {
                             return Err(at);
                         }
-                        assert!(ranged.consume(charge.consumed));
+                        assert!(ranged.consume_for_test(charge.consumed));
                         Ok(true)
                     }
                 }
@@ -141,8 +141,8 @@ fn insert_retire_changes_only_paths_preserving_order_history_range_and_fresh_clo
             .err();
         assert_eq!(actual, expected);
         assert_eq!(
-            (ranged.remaining(), ranged.exceeded()),
-            (full.remaining(), full.exceeded())
+            (ranged.remaining_for_test(), ranged.exceeded_for_test()),
+            (full.remaining_for_test(), full.exceeded_for_test())
         );
     }
     let back = next
@@ -160,16 +160,16 @@ fn insert_retire_changes_only_paths_preserving_order_history_range_and_fresh_clo
             &execution,
         )
         .unwrap();
-    assert!(returned.shape.calls().eq(prior.shape.calls()));
+    assert!(returned.shape.calls().eq((*prior.shape_for_test()).calls()));
     assert_eq!(
         returned.summary(0..calls.len(), true).unwrap().declared,
-        prior.summary(0..calls.len(), true).unwrap().declared
+        (*prior.summary(0..calls.len(), true).unwrap().declared_for_test())
     );
 }
 #[test]
 fn refused_shape_edit_leaves_original_and_shape_views_usable() {
     let request = live_scope();
-    let execution = QueryRequestExecution::open(
+    let execution = QueryRequestExecution::open_for_test(
         worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(test_policy(
             std::num::NonZeroUsize::MIN,
             Some(1 << 24),
@@ -177,7 +177,7 @@ fn refused_shape_edit_leaves_original_and_shape_views_usable() {
         &request,
     );
     let calls = crate::domain_computation::primary_graph::invariant_projection::operation_reader::computation_calls::sequence::tests::calls();
-    let prior = ComputationCallSequence::build(
+    let prior = ComputationCallSequence::build_for_test(
         || {
             calls
                 .iter()
@@ -186,8 +186,8 @@ fn refused_shape_edit_leaves_original_and_shape_views_usable() {
         &execution,
     )
     .unwrap();
-    let shape = Arc::clone(prior.shape());
-    let narrow = QueryRequestExecution::open(
+    let shape = Arc::clone(prior.shape_for_test());
+    let narrow = QueryRequestExecution::open_for_test(
         worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(test_policy(
             std::num::NonZeroUsize::MIN,
             Some(1),
@@ -195,15 +195,15 @@ fn refused_shape_edit_leaves_original_and_shape_views_usable() {
         &request,
     );
     assert!(prior
-        .shape()
+        .shape_for_test()
         .prepare_transition(&BTreeSet::from([read(8)]), &BTreeSet::new(), &narrow)
         .is_err());
     assert!(prior
-        .shape()
+        .shape_for_test()
         .prepare_transition(&BTreeSet::new(), &BTreeSet::from([read(99)]), &execution)
         .is_err());
     assert!(prior
-        .shape()
+        .shape_for_test()
         .prepare_transition(
             &BTreeSet::from([read(1)]),
             &BTreeSet::from([read(1)]),
@@ -211,15 +211,15 @@ fn refused_shape_edit_leaves_original_and_shape_views_usable() {
         )
         .is_err());
     let edit = prior
-        .shape()
+        .shape_for_test()
         .prepare_transition(&BTreeSet::from([read(8)]), &BTreeSet::new(), &execution)
         .unwrap();
     assert!(
-        prior.edited(&edit, std::iter::empty(), &execution).is_err(),
+        prior.edited_for_test(&edit, std::iter::empty(), &execution).is_err(),
         "inserted call needs an actual measured charge"
     );
     assert!(prior
-        .edited(
+        .edited_for_test(
             &edit,
             std::iter::once((read(8), &calls[0].1 .0, Some(1))),
             &narrow

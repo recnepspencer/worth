@@ -18,7 +18,7 @@ fn checkpoint_release_panic_reports_exact_non_retryable_physical_posture() {
         let checkpoint = yielded.inspection().checkpoint().identity().to_owned();
         let recovery = {
             let fixture_phase_result = {
-                let installed_fixture_phase = yielded.fixture_phase(active_request);
+                let installed_fixture_phase = yielded.fixture_phase_for_test(active_request);
                 yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
             };
             match fixture_phase_result {
@@ -93,7 +93,7 @@ fn checkpoint_and_restored_execution_drop_panics_preserve_both_physical_disposit
         let recovery =
             {
                 let fixture_phase_result = {
-                    let installed_fixture_phase = yielded.fixture_phase(active_request);
+                    let installed_fixture_phase = yielded.fixture_phase_for_test(active_request);
                     yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
                 };
                 match fixture_phase_result {

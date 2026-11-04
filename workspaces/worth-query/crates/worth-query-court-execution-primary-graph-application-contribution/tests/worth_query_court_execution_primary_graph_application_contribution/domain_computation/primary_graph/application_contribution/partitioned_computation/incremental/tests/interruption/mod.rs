@@ -112,10 +112,10 @@ fn an_incremental_run_cancelled_inside_a_recombine_stops_and_does_not_rebuild() 
     let first = attempt(
         &world,
         &installed,
-        Some(ComputationPrior::new(edition(), Err(Cause::FirstRun), None)),
+        Some(ComputationPrior::new_for_test(edition(), Err(Cause::FirstRun), None)),
     );
     assert_eq!(first.gathered, [0, 1, 2, 3]);
-    *installed.owner.bump.lock().unwrap() = 10;
+    *(*installed.owner_for_test()).bump.lock().unwrap() = 10;
 
     let (stopped, combines) = cancelled_in_reducer(&world, &installed, Some(prior_of(first, true)));
     assert!(

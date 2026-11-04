@@ -172,3 +172,5 @@ pub(in crate::domain_computation) fn actor_record_corruption(
         "current workflow actor record is malformed",
     )
 }
+
+mod court_doors_for_test;

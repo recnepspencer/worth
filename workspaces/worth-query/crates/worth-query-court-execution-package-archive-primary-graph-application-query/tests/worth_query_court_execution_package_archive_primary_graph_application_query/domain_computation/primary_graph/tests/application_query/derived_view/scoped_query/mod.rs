@@ -10,7 +10,7 @@ fn declared_public_occurrence_query_reads_only_its_typed_scope() {
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let selected = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
         .expect("the fixture read owns its installed host call");
     let principal = world
         .application
@@ -75,6 +75,6 @@ fn declared_public_occurrence_query_reads_only_its_typed_scope() {
         result.observed_sources()[0]
             .managed_derived_view_key()
             .root(),
-        open.entity_id()
+        open.entity_id_for_test()
     );
 }

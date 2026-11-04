@@ -255,7 +255,7 @@ pub fn workflow_admission_fixture_with_provider(
     );
     let basis = admitted_basis();
     let bound = runtime
-        .bind_standalone_test_domain_operation(
+        .bind_standalone_test_domain_operation_for_test(
             &installation_authority,
             &operation,
             &basis,

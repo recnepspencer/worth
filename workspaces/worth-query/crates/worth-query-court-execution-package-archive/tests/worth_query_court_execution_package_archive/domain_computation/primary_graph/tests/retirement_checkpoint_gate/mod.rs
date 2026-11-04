@@ -25,7 +25,7 @@ fn fresh_native_retirement_descriptions_do_not_issue_original_output_authority()
         let (original, unrelated) = source
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 let selected = source.selected_product(&host_custody);
                 let resolve = |key: &str| {
                     selected
@@ -37,7 +37,7 @@ fn fresh_native_retirement_descriptions_do_not_issue_original_output_authority()
                             WorthQueryPrincipalResolutionMode::Ordinary,
                         )
                         .unwrap()
-                        .entity_id()
+                        .entity_id_for_test()
                 };
                 let original = resolve("account-2");
                 let unrelated = resolve("account-1");
@@ -50,7 +50,7 @@ fn fresh_native_retirement_descriptions_do_not_issue_original_output_authority()
             source
                 .application
                 .with_host_advancement(|phase| {
-                    let host_custody = phase.test_host_request();
+                    let host_custody = phase.test_host_request_for_test();
 
                     publish_relational_mutation(
                         &host_custody.borrowed_request_for_test(),
@@ -67,7 +67,7 @@ fn fresh_native_retirement_descriptions_do_not_issue_original_output_authority()
         let bytes = source
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
 
                 source
                     .application
@@ -85,11 +85,11 @@ fn fresh_native_retirement_descriptions_do_not_issue_original_output_authority()
             worth_query_execution::facade::application_installation::WorthQueryApplicationCheckpoint::from_untrusted_bytes(bytes),
         )
         .expect("actual opaque native checkpoint freshly installs");
-        fresh.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request(); let borrowed_execution = phase.borrowed_request_for_test(); let execution = &borrowed_execution;        let selected = fresh.selected_product(&host_custody);
-        let graph = fresh.application.runtime.primary_graph().unwrap();
+        fresh.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request_for_test(); let borrowed_execution = phase.borrowed_request_for_test(); let execution = &borrowed_execution;        let selected = fresh.selected_product(&host_custody);
+        let graph = (*fresh.application.runtime_for_test()).primary_graph().unwrap();
         let handle = graph.integration_handle();
         handle.with_runtime(&borrowed_execution, |runtime| {
-        let snapshot = selected.application_basis().snapshot_handle();
+        let snapshot = selected.application_basis_for_test().snapshot_handle();
         let read = runtime.read_truth();
         let view = read.project_snapshot(snapshot).unwrap();
         let original_metadata = view.read_entity_retirement(execution, original).unwrap().unwrap();
@@ -102,14 +102,14 @@ fn fresh_native_retirement_descriptions_do_not_issue_original_output_authority()
                 entity_id: entity, kind: record.kind_id(), created_at: record.created_at_version(),
                 deleted_at: record.deleted_at_version(), read_locator: "output-role:7:Account:7:retired".into(),
             }];
-            assert!(facts[0].remains_equal_in(runtime,execution,  snapshot).unwrap(), "both actual tombstones match native truth");
+            assert!(facts[0].remains_equal_in_for_test(runtime,execution,  snapshot).unwrap(), "both actual tombstones match native truth");
             let correspondence = correspondence(entity, execution);
-let candidate = SealedNativeOutputWitness::from_checkpoint_facts(&correspondence, graph.layout(), &facts).unwrap();
+let candidate = SealedNativeOutputWitness::from_checkpoint_facts_for_test(&correspondence, graph.layout(), &facts).unwrap();
 
 
 
             let current = candidate.as_ref().is_some_and(|candidate| candidate.get().unwrap()
-                .checkpoint_facts_current_in(execution, runtime, snapshot, &facts).unwrap());
+                .checkpoint_facts_current_in_for_test(execution, runtime, snapshot, &facts).unwrap());
             eprintln!("fresh installed retirement candidate entity={entity:?}, original={}, current={current}", entity == original);
             assert!(candidate.is_none() && !current, "native tombstone descriptions do not bind the original producer retirement");
         }
@@ -120,9 +120,9 @@ pub fn correspondence(
     entity: EntityId,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> WorthQueryApplicationOutputCorrespondence {
-    WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles(
-        TypeId::of::<()>(),
-        TypeId::of::<()>(),
+    WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles_for_test(
+        TypeId::of_for_test::<()>(),
+        TypeId::of_for_test::<()>(),
         std::iter::empty(),
         &[WorthQueryCheckpointOutputRole {
             role: "retired".into(),
@@ -130,7 +130,7 @@ pub fn correspondence(
             entity_name: "Account".into(),
             entity,
         }],
-        |_| Some(TypeId::of::<()>()),
+        |_| Some(TypeId::of_for_test::<()>()),
         execution,
     )
     .unwrap()

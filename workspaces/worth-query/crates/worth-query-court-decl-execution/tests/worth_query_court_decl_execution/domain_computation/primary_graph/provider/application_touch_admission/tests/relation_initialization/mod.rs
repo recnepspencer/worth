@@ -83,7 +83,7 @@ pub fn initialized_batch(world: &World) -> WorkerIntentBatch {
     fields.insert(
         world
             .layout
-            .relation_field_locator("Edge", "Payload", "Weight")
+            .relation_field_locator_for_test("Edge", "Payload", "Weight")
             .unwrap()
             .clone(),
         worth_query_decl::facade::application_schema::U64ApplicationValueBinding::encode(&7)
@@ -92,7 +92,7 @@ pub fn initialized_batch(world: &World) -> WorkerIntentBatch {
     WorkerIntentBatch::new("raw-initialized-relation").push(MutationIntent::Create(
         CreateIntent::Relation(RelationSpec {
             partition_id: world.entity.partition_id,
-            kind_id: world.layout.relation("Edge").unwrap().kind,
+            kind_id: (*world.layout.relation("Edge").unwrap().kind_for_test()),
             client_key: worth_relational::facade::symbols::ClientKey::raw("edge"),
             source: EntityReference::Existing(world.entity),
             target: EntityReference::Existing(world.entity),

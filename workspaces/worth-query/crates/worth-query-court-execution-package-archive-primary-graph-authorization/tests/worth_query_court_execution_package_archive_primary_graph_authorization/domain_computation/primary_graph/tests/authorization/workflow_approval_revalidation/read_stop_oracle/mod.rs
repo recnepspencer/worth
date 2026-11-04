@@ -57,14 +57,14 @@ pub fn run(
     let admission = world
         .application
         .with_host_advancement(|phase| {
-            let principal = authenticated_principal(&phase.test_host_request(), &world, &request);
-            admitted_capability_operation(&phase.test_host_request(), &world, &principal, &request)
+            let principal = authenticated_principal(&phase.test_host_request_for_test(), &world, &request);
+            admitted_capability_operation(&phase.test_host_request_for_test(), &world, &principal, &request)
         })
         .unwrap();
     let basis = world
         .application
         .with_host_advancement(|phase| {
-            let host = phase.test_host_request();
+            let host = phase.test_host_request_for_test();
             durable_approval_basis(&host.borrowed_request_for_test(), &admission)
         })
         .expect("the fixture envelope owns its installed host call");
@@ -133,12 +133,12 @@ pub fn run(
             assert!(
                 cancel_at.is_none() && work.is_none(),
                 "admitted: cancel_at={cancel_at:?}, work={work:?}, consults={}",
-                probe.consults()
+                probe.consults_for_test()
             );
             None
         }
         Ok(Err(denial)) => Some(denial.kind()),
         Err(denial) => panic!("opening is not the approval read: {denial:?}"),
     };
-    (probe.consults(), stop)
+    (probe.consults_for_test(), stop)
 }

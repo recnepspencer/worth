@@ -15,11 +15,11 @@ pub fn probe_handle(aftermath: WorthQueryInstalledAftermathContract) -> WorthQue
         .installed_aftermath(aftermath)
         .expires_at_unix_ms(Some(u64::MAX))
         .finish();
-    WorthQueryRecoveryHandle::axis_probe(binding)
+    WorthQueryRecoveryHandle::axis_probe_for_test(binding)
 }
 
 pub fn authority(handle: &WorthQueryRecoveryHandle) -> WorthQueryRecoveryEffectAuthority {
-    WorthQueryRecoveryEffectAuthority::mint(handle.runtime_authority(), handle.authority_identity())
+    WorthQueryRecoveryEffectAuthority::mint_for_test(handle.runtime_authority_for_test(), handle.authority_identity_for_test())
 }
 
 #[test]

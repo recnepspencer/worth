@@ -358,3 +358,5 @@ impl TouchAdmissionFailure {
         }
     }
 }
+
+mod court_doors_for_test;

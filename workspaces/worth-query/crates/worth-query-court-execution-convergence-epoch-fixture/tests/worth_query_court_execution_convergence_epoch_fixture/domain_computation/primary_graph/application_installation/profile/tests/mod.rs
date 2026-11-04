@@ -7,9 +7,9 @@ fn explicit_record_limit_changes_no_other_profile_policy() {
         WorthQueryInMemoryApplicationProfile::GeometryKernel,
         WorthQueryInMemoryApplicationProfile::WorkflowScale,
     ] {
-        assert_eq!(profile.publication_override(None), None, "omission must preserve profile-default provenance, not install a numerically equal override");
+        assert_eq!(profile.publication_override_for_test(None), None, "omission must preserve profile-default provenance, not install a numerically equal override");
         let default = worth_relational::facade::runtime::RelationalRuntimeConfig::resolved(
-            profile.relational_profile(),
+            profile.relational_profile_for_test(),
             Default::default(),
         )
         .publication
@@ -18,7 +18,7 @@ fn explicit_record_limit_changes_no_other_profile_policy() {
             let mut expected = default.clone();
             expected.max_patch_records_per_commit = Some(maximum);
             assert_eq!(
-                profile.publication_override(std::num::NonZeroUsize::new(maximum)),
+                profile.publication_override_for_test(std::num::NonZeroUsize::new(maximum)),
                 Some(expected)
             );
         }

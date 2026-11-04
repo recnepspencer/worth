@@ -102,7 +102,7 @@ fn one_and_one_hundred_exact_duplicates_add_only_bounded_verifier_work() {
             let commits = world
                 .application
                 .with_host_advancement(|phase| {
-                    let host_custody = phase.test_host_request();
+                    let host_custody = phase.test_host_request_for_test();
 
                     crate::domain_computation::primary_graph::tests::inbound_admission::tests::helpers::owner_commits(&host_custody.borrowed_request_for_test(), &world)
                 })
@@ -156,7 +156,7 @@ fn one_and_one_hundred_exact_duplicates_add_only_bounded_verifier_work() {
             world
                 .application
                 .with_host_advancement(|phase| {
-                    let host_custody = phase.test_host_request();
+                    let host_custody = phase.test_host_request_for_test();
 
                     assert_eq!(
                         crate::domain_computation::primary_graph::tests::inbound_admission::tests::helpers::owner_commits(

@@ -9,7 +9,7 @@ fn source_close_overflow_and_abandoned_drop_release_all_live_resources() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             closed_context.open(&host_custody)
         })
         .expect("the fixture read owns its installed host call");
@@ -19,10 +19,10 @@ fn source_close_overflow_and_abandoned_drop_release_all_live_resources() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             assert!(matches!(
                 {
-                    let installed_fixture_phase = closed.fixture_phase(&host_custody);
+                    let installed_fixture_phase = closed.fixture_phase_for_test(&host_custody);
                     closed.next(
                         &installed_fixture_phase,
                         &closed_context.principal,
@@ -46,7 +46,7 @@ fn source_close_overflow_and_abandoned_drop_release_all_live_resources() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             overflow_context.open(&host_custody)
         })
         .expect("the fixture read owns its installed host call");
@@ -56,9 +56,9 @@ fn source_close_overflow_and_abandoned_drop_release_all_live_resources() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             {
-                let installed_fixture_phase = overflow.fixture_phase(&host_custody);
+                let installed_fixture_phase = overflow.fixture_phase_for_test(&host_custody);
                 overflow.next(
                     &installed_fixture_phase,
                     &overflow_context.principal,
@@ -84,7 +84,7 @@ fn source_close_overflow_and_abandoned_drop_release_all_live_resources() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             abandoned_context.open(&host_custody)
         })
         .expect("the fixture read owns its installed host call");

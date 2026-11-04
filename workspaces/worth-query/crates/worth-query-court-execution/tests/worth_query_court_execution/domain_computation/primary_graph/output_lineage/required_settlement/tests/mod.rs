@@ -18,7 +18,7 @@ pub fn committed() -> (u64, ApplicationSchemaBindingIdentity, ReadyCompletion) {
     let schema = receipt.principal_scope().binding_identity().clone();
     let completion = ReadyCompletion::for_test(WorthQueryCompletedOutputDemand {
         authority: WorthQueryAcceptedOutputAuthority::Committed(receipt),
-        readiness: WorthQueryOutputReadinessDeliveryEvidence::for_test(),
+        readiness: WorthQueryOutputReadinessDeliveryEvidence::for_test_for_test(),
     });
     (runtime_authority, schema, completion)
 }
@@ -26,7 +26,7 @@ pub fn committed() -> (u64, ApplicationSchemaBindingIdentity, ReadyCompletion) {
 #[test]
 fn a_foreign_accepted_authority_is_a_stop_not_a_reason() {
     let (runtime_authority, schema, completion) = committed();
-    let resolved = WorthQueryApplicationOutputLineage::default().resolve_required_settlement(
+    let resolved = WorthQueryApplicationOutputLineage::default().resolve_required_settlement_for_test(
         runtime_authority.wrapping_add(1),
         &schema,
         &completion,
@@ -37,7 +37,7 @@ fn a_foreign_accepted_authority_is_a_stop_not_a_reason() {
 #[test]
 fn an_uncertified_row_is_a_reason_not_a_stop() {
     let (runtime_authority, schema, completion) = committed();
-    let resolved = WorthQueryApplicationOutputLineage::default().resolve_required_settlement(
+    let resolved = WorthQueryApplicationOutputLineage::default().resolve_required_settlement_for_test(
         runtime_authority,
         &schema,
         &completion,

@@ -20,7 +20,7 @@ pub fn add_third_root(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &AuthorizationWorld,
 ) {
-    let graph = world.application.runtime.primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     macro_rules! declared_field {
         ($marker:ty, $value:expr) => {{
             let field = <$marker>::reference();
@@ -71,7 +71,7 @@ pub fn add_primary_reads(
     use worth_relational::facade::transactions::EntityReference;
     use worth_relational::facade::transactions::RelationSpec;
     let scope = live_scope();
-    let selected = world.selected_product(&(phase_custody).test_host_request());
+    let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
     let root = selected
         .resolve_entity(
             phase_custody,
@@ -81,7 +81,7 @@ pub fn add_primary_reads(
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap();
-    let graph = world.application.runtime.primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let kind = graph
         .layout
         .relation(AccountPrimaryActivity::reference().name())
@@ -95,11 +95,11 @@ pub fn add_primary_reads(
                 .visible_relations_of_kind(
                     execution,
                     kind,
-                    selected.application_basis().snapshot_handle().version_id(),
+                    selected.application_basis_for_test().snapshot_handle().version_id(),
                 )
                 .expect("fixture read request remains live")
                 .into_iter()
-                .find(|relation| relation.source == root.entity_id())
+                .find(|relation| relation.source == root.entity_id_for_test())
                 .unwrap()
                 .target
         });
@@ -116,7 +116,7 @@ pub fn add_primary_reads(
                     WorthQueryPrincipalResolutionMode::Ordinary,
                 )
                 .unwrap()
-                .entity_id()
+                .entity_id_for_test()
         })
         .collect::<Vec<_>>();
     drop(selected);

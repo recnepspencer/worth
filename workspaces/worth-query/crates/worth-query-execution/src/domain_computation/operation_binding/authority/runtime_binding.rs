@@ -331,3 +331,5 @@ fn binding_identity<L: BasisOperationLane>(
         format!("installed-support:{}", installed_support.identity()),
     ])
 }
+
+mod court_doors_for_test;

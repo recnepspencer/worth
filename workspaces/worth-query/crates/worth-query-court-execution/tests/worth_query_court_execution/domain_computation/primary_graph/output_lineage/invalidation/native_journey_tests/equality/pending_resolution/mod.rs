@@ -55,7 +55,7 @@ pub fn cutoff_journey(
     successor: Successor,
 ) {
     with_generated_own_write(|world, _, performed, _| {
-        let graph = world.application.runtime.primary_graph().unwrap();
+        let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
         let handle = graph.integration_handle();
         let owner = &handle.source_owner.invalidation_owner;
         let record = performed.get().unwrap();
@@ -63,7 +63,7 @@ pub fn cutoff_journey(
             .application
             .with_host_advancement(|host_phase| {
                 world
-                    .selected_product(&host_phase.test_host_request())
+                    .selected_product(&host_phase.test_host_request_for_test())
                     .resolve_entity(
                         &host_phase,
                         AccountStatus::reference(),
@@ -72,7 +72,7 @@ pub fn cutoff_journey(
                         WorthQueryPrincipalResolutionMode::Ordinary,
                     )
                     .unwrap()
-                    .entity_id()
+                    .entity_id_for_test()
             })
             .expect("installed host call opens");
         let status = AccountStatus::reference();
@@ -87,15 +87,15 @@ pub fn cutoff_journey(
             .field_locator(label.entity(), label.aspect(), label.field())
             .unwrap()
             .clone();
-        let mut source = record.settlement_identity.source().clone();
-        source.output_binding = OutputBindingIdentity::declared("Upstream");
+        let mut source = (*record.settlement_identity_for_test()).source().clone();
+        source.output_binding = OutputBindingIdentity::declared_for_test("Upstream");
         let a0 =
-            RecordedSettlementIdentity::retain(&source, record.settlement_identity.coordinate(), 0);
+            RecordedSettlementIdentity::retain_for_test(&source, (*record.settlement_identity_for_test()).coordinate(), 0);
         let a1 =
-            RecordedSettlementIdentity::retain(&source, record.settlement_identity.coordinate(), 1);
-        source.output_binding = OutputBindingIdentity::declared("Consumer");
+            RecordedSettlementIdentity::retain_for_test(&source, (*record.settlement_identity_for_test()).coordinate(), 1);
+        source.output_binding = OutputBindingIdentity::declared_for_test("Consumer");
         let consumer =
-            RecordedSettlementIdentity::retain(&source, record.settlement_identity.coordinate(), 0);
+            RecordedSettlementIdentity::retain_for_test(&source, (*record.settlement_identity_for_test()).coordinate(), 0);
         handle.with_runtime_mut(request_execution, |runtime| {
             let (before_handle, before) = snapshot(runtime);
             let prefix: Arc<[_]> = Arc::from([field_fact(request_execution, runtime, &before_handle, entity, label)]);
@@ -103,9 +103,9 @@ pub fn cutoff_journey(
             // b has an authentic equality chain. Both b rows become pending
             // when a changes; a's later equality clears them one level only,
             // leaving c's pending edge to b's predecessor in place.
-            source.output_binding = OutputBindingIdentity::declared("DownstreamOutput");
-            let b = RecordedSettlementIdentity::retain(&source, record.settlement_identity.coordinate(), 0);
-            let b_successor = RecordedSettlementIdentity::retain(&source, record.settlement_identity.coordinate(), 1);
+            source.output_binding = OutputBindingIdentity::declared_for_test("DownstreamOutput");
+            let b = RecordedSettlementIdentity::retain_for_test(&source, (*record.settlement_identity_for_test()).coordinate(), 0);
+            let b_successor = RecordedSettlementIdentity::retain_for_test(&source, (*record.settlement_identity_for_test()).coordinate(), 1);
             register(owner, Arc::clone(&b), Arc::from([]), &before, OrdSet::unit(Arc::clone(&a0)));
             register_dependent_alias(owner, &before, &b, &b_successor, &a0);
             register(owner, Arc::clone(&consumer), Arc::clone(&prefix), &before, OrdSet::unit(Arc::clone(&b)));
@@ -157,24 +157,24 @@ pub fn cutoff_journey(
             let candidate = candidate(record, Arc::clone(&consumer), Arc::clone(&prefix));
             let context = context();
 
-let basis = PreparedInputCutoffBasis::prepare(runtime, &live_handle).unwrap();
+let basis = PreparedInputCutoffBasis::prepare_for_test(runtime, &live_handle).unwrap();
 
-let result = candidate.clone().verify_for_reuse(
-                request_execution, candidate.prepared_input_key().unwrap().continued_by_republication(), context, None,
+let result = candidate.clone().verify_for_reuse_for_test(
+                request_execution, candidate.prepared_input_key_for_test().unwrap().continued_by_republication(), context, None,
                 runtime, &basis, owner,
             );
             if matches!(successor, Successor::Equal) {
                 assert!(matches!(result, Ok(InputCutoffDecision::Reuse(_))),
                     "the resolved pending edge must reach full verification");
 
-assert!(ConsumedOutputEvidence::own_evidence_is_current(
-request_execution,                    &prefix, &[], candidate.native_output_witness().unwrap(), runtime, &live_handle,
+assert!(ConsumedOutputEvidence::own_evidence_is_current_for_test(
+request_execution,                    &prefix, &[], candidate.native_output_witness_for_test().unwrap(), runtime, &live_handle,
                 ).unwrap());
                 // Full-prefix verification adds a visit and a native comparison
                 // for every completed handler fact, after the own-evidence check.
                 for fact in prefix.iter() {
 
-assert_eq!(fact.source_currentness_in(runtime, request_execution, &live_handle).unwrap().unwrap().movement(), Movement::Unmoved);
+assert_eq!(fact.source_currentness_in_for_test(runtime, request_execution, &live_handle).unwrap().unwrap().movement(), Movement::Unmoved);
                 }
             } else {
                 assert!(matches!(result, Err(InputCutoffVerificationStop::PendingOutput(ref identity)) if identity == &a0),
@@ -194,18 +194,18 @@ pub fn register_dependent_alias(
     successor: &Arc<RecordedSettlementIdentity>,
     upstream: &Arc<RecordedSettlementIdentity>,
 ) {
-    let relation = StableEqualityConsequence::native_actor_fixture(
+    let relation = StableEqualityConsequence::native_actor_fixture_for_test(
         Arc::clone(predecessor),
         Arc::clone(successor),
         basis,
     );
     let prepared = owner
-        .prepare_current_stable_settlement(
+        .prepare_current_stable_settlement_for_test(
             SettlementRegistration {
                 computation: None,
                 work_membership: None,
                 identity: Arc::clone(successor),
-                facts: RetainedSourceFacts::for_test(false, Arc::from([])),
+                facts: RetainedSourceFacts::for_test_for_test(false, Arc::from([])),
                 output_facts: None,
                 read_basis: basis.clone(),
                 stale_at_read_basis: OrdSet::new(),
@@ -224,7 +224,7 @@ pub fn register_dependent_alias(
 }
 
 pub fn context() -> PreparedDecisionReuseContext {
-    PreparedDecisionReuseContext::new(
+    PreparedDecisionReuseContext::new_for_test(
         WorthQueryProducerInputReuseContract::canonical_bitwise(
             WorthQueryDecisionContextDependencies::KEY,
         ),
@@ -244,7 +244,7 @@ pub fn candidate(
     prefix: Arc<[WorthQueryApplicationObservedFact]>,
 ) -> RetainedInputCutoffCandidate {
     let boundary = CompletedHandlerFactBoundary::completed_for_test(prefix.len());
-    RetainedInputCutoffCandidate::from_exact_cell(Arc::new(OnceLock::from(RecordedOutput {
+    RetainedInputCutoffCandidate::from_exact_cell_for_test(Arc::new(OnceLock::from(RecordedOutput {
         producing_implementation: None,
         required_publication: None,
         computation_source: ComputationSourceEvidence::for_test(false),
@@ -253,27 +253,27 @@ pub fn candidate(
         performed_origin: None,
         consumed_outputs: Arc::from([]),
         completed_decision_reuse: boundary
-            .seal_decision_reuse(context(), DecisionContextUse::default().key_for_test()),
+            .seal_decision_reuse_for_test(context(), DecisionContextUse::default().key_for_test()),
         completed_handler_facts: Some(boundary),
-        prepared_input_reuse_key: Some(PreparedInputReuseKey::new(
+        prepared_input_reuse_key: Some(PreparedInputReuseKey::new_for_test(
             WorthQueryObservedSourceSelection::selecting_for_test(
                 u64::try_from(prefix.len()).unwrap(),
             ),
             [11; 32],
-            InstalledProducerEdition::for_test([12; 32]),
+            InstalledProducerEdition::for_test_for_test([12; 32]),
         )),
         native_output_witness: OnceLock::from(Arc::clone(
-            performed.native_output_witness_cell().unwrap(),
+            performed.native_output_witness_cell_for_test().unwrap(),
         )),
         settlement_identity: identity,
-        correspondence: Arc::clone(&performed.correspondence),
-        source_identity: performed.source_identity,
-        source_partition_identity: performed.source_partition_identity,
-        producer_dependency_identity: performed.producer_dependency_identity,
-        idempotency_key_identity: performed.idempotency_key_identity,
-        mutable: Mutex::new(RecordedOutputMutable::new(
+        correspondence: Arc::clone(&(*performed.correspondence_for_test())),
+        source_identity: (*performed.source_identity_for_test()),
+        source_partition_identity: (*performed.source_partition_identity_for_test()),
+        producer_dependency_identity: (*performed.producer_dependency_identity_for_test()),
+        idempotency_key_identity: (*performed.idempotency_key_identity_for_test()),
+        mutable: Mutex::new(RecordedOutputMutable::new_for_test(
             None,
-            Some(RetainedSourceFacts::for_test(false, prefix)),
+            Some(RetainedSourceFacts::for_test_for_test(false, prefix)),
             RecordedComputation::Absent(PriorAbsence::Restored),
         )),
     })))
@@ -285,7 +285,7 @@ fn retained_registration_consumes_the_equal_successor_at_the_live_image() {
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     with_generated_own_write(|world, _, performed, _| {
-        let graph = world.application.runtime.primary_graph().unwrap();
+        let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
         let handle = graph.integration_handle();
         let owner = &handle.source_owner.invalidation_owner;
         let record = performed.get().unwrap();
@@ -293,7 +293,7 @@ fn retained_registration_consumes_the_equal_successor_at_the_live_image() {
             .application
             .with_host_advancement(|host_phase| {
                 world
-                    .selected_product(&host_phase.test_host_request())
+                    .selected_product(&host_phase.test_host_request_for_test())
                     .resolve_entity(
                         &host_phase,
                         AccountStatus::reference(),
@@ -302,7 +302,7 @@ fn retained_registration_consumes_the_equal_successor_at_the_live_image() {
                         WorthQueryPrincipalResolutionMode::Ordinary,
                     )
                     .unwrap()
-                    .entity_id()
+                    .entity_id_for_test()
             })
             .expect("installed host call opens");
         let status = AccountStatus::reference();
@@ -311,15 +311,15 @@ fn retained_registration_consumes_the_equal_successor_at_the_live_image() {
             .field_locator(status.entity(), status.aspect(), status.field())
             .unwrap()
             .clone();
-        let mut source = record.settlement_identity.source().clone();
-        source.output_binding = OutputBindingIdentity::declared("Upstream");
+        let mut source = (*record.settlement_identity_for_test()).source().clone();
+        source.output_binding = OutputBindingIdentity::declared_for_test("Upstream");
         let a0 =
-            RecordedSettlementIdentity::retain(&source, record.settlement_identity.coordinate(), 0);
+            RecordedSettlementIdentity::retain_for_test(&source, (*record.settlement_identity_for_test()).coordinate(), 0);
         let a1 =
-            RecordedSettlementIdentity::retain(&source, record.settlement_identity.coordinate(), 1);
-        source.output_binding = OutputBindingIdentity::declared("Consumer");
+            RecordedSettlementIdentity::retain_for_test(&source, (*record.settlement_identity_for_test()).coordinate(), 1);
+        source.output_binding = OutputBindingIdentity::declared_for_test("Consumer");
         let consumer =
-            RecordedSettlementIdentity::retain(&source, record.settlement_identity.coordinate(), 0);
+            RecordedSettlementIdentity::retain_for_test(&source, (*record.settlement_identity_for_test()).coordinate(), 0);
         handle.with_runtime_mut(request_execution, |runtime| {
             let (before_handle, before) = snapshot(runtime);
             register(

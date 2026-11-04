@@ -41,9 +41,9 @@ pub fn selected(
 ) -> WorthQueryProductBranchLease {
     world
         .application
-        .select_product_branch(
+        .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch(),
+            world.application.product_runtime().default_branch_for_test(),
         )
         .unwrap()
         .product()
@@ -58,7 +58,7 @@ pub fn name(
 ) -> (EntityId, Name) {
     world
         .invariant
-        .project_operation_on_product::<ReplaceNext, _>(
+        .project_operation_on_product_for_test::<ReplaceNext, _>(
             execution,
             product,
             |reader| {
@@ -83,7 +83,7 @@ pub fn inspect(
 ) -> Result<History, Denial> {
     world
         .invariant
-        .project_operation_on_product::<ReplaceNext, _>(
+        .project_operation_on_product_for_test::<ReplaceNext, _>(
             execution,
             product,
             |reader| reader.lineage(Next::reference(), identity),

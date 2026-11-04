@@ -156,20 +156,20 @@ fn registry_requires_the_exact_private_installation_lease() {
     let foreign_lease = Arc::new(ConditionalClockLease);
     let mut registry = WorthQueryConditionalOperationRegistry::<TestSchema>::default();
     registry
-        .install(Box::new(InstalledClock {
+        .install_for_test(Box::new(InstalledClock {
             identity: "clock-binding".to_string(),
             lease: Arc::clone(&installed_lease),
         }))
         .unwrap();
 
     assert!(registry
-        .admit_clock("clock-binding", &installed_lease)
+        .admit_clock_for_test("clock-binding", &installed_lease)
         .is_some());
     assert!(registry
-        .admit_clock("clock-binding", &foreign_lease)
+        .admit_clock_for_test("clock-binding", &foreign_lease)
         .is_none());
     assert!(registry
-        .admit_clock("another-binding", &installed_lease)
+        .admit_clock_for_test("another-binding", &installed_lease)
         .is_none());
 }
 
@@ -180,7 +180,7 @@ fn parked_operation_does_not_hold_registry_lookup_or_another_operation_cell() {
     let mut registry = WorthQueryConditionalOperationRegistry::<TestSchema>::default();
     for (identity, lease) in [("first", &first_lease), ("second", &second_lease)] {
         registry
-            .install(Box::new(InstalledClock {
+            .install_for_test(Box::new(InstalledClock {
                 identity: identity.to_string(),
                 lease: Arc::clone(lease),
             }))
@@ -190,7 +190,7 @@ fn parked_operation_does_not_hold_registry_lookup_or_another_operation_cell() {
     let first = registry
         .lock()
         .unwrap()
-        .admit_clock("first", &first_lease)
+        .admit_clock_for_test("first", &first_lease)
         .unwrap();
     let (parked_tx, parked_rx) = std::sync::mpsc::sync_channel(0);
     let (release_tx, release_rx) = std::sync::mpsc::sync_channel(0);
@@ -206,7 +206,7 @@ fn parked_operation_does_not_hold_registry_lookup_or_another_operation_cell() {
             let second = registry
                 .lock()
                 .unwrap()
-                .admit_clock("second", &second_lease)
+                .admit_clock_for_test("second", &second_lease)
                 .unwrap();
             let active = second.lock_operation();
             completed_tx

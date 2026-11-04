@@ -27,7 +27,7 @@ impl Context {
         let change = Arc::new(receipt.take_performed_relational_product_change().unwrap());
         let observation = receipt
             .committed_product_publication()
-            .take_output_demand_observation()
+            .take_output_demand_observation_for_test()
             .unwrap();
         let source = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryPerformedOutputDemandSource {
             receipt,
@@ -49,7 +49,7 @@ impl Context {
     }
     pub fn commit(&self, id: usize) -> CompositeCommitIdentity {
         if id == 0 {
-            self.source.change.product_commit().clone()
+            (*self.source.change_for_test()).product_commit().clone()
         } else {
             self.completed
                 .committed_product_publication()
@@ -203,7 +203,7 @@ impl<'a> World<'a> {
             },
         );
         let registry = WorthQueryOutputDemandRegistry::default();
-        let mut state = registry.state.lock().unwrap();
+        let mut state = (*registry.state_for_test()).lock().unwrap();
         let mut owners = Vec::new();
         for (&id, row) in &model.rows {
             let phase = match row.phase {
@@ -212,22 +212,22 @@ impl<'a> World<'a> {
                 _ => DemandState::Admitted,
             };
             let occurrence = if row.product == 0 {
-                context.completed.product_branch().occurrence()
+                context.completed.product_branch().occurrence_for_test()
             } else {
                 occurrence()
             };
             let mut record = record(occurrence, phase, row.owners);
-            record.framework_required_count = model.claimed(id);
-            record.prerequisites = row
+            (*record.framework_required_count_mut_for_test()) = model.claimed(id);
+            (*record.prerequisites_mut_for_test()) = row
                 .claims
                 .iter()
                 .map(|&up| Arc::new(keys[up].clone()))
                 .collect();
 
             if row.source {
-                record.source_commits.push(context.commit(1));
+                (*record.source_commits_for_test()).push(context.commit(1));
             }
-            let wake = Arc::clone(&record.wake);
+            let wake = Arc::clone(&(*record.wake_for_test()));
             state.records.insert(keys[id].clone(), record);
             let member = state.prepare_required_member(&keys[id]).unwrap();
             state.install_required_member(member);
@@ -248,12 +248,12 @@ impl<'a> World<'a> {
             }
         }
         for (&id, entry) in &model.custody {
-            let identity = keys[1].source.clone();
+            let identity = (*keys[1].source_for_test()).clone();
             state.source_custody.insert(
                 context.commit(id),
                 SourceCustody {
-                    occurrence: context.completed.product_branch().occurrence(),
-                    root_kind: PreparedOutputRootKind::Discovered(EqualityTypeId::of::<()>()),
+                    occurrence: context.completed.product_branch().occurrence_for_test(),
+                    root_kind: PreparedOutputRootKind::Discovered(EqualityTypeId::of_for_test::<()>()),
                     source: (id == 0).then(|| context.source.clone()),
                     discovery: None,
                     bound_sources: entry.bound.map(|_| {
@@ -280,7 +280,7 @@ impl<'a> World<'a> {
             supersede_predecessors(&mut state, &keys[1]).unwrap();
         }
         drop(state);
-        registry.complete_prepared_source(&context.completed);
+        registry.complete_prepared_source_for_test(&context.completed);
         Self {
             context,
             registry,
@@ -301,7 +301,7 @@ impl<'a> World<'a> {
     pub fn admission(&self) -> Result<(), WorthQueryOutputDemandDenial> {
         let mut interest = self
             .registry
-            .admit(
+            .admit_for_test(
                 key("oracle-reader", self.generation, 250),
                 None,
                 self.context.scope,
@@ -312,14 +312,14 @@ impl<'a> World<'a> {
             )
             .map(|(interest, _pause)| interest)?;
         // This request row is unrelated to the compared domain; release through real Drop.
-        self.registry
-            .state
+        (*self.registry
+            .state_for_test())
             .lock()
             .unwrap()
             .records
             .get_mut(&interest.key)
             .unwrap()
-            .state = DemandState::Failed(WorthQueryOutputDemandDenial::new(
+            .state = DemandState::Failed(WorthQueryOutputDemandDenial::new_for_test(
             WorthQueryOutputDemandDenialKind::NoEffect,
             "oracle request completed",
         ));
@@ -329,11 +329,11 @@ impl<'a> World<'a> {
     }
     pub fn bind(&mut self) {
         self.registry
-            .ensure_discovered_sources_bound(
+            .ensure_discovered_sources_bound_for_test(
                 &self.context.commit(0),
                 &[BoundOutputSource {
                     scope: self.context.scope,
-                    identity: self.keys[0].source.clone(),
+                    identity: (*self.keys[0].source_for_test()).clone(),
                 }],
             )
             .unwrap();
@@ -345,11 +345,11 @@ pub fn copy_ready(ready: &DemandState) -> DemandState {
         panic!("Ready fixture")
     };
     let Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint::Ready(completion)) =
-        &output.checkpoint
+        &(*output.checkpoint_for_test())
     else {
         panic!("Ready fixture")
     };
-    DemandState::Output(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputProgress::new(
+    DemandState::Output(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputProgress::new_for_test(
         worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint::Ready(completion.clone()),
     ))
 }

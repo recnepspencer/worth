@@ -19,7 +19,7 @@ pub use worth_query_execution::court_doors_for_test::domain_computation::authori
 pub use worth_relational::facade::identity::PartitionId;
 
 pub fn row() -> WorthQueryApplicationProjectionNode {
-    WorthQueryApplicationProjectionNode::new(
+    WorthQueryApplicationProjectionNode::new_for_test(
         EntityId::new(PartitionId::main(), 7, 1),
         None,
         true,
@@ -31,7 +31,7 @@ pub fn tree(
     row: WorthQueryApplicationProjectionNode,
 ) -> WorthQueryApplicationDisclosedProjectionTree {
     WorthQueryApplicationWorkingProjectionTree::new(vec![row])
-        .into_disclosed(&WorthQueryApplicationQueryGovernance::Public)
+        .into_disclosed_for_test(&WorthQueryApplicationQueryGovernance::Public)
 }
 #[test]
 fn independent_projection_bodies_keep_full_generation_occurrence_path_and_completeness() {
@@ -39,21 +39,21 @@ fn independent_projection_bodies_keep_full_generation_occurrence_path_and_comple
     let compare = |other| original.same_one_hop_content(&tree(other), &mut |_| Ok::<_, ()>(()));
     assert_eq!(compare(row()), Ok(true));
     let mut different = row();
-    different.entity_id = EntityId::new(PartitionId::main(), 7, 2);
+    (*different.entity_id_mut_for_test()) = EntityId::new(PartitionId::main(), 7, 2);
     assert_eq!(compare(different), Ok(false));
     let mut different = row();
-    different.source_dependencies_complete = false;
+    (*different.source_dependencies_complete_mut_for_test()) = false;
     assert_eq!(compare(different), Ok(false));
     let mut different = row();
-    different.source_path = Some("root.child".into());
+    (*different.source_path_mut_for_test()) = Some("root.child".into());
     assert_eq!(compare(different), Ok(false));
     let mut different = row();
-    different.incoming_relation = Some(RelationId::new(PartitionId::main(), 9, 1));
+    (*different.incoming_relation_mut_for_test()) = Some(RelationId::new(PartitionId::main(), 9, 1));
     assert_eq!(compare(different), Ok(false));
     let mut left = row();
-    left.incoming_relation = Some(RelationId::new(PartitionId::main(), 9, 1));
+    (*left.incoming_relation_mut_for_test()) = Some(RelationId::new(PartitionId::main(), 9, 1));
     let mut right = row();
-    right.incoming_relation = Some(RelationId::new(PartitionId::main(), 9, 2));
+    (*right.incoming_relation_mut_for_test()) = Some(RelationId::new(PartitionId::main(), 9, 2));
     assert_eq!(
         tree(left).same_one_hop_content(&tree(right), &mut |_| Ok::<_, ()>(())),
         Ok(false)

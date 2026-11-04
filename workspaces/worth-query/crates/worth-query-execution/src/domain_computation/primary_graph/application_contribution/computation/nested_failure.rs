@@ -58,3 +58,5 @@ impl<E> MemberComputeFailure<E> {
         }
     }
 }
+
+mod court_doors_for_test;

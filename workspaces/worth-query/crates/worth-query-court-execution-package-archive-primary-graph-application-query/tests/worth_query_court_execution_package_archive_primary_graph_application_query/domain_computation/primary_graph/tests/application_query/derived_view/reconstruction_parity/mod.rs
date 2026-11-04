@@ -15,7 +15,7 @@ fn members_admitted_across_a_commit_are_stale_after_the_same_charged_reads() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host = phase.test_host_request();
+            let host = phase.test_host_request_for_test();
             let execution = host.borrowed_request_for_test();
             let old = world.selected_product(&host);
             let principal = old
@@ -37,7 +37,7 @@ fn members_admitted_across_a_commit_are_stale_after_the_same_charged_reads() {
                 )
                 .unwrap()
             });
-            assert!(roots[0].entity_id() < roots[1].entity_id());
+            assert!(roots[0].entity_id_for_test() < roots[1].entity_id_for_test());
             let access = WorthQueryApplicationQueryAccessContext::new(&principal, &roots[0]);
             let schema = world.application.installed_schema();
             let membership_query = schema
@@ -64,7 +64,7 @@ fn members_admitted_across_a_commit_are_stale_after_the_same_charged_reads() {
                 .application
                 .execute_application_query_one_shot(
                     &phase,
-                    old.retain_selection(&execution)
+                    old.retain_selection_for_test(&execution)
                         .unwrap()
                         .admit_application_query(
                             &phase,
@@ -77,7 +77,7 @@ fn members_admitted_across_a_commit_are_stale_after_the_same_charged_reads() {
                 )
                 .unwrap();
             let admit = || {
-                old.retain_selection(&execution)
+                old.retain_selection_for_test(&execution)
                     .unwrap()
                     .admit_application_query(
                         &phase,
@@ -89,7 +89,7 @@ fn members_admitted_across_a_commit_are_stale_after_the_same_charged_reads() {
                     .unwrap()
             };
             let first = WorthQueryDerivedPairReadPlans::new(admit(), admit());
-            let graph = &world.application.primary_provider.graph;
+            let graph = &(*world.application.primary_provider_for_test()).graph;
             let label = AccountLabel::reference();
             let locator = graph
                 .layout
@@ -112,7 +112,7 @@ fn members_admitted_across_a_commit_are_stale_after_the_same_charged_reads() {
                                 roots
                                     .iter()
                                     .zip(["open", "unrelated"])
-                                    .map(|(root, status)| (root.entity_id(), status.to_owned()))
+                                    .map(|(root, status)| (root.entity_id_for_test(), status.to_owned()))
                                     .collect()
                             },
                             |member: &String| {
@@ -125,7 +125,7 @@ fn members_admitted_across_a_commit_are_stale_after_the_same_charged_reads() {
                                     WorkerIntentBatch::new("advance-before-second-member").push(
                                         MutationIntent::Entity(EntityMutationIntent::UpdateFields(
                                             UpdateEntityFieldsIntent {
-                                                entity_id: roots[1].entity_id(),
+                                                entity_id: roots[1].entity_id_for_test(),
                                                 fields: AspectFieldPatch::from(BTreeMap::from([(
                                                     locator.clone(),
                                                     StringApplicationValueBinding::encode(
@@ -140,7 +140,7 @@ fn members_admitted_across_a_commit_are_stale_after_the_same_charged_reads() {
                                 let current = world.selected_product(&host);
                                 let admit = || {
                                     current
-                                        .retain_selection(&execution)
+                                        .retain_selection_for_test(&execution)
                                         .unwrap()
                                         .admit_application_query(
                                             &phase,

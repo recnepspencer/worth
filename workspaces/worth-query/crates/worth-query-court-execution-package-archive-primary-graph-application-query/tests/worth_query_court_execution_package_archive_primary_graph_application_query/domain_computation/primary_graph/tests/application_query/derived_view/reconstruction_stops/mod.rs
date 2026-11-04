@@ -33,7 +33,7 @@ pub fn check(case: usize) {
     world
         .application
         .with_host_advancement(|phase| {
-            let host = phase.test_host_request();
+            let host = phase.test_host_request_for_test();
             let execution = host.borrowed_request_for_test();
             let selected = world.selected_product(&host);
             let principal = selected
@@ -92,7 +92,7 @@ pub fn check(case: usize) {
                 .execute_application_query_one_shot(
                     &phase,
                     selected
-                        .retain_selection(&execution)
+                        .retain_selection_for_test(&execution)
                         .unwrap()
                         .admit_application_query(
                             &phase,
@@ -105,7 +105,7 @@ pub fn check(case: usize) {
                 )
                 .unwrap();
             let first = selected
-                .retain_selection(&execution)
+                .retain_selection_for_test(&execution)
                 .unwrap()
                 .admit_application_query(
                     &phase,
@@ -116,7 +116,7 @@ pub fn check(case: usize) {
                 )
                 .unwrap();
             let second = selected
-                .retain_selection(&execution)
+                .retain_selection_for_test(&execution)
                 .unwrap()
                 .admit_application_query(
                     &phase,
@@ -159,7 +159,7 @@ pub fn check(case: usize) {
                 Some(worth_query_execution::court_doors_for_test::domain_computation::provider_session::graph_obligation::owner_execution::pin_control::PinControlGuardForTest::cancellation(cancellation))
             } else if case == 0 {
                 // First side pins normally; second side is the one-predicate query.
-                Some(worth_query_execution::court_doors_for_test::domain_computation::provider_session::graph_obligation::owner_execution::pin_control::PinControlGuardForTest::unavailable_snapshot(1, unavailable))
+                Some(worth_query_execution::court_doors_for_test::domain_computation::provider_session::graph_obligation::owner_execution::pin_control::PinControlGuardForTest::unavailable_snapshot_for_test(1, unavailable))
             } else {
                 None
             };
@@ -170,7 +170,7 @@ pub fn check(case: usize) {
                     &view,
                     selected.product(),
                     &membership,
-                    |_| vec![(root.entity_id(), "open".to_owned())],
+                    |_| vec![(root.entity_id_for_test(), "open".to_owned())],
                     |_| Ok(plans.take().unwrap()),
                     |_| (),
                     |_| (),
@@ -189,7 +189,7 @@ pub fn check(case: usize) {
                 else {
                     panic!("native snapshot loss must reach reconstruction: {actual:?}");
                 };
-                assert_eq!(refused, root.entity_id());
+                assert_eq!(refused, root.entity_id_for_test());
                 // A one-predicate read selects its root without an index, so
                 // the lost snapshot is the query's projection, not a predicate.
                 assert_eq!(

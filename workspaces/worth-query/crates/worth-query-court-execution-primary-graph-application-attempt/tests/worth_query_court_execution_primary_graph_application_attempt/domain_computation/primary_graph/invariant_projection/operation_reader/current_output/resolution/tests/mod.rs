@@ -32,11 +32,11 @@ fn postcommit_observation_cannot_certify_original_own_write_output() {
             world
                 .application
                 .with_host_advancement(|phase| {
-                    let host_custody = phase.test_host_request();
+                    let host_custody = phase.test_host_request_for_test();
                     let request = live_scope();
                     let principal = authenticated_principal(&host_custody, world, &request);
                     let account = resolved_account(&host_custody, world, "2", &request);
-                    let graph = world.application.runtime.primary_graph().unwrap();
+                    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
                     let handle = graph.integration_handle();
                     handle
                         .output_lineage

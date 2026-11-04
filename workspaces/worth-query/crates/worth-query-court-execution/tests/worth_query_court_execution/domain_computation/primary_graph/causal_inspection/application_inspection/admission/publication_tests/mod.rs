@@ -75,16 +75,16 @@ fn cancelled_after_consuming_completion_cannot_publish_and_keeps_original_payer(
                     let selected = world
                         .application
                         .on_branch(world.application.current_world())
-                        .select_with_request(&execution)
+                        .select_with_request_for_test(&execution)
                         .unwrap();
                     let (report, terminal) = world
                         .application
-                        .with_fresh_retained_query_identities(
+                        .with_fresh_retained_query_identities_for_test(
                             &execution,
                             &installed,
                             None,
                             &external,
-                            &original.source,
+                            &(*original.source_for_test()),
                             &selected,
                             &request,
                             |_, principal, scope| {
@@ -107,13 +107,13 @@ fn cancelled_after_consuming_completion_cannot_publish_and_keeps_original_payer(
                                 crate::domain_computation::primary_graph::causal_inspection::application_inspection::admission::publication_tests::affinity::assert_subject_affinity(
                                     &read,
                                     &execution,
-                                    principal.principal().principal_entity_id(),
+                                    principal.principal_for_test().principal_entity_id(),
                                 );
                                 let report = read
-                                    .materialize(&execution)
+                                    .materialize_for_test(&execution)
                                     .unwrap_or_else(|_| panic!("actual report materializes"));
                                 let terminal = read
-                                    .terminal(&execution)
+                                    .terminal_for_test(&execution)
                                     .unwrap_or_else(|_| panic!("actual final read check succeeds"));
                                 Ok::<_, FreshQueryPermissionStop<()>>((report, terminal))
                             },
@@ -143,11 +143,11 @@ fn cancelled_after_consuming_completion_cannot_publish_and_keeps_original_payer(
         )
         .unwrap();
     assert!(completed_actual_terminal);
-    let denial = WorthQueryApplicationInspectionDenial::new(
+    let denial = WorthQueryApplicationInspectionDenial::new_for_test(
         InspectionCause::Admission(failed.unwrap()),
         memory,
     );
-    assert!(matches!(denial.cause, InspectionCause::Admission(InspectionAdmissionDenial::RequestControl(
+    assert!(matches!((*denial.cause_for_test()), InspectionCause::Admission(InspectionAdmissionDenial::RequestControl(
         worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption::Cancelled
     ))));
     assert!(parent.charged_memory_bytes() > before_memory);

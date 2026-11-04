@@ -6,9 +6,9 @@ fn refresh_preserves_the_stop_at_every_counted_consult() {
     let _observation =
         worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation::install_on_this_thread();
     let world = installed_world(&[("counted-refresh", WorthQueryPrincipalMappingStatus::Enabled)]);
-    let handle = world
+    let handle = (*world
         .application
-        .runtime
+        .runtime_for_test())
         .primary_graph()
         .unwrap()
         .integration_handle();

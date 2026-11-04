@@ -32,12 +32,12 @@ fn program_activation_changed_after_preparation_cannot_readmit_the_old_program()
     use worth_relational::facade::transactions::UpdateEntityFieldsIntent;
     use worth_relational::facade::transactions::WorkerIntentBatch;
     let mut world = installed_authorization_world(true);
-    world.application.program_support = Some(installed_program_support(
-        &world.application.installed_schema,
+    (*world.application.program_support_mut_for_test()) = Some(installed_program_support(
+        &(*world.application.installed_schema_for_test()),
     ));
-    let layout = world
+    let layout = (*world
         .application
-        .primary_provider
+        .primary_provider_for_test())
         .graph
         .layout
         .program_activation()
@@ -45,7 +45,7 @@ fn program_activation_changed_after_preparation_cannot_readmit_the_old_program()
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             seed_program_activation(
                 &host_custody.borrowed_request_for_test(),
                 &world,
@@ -54,18 +54,18 @@ fn program_activation_changed_after_preparation_cannot_readmit_the_old_program()
         })
         .expect("the fixture read owns its installed host call");
     let request = live_scope();
-    let support = world.application.program_support.as_ref().unwrap();
+    let support = (*world.application.program_support_for_test()).as_ref().unwrap();
     let activation = support.activation().published().unwrap();
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let program = world
@@ -85,7 +85,7 @@ fn program_activation_changed_after_preparation_cannot_readmit_the_old_program()
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             publish_relational_mutation(
                 &host_custody.borrowed_request_for_test(),
                 &world,
@@ -105,7 +105,7 @@ fn program_activation_changed_after_preparation_cannot_readmit_the_old_program()
         .application
         .with_host_advancement(|phase| {
             world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&(phase).test_host_request_for_test())
                 .product()
                 .selected_commit()
                 .clone()
@@ -135,7 +135,7 @@ fn program_activation_changed_after_preparation_cannot_readmit_the_old_program()
         .with_host_advancement(|phase| {
             assert_eq!(
                 world
-                    .selected_product(&(phase).test_host_request(),)
+                    .selected_product(&(phase).test_host_request_for_test(),)
                     .product()
                     .selected_commit(),
                 &before
@@ -147,27 +147,27 @@ fn program_activation_changed_after_preparation_cannot_readmit_the_old_program()
 #[test]
 fn a_program_action_on_an_unseeded_occurrence_names_the_unresolved_activation() {
     let mut world = installed_authorization_world(true);
-    world.application.program_support = Some(installed_program_support(
-        &world.application.installed_schema,
+    (*world.application.program_support_mut_for_test()) = Some(installed_program_support(
+        &(*world.application.installed_schema_for_test()),
     ));
     let request = live_scope();
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let predecessor = world
         .application
         .with_host_advancement(|phase| {
             world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&(phase).test_host_request_for_test())
                 .product()
                 .selected_commit()
                 .clone()
@@ -186,9 +186,9 @@ fn a_program_action_on_an_unseeded_occurrence_names_the_unresolved_activation() 
             )
         })
         .expect("the fixture read owns its installed host call");
-    let support = world
+    let support = (*world
         .application
-        .program_support
+        .program_support_for_test())
         .as_ref()
         .expect("the fixture host retains its admitted program support");
     let presented = support
@@ -217,7 +217,7 @@ fn a_program_action_on_an_unseeded_occurrence_names_the_unresolved_activation() 
         .with_host_advancement(|phase| {
             assert_eq!(
                 world
-                    .selected_product(&(phase).test_host_request(),)
+                    .selected_product(&(phase).test_host_request_for_test(),)
                     .product()
                     .selected_commit(),
                 &predecessor
@@ -229,27 +229,27 @@ fn a_program_action_on_an_unseeded_occurrence_names_the_unresolved_activation() 
 #[test]
 fn a_required_output_source_on_an_unseeded_occurrence_is_gated_like_its_siblings() {
     let mut world = installed_authorization_world(true);
-    world.application.program_support = Some(installed_program_support(
-        &world.application.installed_schema,
+    (*world.application.program_support_mut_for_test()) = Some(installed_program_support(
+        &(*world.application.installed_schema_for_test()),
     ));
     let request = live_scope();
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let predecessor = world
         .application
         .with_host_advancement(|phase| {
             world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&(phase).test_host_request_for_test())
                 .product()
                 .selected_commit()
                 .clone()
@@ -268,9 +268,9 @@ fn a_required_output_source_on_an_unseeded_occurrence_is_gated_like_its_siblings
             )
         })
         .expect("the fixture read owns its installed host call");
-    let support = world
+    let support = (*world
         .application
-        .program_support
+        .program_support_for_test())
         .as_ref()
         .expect("the fixture host retains its admitted program support");
     let presented = support
@@ -301,7 +301,7 @@ fn a_required_output_source_on_an_unseeded_occurrence_is_gated_like_its_siblings
         .with_host_advancement(|phase| {
             assert_eq!(
                 world
-                    .selected_product(&(phase).test_host_request(),)
+                    .selected_product(&(phase).test_host_request_for_test(),)
                     .product()
                     .selected_commit(),
                 &predecessor

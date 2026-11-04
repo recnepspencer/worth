@@ -231,3 +231,5 @@ impl WorthQueryApplicationPublicationRecoverySlot {
         *state = WorthQueryApplicationPublicationRecoveryState::Complete;
     }
 }
+
+mod court_doors_for_test;

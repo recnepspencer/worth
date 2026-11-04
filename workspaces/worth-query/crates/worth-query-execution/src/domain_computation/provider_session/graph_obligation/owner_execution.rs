@@ -149,6 +149,8 @@ pub(crate) mod pin_panic {
     pub(super) fn panic_if_armed() {
         assert!(!ARMED.replace(false), "injected panic inside owner pin");
     }
+
+mod court_doors_for_test;
 }
 
 pub(crate) mod pin_control;

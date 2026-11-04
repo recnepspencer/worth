@@ -363,7 +363,7 @@ where
         self.primary_provider.application_attempt_resource_count()
     }
 
-    pub(crate) fn application_attempt_work_for_test(
+    pub fn application_attempt_work_for_test(
         &self,
     ) -> crate::domain_computation::primary_graph::provider::WorthQueryApplicationAttemptWorkSnapshot
     {

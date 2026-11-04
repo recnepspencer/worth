@@ -27,9 +27,9 @@ fn overlapping_path_and_projection_adjacency_merge_at_one_native_revision() {
             endpoints: worth_query_execution::facade::domain_computation::WorthQueryApplicationSourceAdjacencyEndpoints::from_observed(&[], worth_execution::ExecutionAllocationPolicy::SystemAllocation, None).unwrap(),
         };
     assert!(projected
-        .merge_same_source_fact(
+        .merge_same_source_fact_for_test(
             path,
-            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new_for_test(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)
         )
         .unwrap());
     assert!(
@@ -44,9 +44,9 @@ fn overlapping_path_and_projection_adjacency_merge_at_one_native_revision() {
             endpoints: worth_query_execution::facade::domain_computation::WorthQueryApplicationSourceAdjacencyEndpoints::from_observed(&[], worth_execution::ExecutionAllocationPolicy::SystemAllocation, None).unwrap(),
         };
     assert!(!projected
-        .merge_same_source_fact(
+        .merge_same_source_fact_for_test(
             changed,
-            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new_for_test(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)
         )
         .unwrap());
 }

@@ -8,7 +8,7 @@ fn public_query_result_reconstructs_disposable_managed_view_from_owner_observati
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let selected = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
         .expect("the fixture read owns its installed host call");
     let principal = world
         .application
@@ -73,7 +73,7 @@ fn public_query_result_reconstructs_disposable_managed_view_from_owner_observati
         .expect("the fixture read owns its installed host call");
     let retained_product = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
         .expect("the fixture read owns its installed host call");
     let foreign = installed_authorization_world(true);
     foreign
@@ -85,7 +85,7 @@ fn public_query_result_reconstructs_disposable_managed_view_from_owner_observati
                     .reconstruct_managed_derived_view(
                         &view,
                         foreign
-                            .selected_product(&(phase).test_host_request(),)
+                            .selected_product(&(phase).test_host_request_for_test(),)
                             .product(),
                         &result,
                         |row| SceneLabel(row.label().to_string()),
@@ -146,7 +146,7 @@ fn public_query_result_reconstructs_disposable_managed_view_from_owner_observati
         })
         .unwrap();
     drop(retained_product);
-    let graph = world.application.runtime.primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let field = AccountLabel::reference();
     let locator = graph
         .layout
@@ -160,13 +160,13 @@ fn public_query_result_reconstructs_disposable_managed_view_from_owner_observati
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::product_publication::publish_relational_mutation(
                 &host_custody.borrowed_request_for_test(),
                 &world,
                 WorkerIntentBatch::new("direct-world-change").push(MutationIntent::Entity(
                     EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
-                        entity_id: account.entity_id(),
+                        entity_id: account.entity_id_for_test(),
                         fields,
                     }),
                 )),
@@ -179,7 +179,7 @@ fn public_query_result_reconstructs_disposable_managed_view_from_owner_observati
     ));
     let selected = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
         .expect("the fixture read owns its installed host call");
     let principal = world
         .application
@@ -234,7 +234,7 @@ fn public_query_result_reconstructs_disposable_managed_view_from_owner_observati
         .expect("the fixture read owns its installed host call");
     let fresh_product = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
         .expect("the fixture read owns its installed host call");
     world
         .application

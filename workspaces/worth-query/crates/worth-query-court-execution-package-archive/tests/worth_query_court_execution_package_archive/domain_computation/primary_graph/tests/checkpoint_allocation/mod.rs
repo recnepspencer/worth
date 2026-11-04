@@ -24,7 +24,7 @@ pub fn leased_checkpoint_retains_one_frame_charge_through_native_handoff_and_reo
     let world = installed_world(&[("alice", WorthQueryPrincipalMappingStatus::Enabled)]);
     let original_principal = world
         .application
-        .with_host_advancement(|phase| resolve_alice(&(phase).test_host_request(), &world, 1))
+        .with_host_advancement(|phase| resolve_alice(&(phase).test_host_request_for_test(), &world, 1))
         .expect("fixture host admits the identity read");
     let refusal = world
         .application
@@ -74,8 +74,8 @@ pub fn leased_checkpoint_retains_one_frame_charge_through_native_handoff_and_reo
     let clone = checkpoint.clone();
     assert_eq!(clone.bytes().as_ptr(), pointer);
     assert_eq!(clone.charged_payload_bytes(), Some(charge));
-    let decoded = clone.decode().unwrap();
-    let (system, system_sections) = worth_query_execution::facade::application_installation::WorthQueryApplicationCheckpoint::encode(
+    let decoded = clone.decode_for_test().unwrap();
+    let (system, system_sections) = worth_query_execution::facade::application_installation::WorthQueryApplicationCheckpoint::encode_for_test(
         decoded.native.clone(),
         world.application.publication(),
         &decoded.accepted_outputs,
@@ -103,7 +103,7 @@ pub fn leased_checkpoint_retains_one_frame_charge_through_native_handoff_and_reo
         restored
             .application
             .with_host_advancement(|phase| resolve_alice(
-                &(phase).test_host_request(),
+                &(phase).test_host_request_for_test(),
                 &restored,
                 1
             ))

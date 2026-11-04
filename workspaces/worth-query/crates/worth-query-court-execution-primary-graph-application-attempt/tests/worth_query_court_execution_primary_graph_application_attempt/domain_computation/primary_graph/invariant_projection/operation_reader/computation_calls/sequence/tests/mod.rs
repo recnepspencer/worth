@@ -38,26 +38,26 @@ fn call_range_demand_and_consumption_match_independent_sequential_prefixes() {
     for start in 0..calls.len() {
         for end in start + 1..=calls.len() {
             for remaining in 0..40 {
-                let mut sequential = Budget::bounded(remaining);
+                let mut sequential = Budget::bounded_for_test(remaining);
                 let fits = calls[start..end].iter().all(|(_, (charge, _))| {
-                    let cost = charge.accounting.unwrap();
-                    sequential.carry(cost.demand, cost.consumed)
+                    let cost = (*charge.accounting_for_test()).unwrap();
+                    sequential.carry_for_test(cost.demand, cost.consumed)
                 });
                 let sum = summary(&tree, &(start..end)).unwrap();
-                let mut ranged = Budget::bounded(remaining);
+                let mut ranged = Budget::bounded_for_test(remaining);
                 assert_eq!(
-                    ranged.carry(
-                        sum.accounting.unwrap().demand,
-                        sum.accounting.unwrap().consumed
+                    ranged.carry_for_test(
+                        (*sum.accounting_for_test()).unwrap().demand,
+                        (*sum.accounting_for_test()).unwrap().consumed
                     ),
                     fits,
                     "{start}..{end}, remaining{remaining}"
                 );
                 if fits {
-                    assert_eq!(ranged.remaining(), sequential.remaining());
+                    assert_eq!(ranged.remaining_for_test(), sequential.remaining_for_test());
                 }
                 assert_eq!(
-                    sum.declared,
+                    (*sum.declared_for_test()),
                     Some(
                         calls[start..end]
                             .iter()
@@ -75,17 +75,17 @@ fn call_range_refusal_descends_to_the_first_actual_unfitting_call() {
     let calls = calls();
     let tree = funded_tree(&calls);
     for remaining in 0..40 {
-        let mut full = Budget::bounded(remaining);
+        let mut full = Budget::bounded_for_test(remaining);
         let stop = calls.iter().position(|(_, (charge, _))| {
-            let charge = charge.accounting.unwrap();
-            if full.can_afford(charge.demand) {
-                assert!(full.consume(charge.consumed));
+            let charge = (*charge.accounting_for_test()).unwrap();
+            if full.can_afford_for_test(charge.demand) {
+                assert!(full.consume_for_test(charge.consumed));
                 false
             } else {
                 true
             }
         });
-        let mut ranged = Budget::bounded(remaining);
+        let mut ranged = Budget::bounded_for_test(remaining);
         let actual = visit(
             &tree,
             &(0..calls.len()),
@@ -93,15 +93,15 @@ fn call_range_refusal_descends_to_the_first_actual_unfitting_call() {
             &mut |entry| -> Result<bool, usize> {
                 match entry {
                     CallVisit::Range(_, sum) => {
-                        let cost = sum.accounting.unwrap();
-                        Ok(ranged.carry(cost.demand, cost.consumed))
+                        let cost = (*sum.accounting_for_test()).unwrap();
+                        Ok(ranged.carry_for_test(cost.demand, cost.consumed))
                     }
                     CallVisit::Leaf(at, _, charge, _) => {
-                        let charge = charge.accounting.unwrap();
-                        if !ranged.can_afford(charge.demand) {
+                        let charge = (*charge.accounting_for_test()).unwrap();
+                        if !ranged.can_afford_for_test(charge.demand) {
                             return Err(at);
                         }
-                        assert!(ranged.consume(charge.consumed));
+                        assert!(ranged.consume_for_test(charge.consumed));
                         Ok(true)
                     }
                 }
@@ -110,8 +110,8 @@ fn call_range_refusal_descends_to_the_first_actual_unfitting_call() {
         .err();
         assert_eq!(actual, stop, "remaining {remaining}");
         assert_eq!(
-            (ranged.remaining(), ranged.exceeded()),
-            (full.remaining(), full.exceeded())
+            (ranged.remaining_for_test(), ranged.exceeded_for_test()),
+            (full.remaining_for_test(), full.exceeded_for_test())
         );
     }
 }
@@ -121,7 +121,7 @@ pub fn funded_tree(calls: &[(ComputationRead, Call)]) -> Arc<Node> {
     use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::QueryRequestExecution;
     use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope;
     let request = live_scope();
-    let execution = QueryRequestExecution::open(
+    let execution = QueryRequestExecution::open_for_test(
         worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(test_policy(
             std::num::NonZeroUsize::MIN,
             Some(1 << 24),

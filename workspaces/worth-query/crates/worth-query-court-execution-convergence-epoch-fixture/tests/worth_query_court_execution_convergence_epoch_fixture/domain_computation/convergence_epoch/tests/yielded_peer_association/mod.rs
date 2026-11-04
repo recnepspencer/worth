@@ -137,7 +137,7 @@ pub fn complete_direct_peer(
     let started = {
         let fixture_phase_result = {
             let fixture_target = yielded;
-            let installed_fixture_phase = fixture_target.fixture_phase(active_request);
+            let installed_fixture_phase = fixture_target.fixture_phase_for_test(active_request);
             fixture_target.readmit_same_runtime(&installed_fixture_phase, runtime, bridge)
         };
         match fixture_phase_result {
@@ -152,7 +152,7 @@ pub fn complete_direct_peer(
     let terminal = {
         let fixture_phase_result = {
             let fixture_target = started;
-            let installed_fixture_phase = fixture_target.fixture_phase(execution);
+            let installed_fixture_phase = fixture_target.fixture_phase_for_test(execution);
             fixture_target.advance(&installed_fixture_phase)
         };
         match fixture_phase_result {
@@ -188,7 +188,7 @@ pub fn complete_workflow_peer(
     let started = {
         let fixture_phase_result = {
             let fixture_target = yielded;
-            let installed_fixture_phase = fixture_target.fixture_phase(active_request);
+            let installed_fixture_phase = fixture_target.fixture_phase_for_test(active_request);
             fixture_target.readmit_same_runtime(&installed_fixture_phase, runtime, bridge)
         };
         match fixture_phase_result {
@@ -203,7 +203,7 @@ pub fn complete_workflow_peer(
     let terminal = {
         let fixture_phase_result = {
             let fixture_target = started;
-            let installed_fixture_phase = fixture_target.fixture_phase(execution);
+            let installed_fixture_phase = fixture_target.fixture_phase_for_test(execution);
             fixture_target.advance(&installed_fixture_phase)
         };
         match fixture_phase_result {
@@ -246,14 +246,14 @@ pub fn direct_yielded_peer(
         .start();
     let started = {
         let fixture_target = epoch;
-        let installed_fixture_phase = fixture_target.fixture_phase(execution);
+        let installed_fixture_phase = fixture_target.fixture_phase_for_test(execution);
         fixture_target.begin_iteration(&installed_fixture_phase, call())
     }
     .unwrap_or_else(|_| panic!("direct peer iteration must start"));
     let paused = {
         let fixture_phase_result = {
             let fixture_target = started;
-            let installed_fixture_phase = fixture_target.fixture_phase(execution);
+            let installed_fixture_phase = fixture_target.fixture_phase_for_test(execution);
             fixture_target.advance(&installed_fixture_phase)
         };
         match fixture_phase_result {
@@ -292,14 +292,14 @@ pub fn workflow_yielded_peer(
         .unwrap_or_else(|_| panic!("workflow peer epoch must start"));
     let started = {
         let fixture_target = epoch;
-        let installed_fixture_phase = fixture_target.fixture_phase(execution);
+        let installed_fixture_phase = fixture_target.fixture_phase_for_test(execution);
         fixture_target.begin_stage_iteration(&installed_fixture_phase, WORKFLOW_STAGE, call())
     }
     .unwrap_or_else(|_| panic!("workflow peer iteration must start"));
     let paused = {
         let fixture_phase_result = {
             let fixture_target = started;
-            let installed_fixture_phase = fixture_target.fixture_phase(execution);
+            let installed_fixture_phase = fixture_target.fixture_phase_for_test(execution);
             fixture_target.advance(&installed_fixture_phase)
         };
         match fixture_phase_result {

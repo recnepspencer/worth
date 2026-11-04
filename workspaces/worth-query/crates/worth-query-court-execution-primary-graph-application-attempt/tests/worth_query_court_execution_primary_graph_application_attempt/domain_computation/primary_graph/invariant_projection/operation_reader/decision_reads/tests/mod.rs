@@ -29,13 +29,13 @@ fn a_failed_read_an_owner_call_swallowed_seals_nothing() {
         *maximum_work_units = 19;
     }
     reads.record(stronger, DecisionReadOutcome::Observed);
-    reads.reading = Some(ComputationRead::Membership);
+    (*reads.reading_mut_for_test()) = Some(ComputationRead::Membership);
     reads.record(adjacency(2), DecisionReadOutcome::Failed);
-    reads.reading = None;
+    (*reads.reading_mut_for_test()) = None;
     reads.record(adjacency(3), DecisionReadOutcome::Failed);
     assert_eq!(
         reads
-            .into_expected(&worth_execution::ExecutionRequest::serial(
+            .into_expected_for_test(&worth_execution::ExecutionRequest::serial(
                 &worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request()
             ))
             .err(),
@@ -48,7 +48,7 @@ fn observed_reads_seal_every_key() {
     let mut reads = DecisionReads::default();
     reads.record(adjacency(1), DecisionReadOutcome::Observed);
     let (keys, _) = reads
-        .into_expected(&worth_execution::ExecutionRequest::serial(
+        .into_expected_for_test(&worth_execution::ExecutionRequest::serial(
             &worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request(),
         ))
         .ok()
@@ -71,7 +71,7 @@ fn shared_handler_and_computation_reads_keep_exact_keys_not_just_cardinality() {
     }
     reads.record(outgoing.clone(), DecisionReadOutcome::Observed);
     reads.record(next_generation.clone(), DecisionReadOutcome::Observed);
-    reads.reading = Some(ComputationRead::Membership);
+    (*reads.reading_mut_for_test()) = Some(ComputationRead::Membership);
     let mut strongest = adjacency(1);
     if let WorthQueryApplicationFactKey::Adjacency {
         maximum_work_units, ..
@@ -83,7 +83,7 @@ fn shared_handler_and_computation_reads_keep_exact_keys_not_just_cardinality() {
     reads.record(adjacency(2), DecisionReadOutcome::Observed);
     reads.record(adjacency(2), DecisionReadOutcome::Observed);
     let (keys, _) = reads
-        .into_expected(&worth_execution::ExecutionRequest::serial(
+        .into_expected_for_test(&worth_execution::ExecutionRequest::serial(
             &worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request(),
         ))
         .ok()

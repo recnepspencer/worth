@@ -45,14 +45,14 @@ fn equal_fingerprints_keep_distinct_exact_keys_and_merge_only_equal_keys() {
 
     let groups = group_projected(projected).unwrap();
     assert_eq!(groups.len(), 2);
-    assert_eq!(groups[0].key.as_ref(), first.as_ref());
+    assert_eq!((*groups[0].key_for_test()).as_ref(), first.as_ref());
     assert_eq!(
-        groups[0].ordinals.iter().copied().collect::<Vec<_>>(),
+        (*groups[0].ordinals_for_test()).iter().copied().collect::<Vec<_>>(),
         vec![0, 2]
     );
-    assert_eq!(groups[1].key.as_ref(), second.as_ref());
+    assert_eq!((*groups[1].key_for_test()).as_ref(), second.as_ref());
     assert_eq!(
-        groups[1].ordinals.iter().copied().collect::<Vec<_>>(),
+        (*groups[1].ordinals_for_test()).iter().copied().collect::<Vec<_>>(),
         vec![1]
     );
 }
@@ -67,17 +67,17 @@ fn source_and_output_facts_share_one_key_but_keep_both_composite_ordinals() {
         kind: KindId::new(9),
     }];
 
-    let prepared = PreparedPostingOrdinals::prepare(&source, Some(&output), &mut None).unwrap();
-    let mut state = MarkState::initial();
-    let projection = prepared.into_projection(0, source.len(), output.len(), None);
+    let prepared = PreparedPostingOrdinals::prepare_for_test(&source, Some(&output), &mut None).unwrap();
+    let mut state = MarkState::initial_for_test();
+    let projection = prepared.into_projection_for_test(0, source.len(), output.len(), None);
     worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::settlement::posting_bindings::bind(&mut state, &projection, &identity).unwrap();
     let ordinals = &projection.ordinals;
     let key = FactPostingKey::EntityLifecycle(entity);
     let own = ordinals.get(&key).unwrap();
     assert_eq!(own.iter().copied().collect::<Vec<_>>(), vec![0, 1]);
-    let global = state.postings.get(&key).unwrap();
+    let global = (*state.postings_for_test()).get(&key).unwrap();
     assert_eq!(global.iter().copied().collect::<Vec<_>>(), vec![0]);
-    let binding = state.posting_bindings.get(&0).unwrap();
+    let binding = (*state.posting_bindings_for_test()).get(&0).unwrap();
     let binding = binding.settlements().unwrap();
     assert_eq!(binding.settlements.len(), 1);
     assert!(binding.settlements.contains(&identity));
@@ -97,24 +97,24 @@ fn final_posting_storage_keeps_all_ordinals_without_retaining_grouping_scratch()
             })
             .collect();
 
-        let prepared = PreparedPostingOrdinals::prepare(&facts, None, &mut None).unwrap();
-        assert_eq!(prepared.ordinals.len(), keys);
-        assert!(prepared
-            .ordinals
+        let prepared = PreparedPostingOrdinals::prepare_for_test(&facts, None, &mut None).unwrap();
+        assert_eq!((*prepared.ordinals_for_test()).len(), keys);
+        assert!((*prepared
+            .ordinals_for_test())
             .values()
             .all(|ordinals| ordinals.len() == copies));
 
         let (_, identity) = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::output_lineage::registry_fixture::recorded_settlement();
-        let mut state = MarkState::initial();
-        let prior = state.postings.clone();
-        let projection = prepared.into_projection(0, facts.len(), 0, None);
+        let mut state = MarkState::initial_for_test();
+        let prior = (*state.postings_for_test()).clone();
+        let projection = prepared.into_projection_for_test(0, facts.len(), 0, None);
 
         worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::settlement::posting_bindings::bind(&mut state, &projection, &identity).unwrap();
         assert!(prior.is_empty());
-        assert_eq!(state.posting_count, keys);
-        assert_eq!(state.postings.len(), keys);
-        assert!(state
-            .postings
+        assert_eq!((*state.posting_count_for_test()), keys);
+        assert_eq!((*state.postings_for_test()).len(), keys);
+        assert!((*state
+            .postings_for_test())
             .values()
             .all(|groups| groups.iter().copied().collect::<Vec<_>>() == vec![0]));
         drop(state);
@@ -133,19 +133,19 @@ fn posting_and_marking_counters_stop_with_their_typed_overflow() {
 
     let entity = EntityId::new(PartitionId::main(), 1, 1);
     let facts = [Fact::SourceEntity { entity_id: entity }];
-    let projection = PreparedPostingOrdinals::prepare(&facts, None, &mut None)
+    let projection = PreparedPostingOrdinals::prepare_for_test(&facts, None, &mut None)
         .unwrap()
-        .into_projection(0, facts.len(), 0, None);
+        .into_projection_for_test(0, facts.len(), 0, None);
     let (_, identity) = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::output_lineage::registry_fixture::recorded_settlement();
 
-    let mut full = MarkState::initial();
-    full.posting_count = usize::MAX;
+    let mut full = MarkState::initial_for_test();
+    (*full.posting_count_mut_for_test()) = usize::MAX;
     assert_eq!(
         worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::settlement::posting_bindings::bind(&mut full, &projection, &identity),
         Err(CompanionPreflightStop::PreparationMemoryCounterOverflow)
     );
 
-    let mut state = MarkState::initial();
+    let mut state = MarkState::initial_for_test();
     worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::settlement::posting_bindings::bind(&mut state, &projection, &identity).unwrap();
     let mut counts = WorthQueryNativeMarkingWork {
         posting_key_lookups: u64::MAX,

@@ -10,7 +10,7 @@ fn source_retention_observations_keep_original_caller_and_execution_stops() {
         WorthQueryRequestInterruption::Cancelled,
         WorthQueryRequestInterruption::DeadlineExceeded,
     ] {
-        let cause = WorthQuerySourceExpectationDenial::source_retention_denied(
+        let cause = WorthQuerySourceExpectationDenial::source_retention_denied_for_test(
             "observed source",
             StoreDenial::RequestInterruption(stop),
         );
@@ -19,7 +19,7 @@ fn source_retention_observations_keep_original_caller_and_execution_stops() {
     }
     for stop in [MapKernelStop::Cancelled, MapKernelStop::DeadlineElapsed] {
         let original = WorkCeilingDenial::Stopped(stop);
-        let cause = WorthQuerySourceExpectationDenial::source_retention_denied(
+        let cause = WorthQuerySourceExpectationDenial::source_retention_denied_for_test(
             "observed source",
             StoreDenial::ExecutionRequest(original),
         );

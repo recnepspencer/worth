@@ -203,7 +203,7 @@ fn panicking_projection_releases_its_snapshot_without_poisoning_the_graph() {
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let world = installed_authorization_world(true);
-    let baseline = world.invariant.active_snapshot_count(request_execution);
+    let baseline = world.invariant.active_snapshot_count_for_test(request_execution);
     let panic = world
         .application
         .with_host_advancement(|phase| {
@@ -219,7 +219,7 @@ fn panicking_projection_releases_its_snapshot_without_poisoning_the_graph() {
 
     assert!(panic.is_err());
     assert_eq!(
-        world.invariant.active_snapshot_count(request_execution),
+        world.invariant.active_snapshot_count_for_test(request_execution),
         baseline
     );
     let completed = world
@@ -246,12 +246,12 @@ fn admitted_projection_supplies_its_exact_root_without_an_equality_lookup() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             world
                 .application
-                .select_product_branch(
+                .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch(),
+                    world.application.product_runtime().default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_authenticated_principal(
@@ -267,12 +267,12 @@ fn admitted_projection_supplies_its_exact_root_without_an_equality_lookup() {
     let scope = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             world
                 .application
-                .select_product_branch(
+                .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch(),
+                    world.application.product_runtime().default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
@@ -294,7 +294,7 @@ fn admitted_projection_supplies_its_exact_root_without_an_equality_lookup() {
         .application
         .with_host_advancement(|phase| {
             world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&(phase).test_host_request_for_test())
                 .authorize_operation(
                     &phase,
                     &principal,

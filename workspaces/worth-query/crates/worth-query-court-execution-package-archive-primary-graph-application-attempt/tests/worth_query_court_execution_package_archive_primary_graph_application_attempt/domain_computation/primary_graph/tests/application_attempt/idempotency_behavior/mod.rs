@@ -18,20 +18,20 @@ fn equivalent_retry_prepared_at_the_original_product_recovers_exact_owner_eviden
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let selected_commit = world
         .application
         .with_host_advancement(|phase| {
             world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&(phase).test_host_request_for_test())
                 .product()
                 .selected_commit()
                 .clone()
@@ -64,7 +64,7 @@ fn equivalent_retry_prepared_at_the_original_product_recovers_exact_owner_eviden
         .application
         .with_host_advancement(|phase| {
             world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&(phase).test_host_request_for_test())
                 .product()
                 .selected_commit()
                 .clone()
@@ -94,13 +94,13 @@ fn same_caller_intent_cannot_cross_installed_operation_identity() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let first = world
@@ -121,7 +121,7 @@ fn same_caller_intent_cannot_cross_installed_operation_identity() {
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "committed", &request)
+            resolved_account(&(phase).test_host_request_for_test(), &world, "committed", &request)
         })
         .expect("the fixture read owns its installed host call");
     let operation = world
@@ -133,7 +133,7 @@ fn same_caller_intent_cannot_cross_installed_operation_identity() {
         .application
         .with_host_advancement(|phase| {
             world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&(phase).test_host_request_for_test())
                 .authorize_operation(
                     &phase,
                     &principal,
@@ -168,13 +168,13 @@ fn same_operation_intent_cannot_cross_an_admitted_scope() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let first_account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let first = world
@@ -202,13 +202,13 @@ fn same_operation_intent_cannot_cross_an_admitted_scope() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let second_account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "unrelated", &request)
+            resolved_account(&(phase).test_host_request_for_test(), &world, "unrelated", &request)
         })
         .expect("the fixture read owns its installed host call");
     let second = world

@@ -42,7 +42,7 @@ fn cancelled_native_preparation_is_a_control_stop_not_no_kind() {
         "native preparation refused",
         Default::default(),
     )
-    .with_native_preparation_error(error);
+    .with_native_preparation_error_for_test(error);
     assert_eq!(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::relational_execution_denial::native_preparation_kind(&failure), Err(Control::Cancelled));
     let denial = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_compare_denial::provider_session_denied(failure);
     assert_eq!(
@@ -114,11 +114,11 @@ fn cancelled_relation_equality_is_a_control_stop_not_false() {
         matching_relations: vec![relation],
     };
     assert!(fact
-        .remains_equal_in(&runtime, &execution, &committed.snapshot)
+        .remains_equal_in_for_test(&runtime, &execution, &committed.snapshot)
         .unwrap());
     source.cancel();
     let denial = fact
-        .remains_equal_in(&runtime, &execution, &committed.snapshot)
+        .remains_equal_in_for_test(&runtime, &execution, &committed.snapshot)
         .unwrap_err();
     assert_eq!(denial.kind(), AttemptKind::Cancelled);
     assert_eq!(

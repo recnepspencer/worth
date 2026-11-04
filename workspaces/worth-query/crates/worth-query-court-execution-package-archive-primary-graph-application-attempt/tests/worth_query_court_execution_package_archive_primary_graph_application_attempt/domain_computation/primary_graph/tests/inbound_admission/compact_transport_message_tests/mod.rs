@@ -49,11 +49,11 @@ fn transport_winner_retains_compact_signed_meaning_until_cutoff() {
     let correlation = *owner.record().correlation();
     let admitted = world
         .application
-        .admit_external_dispatch_attempt(owner.clone())
+        .admit_external_dispatch_attempt_for_test(owner.clone())
         .unwrap();
-    let in_flight = world
+    let in_flight = (*world
         .application
-        .primary_provider
+        .primary_provider_for_test())
         .begin_external_dispatch_in_flight(&owner)
         .unwrap()
         .unwrap();
@@ -61,8 +61,8 @@ fn transport_winner_retains_compact_signed_meaning_until_cutoff() {
     let completed = dispatch_external_effect(&transport, admitted).unwrap();
     world
         .application
-        .record_installed_transport_completion(
-            InstalledTransportCompletion::from_observed_dispatch(owner, &completed).unwrap(),
+        .record_installed_transport_completion_for_test(
+            InstalledTransportCompletion::from_observed_dispatch_for_test(owner, &completed).unwrap(),
             in_flight,
         )
         .unwrap();
@@ -92,7 +92,7 @@ fn transport_winner_retains_compact_signed_meaning_until_cutoff() {
         .with_host_advancement(|active_phase| {
             let phase = &active_phase;
             assert_eq!(
-                world.application.resume_installed_transport_completion(
+                world.application.resume_installed_transport_completion_for_test(
                     &phase.borrowed_request_for_test(),
                     phase,
                     &correlation,

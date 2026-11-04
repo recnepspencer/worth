@@ -11,7 +11,7 @@ fn an_exact_sibling_product_cannot_substitute_at_provider_plan_binding() {
     world
         .application
         .with_host_advancement(|active_phase| {
-            let host_custody = active_phase.test_host_request();
+            let host_custody = active_phase.test_host_request_for_test();
             let phase = &active_phase;
 
             let running = start(
@@ -40,15 +40,15 @@ fn an_exact_sibling_product_cannot_substitute_at_provider_plan_binding() {
             let sibling = fork_product(&world, lease.product());
             let sibling = world
                 .application
-                .select_product_branch(&phase.borrowed_request_for_test(), &sibling)
+                .select_product_branch_for_test(&phase.borrowed_request_for_test(), &sibling)
                 .expect("the exact sibling product remains selectable");
             let (_, sibling_product, sibling_application_basis) = sibling.into_parts();
             drop(sibling_application_basis);
 
             let result = direct_run
-                .admit_provider_execution_plan(&world.application.primary_graph_authority)
+                .admit_provider_execution_plan(&(*world.application.primary_graph_authority_for_test()))
                 .expect("the application authorities admit the provider plan")
-                .bind_application_product(sibling_product);
+                .bind_application_product_for_test(sibling_product);
             assert!(result.is_err());
             finish_uncommitted(mutation_run, direct_run, lease);
         })
@@ -66,7 +66,7 @@ fn the_exact_selected_product_binds_at_provider_plan_boundary() {
     world
         .application
         .with_host_advancement(|active_phase| {
-            let host_custody = active_phase.test_host_request();
+            let host_custody = active_phase.test_host_request_for_test();
             let phase = &active_phase;
 
             let running = start(
@@ -93,9 +93,9 @@ fn the_exact_selected_product_binds_at_provider_plan_boundary() {
                 workflow_settlement_publication: _workflow_settlement_publication,
             } = running;
             let result = direct_run
-                .admit_provider_execution_plan(&world.application.primary_graph_authority)
+                .admit_provider_execution_plan(&(*world.application.primary_graph_authority_for_test()))
                 .expect("the application authorities admit the provider plan")
-                .bind_application_product(lease.product().retained_clone());
+                .bind_application_product_for_test(lease.product().retained_clone_for_test());
             assert!(result.is_ok());
             drop(result);
             finish_uncommitted(mutation_run, direct_run, lease);
@@ -152,11 +152,11 @@ fn foreign_installed_phase_refuses_provider_readmission_before_read_or_charge() 
         a.application
             .with_application_advancement(&scope, |phase| {
                 let before = reads();
-                let plan = brun
-                    .running
-                    .admit_provider_execution_plan(&b.application.primary_graph_authority)
+                let plan = (*brun
+                    .running_for_test())
+                    .admit_provider_execution_plan(&(*b.application.primary_graph_authority_for_test()))
                     .unwrap()
-                    .bind_application_product(brun.lease.product().retained_clone())
+                    .bind_application_product((*brun.lease_for_test()).product().retained_clone())
                     .unwrap();
                 let refusal = match plan.readmit(&phase) {
                     Err(refusal) => refusal,
@@ -180,8 +180,8 @@ fn foreign_installed_phase_refuses_provider_readmission_before_read_or_charge() 
                 let session = real_terminal_session(
                     &phase,
                     &a,
-                    &mut arun.running,
-                    arun.lease.product().retained_clone(),
+                    &mut (*arun.running_mut_for_test()),
+                    (*arun.lease_for_test()).product().retained_clone(),
                 );
                 assert_eq!(session.counters().provider_calls(), 2);
                 // The primary provider's readmission and preparation only mint and
@@ -191,8 +191,8 @@ fn foreign_installed_phase_refuses_provider_readmission_before_read_or_charge() 
                 let _ = session.abort();
             })
             .unwrap();
-        finish_uncommitted(arun.mutation_run, arun.running, arun.lease);
-        finish_uncommitted(brun.mutation_run, brun.running, brun.lease);
+        finish_uncommitted((*arun.mutation_run_for_test()), (*arun.running_for_test()), (*arun.lease_for_test()));
+        finish_uncommitted((*brun.mutation_run_for_test()), (*brun.running_for_test()), (*brun.lease_for_test()));
         place(previous);
     }
 }

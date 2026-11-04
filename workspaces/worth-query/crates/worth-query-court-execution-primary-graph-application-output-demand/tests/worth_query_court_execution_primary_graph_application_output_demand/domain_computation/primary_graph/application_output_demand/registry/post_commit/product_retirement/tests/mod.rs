@@ -17,14 +17,14 @@ fn registry_product_retirement_prunes_rows_and_their_notes_together() {
     let registry = WorthQueryOutputDemandRegistry::default();
     let held = key("retired-note", 1, 2);
     let wake = {
-        let mut state = registry.state.lock().unwrap();
+        let mut state = (*registry.state_for_test()).lock().unwrap();
         for slot in 1..=3 {
             let key = key("retired-note", 1, slot);
             state.records.insert(
                 key.clone(),
                 record(
-                    receipt.product_branch().occurrence(),
-                    DemandState::Failed(WorthQueryOutputDemandDenial::new(
+                    receipt.product_branch().occurrence_for_test(),
+                    DemandState::Failed(WorthQueryOutputDemandDenial::new_for_test(
                         WorthQueryOutputDemandDenialKind::NoEffect,
                         "terminal debt",
                     )),
@@ -38,7 +38,7 @@ fn registry_product_retirement_prunes_rows_and_their_notes_together() {
         Arc::clone(&state.records[&held].wake)
     };
     let before = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::post_commit::retirement_observation::sweep_contacts();
-    registry.release_product_occurrence(receipt.product_branch().occurrence());
+    registry.release_product_occurrence_for_test(receipt.product_branch().occurrence_for_test());
     // Two lifecycle and two prerequisite-custody passes over three rows.
     // Cleanup notes remain separate.
     assert_eq!(
@@ -46,7 +46,7 @@ fn registry_product_retirement_prunes_rows_and_their_notes_together() {
             12
         );
     {
-        let state = registry.state.lock().unwrap();
+        let state = (*registry.state_for_test()).lock().unwrap();
         assert_eq!(state.records.len(), 1);
         assert_eq!(state.closed_cleanup.len(), 3);
         assert!(state.closed_cleanup.valid_order());
@@ -58,7 +58,7 @@ fn registry_product_retirement_prunes_rows_and_their_notes_together() {
         owner: registry.clone(),
     });
     registry.drain_closed_cleanup_admitted().unwrap();
-    let state = registry.state.lock().unwrap();
+    let state = (*registry.state_for_test()).lock().unwrap();
     assert!(state.records.is_empty());
     assert_eq!(state.closed_cleanup.len(), 0);
     assert!(state.closed_cleanup.head().is_none());
@@ -72,12 +72,12 @@ fn registry_product_retirement_sweep_names_its_registry_bound() {
     let mut contacts = Vec::new();
     for (rows, custody_entries) in [(2, 1), (5, 1), (9, 4)] {
         let registry = WorthQueryOutputDemandRegistry::default();
-        let mut state = registry.state.lock().unwrap();
+        let mut state = (*registry.state_for_test()).lock().unwrap();
         for generation in 1..=rows {
             state.records.insert(
                 key("retired", generation, 1),
                 record(
-                    receipts[0].product_branch().occurrence(),
+                    receipts[0].product_branch().occurrence_for_test(),
                     DemandState::Admitted,
                     1,
                 ),
@@ -90,9 +90,9 @@ fn registry_product_retirement_sweep_names_its_registry_bound() {
                     .composite_commit()
                     .clone(),
                 SourceCustody {
-                    occurrence: receipt.product_branch().occurrence(),
+                    occurrence: receipt.product_branch().occurrence_for_test(),
                     root_kind: PreparedOutputRootKind::Discovered(
-                        worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId::of::<()>(),
+                        worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId::of_for_test::<()>(),
                     ),
                     source: None,
                     discovery: None,
@@ -108,10 +108,10 @@ fn registry_product_retirement_sweep_names_its_registry_bound() {
         }
         drop(state);
         let before = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::post_commit::retirement_observation::sweep_contacts();
-        registry.release_product_occurrence(receipts[0].product_branch().occurrence());
+        registry.release_product_occurrence_for_test(receipts[0].product_branch().occurrence_for_test());
         contacts.push(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::post_commit::retirement_observation::sweep_contacts() - before);
-        assert!(registry
-            .state
+        assert!((*registry
+            .state_for_test())
             .lock()
             .unwrap()
             .records

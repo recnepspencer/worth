@@ -173,7 +173,7 @@ impl AggregateWorld {
         host: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'scope>,
     ) -> worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'scope>
     {
-        host.phase_for_application(&self._runtime)
+        host.phase_for_application_for_test(&self._runtime)
     }
 
     pub fn values(values: impl IntoIterator<Item = i64>) -> Self {
@@ -223,10 +223,10 @@ impl AggregateWorld {
         let work = Cell::new(WorthQueryInvariantProjectionWork::default());
         let selected = self
             ._runtime
-            .select_product_branch(execution, self._runtime.product_runtime().default_branch())
+            .select_product_branch_for_test(execution, self._runtime.product_runtime().default_branch_for_test())
             .expect("aggregate product basis");
         let product = selected.product().publication_binding();
-        let completed = self.authority.project_with_work_limit(
+        let completed = self.authority.project_with_work_limit_for_test(
             execution,
             Some(maximum_work),
             product.observation().basis().relational_basis().clone(),
@@ -273,9 +273,9 @@ impl AggregateWorld {
         source: worth_relational::facade::identity::EntityId,
         amount: i64,
     ) {
-        let locator = self
+        let locator = (*self
             .authority
-            .layout
+            .layout_for_test())
             .field_locator("AggregateSource", "SourceFacts", "SourceAmount")
             .expect("amount field is installed")
             .clone();
@@ -360,7 +360,7 @@ impl AggregateWorld {
                 .expect("primary graph publishes");
             let target = projection
                 .project(
-                    &active_phase.phase_for_application(&runtime),
+                    &active_phase.phase_for_application_for_test(&runtime),
                     |reader| {
                         reader.resolve_entity(TargetIdentity::reference(), "target".to_owned())
                     },

@@ -60,21 +60,21 @@ fn both_scheduling_finishes_preserve_claims_and_custody_on_interruption() {
                     "{finish:?}: interruption leaves the row for a later claim"
                 );
                 {
-                    let state = fixture.registry.state.lock().unwrap();
-                    let row = &state.records[&fixture.interest.key];
+                    let state = (*fixture.registry.state_for_test()).lock().unwrap();
+                    let row = &state.records[&(*fixture.interest.key_for_test())];
                     assert_eq!(row.prerequisites.len(), 1);
-                    assert_eq!(row.prerequisites[0].as_ref(), &fixture.upstream.key);
+                    assert_eq!(row.prerequisites[0].as_ref(), &(*fixture.upstream.key_for_test()));
                     assert_eq!(row.framework_required_count, 1, "dependent claim retained");
                     assert_eq!(
-                        state.records[&fixture.upstream.key].framework_required_count,
+                        state.records[&(*fixture.upstream.key_for_test())].framework_required_count,
                         1
                     );
-                    assert_eq!(state.records[&fixture.dependent.key].prerequisites.len(), 1);
+                    assert_eq!(state.records[&(*fixture.dependent.key_for_test())].prerequisites.len(), 1);
                     assert_eq!(row.performed_obligations.len(), 1);
                     assert_eq!(row.performed_obligations[0].source_commit, fixture.commit);
                     assert_eq!(
                         row.performed_obligations[0].source,
-                        fixture.interest.key.source
+                        (*fixture.interest.key_for_test()).source
                     );
                     let source = row
                         .performed_source
@@ -94,10 +94,10 @@ fn both_scheduling_finishes_preserve_claims_and_custody_on_interruption() {
                             panic!("a reopened Ready is given back, not discarded");
                         };
                         assert!(matches!(
-                            output.advancement(),
+                            output.advancement_for_test(),
                             WorthQueryOutputAdvancement::Idle
                         ));
-                        let Some(WorthQueryOutputCheckpoint::Ready(ready)) = &output.checkpoint
+                        let Some(WorthQueryOutputCheckpoint::Ready(ready)) = &(*output.checkpoint_for_test())
                         else {
                             panic!("the exact accepted Ready remains");
                         };
@@ -106,7 +106,7 @@ fn both_scheduling_finishes_preserve_claims_and_custody_on_interruption() {
                     } else {
                         assert!(matches!(row.state, DemandState::Admitted));
                         assert_eq!(
-                            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::succession::Succession::predecessor_of(&row.successor_of),
+                            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::succession::Succession::predecessor_of_for_test(&row.successor_of),
                             Some(*fixture.receipt.idempotency_binding().key_identity())
                         );
                     }
@@ -114,7 +114,7 @@ fn both_scheduling_finishes_preserve_claims_and_custody_on_interruption() {
                 // Ready is certified and reopened before a later scheduling claim.
                 let next = fixture.next_interest(reopened);
                 assert!(matches!(
-                    fixture.registry.begin(&next),
+                    fixture.registry.begin_for_test(&next),
                     WorthQueryOutputDemandAdvanceAdmission::Schedule(_)
                 ));
             }
@@ -134,12 +134,12 @@ fn other_scheduling_stops_still_fail_the_row_and_release_obligations() {
             WorthQueryOutputDemandDenialKind::ProducerUnavailable
         );
         assert_eq!(denial.recovery_posture(), Posture::Terminal);
-        let state = fixture.registry.state.lock().unwrap();
-        let row = &state.records[&fixture.interest.key];
+        let state = (*fixture.registry.state_for_test()).lock().unwrap();
+        let row = &state.records[&(*fixture.interest.key_for_test())];
         assert!(matches!(&row.state, DemandState::Failed(stored)
             if stored == &denial));
         assert_eq!(
-            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::required_stop::head_stop(&state.records, &fixture.interest.key),
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::required_stop::head_stop(&state.records, &(*fixture.interest.key_for_test())),
             Some(denial)
         );
         assert!(row.performed_source.is_none());
@@ -170,10 +170,10 @@ fn interrupted_execution_reports_the_same_retryable_posture() {
         ] {
             let fixture = Fixture::new(false);
             assert!(matches!(
-                fixture.registry.begin(&fixture.interest),
+                fixture.registry.begin_for_test(&fixture.interest),
                 WorthQueryOutputDemandAdvanceAdmission::Schedule(_)
             ));
-            fixture.registry.finish_scheduling(
+            fixture.registry.finish_scheduling_for_test(
                 &fixture.interest,
                 None,
                 &mut Ok(WorthQueryOutputSchedulingResult::Scheduled),
@@ -181,20 +181,20 @@ fn interrupted_execution_reports_the_same_retryable_posture() {
             let finish = selected.then(|| {
                 fixture
                     .registry
-                    .prepare_selected_execution_finish(&fixture.interest)
+                    .prepare_selected_execution_finish_for_test(&fixture.interest)
                     .unwrap()
             });
             assert!(matches!(
-                fixture.registry.begin(&fixture.interest),
+                fixture.registry.begin_for_test(&fixture.interest),
                 WorthQueryOutputDemandAdvanceAdmission::Execute { .. }
             ));
-            let mut denial = WorthQueryOutputDemandDenial::new(kind, "execution stopped");
+            let mut denial = WorthQueryOutputDemandDenial::new_for_test(kind, "execution stopped");
             if let Some(finish) = finish {
                 finish.failure(&mut denial);
             } else {
                 fixture
                     .registry
-                    .finish_execution_failure(&fixture.interest, &mut denial);
+                    .finish_execution_failure_for_test(&fixture.interest, &mut denial);
             }
             assert_eq!(denial.recovery_posture(), Posture::Retryable);
         }
@@ -206,13 +206,13 @@ fn a_new_key_stays_claimable_after_a_caller_resource_stop() {
     use worth_query_execution::facade::application_contribution::WorthQueryManagedComputationResourceDenial as Resource;
     for finish in [Finish::Ordinary, Finish::Selected] {
         let fixture = Fixture::new(false);
-        fixture
+        (*fixture
             .registry
-            .state
+            .state_for_test())
             .lock()
             .unwrap()
             .records
-            .get_mut(&fixture.interest.key)
+            .get_mut(&(*fixture.interest.key_for_test()))
             .unwrap()
             .successor_of = None;
         let kind = WorthQueryOutputDemandDenialKind::ExecutionRequest(Advance::Resource(
@@ -223,7 +223,7 @@ fn a_new_key_stays_claimable_after_a_caller_resource_stop() {
         assert_eq!(denial.recovery_posture(), Posture::Retryable);
         let peer = fixture.next_interest(false);
         assert!(matches!(
-            fixture.registry.begin(&peer),
+            fixture.registry.begin_for_test(&peer),
             WorthQueryOutputDemandAdvanceAdmission::Schedule(_)
         ));
     }

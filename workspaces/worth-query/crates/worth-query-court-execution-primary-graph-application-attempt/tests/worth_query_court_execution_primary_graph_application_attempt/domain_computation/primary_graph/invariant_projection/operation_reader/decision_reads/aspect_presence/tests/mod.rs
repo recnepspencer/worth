@@ -26,17 +26,17 @@ fn optional_aspect_initialization_coalesces_presence_without_dropping_attributio
     let first = presence(1, "facts", "note");
     let second = presence(1, "facts", "score");
     reads.record(first.clone(), DecisionReadOutcome::Observed);
-    reads.reading = Some(ComputationRead::Membership);
+    (*reads.reading_mut_for_test()) = Some(ComputationRead::Membership);
     reads.record(second.clone(), DecisionReadOutcome::Observed);
-    reads.reading = None;
-    assert!(reads.computation.contains_key(&first));
-    assert!(!reads.computation.contains_key(&second));
+    (*reads.reading_mut_for_test()) = None;
+    assert!((*reads.computation_for_test()).contains_key(&first));
+    assert!(!(*reads.computation_for_test()).contains_key(&second));
     let other_aspect = presence(1, "other", "note");
     let other_entity = presence(2, "facts", "note");
     reads.record(other_aspect.clone(), DecisionReadOutcome::Observed);
     reads.record(other_entity.clone(), DecisionReadOutcome::Observed);
     let (keys, _) = reads
-            .into_expected(&worth_execution::ExecutionRequest::serial(
+            .into_expected_for_test(&worth_execution::ExecutionRequest::serial(
                 &worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request(),
             ))
             .ok()

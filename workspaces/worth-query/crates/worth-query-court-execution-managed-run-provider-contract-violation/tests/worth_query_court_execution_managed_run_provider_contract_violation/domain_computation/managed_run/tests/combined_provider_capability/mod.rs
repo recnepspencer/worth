@@ -19,5 +19,5 @@ fn one_installed_anchor_retains_convergence() {
         worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::managed_run::tests::ManagedGraph,
         _,
     >(provider);
-    assert!(anchor.retains_convergence_and_phase_seven_through_ten());
+    assert!(anchor.retains_convergence_and_phase_seven_through_ten_for_test());
 }

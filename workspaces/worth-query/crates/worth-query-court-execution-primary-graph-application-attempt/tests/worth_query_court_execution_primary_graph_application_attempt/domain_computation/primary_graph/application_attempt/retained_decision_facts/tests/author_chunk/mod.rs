@@ -16,7 +16,7 @@ fn active_chunk_orders_full_keys_and_resolves_boundary_and_interior_duplicates()
         let mut store = RetainedFactStore::new(policy).unwrap();
         for limit in authored {
             store
-                .insert(
+                .insert_for_test(
                     key(b"same", Some((b"predicate", limit)), policy),
                     Body {
                         scalar: limit as u64,
@@ -32,7 +32,7 @@ fn active_chunk_orders_full_keys_and_resolves_boundary_and_interior_duplicates()
     let mut store = populate();
     for limit in [0, 5, 12] {
         store
-            .insert(
+            .insert_for_test(
                 key(b"same", Some((b"predicate", limit)), policy),
                 Body {
                     scalar: limit as u64,
@@ -43,7 +43,7 @@ fn active_chunk_orders_full_keys_and_resolves_boundary_and_interior_duplicates()
             )
             .unwrap();
     }
-    let canonical = store.finish(policy).unwrap();
+    let canonical = store.finish_for_test(policy).unwrap();
     assert_eq!(canonical.len(), 9);
     for (record, limit) in canonical.iter().zip([0, 1, 2, 3, 5, 6, 7, 10, 12]) {
         assert_eq!(record.key.locator(), b"same");
@@ -59,13 +59,13 @@ fn active_chunk_orders_full_keys_and_resolves_boundary_and_interior_duplicates()
     }
     let restored = restore_authored_order(canonical, policy).unwrap();
     for (ordinal, (record, limit)) in restored.iter().zip(authored).enumerate() {
-        assert_eq!(record.ordinal, ordinal);
-        assert_eq!(record.value.scalar, limit as u64);
+        assert_eq!((*record.ordinal_for_test()), ordinal);
+        assert_eq!((*record.value_for_test()).scalar, limit as u64);
     }
     for limit in [0, 5, 12] {
         let mut conflict = populate();
         assert!(matches!(
-            conflict.insert(
+            conflict.insert_for_test(
                 key(b"same", Some((b"predicate", limit)), policy),
                 Body {
                     scalar: 99,
@@ -77,7 +77,7 @@ fn active_chunk_orders_full_keys_and_resolves_boundary_and_interior_duplicates()
             Err(StoreDenial::ConflictingBody)
         ));
         assert!(matches!(
-            conflict.insert(
+            conflict.insert_for_test(
                 key(b"different", None, policy),
                 Body {
                     scalar: 13,
@@ -89,7 +89,7 @@ fn active_chunk_orders_full_keys_and_resolves_boundary_and_interior_duplicates()
             Err(StoreDenial::ConflictingBody)
         ));
         assert!(matches!(
-            conflict.finish(policy),
+            conflict.finish_for_test(policy),
             Err(StoreDenial::ConflictingBody)
         ));
     }

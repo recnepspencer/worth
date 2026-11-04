@@ -105,3 +105,5 @@ pub fn group_projected(
     }
     Ok(groups)
 }
+
+mod court_doors_for_test;

@@ -14,14 +14,14 @@ fn explicitly_expired_elevation_has_a_typed_denial() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             authenticated_principal(&host_custody, &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             crate::domain_computation::primary_graph::tests::authorization::capability_elevation::mutation::set_status(
                 &host_custody,
                 &host_custody.borrowed_request_for_test(),
@@ -35,7 +35,7 @@ fn explicitly_expired_elevation_has_a_typed_denial() {
     let Err(denial) = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             admit(
                 &host_custody,
                 &world,
@@ -67,7 +67,7 @@ fn trusted_time_denies_active_status_past_the_elevation_expiry() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             authenticated_principal(&host_custody, &world, &request)
         })
         .expect("the fixture read owns its installed host call");
@@ -75,7 +75,7 @@ fn trusted_time_denies_active_status_past_the_elevation_expiry() {
     let Err(denial) = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             admit(
                 &host_custody,
                 &world,
@@ -103,7 +103,7 @@ fn active_status_before_elevation_issue_is_inactive_not_expired() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             authenticated_principal(&host_custody, &world, &request)
         })
         .expect("the fixture read owns its installed host call");
@@ -111,7 +111,7 @@ fn active_status_before_elevation_issue_is_inactive_not_expired() {
     let Err(denial) = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             admit(
                 &host_custody,
                 &world,
@@ -141,14 +141,14 @@ fn expiry_between_access_and_operation_denies_fresh_progression() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             authenticated_principal(&host_custody, &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let access = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             admit(
                 &host_custody,
                 &world,
@@ -169,7 +169,7 @@ fn expiry_between_access_and_operation_denies_fresh_progression() {
     let Err(denial) = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             world.application.authorize_capability_operation(
                 &host_custody.phase_for_application(&world.application),
                 access,

@@ -14,14 +14,14 @@ fn uncommitted_upstream_never_admits_a_prepared_member() {
     let selected = world
         .application
         .with_host_advancement(|phase| {
-            world
+            (*world
                 .application
-                .runtime
+                .runtime_for_test())
                 .primary_graph()
                 .unwrap()
                 .with_runtime(
                     &phase
-                        .execution_request_for(&world.application.product_runtime)
+                        .execution_request_for_for_test(&(*world.application.product_runtime_for_test()))
                         .unwrap(),
                     |runtime| {
                         let basis = runtime
@@ -47,9 +47,9 @@ fn uncommitted_upstream_never_admits_a_prepared_member() {
     let demand_key = key("upstream", 1, 1);
 
     {
-        let mut state = registry.state.lock().unwrap();
+        let mut state = (*registry.state_for_test()).lock().unwrap();
         let (posting, _cleanup) = state.reserve_settlement_vacancy(&identity).unwrap();
-        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::settlement_index::SettlementIndex::fill_prepared(
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::settlement_index::SettlementIndex::fill_prepared_for_test(
             &posting,
             &identity,
             Arc::clone(&identity),
@@ -61,8 +61,8 @@ fn uncommitted_upstream_never_admits_a_prepared_member() {
         DemandState::Scheduled,
         DemandState::Running,
     ] {
-        registry
-            .state
+        (*registry
+            .state_for_test())
             .lock()
             .unwrap()
             .records
@@ -79,7 +79,7 @@ fn uncommitted_upstream_never_admits_a_prepared_member() {
             WorthQueryOutputDemandDenialKind::SchedulingDeferred,
             "a sealed read alone cannot substitute for committed upstream delivery"
         );
-        let requested = denied.clone().take_requested_output().expect(
+        let requested = denied.clone().take_requested_output_for_test().expect(
             "an unfinished delivery retains its actual read for owner-side checkpoint resumption",
         );
         assert_eq!(requested.identity(), consumed.identity().as_ref());

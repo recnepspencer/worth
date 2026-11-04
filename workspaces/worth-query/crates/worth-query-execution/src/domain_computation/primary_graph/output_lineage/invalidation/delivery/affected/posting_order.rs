@@ -129,3 +129,5 @@ fn observed_match(counts: &mut WorthQueryNativeMarkingWork) -> Result<(), Compan
         .ok_or(CompanionPreflightStop::WorkCounterOverflow)?;
     Ok(())
 }
+
+mod court_doors_for_test;

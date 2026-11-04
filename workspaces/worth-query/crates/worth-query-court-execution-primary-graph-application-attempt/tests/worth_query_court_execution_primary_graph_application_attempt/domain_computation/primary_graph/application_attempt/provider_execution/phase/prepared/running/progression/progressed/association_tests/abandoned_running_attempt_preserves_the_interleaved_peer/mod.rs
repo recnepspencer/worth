@@ -11,12 +11,12 @@ fn abandoned_running_attempt_preserves_the_interleaved_peer() {
     world
         .application
         .with_host_advancement(|active_phase| {
-            let host_custody = active_phase.test_host_request();
+            let host_custody = active_phase.test_host_request_for_test();
             let phase = &active_phase;
 
             let baseline = world
                 .invariant
-                .active_snapshot_count(&active_phase.borrowed_request_for_test());
+                .active_snapshot_count_for_test(&active_phase.borrowed_request_for_test());
             let (victim, peer) = equivalent_programs(
                 &host_custody.phase_for_application(&world.application),
                 &world,
@@ -26,7 +26,7 @@ fn abandoned_running_attempt_preserves_the_interleaved_peer() {
             let peer = start(phase, &world.application, peer, idempotency(143, 144));
             let both_attempts = world
                 .invariant
-                .active_snapshot_count(&active_phase.borrowed_request_for_test());
+                .active_snapshot_count_for_test(&active_phase.borrowed_request_for_test());
             drop(victim);
             assert_only_peer_remains(
                 &active_phase.borrowed_request_for_test(),

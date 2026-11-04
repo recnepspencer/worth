@@ -17,7 +17,7 @@ fn interleaved_readmitted_peers_keep_attempt_ledger_and_release_authority_associ
         let first = {
             let fixture_phase_result = {
                 let fixture_target = first;
-                let installed_fixture_phase = fixture_target.fixture_phase(active_request);
+                let installed_fixture_phase = fixture_target.fixture_phase_for_test(active_request);
                 fixture_target.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
             };
             match fixture_phase_result {
@@ -30,7 +30,7 @@ fn interleaved_readmitted_peers_keep_attempt_ledger_and_release_authority_associ
         let second = {
             let fixture_phase_result = {
                 let fixture_target = second;
-                let installed_fixture_phase = fixture_target.fixture_phase(active_request);
+                let installed_fixture_phase = fixture_target.fixture_phase_for_test(active_request);
                 fixture_target.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
             };
             match fixture_phase_result {
@@ -68,7 +68,7 @@ fn interleaved_readmitted_peers_keep_attempt_ledger_and_release_authority_associ
         let first = {
             let fixture_phase_result = {
                 let fixture_target = first;
-                let installed_fixture_phase = fixture_target.fixture_phase(execution);
+                let installed_fixture_phase = fixture_target.fixture_phase_for_test(execution);
                 fixture_target.advance(&installed_fixture_phase)
             };
             match fixture_phase_result {
@@ -90,7 +90,7 @@ fn interleaved_readmitted_peers_keep_attempt_ledger_and_release_authority_associ
         let second = {
             let fixture_phase_result = {
                 let fixture_target = second;
-                let installed_fixture_phase = fixture_target.fixture_phase(execution);
+                let installed_fixture_phase = fixture_target.fixture_phase_for_test(execution);
                 fixture_target.advance(&installed_fixture_phase)
             };
             match fixture_phase_result {

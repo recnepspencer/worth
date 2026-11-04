@@ -56,7 +56,7 @@ fn workflow_signal_terminalized_after_safe_point_preserves_exact_recovery_eviden
             resources,
             resource_request,
         );
-        let installed_running_phase = execution.phase_for_workflow(&running);
+        let installed_running_phase = execution.phase_for_workflow_for_test(&running);
 
         let logical_run_identity = running.logical_run_identity().to_owned();
         let attempt_identity = running.identity().to_owned();
@@ -75,8 +75,8 @@ fn workflow_signal_terminalized_after_safe_point_preserves_exact_recovery_eviden
             WorthQueryWorkflowGraphStepOutcome::Continue(paused) => paused,
             _ => panic!("workflow provider did not pause"),
         };
-        paused
-            .active
+        (*paused
+            .active_for_test())
             .request_cancellation(BridgeManagedExecutionCancellationReason::HostRequested)
             .expect("host should terminalize the exact workflow Signal attempt");
         let recovery = match paused.yield_run() {

@@ -29,18 +29,18 @@ fn a_queued_member_failure_does_not_withhold_its_independent_sibling() {
                     policy,
                 }
             });
-            let execution = QueryRequestExecution::open(placement, &scope);
+            let execution = QueryRequestExecution::open_for_test(placement, &scope);
             let failed = if failure == Failure::Complete {
-                OwnerPlan::new(
-                    vec![PreparedCompute::declared_test_request(0, false)],
+                OwnerPlan::new_for_test(
+                    vec![PreparedCompute::declared_test_request_for_test(0, false)],
                     move |_| Err(failure),
                 )
             } else {
-                OwnerPlan::immediate(Err(failure))
+                OwnerPlan::immediate_for_test(Err(failure))
             };
-            let succeeding = OwnerPlan::new(
-                vec![PreparedCompute::declared_test_request(1, false)],
-                |mut slots| Ok(slots.pop().unwrap().into_value::<(usize, bool)>().0),
+            let succeeding = OwnerPlan::new_for_test(
+                vec![PreparedCompute::declared_test_request_for_test(1, false)],
+                |mut slots| Ok(slots.pop().unwrap().into_value_for_test::<(usize, bool)>().0),
             );
             let mut held = Vec::new();
             let mut applied = Vec::new();
@@ -48,13 +48,13 @@ fn a_queued_member_failure_does_not_withhold_its_independent_sibling() {
                 .execution_request()
                 .unwrap()
                 .run_native(|_| {
-                    let cursor = CanonicalApplyCursor::compute(
+                    let cursor = CanonicalApplyCursor::compute_for_test(
                         CanonicalUniqueVec::try_from_sorted_unique(vec![0, 1]).unwrap(),
                         vec![failed, succeeding],
                         &execution,
                     );
 
-                    cursor.apply(
+                    cursor.apply_for_test(
                         |key, result| {
                             match result {
                                 Ok(value) => {
@@ -98,16 +98,16 @@ fn a_completion_that_catches_a_compute_denial_applies_the_whole_wave() {
                 policy,
             }
         });
-        let execution = QueryRequestExecution::open(placement, &scope);
+        let execution = QueryRequestExecution::open_for_test(placement, &scope);
         let plans = [3, 7]
             .into_iter()
             .enumerate()
             .map(|(rank, _)| {
-                OwnerPlan::new(
-                    vec![PreparedCompute::declared_test_request(rank, rank == 0)],
+                OwnerPlan::new_for_test(
+                    vec![PreparedCompute::declared_test_request_for_test(rank, rank == 0)],
                     |mut slots| {
                         // The handler catches the transported denial and supplies its decision.
-                        Ok::<_, ()>(slots.pop().unwrap().into_value::<(usize, bool)>().0)
+                        Ok::<_, ()>(slots.pop().unwrap().into_value_for_test::<(usize, bool)>().0)
                     },
                 )
             })
@@ -117,13 +117,13 @@ fn a_completion_that_catches_a_compute_denial_applies_the_whole_wave() {
             .execution_request()
             .unwrap()
             .run_native(|_| {
-                let cursor = CanonicalApplyCursor::compute(
+                let cursor = CanonicalApplyCursor::compute_for_test(
                     CanonicalUniqueVec::try_from_sorted_unique(vec![0, 1]).unwrap(),
                     plans,
                     &execution,
                 );
 
-                cursor.apply(
+                cursor.apply_for_test(
                     |key, result| {
                         assert_eq!(key, result?);
                         applied.push(key);

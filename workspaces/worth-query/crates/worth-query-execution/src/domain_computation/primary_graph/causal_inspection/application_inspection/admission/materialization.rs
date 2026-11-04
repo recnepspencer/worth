@@ -79,3 +79,5 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
         Ok(report)
     }
 }
+
+mod court_doors_for_test;

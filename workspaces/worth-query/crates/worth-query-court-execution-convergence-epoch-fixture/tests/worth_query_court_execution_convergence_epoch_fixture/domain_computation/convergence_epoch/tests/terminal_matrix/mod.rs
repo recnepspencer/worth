@@ -229,7 +229,7 @@ fn managed_signal_cancellation_remains_a_distinct_convergence_terminal() {
         let started = {
             let fixture_phase_result = {
                 let fixture_target = epoch;
-                let installed_fixture_phase = fixture_target.fixture_phase(execution);
+                let installed_fixture_phase = fixture_target.fixture_phase_for_test(execution);
                 fixture_target.begin_iteration(
                     &installed_fixture_phase,
                     WorthQueryManagedGraphCallRequest::new(
@@ -249,7 +249,7 @@ fn managed_signal_cancellation_remains_a_distinct_convergence_terminal() {
         let outcome = {
             let fixture_phase_result = {
                 let fixture_target = started;
-                let installed_fixture_phase = fixture_target.fixture_phase(execution);
+                let installed_fixture_phase = fixture_target.fixture_phase_for_test(execution);
                 fixture_target.advance(&installed_fixture_phase)
             };
             match fixture_phase_result {

@@ -11,12 +11,12 @@ fn cancelled_cleanup_preserves_the_interleaved_peer() {
     world
         .application
         .with_host_advancement(|active_phase| {
-            let host_custody = active_phase.test_host_request();
+            let host_custody = active_phase.test_host_request_for_test();
             let phase = &active_phase;
 
             let baseline = world
                 .invariant
-                .active_snapshot_count(&active_phase.borrowed_request_for_test());
+                .active_snapshot_count_for_test(&active_phase.borrowed_request_for_test());
             let cancellation = WorthQueryCancellationSource::new();
             let request = WorthQueryRequestScope::new(
                 Some(Instant::now() + Duration::from_secs(60)),
@@ -52,7 +52,7 @@ fn cancelled_cleanup_preserves_the_interleaved_peer() {
             let peer = start(phase, &world.application, peer, idempotency(141, 142));
             let both_attempts = world
                 .invariant
-                .active_snapshot_count(&active_phase.borrowed_request_for_test());
+                .active_snapshot_count_for_test(&active_phase.borrowed_request_for_test());
             cancellation.cancel();
             let victim = finish_application_commit(
                 &phase.borrowed_request_for_test(),

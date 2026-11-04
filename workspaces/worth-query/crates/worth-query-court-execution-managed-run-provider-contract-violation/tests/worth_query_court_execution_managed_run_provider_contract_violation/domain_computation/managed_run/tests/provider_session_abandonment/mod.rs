@@ -22,7 +22,7 @@ fn dropping_a_readmitted_session_aborts_once() {
             false,
             resource_request,
         );
-        let installed_running_phase = execution.phase_for_direct(&running);
+        let installed_running_phase = execution.phase_for_direct_for_test(&running);
 
         drop(
             running
@@ -59,7 +59,7 @@ fn dropping_a_prepared_session_aborts_once() {
             false,
             resource_request,
         );
-        let installed_running_phase = execution.phase_for_direct(&running);
+        let installed_running_phase = execution.phase_for_direct_for_test(&running);
 
         drop(
             running
@@ -99,7 +99,7 @@ fn dropping_a_staged_session_aborts_once() {
             false,
             resource_request,
         );
-        let installed_running_phase = execution.phase_for_direct(&running);
+        let installed_running_phase = execution.phase_for_direct_for_test(&running);
 
         drop(
             running
@@ -140,7 +140,7 @@ fn dropping_a_commit_prepared_session_aborts_once() {
             false,
             resource_request,
         );
-        let installed_running_phase = execution.phase_for_direct(&running);
+        let installed_running_phase = execution.phase_for_direct_for_test(&running);
 
         drop(
             running
@@ -151,7 +151,7 @@ fn dropping_a_commit_prepared_session_aborts_once() {
                 .prepare()
                 .expect("provider session should prepare")
                 .bind_reads_and_effects()
-                .prepare_for_commit()
+                .prepare_for_commit_for_test()
                 .expect("staged session should prepare for commit"),
         );
         assert_eq!(
@@ -184,7 +184,7 @@ fn failed_preparation_aborts_once() {
             false,
             resource_request,
         );
-        let installed_running_phase = execution.phase_for_direct(&running);
+        let installed_running_phase = execution.phase_for_direct_for_test(&running);
 
         let _ = running
             .admit_provider_execution_plan(&graph)

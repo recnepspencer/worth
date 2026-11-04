@@ -15,14 +15,14 @@ fn original_source_reports_sort_qualification_without_execution_overflow_and_the
             .application
             .with_host_advancement(|phase| {
                 world
-                    .selected_product(&phase.test_host_request())
+                    .selected_product(&phase.test_host_request_for_test())
                     .product()
-                    .observation()
+                    .observation_for_test()
                     .clone()
             })
             .unwrap();
         world.application.with_application_advancement(&request, |phase| {
-            let custody = phase.test_host_request();
+            let custody = phase.test_host_request_for_test();
             let principal = authenticated_principal(&custody, &world, &request);
             let account = resolved_account(&custody, &world, "open", &request);
             let installed = world.application.installed_schema().installed_mutation_binding::<OptionalOutputMutationBinding>().unwrap();
@@ -67,16 +67,16 @@ fn original_source_reports_sort_qualification_without_execution_overflow_and_the
                 let WorthQueryApplicationCommitOutcome::Committed(receipt) = world.application.compare_and_commit_application_in_advancement(
                     &phase, captured.unwrap(), idempotency, execution.allocation_policy(),
                 ) else { panic!("the genuine qualified compiler twin must publish") };
-                assert!(receipt.authority_binding().original_inspection_disclosure().is_some());
+                assert!(receipt.authority_binding().original_inspection_disclosure_for_test().is_some());
             }
         }).unwrap();
         let after = world
             .application
             .with_host_advancement(|phase| {
                 world
-                    .selected_product(&phase.test_host_request())
+                    .selected_product(&phase.test_host_request_for_test())
                     .product()
-                    .observation()
+                    .observation_for_test()
                     .clone()
             })
             .unwrap();

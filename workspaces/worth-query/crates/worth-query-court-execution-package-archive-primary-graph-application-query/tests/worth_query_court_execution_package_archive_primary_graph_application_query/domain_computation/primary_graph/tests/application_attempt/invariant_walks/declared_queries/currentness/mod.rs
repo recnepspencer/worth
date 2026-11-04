@@ -18,12 +18,12 @@ fn complete_query_sources_keep_unrelated_changes_and_reject_non_discovery_and_em
         world
             .application
             .with_host_advancement(|phase| {
-                let custody = phase.test_host_request();
+                let custody = phase.test_host_request_for_test();
                 let selected = world
                     .application
-                    .select_product_branch(
+                    .select_product_branch_for_test(
                         &custody.borrowed_request_for_test(),
-                        world.application.product_runtime().default_branch(),
+                        world.application.product_runtime().default_branch_for_test(),
                     )
                     .unwrap();
                 selected
@@ -36,12 +36,12 @@ fn complete_query_sources_keep_unrelated_changes_and_reject_non_discovery_and_em
         world
             .application
             .with_host_advancement(|phase| {
-                let custody = phase.test_host_request();
+                let custody = phase.test_host_request_for_test();
                 let selected = world
                     .application
-                    .select_product_branch(
+                    .select_product_branch_for_test(
                         &custody.borrowed_request_for_test(),
-                        world.application.product_runtime().default_branch(),
+                        world.application.product_runtime().default_branch_for_test(),
                     )
                     .unwrap();
                 selected.require_current_required_set(

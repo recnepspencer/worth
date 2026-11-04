@@ -19,9 +19,9 @@ fn started_revision_reader_refuses_unmanaged_and_unrostered_current_truth() {
             installed_provenance_support(world.application.installed_schema());
         let lease = payer();
         let execution = ExecutionRequest::leased(&lease);
-        let layout = world
+        let layout = (*world
             .application
-            .runtime
+            .runtime_for_test())
             .primary_graph()
             .unwrap()
             .layout
@@ -49,9 +49,9 @@ fn started_revision_reader_refuses_unmanaged_and_unrostered_current_truth() {
             },
         );
         let selected = selected(&world, &execution);
-        let handle = world
+        let handle = (*world
             .application
-            .runtime
+            .runtime_for_test())
             .primary_graph()
             .unwrap()
             .integration_handle();
@@ -104,9 +104,9 @@ fn started_revision_missing_current_field_is_rejected_by_native_restore_before_p
     let (support, original, _) = installed_provenance_support(world.application.installed_schema());
     let lease = payer();
     let execution = ExecutionRequest::leased(&lease);
-    let layout = world
+    let layout = (*world
         .application
-        .runtime
+        .runtime_for_test())
         .primary_graph()
         .unwrap()
         .layout
@@ -120,9 +120,9 @@ fn started_revision_missing_current_field_is_rejected_by_native_restore_before_p
         "missing-current",
         admitted_actor(&world),
     );
-    let handle = world
+    let handle = (*world
         .application
-        .runtime
+        .runtime_for_test())
         .primary_graph()
         .unwrap()
         .integration_handle();

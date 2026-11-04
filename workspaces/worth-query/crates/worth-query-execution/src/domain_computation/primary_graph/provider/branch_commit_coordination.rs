@@ -125,3 +125,5 @@ impl WorthQueryApplicationBranchCommitCoordination<'_> {
         self.occurrence == observation.lifecycle_incarnation()
     }
 }
+
+mod court_doors_for_test;

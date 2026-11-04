@@ -9,9 +9,9 @@ pub fn compare(
     divergences: &mut Vec<String>,
     quiescent: bool,
 ) {
-    let state = world
+    let state = (*world
         .registry
-        .state
+        .state_for_test())
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner);
     let mut differences = Vec::new();
@@ -70,17 +70,17 @@ pub fn compare(
             if let (Some(row), Some(model)) = (physical, world.model.rows.get(&id)) {
                 let phase = if worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::refreshed_rejoin::superseded(row) {
                     Phase::Superseded
-                } else if row.terminal() {
+                } else if row.terminal_for_test() {
                     Phase::Closed
-                } else if row.has_cached_ready() {
+                } else if row.has_cached_ready_for_test() {
                     Phase::Ready
-                } else if matches!(row.state, DemandState::Running) {
+                } else if matches!((*row.state_for_test()), DemandState::Running) {
                     Phase::Running
                 } else {
                     Phase::Pending
                 };
                 if phase != model.phase
-                    || row.source_commits.contains(&world.context.commit(1)) != model.source
+                    || (*row.source_commits_for_test()).contains(&world.context.commit(1)) != model.source
                 {
                     differences.push(format!("final row {id} phase/source differs"));
                 }
@@ -105,15 +105,15 @@ pub fn compare(
             let expected_bound = expected.bound.map(|generation| {
                 vec![worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::BoundOutputSource {
                     scope: world.context.scope,
-                    identity: world
+                    identity: (*world
                         .keys
                         .iter()
                         .find(|key| {
-                            key.producer == "oracle-upstream"
-                                && key.source.observation_generation() == generation
+                            (*key.producer_for_test()) == "oracle-upstream"
+                                && (*key.source_for_test()).observation_generation() == generation
                         })
                         .unwrap()
-                        .source
+                        .source_for_test())
                         .clone(),
                 }]
             });
@@ -129,7 +129,7 @@ pub fn compare(
                     .iter()
                     .map(|source| {
                         (
-                            source.identity.clone(),
+                            (*source.identity_for_test()).clone(),
                             WorthQueryOutputDemandDenialKind::Superseded,
                         )
                     })
@@ -183,9 +183,9 @@ pub fn compare(
 }
 
 pub fn dangling(world: &World<'_>) -> Option<WorthQueryOutputDemandKey> {
-    let state = world
+    let state = (*world
         .registry
-        .state
+        .state_for_test())
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner);
     (!state.closed_cleanup.valid_order()).then(|| world.keys[2].clone())

@@ -32,7 +32,7 @@ fn lease_opened_after_reservation_receives_the_exact_committed_successor() {
         .application
         .with_host_advancement(|phase| {
             world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&(phase).test_host_request_for_test())
                 .resolve_authenticated_principal(
                     &phase,
                     &world.binding,
@@ -52,7 +52,7 @@ fn lease_opened_after_reservation_receives_the_exact_committed_successor() {
         .application
         .with_host_advancement(|phase| {
             world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&(phase).test_host_request_for_test())
                 .resolve_entity(
                     &phase,
                     AccountIdentity::reference(),
@@ -66,9 +66,9 @@ fn lease_opened_after_reservation_receives_the_exact_committed_successor() {
     let (parked_tx, parked_rx) = mpsc::sync_channel(0);
     let (release_tx, release_rx) = mpsc::sync_channel(0);
     let release_rx = Arc::new(Mutex::new(release_rx));
-    world
+    (*world
         .application
-        .primary_provider
+        .primary_provider_for_test())
         .set_application_commit_causality_reservation_hook(Some(Arc::new(move || {
             parked_tx.send(()).unwrap();
             release_rx.lock().unwrap().recv().unwrap();
@@ -81,7 +81,7 @@ fn lease_opened_after_reservation_receives_the_exact_committed_successor() {
                 let committed = scope.spawn(|| commit_live_activity(&world, &principal, &request));
                 parked_rx.recv().unwrap();
                 let mut lease = world
-            .selected_product(&(phase).test_host_request(), )
+            .selected_product(&(phase).test_host_request_for_test(), )
             .open_application_query_live::<
                 LiveAccountActivityQuery,
                 AccountSummaryParameters,
@@ -102,9 +102,9 @@ fn lease_opened_after_reservation_receives_the_exact_committed_successor() {
             .unwrap();
                 release_tx.send(()).unwrap();
                 let committed = committed.join().unwrap();
-                world
+                (*world
                     .application
-                    .primary_provider
+                    .primary_provider_for_test())
                     .set_application_commit_causality_reservation_hook(None);
 
                 let WorthQueryApplicationLiveOutcome::Delivered(update) =
@@ -139,7 +139,7 @@ fn publication_without_a_joining_subscriber_releases_marker_and_observation() {
         .application
         .with_host_advancement(|phase| {
             world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&(phase).test_host_request_for_test())
                 .resolve_authenticated_principal(
                     &phase,
                     &world.binding,
@@ -154,7 +154,7 @@ fn publication_without_a_joining_subscriber_releases_marker_and_observation() {
         .application
         .with_host_advancement(|phase| {
             world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&(phase).test_host_request_for_test())
                 .resolve_entity(
                     &phase,
                     AccountStatus::reference(),
@@ -165,22 +165,22 @@ fn publication_without_a_joining_subscriber_releases_marker_and_observation() {
                 .unwrap()
         })
         .expect("the fixture read owns its installed host call");
-    let retention_before = world
+    let retention_before = (*world
         .application
         .product_runtime()
-        .owner
+        .owner_for_test())
         .inspection_port()
         .retention_snapshot()
         .unwrap();
     let program = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             live_activity_program(
-                &(phase).test_host_request(),
+                &(phase).test_host_request_for_test(),
                 &host_custody.borrowed_request_for_test(),
                 &world,
-                world.application.product_runtime().default_branch(),
+                world.application.product_runtime().default_branch_for_test(),
                 &principal,
                 &account,
                 &request,
@@ -192,25 +192,25 @@ fn publication_without_a_joining_subscriber_releases_marker_and_observation() {
     let WorthQueryApplicationCommitOutcome::Committed(committed) =
         world.application.compare_and_commit_application(
             program,
-            WorthQueryApplicationIdempotencyBinding::new([228; 32], [92; 32]),
+            WorthQueryApplicationIdempotencyBinding::new_for_test([228; 32], [92; 32]),
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
     else {
         panic!("the no-subscriber application must commit");
     };
     assert_eq!(
-        world
+        (*world
             .application
-            .primary_provider
+            .primary_provider_for_test())
             .active_application_commit_causality_partitions(),
         0
     );
     // Compare before preparing the live attempt and after it finishes, with
     // the descriptive receipt still retained. Neither receipt owner pins it.
-    let retention_after_publication = world
+    let retention_after_publication = (*world
         .application
         .product_runtime()
-        .owner
+        .owner_for_test())
         .inspection_port()
         .retention_snapshot()
         .unwrap();
@@ -220,6 +220,6 @@ fn publication_without_a_joining_subscriber_releases_marker_and_observation() {
     );
     assert_eq!(
         committed.committed_product_publication().product_branch(),
-        world.application.product_runtime().default_branch()
+        world.application.product_runtime().default_branch_for_test()
     );
 }

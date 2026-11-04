@@ -26,15 +26,15 @@ fn a_demand_records_the_row_it_genuinely_verified() {
         .application
         .with_host_advancement(|phase| primed_output(&phase, &world))
         .expect("the fixture read owns its installed host call");
-    let graph = world.application.runtime.primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let handle = graph.integration_handle();
     let owner = &handle.source_owner.invalidation_owner;
     let selected = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
         .expect("the fixture read owns its installed host call");
-    world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request(); handle.with_runtime(request_execution, |runtime| {
-        let snapshot = selected.application_basis().snapshot_handle();
+    world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request_for_test(); handle.with_runtime(request_execution, |runtime| {
+        let snapshot = selected.application_basis_for_test().snapshot_handle();
         let positioned = runtime.read_truth().positioned_snapshot(snapshot).unwrap();
         let mut read = RetainedOutputCurrentnessRead {
             identity: Arc::clone(&identity),
@@ -55,10 +55,10 @@ let recorded = || {
         assert!(!recorded());
         // Neither absence nor an empty comparison may replace the original
         // own-publication gate. These reads hold no receipt and cannot mark.
-        for facts in [None, RetainedSourceFacts::for_test(false, Arc::from([])).for_comparison()] {
-            read.facts = facts;
+        for facts in [None, RetainedSourceFacts::for_test_for_test(false, Arc::from([])).for_comparison()] {
+            (*read.facts_mut_for_test()) = facts;
 
-            let stopped = selected.require_current_read(&host_custody.borrowed_request_for_test(),
+            let stopped = selected.require_current_read_for_test(&host_custody.borrowed_request_for_test(),
                 runtime, &read, None).unwrap_err();
             assert_eq!(stopped.kind(), worth_query_execution::facade::domain_computation::WorthQueryOutputDemandDenialKind::Superseded);
             assert!(!recorded(), "factless refusal cannot establish a verified row");
@@ -66,9 +66,9 @@ let recorded = || {
         let label = AccountLabel::reference();
         let locator = graph.layout().field_locator(label.entity(), label.aspect(), label.field()).unwrap().clone();
         let fact = field_fact(&host_custody.borrowed_request_for_test(), runtime, snapshot, entity, locator);
-        read.facts = RetainedSourceFacts::for_test(false, Arc::from([fact])).for_comparison();
+        (*read.facts_mut_for_test()) = RetainedSourceFacts::for_test_for_test(false, Arc::from([fact])).for_comparison();
         assert!(selected
-            .require_current_read(&host_custody.borrowed_request_for_test(), runtime, &read, None)
+            .require_current_read_for_test(&host_custody.borrowed_request_for_test(), runtime, &read, None)
             .is_ok());
         assert!(recorded(), "the genuine native verification registers the row");
     }) }).expect("the fixture read owns its installed host call");
@@ -84,15 +84,15 @@ fn a_verification_records_the_row_it_compared() {
         .application
         .with_host_advancement(|phase| primed_output(&phase, &world))
         .expect("the fixture read owns its installed host call");
-    let graph = world.application.runtime.primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let handle = graph.integration_handle();
     let owner = &handle.source_owner.invalidation_owner;
     let selected = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
         .expect("the fixture read owns its installed host call");
-    world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request(); handle.with_runtime(request_execution, |runtime| {
-        let snapshot = selected.application_basis().snapshot_handle();
+    world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request_for_test(); handle.with_runtime(request_execution, |runtime| {
+        let snapshot = selected.application_basis_for_test().snapshot_handle();
         let positioned = runtime.read_truth().positioned_snapshot(snapshot).unwrap();
         let witness = account_witness(&host_custody.borrowed_request_for_test(), &world, runtime, snapshot, entity);
         let facts: Arc<[WorthQueryApplicationObservedFact]> = Arc::from([]);
@@ -101,7 +101,7 @@ fn a_verification_records_the_row_it_compared() {
                     computation: None,
                     work_membership: None,
                     identity: Arc::clone(&identity),
-                    facts: RetainedSourceFacts::for_test(false, Arc::clone(&facts)),
+                    facts: RetainedSourceFacts::for_test_for_test(false, Arc::clone(&facts)),
                     output_facts: None,
                     read_basis: positioned.clone(),
                     stale_at_read_basis: OrdSet::new(),
@@ -110,7 +110,7 @@ fn a_verification_records_the_row_it_compared() {
                 })
             .expect("the row requires verification at the selected source");
         let verify = || {
-            ConsumedOutputEvidence::verify_at_observation(&host_custody.borrowed_request_for_test(), &identity, &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts::for_test(false, Arc::clone(&facts)).for_comparison().unwrap(), &[], None, &witness, owner, runtime, snapshot, &positioned)
+            ConsumedOutputEvidence::verify_at_observation_for_test(&host_custody.borrowed_request_for_test(), &identity, &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts::for_test_for_test(false, Arc::clone(&facts)).for_comparison().unwrap(), &[], None, &witness, owner, runtime, snapshot, &positioned)
         };
 let recorded = || {
             matches!(
@@ -139,7 +139,7 @@ fn a_restored_output_registers_before_commit() {
         .application
         .with_host_advancement(|phase| primed_output(&phase, &world))
         .expect("the fixture read owns its installed host call");
-    let graph = world.application.runtime.primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let handle = graph.integration_handle();
     let (head_handle, head) = handle.with_runtime(request_execution, snapshot);
     let restored = ConsumedOutputEvidence::retained_for_test(
@@ -151,7 +151,7 @@ fn a_restored_output_registers_before_commit() {
     );
 
     assert_eq!(
-        restored.establish_restored_before_commit(request_execution, &handle.source_owner),
+        restored.establish_restored_before_commit_for_test(request_execution, &handle.source_owner),
         Ok(())
     );
 
@@ -168,7 +168,7 @@ pub fn account_witness(
     snapshot: &SnapshotHandle,
     entity: EntityId,
 ) -> Arc<OnceLock<SealedNativeOutputWitness>> {
-    let graph = world.application.runtime.primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let layout = graph.layout();
     let truth = runtime.read_truth();
     let mut facts = vec![WorthQueryApplicationObservedFact::Entity {
@@ -188,9 +188,9 @@ pub fn account_witness(
                 .unwrap(),
         });
     }
-    let correspondence = WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles(
-        TypeId::of::<()>(),
-        TypeId::of::<()>(),
+    let correspondence = WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles_for_test(
+        TypeId::of_for_test::<()>(),
+        TypeId::of_for_test::<()>(),
         std::iter::empty(),
         &[WorthQueryCheckpointOutputRole {
             role: "account".to_owned(),
@@ -198,11 +198,11 @@ pub fn account_witness(
             entity_name: "Account".to_owned(),
             entity,
         }],
-        |_| Some(TypeId::of::<()>()),
+        |_| Some(TypeId::of_for_test::<()>()),
         execution,
     )
     .unwrap();
-    SealedNativeOutputWitness::from_checkpoint_facts(&correspondence, layout, &facts)
+    SealedNativeOutputWitness::from_checkpoint_facts_for_test(&correspondence, layout, &facts)
         .unwrap()
         .expect("complete native facts reconstruct the witness")
 }
@@ -214,7 +214,7 @@ pub fn primed_output(
     world: &AuthorizationWorld,
 ) -> (EntityId, Arc<RecordedSettlementIdentity>) {
     let entity = world
-        .selected_product(&(phase_custody).test_host_request())
+        .selected_product(&(phase_custody).test_host_request_for_test())
         .resolve_entity(
             phase_custody,
             AccountStatus::reference(),
@@ -223,8 +223,8 @@ pub fn primed_output(
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap()
-        .entity_id();
-    let graph = world.application.runtime.primary_graph().unwrap();
+        .entity_id_for_test();
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let label_ref = AccountLabel::reference();
     let label = graph
         .layout()
@@ -245,20 +245,20 @@ pub fn primed_output(
         )),
     );
     let (_, product, _) = world
-        .selected_product(&(phase_custody).test_host_request())
-        .into_parts();
+        .selected_product(&(phase_custody).test_host_request_for_test())
+        .into_parts_for_test();
     let coordinate = ProductCoordinate {
         occurrence: product.observation().lifecycle_incarnation(),
         generation: product.observation().reference_generation().get(),
     };
     let source = SemanticSource {
-        runtime_authority: world.application.runtime.authority_identity().as_u64(),
-        schema: world.application.installed_schema.binding_identity(),
-        scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity(entity),
-        output_binding: OutputBindingIdentity::declared("LabelOutput"),
+        runtime_authority: (*world.application.runtime_for_test()).authority_identity().as_u64(),
+        schema: (*world.application.installed_schema_for_test()).binding_identity(),
+        scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity),
+        output_binding: OutputBindingIdentity::declared_for_test("LabelOutput"),
     };
     (
         entity,
-        RecordedSettlementIdentity::retain(&source, coordinate, 0),
+        RecordedSettlementIdentity::retain_for_test(&source, coordinate, 0),
     )
 }

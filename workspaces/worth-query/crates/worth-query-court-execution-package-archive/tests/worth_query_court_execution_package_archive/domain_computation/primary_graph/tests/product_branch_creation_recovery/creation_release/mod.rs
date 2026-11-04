@@ -52,7 +52,7 @@ fn creation_release_retains_live_recovery_and_defers_actual_owner_cleanup() {
         assert!(world.application.branches().pending_cleanup().is_empty());
         drop(second);
         drop(page);
-        let graph = world.application.runtime.primary_graph().unwrap();
+        let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
         let integration = graph.integration_handle();
         let active = deferred.then(|| {
             integration.with_runtime(execution, |runtime| {

@@ -13,7 +13,7 @@ fn certified_wave_really_overlaps_computing_members() {
         .map(|value| {
             let state = state.clone();
             PreparedMember {
-                requests: vec![PreparedCompute::new(move |member| {
+                requests: vec![PreparedCompute::new_for_test(move |member| {
                     let (mut held, wake) = (state.0.lock().unwrap(), &state.1);
                     held.0 += 1;
                     held.1 += 1;
@@ -24,7 +24,7 @@ fn certified_wave_really_overlaps_computing_members() {
                         .unwrap();
                     held.3 |= guard.timed_out() && held.0 < 2;
                     drop(held);
-                    let (_, poll) = member.into_parts();
+                    let (_, poll) = member.into_parts_for_test();
                     poll().unwrap();
                     state.0.lock().unwrap().1 -= 1;
                     value

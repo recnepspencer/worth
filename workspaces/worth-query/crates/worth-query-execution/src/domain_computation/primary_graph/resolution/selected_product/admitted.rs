@@ -182,3 +182,6 @@ where
         self.resolve_authenticated_principal_admitted_with_native_access(execution, installed_binding, external, scope, mode, validated, &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess::acquire())
     }
 }
+
+#[path = "admitted_court_doors_for_test.rs"]
+mod court_doors_for_test;

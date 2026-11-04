@@ -12,12 +12,12 @@ fn root_path_guard_reads_its_pinned_truth_version() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             world
                 .application
-                .select_product_branch(
+                .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch(),
+                    world.application.product_runtime().default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_authenticated_principal(
@@ -33,12 +33,12 @@ fn root_path_guard_reads_its_pinned_truth_version() {
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             world
                 .application
-                .select_product_branch(
+                .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch(),
+                    world.application.product_runtime().default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
@@ -58,12 +58,12 @@ fn root_path_guard_reads_its_pinned_truth_version() {
         .unwrap();
     let pinned = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
         .expect("the fixture read owns its installed host call");
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             change_account_status(
                 &host_custody.borrowed_request_for_test(),
                 &world,
@@ -103,7 +103,7 @@ fn root_path_guard_reads_its_pinned_truth_version() {
         .application
         .with_host_advancement(|phase| {
             world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&(phase).test_host_request_for_test())
                 .admit_application_query(
                     &phase,
                     &query,
@@ -127,15 +127,15 @@ fn root_path_guard_reads_its_pinned_truth_version() {
     assert_eq!(pinned_result.rows().len(), 2);
     assert!(current_result.rows().is_empty());
     let empty_selection = current_result.result_set_observation().selection_for_test();
-    assert_eq!(empty_selection.aspects.len(), 1);
-    assert_eq!(empty_selection.entities, [account.entity_id()]);
+    assert_eq!((*empty_selection.aspects_for_test()).len(), 1);
+    assert_eq!((*empty_selection.entities_for_test()), [account.entity_id()]);
     let selection = pinned_result.observed_sources()[0]
         .footprint_for_test()
         .root_selection
         .as_ref()
         .expect("pinned path result retains the guard source");
-    let guard = selection
-        .aspects
+    let guard = (*selection
+        .aspects_for_test())
         .iter()
         .find(|aspect| aspect.entity == account.entity_id())
         .unwrap();
@@ -150,9 +150,9 @@ fn root_path_guard_reads_its_pinned_truth_version() {
     };
     let current = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
         .expect("the fixture read owns its installed host call");
-    let graph = world.application.runtime.primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let unavailable = WorthQueryApplicationObservedFact::SourceFieldRevision {
         entity_id: guard.entity,
         locator: AspectFieldLocator::new(
@@ -165,14 +165,14 @@ fn root_path_guard_reads_its_pinned_truth_version() {
     let unavailable_currentness = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             graph
                 .integration_handle()
                 .with_runtime(request_execution, |runtime| {
-                    unavailable.source_currentness_in(
+                    unavailable.source_currentness_in_for_test(
                         runtime,
                         &host_custody.borrowed_request_for_test(),
-                        current.application_basis().snapshot_handle(),
+                        current.application_basis_for_test().snapshot_handle(),
                     )
                 })
         })
@@ -184,15 +184,15 @@ fn root_path_guard_reads_its_pinned_truth_version() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             assert!(
                 !graph
                     .integration_handle()
                     .with_runtime(request_execution, |runtime| {
-                        fact.source_currentness_in(
+                        fact.source_currentness_in_for_test(
                             runtime,
                             &host_custody.borrowed_request_for_test(),
-                            current.application_basis().snapshot_handle(),
+                            current.application_basis_for_test().snapshot_handle(),
                         )
                         .unwrap()
                         .unwrap()
@@ -207,7 +207,7 @@ fn root_path_guard_reads_its_pinned_truth_version() {
         pinned_result.receipt().basis_posture(),
         WorthQueryApplicationQueryBasisPosture::SelectedProduct
     );
-    let absent_guard = &empty_selection.aspects[0];
+    let absent_guard = &(*empty_selection.aspects_for_test())[0];
     let absent_fact = WorthQueryApplicationObservedFact::SourceFieldRevision {
         entity_id: absent_guard.entity,
         locator: AspectFieldLocator::new(
@@ -220,7 +220,7 @@ fn root_path_guard_reads_its_pinned_truth_version() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             change_account_status(
                 &host_custody.borrowed_request_for_test(),
                 &world,
@@ -231,21 +231,21 @@ fn root_path_guard_reads_its_pinned_truth_version() {
         .expect("the fixture read owns its installed host call");
     let reopened = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
         .expect("the fixture read owns its installed host call");
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             assert!(
                 !graph
                     .integration_handle()
                     .with_runtime(request_execution, |runtime| {
                         absent_fact
-                            .source_currentness_in(
+                            .source_currentness_in_for_test(
                                 runtime,
                                 &host_custody.borrowed_request_for_test(),
-                                reopened.application_basis().snapshot_handle(),
+                                reopened.application_basis_for_test().snapshot_handle(),
                             )
                             .unwrap()
                             .unwrap()
@@ -280,9 +280,9 @@ fn root_path_guard_reads_its_pinned_truth_version() {
     assert_ne!(
         current_result
             .result_set_observation()
-            .idempotency_identity(),
+            .idempotency_identity_for_test(),
         reopened_result
             .result_set_observation()
-            .idempotency_identity()
+            .idempotency_identity_for_test()
     );
 }

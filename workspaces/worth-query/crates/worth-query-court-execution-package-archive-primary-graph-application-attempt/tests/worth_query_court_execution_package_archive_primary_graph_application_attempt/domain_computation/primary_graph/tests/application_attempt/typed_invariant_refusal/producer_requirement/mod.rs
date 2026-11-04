@@ -68,7 +68,7 @@ fn a_write_outside_the_required_rule_closure_publishes() {
     let _isolation = worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::tests::fixture::reconstruction_execution::isolated_request_owner();
     let world = install();
     let program =
-        crate::domain_computation::primary_graph::tests::application_attempt::typed_invariant_refusal::program::prepare(&world, &scope(), "open".into()).with_producer_required_invariants(LEDGER);
+        crate::domain_computation::primary_graph::tests::application_attempt::typed_invariant_refusal::program::prepare(&world, &scope(), "open".into()).with_producer_required_invariants_for_test(LEDGER);
     let outcome = commit(&world, program, 211);
     assert!(
         matches!(outcome, WorthQueryApplicationCommitOutcome::Committed(_)),
@@ -80,7 +80,7 @@ fn a_write_outside_the_required_rule_closure_publishes() {
 fn a_deletion_outside_the_required_rule_closure_is_refused_with_its_basis() {
     let _isolation = worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::tests::fixture::reconstruction_execution::isolated_request_owner();
     let world = install();
-    let program = crate::domain_computation::primary_graph::tests::application_attempt::typed_invariant_refusal::program::close(&world, &scope()).with_producer_required_invariants(LEDGER);
+    let program = crate::domain_computation::primary_graph::tests::application_attempt::typed_invariant_refusal::program::close(&world, &scope()).with_producer_required_invariants_for_test(LEDGER);
     let WorthQueryApplicationCommitOutcome::Denied(denial) = commit(&world, program, 212) else {
         panic!("an unproven deletion footprint must not satisfy the requirement");
     };

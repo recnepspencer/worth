@@ -23,7 +23,7 @@ fn bounded_provider_steps_stream_exact_terminal_work_evidence() {
             TwoStepProvider,
             resource_request,
         );
-        let installed_running_phase = execution.phase_for_direct(&running);
+        let installed_running_phase = execution.phase_for_direct_for_test(&running);
 
         let active = running
             .begin_graph_execution(
@@ -129,7 +129,7 @@ fn provider_failure_preserves_governed_work_and_recovery_authority() {
             FailingProvider,
             resource_request,
         );
-        let installed_running_phase = execution.phase_for_direct(&running);
+        let installed_running_phase = execution.phase_for_direct_for_test(&running);
 
         let active = running
             .begin_graph_execution(

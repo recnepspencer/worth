@@ -11,13 +11,13 @@ fn declaration_derived_program_requirement_denies_the_raw_commit_entry() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let operation = world
@@ -29,7 +29,7 @@ fn declaration_derived_program_requirement_denies_the_raw_commit_entry() {
         .application
         .with_host_advancement(|phase| {
             world
-        .selected_product(&(phase).test_host_request(), )
+        .selected_product(&(phase).test_host_request_for_test(), )
         .authorize_operation(&phase,
             &principal,
             &account,
@@ -92,7 +92,7 @@ fn declaration_derived_program_requirement_denies_the_raw_commit_entry() {
         .application
         .with_host_advancement(|phase| {
             world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&(phase).test_host_request_for_test())
                 .product()
                 .selected_commit()
                 .clone()
@@ -126,7 +126,7 @@ fn declaration_derived_program_requirement_denies_the_raw_commit_entry() {
         .with_host_advancement(|phase| {
             assert_eq!(
                 world
-                    .selected_product(&(phase).test_host_request(),)
+                    .selected_product(&(phase).test_host_request_for_test(),)
                     .product()
                     .selected_commit(),
                 &predecessor
@@ -138,31 +138,31 @@ fn declaration_derived_program_requirement_denies_the_raw_commit_entry() {
 #[test]
 fn installed_program_denies_raw_commit_for_an_unlisted_operation() {
     let mut world = installed_authorization_world(true);
-    assert!(!world
+    assert!(!(*world
         .application
-        .program_required_operations
-        .contains(&TypeId::of::<TouchAccountOperation>()));
-    world.application.program_support = Some(installed_program_support(
-        &world.application.installed_schema,
+        .program_required_operations_for_test())
+        .contains(&TypeId::of_for_test::<TouchAccountOperation>()));
+    (*world.application.program_support_mut_for_test()) = Some(installed_program_support(
+        &(*world.application.installed_schema_for_test()),
     ));
     let request = live_scope();
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let predecessor = world
         .application
         .with_host_advancement(|phase| {
             world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&(phase).test_host_request_for_test())
                 .product()
                 .selected_commit()
                 .clone()
@@ -208,7 +208,7 @@ fn installed_program_denies_raw_commit_for_an_unlisted_operation() {
         .with_host_advancement(|phase| {
             assert_eq!(
                 world
-                    .selected_product(&(phase).test_host_request(),)
+                    .selected_product(&(phase).test_host_request_for_test(),)
                     .product()
                     .selected_commit(),
                 &predecessor
@@ -221,14 +221,14 @@ fn installed_program_denies_raw_commit_for_an_unlisted_operation() {
 fn program_output_producer_names_an_operation_not_installed_as_conditional() {
     {
         let mut world = installed_authorization_world(true);
-        world.application.program_support = Some(installed_program_support(
-            &world.application.installed_schema,
+        (*world.application.program_support_mut_for_test()) = Some(installed_program_support(
+            &(*world.application.installed_schema_for_test()),
         ));
         let request = live_scope();
         let principal = world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
 
                 authenticated_principal(
                     &(host_custody.phase_for_application(&world.application)).test_host_request(),
@@ -240,7 +240,7 @@ fn program_output_producer_names_an_operation_not_installed_as_conditional() {
         let account = world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
 
                 resolved_account(
                     &(host_custody.phase_for_application(&world.application)).test_host_request(),
@@ -253,7 +253,7 @@ fn program_output_producer_names_an_operation_not_installed_as_conditional() {
         let predecessor = world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
 
                 world
                     .selected_product(
@@ -268,7 +268,7 @@ fn program_output_producer_names_an_operation_not_installed_as_conditional() {
         let program = world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
 
                 admitted_program_required_program(
                     &host_custody.phase_for_application(&world.application),
@@ -315,7 +315,7 @@ fn program_output_producer_names_an_operation_not_installed_as_conditional() {
         world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
 
                 assert_eq!(
                     world

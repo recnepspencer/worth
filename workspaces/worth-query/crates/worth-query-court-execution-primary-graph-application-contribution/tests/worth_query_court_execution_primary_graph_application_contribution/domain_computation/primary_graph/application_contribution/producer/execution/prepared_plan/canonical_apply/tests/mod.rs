@@ -34,7 +34,7 @@ fn every_compute_precedes_owner_completion_and_failure_destroys_the_suffix() {
             Some(Instant::now() + Duration::from_secs(60)),
             cancellation.token(),
         );
-        let execution = QueryRequestExecution::open(
+        let execution = QueryRequestExecution::open_for_test(
             worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(test_policy(
                 std::num::NonZeroUsize::MIN,
                 None,
@@ -50,8 +50,8 @@ fn every_compute_precedes_owner_completion_and_failure_destroys_the_suffix() {
             let computed = Arc::clone(&computed);
             let dropped = Arc::clone(&dropped);
             let completion = Rc::clone(&completed);
-            plans.push(OwnerPlan::new(
-                vec![PreparedCompute::new(move |member| {
+            plans.push(OwnerPlan::new_for_test(
+                vec![PreparedCompute::new_for_test(move |member| {
                     assert_eq!(member.interruption(), None);
                     computed.lock().unwrap().push(rank);
                     ResultValue {
@@ -61,7 +61,7 @@ fn every_compute_precedes_owner_completion_and_failure_destroys_the_suffix() {
                 })],
                 move |mut slots| {
                     assert_eq!(slots.len(), 1);
-                    let result = slots.pop().unwrap().into_value::<ResultValue>();
+                    let result = slots.pop().unwrap().into_value_for_test::<ResultValue>();
                     completion.borrow_mut().push(result.rank.get());
                     if result.rank.get() == failure {
                         Err(failure)
@@ -72,13 +72,13 @@ fn every_compute_precedes_owner_completion_and_failure_destroys_the_suffix() {
             ));
         }
         let keys = CanonicalUniqueVec::try_from_sorted_unique(vec![0, 1, 2]).unwrap();
-        let cursor = CanonicalApplyCursor::compute(keys, plans, &execution);
+        let cursor = CanonicalApplyCursor::compute_for_test(keys, plans, &execution);
         assert_eq!(*computed.lock().unwrap(), vec![0, 1, 2]);
         assert!(completed.borrow().is_empty());
 
         let mut applied = Vec::new();
         assert_eq!(
-            cursor.apply(
+            cursor.apply_for_test(
                 |key, value| {
                     let value = value?;
                     assert_eq!(key, value, "canonical slots retain their semantic keys");

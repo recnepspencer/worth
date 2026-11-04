@@ -58,7 +58,7 @@ fn workflow_yield_cleanup_waits_for_retained_artifact_owners() {
             resources,
             resource_request,
         );
-        let installed_running_phase = execution.phase_for_workflow(&running);
+        let installed_running_phase = execution.phase_for_workflow_for_test(&running);
 
         let production = running
             .artifacts()

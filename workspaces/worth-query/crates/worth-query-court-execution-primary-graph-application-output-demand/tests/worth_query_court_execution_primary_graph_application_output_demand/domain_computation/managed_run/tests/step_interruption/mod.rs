@@ -106,7 +106,7 @@ fn signal_cancellation_stops_before_the_next_provider_step() {
             },
             resource_request,
         );
-        let installed_running_phase = execution.phase_for_direct(&running);
+        let installed_running_phase = execution.phase_for_direct_for_test(&running);
 
         let active = start_observe(execution, running, &graph, "cancel-before-step");
         active
@@ -148,7 +148,7 @@ fn signal_timeout_stops_before_the_next_provider_step() {
             },
             resource_request,
         );
-        let installed_running_phase = execution.phase_for_direct(&running);
+        let installed_running_phase = execution.phase_for_direct_for_test(&running);
 
         let active = start_observe(execution, running, &graph, "timeout-before-step");
         bridge
@@ -198,7 +198,7 @@ fn signal_rejection_degrades_before_the_next_provider_step() {
             },
             resource_request,
         );
-        let installed_running_phase = execution.phase_for_direct(&running);
+        let installed_running_phase = execution.phase_for_direct_for_test(&running);
 
         let active = start_observe(execution, running, &graph, "reject-before-step");
         active
@@ -238,7 +238,7 @@ fn provider_cannot_advance_after_exceeding_the_governed_work_port() {
             },
             resource_request,
         );
-        let installed_running_phase = execution.phase_for_direct(&running);
+        let installed_running_phase = execution.phase_for_direct_for_test(&running);
 
         let active = start_observe(execution, running, &graph, "over-budget-step");
         let terminal = match active.advance(&installed_running_phase) {
@@ -280,7 +280,7 @@ fn rejected_work_closure_cannot_claim_a_completed_unit() {
             },
             resource_request,
         );
-        let installed_running_phase = execution.phase_for_direct(&running);
+        let installed_running_phase = execution.phase_for_direct_for_test(&running);
 
         let terminal = match start_observe(execution, running, &graph, "rejected-work")
             .advance(&installed_running_phase)
@@ -314,7 +314,7 @@ pub fn start_observe(
     scope: &str,
 ) -> worth_query_execution::facade::domain_computation::WorthQueryActiveDirectGraphExecution {
     {
-        let installed_fixture_phase = running.fixture_phase(execution);
+        let installed_fixture_phase = running.fixture_phase_for_test(execution);
         running.begin_graph_execution(
             &installed_fixture_phase,
             graph,

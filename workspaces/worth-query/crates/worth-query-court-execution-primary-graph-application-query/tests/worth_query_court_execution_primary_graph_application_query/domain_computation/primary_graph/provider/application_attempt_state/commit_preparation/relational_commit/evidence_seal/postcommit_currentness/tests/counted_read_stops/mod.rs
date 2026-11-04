@@ -4,11 +4,11 @@ fn post_effect_rebase_door_preserves_stops_at_every_consult() {
     let world = installed_authorization_world(true);
     world.application.with_host_advancement(|phase| {
         let (entity, locator) = account_note(&phase, &world, "account-1");
-        let kind = world.application.runtime.primary_graph().unwrap().layout.entity_kind(AccountIdentity::reference().entity()).unwrap();
+        let kind = (*world.application.runtime_for_test()).primary_graph().unwrap().layout.entity_kind(AccountIdentity::reference().entity()).unwrap();
         let fact = WorthQueryApplicationObservedFact::AbsentField { entity_id: entity, kind, locator: planned(&locator) };
         worth_query_execution::test_read_stops::every_consult_under(&phase.borrowed_request_for_test(),|execution| match rebase_result_at_current(&phase, execution, &world, vec![fact.clone()]) {
             RebasedSourceFacts::Exact(_) => Ok(true),
-            RebasedSourceFacts::VerificationRequired { reason, .. } => match reason.into_reason() {
+            RebasedSourceFacts::VerificationRequired { reason, .. } => match reason.into_reason_for_test() {
                 RebaseVerificationReason::Execution(cause) => Err(cause),
                 other => panic!("a native stop must keep its cause: {other:?}"),
             },
@@ -24,19 +24,19 @@ fn selected_native_rebase_preserves_stops_at_every_consult() {
     let world = installed_authorization_world(true);
     world.application.with_host_advancement(|phase| {
         let (entity, locator) = account_note(&phase, &world, "account-1");
-        let kind = world.application.runtime.primary_graph().unwrap().layout.entity_kind(AccountIdentity::reference().entity()).unwrap();
-        let control = StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None);
+        let kind = (*world.application.runtime_for_test()).primary_graph().unwrap().layout.entity_kind(AccountIdentity::reference().entity()).unwrap();
+        let control = StorageControl::new_for_test(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None);
         let mut facts = NativeFactPayloadBuilder::allocate(2, control).unwrap();
         facts.push(WorthQueryApplicationObservedFact::AbsentField { entity_id: entity, kind, locator: planned(&locator) }).unwrap();
         // A later real source question exercises cancellation while the first
         // pre-funded action slot is being filled, before that source is asked.
         facts.push(WorthQueryApplicationObservedFact::SourceEntity { entity_id: entity }).unwrap();
         let facts = facts.seal().unwrap();
-        let selected = world.selected_product(&phase.test_host_request());
-        let snapshot = selected.application_basis().snapshot_handle();
+        let selected = world.selected_product(&phase.test_host_request_for_test());
+        let snapshot = selected.application_basis_for_test().snapshot_handle();
         worth_query_execution::test_read_stops::every_consult_under(&phase.borrowed_request_for_test(), |execution| {
-            let prepared = match worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::selected::SelectedRebase::prepare_full(
-                facts.clone(), Arc::from([]), StorageControl::new(execution.allocation_policy(), None),
+            let prepared = match worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::selected::SelectedRebase::prepare_full_for_test(
+                facts.clone(), Arc::from([]), StorageControl::new_for_test(execution.allocation_policy(), None),
             ) {
                 Ok(prepared) => prepared,
                 Err(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::PreparedRebaseDenial::Retention(
@@ -52,8 +52,8 @@ fn selected_native_rebase_preserves_stops_at_every_consult() {
                 }
                 Err(cause) => panic!("unexpected preparation refusal: {cause:?}"),
             };
-let result = world.application.runtime.primary_graph().unwrap().integration_handle().with_runtime(execution, |runtime| {
-                prepared.rebase(execution, runtime, snapshot, &BTreeSet::new(), true, StorageControl::new(execution.allocation_policy(), None))
+let result = (*world.application.runtime_for_test()).primary_graph().unwrap().integration_handle().with_runtime(execution, |runtime| {
+                prepared.rebase_for_test(execution, runtime, snapshot, &BTreeSet::new(), true, StorageControl::new_for_test(execution.allocation_policy(), None))
             });
 
 
@@ -63,7 +63,7 @@ let result = world.application.runtime.primary_graph().unwrap().integration_hand
                     assert!(matches!(&facts[0], WorthQueryApplicationObservedFact::SourceFieldRevision { .. }));
                     Ok(true)
                 }
-                RebasedSourceFacts::VerificationRequired { reason, .. } => match reason.into_reason() {
+                RebasedSourceFacts::VerificationRequired { reason, .. } => match reason.into_reason_for_test() {
                 RebaseVerificationReason::Execution(cause) => Err(cause),
                 RebaseVerificationReason::AdmissionDenied(CompanionPreflightStop::Execution(cause)) => Err(cause),
                 RebaseVerificationReason::AdmissionDenied(CompanionPreflightStop::Interrupted(event)) => Err(match event.interruption() {

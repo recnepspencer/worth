@@ -46,7 +46,7 @@ pub fn expiring_admissions(
         .application
         .with_host_advancement(|phase| {
             world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&(phase).test_host_request_for_test())
                 .resolve_authenticated_principal(
                     &phase,
                     &world.binding,
@@ -60,7 +60,7 @@ pub fn expiring_admissions(
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), world, "open", request)
+            resolved_account(&(phase).test_host_request_for_test(), world, "open", request)
         })
         .expect("the fixture read owns its installed host call");
     let operation = world
@@ -74,7 +74,7 @@ pub fn expiring_admissions(
                 .application
                 .with_host_advancement(|phase| {
                     world
-                        .selected_product(&(phase).test_host_request())
+                        .selected_product(&(phase).test_host_request_for_test())
                         .authorize_operation(
                             &phase,
                             &principal,
@@ -215,7 +215,7 @@ fn a_foreign_and_expired_admission_is_refused_as_foreign_at_every_entry() {
     let read = target_world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             target_world
                 .application
                 .begin_application_read_attempt(

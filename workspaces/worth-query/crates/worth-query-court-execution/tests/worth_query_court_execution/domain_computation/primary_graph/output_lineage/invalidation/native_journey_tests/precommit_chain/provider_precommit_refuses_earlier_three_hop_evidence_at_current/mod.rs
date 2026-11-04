@@ -8,7 +8,7 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
     let (entity, product) = world
         .application
         .with_host_advancement(|phase| {
-            let selected = world.selected_product(&phase.test_host_request());
+            let selected = world.selected_product(&phase.test_host_request_for_test());
             let entity = selected
                 .resolve_entity(
                     &phase,
@@ -18,8 +18,8 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
                     WorthQueryPrincipalResolutionMode::Ordinary,
                 )
                 .unwrap()
-                .entity_id();
-            let (_, product, _) = selected.into_parts();
+                .entity_id_for_test();
+            let (_, product, _) = selected.into_parts_for_test();
             (entity, product)
         })
         .expect("initial source selection borrows its installed phase");
@@ -27,7 +27,7 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
         occurrence: product.observation().lifecycle_incarnation(),
         generation: product.observation().reference_generation().get(),
     };
-    let graph = world.application.runtime.primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let handle = graph.integration_handle();
     let owner = &handle.source_owner.invalidation_owner;
     let status_ref = AccountStatus::reference();
@@ -44,19 +44,19 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
         .clone();
     let source = |output_binding| {
         SemanticSource {
-        runtime_authority: world.application.runtime.authority_identity().as_u64(),
-        schema: world.application.installed_schema.binding_identity().clone(),
-        scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity(entity),
+        runtime_authority: (*world.application.runtime_for_test()).authority_identity().as_u64(),
+        schema: (*world.application.installed_schema_for_test()).binding_identity().clone(),
+        scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity),
         output_binding,
     }
     };
-    let a = RecordedSettlementIdentity::retain(
-        &source(OutputBindingIdentity::declared("StatusOutput")),
+    let a = RecordedSettlementIdentity::retain_for_test(
+        &source(OutputBindingIdentity::declared_for_test("StatusOutput")),
         coordinate,
         0,
     );
-    let b = RecordedSettlementIdentity::retain(
-        &source(OutputBindingIdentity::declared("DownstreamOutput")),
+    let b = RecordedSettlementIdentity::retain_for_test(
+        &source(OutputBindingIdentity::declared_for_test("DownstreamOutput")),
         coordinate,
         0,
     );
@@ -108,7 +108,7 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
 
     assert_eq!(
         handle.with_runtime(request_execution, |runtime| {
-            ConsumedOutputEvidence::verify_many_with_admission(
+            ConsumedOutputEvidence::verify_many_with_admission_for_test(
                 request_execution,
                 std::slice::from_ref(&b_evidence),
                 owner,
@@ -127,7 +127,7 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
 
     assert_eq!(
         handle.with_runtime(request_execution, |runtime| {
-            ConsumedOutputEvidence::verify_many_with_admission(
+            ConsumedOutputEvidence::verify_many_with_admission_for_test(
                 request_execution,
                 std::slice::from_ref(&b_evidence),
                 owner,
@@ -145,7 +145,7 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
             computation: None,
             work_membership: None,
             identity: Arc::clone(&b),
-            facts: RetainedSourceFacts::for_test(false, Arc::from([])),
+            facts: RetainedSourceFacts::for_test_for_test(false, Arc::from([])),
             output_facts: None,
             read_basis: after.clone(),
             stale_at_read_basis: OrdSet::new(),
@@ -162,7 +162,7 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
 
     assert_eq!(
         handle.with_runtime(request_execution, |runtime| {
-            ConsumedOutputEvidence::verify_many_with_admission(
+            ConsumedOutputEvidence::verify_many_with_admission_for_test(
                 request_execution,
                 std::slice::from_ref(&b_evidence),
                 owner,
@@ -188,7 +188,7 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
             .with_host_advancement(|phase| {
                 let request = live_scope();
                 let external = world.authenticate("alice", Duration::from_secs(60), &request);
-                let selected = world.selected_product(&phase.test_host_request());
+                let selected = world.selected_product(&phase.test_host_request_for_test());
                 let principal = selected
                     .resolve_authenticated_principal(
                         &phase,
@@ -263,15 +263,15 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
     let stale = admitted_program("must-not-publish").with_consumed_output_for_test(b_evidence);
     let product_before = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&phase.test_host_request()))
+        .with_host_advancement(|phase| world.selected_product(&phase.test_host_request_for_test()))
         .expect("product selection borrows its installed phase")
         .product()
-        .observation()
+        .observation_for_test()
         .clone();
     let (head_before_handle, head_before) = handle.with_runtime(request_execution, snapshot);
     let denied = world.application.compare_and_commit_application(
         stale,
-        WorthQueryApplicationIdempotencyBinding::new([211; 32], [212; 32]),
+        WorthQueryApplicationIdempotencyBinding::new_for_test([211; 32], [212; 32]),
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     );
     let WorthQueryApplicationCommitOutcome::Denied(denial) = denied else {
@@ -292,10 +292,10 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
     assert_eq!(
         world
             .application
-            .with_host_advancement(|phase| world.selected_product(&phase.test_host_request()))
+            .with_host_advancement(|phase| world.selected_product(&phase.test_host_request_for_test()))
             .expect("product selection borrows its installed phase")
             .product()
-            .observation(),
+            .observation_for_test(),
         &product_before,
         "the denied C commit cannot move Product truth"
     );
@@ -312,7 +312,7 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
     assert!(matches!(
         world.application.compare_and_commit_application(
             admitted_program("fresh-valid-commit"),
-            WorthQueryApplicationIdempotencyBinding::new([213; 32], [214; 32]),
+            WorthQueryApplicationIdempotencyBinding::new_for_test([213; 32], [214; 32]),
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         ),
         WorthQueryApplicationCommitOutcome::Committed(_)

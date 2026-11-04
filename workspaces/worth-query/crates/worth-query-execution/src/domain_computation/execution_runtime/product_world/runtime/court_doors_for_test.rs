@@ -14,3 +14,10 @@ impl WorthQueryProductRuntime {
         &self.owner
     }
 }
+
+impl WorthQueryProductRuntime {
+    #[doc(hidden)]
+    pub fn owner_cleanup_for_test(&self) -> &WorthQueryProductBranchOwnerCleanupRegistry {
+        &self.owner_cleanup
+    }
+}

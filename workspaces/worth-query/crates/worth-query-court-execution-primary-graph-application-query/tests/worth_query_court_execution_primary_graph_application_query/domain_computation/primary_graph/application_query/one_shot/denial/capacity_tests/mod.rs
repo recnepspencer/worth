@@ -17,7 +17,7 @@ fn boxed_authorization_and_spare_string_capacity_are_charged() {
     subject.push('s');
     let mut authorization_subject = String::with_capacity(256);
     authorization_subject.push('a');
-    let authorization = WorthQueryOperationAuthorizationDenial::new(
+    let authorization = WorthQueryOperationAuthorizationDenial::new_for_test(
         WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::PermissionDenied),
         authorization_subject,
     );

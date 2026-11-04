@@ -125,3 +125,5 @@ where
 {
     WorthQueryRecoveryBindingCurrentTruth::from_admitted(admission)?.check(binding)
 }
+
+mod court_doors_for_test;

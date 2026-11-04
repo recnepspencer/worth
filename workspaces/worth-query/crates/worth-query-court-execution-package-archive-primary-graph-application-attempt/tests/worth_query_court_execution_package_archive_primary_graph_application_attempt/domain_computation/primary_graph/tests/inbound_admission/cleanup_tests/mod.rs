@@ -46,7 +46,7 @@ fn one_cleanup_page_reclaims_one_of_two_terminals_but_never_pending_custody() {
             signed_envelope(pending_record, [0xc3; 32], pending_record.payload(), false);
         assert!(world
             .application
-            .admit_inbound_occurrence(&wide_handle, &pending_envelope)
+            .admit_inbound_occurrence_for_test(&wide_handle, &pending_envelope)
             .is_ok());
         assert_eq!(
             world
@@ -122,7 +122,7 @@ fn expired_settled_terminal_reclaims_one_finite_accepted_slot() {
         );
         let accepted_before_cleanup = world
             .application
-            .retained_accepted_for_cleanup_test(first_record.correlation())
+            .retained_accepted_for_cleanup_test_for_test(first_record.correlation())
             .expect("performed owner retains accepted custody before expiry");
         let one = NonZeroUsize::new(1).unwrap();
         assert_eq!(
@@ -146,7 +146,7 @@ fn expired_settled_terminal_reclaims_one_finite_accepted_slot() {
         );
         let (claim, retryable) = world
             .application
-            .stale_publication_claim_for_cleanup_test(&accepted_before_cleanup);
+            .stale_publication_claim_for_cleanup_test_for_test(&accepted_before_cleanup);
         assert_eq!(
             claim,
             WorthQueryInboundPublicationClaim::Gone,

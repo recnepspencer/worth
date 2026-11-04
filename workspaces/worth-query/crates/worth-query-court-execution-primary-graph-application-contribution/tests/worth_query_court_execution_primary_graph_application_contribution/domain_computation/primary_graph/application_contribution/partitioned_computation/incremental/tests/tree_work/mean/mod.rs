@@ -85,15 +85,15 @@ fn mean_reported_update_nodes_obey_the_random_treap_depth_law() {
                 keys.iter().map(|id| (*id, 2)).collect(),
                 u64::MAX,
             );
-            reconcile(next.report);
-            let TreeRun::Edited(metrics) = next.report else {
+            reconcile((*next.report_for_test()));
+            let TreeRun::Edited(metrics) = (*next.report_for_test()) else {
                 panic!("mean workload must edit")
             };
             let metrics = metrics
                 .accounted_metrics()
                 .expect("explicit accounted fixture");
             assert_eq!(
-                *next.outcome.unwrap().result(),
+                *(*next.outcome_for_test()).unwrap().result(),
                 u64::try_from(2 * n).unwrap()
             );
             total += metrics.recombined_nodes;

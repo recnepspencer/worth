@@ -67,55 +67,55 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
                 execution,
                 &world,
                 &mut running,
-                lease.product().retained_clone(),
+                lease.product().retained_clone_for_test(),
             );
-            assert!(staged.bind_application_attempt(attempt_basis).is_ok());
+            assert!(staged.bind_application_attempt_for_test(attempt_basis).is_ok());
 
             assert!(WorthQueryApplicationAttemptBasis::capture(
                 &foreign_world.application,
                 &admission,
-                lease.snapshot(),
+                lease.snapshot_for_test(),
                 lease.product(),
             )
             .is_err());
 
-            let substitute_lease = WorthQueryApplicationSnapshotLease::acquire(
+            let substitute_lease = WorthQueryApplicationSnapshotLease::acquire_for_test(
                 &phase
-                    .execution_request_for(&world.application.product_runtime)
+                    .execution_request_for_for_test(&(*world.application.product_runtime_for_test()))
                     .expect("fixture issuer"),
-                lease.handle().clone(),
-                std::sync::Arc::clone(&lease.layout),
-                lease.product().retained_clone(),
+                lease.handle_for_test().clone(),
+                std::sync::Arc::clone(&(*lease.layout_for_test())),
+                lease.product().retained_clone_for_test(),
             )
             .expect("the real branch must issue a second exact snapshot handle");
-            assert_ne!(substitute_lease.snapshot(), lease.snapshot());
+            assert_ne!(substitute_lease.snapshot_for_test(), lease.snapshot_for_test());
             let substitute_snapshot_basis = WorthQueryApplicationAttemptBasis::capture(
                 &world.application,
                 &admission,
-                substitute_lease.snapshot(),
+                substitute_lease.snapshot_for_test(),
                 substitute_lease.product(),
             )
             .expect("same-runtime same-branch snapshot remains a valid pre-session basis");
             assert!(staged
-                .bind_application_attempt(substitute_snapshot_basis)
+                .bind_application_attempt_for_test(substitute_snapshot_basis)
                 .is_err());
-            assert!(substitute_lease.release());
+            assert!(substitute_lease.release_for_test());
 
-            let foreign_branch_snapshot = lease.handle().with_runtime_mut(
+            let foreign_branch_snapshot = lease.handle_for_test().with_runtime_mut(
                 &phase
-                    .execution_request_for(&world.application.product_runtime)
+                    .execution_request_for_for_test(&(*world.application.product_runtime_for_test()))
                     .expect("fixture issuer"),
                 |runtime| {
                     let foreign = worth_relational::facade::history::BranchId(
                         "foreign-affinity-branch".to_owned(),
                     );
                     let (_, fork_basis) = runtime
-                        .observe_fork_source(lease.snapshot().branch_id())
+                        .observe_fork_source(lease.snapshot_for_test().branch_id())
                         .expect("test runtime can observe the exact source basis");
                     runtime
                         .fork_branch(
                             &phase
-                                .execution_request_for(&world.application.product_runtime)
+                                .execution_request_for_for_test(&(*world.application.product_runtime_for_test()))
                                 .expect("fixture issuer"),
                             foreign.clone(),
                             fork_basis,
@@ -136,9 +136,9 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
                 lease.product(),
             )
             .is_err());
-            assert!(lease.handle().with_runtime_mut(
+            assert!(lease.handle_for_test().with_runtime_mut(
                 &phase
-                    .execution_request_for(&world.application.product_runtime)
+                    .execution_request_for_for_test(&(*world.application.product_runtime_for_test()))
                     .expect("fixture issuer"),
                 |runtime| {
                     runtime
@@ -207,18 +207,18 @@ fn a_real_peer_plan_and_session_cannot_substitute_for_the_captured_attempt() {
                 execution,
                 &world,
                 &mut first_running,
-                first_lease.product().retained_clone(),
+                first_lease.product().retained_clone_for_test(),
             );
             let second_staged = real_terminal_session(
                 execution,
                 &world,
                 &mut second_running,
-                second_lease.product().retained_clone(),
+                second_lease.product().retained_clone_for_test(),
             );
-            let first_terminal = first_staged.provider_session_terminal_binding();
-            let second_terminal = second_staged.provider_session_terminal_binding();
+            let first_terminal = first_staged.provider_session_terminal_binding_for_test();
+            let second_terminal = second_staged.provider_session_terminal_binding_for_test();
             assert_ne!(first_terminal, second_terminal);
-            let mismatches = first_basis.affinity_mismatches(&second_terminal);
+            let mismatches = first_basis.affinity_mismatches_for_test(&second_terminal);
             assert_eq!(
                 mismatches,
                 [
@@ -231,8 +231,8 @@ fn a_real_peer_plan_and_session_cannot_substitute_for_the_captured_attempt() {
                 .into_iter()
                 .collect()
             );
-            assert!(second_staged.bind_application_attempt(first_basis).is_err());
-            assert!(first_staged.bind_application_attempt(second_basis).is_err());
+            assert!(second_staged.bind_application_attempt_for_test(first_basis).is_err());
+            assert!(first_staged.bind_application_attempt_for_test(second_basis).is_err());
             let _ = first_staged.abort();
             let _ = second_staged.abort();
             finish_uncommitted(first_mutation_run, first_running, first_lease);
@@ -258,7 +258,7 @@ pub fn fork_product(
     let outcome = world
         .application
         .product_runtime()
-        .create_product_branch(
+        .create_product_branch_for_test(
             execution,
             source,
             None,
@@ -283,9 +283,9 @@ pub fn real_terminal_session<'run>(
 ) -> worth_query_execution::facade::domain_computation::WorthQuerySessionBoundReadsAndEffects<'run>
 {
     running
-        .admit_provider_execution_plan(&world.application.primary_graph_authority)
+        .admit_provider_execution_plan(&(*world.application.primary_graph_authority_for_test()))
         .expect("real application authorities must admit their provider plan")
-        .bind_application_product(product)
+        .bind_application_product_for_test(product)
         .expect("the exact selected product must bind its provider plan")
         .readmit(execution)
         .expect("the real provider must readmit its exact plan")
@@ -300,7 +300,7 @@ pub fn finish_uncommitted(
     lease: WorthQueryApplicationSnapshotLease,
 ) {
     mutation_run
-        .finish(
+        .finish_for_test(
             running,
             WorthQueryManagedRunTerminalKind::Failed,
             lease.release_custody(),
@@ -325,7 +325,7 @@ pub fn start(
         &phase.borrowed_request_for_test(),
         phase,
         &world.application,
-        WorthQueryApplicationCommitPreparationRequest::new(program, idempotency, None, None),
+        WorthQueryApplicationCommitPreparationRequest::new_for_test(program, idempotency, None, None),
     );
     let WorthQueryApplicationCommitPreparation::Ready(prepared) = prepared else {
         panic!("affinity fixture must reach ordinary prepared posture")
@@ -340,15 +340,15 @@ pub fn retained_program(
     replacement: &str,
 ) -> RetainedProgram {
     let request = live_scope();
-    let principal = authenticated_principal(&(phase_custody).test_host_request(), world, &request);
+    let principal = authenticated_principal(&(phase_custody).test_host_request_for_test(), world, &request);
     let account = resolved_account(
-        &(phase_custody).test_host_request(),
+        &(phase_custody).test_host_request_for_test(),
         world,
         "open",
         &request,
     );
     retained_status_program(
-        &(phase_custody).test_host_request(),
+        &(phase_custody).test_host_request_for_test(),
         world,
         &principal,
         &account,

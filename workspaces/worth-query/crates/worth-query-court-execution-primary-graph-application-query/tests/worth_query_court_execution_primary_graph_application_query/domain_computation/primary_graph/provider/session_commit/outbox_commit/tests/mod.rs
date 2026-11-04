@@ -24,18 +24,18 @@ fn real_commit_mapping_denial_reaches_receipt_projection() {
     let evidence = commit_only_other_outbox(request_execution);
     let seal = evidence
         .committed_resolution
-        .seal_for_receipt()
+        .seal_for_receipt_for_test()
         .expect("the committed create resolves");
     let binding = seal
         .binding()
         .expect("the committed create has one binding");
-    assert_eq!(binding.record(), evidence.committed_pending.record());
+    assert_eq!(binding.record(), evidence.committed_pending.record_for_test());
     assert_eq!(binding.record_ref(), &evidence.expected_record_ref);
 
     assert_eq!(
         evidence
             .requested_resolution
-            .seal_for_receipt()
+            .seal_for_receipt_for_test()
             .map(|seal| seal.into_binding()),
         Err(WorthQueryCommittedDispatchOutboxBindingDenial::CreatedEntityMissing)
     );
@@ -50,7 +50,7 @@ fn real_commit_with_no_requested_outbox_projects_honest_absence() {
     assert_eq!(
         evidence
             .absent_resolution
-            .seal_for_receipt()
+            .seal_for_receipt_for_test()
             .expect("honest absence is a successful receipt projection")
             .into_binding(),
         None
@@ -69,7 +69,7 @@ pub fn commit_only_other_outbox(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> CommittedOutboxResolutionEvidence {
     let world = installed_authorization_world(true);
-    let provider = &world.application.primary_provider;
+    let provider = &(*world.application.primary_provider_for_test());
     let (_, requested) = bind_dispatch_outbox_create_intent(
         Some(provider.graph.layout.provider_dispatch_outbox()),
         Some(&record(1)),
@@ -107,19 +107,19 @@ pub fn commit_only_other_outbox(
                 .expect("the other outbox commits");
             let expected_record_ref = RecordRef::Entity(
                 committed
-                    .created_entity(committed_pending.created_entity())
+                    .created_entity(committed_pending.created_entity_for_test())
                     .expect("the exact committed create has an owner-minted mapping"),
             );
             let evidence = CommittedOutboxResolutionEvidence {
-                committed_resolution: WorthQueryCommittedDispatchOutboxResolution::from_commit(
+                committed_resolution: WorthQueryCommittedDispatchOutboxResolution::from_commit_for_test(
                     Some(&committed_pending),
                     &committed,
                 ),
-                requested_resolution: WorthQueryCommittedDispatchOutboxResolution::from_commit(
+                requested_resolution: WorthQueryCommittedDispatchOutboxResolution::from_commit_for_test(
                     Some(&requested),
                     &committed,
                 ),
-                absent_resolution: WorthQueryCommittedDispatchOutboxResolution::from_commit(
+                absent_resolution: WorthQueryCommittedDispatchOutboxResolution::from_commit_for_test(
                     None, &committed,
                 ),
                 committed_pending,
@@ -147,7 +147,7 @@ pub fn record(identity: u64) -> WorthQueryDispatchOutboxRecord {
         branch: "main",
     })
     .expect("test correlation derives");
-    WorthQueryDispatchOutboxRecord::from_installed_contract(
+    WorthQueryDispatchOutboxRecord::from_installed_contract_for_test(
         correlation,
         &InstalledExternalEffectContract::Declared {
             correlation_family:

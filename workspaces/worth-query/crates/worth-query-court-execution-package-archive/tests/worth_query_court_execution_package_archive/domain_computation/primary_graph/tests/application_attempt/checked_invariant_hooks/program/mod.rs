@@ -13,15 +13,15 @@ pub fn prepare(
     world
         .application
         .with_host_advancement(|phase| {
-            let host_request = phase.test_host_request();
+            let host_request = phase.test_host_request_for_test();
             let execution = host_request
                 .execution_request_for(world.application.product_runtime())
                 .unwrap();
             let selected = world
                 .application
-                .select_product_branch(
+                .select_product_branch_for_test(
                     &execution,
-                    world.application.product_runtime().default_branch(),
+                    world.application.product_runtime().default_branch_for_test(),
                 )
                 .unwrap();
             let external =

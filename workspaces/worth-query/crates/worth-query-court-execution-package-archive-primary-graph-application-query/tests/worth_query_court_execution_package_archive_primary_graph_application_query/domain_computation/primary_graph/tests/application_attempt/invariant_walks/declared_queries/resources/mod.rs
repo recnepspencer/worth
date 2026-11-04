@@ -20,12 +20,12 @@ fn complete_declared_path_retains_original_memory_until_last_source() {
     .unwrap();
     assert!(payer.charged_memory_bytes() > 0);
     let body = std::sync::Arc::clone(
-        &result.observed_sources()[0]
+        &(*result.observed_sources()[0]
             .footprint_for_test()
             .root_selection
             .as_ref()
             .unwrap()
-            .walks
+            .walks_for_test())
             .as_ref()
             .unwrap()
             .values()[0],

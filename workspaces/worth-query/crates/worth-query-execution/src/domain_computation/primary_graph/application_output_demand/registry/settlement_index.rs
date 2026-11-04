@@ -163,3 +163,5 @@ impl DemandRegistryState {
         reservation::reserve(self, identity)
     }
 }
+
+mod court_doors_for_test;

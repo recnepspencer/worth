@@ -20,9 +20,9 @@ pub fn disable_mapping(
     world: &AuthorizationWorld,
     mapping_id: EntityId,
 ) {
-    let graph = world
+    let graph = (*world
         .application
-        .runtime
+        .runtime_for_test())
         .primary_graph()
         .expect("test world publishes a primary graph");
     let layout = graph
@@ -55,9 +55,9 @@ pub fn revoke_account_ownership(
     world: &AuthorizationWorld,
     account: EntityId,
 ) {
-    let graph = world
+    let graph = (*world
         .application
-        .runtime
+        .runtime_for_test())
         .primary_graph()
         .expect("test world publishes a primary graph");
     let relation_kind = graph
@@ -65,11 +65,11 @@ pub fn revoke_account_ownership(
         .relation(AccountOwner::reference().name())
         .expect("account ownership is installed")
         .kind;
-    let selected = world.selected_product(&(phase_custody).test_host_request());
+    let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
     let relation = graph
         .integration_handle()
         .with_runtime_mut(execution, |runtime| {
-            let snapshot = selected.application_basis().snapshot_handle();
+            let snapshot = selected.application_basis_for_test().snapshot_handle();
 
             runtime
                 .read_truth()

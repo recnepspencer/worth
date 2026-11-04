@@ -7,3 +7,12 @@ impl WorthQueryProductBranch {
         Self::occurrence(self)
     }
 }
+
+impl WorthQueryProductBranch {
+    #[doc(hidden)]
+    pub fn from_occurrence_for_test(
+        occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
+    ) -> Self {
+        Self::from_occurrence(occurrence)
+    }
+}

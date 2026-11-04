@@ -129,9 +129,9 @@ fn omitted_dependency_cannot_be_used_as_a_complete_source_expectation() {
     let result = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             execute_result(
-                &(phase).test_host_request(),
+                &(phase).test_host_request_for_test(),
                 &host_custody.borrowed_request_for_test(),
                 &world,
             )
@@ -142,7 +142,7 @@ fn omitted_dependency_cannot_be_used_as_a_complete_source_expectation() {
         .first()
         .expect("the selected row carries an opaque source observation");
     let denial = source
-        .validate_completeness("GovernedAccountOmissionQuery")
+        .validate_completeness_for_test("GovernedAccountOmissionQuery")
         .expect_err("an omitted declared dependency must not authorize a mutation");
     assert_eq!(
         denial.kind(),
@@ -157,7 +157,7 @@ pub fn observe(label: &str) -> ConsumerObservation {
         .script(vec![UNIX_EPOCH + Duration::from_secs(100); 32]);
     world
         .application
-        .with_host_advancement(|phase| execute(&phase.test_host_request(), &world))
+        .with_host_advancement(|phase| execute(&phase.test_host_request_for_test(), &world))
         .expect("the observation fixture owns its installed read")
 }
 
@@ -181,13 +181,13 @@ pub fn execute_result(
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
-        .select_product_branch(
+        .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch(),
+            world.application.product_runtime().default_branch_for_test(),
         )
         .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             &world.binding,
             &external,
             &request,
@@ -196,13 +196,13 @@ pub fn execute_result(
         .unwrap();
     let account = world
         .application
-        .select_product_branch(
+        .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch(),
+            world.application.product_runtime().default_branch_for_test(),
         )
         .expect("the selected product branch remains admitted")
         .resolve_entity(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             AccountIdentity::reference(),
             "account-1".to_owned(),
             &request,
@@ -215,20 +215,20 @@ pub fn execute_result(
         .certification_query(GovernedAccountOmissionQuery::reference())
         .unwrap();
     let capability = admit_touch_account_capability(
-        &(phase_custody).test_host_request(),
+        &(phase_custody).test_host_request_for_test(),
         world,
         &principal,
         &request,
     )
     .unwrap();
-    let capability_session = capability.graph_work_session_identity();
-    let capability_run = capability.graph_work_managed_run_identity();
+    let capability_session = capability.graph_work_session_identity_for_test();
+    let capability_run = capability.graph_work_managed_run_identity_for_test();
     let capability_branch = capability.graph_work_branch().clone();
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
     let plan = world
-        .selected_product(&(phase_custody).test_host_request())
+        .selected_product(&(phase_custody).test_host_request_for_test())
         .admit_governed_application_query(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             &query,
             &access,
             capability,
@@ -247,7 +247,7 @@ pub fn execute_result(
     world
         .application
         .execute_application_query_one_shot(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             plan,
         )
         .unwrap()

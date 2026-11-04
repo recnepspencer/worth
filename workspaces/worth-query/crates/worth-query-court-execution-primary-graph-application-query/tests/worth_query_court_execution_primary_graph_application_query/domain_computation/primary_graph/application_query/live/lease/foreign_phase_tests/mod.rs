@@ -47,7 +47,7 @@ fn foreign_phase_refuses_both_live_doors_before_cancelled_read_admission() {
         let (principal, account, capability, selected) = receiver
             .application
             .with_application_advancement(&request, |receiver_phase| {
-                let custody = receiver_phase.test_host_request();
+                let custody = receiver_phase.test_host_request_for_test();
                 let principal = receiver
                     .selected_product(&custody)
                     .resolve_authenticated_principal(

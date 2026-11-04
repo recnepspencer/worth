@@ -22,7 +22,7 @@ pub fn ordinary_field_allocation(
     world
         .application
         .with_host_advancement(|phase| {
-            let phase_custody = &phase.test_host_request();
+            let phase_custody = &phase.test_host_request_for_test();
             let request = live_scope();
             let principal = authenticated_principal(phase_custody, world, &request);
             let account = resolved_account(phase_custody, world, "open", &request);

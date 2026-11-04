@@ -16,7 +16,7 @@ fn admitted_external_identity_resolves_through_certified_index_and_freshness() {
         .application
         .with_host_advancement(|phase| {
             world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&(phase).test_host_request_for_test())
                 .resolve_authenticated_principal(
                     &phase,
                     &world.binding,
@@ -37,7 +37,7 @@ fn admitted_external_identity_resolves_through_certified_index_and_freshness() {
         .application
         .with_host_advancement(|phase| {
             world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&(phase).test_host_request_for_test())
                 .validate_authenticated_principal(&phase, &principal, &scope)
                 .unwrap()
         })

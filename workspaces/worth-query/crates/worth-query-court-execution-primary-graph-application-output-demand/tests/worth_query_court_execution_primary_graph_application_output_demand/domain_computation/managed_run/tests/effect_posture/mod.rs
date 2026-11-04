@@ -110,7 +110,7 @@ fn touch_effect_cannot_cross_an_effect_free_step_contract() {
         let terminal = {
             let fixture_phase_result = {
                 let fixture_target = active;
-                let installed_fixture_phase = fixture_target.fixture_phase(execution);
+                let installed_fixture_phase = fixture_target.fixture_phase_for_test(execution);
                 fixture_target.advance(&installed_fixture_phase)
             };
             match fixture_phase_result {
@@ -150,7 +150,7 @@ fn declared_partial_effect_posture_carries_exact_applied_effect_evidence() {
         let completion = {
             let fixture_phase_result = {
                 let fixture_target = start_effect(execution, running, &graph, "partial-effect");
-                let installed_fixture_phase = fixture_target.fixture_phase(execution);
+                let installed_fixture_phase = fixture_target.fixture_phase_for_test(execution);
                 fixture_target.advance(&installed_fixture_phase)
             };
             match fixture_phase_result {
@@ -191,7 +191,7 @@ fn rejected_effect_closure_cannot_claim_an_applied_effect() {
         let terminal = {
             let fixture_phase_result = {
                 let fixture_target = start_effect(execution, running, &graph, "rejected-effect");
-                let installed_fixture_phase = fixture_target.fixture_phase(execution);
+                let installed_fixture_phase = fixture_target.fixture_phase_for_test(execution);
                 fixture_target.advance(&installed_fixture_phase)
             };
             match fixture_phase_result {
@@ -242,7 +242,7 @@ fn panic_after_effect_attempt_preserves_effect_uncertainty() {
         let terminal = {
             let fixture_phase_result = {
                 let fixture_target = start_effect(execution, running, &graph, "panicked-effect");
-                let installed_fixture_phase = fixture_target.fixture_phase(execution);
+                let installed_fixture_phase = fixture_target.fixture_phase_for_test(execution);
                 fixture_target.advance(&installed_fixture_phase)
             };
             match fixture_phase_result {
@@ -277,7 +277,7 @@ pub fn start_effect(
 ) -> worth_query_execution::facade::domain_computation::WorthQueryActiveDirectGraphExecution {
     {
         let fixture_target = running;
-        let installed_fixture_phase = fixture_target.fixture_phase(execution);
+        let installed_fixture_phase = fixture_target.fixture_phase_for_test(execution);
         fixture_target.begin_graph_execution(
             &installed_fixture_phase,
             graph,

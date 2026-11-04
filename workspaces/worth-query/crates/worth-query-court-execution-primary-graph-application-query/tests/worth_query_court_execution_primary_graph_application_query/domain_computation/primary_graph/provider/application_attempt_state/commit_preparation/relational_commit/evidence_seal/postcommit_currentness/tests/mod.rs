@@ -46,16 +46,16 @@ fn a_source_revision_the_effect_moved_is_kept_and_reported_superseded() {
     let read = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             rebase_at_current(
                 &phase,
                 &host_custody.borrowed_request_for_test(),
                 &world,
                 vec![WorthQueryApplicationObservedFact::AbsentField {
                     entity_id: entity,
-                    kind: world
+                    kind: (*world
                         .application
-                        .runtime
+                        .runtime_for_test())
                         .primary_graph()
                         .unwrap()
                         .layout
@@ -69,7 +69,7 @@ fn a_source_revision_the_effect_moved_is_kept_and_reported_superseded() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             assert_eq!(
                 rebase_result_at_current(
                     &phase,
@@ -86,7 +86,7 @@ fn a_source_revision_the_effect_moved_is_kept_and_reported_superseded() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             set_note(
                 &host_custody.borrowed_request_for_test(),
                 &world,
@@ -99,7 +99,7 @@ fn a_source_revision_the_effect_moved_is_kept_and_reported_superseded() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             assert_eq!(
                 rebase_result_at_current(
                     &phase,
@@ -132,16 +132,16 @@ fn unavailable_native_revision_never_authorizes_output_reuse() {
     let rebased = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             rebase_result_at_current(
                 &phase,
                 &host_custody.borrowed_request_for_test(),
                 &world,
                 vec![WorthQueryApplicationObservedFact::AbsentField {
                     entity_id: entity,
-                    kind: world
+                    kind: (*world
                         .application
-                        .runtime
+                        .runtime_for_test())
                         .primary_graph()
                         .unwrap()
                         .layout
@@ -157,7 +157,7 @@ fn unavailable_native_revision_never_authorizes_output_reuse() {
         RebasedSourceFacts::VerificationRequired {
             reason,
             ..
-        } if reason.reason() == &RebaseVerificationReason::NativeFactRevisionUnavailable
+        } if reason.reason_for_test() == &RebaseVerificationReason::NativeFactRevisionUnavailable
             && worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::mark_state::FullVerificationReason::from(reason.clone())
                 == worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::mark_state::FullVerificationReason::NativeFactRevisionUnavailable(0)
     ));
@@ -172,7 +172,7 @@ pub fn account_note(
     AspectFieldLocator,
 ) {
     let entity = world
-        .selected_product(&(phase_custody).test_host_request())
+        .selected_product(&(phase_custody).test_host_request_for_test())
         .resolve_entity(
             phase_custody,
             AccountIdentity::reference(),
@@ -181,11 +181,11 @@ pub fn account_note(
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap()
-        .entity_id();
+        .entity_id_for_test();
     let note = AccountNote::reference();
-    let locator = world
+    let locator = (*world
         .application
-        .runtime
+        .runtime_for_test())
         .primary_graph()
         .unwrap()
         .layout
@@ -223,7 +223,7 @@ pub fn current(
 ) -> bool {
     currentness(phase_custody, execution, world, fact)
         .unwrap()
-        .movement()
+        .movement_for_test()
         == Movement::Unmoved
 }
 
@@ -233,10 +233,10 @@ pub fn output_selection(
     world: &AuthorizationWorld,
     facts: &(impl FactSequence + ?Sized),
 ) -> OutputDependencySelection {
-    let selected = world.selected_product(&(phase_custody).test_host_request());
-    world
+    let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
+    (*world
         .application
-        .runtime
+        .runtime_for_test())
         .primary_graph()
         .unwrap()
         .integration_handle()
@@ -244,7 +244,7 @@ pub fn output_selection(
             compare_retained_output_dependencies(
                 execution,
                 runtime,
-                selected.application_basis().snapshot_handle(),
+                selected.application_basis_for_test().snapshot_handle(),
                 true,
                 Some(facts),
             )
@@ -258,18 +258,18 @@ pub fn currentness(
     world: &AuthorizationWorld,
     fact: &WorthQueryApplicationObservedFact,
 ) -> Result<FactMovement, WorthQuerySourceCurrentnessFailure> {
-    let selected = world.selected_product(&(phase_custody).test_host_request());
-    world
+    let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
+    (*world
         .application
-        .runtime
+        .runtime_for_test())
         .primary_graph()
         .unwrap()
         .integration_handle()
         .with_runtime(execution, |runtime| {
-            fact.source_currentness_in(
+            fact.source_currentness_in_for_test(
                 runtime,
                 execution,
-                selected.application_basis().snapshot_handle(),
+                selected.application_basis_for_test().snapshot_handle(),
             )
             .unwrap()
         })
@@ -304,16 +304,16 @@ pub fn rebase_result_at_current(
     world: &AuthorizationWorld,
     facts: Vec<WorthQueryApplicationObservedFact>,
 ) -> RebasedSourceFacts {
-    let selected = world.selected_product(&(phase_custody).test_host_request());
+    let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
 
-    world
+    (*world
         .application
-        .runtime
+        .runtime_for_test())
         .primary_graph()
         .unwrap()
         .integration_handle()
         .with_runtime(execution, |runtime| {
-            rebase(execution, runtime, selected.application_basis().snapshot_handle(), PreparedSourceFactRebase::admit(facts, [].into(), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(), &BTreeSet::new(), true)
+            rebase(execution, runtime, selected.application_basis_for_test().snapshot_handle(), PreparedSourceFactRebase::admit_for_test(facts, [].into(), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new_for_test(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(), &BTreeSet::new(), true)
         })
 }
 

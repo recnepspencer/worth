@@ -16,13 +16,13 @@ fn reserved_slot_naming_the_exact_binding_is_publication_pending() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let operation = world
@@ -34,7 +34,7 @@ fn reserved_slot_naming_the_exact_binding_is_publication_pending() {
         .application
         .with_host_advancement(|phase| {
             world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&(phase).test_host_request_for_test())
                 .authorize_operation(
                     &phase,
                     &principal,
@@ -51,22 +51,22 @@ fn reserved_slot_naming_the_exact_binding_is_publication_pending() {
     // The owner binds the caller's key to the admitted operation before it
     // reads custody; the slot records that bound identity.
     let bound = binding
-        .bind_operation(admission.operation_definition_identity())
+        .bind_operation(admission.operation_definition_identity_for_test())
         .bind_operation_scope(admission.operation_scope_binding())
-        .bind_preconditions(admission.mutation_preconditions().identity())
-        .bind_governed_input(admission.governed_input_identity())
-        .bind_governed_proposal(admission.governed_proposal_identity());
+        .bind_preconditions(admission.mutation_preconditions().identity_for_test())
+        .bind_governed_input(admission.governed_input_identity_for_test())
+        .bind_governed_proposal_for_test(admission.governed_proposal_identity_for_test());
     let reservation = world
         .application
         .with_host_advancement(|phase| {
-            world
+            (*world
                 .application
-                .primary_provider
+                .primary_provider_for_test())
                 .reserve_application_publication_recovery(
                     world
-                        .selected_product(&(phase).test_host_request())
+                        .selected_product(&(phase).test_host_request_for_test())
                         .product()
-                        .observation(),
+                        .observation_for_test(),
                     Some(bound),
                 )
                 .expect("the owner reserves the exact product incarnation")
@@ -76,7 +76,7 @@ fn reserved_slot_naming_the_exact_binding_is_publication_pending() {
         world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 world
                     .application
                     .resolve_admitted_guarded_workflow_operation_custody(

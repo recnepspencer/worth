@@ -46,13 +46,13 @@ fn missing_owner_candidate_is_denied_before_semantic_invariant_execution() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let rejected = world
@@ -84,9 +84,9 @@ fn missing_owner_candidate_is_denied_before_semantic_invariant_execution() {
         WorthQueryApplicationCommitDenialStage::InvariantExecution
     );
     assert_eq!(
-        world
+        (*world
             .application
-            .primary_provider
+            .primary_provider_for_test())
             .published_application_commit_count(),
         0,
         "owner validation denial must precede commit and outbox publication"
@@ -94,7 +94,7 @@ fn missing_owner_candidate_is_denied_before_semantic_invariant_execution() {
     let _still_open = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "open", &live_scope())
+            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &live_scope())
         })
         .expect("the fixture read owns its installed host call");
 }
@@ -106,13 +106,13 @@ fn relational_invariant_violation_denies_before_provider_commit() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let rejected = world
@@ -146,7 +146,7 @@ fn relational_invariant_violation_denies_before_provider_commit() {
     let _still_open = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "open", &live_scope())
+            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &live_scope())
         })
         .expect("the fixture read owns its installed host call");
 }
@@ -159,13 +159,13 @@ fn zero_semantic_invariants_still_require_relational_candidate_validation() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let rejected = world
@@ -190,9 +190,9 @@ fn zero_semantic_invariants_still_require_relational_candidate_validation() {
         WorthQueryApplicationCommitDenialStage::InvariantExecution
     );
     assert_eq!(
-        world
+        (*world
             .application
-            .primary_provider
+            .primary_provider_for_test())
             .published_application_commit_count(),
         0,
         "zero-requirement owner denial must precede commit and outbox publication"
@@ -208,13 +208,13 @@ fn zero_semantic_invariants_commit_after_owner_candidate_admission() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let program = world
@@ -253,13 +253,13 @@ fn owner_validated_application_touch_outside_installed_ceiling_is_denied() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let rejected = world
@@ -293,7 +293,7 @@ fn owner_validated_application_touch_outside_installed_ceiling_is_denied() {
     let _still_open = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "open", &live_scope())
+            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &live_scope())
         })
         .expect("the fixture read owns its installed host call");
 }

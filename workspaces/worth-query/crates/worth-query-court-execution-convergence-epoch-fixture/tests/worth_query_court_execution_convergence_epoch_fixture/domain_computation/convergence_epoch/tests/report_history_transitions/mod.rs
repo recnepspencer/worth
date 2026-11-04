@@ -198,7 +198,7 @@ pub fn advance(
     call_identity: &str,
 ) -> WorthQueryDirectConvergenceIterationOutcome {
     let started = {
-        let installed_fixture_phase = epoch.fixture_phase(execution);
+        let installed_fixture_phase = epoch.fixture_phase_for_test(execution);
         epoch.begin_iteration(
             &installed_fixture_phase,
             WorthQueryManagedGraphCallRequest::new(
@@ -210,7 +210,7 @@ pub fn advance(
     .unwrap_or_else(|_| panic!("report history iteration must start"));
     {
         let fixture_phase_result = {
-            let installed_fixture_phase = started.fixture_phase(execution);
+            let installed_fixture_phase = started.fixture_phase_for_test(execution);
             started.advance(&installed_fixture_phase)
         };
         match fixture_phase_result {

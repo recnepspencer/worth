@@ -23,11 +23,11 @@ fn preview_readmission_retains_original_source_and_runtime_until_promotion() {
         })
         .unwrap()
         .unwrap();
-    let original_identity = preview.handle.session_identity().clone();
-    let diagnostics = preview.handle.diagnostics().clone();
-    let original_source = std::sync::Arc::clone(&preview._source);
-    let observer = preview.handle.liveness_observer();
-    let original_execution = preview.handle.execution_record().digest().to_owned();
+    let original_identity = (*preview.handle_for_test()).session_identity().clone();
+    let diagnostics = (*preview.handle_for_test()).diagnostics().clone();
+    let original_source = std::sync::Arc::clone(&(*preview._source_for_test()));
+    let observer = (*preview.handle_for_test()).liveness_observer();
+    let original_execution = (*preview.handle_for_test()).execution_record().digest().to_owned();
     let (preview, denial) = other
         .with_host_advancement(|phase| preview.readmit(&phase, &runtime))
         .unwrap()
@@ -36,7 +36,7 @@ fn preview_readmission_retains_original_source_and_runtime_until_promotion() {
         denial,
         WorthQueryApplicationPreviewReadmissionDenial::ForeignPhase
     );
-    assert!(std::sync::Arc::ptr_eq(&preview._source, &original_source));
+    assert!(std::sync::Arc::ptr_eq(&(*preview._source_for_test()), &original_source));
     let (preview, denial) = other
         .with_host_advancement(|phase| preview.readmit(&phase, &other))
         .unwrap()
@@ -51,11 +51,11 @@ fn preview_readmission_retains_original_source_and_runtime_until_promotion() {
         .unwrap();
     assert!(observer.admit_active_session().is_some());
     assert!(std::sync::Arc::ptr_eq(
-        &preview.session._source,
+        &(*preview.session_for_test())._source,
         &original_source
     ));
     assert_eq!(
-        preview.session.handle.execution_record().digest(),
+        (*preview.session_for_test()).handle.execution_record().digest(),
         original_execution
     );
     let outcome = preview.promote().unwrap();
@@ -88,9 +88,9 @@ fn readmitted_preview_discard_refusal_retains_source_and_liveness_until_real_clo
         })
         .unwrap()
         .unwrap();
-    let diagnostics = preview.handle.diagnostics().clone();
-    let source = std::sync::Arc::clone(&preview._source);
-    let observer = preview.handle.liveness_observer();
+    let diagnostics = (*preview.handle_for_test()).diagnostics().clone();
+    let source = std::sync::Arc::clone(&(*preview._source_for_test()));
+    let observer = (*preview.handle_for_test()).liveness_observer();
     let fault = preview.reject_discard_for_test();
     let preview = runtime
         .with_host_advancement(|phase| preview.readmit(&phase, &runtime))
@@ -98,7 +98,7 @@ fn readmitted_preview_discard_refusal_retains_source_and_liveness_until_real_clo
         .unwrap();
     let (preview, denial) = preview.discard().unwrap_err();
     assert_eq!(denial.kind(), worth_runtime_bridge::facade::BridgeSpeculationErrorKind::PreviewResidueClassificationMismatch);
-    assert!(std::sync::Arc::ptr_eq(&preview.session._source, &source));
+    assert!(std::sync::Arc::ptr_eq(&(*preview.session_for_test())._source, &source));
     assert!(observer.admit_active_session().is_some());
     assert!(diagnostics.preview_discard_records().is_empty());
     drop(fault);
@@ -131,7 +131,7 @@ fn preview_keeps_installed_runtime_alive_until_explicit_discard() {
         })
         .unwrap()
         .unwrap();
-    let observer = preview.handle.liveness_observer();
+    let observer = (*preview.handle_for_test()).liveness_observer();
     assert_eq!(runtime.close_conditional_runtime().unwrap_err().kind(),
         worth_query_execution::facade::domain_computation::WorthQueryConditionalRuntimeInstallationDenialKind::RuntimeKeepaliveRetained);
     assert!(observer.admit_active_session().is_some());

@@ -72,7 +72,7 @@ fn isolated_source_map_transfer() {
             entity_id: EntityId::new(PartitionId::main(), slot, 1),
         }),
     );
-    let count = dependent.as_ref().unwrap().len();
+    let count = dependent.as_ref().unwrap().len_for_test();
     let region = stats_alloc::Region::new(&stats_alloc::INSTRUMENTED_SYSTEM);
     let merged = merge_source_facts(Vec::new(), dependent, "test", control()).unwrap();
     let allocated = region.change().bytes_allocated;

@@ -30,31 +30,31 @@ fn selected_execution_failure_fails_the_row_only_for_an_intrinsic_stop() {
             let registry = WorthQueryOutputDemandRegistry::default();
             let admit = || {
                 registry
-                .admit(demand_key.clone(), None, worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity(root(1)), product_occurrence, worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandAdmissionKind::Ordinary, None, None)
+                .admit_for_test(demand_key.clone(), None, worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(root(1)), product_occurrence, worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandAdmissionKind::Ordinary, None, None)
                 .expect("the registry creates and joins actual retained membership").0
             };
             let running = admit();
             let peer = admit();
             assert!(matches!(
-                registry.begin(&running),
+                registry.begin_for_test(&running),
                 worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::advance_admission::WorthQueryOutputDemandAdvanceAdmission::Schedule(None)
             ));
-            registry.finish_scheduling(
+            registry.finish_scheduling_for_test(
                 &running,
                 None,
                 &mut Ok(WorthQueryOutputSchedulingResult::Scheduled),
             );
             let finish = registry
-                .prepare_selected_execution_finish(&running)
+                .prepare_selected_execution_finish_for_test(&running)
                 .expect("the owner prepares its finish before Running");
             assert!(matches!(
-                registry.begin(&running),
+                registry.begin_for_test(&running),
                 worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::advance_admission::WorthQueryOutputDemandAdvanceAdmission::Execute {
                     successor_of: None
                 }
             ));
             let mut denial = if kind == Kind::ProducerDomainDenied {
-                WorthQueryOutputDemandDenial::producer_domain_denied(
+                WorthQueryOutputDemandDenial::producer_domain_denied_for_test(
                     "the original producer".to_owned(),
                     Some("original domain refusal"),
                     worth_query_execution::facade::domain_computation::WorthQueryProducerDenialValue::DeclaredValue {
@@ -63,12 +63,12 @@ fn selected_execution_failure_fails_the_row_only_for_an_intrinsic_stop() {
                     },
                 )
             } else {
-                WorthQueryOutputDemandDenial::new(kind.clone(), "the original producer".to_owned())
+                WorthQueryOutputDemandDenial::new_for_test(kind.clone(), "the original producer".to_owned())
             };
-            denial.readmission_failure = Some("original readmission refusal");
+            (*denial.readmission_failure_mut_for_test()) = Some("original readmission refusal");
             finish.failure(&mut denial);
             if !peer_executes {
-                let state = registry.state.lock().unwrap();
+                let state = (*registry.state_for_test()).lock().unwrap();
                 let dependent = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::required_stop::head_stop(&state.records, &demand_key)
                     .expect("a dependent receives the original intrinsic failure");
                 assert_eq!(dependent, denial);
@@ -78,7 +78,7 @@ fn selected_execution_failure_fails_the_row_only_for_an_intrinsic_stop() {
             worth_query_execution::facade::domain_computation::WorthQueryOutputDemandRecoveryPosture::Terminal,
             "{kind:?} stays Terminal for the request that met it"
         );
-            let next = registry.begin(&peer);
+            let next = registry.begin_for_test(&peer);
             assert_eq!(
                 matches!(
                     next,
@@ -124,28 +124,28 @@ fn unauthorized_caller_leaves_the_row_for_an_authorized_peer_to_ready() {
     let registry = WorthQueryOutputDemandRegistry::default();
     let admit = || {
         registry
-            .admit(key("unauthorized-caller", 1, 1), None, worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity(root(1)), occurrence(), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandAdmissionKind::Ordinary, None, None)
+            .admit_for_test(key("unauthorized-caller", 1, 1), None, worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(root(1)), occurrence(), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandAdmissionKind::Ordinary, None, None)
             .expect("the registry creates and joins actual retained membership").0
     };
     let unauthorized = admit();
     let authorized = admit();
     assert!(matches!(
-        registry.begin(&unauthorized),
+        registry.begin_for_test(&unauthorized),
         Admission::Schedule(None)
     ));
-    registry.finish_scheduling(
+    registry.finish_scheduling_for_test(
         &unauthorized,
         None,
         &mut Ok(WorthQueryOutputSchedulingResult::Scheduled),
     );
     let finish = registry
-        .prepare_selected_execution_finish(&unauthorized)
+        .prepare_selected_execution_finish_for_test(&unauthorized)
         .expect("the unauthorized caller prepares its finish before Running");
     assert!(matches!(
-        registry.begin(&unauthorized),
+        registry.begin_for_test(&unauthorized),
         Admission::Execute { successor_of: None }
     ));
-    let mut denial = WorthQueryOutputDemandDenial::new(
+    let mut denial = WorthQueryOutputDemandDenial::new_for_test(
         WorthQueryOutputDemandDenialKind::RequestAuthorization(
             AuthorizationRefusal::PermissionDenied,
         ),
@@ -159,16 +159,16 @@ fn unauthorized_caller_leaves_the_row_for_an_authorized_peer_to_ready() {
     );
 
     let finish = registry
-        .prepare_selected_execution_finish(&authorized)
+        .prepare_selected_execution_finish_for_test(&authorized)
         .expect("the authorized peer prepares its finish on the rescheduled row");
     assert!(matches!(
-        registry.begin(&authorized),
+        registry.begin_for_test(&authorized),
         Admission::Execute { successor_of: None }
     ));
     let receipt = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application();
     let completion = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryCompletedOutputDemand {
         authority: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryAcceptedOutputAuthority::Committed(receipt),
-        readiness: worth_query_execution::facade::domain_computation::WorthQueryOutputReadinessDeliveryEvidence::for_test(),
+        readiness: worth_query_execution::facade::domain_computation::WorthQueryOutputReadinessDeliveryEvidence::for_test_for_test(),
     };
     if finish
         .publish(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint::Ready(
@@ -178,5 +178,5 @@ fn unauthorized_caller_leaves_the_row_for_an_authorized_peer_to_ready() {
     {
         panic!("the authorized peer publishes the row it executed");
     }
-    assert!(matches!(registry.begin(&authorized), Admission::Ready(_)));
+    assert!(matches!(registry.begin_for_test(&authorized), Admission::Ready(_)));
 }

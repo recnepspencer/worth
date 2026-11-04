@@ -9,7 +9,7 @@ fn retained_re_registration_marks_existing_consumers_pending() {
     let world = installed_authorization_world(true);
     let selected = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
         .expect("the fixture read owns its installed host call");
     let entity = world
         .application
@@ -23,15 +23,15 @@ fn retained_re_registration_marks_existing_consumers_pending() {
                     WorthQueryPrincipalResolutionMode::Ordinary,
                 )
                 .unwrap()
-                .entity_id()
+                .entity_id_for_test()
         })
         .expect("the fixture read owns its installed host call");
-    let (_, product, _) = selected.into_parts();
+    let (_, product, _) = selected.into_parts_for_test();
     let coordinate = ProductCoordinate {
         occurrence: product.observation().lifecycle_incarnation(),
         generation: product.observation().reference_generation().get(),
     };
-    let graph = world.application.runtime.primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let handle = graph.integration_handle();
     let owner = &handle.source_owner.invalidation_owner;
     let status_ref = AccountStatus::reference();
@@ -42,26 +42,26 @@ fn retained_re_registration_marks_existing_consumers_pending() {
         .clone();
     let source = |output_binding| {
         SemanticSource {
-        runtime_authority: world.application.runtime.authority_identity().as_u64(),
-        schema: world.application.installed_schema.binding_identity().clone(),
-        scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity(entity),
+        runtime_authority: (*world.application.runtime_for_test()).authority_identity().as_u64(),
+        schema: (*world.application.installed_schema_for_test()).binding_identity().clone(),
+        scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity),
         output_binding,
     }
     };
-    let upstream = RecordedSettlementIdentity::retain(
-        &source(OutputBindingIdentity::declared("StatusOutput")),
+    let upstream = RecordedSettlementIdentity::retain_for_test(
+        &source(OutputBindingIdentity::declared_for_test("StatusOutput")),
         coordinate,
         0,
     );
-    let consumer = RecordedSettlementIdentity::retain(
-        &source(OutputBindingIdentity::declared("DownstreamOutput")),
+    let consumer = RecordedSettlementIdentity::retain_for_test(
+        &source(OutputBindingIdentity::declared_for_test("DownstreamOutput")),
         coordinate,
         0,
     );
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             let request_execution = &host_custody.borrowed_request_for_test();
             handle.with_runtime_mut(request_execution, |runtime| {
                 write_field(request_execution, runtime, entity, status.clone(), "prime");

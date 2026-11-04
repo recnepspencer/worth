@@ -39,15 +39,15 @@ fn sealed_plan_prepares_session_binds_work_and_aborts() {
             true,
             resource_request,
         );
-        let installed_running_phase = execution.phase_for_direct(&running);
+        let installed_running_phase = execution.phase_for_direct_for_test(&running);
 
         let expected_run = running.identity().to_owned();
         let expected_basis = running
-            .provider_plan_bridge_basis()
+            .provider_plan_bridge_basis_for_test()
             .identity()
             .as_str()
             .to_owned();
-        let expected_snapshot = running.execution_snapshot_reference();
+        let expected_snapshot = running.execution_snapshot_reference_for_test();
         {
             let plan = running
                 .admit_provider_execution_plan(&graph)

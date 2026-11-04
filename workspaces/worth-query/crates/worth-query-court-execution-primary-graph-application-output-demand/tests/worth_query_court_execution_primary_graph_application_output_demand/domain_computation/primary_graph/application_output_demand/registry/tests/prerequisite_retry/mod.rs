@@ -9,7 +9,7 @@ fn pending_required_prerequisite_preserves_its_retryable_operation() {
         generation: Mutex::new(0),
         changed: Condvar::new(),
     });
-    registry.state.lock().unwrap().records.insert(
+    (*registry.state_for_test()).lock().unwrap().records.insert(
         demand_key.clone(),
         DemandRecord {
             required_interests: 1,
@@ -18,20 +18,20 @@ fn pending_required_prerequisite_preserves_its_retryable_operation() {
         },
     );
     let demand_interest = required_interest(&registry, demand_key.clone(), wake);
-    let mut denial = WorthQueryOutputDemandDenial::new(
+    let mut denial = WorthQueryOutputDemandDenial::new_for_test(
         WorthQueryOutputDemandDenialKind::IncompleteDependencyCoverage,
         "selected upstream settlement has not entered the managed registry",
     )
-    .with_recovery_posture(WorthQueryOutputDemandRecoveryPosture::Retryable);
+    .with_recovery_posture_for_test(WorthQueryOutputDemandRecoveryPosture::Retryable);
 
-    registry.finish_execution_failure(&demand_interest, &mut denial);
+    registry.finish_execution_failure_for_test(&demand_interest, &mut denial);
 
     assert_eq!(
         denial.recovery_posture(),
         WorthQueryOutputDemandRecoveryPosture::Retryable
     );
     assert!(matches!(
-        registry.state.lock().unwrap().records[&demand_key].state,
+        (*registry.state_for_test()).lock().unwrap().records[&demand_key].state,
         DemandState::Scheduled
     ));
 }
@@ -51,7 +51,7 @@ fn an_upstream_retired_after_the_execution_read_it_is_a_retryable_stale_claim() 
         generation: Mutex::new(0),
         changed: Condvar::new(),
     });
-    registry.state.lock().unwrap().records.insert(
+    (*registry.state_for_test()).lock().unwrap().records.insert(
         reader_key.clone(),
         DemandRecord {
             required_interests: 1,
@@ -67,7 +67,7 @@ fn an_upstream_retired_after_the_execution_read_it_is_a_retryable_stale_claim() 
         );
 
     let context = reader
-        .required_context("registry-fixture-family", &source_owner)
+        .required_context_for_test("registry-fixture-family", &source_owner)
         .expect("the running reader issues its required context");
     // The upstream row this execution read is no longer indexed: a newer
     // settlement of its demand retired it.
@@ -76,7 +76,7 @@ fn an_upstream_retired_after_the_execution_read_it_is_a_retryable_stale_claim() 
         worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(
             true,
         );
-    let graph = world.application.runtime.primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let selected = graph
         .integration_handle()
         .with_runtime(request_execution, |runtime| {

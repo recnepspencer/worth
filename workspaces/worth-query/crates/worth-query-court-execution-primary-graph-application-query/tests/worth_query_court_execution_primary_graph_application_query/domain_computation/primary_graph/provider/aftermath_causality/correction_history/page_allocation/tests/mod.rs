@@ -23,7 +23,7 @@ fn correction_page_retains_all_owned_receipts_until_its_last_shared_owner() {
                 std::time::Duration::from_secs(120),
                 &request,
             );
-            let target = world.selected_product(&phase.test_host_request());
+            let target = world.selected_product(&phase.test_host_request_for_test());
             let selected = target
                 .select_correction_source(
                     &phase,
@@ -126,7 +126,7 @@ fn correction_page_allocation_preserves_native_memory_refusal_and_releases_its_r
             panic!("bootstrap carries its actual execution payer")
         };
         let baseline = payer.charged_memory_bytes();
-        let mut allocation = WorthQueryCorrectionHistoryPageAllocation::new(&execution).unwrap();
+        let mut allocation = WorthQueryCorrectionHistoryPageAllocation::new_for_test(&execution).unwrap();
         let held = payer
             .reserve_memory(payer.available_memory_bytes().unwrap())
             .unwrap();

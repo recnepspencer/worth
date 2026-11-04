@@ -131,7 +131,7 @@ pub fn lower<const P: u8>() -> Result<(), WorthQueryPrimaryGraphInstallationDeni
         .installed_packages()
         .bind_application_schema(declaration)
         .unwrap();
-    let (layout, _) = WorthQueryPrimaryGraphLayout::lower(
+    let (layout, _) = WorthQueryPrimaryGraphLayout::lower_for_test(
         schema.installed_declaration(),
         schema.native_contracts(),
         &worth_relational::facade::schema::RelationalSchemaRegistry::new(),
@@ -154,7 +154,7 @@ pub fn lower<const P: u8>() -> Result<(), WorthQueryPrimaryGraphInstallationDeni
         .unwrap();
     let host = worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request();
     factories
-        .lower(
+        .lower_for_test(
             &worth_execution::ExecutionRequest::serial(&host),
             schema.binding_identity(),
             &layout,

@@ -12,7 +12,7 @@ use worth_query_execution::facade::domain_computation::WorthQueryApplicationIdem
 pub fn probe_handle(
     idempotency: WorthQueryApplicationIdempotencyBinding,
 ) -> WorthQueryRecoveryHandle {
-    WorthQueryRecoveryHandle::axis_probe(
+    WorthQueryRecoveryHandle::axis_probe_for_test(
         WorthQueryRecoveryHandleBindingAxisProbe::real()
             .idempotency(idempotency)
             .finish(),
@@ -21,15 +21,15 @@ pub fn probe_handle(
 
 #[test]
 fn foreign_admitted_idempotency_read_denies_distinctly() {
-    let binding_a = WorthQueryApplicationIdempotencyBinding::new([0xA1; 32], [0xA2; 32]);
-    let binding_b = WorthQueryApplicationIdempotencyBinding::new([0xB1; 32], [0xB2; 32]);
+    let binding_a = WorthQueryApplicationIdempotencyBinding::new_for_test([0xA1; 32], [0xA2; 32]);
+    let binding_b = WorthQueryApplicationIdempotencyBinding::new_for_test([0xB1; 32], [0xB2; 32]);
     let handle_b = probe_handle(binding_b);
-    let registry = handle_b.registry_arc();
-    let authority_b = WorthQueryRecoveryEffectAuthority::mint(
-        handle_b.runtime_authority(),
-        handle_b.authority_identity(),
+    let registry = handle_b.registry_arc_for_test();
+    let authority_b = WorthQueryRecoveryEffectAuthority::mint_for_test(
+        handle_b.runtime_authority_for_test(),
+        handle_b.authority_identity_for_test(),
     );
-    let read_a = WorthQueryAdmittedIdempotencyRead::mint(
+    let read_a = WorthQueryAdmittedIdempotencyRead::mint_for_test(
         binding_a,
         WorthQueryApplicationIdempotencyResolution::Unseen,
     );
@@ -45,14 +45,14 @@ fn foreign_admitted_idempotency_read_denies_distinctly() {
 
 #[test]
 fn matching_admitted_idempotency_read_resolves() {
-    let binding = WorthQueryApplicationIdempotencyBinding::new([0xC1; 32], [0xC2; 32]);
+    let binding = WorthQueryApplicationIdempotencyBinding::new_for_test([0xC1; 32], [0xC2; 32]);
     let handle = probe_handle(binding);
-    let registry = handle.registry_arc();
-    let authority = WorthQueryRecoveryEffectAuthority::mint(
-        handle.runtime_authority(),
-        handle.authority_identity(),
+    let registry = handle.registry_arc_for_test();
+    let authority = WorthQueryRecoveryEffectAuthority::mint_for_test(
+        handle.runtime_authority_for_test(),
+        handle.authority_identity_for_test(),
     );
-    let read = WorthQueryAdmittedIdempotencyRead::mint(
+    let read = WorthQueryAdmittedIdempotencyRead::mint_for_test(
         binding,
         WorthQueryApplicationIdempotencyResolution::Unseen,
     );

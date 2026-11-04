@@ -14,7 +14,7 @@ fn pair_rebase_uses_native_revision_and_never_retains_partial_facts() {
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let world = installed_authorization_world(true);
-    let graph = world.application.runtime.primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let relation_kind = graph
         .layout
         .relation(AccountOwner::reference().name())
@@ -22,7 +22,7 @@ fn pair_rebase_uses_native_revision_and_never_retains_partial_facts() {
         .kind;
     let selected = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
         .expect("the fixture read owns its installed host call");
     let principal = world
         .application
@@ -40,12 +40,12 @@ fn pair_rebase_uses_native_revision_and_never_retains_partial_facts() {
         .expect("the fixture read owns its installed host call");
     let fact = Fact::Relation {
         relation_kind,
-        from: principal.entity_id(),
-        to: principal.entity_id(),
+        from: principal.entity_id_for_test(),
+        to: principal.entity_id_for_test(),
         matching_relations: Vec::new(),
     };
-    world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request(); graph.integration_handle().with_runtime(request_execution, |runtime| {
-            let snapshot = selected.application_basis().snapshot_handle();
+    world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request_for_test(); graph.integration_handle().with_runtime(request_execution, |runtime| {
+            let snapshot = selected.application_basis_for_test().snapshot_handle();
 
             // A pair's native revision is one selected owner-index lookup.
             assert!(matches!(
@@ -58,25 +58,25 @@ fn pair_rebase_uses_native_revision_and_never_retains_partial_facts() {
             ));
             assert!(
                 matches!(
-                    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::rebase(&host_custody.borrowed_request_for_test(), runtime, snapshot, worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::PreparedSourceFactRebase::admit(vec![fact], [].into(), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(), &std::collections::BTreeSet::new(), true),
+                    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::rebase(&host_custody.borrowed_request_for_test(), runtime, snapshot, worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::PreparedSourceFactRebase::admit_for_test(vec![fact], [].into(), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new_for_test(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(), &std::collections::BTreeSet::new(), true),
                     worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::RebasedSourceFacts::Exact(_)
                 ),
                 "a complete pair fact rebases through its native structural revision"
             );
             // The admitted work is the decision's recorded limit; a stale
             // anchor or a zero limit acquires no revision.
-            let mut stale_anchor = principal.entity_id();
+            let mut stale_anchor = principal.entity_id_for_test();
             stale_anchor.generation.0 += 1;
             let unrevisable = [
                 Fact::Relation {
                     relation_kind,
                     from: stale_anchor,
-                    to: principal.entity_id(),
+                    to: principal.entity_id_for_test(),
                     matching_relations: Vec::new(),
                 },
                 Fact::Adjacency {
                     relation_kind,
-                    anchor: principal.entity_id(),
+                    anchor: principal.entity_id_for_test(),
                     direction: DecisionDirection::Outgoing,
                     maximum_work_units: 0,
                     relations: Vec::new(),
@@ -85,7 +85,7 @@ fn pair_rebase_uses_native_revision_and_never_retains_partial_facts() {
             for fact in unrevisable {
                 assert!(
                     matches!(
-                        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::rebase(&host_custody.borrowed_request_for_test(), runtime, snapshot, worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::PreparedSourceFactRebase::admit(vec![fact], [].into(), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(), &std::collections::BTreeSet::new(), true),
+                        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::rebase(&host_custody.borrowed_request_for_test(), runtime, snapshot, worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::PreparedSourceFactRebase::admit_for_test(vec![fact], [].into(), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new_for_test(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(), &std::collections::BTreeSet::new(), true),
                         worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::RebasedSourceFacts::VerificationRequired { .. }
                     ),
                     "failed relation revision acquisition marks the entire output non-reusable"
@@ -93,7 +93,7 @@ fn pair_rebase_uses_native_revision_and_never_retains_partial_facts() {
             }
             let stale_revision = Fact::SourceAdjacencyRevision {
                 relation_kind,
-                anchor: principal.entity_id(),
+                anchor: principal.entity_id_for_test(),
                 direction: NativeDirection::Outgoing,
                 native_revision: None,
                 comparison_work_limit: 0,
@@ -101,15 +101,15 @@ fn pair_rebase_uses_native_revision_and_never_retains_partial_facts() {
             };
 
             assert!(matches!(
-                worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::rebase(&host_custody.borrowed_request_for_test(), runtime, snapshot, worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::PreparedSourceFactRebase::admit(vec![stale_revision.clone()], [].into(), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None))
+                worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::rebase(&host_custody.borrowed_request_for_test(), runtime, snapshot, worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::PreparedSourceFactRebase::admit_for_test(vec![stale_revision.clone()], [].into(), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new_for_test(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None))
                         .unwrap(), &std::collections::BTreeSet::new(), true),
                 worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::RebasedSourceFacts::VerificationRequired { .. }
             ));
 
-            match worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::rebase(&host_custody.borrowed_request_for_test(), runtime, snapshot, worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::PreparedSourceFactRebase::admit(vec![stale_revision.clone()], [].into(), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None))
+            match worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::rebase(&host_custody.borrowed_request_for_test(), runtime, snapshot, worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::PreparedSourceFactRebase::admit_for_test(vec![stale_revision.clone()], [].into(), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new_for_test(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None))
                     .unwrap(), &std::collections::BTreeSet::new(), false) {
                 worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::RebasedSourceFacts::Exact(facts) => {
-                    assert_eq!(facts.iter().cloned().collect::<Vec<_>>(), &[stale_revision])
+                    assert_eq!(facts.iter_for_test().cloned().collect::<Vec<_>>(), &[stale_revision])
                 }
                 other => {
                     panic!("non-output evidence must retain its comparison posture: {other:?}")

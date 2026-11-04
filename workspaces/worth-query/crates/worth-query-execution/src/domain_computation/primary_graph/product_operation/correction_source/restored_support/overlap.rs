@@ -368,3 +368,5 @@ fn unsupported(reason: &'static str, fact: &Fact) -> Stop {
     );
     Stop::UnsupportedFact
 }
+
+mod court_doors_for_test;

@@ -205,3 +205,5 @@ pub(super) fn from_snapshot_admission_denial(
     };
     WorthQueryInvariantProjectionDenial::from_kind(kind)
 }
+
+mod court_doors_for_test;

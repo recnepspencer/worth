@@ -85,3 +85,5 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
         self.candidate.advance_conditional_definition(definition)
     }
 }
+
+mod court_doors_for_test;

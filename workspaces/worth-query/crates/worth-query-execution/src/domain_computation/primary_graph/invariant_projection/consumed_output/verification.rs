@@ -275,3 +275,5 @@ impl std::fmt::Display for ConsumedOutputVerificationStop {
     }
 }
 impl std::error::Error for ConsumedOutputVerificationStop {}
+
+mod court_doors_for_test;

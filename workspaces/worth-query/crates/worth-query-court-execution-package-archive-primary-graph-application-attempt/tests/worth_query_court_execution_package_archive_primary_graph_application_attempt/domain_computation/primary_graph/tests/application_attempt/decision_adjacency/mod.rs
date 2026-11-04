@@ -37,9 +37,9 @@ pub fn authenticated(
     let external = world.authenticate(subject, Duration::from_secs(60), request);
     world
         .application
-        .select_product_branch(
+        .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch(),
+            world.application.product_runtime().default_branch_for_test(),
         )
         .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
@@ -61,9 +61,9 @@ pub fn resolved_principal(
 ) -> WorthQueryApplicationEntityIdentity<IdentityExecutionSchema, Principal> {
     world
         .application
-        .select_product_branch(
+        .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch(),
+            world.application.product_runtime().default_branch_for_test(),
         )
         .expect("the selected product branch remains admitted")
         .resolve_entity(
@@ -100,7 +100,7 @@ pub fn link_program(
         .installed_operation(ChangeOwnershipOperation::reference())
         .unwrap();
     let admission = world
-        .selected_product(&(phase_custody).test_host_request())
+        .selected_product(&(phase_custody).test_host_request_for_test())
         .authorize_operation(
             phase_custody,
             actor,
@@ -177,7 +177,7 @@ pub fn assert_membership_absent(
         .installed_operation(ChangeOwnershipOperation::reference())
         .unwrap();
     let admission = world
-        .selected_product(&(phase_custody).test_host_request())
+        .selected_product(&(phase_custody).test_host_request_for_test())
         .authorize_operation(
             phase_custody,
             actor,
@@ -233,7 +233,7 @@ pub fn assert_membership_absent(
     let from = candidate.existing_entity(principal).unwrap();
     let to = candidate.existing_entity(account).unwrap();
     let denial = candidate
-        .unlink_observed(AccountOwner::reference(), &from, &to)
+        .unlink_observed_for_test(AccountOwner::reference(), &from, &to)
         .expect_err("candidate authoring cannot reconstruct an unobserved edge");
     assert_eq!(
         denial.kind(),
@@ -263,7 +263,7 @@ pub fn unlink_program(
         .installed_operation(ChangeOwnershipOperation::reference())
         .unwrap();
     let admission = world
-        .selected_product(&(phase_custody).test_host_request())
+        .selected_product(&(phase_custody).test_host_request_for_test())
         .authorize_operation(
             phase_custody,
             actor,
@@ -305,7 +305,7 @@ pub fn unlink_program(
     let from = effects.existing_entity(principal).unwrap();
     let to = effects.existing_entity(account).unwrap();
     effects
-        .unlink_observed(AccountOwner::reference(), &from, &to)
+        .unlink_observed_for_test(AccountOwner::reference(), &from, &to)
         .unwrap();
     effects.finish().unwrap()
 }

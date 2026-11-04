@@ -23,8 +23,8 @@ pub fn check(observe_field: bool) {
         .application
         .with_host_advancement(|phase| {
             (
-                authenticated_principal(&phase.test_host_request(), &world, &request),
-                resolved_account(&phase.test_host_request(), &world, "open", &request),
+                authenticated_principal(&phase.test_host_request_for_test(), &world, &request),
+                resolved_account(&phase.test_host_request_for_test(), &world, "open", &request),
             )
         })
         .unwrap();
@@ -50,7 +50,7 @@ pub fn check(observe_field: bool) {
                     WorthQueryApplicationAttemptDenialKind::Cancelled
                 );
             } else {
-                let selected = world.selected_product(&phase.test_host_request());
+                let selected = world.selected_product(&phase.test_host_request_for_test());
                 let operation = world
                     .application
                     .installed_schema()

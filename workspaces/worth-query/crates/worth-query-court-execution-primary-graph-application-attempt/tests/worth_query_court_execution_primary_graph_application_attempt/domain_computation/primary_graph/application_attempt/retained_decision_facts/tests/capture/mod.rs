@@ -27,13 +27,13 @@ fn installed_absence_projection_refuses_before_retention_and_releases_snapshot()
     let actor = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request_scope)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request_scope)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "open", &request_scope)
+            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request_scope)
         })
         .expect("the fixture read owns its installed host call");
     let operation = world
@@ -45,7 +45,7 @@ fn installed_absence_projection_refuses_before_retention_and_releases_snapshot()
         .application
         .with_host_advancement(|phase| {
             world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&(phase).test_host_request_for_test())
                 .authorize_operation(
                     &phase,
                     &actor,

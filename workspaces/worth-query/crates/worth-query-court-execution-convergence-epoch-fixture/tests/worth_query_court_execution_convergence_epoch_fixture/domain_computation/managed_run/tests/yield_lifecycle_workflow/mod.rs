@@ -56,7 +56,7 @@ fn workflow_yield_retains_operation_and_stage_capacity_until_cleanup() {
             resources,
             resource_request,
         );
-        let installed_running_phase = execution.phase_for_workflow(&running);
+        let installed_running_phase = execution.phase_for_workflow_for_test(&running);
 
         let logical_run_identity = running.logical_run_identity().to_owned();
         let attempt_identity = running.identity().to_owned();
@@ -181,7 +181,7 @@ fn workflow_suspension_failure_returns_terminalized_release_authority() {
             resources,
             resource_request,
         );
-        let installed_running_phase = execution.phase_for_workflow(&running);
+        let installed_running_phase = execution.phase_for_workflow_for_test(&running);
 
         let active = running
             .begin_stage_graph_execution(

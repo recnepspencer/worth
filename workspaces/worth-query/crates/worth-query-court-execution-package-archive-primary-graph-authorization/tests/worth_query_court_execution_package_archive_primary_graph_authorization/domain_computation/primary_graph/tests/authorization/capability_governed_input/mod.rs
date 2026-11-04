@@ -43,7 +43,7 @@ fn every_capability_admission_reports_its_one_governed_input_derivation() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
 
@@ -95,7 +95,7 @@ fn governed_input_identity_drift_under_a_reused_key_is_denied() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
 
@@ -195,7 +195,7 @@ pub fn capability_world() -> (World, Principal) {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let custody = phase.test_host_request();
+            let custody = phase.test_host_request_for_test();
             let phase_custody = &custody;
 
             authenticated_principal(&(phase_custody).test_host_request(), &world, &live_scope())
@@ -215,7 +215,7 @@ pub fn execute_touch_handler(
     world
         .application
         .with_application_advancement(&request, |phase| {
-            let custody = phase.test_host_request();
+            let custody = phase.test_host_request_for_test();
             let phase_custody = &custody;
             let operation = world
                 .application
@@ -239,7 +239,7 @@ pub fn execute_touch_handler(
                     Default::default(),
                 )
                 .unwrap();
-            assert!(admission.governed_input_identity().is_some());
+            assert!(admission.governed_input_identity_for_test().is_some());
 
             let key = "governed-input-handler".to_owned();
             let identities = ApplicationMutationIdentities::<

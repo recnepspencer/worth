@@ -56,29 +56,29 @@ fn every_affinity_dimension_uses_real_installed_authority_and_exact_denial() {
     assert_standard_mismatch(
         &contracts,
         WorthQueryArtifactDenialKind::OperationMismatch,
-        |parts| parts.operation_identity = "foreign-operation".into(),
+        |parts| (*parts.operation_identity_mut_for_test()) = "foreign-operation".into(),
     );
     assert_standard_mismatch(
         &contracts,
         WorthQueryArtifactDenialKind::OperationMismatch,
-        |parts| parts.binding_identity = "foreign-binding".into(),
+        |parts| (*parts.binding_identity_mut_for_test()) = "foreign-binding".into(),
     );
     assert_standard_mismatch(
         &contracts,
         WorthQueryArtifactDenialKind::RunMismatch,
         |parts| {
-            parts.run_identity = "foreign-run".into();
+            (*parts.run_identity_mut_for_test()) = "foreign-run".into();
         },
     );
     assert_standard_mismatch(
         &contracts,
         WorthQueryArtifactDenialKind::StageMismatch,
-        |parts| parts.stage_identity = "foreign-stage".into(),
+        |parts| (*parts.stage_identity_mut_for_test()) = "foreign-stage".into(),
     );
     assert_standard_mismatch(
         &contracts,
         WorthQueryArtifactDenialKind::BasisMismatch,
-        |parts| parts.basis_identity = "foreign-basis".into(),
+        |parts| (*parts.basis_identity_mut_for_test()) = "foreign-basis".into(),
     );
     assert_contract_mismatch(
         &contracts,

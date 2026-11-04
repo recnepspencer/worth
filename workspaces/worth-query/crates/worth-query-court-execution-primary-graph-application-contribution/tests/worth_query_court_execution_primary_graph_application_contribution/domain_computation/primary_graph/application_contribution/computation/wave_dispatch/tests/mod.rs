@@ -77,7 +77,7 @@ pub fn run_handoff(
             policy,
         }
     });
-    let request = QueryRequestExecution::open(placement, &scope);
+    let request = QueryRequestExecution::open_for_test(placement, &scope);
     let mut values = None;
     let handoff = request
         .execution_request()
@@ -90,8 +90,8 @@ pub fn run_handoff(
 }
 pub fn member_result(rank: u64, fails: bool) -> PreparedMember {
     PreparedMember {
-        requests: vec![PreparedCompute::new(move |member| {
-            let (_, poll) = member.into_parts();
+        requests: vec![PreparedCompute::new_for_test(move |member| {
+            let (_, poll) = member.into_parts_for_test();
             poll().unwrap();
             (rank, fails)
         })],
@@ -119,7 +119,7 @@ fn member_denials_remain_canonical_data_without_accounting_at_every_width() {
             let actual: Vec<_> = settled
                 .into_iter()
                 .map(|slots| {
-                    let mut slots = slots.unwrap().into_slots();
+                    let mut slots = slots.unwrap().into_slots_for_test();
                     assert_eq!(slots.len(), 1);
                     slots.pop().unwrap().into_value::<(u64, bool)>()
                 })
@@ -138,7 +138,7 @@ fn a_panicking_compute_drops_its_suffix_and_clears_worker_custody() {
     let after = Arc::new(Mutex::new(false));
     let probe = after.clone();
     let panics = PreparedMember {
-        requests: vec![PreparedCompute::new::<()>(|_| panic!("declared failure"))],
+        requests: vec![PreparedCompute::new_for_test::<()>(|_| panic!("declared failure"))],
     };
     let settled = run_stopped(
         Some(2),
@@ -152,7 +152,7 @@ fn a_panicking_compute_drops_its_suffix_and_clears_worker_custody() {
     let (settled, _) = run(
         Some(2),
         vec![PreparedMember {
-            requests: vec![PreparedCompute::new(move |_| {
+            requests: vec![PreparedCompute::new_for_test(move |_| {
                 *probe.lock().unwrap() = true;
             })],
         }],
@@ -172,7 +172,7 @@ fn a_later_member_finishes_first_even_when_a_canonical_member_fails() {
                 .map(|rank| {
                     let schedule = schedule.clone();
                     PreparedMember {
-                        requests: vec![PreparedCompute::new(move |member| {
+                        requests: vec![PreparedCompute::new_for_test(move |member| {
                             if rank == 0 {
                                 let (state, wake) = &*schedule;
                                 let (mut state, waited) = wake
@@ -185,7 +185,7 @@ fn a_later_member_finishes_first_even_when_a_canonical_member_fails() {
                                 // Failure watchdog only; a passing schedule wakes immediately.
                                 state.1 |= waited.timed_out() && !state.0.contains(&3);
                             }
-                            let (_, poll) = member.into_parts();
+                            let (_, poll) = member.into_parts_for_test();
                             poll().unwrap();
                             let (state, wake) = &*schedule;
                             state.lock().unwrap().0.push(rank);
@@ -214,7 +214,7 @@ fn a_later_member_finishes_first_even_when_a_canonical_member_fails() {
                 .map(|slots| {
                     slots
                         .unwrap()
-                        .into_slots()
+                        .into_slots_for_test()
                         .pop()
                         .unwrap()
                         .into_value::<(usize, bool)>()

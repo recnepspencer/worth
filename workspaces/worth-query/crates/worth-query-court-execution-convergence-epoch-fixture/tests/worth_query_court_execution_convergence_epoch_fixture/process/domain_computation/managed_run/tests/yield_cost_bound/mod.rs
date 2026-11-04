@@ -183,7 +183,7 @@ pub fn prepared_target(
         resource_request,
     );
     let active = {
-        let installed_fixture_phase = running.fixture_phase(execution);
+        let installed_fixture_phase = running.fixture_phase_for_test(execution);
         running.begin_graph_execution(
             &installed_fixture_phase,
             &graph,
@@ -196,7 +196,7 @@ pub fn prepared_target(
     .expect("yield cost provider should begin");
     let paused = {
         let fixture_phase_result = {
-            let installed_fixture_phase = active.fixture_phase(execution);
+            let installed_fixture_phase = active.fixture_phase_for_test(execution);
             active.advance(&installed_fixture_phase)
         };
         match fixture_phase_result {
@@ -271,7 +271,7 @@ pub fn prepared_workflow_target(
         resources,
         resource_request,
     );
-    let installed_fixture_phase = running.fixture_phase(execution);
+    let installed_fixture_phase = running.fixture_phase_for_test(execution);
     let active = running
         .begin_stage_graph_execution(
             &installed_fixture_phase,

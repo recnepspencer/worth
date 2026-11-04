@@ -110,7 +110,7 @@ fn compatible_but_independently_minted_provider_support_denies_before_provider_s
             independently_minted_support,
             resource_request,
         );
-        let installed_running_phase = execution.phase_for_direct(&running);
+        let installed_running_phase = execution.phase_for_direct_for_test(&running);
 
         let failure = match running.begin_graph_execution(
             &installed_running_phase,
@@ -149,7 +149,7 @@ fn workflow_stage_safe_point_family_must_match_the_running_bridge_basis() {
         let execution = phase;
 
         let (running, graph, begins) = foreign_safe_point_workflow(resource_request);
-        let installed_running_phase = execution.phase_for_workflow(&running);
+        let installed_running_phase = execution.phase_for_workflow_for_test(&running);
 
         let failure = match running.begin_stage_graph_execution(
             &installed_running_phase,

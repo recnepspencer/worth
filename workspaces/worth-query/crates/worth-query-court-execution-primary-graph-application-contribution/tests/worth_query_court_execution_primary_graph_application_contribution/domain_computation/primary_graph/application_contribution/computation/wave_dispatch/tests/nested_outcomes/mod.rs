@@ -11,8 +11,8 @@ fn an_unrelated_error_cannot_take_an_earlier_requests_stop() {
         let count = later_runs.clone();
         let member = PreparedMember {
             requests: vec![
-                PreparedCompute::new(|member| {
-                    member.compute(|managed, _poll, _transport| {
+                PreparedCompute::new_for_test(|member| {
+                    member.compute_for_test(|managed, _poll, _transport| {
                         let map = ExecutionMap::<_, u64>::from_keyless_partitions(
                             [(
                                 PartitionIdentity::new(1),
@@ -41,8 +41,8 @@ fn an_unrelated_error_cannot_take_an_earlier_requests_stop() {
                         Ok::<_, ()>(())
                     })
                 }),
-                PreparedCompute::new(move |member| {
-                    member.compute(|_, _, _transport| {
+                PreparedCompute::new_for_test(move |member| {
+                    member.compute_for_test(|_, _, _transport| {
                         count.fetch_add(1, Ordering::SeqCst);
                         Err::<(), _>("unrelated failure")
                     })
@@ -66,8 +66,8 @@ fn an_unrelated_error_cannot_take_an_earlier_requests_stop() {
 fn taken_partition_denials_leave_siblings_for_owner_completion() {
     for width in [None, Some(1), Some(2), Some(4)] {
         let failed = PreparedMember {
-            requests: vec![PreparedCompute::new(|member| {
-                member.compute(|managed, _poll, transport| {
+            requests: vec![PreparedCompute::new_for_test(|member| {
+                member.compute_for_test(|managed, _poll, transport| {
                     let map = ExecutionMap::<_, u64>::from_keyless_partitions(
                         vec![(
                             PartitionIdentity::new(1),
@@ -96,7 +96,7 @@ fn taken_partition_denials_leave_siblings_for_owner_completion() {
                                 MapOutcome::Stopped { reason, .. } => Err(reason),
                             }
                         })
-                        .map_err(MemberComputeFailure::into_failure)
+                        .map_err(MemberComputeFailure::into_failure_for_test)
                 })
             })],
         };
@@ -107,7 +107,7 @@ fn taken_partition_denials_leave_siblings_for_owner_completion() {
             "the sibling has its canonical completion slot"
         );
         let mut members = members.into_iter();
-        let mut denied = members.next().unwrap().unwrap().into_slots();
+        let mut denied = members.next().unwrap().unwrap().into_slots_for_test();
         assert_eq!(denied.len(), 1);
         assert_eq!(
             denied
@@ -119,7 +119,7 @@ fn taken_partition_denials_leave_siblings_for_owner_completion() {
                 cause: MapKernelFailure::Domain(())
             })
         );
-        let mut sibling = members.next().unwrap().unwrap().into_slots();
+        let mut sibling = members.next().unwrap().unwrap().into_slots_for_test();
         assert_eq!(
             sibling.pop().unwrap().into_value::<(u64, bool)>(),
             (2, false)

@@ -10,8 +10,8 @@ fn partition_metadata_refusal_preserves_prior_and_its_funded_view_lasts_until_fi
     let world = installed_authorization_world(true);
     let first = first_run(&world, &installed(StatusRead::Gather(1), sum));
     let sealed = first.sealed.unwrap().unwrap();
-    let prior = sealed
-        .state
+    let prior = (*sealed
+        .state_for_test())
         .typed
         .downcast_ref::<RetainedPartitions<Parity, Number, u64>>()
         .unwrap();
@@ -21,7 +21,7 @@ fn partition_metadata_refusal_preserves_prior_and_its_funded_view_lasts_until_fi
     let first_identity = *prior.partitions.keys().next().unwrap();
     let original = prior.partitions.get(&first_identity).unwrap().key.0;
     let request = live_scope();
-    let narrow = QueryRequestExecution::open(
+    let narrow = QueryRequestExecution::open_for_test(
         RuntimeWorldExecutionPlacement::Serial(test_policy(std::num::NonZeroUsize::MIN, Some(1))),
         &request,
     );
@@ -32,7 +32,7 @@ fn partition_metadata_refusal_preserves_prior_and_its_funded_view_lasts_until_fi
     ));
     let value = candidate.get(&first_identity).unwrap().clone();
     assert!(candidate
-        .put(first_identity, value, narrow.allocation_policy().unwrap())
+        .put(first_identity, value, narrow.allocation_policy_for_test().unwrap())
         .is_err());
     assert_eq!(candidate.len(), count);
     assert!(std::ptr::eq(
@@ -40,7 +40,7 @@ fn partition_metadata_refusal_preserves_prior_and_its_funded_view_lasts_until_fi
         candidate.get(&first_identity).unwrap()
     ));
     let capacity = bound * 4;
-    let fresh = QueryRequestExecution::open(
+    let fresh = QueryRequestExecution::open_for_test(
         RuntimeWorldExecutionPlacement::Serial(test_policy(
             std::num::NonZeroUsize::MIN,
             Some(capacity),
@@ -53,7 +53,7 @@ fn partition_metadata_refusal_preserves_prior_and_its_funded_view_lasts_until_fi
     );
     let value = candidate.get(&first_identity).unwrap().clone();
     candidate
-        .put(first_identity, value, fresh.allocation_policy().unwrap())
+        .put(first_identity, value, fresh.allocation_policy_for_test().unwrap())
         .unwrap();
     let view = Arc::new(candidate);
     let clone = Arc::clone(&view);

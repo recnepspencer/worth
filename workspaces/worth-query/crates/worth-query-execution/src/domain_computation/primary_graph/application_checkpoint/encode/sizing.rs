@@ -84,3 +84,5 @@ fn size_overflow() -> DurabilityError {
         "Query application checkpoint size exceeds this host or wire format",
     )
 }
+
+mod court_doors_for_test;

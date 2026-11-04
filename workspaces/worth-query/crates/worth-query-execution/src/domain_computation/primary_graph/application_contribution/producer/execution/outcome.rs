@@ -295,3 +295,5 @@ mod invariant_refusal_tests;
 
 #[cfg(test)]
 mod domain_denial_tests;
+
+mod court_doors_for_test;

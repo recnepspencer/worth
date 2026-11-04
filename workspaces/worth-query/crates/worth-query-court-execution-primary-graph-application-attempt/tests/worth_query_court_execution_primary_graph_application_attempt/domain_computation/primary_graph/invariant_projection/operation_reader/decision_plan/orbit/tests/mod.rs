@@ -28,22 +28,22 @@ fn failure_of_second_orbit_registration_vetoes_the_partial_pair() {
         .unwrap();
     let (earlier, _snapshot, _) = completed.into_parts();
     world.application.with_host_advancement(|phase| {
-        let host = phase.test_host_request();
+        let host = phase.test_host_request_for_test();
         let execution = host.execution_request_for(world.application.product_runtime()).unwrap();
         let (admission,_) = authorize(&world, &phase, &execution, &request, 0, ReplaceNext::reference());
         let (_, projection, _) = world.invariant.project_admitted_operation(&phase, &admission, |reader, root| {
-            assert!(!earlier.walk().issued_at(reader.reader.snapshot, reader.reader.authority_identity));
-            let contracts = reader.admitted_contracts.as_ref().unwrap().clone();
-            let admitted = reader.admission_identity.unwrap();
+            assert!(!earlier.walk().issued_at_for_test((*reader.reader_for_test()).snapshot, (*reader.reader_for_test()).authority_identity));
+            let contracts = (*reader.admitted_contracts_for_test()).as_ref().unwrap().clone();
+            let admitted = (*reader.admission_identity_for_test()).unwrap();
             // The deliberately conflicting registry value is a genuine earlier
             // Native body, never fabricated graph truth or a new construction door.
-            let original = *reader.reader.execution;
-            let seeded = original.run_native_with_checkpoint(|context| reader.decision_facts.record_walk(earlier.walk(), admitted, contracts, &original, context).is_ok()).unwrap().0;
+            let original = *(*reader.reader_for_test()).execution;
+            let seeded = original.run_native_with_checkpoint(|context| (*reader.decision_facts_for_test()).record_walk(earlier.walk(), admitted, contracts, &original, context).is_ok()).unwrap().0;
             assert!(seeded);
-            let before = reader.reader.work();
+            let before = (*reader.reader_for_test()).work();
             let error = reader.decision_orbit(Next::reference(), root).unwrap_err();
             assert_eq!(error.kind(), WorthQueryInvariantProjectionTraversalDenialKind::ForeignIdentity);
-            assert!(reader.reader.work().adjacency_lists_read() > before.adjacency_lists_read(), "the actual complete orbit was read before its second registration refused");
+            assert!((*reader.reader_for_test()).work().adjacency_lists_read() > before.adjacency_lists_read(), "the actual complete orbit was read before its second registration refused");
         }, Allocation::SystemAllocation).unwrap().into_parts();
         let error = world.application.begin_projected_application_read_attempt(&phase, admission, projection, Allocation::SystemAllocation).err().unwrap();
         assert_eq!(error.kind(), WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact, "swallowing a second-registration failure cannot seal the first fact alone");

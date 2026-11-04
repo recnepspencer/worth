@@ -184,3 +184,5 @@ impl PreparedSelectedCheckpointFinish<'_> {
 fn empty_denial(kind: WorthQueryOutputDemandDenialKind) -> WorthQueryOutputDemandDenial {
     WorthQueryOutputDemandDenial::new(kind, "")
 }
+
+mod court_doors_for_test;

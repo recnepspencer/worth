@@ -18,7 +18,7 @@ fn foreign_bridge_denies_before_fresh_query_or_provider_work_and_preserves_retry
             worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::managed_run::tests::causal_fixture::managed_admission_context(&resource_request).bridge;
         let denied = {
             let fixture_phase_result = {
-                let installed_fixture_phase = yielded.fixture_phase(active_request);
+                let installed_fixture_phase = yielded.fixture_phase_for_test(active_request);
                 yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &foreign_bridge)
             };
             match fixture_phase_result {
@@ -54,7 +54,7 @@ fn foreign_bridge_denies_before_fresh_query_or_provider_work_and_preserves_retry
 
         let active = {
             let fixture_phase_result = {
-                let installed_fixture_phase = yielded.fixture_phase(active_request);
+                let installed_fixture_phase = yielded.fixture_phase_for_test(active_request);
                 yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
             };
             match fixture_phase_result {
@@ -66,7 +66,7 @@ fn foreign_bridge_denies_before_fresh_query_or_provider_work_and_preserves_retry
         };
         let completion = {
             let fixture_phase_result = {
-                let installed_fixture_phase = active.fixture_phase(execution);
+                let installed_fixture_phase = active.fixture_phase_for_test(execution);
                 active.advance(&installed_fixture_phase)
             };
             match fixture_phase_result {
@@ -98,7 +98,7 @@ fn crossed_bridge_denial_preserves_both_interleaved_direct_peers() {
 
         let first = {
             let fixture_phase_result = {
-                let installed_fixture_phase = first.fixture_phase(active_request);
+                let installed_fixture_phase = first.fixture_phase_for_test(active_request);
                 first.readmit_same_runtime(&installed_fixture_phase, &first_runtime, &second_bridge)
             };
             match fixture_phase_result {
@@ -122,7 +122,7 @@ fn crossed_bridge_denial_preserves_both_interleaved_direct_peers() {
 
         let first = {
             let fixture_phase_result = {
-                let installed_fixture_phase = first.fixture_phase(active_request);
+                let installed_fixture_phase = first.fixture_phase_for_test(active_request);
                 first.readmit_same_runtime(&installed_fixture_phase, &first_runtime, &first_bridge)
             };
             match fixture_phase_result {
@@ -134,7 +134,7 @@ fn crossed_bridge_denial_preserves_both_interleaved_direct_peers() {
         };
         let second = {
             let fixture_phase_result = {
-                let installed_fixture_phase = second.fixture_phase(active_request);
+                let installed_fixture_phase = second.fixture_phase_for_test(active_request);
                 second.readmit_same_runtime(
                     &installed_fixture_phase,
                     &second_runtime,
@@ -152,7 +152,7 @@ fn crossed_bridge_denial_preserves_both_interleaved_direct_peers() {
         for active in [first, second] {
             let completion = {
                 let fixture_phase_result = {
-                    let installed_fixture_phase = active.fixture_phase(execution);
+                    let installed_fixture_phase = active.fixture_phase_for_test(execution);
                     active.advance(&installed_fixture_phase)
                 };
                 match fixture_phase_result {
@@ -190,7 +190,7 @@ fn successor_installation_denies_stale_yield_before_any_fresh_authority() {
         let bridge = worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::managed_run::tests::causal_fixture::managed_admission_context(&resource_request).bridge;
         let denied = {
             let fixture_phase_result = {
-                let installed_fixture_phase = yielded.fixture_phase(active_request);
+                let installed_fixture_phase = yielded.fixture_phase_for_test(active_request);
                 yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
             };
             match fixture_phase_result {

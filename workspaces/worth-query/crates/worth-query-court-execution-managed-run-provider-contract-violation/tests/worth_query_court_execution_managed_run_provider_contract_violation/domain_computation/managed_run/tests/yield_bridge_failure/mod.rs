@@ -18,7 +18,7 @@ fn bridge_terminalization_failure_preserves_the_paused_run_for_retry_or_cleanup(
             YieldProvider::installed(5),
             resource_request,
         );
-        let installed_running_phase = execution.phase_for_direct(&running);
+        let installed_running_phase = execution.phase_for_direct_for_test(&running);
 
         let active = running
             .begin_graph_execution(
@@ -54,8 +54,8 @@ fn bridge_terminalization_failure_preserves_the_paused_run_for_retry_or_cleanup(
             Ok(paused) => paused,
             Err(_) => panic!("bridge failure consumed the still-running attempt"),
         };
-        paused
-            .active
+        (*paused
+            .active_for_test())
             .request_cancellation(BridgeManagedExecutionCancellationReason::HostRequested)
             .unwrap();
         let terminal = match paused.advance(&installed_running_phase) {
@@ -122,7 +122,7 @@ fn workflow_bridge_failure_aborts_artifact_freeze_and_restores_production() {
             resources,
             resource_request,
         );
-        let installed_running_phase = execution.phase_for_workflow(&running);
+        let installed_running_phase = execution.phase_for_workflow_for_test(&running);
 
         let production = running
             .artifacts()
@@ -183,8 +183,8 @@ fn workflow_bridge_failure_aborts_artifact_freeze_and_restores_production() {
         drop(handle);
         assert_eq!(disposals.load(Ordering::Acquire), 1);
 
-        paused
-            .active
+        (*paused
+            .active_for_test())
             .request_cancellation(BridgeManagedExecutionCancellationReason::HostRequested)
             .unwrap();
         let terminal = match paused.advance(&installed_running_phase) {

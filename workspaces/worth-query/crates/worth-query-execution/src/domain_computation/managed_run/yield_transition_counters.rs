@@ -73,3 +73,5 @@ impl WorthQueryYieldTransitionCounters {
         self.yielded_capability_mint_count = self.yielded_capability_mint_count.saturating_add(1);
     }
 }
+
+mod court_doors_for_test;

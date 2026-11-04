@@ -36,13 +36,13 @@ fn ordinary_and_optional_writes_to_one_entity_commit_as_one_native_patch() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::authenticated_principal(&(phase).test_host_request(), &world, &request)
+            worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::resolved_account(&(phase).test_host_request(), &world, "unrelated", &request)
+            worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::resolved_account(&(phase).test_host_request_for_test(), &world, "unrelated", &request)
         })
         .expect("the fixture read owns its installed host call");
     let operation = world
@@ -54,7 +54,7 @@ fn ordinary_and_optional_writes_to_one_entity_commit_as_one_native_patch() {
         .application
         .with_host_advancement(|phase| {
             world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&(phase).test_host_request_for_test())
                 .authorize_operation(
                     &phase,
                     &principal,
@@ -155,13 +155,13 @@ fn absent_field_decision_facts_stale_after_a_competing_presence_change() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::authenticated_principal(&(phase).test_host_request(), &world, &request)
+            worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::resolved_account(&(phase).test_host_request(), &world, "unrelated", &request)
+            worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::resolved_account(&(phase).test_host_request_for_test(), &world, "unrelated", &request)
         })
         .expect("the fixture read owns its installed host call");
     let winner = world
@@ -241,7 +241,7 @@ pub fn program(
         .installed_operation(PatchAccountDraftOperation::reference())
         .unwrap();
     let admission = world
-        .selected_product(&(phase_custody).test_host_request())
+        .selected_product(&(phase_custody).test_host_request_for_test())
         .authorize_operation(
             phase_custody,
             principal,
@@ -304,9 +304,9 @@ pub fn query(
 ) -> OptionalAccountFieldResult {
     let scope = world
         .application
-        .select_product_branch(
+        .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch(),
+            world.application.product_runtime().default_branch_for_test(),
         )
         .expect("the selected product branch remains admitted")
         .resolve_entity(
@@ -324,7 +324,7 @@ pub fn query(
         .unwrap();
     let access = WorthQueryApplicationQueryAccessContext::new(principal, &scope);
     let plan = world
-        .selected_product(&(phase_custody).test_host_request())
+        .selected_product(&(phase_custody).test_host_request_for_test())
         .admit_application_query(
             phase_custody,
             &query,

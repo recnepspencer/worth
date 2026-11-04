@@ -15,13 +15,13 @@ pub use worth_query_execution::facade::domain_computation::WorthQueryPrincipalRe
 fn equal_version_snapshot_from_another_relational_runtime_is_rejected() {
     let first = installed_authorization_world(true);
     let second = installed_authorization_world(true);
-    let first_graph = first.application.runtime.primary_graph().unwrap();
-    let second_graph = second.application.runtime.primary_graph().unwrap();
+    let first_graph = (*first.application.runtime_for_test()).primary_graph().unwrap();
+    let second_graph = (*second.application.runtime_for_test()).primary_graph().unwrap();
     let installed = first_graph.retain_entity_resolution_context();
     let first_version = first
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             let borrowed_execution = host_custody.borrowed_request_for_test();
             let first_product = first.selected_product(
                 &(host_custody.phase_for_application(&first.application)).test_host_request(),
@@ -31,7 +31,7 @@ fn equal_version_snapshot_from_another_relational_runtime_is_rejected() {
                 .integration_handle()
                 .with_runtime_mut(&borrowed_execution, |_| {
                     first_product
-                        .application_basis()
+                        .application_basis_for_test()
                         .snapshot_handle()
                         .version_id()
                 })
@@ -40,7 +40,7 @@ fn equal_version_snapshot_from_another_relational_runtime_is_rejected() {
     second
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             let borrowed_execution = host_custody.borrowed_request_for_test();
             let _execution = &borrowed_execution;
             let second_product = second.selected_product(
@@ -49,7 +49,7 @@ fn equal_version_snapshot_from_another_relational_runtime_is_rejected() {
             second_graph
                 .integration_handle()
                 .with_runtime_mut(&borrowed_execution, |runtime| {
-                    let snapshot = second_product.application_basis().snapshot_handle();
+                    let snapshot = second_product.application_basis_for_test().snapshot_handle();
                     assert_eq!(snapshot.version_id(), first_version);
                     let denial = match installed.at_snapshot(
                         runtime,
@@ -77,14 +77,14 @@ fn rebuilt_index_generation_preserves_stable_entity_meaning() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             let borrowed_execution = host_custody.borrowed_request_for_test();
             let execution = &borrowed_execution;
             let identity = world
                 .application
-                .select_product_branch(
+                .select_product_branch_for_test(
                     execution,
-                    world.application.product_runtime().default_branch(),
+                    world.application.product_runtime().default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
@@ -95,7 +95,7 @@ fn rebuilt_index_generation_preserves_stable_entity_meaning() {
                     WorthQueryPrincipalResolutionMode::Ordinary,
                 )
                 .unwrap();
-            let graph = world.application.runtime.primary_graph().unwrap();
+            let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
             let installed = graph.retain_entity_resolution_context();
             let selected = world.selected_product(
                 &(host_custody.phase_for_application(&world.application)).test_host_request(),
@@ -127,7 +127,7 @@ fn rebuilt_index_generation_preserves_stable_entity_meaning() {
                         build.generations[0].generation_id,
                         identity.identity_index_generation()
                     );
-                    let snapshot = selected.application_basis().snapshot_handle();
+                    let snapshot = selected.application_basis_for_test().snapshot_handle();
                     let truth = installed
                         .at_snapshot(
                             runtime,
@@ -146,17 +146,17 @@ fn rebuilt_index_generation_preserves_stable_entity_meaning() {
 #[test]
 fn installed_context_derives_binding_layout_and_index_from_its_graph() {
     let world = installed_authorization_world(true);
-    let graph = world.application.runtime.primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let installed = graph.retain_entity_resolution_context();
     world.application.with_host_advancement(|phase| {
-let host_custody = phase.test_host_request();
+let host_custody = phase.test_host_request_for_test();
 let borrowed_execution = host_custody.borrowed_request_for_test();
 let execution = &borrowed_execution;
 let selected = world.selected_product(
             &(host_custody.phase_for_application(&world.application)).test_host_request(),
         );
         graph.integration_handle().with_runtime_mut(&borrowed_execution, |runtime| {
-        let snapshot = selected.application_basis().snapshot_handle();
+        let snapshot = selected.application_basis_for_test().snapshot_handle();
         let truth = installed
             .at_snapshot( runtime, snapshot, WorthQueryPrincipalResolutionMode::Ordinary)
             .unwrap();

@@ -207,3 +207,5 @@ fn native_denial(
     };
     WorthQueryOutputDemandDenial::new(kind, "selected installed discontinuity cannot be observed")
 }
+
+mod court_doors_for_test;

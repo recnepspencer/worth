@@ -71,36 +71,36 @@ pub fn context_effects(
     };
     let transition = CreatedEntityRef {
         partition_id: source.partition_id,
-        kind_id: layout.transition.entity_kind,
+        kind_id: (*layout.transition_for_test()).entity_kind,
         client_key: ClientKey::raw("transition"),
     };
     let mut fields = BTreeMap::from([
         (
-            layout.transition.identity.clone(),
+            (*layout.transition_for_test()).identity.clone(),
             text_value("native-context-fixture"),
         ),
         (
-            layout.transition.protocol_version.clone(),
+            (*layout.transition_for_test()).protocol_version.clone(),
             AspectValue::UInt64(3),
         ),
-        (layout.transition.occurrence.clone(), AspectValue::UInt64(0)),
-        (layout.transition.outcome.clone(), AspectValue::UInt64(1)),
+        ((*layout.transition_for_test()).occurrence.clone(), AspectValue::UInt64(0)),
+        ((*layout.transition_for_test()).outcome.clone(), AspectValue::UInt64(1)),
         (
-            layout.transition.live_membership_partition.clone(),
+            (*layout.transition_for_test()).live_membership_partition.clone(),
             AspectValue::UInt64(0),
         ),
         (
-            layout.transition.live_membership_slot.clone(),
+            (*layout.transition_for_test()).live_membership_slot.clone(),
             AspectValue::UInt64(0),
         ),
         (
-            layout.transition.live_membership_generation.clone(),
+            (*layout.transition_for_test()).live_membership_generation.clone(),
             AspectValue::UInt64(0),
         ),
     ]);
     // The actor is genuine; these rows deliberately claim no instance,
     // occurrence allowance or performed-command proof.
-    actor.append_fields(&layout.transition.advancer, &mut fields);
+    actor.append_fields_for_test(&(*layout.transition_for_test()).advancer, &mut fields);
     let mut effects = vec![
         Effect::CreateEntity {
             kind: account_kind,
@@ -150,40 +150,40 @@ pub fn context_effects(
 pub fn corrupt(layout: &WorthQueryWorkflowLayout, effects: &mut Vec<Effect>, defect: Option<&str>) {
     for effect in &mut *effects {
         if let Effect::CreateEntity { kind, fields, .. } = effect {
-            if *kind == layout.transition.entity_kind {
+            if *kind == (*layout.transition_for_test()).entity_kind {
                 if defect == Some("count") {
                     fields.insert(
-                        layout.transition.output_count.clone(),
+                        (*layout.transition_for_test()).output_count.clone(),
                         AspectValue::UInt64(1),
                     );
                 }
                 if defect == Some("overflow") {
                     fields.insert(
-                        layout.transition.output_count.clone(),
+                        (*layout.transition_for_test()).output_count.clone(),
                         AspectValue::UInt64(u64::MAX),
                     );
                 }
                 if defect == Some("downgrade") {
                     fields.insert(
-                        layout.transition.protocol_version.clone(),
+                        (*layout.transition_for_test()).protocol_version.clone(),
                         AspectValue::UInt64(2),
                     );
                 }
             }
-            if *kind == layout.operation_output.entity_kind {
+            if *kind == (*layout.operation_output.entity_kind_for_test()) {
                 match defect {
                     Some("duplicate") => {
                         fields.insert(
-                            layout.operation_output.role.clone(),
+                            (*layout.operation_output.role_for_test()).clone(),
                             text_value("duplicated"),
                         );
                     }
                     Some("empty") => {
-                        fields.insert(layout.operation_output.role.clone(), text_value(""));
+                        fields.insert((*layout.operation_output.role_for_test()).clone(), text_value(""));
                     }
                     Some("posture") => {
                         fields.insert(
-                            layout.operation_output.posture.clone(),
+                            (*layout.operation_output.posture_for_test()).clone(),
                             AspectValue::UInt64(99),
                         );
                     }
@@ -193,7 +193,7 @@ pub fn corrupt(layout: &WorthQueryWorkflowLayout, effects: &mut Vec<Effect>, def
         }
     }
     if defect == Some("missing-target") {
-        effects.retain(|effect| !matches!(effect, Effect::CreateRelation { kind, .. } if *kind == layout.operation_output.target));
+        effects.retain(|effect| !matches!(effect, Effect::CreateRelation { kind, .. } if *kind == (*layout.operation_output.target_for_test())));
     }
 }
 
@@ -212,10 +212,10 @@ pub fn attach_structural_parent(
         })
     };
     for (kind, key) in [
-        (layout.lineage.entity_kind, "lineage"),
-        (layout.definition.entity_kind, "definition"),
-        (layout.node.entity_kind, "node"),
-        (layout.instance.entity_kind, "instance"),
+        ((*layout.lineage_for_test()).entity_kind, "lineage"),
+        ((*layout.definition_for_test()).entity_kind, "definition"),
+        ((*layout.node_for_test()).entity_kind, "node"),
+        ((*layout.instance_for_test()).entity_kind, "instance"),
     ] {
         effects.push(Effect::CreateEntity {
             kind,
@@ -224,40 +224,40 @@ pub fn attach_structural_parent(
             partition: Partition::Context(partition),
         });
     }
-    let lineage = reference(layout.lineage.entity_kind, "lineage");
-    let definition = reference(layout.definition.entity_kind, "definition");
-    let node = reference(layout.node.entity_kind, "node");
-    let instance = reference(layout.instance.entity_kind, "instance");
+    let lineage = reference((*layout.lineage_for_test()).entity_kind, "lineage");
+    let definition = reference((*layout.definition_for_test()).entity_kind, "definition");
+    let node = reference((*layout.node_for_test()).entity_kind, "node");
+    let instance = reference((*layout.instance_for_test()).entity_kind, "instance");
     for (kind, from, to) in [
         (
-            layout.lineage_definition_relation,
+            (*layout.lineage_definition_relation_for_test()),
             lineage.clone(),
             definition.clone(),
         ),
         (
-            layout.definition_node_relation,
+            (*layout.definition_node_relation_for_test()),
             definition.clone(),
             node.clone(),
         ),
         (
-            layout.definition_start_relation,
+            (*layout.definition_start_relation_for_test()),
             definition.clone(),
             node.clone(),
         ),
-        (layout.instance_lineage_relation, instance.clone(), lineage),
+        ((*layout.instance_lineage_relation_for_test()), instance.clone(), lineage),
         (
-            layout.instance_definition_relation,
+            (*layout.instance_definition_relation_for_test()),
             instance.clone(),
             definition,
         ),
         (
-            layout.instance_transition_relation,
+            (*layout.instance_transition_relation_for_test()),
             instance,
-            reference(layout.transition.entity_kind, "transition"),
+            reference((*layout.transition_for_test()).entity_kind, "transition"),
         ),
         (
-            layout.transition_node_relation,
-            reference(layout.transition.entity_kind, "transition"),
+            (*layout.transition_node_relation_for_test()),
+            reference((*layout.transition_for_test()).entity_kind, "transition"),
             node,
         ),
     ] {

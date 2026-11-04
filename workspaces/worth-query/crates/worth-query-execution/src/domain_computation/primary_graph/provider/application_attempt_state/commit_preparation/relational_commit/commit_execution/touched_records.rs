@@ -75,3 +75,5 @@ fn allocation_denied(
         crate::domain_computation::WorthQueryProviderSessionFailure::allocation_denied(denial),
     )
 }
+
+mod court_doors_for_test;

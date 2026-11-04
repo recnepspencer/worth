@@ -9,7 +9,7 @@ fn optional_owner_removal_and_insertion_refresh_at_the_real_current_product() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             let borrowed_execution = host_custody.borrowed_request_for_test();
             let request_execution = &borrowed_execution;
             let selected = world.selected_product(
@@ -88,7 +88,7 @@ fn optional_owner_removal_and_insertion_refresh_at_the_real_current_product() {
                     },
                     |_| {
                         let first = selected
-                            .retain_selection(request_execution)
+                            .retain_selection_for_test(request_execution)
                             .unwrap()
                             .admit_application_query(
                                 &host_custody.phase_for_application(&world.application),
@@ -101,7 +101,7 @@ fn optional_owner_removal_and_insertion_refresh_at_the_real_current_product() {
                                 WorthQueryManagedDerivedViewDenial::QueryExecutionDenied
                             })?;
                         let second = selected
-                            .retain_selection(request_execution)
+                            .retain_selection_for_test(request_execution)
                             .unwrap()
                             .admit_application_query(
                                 &host_custody.phase_for_application(&world.application),
@@ -132,7 +132,7 @@ fn optional_owner_removal_and_insertion_refresh_at_the_real_current_product() {
                     .0,
                 Some(owner)
             );
-            let graph = world.application.runtime.primary_graph().unwrap();
+            let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
             let kind = graph
                 .layout
                 .relation(AccountOwner::reference().name())
@@ -146,7 +146,7 @@ fn optional_owner_removal_and_insertion_refresh_at_the_real_current_product() {
                         .visible_relations_of_kind(
                             request_execution,
                             kind,
-                            selected.application_basis().snapshot_handle().version_id(),
+                            selected.application_basis_for_test().snapshot_handle().version_id(),
                         )
                         .expect("fixture read request remains live")
                         .into_iter()

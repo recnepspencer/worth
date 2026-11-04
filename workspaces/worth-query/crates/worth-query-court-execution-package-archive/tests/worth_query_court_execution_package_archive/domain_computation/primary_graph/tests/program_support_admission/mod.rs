@@ -17,13 +17,13 @@ use worth_query_installation::facade::WorthQueryProgramSupportRetirementDenial;
 #[test]
 fn a_host_presents_only_the_program_revisions_it_admitted() {
     let world = installed_authorization_world(true);
-    let support = installed_program_support(&world.application.installed_schema);
+    let support = installed_program_support(&(*world.application.installed_schema_for_test()));
     assert!(
-        support.present(&rostered_program_revision()).is_some(),
+        support.present_for_test(&rostered_program_revision()).is_some(),
         "the rostered revision is presentable meaning on this host"
     );
     assert!(
-        support.present(&unadmitted_program_revision()).is_none(),
+        support.present_for_test(&unadmitted_program_revision()).is_none(),
         "a revision this host never admitted must not be presentable"
     );
 }
@@ -31,16 +31,16 @@ fn a_host_presents_only_the_program_revisions_it_admitted() {
 #[test]
 fn an_activation_rendering_no_rostered_program_answers_to_resolves_to_nothing() {
     let world = installed_authorization_world(true);
-    let support = installed_program_support(&world.application.installed_schema);
+    let support = installed_program_support(&(*world.application.installed_schema_for_test()));
     assert!(
         support
-            .rostered_for_rendering(&program_revision_rendering(&rostered_program_revision()))
+            .rostered_for_rendering_for_test(&program_revision_rendering(&rostered_program_revision()))
             .is_some(),
         "the rostered program answers to its own stored rendering"
     );
     assert!(
         support
-            .rostered_for_rendering(&program_revision_rendering(&unadmitted_program_revision()))
+            .rostered_for_rendering_for_test(&program_revision_rendering(&unadmitted_program_revision()))
             .is_none(),
         "an unattributable activation rendering must resolve to no program"
     );
@@ -49,9 +49,9 @@ fn an_activation_rendering_no_rostered_program_answers_to_resolves_to_nothing() 
 #[test]
 fn a_host_without_a_published_activation_names_no_occurrence_program() {
     let world = installed_authorization_world(true);
-    let support = installed_program_support(&world.application.installed_schema);
+    let support = installed_program_support(&(*world.application.installed_schema_for_test()));
     assert_eq!(
-        support.activation().published(),
+        support.activation().published_for_test(),
         None,
         "an unseeded branch must not present a permissive default activation"
     );
@@ -61,29 +61,29 @@ fn a_host_without_a_published_activation_names_no_occurrence_program() {
 fn retained_program_meaning_does_not_authorize_an_inactive_or_replaced_support() {
     let world = installed_authorization_world(true);
     let revision = rostered_program_revision();
-    let support = installed_program_support(&world.application.installed_schema);
-    let prior = support.retain_interpretation(&revision).unwrap();
-    let current = support.retain_interpretation(&revision).unwrap();
+    let support = installed_program_support(&(*world.application.installed_schema_for_test()));
+    let prior = support.retain_interpretation_for_test(&revision).unwrap();
+    let current = support.retain_interpretation_for_test(&revision).unwrap();
     assert!(prior.same_support_as(&current));
 
-    let replacement = installed_program_support(&world.application.installed_schema);
-    let replacement_pin = replacement.retain_interpretation(&revision).unwrap();
+    let replacement = installed_program_support(&(*world.application.installed_schema_for_test()));
+    let replacement_pin = replacement.retain_interpretation_for_test(&revision).unwrap();
     assert!(!prior.same_support_as(&replacement_pin));
 
-    let retirement = support.lifecycle().begin_retirement(&revision).unwrap();
-    assert!(support.retain_interpretation(&revision).is_none());
+    let retirement = support.lifecycle().begin_retirement_for_test(&revision).unwrap();
+    assert!(support.retain_interpretation_for_test(&revision).is_none());
     drop(retirement);
-    assert!(support.retain_interpretation(&revision).is_some());
+    assert!(support.retain_interpretation_for_test(&revision).is_some());
 }
 
 #[test]
 fn a_commit_names_why_it_cannot_present_a_retiring_or_unadmitted_revision() {
     let world = installed_authorization_world(true);
     let revision = rostered_program_revision();
-    let support = installed_program_support(&world.application.installed_schema);
-    assert!(support.present_for_commit(&revision).is_ok());
+    let support = installed_program_support(&(*world.application.installed_schema_for_test()));
+    assert!(support.present_for_commit_for_test(&revision).is_ok());
     let unadmitted = support
-        .present_for_commit(&unadmitted_program_revision())
+        .present_for_commit_for_test(&unadmitted_program_revision())
         .err()
         .expect("an unadmitted revision is refused");
     assert_eq!(
@@ -91,9 +91,9 @@ fn a_commit_names_why_it_cannot_present_a_retiring_or_unadmitted_revision() {
         WorthQueryApplicationCommitDenialKind::ApplicationProgramRequired
     );
 
-    let retirement = support.lifecycle().begin_retirement(&revision).unwrap();
+    let retirement = support.lifecycle().begin_retirement_for_test(&revision).unwrap();
     let retiring = support
-        .present_for_commit(&revision)
+        .present_for_commit_for_test(&revision)
         .err()
         .expect("a retiring revision is refused");
     assert_eq!(
@@ -101,33 +101,33 @@ fn a_commit_names_why_it_cannot_present_a_retiring_or_unadmitted_revision() {
         WorthQueryApplicationCommitDenialKind::ProgramSupportRetired
     );
     drop(retirement);
-    assert!(support.present_for_commit(&revision).is_ok());
+    assert!(support.present_for_commit_for_test(&revision).is_ok());
 }
 
 #[test]
 fn a_completed_retirement_leaves_the_revision_permanently_retired() {
     let world = installed_authorization_world(true);
     let revision = rostered_program_revision();
-    let support = installed_program_support(&world.application.installed_schema);
+    let support = installed_program_support(&(*world.application.installed_schema_for_test()));
     let receipt = support
         .lifecycle()
-        .begin_retirement(&revision)
+        .begin_retirement_for_test(&revision)
         .unwrap()
         .finish(0, 0)
         .expect("an unused revision retires");
     assert!(receipt.inventory().can_retire());
 
     let retired = support
-        .present_for_commit(&revision)
+        .present_for_commit_for_test(&revision)
         .err()
         .expect("a retired revision is refused");
     assert_eq!(
         retired.kind(),
         WorthQueryApplicationCommitDenialKind::ProgramSupportRetired
     );
-    assert!(support.retain_interpretation(&revision).is_none());
+    assert!(support.retain_interpretation_for_test(&revision).is_none());
     assert!(matches!(
-        support.lifecycle().begin_retirement(&revision),
+        support.lifecycle().begin_retirement_for_test(&revision),
         Err(WorthQueryProgramSupportRetirementDenial::AlreadyRetired { .. })
     ));
 }

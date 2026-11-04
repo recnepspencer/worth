@@ -123,3 +123,5 @@ impl CheckpointMetadataFunding {
         self.copy_text(value, execution)
     }
 }
+
+mod court_doors_for_test;

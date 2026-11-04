@@ -184,3 +184,5 @@ pub(super) fn sections(bytes: &[u8]) -> Result<CurrentSections<'_>, CheckpointDe
         outputs: cursor.remaining,
     })
 }
+
+mod court_doors_for_test;

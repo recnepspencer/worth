@@ -43,7 +43,7 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
     let world = installed_authorization_world(true);
     let selected = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
         .expect("the fixture read owns its installed host call");
     let entity = world
         .application
@@ -57,15 +57,15 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
                     WorthQueryPrincipalResolutionMode::Ordinary,
                 )
                 .unwrap()
-                .entity_id()
+                .entity_id_for_test()
         })
         .expect("the fixture read owns its installed host call");
-    let graph = world.application.runtime.primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let layout = graph.layout();
     let handle = graph.integration_handle();
-    let correspondence = WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles(
-        TypeId::of::<()>(),
-        TypeId::of::<()>(),
+    let correspondence = WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles_for_test(
+        TypeId::of_for_test::<()>(),
+        TypeId::of_for_test::<()>(),
         std::iter::empty(),
         &[WorthQueryCheckpointOutputRole {
             role: "account".to_owned(),
@@ -73,7 +73,7 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
             entity_name: "Account".to_owned(),
             entity,
         }],
-        |_| Some(TypeId::of::<()>()),
+        |_| Some(TypeId::of_for_test::<()>()),
         &worth_execution::ExecutionRequest::serial(&worth_execution::SerialRequest::from_memory(
             worth_execution::SerialMemoryBudget::new(None),
             worth_execution::CancellationToken::new(),
@@ -82,9 +82,9 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
     )
     .unwrap();
     // Distinct roles may name one entity; each keeps its own expectations.
-    let alias_correspondence = WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles(
-        TypeId::of::<()>(),
-        TypeId::of::<()>(),
+    let alias_correspondence = WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles_for_test(
+        TypeId::of_for_test::<()>(),
+        TypeId::of_for_test::<()>(),
         std::iter::empty(),
         &["account", "alias"].map(|role| WorthQueryCheckpointOutputRole {
             role: role.to_owned(),
@@ -92,7 +92,7 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
             entity_name: "Account".to_owned(),
             entity,
         }),
-        |_| Some(TypeId::of::<()>()),
+        |_| Some(TypeId::of_for_test::<()>()),
         &worth_execution::ExecutionRequest::serial(&worth_execution::SerialRequest::from_memory(
             worth_execution::SerialMemoryBudget::new(None),
             worth_execution::CancellationToken::new(),
@@ -114,7 +114,7 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         .field_locator(label_ref.entity(), label_ref.aspect(), label_ref.field())
         .unwrap()
         .clone();
-    let changed_output_equal = world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request(); let request_execution = &host_custody.borrowed_request_for_test(); handle.with_runtime_mut(request_execution, |runtime| {
+    let changed_output_equal = world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request_for_test(); let request_execution = &host_custody.borrowed_request_for_test(); handle.with_runtime_mut(request_execution, |runtime| {
         let before = snapshot(runtime);
         let truth = runtime.read_truth();
         let mut facts = vec![Fact::Entity {
@@ -147,10 +147,10 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
 
 
 
-        let restored = SealedNativeOutputWitness::from_checkpoint_facts(&correspondence, layout, &facts)
+        let restored = SealedNativeOutputWitness::from_checkpoint_facts_for_test(&correspondence, layout, &facts)
         .unwrap()
         .expect("complete old native facts reconstruct the witness");
-        assert!(restored.get().unwrap().checkpoint_facts_current_in(&host_custody.borrowed_request_for_test(),
+        assert!(restored.get().unwrap().checkpoint_facts_current_in_for_test(&host_custody.borrowed_request_for_test(),
             runtime, &before, &facts,
         ).unwrap());
 
@@ -158,20 +158,20 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
 
 
 
-        let alias = SealedNativeOutputWitness::from_checkpoint_facts(&alias_correspondence, layout, &facts).unwrap().expect("both roles fill every aspect slot from the one entity's facts");
-        assert!(alias.get().unwrap().checkpoint_facts_current_in(&host_custody.borrowed_request_for_test(),
+        let alias = SealedNativeOutputWitness::from_checkpoint_facts_for_test(&alias_correspondence, layout, &facts).unwrap().expect("both roles fill every aspect slot from the one entity's facts");
+        assert!(alias.get().unwrap().checkpoint_facts_current_in_for_test(&host_custody.borrowed_request_for_test(),
             runtime, &before, &facts,
         ).unwrap());
 
         assert!(restored
             .get()
             .unwrap()
-            .unchanged_in( runtime, &before, request_execution)
+            .unchanged_in_for_test( runtime, &before, request_execution)
             .unwrap());
         assert!(restored
             .get()
             .unwrap()
-            .checkpoint_facts_current_in(&host_custody.borrowed_request_for_test(),
+            .checkpoint_facts_current_in_for_test(&host_custody.borrowed_request_for_test(),
                 runtime,
                 &before,
                 &producer_facts,
@@ -186,10 +186,10 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         ).expect("the actual installed sparse selection supplies the checkpoint fact");
         let witness = restored.get().unwrap();
 
-        assert!(witness.unchanged_in( runtime, &before, request_execution).unwrap());
+        assert!(witness.unchanged_in_for_test( runtime, &before, request_execution).unwrap());
 
 
-        assert!(witness.checkpoint_facts_current_in(&host_custody.borrowed_request_for_test(), runtime, &before,
+        assert!(witness.checkpoint_facts_current_in_for_test(&host_custody.borrowed_request_for_test(), runtime, &before,
             &[indexed.clone(), indexed.clone()]).unwrap());
 
         let mut duplicate_facts = facts.clone();
@@ -197,8 +197,8 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
 
 
 
-        let duplicate_witness = SealedNativeOutputWitness::from_checkpoint_facts(&correspondence, layout, &duplicate_facts).unwrap().unwrap();
-        assert!(duplicate_witness.get().unwrap().checkpoint_facts_current_in(&host_custody.borrowed_request_for_test(),
+        let duplicate_witness = SealedNativeOutputWitness::from_checkpoint_facts_for_test(&correspondence, layout, &duplicate_facts).unwrap().unwrap();
+        assert!(duplicate_witness.get().unwrap().checkpoint_facts_current_in_for_test(&host_custody.borrowed_request_for_test(),
             runtime, &before, &duplicate_facts,
         ).unwrap());
 
@@ -224,7 +224,7 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         ));
 
         let missing = &facts[..facts.len() - 1];
-        assert!(SealedNativeOutputWitness::from_checkpoint_facts(&correspondence, layout, missing)
+        assert!(SealedNativeOutputWitness::from_checkpoint_facts_for_test(&correspondence, layout, missing)
         .unwrap()
         .is_none());
         let mut conflicting = facts.clone();
@@ -241,7 +241,7 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
             aspect: aspect.clone(),
             native_revision: Some(native_revision.unwrap_or(0).checked_add(1).unwrap()),
         });
-        assert!(SealedNativeOutputWitness::from_checkpoint_facts(&correspondence, layout, &conflicting)
+        assert!(SealedNativeOutputWitness::from_checkpoint_facts_for_test(&correspondence, layout, &conflicting)
         .unwrap()
         .is_none());
         crate::domain_computation::primary_graph::output_lineage::native_output_witness::checkpoint::tests::one_pass::assert_one_pass_reconstruction(&correspondence, layout, &facts, &producer_facts[0]);
@@ -259,7 +259,7 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         );
         // Reconstruct after the edit from the old checkpoint facts. A builder
         // that samples the new head would incorrectly accept this output.
-        let after_restore = SealedNativeOutputWitness::from_checkpoint_facts(&correspondence, layout, &facts)
+        let after_restore = SealedNativeOutputWitness::from_checkpoint_facts_for_test(&correspondence, layout, &facts)
         .unwrap()
         .unwrap();
         let current_facts: Vec<_> = facts.iter().map(|fact| match fact {
@@ -269,23 +269,23 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
             },
             other => other.clone(),
         }).collect();
-        let current = SealedNativeOutputWitness::from_checkpoint_facts(&correspondence, layout, &current_facts).unwrap().unwrap();
+        let current = SealedNativeOutputWitness::from_checkpoint_facts_for_test(&correspondence, layout, &current_facts).unwrap().unwrap();
         let changed_output_equal = restored.get().unwrap()
-            .same_output_as(current.get().unwrap()).unwrap();
+            .same_output_as_for_test(current.get().unwrap()).unwrap();
         assert!(!after_restore
             .get()
             .unwrap()
-            .unchanged_in( runtime, &after, request_execution)
+            .unchanged_in_for_test( runtime, &after, request_execution)
             .unwrap());
         assert!(
             producer_facts[0]
-                .source_currentness_in(runtime, &host_custody.borrowed_request_for_test(), &after).unwrap().unwrap().movement()
+                .source_currentness_in_for_test(runtime, &host_custody.borrowed_request_for_test(), &after).unwrap().unwrap().movement()
                 == Movement::Unmoved
         );
         assert!(!after_restore
             .get()
             .unwrap()
-            .checkpoint_facts_current_in(&host_custody.borrowed_request_for_test(),
+            .checkpoint_facts_current_in_for_test(&host_custody.borrowed_request_for_test(),
                 runtime,
                 &after,
                 &producer_facts,

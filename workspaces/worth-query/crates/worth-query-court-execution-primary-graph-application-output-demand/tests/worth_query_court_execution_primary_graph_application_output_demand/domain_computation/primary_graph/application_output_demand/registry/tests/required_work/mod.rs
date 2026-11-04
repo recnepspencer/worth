@@ -15,25 +15,25 @@ use worth_query_testkit_execution_primary_graph_application_contribution::domain
 fn activation_and_newer_hint_survive_an_older_selected_ack() {
     let (_lineage, [earlier, later]) = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::output_lineage::registry_fixture::recorded_settlement_pair();
     let queue = Arc::new(RequiredWorkQueue::new());
-    let member = Arc::new(RequiredWorkMembership::new(
+    let member = Arc::new(RequiredWorkMembership::new_for_test(
         Arc::new(key("selected-output", 1, 1)),
         &queue,
     ));
     // Preparation can mark an inactive row before its required interest opens.
-    drop(member.mark_local_required(Arc::clone(&earlier)));
+    drop(member.mark_local_required_for_test(Arc::clone(&earlier)));
     assert!(matches!(queue.pop(), RequiredWorkPop::Empty));
-    member.set_required(true);
+    member.set_required_for_test(true);
     let first = selected(&queue);
     assert!(matches!(
-        first.kind(),
+        first.kind_for_test(),
         SelectedRequiredWorkKind::Local { settlement } if Arc::ptr_eq(settlement, &earlier)
     ));
     // A newer cutover must survive the older worker's acknowledgement.
-    drop(member.mark_local_required(Arc::clone(&later)));
+    drop(member.mark_local_required_for_test(Arc::clone(&later)));
     assert!(first.acknowledge_fixture().is_none());
     let selected = selected(&queue);
     assert!(matches!(
-        selected.kind(),
+        selected.kind_for_test(),
         SelectedRequiredWorkKind::Local { settlement } if Arc::ptr_eq(settlement, &later)
     ));
     assert!(selected.acknowledge_fixture().is_some());
@@ -42,14 +42,14 @@ fn activation_and_newer_hint_survive_an_older_selected_ack() {
 #[test]
 fn new_required_record_selects_unresolved_work_without_a_settlement_identity() {
     let queue = Arc::new(RequiredWorkQueue::new());
-    let member = Arc::new(RequiredWorkMembership::new(
+    let member = Arc::new(RequiredWorkMembership::new_for_test(
         Arc::new(key("unsettled-output", 1, 1)),
         &queue,
     ));
-    member.set_required(true);
+    member.set_required_for_test(true);
     let selected = selected(&queue);
     assert!(matches!(
-        selected.kind(),
+        selected.kind_for_test(),
         SelectedRequiredWorkKind::UnresolvedInitial
     ));
     assert!(selected.acknowledge_fixture().is_some());
@@ -59,28 +59,28 @@ fn new_required_record_selects_unresolved_work_without_a_settlement_identity() {
 fn duplicate_selected_version_cannot_acknowledge_the_next_cause() {
     let (_lineage, [settlement, _]) = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::output_lineage::registry_fixture::recorded_settlement_pair();
     let queue = Arc::new(RequiredWorkQueue::new());
-    let member = Arc::new(RequiredWorkMembership::new(
+    let member = Arc::new(RequiredWorkMembership::new_for_test(
         Arc::new(key("selected-output", 1, 1)),
         &queue,
     ));
-    member.set_required(true); // Keeps an independent unresolved cause.
-    drop(member.mark_local_required(Arc::clone(&settlement)));
+    member.set_required_for_test(true); // Keeps an independent unresolved cause.
+    drop(member.mark_local_required_for_test(Arc::clone(&settlement)));
     let first = selected(&queue);
-    member.set_required(true); // Requeue without publishing a newer hint.
+    member.set_required_for_test(true); // Requeue without publishing a newer hint.
     let second = selected(&queue);
     assert!(matches!(
-        first.kind(),
+        first.kind_for_test(),
         SelectedRequiredWorkKind::Local { .. }
     ));
     assert!(matches!(
-        second.kind(),
+        second.kind_for_test(),
         SelectedRequiredWorkKind::Local { .. }
     ));
     assert!(first.acknowledge_fixture().is_some());
     assert!(second.acknowledge_fixture().is_none());
     let remaining = selected(&queue);
     assert!(matches!(
-        remaining.kind(),
+        remaining.kind_for_test(),
         SelectedRequiredWorkKind::UnresolvedInitial
     ));
     assert!(remaining.acknowledge_fixture().is_some());
@@ -89,13 +89,13 @@ fn duplicate_selected_version_cannot_acknowledge_the_next_cause() {
 #[test]
 fn requeued_last_cause_becomes_one_stale_pop() {
     let queue = Arc::new(RequiredWorkQueue::new());
-    let member = Arc::new(RequiredWorkMembership::new(
+    let member = Arc::new(RequiredWorkMembership::new_for_test(
         Arc::new(key("unsettled-output", 1, 1)),
         &queue,
     ));
-    member.set_required(true);
+    member.set_required_for_test(true);
     let first = selected(&queue);
-    member.set_required(true);
+    member.set_required_for_test(true);
     assert!(first.acknowledge_fixture().is_some());
     assert!(matches!(queue.pop(), RequiredWorkPop::Stale));
     assert!(matches!(queue.pop(), RequiredWorkPop::Empty));
@@ -104,27 +104,27 @@ fn requeued_last_cause_becomes_one_stale_pop() {
 fn a_claim_selects_newer_causes_and_current_acknowledges_the_row_once() {
     let (_lineage, [earlier, later]) = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::output_lineage::registry_fixture::recorded_settlement_pair();
     let queue = Arc::new(RequiredWorkQueue::new());
-    let member = Arc::new(RequiredWorkMembership::new(
+    let member = Arc::new(RequiredWorkMembership::new_for_test(
         Arc::new(key("claimed-output", 1, 1)),
         &queue,
     ));
-    member.set_required(true);
-    drop(member.mark_local_required(earlier));
+    member.set_required_for_test(true);
+    drop(member.mark_local_required_for_test(earlier));
     let RequiredWorkPop::Claimed(mut claim) = queue.pop() else {
         panic!("a marked row is claimed")
     };
-    drop(member.mark_local_required(Arc::clone(&later)));
+    drop(member.mark_local_required_for_test(Arc::clone(&later)));
     assert!(
         matches!(queue.pop(), RequiredWorkPop::Empty),
         "a live claim prevents another visit in this advance"
     );
     let selected = claim.select().unwrap();
     assert!(
-        matches!(selected.kind(), SelectedRequiredWorkKind::Local { settlement } if Arc::ptr_eq(settlement, &later)),
+        matches!(selected.kind_for_test(), SelectedRequiredWorkKind::Local { settlement } if Arc::ptr_eq(settlement, &later)),
         "inspection selects the live cause, not the popped one"
     );
     worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::performed::certification::CurrentProof::with_current_fixture_basis(&member, |proof| {
-        assert!(selected.acknowledge_current_admitted(proof).unwrap().is_some());
+        assert!(selected.acknowledge_current_admitted_for_test(proof).unwrap().is_some());
     });
     drop(claim);
     assert!(
@@ -142,11 +142,11 @@ fn discontinuity_selects_the_first_declared_family_member() {
         let outputs = families.map(|(type_id, identity)| {
             (
                 type_id,
-                worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::demand_key::WorthQueryOutputDemandKey::new(
+                worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::demand_key::WorthQueryOutputDemandKey::new_for_test(
                     identity,
-                    seed.producer_identity().to_owned(),
+                    seed.producer_identity_for_test().to_owned(),
                     seed.applicability(),
-                    seed.source_epoch().clone(),
+                    seed.source_epoch_for_test().clone(),
                 ),
             )
         });
@@ -158,8 +158,8 @@ fn discontinuity_selects_the_first_declared_family_member() {
                     .0,
             );
         }
-        let queue = registry
-            .state
+        let queue = (*registry
+            .state_for_test())
             .lock()
             .unwrap()
             .required_work_queue
@@ -168,8 +168,8 @@ fn discontinuity_selects_the_first_declared_family_member() {
         for _ in 0..2 {
             assert!(selected(&queue).acknowledge_fixture().is_some());
         }
-        registry
-            .state
+        (*registry
+            .state_for_test())
             .lock()
             .unwrap()
             .fixture_page_required_discontinuity(
@@ -179,7 +179,7 @@ fn discontinuity_selects_the_first_declared_family_member() {
             )
             .unwrap();
         let first = selected(&queue);
-        let selected = outputs.iter().find(|(_, key)| key == first.key()).unwrap();
+        let selected = outputs.iter().find(|(_, key)| key == first.key_for_test()).unwrap();
         assert_eq!(selected, &outputs[0]);
         assert_ne!(selected.0, outputs[1].0);
     }

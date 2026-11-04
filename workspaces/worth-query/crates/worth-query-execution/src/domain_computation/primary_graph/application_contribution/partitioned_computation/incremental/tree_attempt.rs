@@ -115,3 +115,5 @@ impl<T> TreeAttempt<T, ReductionRunFailure<worth_execution::MapKernelStop>> {
         })
     }
 }
+
+mod court_doors_for_test;

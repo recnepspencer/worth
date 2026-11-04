@@ -26,3 +26,5 @@ impl RequiredWorkMembership {
         self.state.lock().unwrap().unresolved_initial
     }
 }
+
+mod court_doors_for_test;

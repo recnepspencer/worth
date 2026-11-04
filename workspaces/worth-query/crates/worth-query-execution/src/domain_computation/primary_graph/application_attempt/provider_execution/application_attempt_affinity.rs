@@ -317,3 +317,5 @@ impl WorthQueryApplicationAttemptAffinity {
         self.provider_session.admits_cleanup_binding(cleanup)
     }
 }
+
+mod court_doors_for_test;

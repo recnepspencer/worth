@@ -29,10 +29,10 @@ pub fn with_unmanaged_publications(
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&phase.test_host_request(), &world, &request)
+            authenticated_principal(&phase.test_host_request_for_test(), &world, &request)
         })
         .expect("the principal fixture opens its host call");
-    let graph = world.application.runtime.primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let handle = graph.integration_handle();
     let owner = &handle.source_owner.invalidation_owner;
     let partition = [7; 32];
@@ -42,10 +42,10 @@ pub fn with_unmanaged_publications(
             .with_host_advancement(|phase| {
                 let phase_custody = &phase;
                 let account =
-                    resolved_account(&phase.test_host_request(), &world, status, &request);
+                    resolved_account(&phase.test_host_request_for_test(), &world, status, &request);
 
                 retained_status_program(
-                    &(phase_custody).test_host_request(),
+                    &(phase_custody).test_host_request_for_test(),
                     &world,
                     &principal,
                     &account,
@@ -65,7 +65,7 @@ pub fn with_unmanaged_publications(
         };
         Arc::clone(
             receipt
-                .exact_output_settlement()
+                .exact_output_settlement_for_test()
                 .expect("an output publication records its settlement"),
         )
     };

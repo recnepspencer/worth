@@ -270,3 +270,5 @@ impl AsRef<[EntityId]> for AdmittedAdjacencyEndpoints {
             .map_or(&[], |storage| storage.elements())
     }
 }
+
+mod court_doors_for_test;

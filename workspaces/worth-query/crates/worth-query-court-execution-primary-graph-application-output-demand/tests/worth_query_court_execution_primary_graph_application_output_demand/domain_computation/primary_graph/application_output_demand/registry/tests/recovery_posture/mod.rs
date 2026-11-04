@@ -31,7 +31,7 @@ fn retryable_publication_stale_does_not_keep_a_closed_required_interest() {
         generation: Mutex::new(0),
         changed: Condvar::new(),
     });
-    registry.state.lock().unwrap().records.insert(
+    (*registry.state_for_test()).lock().unwrap().records.insert(
         demand_key.clone(),
         DemandRecord {
             required_interests: 1,
@@ -40,24 +40,24 @@ fn retryable_publication_stale_does_not_keep_a_closed_required_interest() {
         },
     );
     let demand_interest = required_interest(&registry, demand_key.clone(), wake);
-    let mut denial = WorthQueryOutputDemandDenial::new(
+    let mut denial = WorthQueryOutputDemandDenial::new_for_test(
         WorthQueryOutputDemandDenialKind::PublicationStale,
         "a sibling advanced the product head",
     );
 
-    registry.finish_execution_failure(&demand_interest, &mut denial);
+    registry.finish_execution_failure_for_test(&demand_interest, &mut denial);
     assert_eq!(
         denial.recovery_posture(),
         WorthQueryOutputDemandRecoveryPosture::Retryable
     );
     assert!(matches!(
-        registry.state.lock().unwrap().records[&demand_key].state,
+        (*registry.state_for_test()).lock().unwrap().records[&demand_key].state,
         DemandState::Scheduled
     ));
     drop(demand_interest);
 
-    assert!(!registry
-        .state
+    assert!(!(*registry
+        .state_for_test())
         .lock()
         .unwrap()
         .records
@@ -71,7 +71,7 @@ fn running_budget_failure_stays_with_its_request_and_leaves_the_row_claimable() 
         generation: Mutex::new(0),
         changed: Condvar::new(),
     });
-    registry.state.lock().unwrap().records.insert(
+    (*registry.state_for_test()).lock().unwrap().records.insert(
         demand_key.clone(),
         DemandRecord {
             required_interests: 1,
@@ -80,19 +80,19 @@ fn running_budget_failure_stays_with_its_request_and_leaves_the_row_claimable() 
         },
     );
     let demand_interest = required_interest(&registry, demand_key.clone(), wake);
-    let mut denial = WorthQueryOutputDemandDenial::new(
+    let mut denial = WorthQueryOutputDemandDenial::new_for_test(
         WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
         "the running attempt exhausted its governed work budget",
     );
 
-    registry.finish_execution_failure(&demand_interest, &mut denial);
+    registry.finish_execution_failure_for_test(&demand_interest, &mut denial);
 
     assert_eq!(
         denial.recovery_posture(),
         WorthQueryOutputDemandRecoveryPosture::Terminal
     );
     assert!(matches!(
-        registry.begin(&demand_interest),
+        registry.begin_for_test(&demand_interest),
         WorthQueryOutputDemandAdvanceAdmission::Execute { successor_of: None }
     ));
 }
@@ -103,25 +103,25 @@ fn no_change_checkpoint_keeps_its_real_receipt_across_claims() {
         .committed_product_publication()
         .composite_commit()
         .clone();
-    let original_occurrence = receipt.product_branch().occurrence();
+    let original_occurrence = receipt.product_branch().occurrence_for_test();
     let registry = WorthQueryOutputDemandRegistry::default();
     let demand_key = key("no-change", 8, 1);
     let wake = Arc::new(DemandWake {
         generation: Mutex::new(0),
         changed: Condvar::new(),
     });
-    registry.state.lock().unwrap().records.insert(
+    (*registry.state_for_test()).lock().unwrap().records.insert(
         demand_key.clone(),
         DemandRecord {
             required_interests: 1,
             wake: Arc::clone(&wake),
             ..record(
                 original_occurrence,
-                DemandState::Output(WorthQueryOutputProgress::new(
+                DemandState::Output(WorthQueryOutputProgress::new_for_test(
                     WorthQueryOutputCheckpoint::Published {
                         receipt,
                         delivery: WorthQueryPendingOutputDelivery::NoChange,
-                        ready_backing: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::ready_backing::PreparedReadyBacking::for_test(),
+                        ready_backing: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::ready_backing::PreparedReadyBacking::for_test_for_test(),
                     },
                 )),
                 1,
@@ -130,7 +130,7 @@ fn no_change_checkpoint_keeps_its_real_receipt_across_claims() {
     );
     let demand_interest = required_interest(&registry, demand_key.clone(), wake);
     let WorthQueryOutputDemandAdvanceAdmission::AdvanceCheckpoint { claim, checkpoint } =
-        registry.begin(&demand_interest)
+        registry.begin_for_test(&demand_interest)
     else {
         panic!("the no-change checkpoint must remain runnable")
     };
@@ -143,18 +143,18 @@ fn no_change_checkpoint_keeps_its_real_receipt_across_claims() {
         &original_commit
     );
     assert!(matches!(
-        registry.begin(&demand_interest),
+        registry.begin_for_test(&demand_interest),
         WorthQueryOutputDemandAdvanceAdmission::Pending,
     ));
 
     registry
-        .finish_checkpoint(&demand_interest, claim, checkpoint, None)
+        .finish_checkpoint_for_test(&demand_interest, claim, checkpoint, None)
         .unwrap();
 
     let WorthQueryOutputDemandAdvanceAdmission::AdvanceCheckpoint {
         claim: retried_claim,
         checkpoint: retried,
-    } = registry.begin(&demand_interest)
+    } = registry.begin_for_test(&demand_interest)
     else {
         panic!("releasing an idle claim must preserve no-change publication")
     };
@@ -175,25 +175,25 @@ fn closed_occurrence_stops_a_claim_without_losing_published_identity() {
         .committed_product_publication()
         .composite_commit()
         .clone();
-    let occurrence = receipt.product_branch().occurrence();
+    let occurrence = receipt.product_branch().occurrence_for_test();
     let registry = WorthQueryOutputDemandRegistry::default();
     let demand_key = key("required", 9, 1);
     let wake = Arc::new(DemandWake {
         generation: Mutex::new(0),
         changed: Condvar::new(),
     });
-    registry.state.lock().unwrap().records.insert(
+    (*registry.state_for_test()).lock().unwrap().records.insert(
         demand_key.clone(),
         DemandRecord {
             required_interests: 1,
             wake: Arc::clone(&wake),
             ..record(
                 occurrence,
-                DemandState::Output(WorthQueryOutputProgress::new(
+                DemandState::Output(WorthQueryOutputProgress::new_for_test(
                     WorthQueryOutputCheckpoint::Published {
                         receipt,
                         delivery: WorthQueryPendingOutputDelivery::NoChange,
-                        ready_backing: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::ready_backing::PreparedReadyBacking::for_test(),
+                        ready_backing: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::ready_backing::PreparedReadyBacking::for_test_for_test(),
                     },
                 )),
                 1,
@@ -202,30 +202,30 @@ fn closed_occurrence_stops_a_claim_without_losing_published_identity() {
     );
     let demand_interest = required_interest(&registry, demand_key.clone(), wake);
     let WorthQueryOutputDemandAdvanceAdmission::AdvanceCheckpoint { claim, checkpoint } =
-        registry.begin(&demand_interest)
+        registry.begin_for_test(&demand_interest)
     else {
         panic!("published output must admit one claim")
     };
 
-    registry.release_product_occurrence(occurrence);
+    registry.release_product_occurrence_for_test(occurrence);
     let cause = registry
-        .finish_checkpoint(&demand_interest, claim, checkpoint, None)
+        .finish_checkpoint_for_test(&demand_interest, claim, checkpoint, None)
         .expect_err("branch close must win over the claimed completion");
     assert_eq!(cause.kind(), WorthQueryOutputDemandDenialKind::Closed);
-    let state = registry.state.lock().unwrap();
+    let state = (*registry.state_for_test()).lock().unwrap();
     let DemandState::Output(output) = &state.records[&demand_key].state else {
         panic!("published identity must survive the terminal denial while interest remains")
     };
     assert_eq!(
-        output
-            .published_commit
+        (*output
+            .published_commit_for_test())
             .as_ref()
             .expect("ordinary published commit"),
         &commit,
     );
     assert_eq!(
-        output
-            .checkpoint
+        (*output
+            .checkpoint_for_test())
             .as_ref()
             .expect("stopped output retains its checkpoint")
             .receipt()
@@ -235,12 +235,12 @@ fn closed_occurrence_stops_a_claim_without_losing_published_identity() {
         &commit,
     );
     assert!(matches!(
-        output.advancement(),
+        output.advancement_for_test(),
         worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputAdvancement::Stopped { .. }
     ));
     drop(state);
     assert!(matches!(
-        registry.begin(&demand_interest),
+        registry.begin_for_test(&demand_interest),
         WorthQueryOutputDemandAdvanceAdmission::Failed(denial)
             if denial.kind() == WorthQueryOutputDemandDenialKind::Closed
     ));

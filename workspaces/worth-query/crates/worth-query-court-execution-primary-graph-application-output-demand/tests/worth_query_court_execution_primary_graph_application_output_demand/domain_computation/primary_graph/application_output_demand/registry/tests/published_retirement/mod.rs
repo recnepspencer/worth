@@ -10,7 +10,7 @@ pub fn admit(
     registry: &WorthQueryOutputDemandRegistry,
     key: &WorthQueryOutputDemandKey,
 ) -> WorthQueryOutputDemandInterest {
-    registry.admit(key.clone(), None, worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity(root(1)), occurrence(), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandAdmissionKind::Ordinary, None, None).map(|(interest, _pause)| interest).unwrap()
+    registry.admit_for_test(key.clone(), None, worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(root(1)), occurrence(), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandAdmissionKind::Ordinary, None, None).map(|(interest, _pause)| interest).unwrap()
 }
 
 pub fn publish(
@@ -19,24 +19,24 @@ pub fn publish(
     receipt: worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitReceipt,
 ) {
     assert!(matches!(
-        registry.begin(interest),
+        registry.begin_for_test(interest),
         Admission::Schedule(None)
     ));
-    registry.finish_scheduling(
+    registry.finish_scheduling_for_test(
         interest,
         None,
         &mut Ok(WorthQueryOutputSchedulingResult::Scheduled),
     );
     let finish = registry
-        .prepare_selected_execution_finish(interest)
+        .prepare_selected_execution_finish_for_test(interest)
         .unwrap();
     assert!(matches!(
-        registry.begin(interest),
+        registry.begin_for_test(interest),
         Admission::Execute { .. }
     ));
-    let backing = PreparedReadyBacking::new();
+    let backing = PreparedReadyBacking::new_for_test();
     RunningSelectedExecution::new(finish)
-        .publish(WorthQueryOutputCheckpoint::Published {
+        .publish_for_test(WorthQueryOutputCheckpoint::Published {
             receipt,
             delivery: WorthQueryPendingOutputDelivery::NoChange,
             ready_backing: backing,
@@ -58,7 +58,7 @@ fn last_published_interest_releases_its_own_prerequisite_claims() {
         {
             // The local registry fixture declares one already funded consumed edge.
             // Native certification is not under test; release of that edge is.
-            let mut state = registry.state.lock().unwrap();
+            let mut state = (*registry.state_for_test()).lock().unwrap();
             let claims = vec![Arc::new(upstream_key.clone())];
 
             state.records.get_mut(&output_key).unwrap().prerequisites = claims;
@@ -69,7 +69,7 @@ fn last_published_interest_releases_its_own_prerequisite_claims() {
                 .framework_required_count += 1;
         }
         drop(output);
-        let state = registry.state.lock().unwrap();
+        let state = (*registry.state_for_test()).lock().unwrap();
         assert!(!state.records.contains_key(&output_key));
         assert_eq!(state.records[&upstream_key].framework_required_count, 0);
         assert_eq!(state.records[&upstream_key].interests, 1);
@@ -94,7 +94,7 @@ fn one_remaining_interest_keeps_the_undelivered_publication() {
         publish(&registry, &first, receipt);
         let claims = vec![Arc::new(upstream_key.clone())];
         {
-            let mut state = registry.state.lock().unwrap();
+            let mut state = (*registry.state_for_test()).lock().unwrap();
 
             state.records.get_mut(&output_key).unwrap().prerequisites = claims.clone();
             state
@@ -105,7 +105,7 @@ fn one_remaining_interest_keeps_the_undelivered_publication() {
         }
         drop(first);
         {
-            let state = registry.state.lock().unwrap();
+            let state = (*registry.state_for_test()).lock().unwrap();
             assert_eq!(state.records[&output_key].interests, 1);
             assert_eq!(
                 state.records[&output_key].prerequisites, claims,
@@ -115,18 +115,18 @@ fn one_remaining_interest_keeps_the_undelivered_publication() {
 
             assert!(
                 matches!(&state.records[&output_key].state, DemandState::Output(output)
-                if matches!(output.checkpoint, Some(WorthQueryOutputCheckpoint::Published { .. })))
+                if matches!((*output.checkpoint_for_test()), Some(WorthQueryOutputCheckpoint::Published { .. })))
             );
         }
         drop(second);
-        assert!(!registry
-            .state
+        assert!(!(*registry
+            .state_for_test())
             .lock()
             .unwrap()
             .records
             .contains_key(&output_key));
         assert_eq!(
-            registry.state.lock().unwrap().records[&upstream_key].framework_required_count,
+            (*registry.state_for_test()).lock().unwrap().records[&upstream_key].framework_required_count,
             0
         );
         drop(upstream);
@@ -145,11 +145,11 @@ fn a_registry_successor_is_moved_to_exactly_one_taker() {
         publish(&registry, &first, receipt);
         let successor: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::held_successor::HeldRequiredSuccessor = Box::new(row_key.clone());
         assert!(registry
-            .hold_required_successor(successor, |held| held
+            .hold_required_successor_for_test(successor, |held| held
                 .downcast_ref::<WorthQueryOutputDemandKey>())
             .is_none());
         let moved = registry
-            .take_published_held_successor(&row_key)
+            .take_published_held_successor_for_test(&row_key)
             .unwrap()
             .unwrap();
         assert_eq!(
@@ -158,7 +158,7 @@ fn a_registry_successor_is_moved_to_exactly_one_taker() {
         );
         assert!(
             registry
-                .take_published_held_successor(&row_key)
+                .take_published_held_successor_for_test(&row_key)
                 .unwrap()
                 .is_none(),
             "a second advance receives no successor after the custody move"

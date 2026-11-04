@@ -18,7 +18,7 @@ fn local_full_verification_requirement_overrides_a_clean_actor_row() {
     let world = installed_authorization_world(true);
     let selected = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
         .expect("the fixture read owns its installed host call");
     let entity = world
         .application
@@ -32,12 +32,12 @@ fn local_full_verification_requirement_overrides_a_clean_actor_row() {
                     WorthQueryPrincipalResolutionMode::Ordinary,
                 )
                 .unwrap()
-                .entity_id()
+                .entity_id_for_test()
         })
         .expect("the fixture read owns its installed host call");
-    let (_, product, _) = selected.into_parts();
+    let (_, product, _) = selected.into_parts_for_test();
     let observation = product.observation();
-    let graph = world.application.runtime.primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let handle = graph.integration_handle();
     let owner = &handle.source_owner.invalidation_owner;
     let status_ref = AccountStatus::reference();
@@ -49,7 +49,7 @@ fn local_full_verification_requirement_overrides_a_clean_actor_row() {
     let (before_handle, before, retained_fact) = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             handle.with_runtime(request_execution, |runtime| {
                 let (snapshot, basis) = snapshot(runtime);
                 let fact = field_fact(
@@ -66,34 +66,34 @@ fn local_full_verification_requirement_overrides_a_clean_actor_row() {
         .expect("the fixture read owns its installed host call");
 
     let mut lineage = WorthQueryApplicationOutputLineage::default();
-    lineage.fixture_binding(TypeId::of::<StatusOutput>(), "StatusOutput");
+    lineage.fixture_binding(TypeId::of_for_test::<StatusOutput>(), "StatusOutput");
 
-    lineage.install_output_families(BTreeMap::from([(
+    lineage.install_output_families_for_test(BTreeMap::from([(
         "local-requirement".to_owned().into(),
-        vec![(TypeId::of::<StatusOutput>(), "output".to_owned())],
+        vec![(TypeId::of_for_test::<StatusOutput>(), "output".to_owned())],
     )]));
-    let runtime_authority = world.application.runtime.authority_identity().as_u64();
-    let schema = world.application.installed_schema.binding_identity();
-    let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity(entity);
-    lineage.record_restoration(
-        TypeId::of::<StatusOutput>(),
+    let runtime_authority = (*world.application.runtime_for_test()).authority_identity().as_u64();
+    let schema = (*world.application.installed_schema_for_test()).binding_identity();
+    let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity);
+    lineage.record_restoration_for_test(
+        TypeId::of_for_test::<StatusOutput>(),
         runtime_authority,
         schema.clone(),
         scope,
         observation,
         Arc::new(WorthQueryApplicationOutputCorrespondence::default()),
-        RecordedSourceIdentity::Checkpoint(WorthQueryCheckpointSourceIdentity::new([0x71; 32])),
+        RecordedSourceIdentity::Checkpoint(WorthQueryCheckpointSourceIdentity::new_for_test([0x71; 32])),
         [0x72; 32],
         None,
         [0x73; 32],
-            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false).retain_facts(Arc::clone(&retained_fact)),
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false).retain_facts_for_test(Arc::clone(&retained_fact)),
         None,
         None,
         None,
     );
     let identity = Arc::clone(
         &lineage
-            .resolve_current_family(
+            .resolve_current_family_for_test(
                 request_execution,
                 runtime_authority,
                 &schema,
@@ -118,7 +118,7 @@ fn local_full_verification_requirement_overrides_a_clean_actor_row() {
         &before,
         OrdSet::new(),
     );
-    lineage.require_settlement_verification(
+    lineage.require_settlement_verification_for_test(
         &identity,
         FullVerificationReason::NativeRevisionUnavailable,
     );
@@ -132,7 +132,7 @@ fn local_full_verification_requirement_overrides_a_clean_actor_row() {
     ));
 
     let candidate = lineage
-        .resolve_current_family(
+        .resolve_current_family_for_test(
             request_execution,
             runtime_authority,
             &schema,
@@ -153,9 +153,9 @@ fn local_full_verification_requirement_overrides_a_clean_actor_row() {
     let result = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             handle.with_runtime(request_execution, |runtime| {
-                ConsumedOutputEvidence::verify_candidate_with_admission(
+                ConsumedOutputEvidence::verify_candidate_with_admission_for_test(
                     &host_custody.borrowed_request_for_test(),
                     &candidate.settlement_identity,
                     &candidate.observed_source_facts.for_comparison().unwrap(),

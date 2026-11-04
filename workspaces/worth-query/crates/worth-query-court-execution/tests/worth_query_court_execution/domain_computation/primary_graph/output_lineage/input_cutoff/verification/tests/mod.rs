@@ -20,7 +20,7 @@ fn a_marked_fact_is_reverified_at_the_real_native_snapshot() {
         .with_host_advancement(|phase| {
             let execution = phase.borrowed_request_for_test();
             let entity = world
-                .selected_product(&phase.test_host_request())
+                .selected_product(&phase.test_host_request_for_test())
                 .resolve_entity(
                     &phase,
                     AccountStatus::reference(),
@@ -29,8 +29,8 @@ fn a_marked_fact_is_reverified_at_the_real_native_snapshot() {
                     WorthQueryPrincipalResolutionMode::Ordinary,
                 )
                 .unwrap()
-                .entity_id();
-            let graph = world.application.runtime.primary_graph().unwrap();
+                .entity_id_for_test();
+            let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
             let status_ref = AccountStatus::reference();
             let status = graph
                 .layout()
@@ -43,9 +43,9 @@ fn a_marked_fact_is_reverified_at_the_real_native_snapshot() {
                 status.field_path().clone(),
             );
 
-            world
+            (*world
                 .application
-                .primary_provider
+                .primary_provider_for_test())
                 .graph
                 .with_runtime(&execution, |runtime| {
                     let basis = runtime
@@ -118,7 +118,7 @@ fn a_clean_settlement_reuses_without_fact_reverification() {
         .application
         .with_host_advancement(|phase| {
             let execution = phase.borrowed_request_for_test();
-            let selected_product = world.selected_product(&phase.test_host_request());
+            let selected_product = world.selected_product(&phase.test_host_request_for_test());
             let entity = selected_product
                 .resolve_entity(
                     &phase,
@@ -128,10 +128,10 @@ fn a_clean_settlement_reuses_without_fact_reverification() {
                     WorthQueryPrincipalResolutionMode::Ordinary,
                 )
                 .unwrap()
-                .entity_id();
-            let (_, product, _) = selected_product.into_parts();
+                .entity_id_for_test();
+            let (_, product, _) = selected_product.into_parts_for_test();
             let observation = product.observation();
-            let graph = world.application.runtime.primary_graph().unwrap();
+            let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
             let handle = graph.integration_handle();
             let owner = &handle.source_owner.invalidation_owner;
             let status_ref = AccountStatus::reference();
@@ -145,9 +145,9 @@ fn a_clean_settlement_reuses_without_fact_reverification() {
                 status.field_path().clone(),
             );
             let correspondence = Arc::new(
-                WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles(
-                    TypeId::of::<()>(),
-                    TypeId::of::<()>(),
+                WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles_for_test(
+                    TypeId::of_for_test::<()>(),
+                    TypeId::of_for_test::<()>(),
                     std::iter::empty(),
                     &[WorthQueryCheckpointOutputRole {
                         role: "account".to_owned(),
@@ -155,18 +155,18 @@ fn a_clean_settlement_reuses_without_fact_reverification() {
                         entity_name: "Account".to_owned(),
                         entity,
                     }],
-                    |_| Some(TypeId::of::<()>()),
+                    |_| Some(TypeId::of_for_test::<()>()),
                     &execution,
                 )
                 .unwrap(),
             );
             let source = SemanticSource {
-                runtime_authority: world.application.runtime.authority_identity().as_u64(),
-                schema: world.application.installed_schema.binding_identity(),
-                scope: WorthQueryOperationScopeEntityBinding::from_entity(entity),
-                output_binding: OutputBindingIdentity::declared("ProbeOutput"),
+                runtime_authority: (*world.application.runtime_for_test()).authority_identity().as_u64(),
+                schema: (*world.application.installed_schema_for_test()).binding_identity(),
+                scope: WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity),
+                output_binding: OutputBindingIdentity::declared_for_test("ProbeOutput"),
             };
-            let identity = RecordedSettlementIdentity::retain(
+            let identity = RecordedSettlementIdentity::retain_for_test(
                 &source,
                 ProductCoordinate {
                     occurrence: observation.lifecycle_incarnation(),
@@ -176,14 +176,14 @@ fn a_clean_settlement_reuses_without_fact_reverification() {
             );
             let selection = WorthQueryObservedSourceSelection::selecting_for_test(1);
             let input_key = || {
-                PreparedInputReuseKey::new(
+                PreparedInputReuseKey::new_for_test(
                     selection.clone(),
                     [0x61; 32],
-                    InstalledProducerEdition::for_test([0x51; 32]),
+                    InstalledProducerEdition::for_test_for_test([0x51; 32]),
                 )
             };
             let context = || {
-                PreparedDecisionReuseContext::new(
+                PreparedDecisionReuseContext::new_for_test(
                     WorthQueryProducerInputReuseContract::canonical_bitwise(
                         WorthQueryDecisionContextDependencies::NONE,
                     ),
@@ -217,13 +217,13 @@ fn a_clean_settlement_reuses_without_fact_reverification() {
                         native_revision: Some(revision),
                     }]);
 
-                let witness = PreparedNativeOutputWitness::prepare_republication(
+                let witness = PreparedNativeOutputWitness::prepare_republication_for_test(
                     &correspondence,
                     graph.layout(),
                 )
                 .unwrap()
                 .expect("the installed Account admits its native witness")
-                .finish(&correspondence, runtime, &snapshot)
+                .finish_for_test(&correspondence, runtime, &snapshot)
                 .unwrap();
                 let evidence = ComputationSourceEvidence::for_test(false);
                 owner
@@ -231,7 +231,7 @@ fn a_clean_settlement_reuses_without_fact_reverification() {
                         computation: None,
                         work_membership: None,
                         identity: Arc::clone(&identity),
-                        facts: evidence.retain_facts(Arc::clone(&facts)),
+                        facts: evidence.retain_facts_for_test(Arc::clone(&facts)),
                         output_facts: None,
                         read_basis: selected.clone(),
                         stale_at_read_basis: Default::default(),
@@ -256,7 +256,7 @@ fn a_clean_settlement_reuses_without_fact_reverification() {
 
                 let boundary = CompletedHandlerFactBoundary::completed_for_test(1);
                 let completed = boundary
-                    .seal_decision_reuse(context(), DecisionContextUse::default())
+                    .seal_decision_reuse_for_test(context(), DecisionContextUse::default())
                     .unwrap();
                 let row = RecordedOutput {
                     producing_implementation: None,
@@ -275,18 +275,18 @@ fn a_clean_settlement_reuses_without_fact_reverification() {
                     source_partition_identity: None,
                     producer_dependency_identity: None,
                     idempotency_key_identity: [0x41; 32],
-                    mutable: Mutex::new(RecordedOutputMutable::new(
+                    mutable: Mutex::new(RecordedOutputMutable::new_for_test(
                         None,
-                        Some(evidence.retain_facts(facts)),
+                        Some(evidence.retain_facts_for_test(facts)),
                         RecordedComputation::Absent(PriorAbsence::FirstRun),
                     )),
                 };
-                let candidate = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::input_cutoff::RetainedInputCutoffCandidate::from_exact_cell(Arc::new(
+                let candidate = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::input_cutoff::RetainedInputCutoffCandidate::from_exact_cell_for_test(Arc::new(
                     OnceLock::from(row),
                 ));
 
                 let decision = candidate
-                    .eligible_for_reuse(
+                    .eligible_for_reuse_for_test(
                         &execution,
                         &input_key(),
                         &context(),

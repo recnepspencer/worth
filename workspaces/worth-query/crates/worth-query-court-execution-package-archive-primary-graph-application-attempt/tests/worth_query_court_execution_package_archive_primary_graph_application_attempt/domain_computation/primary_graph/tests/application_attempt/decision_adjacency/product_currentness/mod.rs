@@ -17,7 +17,7 @@ fn unrelated_adjacency_growth_preserves_prepared_decision_facts() {
     let alice = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             authenticated(
                 &phase,
                 &host_custody.borrowed_request_for_test(),
@@ -30,7 +30,7 @@ fn unrelated_adjacency_growth_preserves_prepared_decision_facts() {
     let bob = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             authenticated(
                 &phase,
                 &host_custody.borrowed_request_for_test(),
@@ -43,7 +43,7 @@ fn unrelated_adjacency_growth_preserves_prepared_decision_facts() {
     let alice_identity = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             resolved_principal(
                 &phase,
                 &host_custody.borrowed_request_for_test(),
@@ -56,7 +56,7 @@ fn unrelated_adjacency_growth_preserves_prepared_decision_facts() {
     let bob_identity = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             resolved_principal(
                 &phase,
                 &host_custody.borrowed_request_for_test(),
@@ -69,24 +69,24 @@ fn unrelated_adjacency_growth_preserves_prepared_decision_facts() {
     let first_account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let second_account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "unrelated", &request)
+            resolved_account(&(phase).test_host_request_for_test(), &world, "unrelated", &request)
         })
         .expect("the fixture read owns its installed host call");
     let selected = world
         .application
         .product_runtime()
-        .admit_product_branch(world.application.product_runtime().default_branch())
+        .admit_product_branch_for_test(world.application.product_runtime().default_branch_for_test())
         .unwrap();
     let commit_count = || {
-        world
+        (*world
             .application
-            .primary_provider
+            .primary_provider_for_test())
             .graph
             .with_runtime(request_execution, |runtime| {
                 runtime.history().immutable_commit_count()
@@ -134,7 +134,7 @@ fn unrelated_adjacency_growth_preserves_prepared_decision_facts() {
     let current = world
         .application
         .product_runtime()
-        .admit_product_branch(world.application.product_runtime().default_branch())
+        .admit_product_branch_for_test(world.application.product_runtime().default_branch_for_test())
         .unwrap();
     assert_ne!(current.selected_commit(), selected.selected_commit());
     assert_eq!(commit_count(), baseline + 1);
@@ -152,7 +152,7 @@ fn unrelated_adjacency_growth_preserves_prepared_decision_facts() {
     let successor = world
         .application
         .product_runtime()
-        .admit_product_branch(world.application.product_runtime().default_branch())
+        .admit_product_branch_for_test(world.application.product_runtime().default_branch_for_test())
         .unwrap();
     assert_ne!(successor.selected_commit(), current.selected_commit());
 

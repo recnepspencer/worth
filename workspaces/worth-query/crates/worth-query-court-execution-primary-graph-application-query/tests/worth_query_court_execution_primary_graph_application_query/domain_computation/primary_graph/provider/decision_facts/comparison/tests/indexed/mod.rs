@@ -23,18 +23,18 @@ fn scoped_indexed_comparison_preserves_pinned_absence_limits_and_foreign_affinit
     let world = installed_authorization_world(true);
     let foreign = installed_authorization_world(true);
     let request = live_scope();
-    let control = StorageControl::new(ExecutionAllocationPolicy::SystemAllocation, Some(&request));
+    let control = StorageControl::new_for_test(ExecutionAllocationPolicy::SystemAllocation, Some(&request));
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             let borrowed_execution = host_custody.borrowed_request_for_test();
             let execution = &borrowed_execution;
             let selected = world.selected_product(
                 &(host_custody.phase_for_application(&world.application)).test_host_request(),
             );
-            let snapshot = selected.application_basis().snapshot_handle();
-            let graph = world.application.runtime.primary_graph().unwrap();
+            let snapshot = selected.application_basis_for_test().snapshot_handle();
+            let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
             let field = AccountStatus::reference();
             let layout = graph
                 .layout
@@ -77,27 +77,27 @@ fn scoped_indexed_comparison_preserves_pinned_absence_limits_and_foreign_affinit
             };
             assert_eq!(open.len(), 1);
             assert_eq!(other.len(), 1);
-            let mut selectors = PreparedSelections::new();
+            let mut selectors = PreparedSelections::new_for_test();
             for fact in [&present, &missing, &unrelated] {
                 graph
                     .integration_handle()
                     .with_runtime(&borrowed_execution, |runtime| {
                         assert!(fact.remains_equal_in(runtime, execution, snapshot).unwrap());
                         assert!(selectors
-                            .remains_equal(execution, fact, runtime, snapshot, control)
+                            .remains_equal_for_test(execution, fact, runtime, snapshot, control)
                             .unwrap());
                     });
             }
             assert_eq!(
-                selectors.selectors.len(),
+                (*selectors.selectors_for_test()).len(),
                 1,
                 "all distinct predicates share only the exact index admission"
             );
-            foreign.application.primary_provider.graph.with_runtime(
+            (*foreign.application.primary_provider_for_test()).graph.with_runtime(
                 &borrowed_execution,
                 |runtime| {
                     assert!(!selectors
-                        .remains_equal(execution, &present, runtime, snapshot, control)
+                        .remains_equal_for_test(execution, &present, runtime, snapshot, control)
                         .unwrap());
                 },
             );
@@ -119,19 +119,19 @@ fn scoped_indexed_comparison_preserves_pinned_absence_limits_and_foreign_affinit
                 .integration_handle()
                 .with_runtime(&borrowed_execution, |runtime| {
                     assert!(selectors
-                        .remains_equal(execution, &present, runtime, snapshot, control)
+                        .remains_equal_for_test(execution, &present, runtime, snapshot, control)
                         .unwrap())
                 });
             let current = world.selected_product(
                 &(host_custody.phase_for_application(&world.application)).test_host_request(),
             );
-            let current_snapshot = current.application_basis().snapshot_handle();
-            let mut current_selectors = PreparedSelections::new();
+            let current_snapshot = current.application_basis_for_test().snapshot_handle();
+            let mut current_selectors = PreparedSelections::new_for_test();
             graph
                 .integration_handle()
                 .with_runtime(&borrowed_execution, |runtime| {
                     assert!(!current_selectors
-                        .remains_equal(execution, &present, runtime, current_snapshot, control)
+                        .remains_equal_for_test(execution, &present, runtime, current_snapshot, control)
                         .unwrap());
                     let complete = observe_indexed_entity_selection(
                         runtime,
@@ -149,7 +149,7 @@ fn scoped_indexed_comparison_preserves_pinned_absence_limits_and_foreign_affinit
                     };
                     assert_eq!(candidates.len(), 2);
                     assert!(current_selectors
-                        .remains_equal(execution, &complete, runtime, current_snapshot, control)
+                        .remains_equal_for_test(execution, &complete, runtime, current_snapshot, control)
                         .unwrap());
                     for limit in [0, 1, usize::MAX] {
                         let mut narrowed = complete.clone();
@@ -162,7 +162,7 @@ fn scoped_indexed_comparison_preserves_pinned_absence_limits_and_foreign_affinit
                         *candidate_limit = limit;
                         assert!(
                             !current_selectors
-                                .remains_equal(
+                                .remains_equal_for_test(
                                     execution,
                                     &narrowed,
                                     runtime,
@@ -192,17 +192,17 @@ fn prepared_indexed_comparison_keeps_a_native_cancellation() {
     let scope = WorthQueryRequestScope::new(None, source.token());
     world.application.with_application_advancement(&scope, |phase| {
         let execution = phase.checked_execution_request_for(world.application.product_runtime()).unwrap();
-        let selected = world.selected_product(&phase.test_host_request());
-        let snapshot = selected.application_basis().snapshot_handle();
-        let graph = world.application.runtime.primary_graph().unwrap();
+        let selected = world.selected_product(&phase.test_host_request_for_test());
+        let snapshot = selected.application_basis_for_test().snapshot_handle();
+        let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
         let field = graph.layout.equality_field("Account", "AccountPolicy", "AccountStatus").unwrap();
         let (answer, seen) = graph.integration_handle().with_runtime(&execution, |runtime| {
             let fact = observe_indexed_entity_selection(runtime, &execution, snapshot,
                 field.equality_index_id.unwrap(), field.entity_kind, field.locator.clone(),
                 StringApplicationValueBinding::encode(&"open".to_owned()).unwrap(), 2).unwrap();
-            let mut prepared = PreparedSelections::new();
-            let control = StorageControl::new(ExecutionAllocationPolicy::SystemAllocation, None);
-            assert!(prepared.remains_equal(&execution, &fact, runtime, snapshot, control).unwrap());
+            let mut prepared = PreparedSelections::new_for_test();
+            let control = StorageControl::new_for_test(ExecutionAllocationPolicy::SystemAllocation, None);
+            assert!(prepared.remains_equal_for_test(&execution, &fact, runtime, snapshot, control).unwrap());
             let seen = Rc::new(Cell::new(0));
             let contacts = Rc::clone(&seen);
             // Query entry + Native admission precede the Native collector.
@@ -212,7 +212,7 @@ fn prepared_indexed_comparison_keeps_a_native_cancellation() {
                 contacts.set(contacts.get() + 1);
                 if contacts.get() == NATIVE_COLLECTION_CONSULT { source.cancel(); }
             });
-            let answer = prepared.remains_equal(&execution, &fact, runtime, snapshot, control);
+            let answer = prepared.remains_equal_for_test(&execution, &fact, runtime, snapshot, control);
             (answer, seen.get())
         });
         assert_eq!(seen, 3);

@@ -33,13 +33,13 @@ pub fn complete_review_out_of_band(
 ) {
     let review = world
         .application
-        .select_product_branch(
+        .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch(),
+            world.application.product_runtime().default_branch_for_test(),
         )
         .expect("the selected product branch remains admitted")
         .resolve_entity(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             CapabilityReviewIdentity::reference(),
             "review-2".to_owned(),
             &live_scope(),
@@ -47,7 +47,7 @@ pub fn complete_review_out_of_band(
         )
         .unwrap();
     let field = CapabilityReviewStatusField::reference();
-    let graph = world.application.runtime.primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let locator = graph
         .layout()
         .field_locator(field.entity(), field.aspect(), field.field())
@@ -96,20 +96,20 @@ pub fn replace_support_grantor_with_custodian(
 ) {
     let grant = world
         .application
-        .select_product_branch(
+        .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch(),
+            world.application.product_runtime().default_branch_for_test(),
         )
         .expect("the selected product branch remains admitted")
         .resolve_entity(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             CapabilityIdentity::reference(),
             "capability-1".to_owned(),
             &live_scope(),
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap();
-    let graph = world.application.runtime.primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let grantor_kind = graph
         .layout()
         .relation(CapabilityGrantor::reference().name())
@@ -121,9 +121,9 @@ pub fn replace_support_grantor_with_custodian(
         .unwrap()
         .kind;
     let handle = graph.integration_handle();
-    let selected = world.selected_product(&(phase_custody).test_host_request());
+    let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
     let grantor = handle.with_runtime_mut(execution, |runtime| {
-        let snapshot = selected.application_basis().snapshot_handle();
+        let snapshot = selected.application_basis_for_test().snapshot_handle();
 
         runtime
             .read_truth()

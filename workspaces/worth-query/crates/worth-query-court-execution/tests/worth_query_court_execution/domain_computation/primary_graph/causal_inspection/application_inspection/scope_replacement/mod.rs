@@ -30,7 +30,7 @@ use worth_relational::facade::transactions::RelationSpec;
 use worth_relational::facade::transactions::WorkerIntentBatch;
 
 pub fn account_fields(world: &AuthorizationWorld) -> AspectFieldPatch {
-    let layout = world.application.runtime.primary_graph().unwrap().layout();
+    let layout = (*world.application.runtime_for_test()).primary_graph().unwrap().layout();
     let locator = |field: (&str, &str, &str)| {
         layout
             .field_locator(field.0, field.1, field.2)
@@ -78,14 +78,14 @@ fn same_scope_reused_slot_cannot_inherit_original_observation_generation() {
         .execute()
         .unwrap()
         .close();
-    let old = original.source.retained_scope_selector().subject();
+    let old = (*original.source_for_test()).retained_scope_selector().subject();
     let readers = world.application.application_query_basis_observer();
     let baseline = readers.observe().active();
     let publish = |batch| {
         world
             .application
             .with_host_advancement(|phase| {
-                let host = phase.test_host_request();
+                let host = phase.test_host_request_for_test();
                 publish_relational_mutation(&host.borrowed_request_for_test(), &world, batch);
             })
             .unwrap()
@@ -102,9 +102,9 @@ fn same_scope_reused_slot_cannot_inherit_original_observation_generation() {
             let execution = phase
                 .checked_execution_request_for(world.application.product_runtime())
                 .unwrap();
-            world
+            (*world
                 .application
-                .runtime
+                .runtime_for_test())
                 .primary_graph()
                 .unwrap()
                 .integration_handle()
@@ -119,7 +119,7 @@ fn same_scope_reused_slot_cannot_inherit_original_observation_generation() {
         reclaimed.outcome().entity_reclaimed > 0,
         "an actual reclaim must precede any reuse claim"
     );
-    let layout = world.application.runtime.primary_graph().unwrap().layout();
+    let layout = (*world.application.runtime_for_test()).primary_graph().unwrap().layout();
     publish(
         WorkerIntentBatch::new("inspection-generation-create").push(MutationIntent::Create(
             CreateIntent::Entity(EntitySpec {
@@ -133,7 +133,7 @@ fn same_scope_reused_slot_cannot_inherit_original_observation_generation() {
     let (fresh, owner) = world
         .application
         .with_host_advancement(|phase| {
-            let selected = world.selected_product(&phase.test_host_request());
+            let selected = world.selected_product(&phase.test_host_request_for_test());
             let fresh = selected
                 .resolve_entity(
                     &phase,
@@ -143,7 +143,7 @@ fn same_scope_reused_slot_cannot_inherit_original_observation_generation() {
                     WorthQueryPrincipalResolutionMode::Ordinary,
                 )
                 .unwrap()
-                .entity_id();
+                .entity_id_for_test();
             let owner = selected
                 .resolve_entity(
                     &phase,
@@ -153,7 +153,7 @@ fn same_scope_reused_slot_cannot_inherit_original_observation_generation() {
                     WorthQueryPrincipalResolutionMode::Ordinary,
                 )
                 .unwrap()
-                .entity_id();
+                .entity_id_for_test();
             (fresh, owner)
         })
         .unwrap();
@@ -184,7 +184,7 @@ fn same_scope_reused_slot_cannot_inherit_original_observation_generation() {
     );
     let current_original = observe(&world, &external, &request, false);
     assert_eq!(
-        current_original.source.retained_scope_selector().subject(),
+        (*current_original.source_for_test()).retained_scope_selector().subject(),
         fresh
     );
     world
@@ -209,7 +209,7 @@ fn same_scope_reused_slot_cannot_inherit_original_observation_generation() {
         .unwrap();
     assert!(
         matches!(
-            denial.cause,
+            (*denial.cause_for_test()),
             worth_query_execution::court_doors_for_test::domain_computation::primary_graph::causal_inspection::application_inspection::stop::InspectionCause::Admission(
                 worth_query_execution::court_doors_for_test::domain_computation::primary_graph::causal_inspection::application_inspection::admission::InspectionAdmissionDenial::ForeignIssuedAccess
             )

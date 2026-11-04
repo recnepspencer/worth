@@ -112,7 +112,7 @@ pub fn indeterminate_terminal_with_probe(
         direct_admission_fixture_with_domain_port_probe(disposition, resource_request);
     let epoch = fixture.admit();
     let started = {
-        let installed_fixture_phase = epoch.fixture_phase(execution);
+        let installed_fixture_phase = epoch.fixture_phase_for_test(execution);
         epoch.begin_iteration(
             &installed_fixture_phase,
             WorthQueryManagedGraphCallRequest::new(
@@ -124,7 +124,7 @@ pub fn indeterminate_terminal_with_probe(
     .unwrap_or_else(|_| panic!("governed probe iteration must start"));
     let outcome = {
         let fixture_phase_result = {
-            let installed_fixture_phase = started.fixture_phase(execution);
+            let installed_fixture_phase = started.fixture_phase_for_test(execution);
             started.advance(&installed_fixture_phase)
         };
         match fixture_phase_result {
@@ -200,7 +200,7 @@ fn provider_family_inspection_panic_denies_and_returns_every_admission_authority
     let (_, managed, _) = rejection.into_parts();
     let terminal = managed
         .start()
-        .terminate_for_convergence(WorthQueryManagedRunTerminalKind::Failed);
+        .terminate_for_convergence_for_test(WorthQueryManagedRunTerminalKind::Failed);
     assert_eq!(terminal.provider_work().provider_step_attempt_count(), 0);
     let cleanup = match terminal.cleanup() {
         Ok(cleanup) => cleanup,

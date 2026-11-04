@@ -21,17 +21,17 @@ fn retained_output_liveness_door_preserves_stops_at_every_consult() {
                 .field(&execution, &account, AccountStatus::reference())
                 .unwrap()
                 .is_some());
-            let selected = world.selected_product(&phase.test_host_request());
-            world
+            let selected = world.selected_product(&phase.test_host_request_for_test());
+            (*world
                 .application
-                .runtime
+                .runtime_for_test())
                 .primary_graph()
                 .unwrap()
                 .integration_handle()
                 .with_runtime(&execution, |runtime| {
                     let view = runtime
                         .read_truth()
-                        .project_snapshot(selected.application_basis().snapshot_handle())
+                        .project_snapshot(selected.application_basis_for_test().snapshot_handle())
                         .unwrap();
                     worth_query_execution::test_read_stops::every_consult_under(
                         &execution,

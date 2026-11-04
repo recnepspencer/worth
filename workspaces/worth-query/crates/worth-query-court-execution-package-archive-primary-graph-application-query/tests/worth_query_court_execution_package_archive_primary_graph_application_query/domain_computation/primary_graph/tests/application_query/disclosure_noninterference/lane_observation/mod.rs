@@ -110,7 +110,7 @@ pub fn observe_protected_world(label: &str) -> ProtectedWorldObservation {
     let (principal, committer, account) = world
         .application
         .with_host_advancement(|phase| {
-            let custody = phase.test_host_request();
+            let custody = phase.test_host_request_for_test();
             let phase_custody = &custody;
             let principal = resolve_principal(
                 phase_custody,
@@ -149,13 +149,13 @@ pub fn observe_protected_world(label: &str) -> ProtectedWorldObservation {
     let one_shot = world
         .application
         .with_host_advancement(|phase| {
-            crate::domain_computation::primary_graph::tests::application_query::disclosure_noninterference::lane_observation::non_live::observe_one_shot(&phase.test_host_request(), &context, &mut occurrences)
+            crate::domain_computation::primary_graph::tests::application_query::disclosure_noninterference::lane_observation::non_live::observe_one_shot(&phase.test_host_request_for_test(), &context, &mut occurrences)
         })
         .expect("the fixture owns its one-shot call");
     let continuation = world
         .application
         .with_host_advancement(|phase| {
-            crate::domain_computation::primary_graph::tests::application_query::disclosure_noninterference::lane_observation::non_live::observe_continuation(&phase.test_host_request(), &context, &mut occurrences)
+            crate::domain_computation::primary_graph::tests::application_query::disclosure_noninterference::lane_observation::non_live::observe_continuation(&phase.test_host_request_for_test(), &context, &mut occurrences)
         })
         .expect("the fixture owns its continuation call");
     let (live, live_commit_ordinal, live_close) = crate::domain_computation::primary_graph::tests::application_query::disclosure_noninterference::lane_observation::live::observe(&context, label, &mut occurrences);
@@ -240,13 +240,13 @@ pub fn resolve_principal(
     let external = world.authenticate(external_identity, Duration::from_secs(60), request);
     world
         .application
-        .select_product_branch(
+        .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch(),
+            world.application.product_runtime().default_branch_for_test(),
         )
         .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             &world.binding,
             &external,
             request,
@@ -263,13 +263,13 @@ pub fn resolve_account(
 ) -> WorthQueryApplicationEntityIdentity<IdentityExecutionSchema, Account> {
     world
         .application
-        .select_product_branch(
+        .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch(),
+            world.application.product_runtime().default_branch_for_test(),
         )
         .expect("the selected product branch remains admitted")
         .resolve_entity(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             AccountIdentity::reference(),
             "account-1".to_owned(),
             request,

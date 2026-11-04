@@ -10,17 +10,17 @@ fn role_family_accepts_variable_semantic_members_and_enforces_its_contract() {
     let negative = created_handle("face-negative", 20, &program);
     let positive = created_handle("face-positive", 21, &program);
     let negative_role =
-        OutputRoleUse::member::<Face, WorthQueryCreateOutput>("negative.inherited.wall").unwrap();
+        OutputRoleUse::member_for_test::<Face, WorthQueryCreateOutput>("negative.inherited.wall").unwrap();
     let positive_role =
-        OutputRoleUse::member::<Face, WorthQueryCreateOutput>("positive.cap").unwrap();
-    candidate.bind(negative_role, &negative, &program).unwrap();
+        OutputRoleUse::member_for_test::<Face, WorthQueryCreateOutput>("positive.cap").unwrap();
+    candidate.bind_for_test(negative_role, &negative, &program).unwrap();
     assert_eq!(
-        candidate.validate_effects(&[]).unwrap_err().kind(),
+        candidate.validate_effects_for_test(&[]).unwrap_err().kind(),
         WorthQueryApplicationAttemptDenialKind::MissingOutputRole
     );
-    candidate.bind(positive_role, &positive, &program).unwrap();
+    candidate.bind_for_test(positive_role, &positive, &program).unwrap();
     candidate
-        .validate_effects(&[
+        .validate_effects_for_test(&[
             create_effect("face-negative", 20),
             create_effect("face-positive", 21),
         ])
@@ -41,7 +41,7 @@ fn role_family_accepts_variable_semantic_members_and_enforces_its_contract() {
     ] {
         assert_eq!(
             candidate
-                .bind(role, &created_handle(key, kind, &program), &program)
+                .bind_for_test(role, &created_handle(key, kind, &program), &program)
                 .unwrap_err()
                 .kind(),
             WorthQueryApplicationAttemptDenialKind::UndeclaredOutputRole
@@ -55,12 +55,12 @@ fn role_family_accepts_variable_semantic_members_and_enforces_its_contract() {
     let existing = existing_handle(EntityId::new(PartitionId::main(), 23, 0), &program);
     assert_eq!(
         candidate
-            .bind(wrong_posture, &existing, &program)
+            .bind_for_test(wrong_posture, &existing, &program)
             .unwrap_err()
             .kind(),
         WorthQueryApplicationAttemptDenialKind::OutputRoleActionMismatch
     );
-    let committed = candidate.seal_with(|created| {
+    let committed = candidate.seal_with_for_test(|created| {
         Some(match created.client_key.as_raw_str() {
             Some("face-negative") => EntityId::new(PartitionId::main(), 30, 1),
             Some("face-positive") => EntityId::new(PartitionId::main(), 31, 1),
@@ -107,39 +107,39 @@ fn role_family_accepts_variable_semantic_members_and_enforces_its_contract() {
 #[test]
 fn family_range_is_deterministic_and_exposes_mixed_postures_only_within_prefix() {
     let program = Arc::new(());
-    let preserve = OutputRoleUse::member::<Mixed, WorthQueryPreserveOutput>("preserve").unwrap();
-    let create = OutputRoleUse::member::<Mixed, WorthQueryCreateOutput>("create").unwrap();
-    let retire = OutputRoleUse::member::<Mixed, WorthQueryRetireOutput>("retire").unwrap();
+    let preserve = OutputRoleUse::member_for_test::<Mixed, WorthQueryPreserveOutput>("preserve").unwrap();
+    let create = OutputRoleUse::member_for_test::<Mixed, WorthQueryCreateOutput>("create").unwrap();
+    let retire = OutputRoleUse::member_for_test::<Mixed, WorthQueryRetireOutput>("retire").unwrap();
     let mut candidate = prepared::<MixedOutputs>();
     candidate
-        .bind(
+        .bind_for_test(
             preserve,
             &existing_handle(EntityId::new(PartitionId::main(), 40, 1), &program),
             &program,
         )
         .unwrap();
     candidate
-        .bind(
+        .bind_for_test(
             create,
             &created_handle("family-create", 41, &program),
             &program,
         )
         .unwrap();
     candidate
-        .bind(
+        .bind_for_test(
             retire,
             &existing_handle(EntityId::new(PartitionId::main(), 42, 1), &program),
             &program,
         )
         .unwrap();
     candidate
-        .bind(
-            OutputRoleUse::fixed::<Unrelated>(),
+        .bind_for_test(
+            OutputRoleUse::fixed_for_test::<Unrelated>(),
             &existing_handle(EntityId::new(PartitionId::main(), 43, 1), &program),
             &program,
         )
         .unwrap();
-    let committed = candidate.seal_with(|_| Some(EntityId::new(PartitionId::main(), 41, 1)));
+    let committed = candidate.seal_with_for_test(|_| Some(EntityId::new(PartitionId::main(), 41, 1)));
 
     let outputs = committed.outputs_of::<MixedOutputs>().unwrap();
     let entries = outputs.family_entries::<Mixed>().unwrap();

@@ -14,7 +14,7 @@ fn same_runtime_foreign_bridge_adapter_denies_before_lower_authority_admission()
         .start_direct_resource_attempt(&operation, plan)
         .expect("exact operation should start");
     let context = worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::managed_run::tests::causal_fixture::source_profile_substitution_context(&resource_request);
-    let request = WorthQueryManagedTruthReadRequest::from_relational_basis(
+    let request = WorthQueryManagedTruthReadRequest::from_relational_basis_for_test(
         context.descriptor.clone(),
         worth_runtime_bridge::facade::SnapshotReadPacket::new(vec![]),
     );
@@ -33,7 +33,7 @@ fn same_runtime_foreign_bridge_adapter_denies_before_lower_authority_admission()
     assert!(rejection.detail().contains("authoritative adapter"));
 
     let attempt = rejection.into_resource_attempt();
-    let request = WorthQueryManagedTruthReadRequest::from_relational_basis(
+    let request = WorthQueryManagedTruthReadRequest::from_relational_basis_for_test(
         context.descriptor,
         worth_runtime_bridge::facade::SnapshotReadPacket::new(vec![]),
     );
@@ -69,7 +69,7 @@ fn foreign_query_runtime_denies_before_resource_or_lower_basis_checks() {
     );
 
     let rejection =
-        match foreign.admit_direct_run(&operation, attempt, lower.bridge, lower.relational) {
+        match foreign.admit_direct_run_for_test(&operation, attempt, lower.bridge, lower.relational) {
             Ok(_) => panic!("foreign Query runtime admitted another runtime's run"),
             Err(rejection) => rejection,
         };
@@ -106,7 +106,7 @@ fn stale_installation_generation_denies_before_resource_or_lower_basis_checks() 
     );
 
     let rejection =
-        match runtime.admit_direct_run(&operation, attempt, lower.bridge, lower.relational) {
+        match runtime.admit_direct_run_for_test(&operation, attempt, lower.bridge, lower.relational) {
             Ok(_) => panic!("stale installed operation admitted a managed run"),
             Err(rejection) => rejection,
         };
@@ -138,7 +138,7 @@ fn independently_valid_resource_attempt_cannot_substitute_for_the_operation() {
     );
 
     let rejection =
-        match runtime.admit_direct_run(&operation, attempt, lower.bridge, lower.relational) {
+        match runtime.admit_direct_run_for_test(&operation, attempt, lower.bridge, lower.relational) {
             Ok(_) => panic!("foreign resource attempt substituted for the operation"),
             Err(rejection) => rejection,
         };
@@ -183,7 +183,7 @@ fn bridge_attempt_for_a_different_run_intent_cannot_substitute() {
     );
 
     let rejection =
-        match runtime.admit_direct_run(&operation, attempt, lower.bridge, lower.relational) {
+        match runtime.admit_direct_run_for_test(&operation, attempt, lower.bridge, lower.relational) {
             Ok(_) => panic!("Bridge authority for another run intent substituted"),
             Err(rejection) => rejection,
         };
@@ -217,7 +217,7 @@ fn independently_valid_relational_runtime_cannot_substitute_for_bridge_source() 
         resource_request,
     );
 
-    let rejection = match runtime.admit_direct_run(
+    let rejection = match runtime.admit_direct_run_for_test(
         &operation,
         attempt,
         bridge_owner.bridge,
@@ -253,7 +253,7 @@ fn independently_valid_snapshot_lease_cannot_substitute_within_one_runtime() {
     );
 
     let rejection =
-        match runtime.admit_direct_run(&operation, attempt, lower.bridge, lower.relational) {
+        match runtime.admit_direct_run_for_test(&operation, attempt, lower.bridge, lower.relational) {
             Ok(_) => panic!("different active snapshot lease substituted for Bridge truth"),
             Err(rejection) => rejection,
         };

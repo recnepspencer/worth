@@ -20,12 +20,12 @@ fn a_queue_refusal_uses_its_advance_custody_not_the_rows_caller_tag() {
     for caller_tag in [false, true] {
         let registry = WorthQueryOutputDemandRegistry::default();
         let (_interest, ready) = registry.fixture_refusing_ready();
-        let key = ready.key().clone();
+        let key = ready.key_for_test().clone();
         let mut frontier = RequiredFrontier::new();
 
         frontier.insert(ready, caller_tag, None).unwrap();
-        let mut queue = QueuedRequiredRoots::new();
-        queue.defer_caller();
+        let mut queue = QueuedRequiredRoots::new_for_test();
+        queue.defer_caller_for_test();
         let mut custody = RequiredContinuations::<IdentityExecutionSchema>::default();
         let kind = WorthQueryOutputDemandDenialKind::ProducerUnavailable;
         let result = RefusingMember {
@@ -34,15 +34,15 @@ fn a_queue_refusal_uses_its_advance_custody_not_the_rows_caller_tag() {
             row: RefusalRow::Member,
             custody: RefusalCustody::Queue(&mut custody),
         }
-        .end(
-            WorthQueryOutputDemandDenial::new(kind.clone(), "the queued member's own stop"),
-            StopRecording::member(),
+        .end_for_test(
+            WorthQueryOutputDemandDenial::new_for_test(kind.clone(), "the queued member's own stop"),
+            StopRecording::member_for_test(),
             &mut queue,
         );
         match result {
             Ok(end @ RefusalEnd::Held) => {
                 assert!(end
-                    .finish(|| panic!("a held queue row does not end its cursor"))
+                    .finish_for_test(|| panic!("a held queue row does not end its cursor"))
                     .is_none());
             }
             Ok(RefusalEnd::QueueBudget) => panic!("the row's stop is not a request budget"),
@@ -54,7 +54,7 @@ fn a_queue_refusal_uses_its_advance_custody_not_the_rows_caller_tag() {
         assert_eq!(registry.fixture_stop_kind(&key), Some(kind));
         assert!(matches!(frontier.members[0].state, MemberState::Pending));
         assert!(matches!(
-            queue.take_caller(),
+            queue.take_caller_for_test(),
             Some(WorthQueryOutputDemandAdvance::Pending)
         ));
     }
@@ -66,8 +66,8 @@ fn a_queue_budget_refusal_returns_its_typed_end() {
     let mut frontier = RequiredFrontier::new();
 
     frontier.insert(ready, false, None).unwrap();
-    let mut queue = QueuedRequiredRoots::new();
-    queue.defer_caller();
+    let mut queue = QueuedRequiredRoots::new_for_test();
+    queue.defer_caller_for_test();
     let mut custody = RequiredContinuations::<IdentityExecutionSchema>::default();
     let result = RefusingMember {
         registry: &registry,
@@ -75,12 +75,12 @@ fn a_queue_budget_refusal_returns_its_typed_end() {
         row: RefusalRow::Member,
         custody: RefusalCustody::Queue(&mut custody),
     }
-    .end(
-        WorthQueryOutputDemandDenial::new(
+    .end_for_test(
+        WorthQueryOutputDemandDenial::new_for_test(
             WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
             "required custody refused",
         ),
-        StopRecording::member(),
+        StopRecording::member_for_test(),
         &mut queue,
     );
     let end = result.unwrap_or_else(|_| panic!("queue custody returns its budget end"));
@@ -104,11 +104,11 @@ fn a_queue_budget_refusal_returns_its_typed_end() {
 fn a_caller_refusal_returns_its_stop_even_for_a_queue_origin_row() {
     let registry = WorthQueryOutputDemandRegistry::default();
     let (_interest, ready) = registry.fixture_refusing_ready();
-    let key = ready.key().clone();
+    let key = ready.key_for_test().clone();
     let mut frontier = RequiredFrontier::new();
 
     frontier.insert(ready, false, None).unwrap();
-    let mut queue = QueuedRequiredRoots::new();
+    let mut queue = QueuedRequiredRoots::new_for_test();
     let kind = WorthQueryOutputDemandDenialKind::ProducerUnavailable;
     let result = RefusingMember::<IdentityExecutionSchema> {
         registry: &registry,
@@ -116,9 +116,9 @@ fn a_caller_refusal_returns_its_stop_even_for_a_queue_origin_row() {
         row: RefusalRow::Member,
         custody: RefusalCustody::Caller,
     }
-    .end(
-        WorthQueryOutputDemandDenial::new(kind.clone(), "the caller's own refusal"),
-        StopRecording::member(),
+    .end_for_test(
+        WorthQueryOutputDemandDenial::new_for_test(kind.clone(), "the caller's own refusal"),
+        StopRecording::member_for_test(),
         &mut queue,
     );
     let mut finished = false;
@@ -134,5 +134,5 @@ fn a_caller_refusal_returns_its_stop_even_for_a_queue_origin_row() {
         "caller custody returns its own stop before the cursor finish"
     );
     assert_eq!(registry.fixture_stop_kind(&key), Some(kind));
-    assert!(!queue.draining());
+    assert!(!queue.draining_for_test());
 }

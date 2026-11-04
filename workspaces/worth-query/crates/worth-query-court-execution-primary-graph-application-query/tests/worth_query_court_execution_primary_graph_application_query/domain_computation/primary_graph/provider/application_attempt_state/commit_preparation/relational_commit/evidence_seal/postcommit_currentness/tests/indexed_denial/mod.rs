@@ -20,14 +20,14 @@ pub fn committed_indexed_facts(
     world: &AuthorizationWorld,
 ) -> Vec<WorthQueryApplicationObservedFact> {
     let request = live_scope();
-    let principal = world.application.with_host_advancement(|phase| { let phase_custody = &phase;    worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::authenticated_principal(&(phase_custody).test_host_request(), world, &request) }).expect("the fixture read owns its installed host call");
+    let principal = world.application.with_host_advancement(|phase| { let phase_custody = &phase;    worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::authenticated_principal(&(phase_custody).test_host_request_for_test(), world, &request) }).expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
             let phase_custody = &phase;
 
             worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::resolved_account(
-                &(phase_custody).test_host_request(),
+                &(phase_custody).test_host_request_for_test(),
                 world,
                 "open",
                 &request,
@@ -45,7 +45,7 @@ pub fn committed_indexed_facts(
             let phase_custody = &phase;
 
             world
-                .selected_product(&(phase_custody).test_host_request())
+                .selected_product(&(phase_custody).test_host_request_for_test())
                 .authorize_operation(
                     phase_custody,
                     &principal,
@@ -97,9 +97,9 @@ pub fn committed_indexed_facts(
     else {
         panic!("the installed indexed decision must commit");
     };
-    let facts = world
+    let facts = (*world
         .application
-        .primary_provider
+        .primary_provider_for_test())
         .graph
         .output_lineage
         .lock()
@@ -142,7 +142,7 @@ fn indexed_postcommit_rebase_preserves_the_native_denial_and_fact_ordinal() {
         let outcome = world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
 
                 rebase_result_at_current(
                     &host_custody.phase_for_application(&world.application),
@@ -157,7 +157,7 @@ fn indexed_postcommit_rebase_preserves_the_native_denial_and_fact_ordinal() {
                 &outcome,
                 RebasedSourceFacts::VerificationRequired {
                     reason, ..
-                } if reason.reason() == &RebaseVerificationReason::IndexedSelectionFactDenied(
+                } if reason.reason_for_test() == &RebaseVerificationReason::IndexedSelectionFactDenied(
                     IndexedSelectionReobserveDenial::Lookup(BoundedEntityFieldLookupDenialKind::IndexNotInstalled))
                     && worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::mark_state::FullVerificationReason::from(reason.clone())
                         == worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::mark_state::FullVerificationReason::IndexedSelectionFactDenied(ordinal,
@@ -198,16 +198,16 @@ fn sparse_indexed_rebase_keeps_complete_dependencies_without_work_estimates() {
         let selected = world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
 
                 world.selected_product(
                     &(host_custody.phase_for_application(&world.application)).test_host_request(),
                 )
             })
             .expect("the fixture read owns its installed host call");
-        let graph = world.application.runtime.primary_graph().unwrap();
-        let observed = world.application.with_host_advancement(|phase| {   let borrowed_execution = phase.execution_request_for(&world.application.product_runtime).expect("fixture borrows its runtime request"); let execution = &borrowed_execution; graph.integration_handle().with_runtime(&phase.borrowed_request_for_test(), |runtime| {
-        let snapshot = selected.application_basis().snapshot_handle();
+        let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+        let observed = world.application.with_host_advancement(|phase| {   let borrowed_execution = phase.execution_request_for_for_test(&(*world.application.product_runtime_for_test())).expect("fixture borrows its runtime request"); let execution = &borrowed_execution; graph.integration_handle().with_runtime(&phase.borrowed_request_for_test(), |runtime| {
+        let snapshot = selected.application_basis_for_test().snapshot_handle();
         let observed = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::indexed_entity_selection::observe_indexed_entity_selection(
             runtime,execution,  snapshot, *index_id, *entity_kind, locator.clone(), value.clone(), 100_001,
         ).expect("the installed index supplies a genuine complete sparse observation");
@@ -220,22 +220,22 @@ fn sparse_indexed_rebase_keeps_complete_dependencies_without_work_estimates() {
             let WorthQueryApplicationObservedFact::IndexedEntitySelection { index_id, candidate_limit, .. } = &mut faulted else { unreachable!() };
             if invalid_limit { *candidate_limit = 0; } else { *index_id = DerivedIndexId(u64::MAX); }
 
-            assert_eq!(faulted.source_currentness_in(runtime,execution,  snapshot),
+            assert_eq!(faulted.source_currentness_in_for_test(runtime,execution,  snapshot),
                 Ok(Err(WorthQuerySourceCurrentnessFailure::Unavailable)));
 
         }
         let original = vec![observed.clone(), observed.clone()];
-        let outcome = rebase(execution, runtime, snapshot, PreparedSourceFactRebase::admit(
+        let outcome = rebase(execution, runtime, snapshot, PreparedSourceFactRebase::admit_for_test(
                 original.clone(),
                 [].into(),
-                StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None),
+                StorageControl::new_for_test(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None),
             ).unwrap(), &BTreeSet::new(), true);
         let RebasedSourceFacts::Exact(facts) = outcome else {
             panic!("native reobservation keeps the complete original facts: {outcome:?}");
         };
         assert_eq!(facts.iter().cloned().collect::<Vec<_>>(), original.as_slice(), "retain the original limits and dependencies");
         for fact in facts.iter() {
-            let movement = fact.source_currentness_in(runtime,execution,  snapshot).unwrap().unwrap();
+            let movement = fact.source_currentness_in_for_test(runtime,execution,  snapshot).unwrap().unwrap();
             assert_eq!(movement.movement(), Movement::Unmoved);
         }
         observed
@@ -243,7 +243,7 @@ fn sparse_indexed_rebase_keeps_complete_dependencies_without_work_estimates() {
         let (second_account, _) = world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
 
                 account_note(
                     &host_custody.phase_for_application(&world.application),
@@ -255,7 +255,7 @@ fn sparse_indexed_rebase_keeps_complete_dependencies_without_work_estimates() {
         world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
 
                 set_note(
                     &host_custody.borrowed_request_for_test(),
@@ -269,7 +269,7 @@ fn sparse_indexed_rebase_keeps_complete_dependencies_without_work_estimates() {
         let selected = world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
 
                 world.selected_product(
                     &(host_custody.phase_for_application(&world.application)).test_host_request(),
@@ -280,13 +280,13 @@ fn sparse_indexed_rebase_keeps_complete_dependencies_without_work_estimates() {
             .application
             .with_host_advancement(|phase| {
                 let borrowed_execution = phase
-                    .execution_request_for(&world.application.product_runtime)
+                    .execution_request_for_for_test(&(*world.application.product_runtime_for_test()))
                     .expect("fixture borrows its runtime request");
                 let execution = &borrowed_execution;
                 graph
                     .integration_handle()
                     .with_runtime(execution, |runtime| {
-                        let snapshot = selected.application_basis().snapshot_handle();
+                        let snapshot = selected.application_basis_for_test().snapshot_handle();
 
                         let current = observed.source_currentness_in(runtime, execution, snapshot)
                             .expect("the real lookup remains available")
@@ -294,8 +294,8 @@ fn sparse_indexed_rebase_keeps_complete_dependencies_without_work_estimates() {
                         assert_eq!(current.movement(), Movement::Moved,
                             "the independently authored second matching account changes membership");
                         let normalized = rebase(execution, runtime, snapshot,
-                            PreparedSourceFactRebase::admit(vec![observed.clone()], [].into(),
-                                StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(),
+                            PreparedSourceFactRebase::admit_for_test(vec![observed.clone()], [].into(),
+                                StorageControl::new_for_test(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(),
                             &BTreeSet::new(), true);
                         let RebasedSourceFacts::Exact(facts) = normalized else {
                             panic!("postcondition membership is normalized by the native lookup: {normalized:?}");

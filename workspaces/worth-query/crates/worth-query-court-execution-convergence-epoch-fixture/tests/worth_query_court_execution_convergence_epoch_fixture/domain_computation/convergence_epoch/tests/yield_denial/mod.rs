@@ -92,14 +92,14 @@ pub fn direct_denied_peer(
         .unwrap_or_else(|_| panic!("direct yield-denial peer must admit"))
         .start();
     let started = {
-        let installed_fixture_phase = epoch.fixture_phase(execution);
+        let installed_fixture_phase = epoch.fixture_phase_for_test(execution);
         epoch.begin_iteration(&installed_fixture_phase, call("same-scope-yield-denial"))
     }
     .unwrap_or_else(|_| panic!("direct yield-denial peer must start"));
     let epoch_identity = started.epoch_identity().to_owned();
     let paused = {
         let fixture_phase_result = {
-            let installed_fixture_phase = started.fixture_phase(execution);
+            let installed_fixture_phase = started.fixture_phase_for_test(execution);
             started.advance(&installed_fixture_phase)
         };
         match fixture_phase_result {
@@ -139,7 +139,7 @@ pub fn workflow_denied_peer(
         .start()
         .unwrap_or_else(|_| panic!("workflow yield-denial peer must start"));
     let started = {
-        let installed_fixture_phase = epoch.fixture_phase(execution);
+        let installed_fixture_phase = epoch.fixture_phase_for_test(execution);
         epoch.begin_stage_iteration(
             &installed_fixture_phase,
             WORKFLOW_STAGE,
@@ -150,7 +150,7 @@ pub fn workflow_denied_peer(
     let epoch_identity = started.epoch_identity().to_owned();
     let paused = {
         let fixture_phase_result = {
-            let installed_fixture_phase = started.fixture_phase(execution);
+            let installed_fixture_phase = started.fixture_phase_for_test(execution);
             started.advance(&installed_fixture_phase)
         };
         match fixture_phase_result {
@@ -177,7 +177,7 @@ pub fn complete_direct_peer(
     let terminal = {
         let fixture_phase_result = {
             let fixture_state = peer.denied.retry();
-            let installed_fixture_phase = fixture_state.fixture_phase(execution);
+            let installed_fixture_phase = fixture_state.fixture_phase_for_test(execution);
             fixture_state.advance(&installed_fixture_phase)
         };
         match fixture_phase_result {
@@ -206,7 +206,7 @@ pub fn complete_workflow_peer(
     let terminal = {
         let fixture_phase_result = {
             let fixture_state = peer.denied.retry();
-            let installed_fixture_phase = fixture_state.fixture_phase(execution);
+            let installed_fixture_phase = fixture_state.fixture_phase_for_test(execution);
             fixture_state.advance(&installed_fixture_phase)
         };
         match fixture_phase_result {

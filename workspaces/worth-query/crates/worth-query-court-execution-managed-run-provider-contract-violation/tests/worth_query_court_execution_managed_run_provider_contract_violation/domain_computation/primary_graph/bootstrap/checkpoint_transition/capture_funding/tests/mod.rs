@@ -15,7 +15,7 @@ fn serial_backing_without_a_lease_refuses_capture_narrowing() {
         .unwrap()
         .with_capture_memory_limit(0);
     assert!(matches!(
-        resources.capture_lease(
+        resources.capture_lease_for_test(
             ExecutionRequest::serial(&serial),
             ExecutionAllocationPolicy::SystemAllocation,
         ),

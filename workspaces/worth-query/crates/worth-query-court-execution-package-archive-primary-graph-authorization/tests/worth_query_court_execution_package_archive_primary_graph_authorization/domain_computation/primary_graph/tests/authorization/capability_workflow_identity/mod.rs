@@ -80,7 +80,7 @@ fn a_capability_workflow_encodes_its_input_and_key_once_each_first_and_replayed(
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let schema = world.application.installed_schema();
@@ -97,7 +97,7 @@ fn a_capability_workflow_encodes_its_input_and_key_once_each_first_and_replayed(
         world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 reset_encoding_counts();
                 let input =
                     ApplicationEncodedInput::<CapabilityTouchOperationInputBinding>::encode(
@@ -105,7 +105,7 @@ fn a_capability_workflow_encodes_its_input_and_key_once_each_first_and_replayed(
                     )
                     .expect("the input encodes");
                 let workflow = bind_touch("workflow-key", &input, *principal.principal_identity());
-                let selected = world.selected_product(&(phase).test_host_request());
+                let selected = world.selected_product(&(phase).test_host_request_for_test());
                 let access = admit_encoded_capability_access(
                     &host_custody.borrowed_request_for_test(),
                     &world.application,

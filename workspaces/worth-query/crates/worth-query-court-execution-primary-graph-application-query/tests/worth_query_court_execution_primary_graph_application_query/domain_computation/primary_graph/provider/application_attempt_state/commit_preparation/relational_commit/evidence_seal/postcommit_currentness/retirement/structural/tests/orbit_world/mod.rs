@@ -24,12 +24,12 @@ pub fn capture(world: &World, key: u64, execution: &ExecutionRequest<'_, '_>) ->
         .unwrap();
     let selected = world
         .application
-        .select_product_branch(
+        .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch(),
+            world.application.product_runtime().default_branch_for_test(),
         )
         .unwrap();
-    let graph = world.application.runtime.primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let kind = graph
         .layout
         .entity_kind(NodeKey::reference::<OrbitSchema<true>>().entity())
@@ -50,7 +50,7 @@ pub fn capture(world: &World, key: u64, execution: &ExecutionRequest<'_, '_>) ->
                     execution,
                 )
                 .unwrap();
-            let aggregate = AggregateObservation::read(
+            let aggregate = AggregateObservation::read_for_test(
                 &pin,
                 execution,
                 AggregateQuery {
@@ -66,7 +66,7 @@ pub fn capture(world: &World, key: u64, execution: &ExecutionRequest<'_, '_>) ->
             .unwrap();
             let (walk, _) = execution
                 .run_native_with_checkpoint(|context| {
-                    StructuralWalkObservation::read(
+                    StructuralWalkObservation::read_for_test(
                         &pin,
                         execution,
                         StructuralWalkQuery {
@@ -99,14 +99,14 @@ pub fn at_current<R>(
 ) -> R {
     let selected = world
         .application
-        .select_product_branch(
+        .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch(),
+            world.application.product_runtime().default_branch_for_test(),
         )
         .unwrap();
-    world
+    (*world
         .application
-        .runtime
+        .runtime_for_test())
         .primary_graph()
         .unwrap()
         .integration_handle()
@@ -131,7 +131,7 @@ pub fn walk(facts: &[Fact]) -> &StructuralWalkObservation {
 
 pub fn delete_group(world: &World, execution: &ExecutionRequest<'_, '_>, facts: &[Fact]) {
     let mut batch = WorkerIntentBatch::new("whole-orbit-retirement");
-    for edge in walk(facts).native().relations() {
+    for edge in walk(facts).native_for_test().relations() {
         batch = batch.push(MutationIntent::Relation(RelationMutationIntent::Delete(
             DeleteRelationIntent {
                 relation_id: edge.relation_id,

@@ -120,3 +120,5 @@ pub fn comparison_stop(
         BoundedEntityFieldLookupAdmissionStop::ExactBasisRequired => Ok(false),
     }
 }
+
+mod court_doors_for_test;

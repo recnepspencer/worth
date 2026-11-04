@@ -309,3 +309,5 @@ fn semantic_retained_bytes(
 #[cfg(test)]
 #[path = "publication_binding/tests.rs"]
 mod tests;
+
+mod court_doors_for_test;

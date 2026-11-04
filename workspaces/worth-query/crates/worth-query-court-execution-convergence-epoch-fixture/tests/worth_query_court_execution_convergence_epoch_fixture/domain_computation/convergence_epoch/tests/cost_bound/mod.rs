@@ -69,7 +69,7 @@ fn late_terminal_reconciles_cumulative_convergence_work_without_double_counting(
 
         let epoch = direct_epoch_fixture(FixtureDisposition::Continue, resource_request);
 
-        let installed_fixture_phase = epoch.fixture_phase(execution);
+        let installed_fixture_phase = epoch.fixture_phase_for_test(execution);
         let execution = &installed_fixture_phase;
         let started = match epoch.begin_iteration(execution, call("completed-before-cancellation"))
         {

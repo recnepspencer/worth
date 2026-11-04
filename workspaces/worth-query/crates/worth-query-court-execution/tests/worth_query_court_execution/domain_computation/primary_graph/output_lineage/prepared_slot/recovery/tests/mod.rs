@@ -22,14 +22,14 @@ fn world_recovery_metadata_carries_the_original_computation_and_absence() {
     let product = world
         .application
         .product_runtime()
-        .admit_product_branch(world.application.product_runtime().default_branch())
+        .admit_product_branch_for_test(world.application.product_runtime().default_branch_for_test())
         .unwrap();
     let source = SemanticSource {
-            runtime_authority: world.application.runtime.authority_identity().as_u64(),
-            schema: world.application.installed_schema.binding_identity().clone(),
-            scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity(
+            runtime_authority: (*world.application.runtime_for_test()).authority_identity().as_u64(),
+            schema: (*world.application.installed_schema_for_test()).binding_identity().clone(),
+            scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(
                 worth_relational::facade::identity::EntityId::new(worth_relational::facade::identity::PartitionId::main(), 1, 1)),
-            output_binding: OutputBindingIdentity::declared("()"),
+            output_binding: OutputBindingIdentity::declared_for_test("()"),
         };
     let coordinate = ProductCoordinate {
         occurrence: product.observation().lifecycle_incarnation(),
@@ -38,7 +38,7 @@ fn world_recovery_metadata_carries_the_original_computation_and_absence() {
     let owner = Arc::new(Mutex::new(WorthQueryApplicationOutputLineage::default()));
     // These are private vacant addresses, never publication authority.
     // Reserve their ledger custody before constructing their test slots.
-    let generation = std::cell::Cell::new(coordinate.generation);
+    let generation = std::cell::Cell::new((*coordinate.generation_for_test()));
 
     let slot = || {
         let coordinate = ProductCoordinate {
@@ -47,22 +47,22 @@ fn world_recovery_metadata_carries_the_original_computation_and_absence() {
         };
         generation.set(generation.get() + 1);
         let mut lineage = owner.lock().unwrap();
-        let identity = RecordedSettlementIdentity::retain(&source, coordinate, 0);
+        let identity = RecordedSettlementIdentity::retain_for_test(&source, coordinate, 0);
         let record_cell = Arc::new(OnceLock::new());
-        lineage
-            .by_source
+        (*lineage
+            .by_source_for_test())
             .entry(source.clone())
             .or_default()
-            .entry(coordinate.occurrence)
+            .entry((*coordinate.occurrence_for_test()))
             .or_default()
-            .insert(coordinate.generation, vec![Arc::clone(&record_cell)]);
+            .insert((*coordinate.generation_for_test()), vec![Arc::clone(&record_cell)]);
         let partition_cell =
-            lineage
-                .partition_index
+            (*lineage
+                .partition_index_for_test())
                 .insert_vacancy(source.clone(), coordinate, None);
         PreparedOutputLineageSlot {
                 owner: Arc::clone(&owner),
-                output_binding_type: TypeId::of::<()>(),
+                output_binding_type: TypeId::of_for_test::<()>(),
                 source: source.clone(),
                 coordinate,
                 partition: None,
@@ -91,20 +91,20 @@ fn world_recovery_metadata_carries_the_original_computation_and_absence() {
     ] {
         let produced = matches!(&computation, SealedComputationRetention::Produced(_));
         let mut original = slot();
-        original.retain_computation(computation, None);
-        let metadata = original.into_recovery_metadata();
+        original.retain_computation_for_test(computation, None);
+        let metadata = original.into_recovery_metadata_for_test();
         let mut replacement = slot();
-        replacement.retain_recovery_metadata(metadata);
+        replacement.retain_recovery_metadata_for_test(metadata);
         assert_eq!(
             matches!(
-                &replacement.computation,
+                &(*replacement.computation_for_test()),
                 PreparedComputationCustody::Assigned(SealedComputationRetention::Produced(_))
             ),
             produced
         );
         if !produced {
             assert!(matches!(
-                replacement.computation,
+                (*replacement.computation_for_test()),
                 PreparedComputationCustody::Assigned(SealedComputationRetention::Absent(
                     PriorAbsence::Stopped
                 ))

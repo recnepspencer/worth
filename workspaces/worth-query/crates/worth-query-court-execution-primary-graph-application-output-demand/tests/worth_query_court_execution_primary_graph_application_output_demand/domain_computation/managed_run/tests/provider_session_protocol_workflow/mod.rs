@@ -115,7 +115,7 @@ fn workflow_stage_uses_stage_resources_and_scope_in_the_same_protocol() {
         let execution = phase;
 
         let (mut running, graph) = workflow_session_run("workflow-session", resource_request);
-        let installed_running_phase = execution.phase_for_workflow(&running);
+        let installed_running_phase = execution.phase_for_workflow_for_test(&running);
 
         {
             let plan = running
@@ -320,7 +320,7 @@ pub fn cleanup_workflow(
     running: worth_query_execution::facade::domain_computation::WorthQueryRunningWorkflowRun,
 ) {
     let outcome = running
-        .terminate_for_convergence(WorthQueryManagedRunTerminalKind::Failed)
+        .terminate_for_convergence_for_test(WorthQueryManagedRunTerminalKind::Failed)
         .cleanup();
     assert!(matches!(
         outcome,
@@ -330,7 +330,7 @@ pub fn cleanup_workflow(
 
 pub fn cleanup_direct(running: WorthQueryRunningDirectRun) {
     running
-        .terminate_for_convergence(WorthQueryManagedRunTerminalKind::Failed)
+        .terminate_for_convergence_for_test(WorthQueryManagedRunTerminalKind::Failed)
         .cleanup()
         .expect("direct protocol cost fixture cleanup should complete");
 }

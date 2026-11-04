@@ -64,7 +64,7 @@ fn same_world_publications_retain_distinct_commit_and_attempt_occurrences() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
 
             let first_observed = world
                 .application
@@ -98,13 +98,13 @@ fn idempotent_recovery_reuses_the_original_world_terminal() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let program = || {
@@ -112,7 +112,7 @@ fn idempotent_recovery_reuses_the_original_world_terminal() {
             .application
             .with_host_advancement(|phase| {
                 worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::preimage_evidence::retained_status_program(
-                    &(phase).test_host_request(),
+                    &(phase).test_host_request_for_test(),
                     &world,
                     &principal,
                     &account,

@@ -19,7 +19,7 @@ pub fn post_admission_failure(
         },
         resource_request,
     );
-    let installed_running_phase = execution.phase_for_direct(&running);
+    let installed_running_phase = execution.phase_for_direct_for_test(&running);
 
     match running.begin_graph_execution(
         &installed_running_phase,

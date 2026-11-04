@@ -130,7 +130,7 @@ impl<Schema, Operation, Input, Scope>
 impl<Schema, Operation, Input, Scope>
     WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>
 {
-    pub(in crate::domain_computation::primary_graph) fn with_consumed_output_for_test(
+    pub fn with_consumed_output_for_test(
         mut self,
         evidence: crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence,
     ) -> Self {
@@ -218,3 +218,5 @@ impl<Schema, Operation, Input, Scope>
         self
     }
 }
+
+mod court_doors_for_test;

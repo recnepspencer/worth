@@ -17,7 +17,7 @@ fn held_completed_evidence_preserves_exact_old_replay_without_eviction() {
         let principal = world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 authenticated_principal(
                     &(host_custody.phase_for_application(&world.application)).test_host_request(),
                     &world,
@@ -28,7 +28,7 @@ fn held_completed_evidence_preserves_exact_old_replay_without_eviction() {
         let account = world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 resolved_account(
                     &(host_custody.phase_for_application(&world.application)).test_host_request(),
                     &world,
@@ -40,7 +40,7 @@ fn held_completed_evidence_preserves_exact_old_replay_without_eviction() {
         let original = world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 admitted_program(
                     &host_custody.phase_for_application(&world.application),
                     &world,
@@ -54,7 +54,7 @@ fn held_completed_evidence_preserves_exact_old_replay_without_eviction() {
         let replay = world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 admitted_program(
                     &host_custody.phase_for_application(&world.application),
                     &world,
@@ -80,7 +80,7 @@ fn held_completed_evidence_preserves_exact_old_replay_without_eviction() {
             let account = world
                 .application
                 .with_host_advancement(|phase| {
-                    let host_custody = phase.test_host_request();
+                    let host_custody = phase.test_host_request_for_test();
                     resolved_account(
                         &(host_custody.phase_for_application(&world.application))
                             .test_host_request(),
@@ -94,7 +94,7 @@ fn held_completed_evidence_preserves_exact_old_replay_without_eviction() {
             let program = world
                 .application
                 .with_host_advancement(|phase| {
-                    let host_custody = phase.test_host_request();
+                    let host_custody = phase.test_host_request_for_test();
                     admitted_program(
                         &host_custody.phase_for_application(&world.application),
                         &world,
@@ -123,7 +123,7 @@ fn held_completed_evidence_preserves_exact_old_replay_without_eviction() {
         let head = world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 world
                     .selected_product(
                         &(host_custody.phase_for_application(&world.application))
@@ -149,7 +149,7 @@ fn held_completed_evidence_preserves_exact_old_replay_without_eviction() {
         world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 assert_eq!(
                     world
                         .selected_product(

@@ -101,7 +101,7 @@ fn resource_attempt_rejects_omitted_installed_support_participants() {
             let runtime = runtime();
             let (plan, contract_identity) = admitted_plan("installed-binding");
             let mut authority = authority(&runtime, "installed-binding", &contract_identity, &plan);
-            authority.direct_resource_topology = topology(
+            (*authority.direct_resource_topology_mut_for_test()) = topology(
                 conditional_nodes.iter().copied(),
                 graph_providers.iter().copied(),
                 commit_groups.iter().copied(),

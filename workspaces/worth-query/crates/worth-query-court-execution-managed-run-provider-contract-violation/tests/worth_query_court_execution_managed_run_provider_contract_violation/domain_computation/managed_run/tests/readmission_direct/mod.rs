@@ -24,7 +24,7 @@ fn direct_readmission_mints_fresh_attempts_and_transfers_capacity() {
         let reservation_count = yielded.inspection().retained_capacity_reservation_count();
         let readmitted = {
             let fixture_phase_result = {
-                let installed_fixture_phase = yielded.fixture_phase(active_request);
+                let installed_fixture_phase = yielded.fixture_phase_for_test(active_request);
                 yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
             };
             match fixture_phase_result {
@@ -49,7 +49,7 @@ fn direct_readmission_mints_fresh_attempts_and_transfers_capacity() {
 
         let completion = {
             let fixture_phase_result = {
-                let installed_fixture_phase = active.fixture_phase(execution);
+                let installed_fixture_phase = active.fixture_phase_for_test(execution);
                 active.advance(&installed_fixture_phase)
             };
             match fixture_phase_result {
@@ -94,7 +94,7 @@ fn query_preflight_denial_returns_the_exact_yielded_capability_without_fresh_wor
         let foreign_runtime = query_runtime();
         let denied = {
             let fixture_phase_result = {
-                let installed_fixture_phase = yielded.fixture_phase(active_request);
+                let installed_fixture_phase = yielded.fixture_phase_for_test(active_request);
                 yielded.readmit_same_runtime(&installed_fixture_phase, &foreign_runtime, &bridge)
             };
             match fixture_phase_result {
@@ -123,7 +123,7 @@ fn query_preflight_denial_returns_the_exact_yielded_capability_without_fresh_wor
 
         let active = {
             let fixture_phase_result = {
-                let installed_fixture_phase = yielded.fixture_phase(active_request);
+                let installed_fixture_phase = yielded.fixture_phase_for_test(active_request);
                 yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
             };
             match fixture_phase_result {
@@ -135,7 +135,7 @@ fn query_preflight_denial_returns_the_exact_yielded_capability_without_fresh_wor
         };
         let completion = {
             let fixture_phase_result = {
-                let installed_fixture_phase = active.fixture_phase(execution);
+                let installed_fixture_phase = active.fixture_phase_for_test(execution);
                 active.advance(&installed_fixture_phase)
             };
             match fixture_phase_result {
@@ -171,7 +171,7 @@ fn provider_restore_denial_preserves_the_exact_checkpoint_and_capacity_package()
         let reservations = yielded.inspection().retained_capacity_reservation_count();
         let denied = {
             let fixture_phase_result = {
-                let installed_fixture_phase = yielded.fixture_phase(active_request);
+                let installed_fixture_phase = yielded.fixture_phase_for_test(active_request);
                 yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
             };
             match fixture_phase_result {

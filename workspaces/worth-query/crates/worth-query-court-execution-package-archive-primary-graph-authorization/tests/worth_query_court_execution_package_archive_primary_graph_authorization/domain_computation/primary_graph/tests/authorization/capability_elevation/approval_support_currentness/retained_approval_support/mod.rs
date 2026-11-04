@@ -7,7 +7,7 @@ fn replacement_policy_path_for_the_same_grant_cuts_off_approved_use() {
     let requester = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             crate::domain_computation::primary_graph::tests::authorization::capability_elevation::approval_transition::authenticated(
                 &host_custody,
                 &world,
@@ -19,14 +19,14 @@ fn replacement_policy_path_for_the_same_grant_cuts_off_approved_use() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             let borrowed_execution = host_custody.borrowed_request_for_test();
             let execution = &borrowed_execution;
             crate::domain_computation::primary_graph::tests::authorization::capability_elevation::review_support_mutation::replace_support_grantor_with_custodian(
                 &host_custody,
                 execution,
                 &world,
-                requester.principal_entity_id(),
+                requester.principal_entity_id_for_test(),
             )
         })
         .expect("the fixture read owns its installed host call");
@@ -36,7 +36,7 @@ fn replacement_policy_path_for_the_same_grant_cuts_off_approved_use() {
     let Err(denial) = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             world
                 .selected_product(&host_custody)
                 .admit_approved_elevation_access(
@@ -62,7 +62,7 @@ fn replacement_policy_path_for_the_same_grant_cuts_off_approved_use() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             assert_eq!(
                 crate::domain_computation::primary_graph::tests::authorization::capability_elevation::terminal_state::elevation_status(
                     &host_custody,

@@ -112,3 +112,5 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     )?;
     Ok(outcome.expect("the singleton cursor applied its one slot"))
 }
+
+mod court_doors_for_test;

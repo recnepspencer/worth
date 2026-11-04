@@ -80,14 +80,14 @@ pub fn run(
         completed: completed.clone(),
     };
     let installed =
-        WorthQueryInstalledManagedComputation::<Schema, Feature, Computation, _>::new(owner);
-    let execution = QueryRequestExecution::open(
+        WorthQueryInstalledManagedComputation::<Schema, Feature, Computation, _>::new_for_test(owner);
+    let execution = QueryRequestExecution::open_for_test(
         worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(
             worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy(
                 std::num::NonZeroUsize::MIN, None)), &scope);
     let result = installed
         .decision_plan(&input, HandlerResult::Completed)
-        .run(&execution);
+        .run_for_test(&execution);
     (result, completed.load(Ordering::SeqCst))
 }
 

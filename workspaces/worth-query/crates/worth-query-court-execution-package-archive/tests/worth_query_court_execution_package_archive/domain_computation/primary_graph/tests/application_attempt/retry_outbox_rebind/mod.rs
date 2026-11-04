@@ -57,7 +57,7 @@ pub fn commit_response_lost(
         .with_host_advancement(|phase| {
             let phase_custody = &phase;
 
-            authenticated_principal(&(phase_custody).test_host_request(), world, &request)
+            authenticated_principal(&(phase_custody).test_host_request_for_test(), world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
@@ -66,7 +66,7 @@ pub fn commit_response_lost(
             let phase_custody = &phase;
 
             resolved_account(
-                &(phase_custody).test_host_request(),
+                &(phase_custody).test_host_request_for_test(),
                 world,
                 "open",
                 &request,
@@ -79,7 +79,7 @@ pub fn commit_response_lost(
             let phase_custody = &phase;
 
             retained_status_program(
-                &(phase_custody).test_host_request(),
+                &(phase_custody).test_host_request_for_test(),
                 world,
                 &principal,
                 &account,
@@ -126,7 +126,7 @@ pub fn retry_without_managed_work(
         .with_host_advancement(|phase| {
             let phase_custody = &phase;
 
-            authenticated_principal(&(phase_custody).test_host_request(), world, &retry_request)
+            authenticated_principal(&(phase_custody).test_host_request_for_test(), world, &retry_request)
         })
         .expect("the fixture read owns its installed host call");
     let retry_account = world
@@ -135,7 +135,7 @@ pub fn retry_without_managed_work(
             let phase_custody = &phase;
 
             resolved_account(
-                &(phase_custody).test_host_request(),
+                &(phase_custody).test_host_request_for_test(),
                 world,
                 "response-lost",
                 &retry_request,
@@ -148,7 +148,7 @@ pub fn retry_without_managed_work(
             let phase_custody = &phase;
 
             retained_status_program(
-                &(phase_custody).test_host_request(),
+                &(phase_custody).test_host_request_for_test(),
                 world,
                 &retry_principal,
                 &retry_account,
@@ -193,7 +193,7 @@ pub fn consume_armed_session_and_invariant_sentinels(world: &AuthorizationWorld)
         .with_host_advancement(|phase| {
             let phase_custody = &phase;
 
-            authenticated_principal(&(phase_custody).test_host_request(), world, &request)
+            authenticated_principal(&(phase_custody).test_host_request_for_test(), world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let probe_account = world
@@ -202,7 +202,7 @@ pub fn consume_armed_session_and_invariant_sentinels(world: &AuthorizationWorld)
             let phase_custody = &phase;
 
             resolved_account(
-                &(phase_custody).test_host_request(),
+                &(phase_custody).test_host_request_for_test(),
                 world,
                 "unrelated",
                 &request,
@@ -243,7 +243,7 @@ pub fn consume_armed_session_and_invariant_sentinels(world: &AuthorizationWorld)
         .with_host_advancement(|phase| {
             let phase_custody = &phase;
 
-            authenticated_principal(&(phase_custody).test_host_request(), world, &request)
+            authenticated_principal(&(phase_custody).test_host_request_for_test(), world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let probe_account = world
@@ -252,7 +252,7 @@ pub fn consume_armed_session_and_invariant_sentinels(world: &AuthorizationWorld)
             let phase_custody = &phase;
 
             resolved_account(
-                &(phase_custody).test_host_request(),
+                &(phase_custody).test_host_request_for_test(),
                 world,
                 "unrelated",
                 &request,
@@ -296,7 +296,7 @@ pub fn assert_unseen_commit_uses_the_managed_path(world: &AuthorizationWorld) {
         .with_host_advancement(|phase| {
             let phase_custody = &phase;
 
-            authenticated_principal(&(phase_custody).test_host_request(), world, &request)
+            authenticated_principal(&(phase_custody).test_host_request_for_test(), world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let probe_account = world
@@ -305,7 +305,7 @@ pub fn assert_unseen_commit_uses_the_managed_path(world: &AuthorizationWorld) {
             let phase_custody = &phase;
 
             resolved_account(
-                &(phase_custody).test_host_request(),
+                &(phase_custody).test_host_request_for_test(),
                 world,
                 "unrelated",
                 &request,
@@ -365,16 +365,16 @@ pub fn assert_unseen_commit_uses_the_managed_path(world: &AuthorizationWorld) {
 pub fn assert_no_managed_attempt_work(
     work: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_work::WorthQueryApplicationAttemptWorkSnapshot,
 ) {
-    assert_eq!(work.managed_bridge_plans, 0);
-    assert_eq!(work.provider_session_readmissions, 0);
-    assert_eq!(work.provider_session_preparations, 0);
-    assert_eq!(work.staged_session_preparations, 0);
-    assert_eq!(work.attempt_registrations, 0);
-    assert_eq!(work.overlay_stagings, 0);
-    assert_eq!(work.invariant_state_loads, 0);
-    assert_eq!(work.invariant_executions, 0);
-    assert_eq!(work.prepared_commits, 0);
-    assert_eq!(work.attempt_aborts, 0);
-    assert_eq!(work.managed_cleanups, 0);
-    assert_eq!(work.external_dispatch_admissions, 0);
+    assert_eq!((*work.managed_bridge_plans_for_test()), 0);
+    assert_eq!((*work.provider_session_readmissions_for_test()), 0);
+    assert_eq!((*work.provider_session_preparations_for_test()), 0);
+    assert_eq!((*work.staged_session_preparations_for_test()), 0);
+    assert_eq!((*work.attempt_registrations_for_test()), 0);
+    assert_eq!((*work.overlay_stagings_for_test()), 0);
+    assert_eq!((*work.invariant_state_loads_for_test()), 0);
+    assert_eq!((*work.invariant_executions_for_test()), 0);
+    assert_eq!((*work.prepared_commits_for_test()), 0);
+    assert_eq!((*work.attempt_aborts_for_test()), 0);
+    assert_eq!((*work.managed_cleanups_for_test()), 0);
+    assert_eq!((*work.external_dispatch_admissions_for_test()), 0);
 }

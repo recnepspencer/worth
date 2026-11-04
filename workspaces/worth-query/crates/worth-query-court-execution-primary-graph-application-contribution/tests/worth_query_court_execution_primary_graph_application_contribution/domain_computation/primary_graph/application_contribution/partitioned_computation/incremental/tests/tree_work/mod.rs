@@ -56,16 +56,16 @@ pub fn template() -> SealedComputationRun {
 /// Only the tree-update boundary is under test here. Unused owner facts are
 /// retained from a real admitted run; local identities carry no authority.
 pub fn retained(source: &SealedComputationRun, keys: &[Id]) -> Retained {
-    let template = source.state.typed.downcast_ref::<Retained>().unwrap();
+    let template = (*source.state_for_test()).typed.downcast_ref::<Retained>().unwrap();
     let request = live_scope();
-    let execution = QueryRequestExecution::open(serial_placement(), &request);
+    let execution = QueryRequestExecution::open_for_test(serial_placement(), &request);
     let (tree, _) = ReductionTree::<u64, fn(&u64, &u64) -> u64>::try_from_declared_native(
         plan(keys),
         keys.iter().map(|id| (*id, 1)).collect(),
         0,
         counted as fn(&u64, &u64) -> u64,
-        Some(execution.dispatch().unwrap().native_lease_for_test()),
-        || execution.checkpoint(),
+        Some(execution.dispatch_for_test().unwrap().native_lease_for_test()),
+        || execution.checkpoint_for_test(),
     )
     .unwrap();
     let partition = template.partitions.values().next().unwrap();
@@ -94,11 +94,11 @@ pub fn retained(source: &SealedComputationRun, keys: &[Id]) -> Retained {
     else {
         panic!("actual native scalar slots")
     };
-    let partitions = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::partition_metadata::PartitionMetadata::from_recorded(
+    let partitions = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::partition_metadata::PartitionMetadata::from_recorded_for_test(
         keys.iter()
             .map(|id| (*id, (Arc::clone(&partition.key), partition.gather.clone())))
             .collect(),
-        execution.allocation_policy().unwrap(),
+        execution.allocation_policy_for_test().unwrap(),
     )
     .unwrap();
     Retained {
@@ -131,7 +131,7 @@ pub fn run(
     remaining: u64,
 ) -> worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tree_report::ReportedTree<Tree, u32>{
     let request = live_scope();
-    let execution = QueryRequestExecution::open(serial_placement(), &request);
+    let execution = QueryRequestExecution::open_for_test(serial_placement(), &request);
     let reducer = WorthQueryDeterministicReducer::canonical(|| 0, counted);
     let plan = plan(keys);
     let work = plan.checked_build_work();
@@ -178,8 +178,8 @@ fn every_edit_obeys_its_pre_edit_shape_bound_and_reconciles() {
     for key in &keys {
         reset_counts();
         let next = run(&retained, &keys, BTreeMap::from([(*key, 2)]), u64::MAX);
-        reconcile(next.report);
-        let TreeRun::Edited(metrics) = next.report else {
+        reconcile((*next.report_for_test()));
+        let TreeRun::Edited(metrics) = (*next.report_for_test()) else {
             panic!("an ordinary update edits")
         };
         let metrics = metrics
@@ -188,12 +188,12 @@ fn every_edit_obeys_its_pre_edit_shape_bound_and_reconciles() {
         let path = crate::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tests::tree_work::shape::Shape::update_path(&shape, *key);
         assert!(metrics.recombined_nodes <= u128::try_from(path.len()).unwrap());
         assert_eq!(metrics.combine_calls, 2 * metrics.recombined_nodes);
-        assert_eq!(*next.outcome.unwrap().result(), 129);
+        assert_eq!(*(*next.outcome_for_test()).unwrap().result(), 129);
         reset_counts();
         let same = run(&retained, &keys, BTreeMap::from([(*key, 1)]), u64::MAX);
-        reconcile(same.report);
+        reconcile((*same.report_for_test()));
         assert_eq!(
-            same.report
+            (*same.report_for_test())
                 .metrics_for_test()
                 .accounted_metrics()
                 .expect("explicit accounted fixture")
@@ -202,7 +202,7 @@ fn every_edit_obeys_its_pre_edit_shape_bound_and_reconciles() {
             "identical bits cut off"
         );
         assert_eq!(
-            same.report
+            (*same.report_for_test())
                 .metrics_for_test()
                 .accounted_metrics()
                 .expect("explicit accounted fixture")
@@ -212,30 +212,30 @@ fn every_edit_obeys_its_pre_edit_shape_bound_and_reconciles() {
         let deleted: Vec<_> = keys.iter().copied().filter(|id| id != key).collect();
         reset_counts();
         let next = run(&retained, &deleted, BTreeMap::new(), u64::MAX);
-        reconcile(next.report);
-        assert!(matches!(next.report, TreeRun::Edited(_)));
+        reconcile((*next.report_for_test()));
+        assert!(matches!((*next.report_for_test()), TreeRun::Edited(_)));
         assert_eq!(
-            next.report
+            (*next.report_for_test())
                 .metrics_for_test()
                 .accounted_metrics()
                 .expect("explicit accounted fixture")
                 .combine_calls,
-            2 * next
-                .report
+            2 * (*next
+                .report_for_test())
                 .metrics_for_test()
                 .accounted_metrics()
                 .expect("explicit accounted fixture")
                 .recombined_nodes
         );
         assert!(
-            next.report
+            (*next.report_for_test())
                 .metrics_for_test()
                 .accounted_metrics()
                 .expect("explicit accounted fixture")
                 .recombined_nodes
                 <= u128::from(crate::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tests::tree_work::shape::Shape::deletion_depth(&shape, *key))
         );
-        assert_eq!(*next.outcome.unwrap().result(), 127);
+        assert_eq!(*(*next.outcome_for_test()).unwrap().result(), 127);
     }
     for key in (0..128).map(|n| Id::new(n * 17 + 4)) {
         let mut inserted = keys.clone();
@@ -244,30 +244,30 @@ fn every_edit_obeys_its_pre_edit_shape_bound_and_reconciles() {
         let bound = crate::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tests::tree_work::shape::Shape::depth(&shape, key) + crate::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tests::tree_work::shape::Shape::rotations(&shape, key) + 1;
         reset_counts();
         let next = run(&retained, &inserted, BTreeMap::from([(key, 2)]), u64::MAX);
-        reconcile(next.report);
-        assert!(matches!(next.report, TreeRun::Edited(_)));
+        reconcile((*next.report_for_test()));
+        assert!(matches!((*next.report_for_test()), TreeRun::Edited(_)));
         assert_eq!(
-            next.report
+            (*next.report_for_test())
                 .metrics_for_test()
                 .accounted_metrics()
                 .expect("explicit accounted fixture")
                 .combine_calls,
-            2 * next
-                .report
+            2 * (*next
+                .report_for_test())
                 .metrics_for_test()
                 .accounted_metrics()
                 .expect("explicit accounted fixture")
                 .recombined_nodes
         );
         assert_eq!(
-            next.report
+            (*next.report_for_test())
                 .metrics_for_test()
                 .accounted_metrics()
                 .expect("explicit accounted fixture")
                 .recombined_nodes,
             u128::from(bound)
         );
-        assert_eq!(*next.outcome.unwrap().result(), 130);
+        assert_eq!(*(*next.outcome_for_test()).unwrap().result(), 130);
     }
 }
 
@@ -279,7 +279,7 @@ fn public_incremental_observation_reports_actual_work_apart_from_charge() {
     let installed = installed(StatusRead::Gather(1), counted);
     let first = first_run(&world, &installed);
     let charge = first.outcome.as_ref().unwrap().1;
-    *installed.owner.bump.lock().unwrap() = 10;
+    *(*installed.owner_for_test()).bump.lock().unwrap() = 10;
     reset_counts();
     let next = attempt(&world, &installed, Some(prior_of(first, true)));
     assert_eq!(next.runs, [(Run::Incremental, None)]);

@@ -58,7 +58,7 @@ fn a_causal_replay_after_its_history_retires_answers_with_its_sealed_causality()
                 std::time::Duration::from_secs(120),
                 &scope,
             );
-            let target = world.selected_product(&phase.test_host_request());
+            let target = world.selected_product(&phase.test_host_request_for_test());
             let denial = target
                 .select_correction_source_coordinates(
                     &phase,

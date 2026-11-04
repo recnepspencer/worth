@@ -359,3 +359,5 @@ pub(super) fn denial(
 ) -> WorthQueryOutputDemandDenial {
     WorthQueryOutputDemandDenial::new(kind, subject)
 }
+
+mod court_doors_for_test;

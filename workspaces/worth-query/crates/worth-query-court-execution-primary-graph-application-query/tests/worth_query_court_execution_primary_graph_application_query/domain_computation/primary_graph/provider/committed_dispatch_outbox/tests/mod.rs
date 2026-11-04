@@ -35,9 +35,9 @@ fn owner_read_denies_missing_foreign_and_every_commit_affinity_substitution() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let world = installed_authorization_world(true);
-    let provider = &world.application.primary_provider;
+    let provider = &(*world.application.primary_provider_for_test());
     let (binding, commit, runtime_id) = commit_record(execution, provider, 1);
-    let record = binding.record().clone();
+    let record = binding.record_for_test().clone();
     assert_eq!(
         provider
             .observe_expected(execution, &binding, &commit, runtime_id)
@@ -75,17 +75,17 @@ pub fn assert_commit_affinity_substitutions(
     let mut wrong_commit_id = commit.clone();
     wrong_commit_id.commit_id = CommitId(commit.commit_id.0.saturating_sub(1));
     assert_eq!(
-        provider.observe_expected(execution, binding, &wrong_commit_id, runtime_id),
+        provider.observe_expected_for_test(execution, binding, &wrong_commit_id, runtime_id),
         Err(Denial::ExactCommitUnavailable)
     );
     let mut wrong_version = commit.clone();
     wrong_version.version_id = VersionId(commit.version_id.0.saturating_sub(1));
     assert_eq!(
-        provider.observe_expected(execution, binding, &wrong_version, runtime_id),
+        provider.observe_expected_for_test(execution, binding, &wrong_version, runtime_id),
         Err(Denial::CommitMismatch)
     );
     let feature = BranchId("committed-outbox-feature".to_owned());
-    provider.graph.with_runtime_mut(execution, |runtime| {
+    (*provider.graph_for_test()).with_runtime_mut(execution, |runtime| {
         let (_, basis) = runtime.observe_fork_source(&commit.branch_id).unwrap();
         runtime
             .fork_branch(execution, feature.clone(), basis)
@@ -109,7 +109,7 @@ pub fn assert_commit_affinity_substitutions(
             .push_batch(
                 WorkerIntentBatch::new("feature-outbox-head").push(
                     dispatch_outbox_create_intent(
-                        Some(provider.graph.layout.provider_dispatch_outbox()),
+                        Some((*provider.graph_for_test()).layout.provider_dispatch_outbox()),
                         Some(&feature_record),
                     )
                     .unwrap(),
@@ -124,7 +124,7 @@ pub fn assert_commit_affinity_substitutions(
     let mut wrong_branch = commit;
     wrong_branch.branch_id = feature;
     assert_eq!(
-        provider.observe_expected(execution, binding, &wrong_branch, runtime_id),
+        provider.observe_expected_for_test(execution, binding, &wrong_branch, runtime_id),
         Err(Denial::CommitMismatch)
     );
 }
@@ -135,9 +135,9 @@ fn fresh_later_head_still_reports_the_rows_exact_creation_commit() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let world = installed_authorization_world(true);
-    let provider = &world.application.primary_provider;
+    let provider = &(*world.application.primary_provider_for_test());
     let (first_binding, first_commit, runtime_id) = commit_record(execution, provider, 3);
-    let first = first_binding.record().clone();
+    let first = first_binding.record_for_test().clone();
     let (_, later_commit, _) = commit_record(execution, provider, 4);
     assert_ne!(first_commit, later_commit);
 
@@ -163,9 +163,9 @@ fn every_later_valid_field_substitution_leaves_exact_commit_truth_unchanged() {
 
     for (field, replacement) in valid_later_field_substitutions() {
         let world = installed_authorization_world(true);
-        let provider = &world.application.primary_provider;
+        let provider = &(*world.application.primary_provider_for_test());
         let (binding, commit, runtime_id) = commit_record(execution, provider, 31);
-        let record = binding.record().clone();
+        let record = binding.record_for_test().clone();
         let observed = provider
             .observe_expected(execution, &binding, &commit, runtime_id)
             .expect("original exact-commit row");
@@ -218,9 +218,9 @@ fn later_deletion_cannot_erase_exact_commit_truth() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let world = installed_authorization_world(true);
-    let provider = &world.application.primary_provider;
+    let provider = &(*world.application.primary_provider_for_test());
     let (binding, commit, runtime_id) = commit_record(execution, provider, 32);
-    let record = binding.record().clone();
+    let record = binding.record_for_test().clone();
     let observed = provider
         .observe_expected(execution, &binding, &commit, runtime_id)
         .expect("original exact-commit row");

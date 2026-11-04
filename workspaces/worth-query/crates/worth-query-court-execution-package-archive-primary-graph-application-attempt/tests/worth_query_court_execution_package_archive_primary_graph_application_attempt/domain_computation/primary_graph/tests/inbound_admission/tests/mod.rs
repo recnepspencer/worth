@@ -111,7 +111,7 @@ fn performed_inbound_completion_closes_later_dispatch_admission() {
         Posture::Performed
     );
     assert!(matches!(
-        world.application.admit_external_dispatch_attempt(committed),
+        world.application.admit_external_dispatch_attempt_for_test(committed),
         Err(WorthQueryExternalDispatchAdmissionDenial::AlreadyCompleted)
     ));
 }
@@ -132,27 +132,27 @@ fn cleanup_verification_of_a_completed_inbound_keeps_the_terminal_owner() {
             .posture(),
         Posture::Performed
     );
-    let sealed = world
+    let sealed = (*world
         .application
-        .primary_provider
+        .primary_provider_for_test())
         .lookup_completed_inbound(&correlation)
         .unwrap()
         .expect("the terminal owner holds the completion");
     world
         .application
-        .verify_completed_inbound_for_cleanup(&[correlation], u64::MAX)
+        .verify_completed_inbound_for_cleanup_for_test(&[correlation], u64::MAX)
         .expect("World-paired durable row permits exact expiry turnover");
     assert_eq!(
-        world
+        (*world
             .application
-            .primary_provider
+            .primary_provider_for_test())
             .lookup_completed_inbound(&correlation)
             .unwrap(),
         Some(sealed)
     );
     world
         .application
-        .verify_completed_inbound_for_cleanup(&[correlation], u64::MAX)
+        .verify_completed_inbound_for_cleanup_for_test(&[correlation], u64::MAX)
         .expect("retry after custody turnover remains idempotent");
 }
 

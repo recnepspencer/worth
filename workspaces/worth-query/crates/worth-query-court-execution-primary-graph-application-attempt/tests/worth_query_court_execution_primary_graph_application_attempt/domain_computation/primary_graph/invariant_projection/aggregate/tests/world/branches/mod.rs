@@ -44,7 +44,7 @@ impl AggregateWorld {
     ) -> Result<(i64, u64), WorthQueryInvariantAggregateDenialKind> {
         let observed = Cell::new(None);
         let identity = self.relational_identity(phase_custody, branch);
-        let (_, basis) = self.authority.graph.with_runtime_mut(
+        let (_, basis) = (*self.authority.graph_for_test()).with_runtime_mut(
             &phase_custody.borrowed_request_for_test(),
             |runtime| {
                 runtime
@@ -53,7 +53,7 @@ impl AggregateWorld {
             },
         );
         self.authority
-            .project_with_work_limit(
+            .project_with_work_limit_for_test(
                 &phase_custody.borrowed_request_for_test(),
                 Some(10_000),
                 basis,
@@ -81,7 +81,7 @@ impl AggregateWorld {
         phase_custody: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
         source: &str,
     ) -> EntityId {
-        self.authority
+        (*self.authority
             .project(
                 phase_custody,
                 |reader| reader.resolve_entity(SourceIdentity::reference(), source.to_owned()),
@@ -91,7 +91,7 @@ impl AggregateWorld {
             .output()
             .as_ref()
             .expect("source identity resolves")
-            .entity_id
+            .entity_id_for_test())
     }
 
     /// The one contribution a source makes to the target.
@@ -100,7 +100,7 @@ impl AggregateWorld {
         phase_custody: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
         source: EntityId,
     ) -> RelationId {
-        self.authority
+        (*self.authority
             .project(
                 phase_custody,
                 |reader| reader.relations_to(AggregateContribution::reference(), &self.target),
@@ -111,9 +111,9 @@ impl AggregateWorld {
             .as_ref()
             .expect("contributions read")
             .iter()
-            .find(|relation| relation.from.entity_id == source)
+            .find(|relation| (*relation.from_for_test()).entity_id == source)
             .expect("the source contributes")
-            .relation_id
+            .relation_id_for_test())
     }
 
     pub fn remove_relation_on(
@@ -141,8 +141,8 @@ impl AggregateWorld {
     ) {
         let identity = self.relational_identity(phase_custody, branch);
         let execution = phase_custody.borrowed_request_for_test();
-        self.authority
-            .graph
+        (*self.authority
+            .graph_for_test())
             .with_runtime_mut(&execution, |runtime| {
                 let admitted = runtime
                     .admit_branch_basis(&identity)
@@ -181,14 +181,14 @@ impl AggregateWorld {
             .expect("the branch remains selectable");
         let branch_id = selected
             .product()
-            .observation()
+            .observation_for_test()
             .basis()
             .relational_basis()
             .descriptor()
             .branch_id()
             .clone();
-        self.authority
-            .graph
+        (*self.authority
+            .graph_for_test())
             .with_runtime(&phase_custody.borrowed_request_for_test(), |runtime| {
                 runtime
                     .branch_identity(&branch_id)

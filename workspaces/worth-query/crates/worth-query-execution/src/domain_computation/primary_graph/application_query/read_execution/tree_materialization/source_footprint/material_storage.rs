@@ -133,3 +133,5 @@ impl<'a, 'request, 'authority> MaterialFootprintStorage<'a, 'request, 'authority
         self.execution
     }
 }
+
+mod court_doors_for_test;

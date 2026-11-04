@@ -49,7 +49,7 @@ fn cancelled_indexed_selection_equality_keeps_the_native_stop() {
         source.cancel();
         assert_eq!(compare().unwrap_err().kind(), Kind::Cancelled);
         assert_eq!(
-            fact.remains_equal_in(runtime, execution, snapshot)
+            fact.remains_equal_in_for_test(runtime, execution, snapshot)
                 .unwrap_err()
                 .kind(),
             Kind::Cancelled
@@ -163,7 +163,7 @@ fn cancelled_adjacency_read_and_equality_keep_the_native_stop() {
                 relations: expected,
             };
             assert_eq!(
-                fact.remains_equal_in(runtime, execution, snapshot)
+                fact.remains_equal_in_for_test(runtime, execution, snapshot)
                     .unwrap_err()
                     .kind(),
                 Kind::Cancelled
@@ -185,10 +185,10 @@ pub fn with_indexed_fact<R>(
     let world = installed_authorization_world(true);
     let selected = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&phase.test_host_request()))
+        .with_host_advancement(|phase| world.selected_product(&phase.test_host_request_for_test()))
         .unwrap();
-    let snapshot = selected.application_basis().snapshot_handle();
-    let graph = world.application.runtime.primary_graph().unwrap();
+    let snapshot = selected.application_basis_for_test().snapshot_handle();
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let field = AccountStatus::reference();
     let layout = graph
         .layout
@@ -244,7 +244,7 @@ fn source_currentness_keeps_a_stop_raised_inside_the_indexed_read() {
             );
 
         worth_query_execution::facade::domain_computation::fact_verification_on_this_thread_for_test();
-        assert_eq!(fact.source_currentness_in(runtime, execution, snapshot), Err(worth_relational::facade::mvcc::CompanionPreflightStop::Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause::Cancelled)));
+        assert_eq!(fact.source_currentness_in_for_test(runtime, execution, snapshot), Err(worth_relational::facade::mvcc::CompanionPreflightStop::Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause::Cancelled)));
         let observed = worth_query_execution::facade::domain_computation::fact_verification_on_this_thread_for_test();
         assert!(
             observed.source_currentness_visits > 0,
@@ -255,7 +255,7 @@ fn source_currentness_keeps_a_stop_raised_inside_the_indexed_read() {
         // Leave a genuine stopped comparison unconsumed. The final listener
         // owns that diagnostic interval and must release it on drop.
         assert!(fact
-            .source_currentness_in(runtime, execution, snapshot)
+            .source_currentness_in_for_test(runtime, execution, snapshot)
             .is_err());
         drop(observation);
         assert_eq!(worth_query_execution::facade::domain_computation::fact_verification_on_this_thread_for_test(), Default::default(), "dropping the observation clears untaken work");

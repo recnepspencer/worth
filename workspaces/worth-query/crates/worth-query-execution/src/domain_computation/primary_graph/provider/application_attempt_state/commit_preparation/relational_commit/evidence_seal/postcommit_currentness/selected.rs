@@ -289,3 +289,5 @@ fn storage_stop(cause: StoreDenial, own_effect: OwnEffectOnReads) -> RebasedSour
     };
     RebasedSourceFacts::VerificationRequired { reason, own_effect }
 }
+
+mod court_doors_for_test;

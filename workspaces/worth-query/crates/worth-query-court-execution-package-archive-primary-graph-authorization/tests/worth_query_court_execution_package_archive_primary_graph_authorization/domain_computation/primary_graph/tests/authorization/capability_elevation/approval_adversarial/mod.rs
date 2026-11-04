@@ -24,7 +24,7 @@ fn any_preexisting_approver_relation_blocks_fresh_approval_materialization() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             crate::domain_computation::primary_graph::tests::authorization::capability_elevation::mutation::add_self_approver(
                 &host_custody,
                 &host_custody.borrowed_request_for_test(),
@@ -38,7 +38,7 @@ fn any_preexisting_approver_relation_blocks_fresh_approval_materialization() {
     let Err(denial) = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             approval_reads(&host_custody, &world, &request, requested)
                 .materialize_elevation_approval_program()
         })
@@ -67,14 +67,14 @@ fn ordinary_operation_and_commit_paths_cannot_publish_approval_authority() {
     let approver = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             crate::domain_computation::primary_graph::tests::authorization::capability_elevation::approval_transition::authenticated(&host_custody, &world, "bob", &request)
         })
         .expect("the fixture read owns its installed host call");
     let access = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             crate::domain_computation::primary_graph::tests::authorization::capability_elevation::approval_transition::approval_access(&host_custody, &world, &approver, &request)
                 .unwrap()
         })
@@ -83,7 +83,7 @@ fn ordinary_operation_and_commit_paths_cannot_publish_approval_authority() {
     let denial = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             world
                 .application
                 .authorize_capability_operation(
@@ -106,7 +106,7 @@ fn ordinary_operation_and_commit_paths_cannot_publish_approval_authority() {
     let ordinary = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             approval_reads(
                 &(host_custody.phase_for_application(&world.application)).test_host_request(),
                 &world,
@@ -140,7 +140,7 @@ fn lifecycle_drift_before_approval_commit_is_stale_and_returns_request_authority
     let program = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             approval_reads(&host_custody, &world, &request, requested)
                 .materialize_elevation_approval_program()
                 .unwrap()
@@ -149,7 +149,7 @@ fn lifecycle_drift_before_approval_commit_is_stale_and_returns_request_authority
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             crate::domain_computation::primary_graph::tests::authorization::capability_elevation::mutation::set_status(
                 &host_custody,
                 &host_custody.borrowed_request_for_test(),
@@ -191,7 +191,7 @@ pub fn approval_reads(
     let admission = world
         .application
         .authorize_elevation_approval(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             requested,
             access,
             &operation,
@@ -201,7 +201,7 @@ pub fn approval_reads(
     let (_, projection, _) = world
         .invariant
         .project_admitted_operation(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             &admission,
             |reader, _| crate::domain_computation::primary_graph::tests::authorization::capability_elevation::approval_transition::seal_approval_facts(reader),
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -211,14 +211,14 @@ pub fn approval_reads(
     world
         .application
         .begin_projected_application_read_attempt(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             admission,
             projection,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap()
         .complete_projected_dependencies(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap()

@@ -240,13 +240,13 @@ pub fn direct_paused(
     let epoch = fixture.admit();
     let identity = epoch.identity().to_owned();
     let started = {
-        let installed_fixture_phase = epoch.fixture_phase(execution);
+        let installed_fixture_phase = epoch.fixture_phase_for_test(execution);
         epoch.begin_iteration(&installed_fixture_phase, call(call_identity))
     }
     .unwrap_or_else(|_| panic!("direct recovery iteration must start"));
     let paused = {
         let fixture_phase_result = {
-            let installed_fixture_phase = started.fixture_phase(execution);
+            let installed_fixture_phase = started.fixture_phase_for_test(execution);
             started.advance(&installed_fixture_phase)
         };
         match fixture_phase_result {
@@ -269,7 +269,7 @@ pub fn workflow_paused(
     let epoch = fixture.admit();
     let identity = epoch.identity().to_owned();
     let started = {
-        let installed_fixture_phase = epoch.fixture_phase(execution);
+        let installed_fixture_phase = epoch.fixture_phase_for_test(execution);
         epoch.begin_stage_iteration(
             &installed_fixture_phase,
             WORKFLOW_STAGE,
@@ -279,7 +279,7 @@ pub fn workflow_paused(
     .unwrap_or_else(|_| panic!("workflow recovery iteration must start"));
     let paused = {
         let fixture_phase_result = {
-            let installed_fixture_phase = started.fixture_phase(execution);
+            let installed_fixture_phase = started.fixture_phase_for_test(execution);
             started.advance(&installed_fixture_phase)
         };
         match fixture_phase_result {

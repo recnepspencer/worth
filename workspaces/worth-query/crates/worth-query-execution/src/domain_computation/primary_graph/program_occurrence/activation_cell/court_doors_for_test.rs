@@ -7,3 +7,10 @@ impl WorthQueryProgramActivationCell {
         Self::unpublished()
     }
 }
+
+impl WorthQueryProgramActivationCell {
+    #[doc(hidden)]
+    pub fn published_for_test(&self) -> Option<EntityId> {
+        Self::published(self)
+    }
+}

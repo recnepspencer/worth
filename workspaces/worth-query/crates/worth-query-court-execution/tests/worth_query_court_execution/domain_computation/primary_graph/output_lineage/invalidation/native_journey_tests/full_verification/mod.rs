@@ -15,7 +15,7 @@ fn full_verification_uses_native_facts_and_retains_the_exact_captured_image() {
     let world = installed_authorization_world(true);
     let selected = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&phase.test_host_request()))
+        .with_host_advancement(|phase| world.selected_product(&phase.test_host_request_for_test()))
         .expect("installed host call opens");
     let entity = world
         .application
@@ -30,20 +30,20 @@ fn full_verification_uses_native_facts_and_retains_the_exact_captured_image() {
         })
         .expect("installed host call opens")
         .unwrap()
-        .entity_id();
-    let (_, product, _) = selected.into_parts();
+        .entity_id_for_test();
+    let (_, product, _) = selected.into_parts_for_test();
     let coordinate = ProductCoordinate {
         occurrence: product.observation().lifecycle_incarnation(),
         generation: product.observation().reference_generation().get(),
     };
     let source = SemanticSource {
-        runtime_authority: world.application.runtime.authority_identity().as_u64(),
-        schema: world.application.installed_schema.binding_identity(),
-        scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity(entity),
-        output_binding: OutputBindingIdentity::declared("LabelOutput"),
+        runtime_authority: (*world.application.runtime_for_test()).authority_identity().as_u64(),
+        schema: (*world.application.installed_schema_for_test()).binding_identity(),
+        scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity),
+        output_binding: OutputBindingIdentity::declared_for_test("LabelOutput"),
     };
-    let identity = RecordedSettlementIdentity::retain(&source, coordinate, 0);
-    let graph = world.application.runtime.primary_graph().unwrap();
+    let identity = RecordedSettlementIdentity::retain_for_test(&source, coordinate, 0);
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let handle = graph.integration_handle();
     let owner = &handle.source_owner.invalidation_owner;
     let label_ref = AccountLabel::reference();
@@ -58,7 +58,7 @@ fn full_verification_uses_native_facts_and_retains_the_exact_captured_image() {
         use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::consumed_output::verification::ConsumedOutputVerification;
 
         assert_eq!(
-            ConsumedOutputEvidence::verify_many_with_admission(
+            ConsumedOutputEvidence::verify_many_with_admission_for_test(
                 request_execution,
                 &[],
                 owner,

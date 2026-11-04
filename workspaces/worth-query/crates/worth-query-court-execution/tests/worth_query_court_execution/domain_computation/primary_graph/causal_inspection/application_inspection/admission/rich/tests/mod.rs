@@ -47,18 +47,18 @@ fn separately_admitted_rich_body_cannot_replace_scope_or_requested_families() {
             let selected = world
                 .application
                 .on_branch(world.application.current_world())
-                .select_with_request(&execution)
+                .select_with_request_for_test(&execution)
                 .unwrap();
             let mut memory_a = None;
             let mut memory_b = None;
             let ((report_a, terminal_a), (mut report_b, terminal_b)) = world
                 .application
-                .with_fresh_retained_query_identities(
+                .with_fresh_retained_query_identities_for_test(
                     &execution,
                     &installed,
                     None,
                     &external,
-                    &original.source,
+                    &(*original.source_for_test()),
                     &selected,
                     &request,
                     |_, principal, scope| {
@@ -100,10 +100,10 @@ fn separately_admitted_rich_body_cannot_replace_scope_or_requested_families() {
                         )
                         .unwrap_or_else(|_| panic!("first real rich read admits"));
                         let report_a = read_a
-                            .materialize_rich(&execution, installed.query())
+                            .materialize_rich_for_test(&execution, installed.query())
                             .unwrap_or_else(|_| panic!("first rich report assembles"));
                         let terminal_a = read_a
-                            .terminal(&execution)
+                            .terminal_for_test(&execution)
                             .unwrap_or_else(|_| panic!("first terminal admits"));
                         let mut read_b = prepare(
                             &world.application,
@@ -123,10 +123,10 @@ fn separately_admitted_rich_body_cannot_replace_scope_or_requested_families() {
                         )
                         .unwrap_or_else(|_| panic!("second real rich read admits"));
                         let report_b = read_b
-                            .materialize_rich(&execution, installed.query())
+                            .materialize_rich_for_test(&execution, installed.query())
                             .unwrap_or_else(|_| panic!("second rich report assembles"));
                         let terminal_b = read_b
-                            .terminal(&execution)
+                            .terminal_for_test(&execution)
                             .unwrap_or_else(|_| panic!("second terminal admits"));
                         Ok::<_, FreshQueryPermissionStop<()>>((
                             (report_a, terminal_a),

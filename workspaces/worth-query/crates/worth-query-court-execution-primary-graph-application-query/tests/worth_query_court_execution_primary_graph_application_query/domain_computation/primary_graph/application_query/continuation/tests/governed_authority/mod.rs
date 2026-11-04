@@ -40,7 +40,7 @@ fn governed_cursor_alone_cannot_resume_disclosure() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
 
             let continuation = issue(
                 &host_custody,
@@ -82,7 +82,7 @@ fn governed_continuation_consumes_fresh_capability_evidence() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
 
             let continuation = issue(
                 &host_custody,
@@ -140,16 +140,16 @@ pub fn context() -> (
     let (principal, account, query) = world
         .application
         .with_host_advancement(|phase| {
-            let phase_custody = phase.test_host_request();
+            let phase_custody = phase.test_host_request_for_test();
             let borrowed_execution = phase
-                .execution_request_for(world.application.product_runtime())
+                .execution_request_for_for_test(world.application.product_runtime())
                 .expect("the context lends its installed phase");
             let execution = &borrowed_execution;
             let principal = world
                 .application
-                .select_product_branch(
+                .select_product_branch_for_test(
                     execution,
-                    world.application.product_runtime().default_branch(),
+                    world.application.product_runtime().default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_authenticated_principal(
@@ -162,9 +162,9 @@ pub fn context() -> (
                 .unwrap();
             let account = world
                 .application
-                .select_product_branch(
+                .select_product_branch_for_test(
                     execution,
-                    world.application.product_runtime().default_branch(),
+                    world.application.product_runtime().default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
@@ -206,7 +206,7 @@ pub fn issue(
     let plan = world
         .selected_product(phase_custody)
         .admit_governed_application_query_continuation(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             query,
             &access,
             capability,
@@ -220,7 +220,7 @@ pub fn issue(
     let page = world
         .application
         .execute_application_query_continuation_page(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             plan,
         )
         .unwrap();

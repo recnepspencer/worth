@@ -54,15 +54,15 @@ impl LiveContext {
             .with_host_advancement(|phase| {
                 let phase_custody = &phase;
                 let borrowed_execution = phase
-                    .execution_request_for(world.application.product_runtime())
+                    .execution_request_for_for_test(world.application.product_runtime())
                     .expect("the installed fixture lends its own phase");
                 let execution = &borrowed_execution;
 
                 world
                     .application
-                    .select_product_branch(
+                    .select_product_branch_for_test(
                         execution,
-                        world.application.product_runtime().default_branch(),
+                        world.application.product_runtime().default_branch_for_test(),
                     )
                     .expect("the selected product branch remains admitted")
                     .resolve_authenticated_principal(
@@ -103,13 +103,13 @@ impl LiveContext {
             .authenticate(identity, Duration::from_secs(60), &self.request);
         self.world
             .application
-            .select_product_branch(
+            .select_product_branch_for_test(
                 execution,
-                self.world.application.product_runtime().default_branch(),
+                self.world.application.product_runtime().default_branch_for_test(),
             )
             .expect("the selected product branch remains admitted")
             .resolve_authenticated_principal(
-                &phase_custody.phase_for_application(&self.world.application),
+                &phase_custody.phase_for_application_for_test(&self.world.application),
                 &self.world.binding,
                 &external,
                 &self.request,
@@ -134,13 +134,13 @@ impl LiveContext {
         let account = self
             .world
             .application
-            .select_product_branch(
+            .select_product_branch_for_test(
                 execution,
-                self.world.application.product_runtime().default_branch(),
+                self.world.application.product_runtime().default_branch_for_test(),
             )
             .expect("the selected product branch remains admitted")
             .resolve_entity(
-                &phase_custody.phase_for_application(&self.world.application),
+                &phase_custody.phase_for_application_for_test(&self.world.application),
                 AccountIdentity::reference(),
                 "account-1".to_owned(),
                 &self.request,
@@ -148,7 +148,7 @@ impl LiveContext {
             )
             .unwrap();
         self.world
-            .selected_product(&(phase_custody).test_host_request(), )
+            .selected_product(&(phase_custody).test_host_request_for_test(), )
             .open_application_query_live::<
                 LiveAccountActivityQuery,
                 AccountSummaryParameters,
@@ -158,7 +158,7 @@ impl LiveContext {
                 Account,
                 Activity,
                 LiveAccountActivityCause,
-            >(&phase_custody.phase_for_application(&self.world.application),
+            >(&phase_custody.phase_for_application_for_test(&self.world.application),
                 query,
                 &self.principal,
                 account,
@@ -170,9 +170,9 @@ impl LiveContext {
     }
 
     pub fn close_source(&self) {
-        self.world
+        (*self.world
             .application
-            .primary_provider
+            .primary_provider_for_test())
             .live_delivery
             .close();
     }
@@ -192,9 +192,9 @@ impl LiveContext {
 
     pub fn assert_source_released(&self) {
         assert_eq!(
-            self.world
+            (*self.world
                 .application
-                .primary_provider
+                .primary_provider_for_test())
                 .active_application_commit_causality_partitions(),
             0
         );
@@ -209,7 +209,7 @@ fn explicit_close_releases_bridge_signal_and_queue_resources() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             context.open(&host_custody)
         })
         .expect("the fixture read owns its installed host call");
@@ -247,7 +247,7 @@ fn fresh_principal_admission_precedes_empty_and_overflow_progress() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             empty_context.open(&host_custody)
         })
         .expect("the fixture read owns its installed host call");
@@ -255,7 +255,7 @@ fn fresh_principal_admission_precedes_empty_and_overflow_progress() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             empty_context.principal(&host_custody, "bob")
         })
         .expect("the fixture read owns its installed host call");
@@ -263,10 +263,10 @@ fn fresh_principal_admission_precedes_empty_and_overflow_progress() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             assert!(matches!(
                 {
-                    let installed_fixture_phase = empty.fixture_phase(&host_custody);
+                    let installed_fixture_phase = empty.fixture_phase_for_test(&host_custody);
                     empty.next(&installed_fixture_phase, &foreign, &empty_context.request)
                 },
                 WorthQueryApplicationLiveOutcome::AuthorizationDenied(_)
@@ -282,7 +282,7 @@ fn fresh_principal_admission_precedes_empty_and_overflow_progress() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             overflow_context.open(&host_custody)
         })
         .expect("the fixture read owns its installed host call");
@@ -291,7 +291,7 @@ fn fresh_principal_admission_precedes_empty_and_overflow_progress() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             overflow_context.principal(&host_custody, "bob")
         })
         .expect("the fixture read owns its installed host call");
@@ -299,10 +299,10 @@ fn fresh_principal_admission_precedes_empty_and_overflow_progress() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             assert!(matches!(
                 {
-                    let installed_fixture_phase = overflow.fixture_phase(&host_custody);
+                    let installed_fixture_phase = overflow.fixture_phase_for_test(&host_custody);
                     overflow.next(
                         &installed_fixture_phase,
                         &foreign,
@@ -318,7 +318,7 @@ fn fresh_principal_admission_precedes_empty_and_overflow_progress() {
 }
 
 pub fn observer(lease: &TestLiveLease<'_>) -> BridgeExecutionBasisLifecycleObserver {
-    let basis = lease.basis.as_ref().expect("open lease retains its basis");
+    let basis = (*lease.basis_for_test()).as_ref().expect("open lease retains its basis");
     basis.bridge.lifecycle_observer()
 }
 

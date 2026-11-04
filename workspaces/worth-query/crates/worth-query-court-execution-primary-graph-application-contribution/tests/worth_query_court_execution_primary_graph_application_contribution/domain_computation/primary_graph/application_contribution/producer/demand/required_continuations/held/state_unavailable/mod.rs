@@ -26,9 +26,9 @@ fn absent_admitted_demand_refuses_with_required_successor_state_unavailable() {
         .application
         .with_host_advancement(|phase| {
             let runtime = &world.application;
-            let execution = phase.execution_request_for(runtime.product_runtime()).unwrap();
+            let execution = phase.execution_request_for_for_test(runtime.product_runtime()).unwrap();
             let denial = successor
-                .run_again(
+                .run_again_for_test(
                     &execution,
                     &phase,
                     runtime,

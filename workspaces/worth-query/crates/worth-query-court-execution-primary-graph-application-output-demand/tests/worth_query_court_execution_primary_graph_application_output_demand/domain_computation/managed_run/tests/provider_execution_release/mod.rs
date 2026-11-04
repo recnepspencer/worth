@@ -140,7 +140,7 @@ fn physical_release_failure_terminalizes_with_exact_recovery_evidence() {
                 provider,
                 resource_request,
             );
-            let installed_running_phase = execution.phase_for_direct(&running);
+            let installed_running_phase = execution.phase_for_direct_for_test(&running);
 
             let active = running
                 .begin_graph_execution(
@@ -256,7 +256,7 @@ fn workflow_disposal_rejection_terminalizes_before_returning_running_authority()
             resources,
             resource_request,
         );
-        let installed_running_phase = execution.phase_for_workflow(&running);
+        let installed_running_phase = execution.phase_for_workflow_for_test(&running);
 
         let active = running
             .begin_stage_graph_execution(
@@ -330,7 +330,7 @@ fn invocation_panic_and_destructor_panic_are_independently_evidenced() {
                 provider,
                 resource_request,
             );
-            let installed_running_phase = execution.phase_for_direct(&running);
+            let installed_running_phase = execution.phase_for_direct_for_test(&running);
 
             let active = running
                 .begin_graph_execution(

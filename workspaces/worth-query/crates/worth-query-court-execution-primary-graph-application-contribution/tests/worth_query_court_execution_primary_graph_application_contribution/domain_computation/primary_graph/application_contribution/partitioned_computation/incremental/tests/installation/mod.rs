@@ -99,7 +99,7 @@ fn another_owner_with_the_same_types_runs_in_full() {
         (1..=4).sum::<u64>() * 2,
         "its own total"
     );
-    assert_eq!(*doubling.owner.0.calls.lock().unwrap(), full_call_law());
+    assert_eq!(*(*doubling.owner_for_test()).0.calls.lock().unwrap(), full_call_law());
 }
 
 #[test]
@@ -117,7 +117,7 @@ fn a_reinstalled_owner_runs_in_full() {
     ));
     assert_eq!(next.gathered, [0, 1], "every partition is gathered");
     assert_eq!(next.outcome.unwrap().0, (1..=4).sum::<u64>());
-    assert_eq!(*reinstalled.owner.calls.lock().unwrap(), full_call_law());
+    assert_eq!(*(*reinstalled.owner_for_test()).calls.lock().unwrap(), full_call_law());
 }
 
 #[test]
@@ -128,11 +128,11 @@ fn a_clone_of_the_installation_reuses_its_state() {
     let installed = installed(StatusRead::Gather(1), sum);
     let first = first_run(&world, &installed);
 
-    *installed.owner.calls.lock().unwrap() = [0; 4];
+    *(*installed.owner_for_test()).calls.lock().unwrap() = [0; 4];
     let next = attempt(&world, &installed.clone(), Some(prior_of(first, false)));
     assert!(matches!(next.runs.as_slice(), [(Run::Incremental, None)]));
     assert!(next.gathered.is_empty(), "nothing is gathered again");
-    assert_eq!(*installed.owner.calls.lock().unwrap(), [0; 4]);
+    assert_eq!(*(*installed.owner_for_test()).calls.lock().unwrap(), [0; 4]);
 }
 
 #[test]
@@ -160,22 +160,22 @@ fn retained_reads_require_the_actual_installed_value_catalogue() {
         ),
     ] {
         let first = first_run(&world, &installed);
-        let mut state = first.sealed.unwrap().unwrap().state;
+        let mut state = (*first.sealed.unwrap().unwrap().state_for_test());
         state.basis = state.basis.with_value_bindings_for_test(catalogue);
-        let prior = ComputationPrior::new(edition(), Ok(std::sync::Arc::new(state)), None);
-        *installed.owner.calls.lock().unwrap() = [0; 4];
+        let prior = ComputationPrior::new_for_test(edition(), Ok(std::sync::Arc::new(state)), None);
+        *(*installed.owner_for_test()).calls.lock().unwrap() = [0; 4];
         let next = attempt(&world, &installed, Some(prior));
         if same {
             assert!(matches!(next.runs.as_slice(), [(Run::Incremental, None)]));
             assert!(next.gathered.is_empty());
-            assert_eq!(*installed.owner.calls.lock().unwrap(), [0; 4]);
+            assert_eq!(*(*installed.owner_for_test()).calls.lock().unwrap(), [0; 4]);
         } else {
             assert!(matches!(
                 next.runs.as_slice(),
                 [(Run::Full(Cause::OtherInstallation), Some(_))]
             ));
             assert_eq!(next.gathered, [0, 1]);
-            assert_eq!(*installed.owner.calls.lock().unwrap(), full_call_law());
+            assert_eq!(*(*installed.owner_for_test()).calls.lock().unwrap(), full_call_law());
         }
         assert_eq!(next.outcome.unwrap().0, (1..=4).sum::<u64>());
     }
@@ -199,7 +199,7 @@ fn a_reinstalled_reducer_runs_in_full_with_its_own_reduction() {
     ));
     assert_eq!(next.gathered, [0, 1]);
     assert_eq!(next.outcome.unwrap().0, expected);
-    assert_eq!(*reinstalled.owner.calls.lock().unwrap(), full_call_law());
+    assert_eq!(*(*reinstalled.owner_for_test()).calls.lock().unwrap(), full_call_law());
 }
 
 /// A new installation meets each item and computes every distinct model key.

@@ -5,7 +5,7 @@ use worth_query_testkit_execution_primary_graph_application_contribution::domain
 pub fn membership_and_label(
     world: &AuthorizationWorld,
 ) -> (AspectFieldLocator, AspectFieldLocator) {
-    let graph = world.application.runtime.primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let tag_field = AccountMembershipTag::reference();
     let tag_locator = graph
         .layout

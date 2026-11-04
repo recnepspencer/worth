@@ -9,21 +9,21 @@ fn external_receipt_clones_do_not_pin_an_evicted_historical_basis() {
         let selected = world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 world.selected_product(
                     &(host_custody.phase_for_application(&world.application)).test_host_request(),
                 )
             })
             .expect("the fixture read owns its installed host call");
-        let _live = world
+        let _live = (*world
             .application
-            .primary_provider
+            .primary_provider_for_test())
             .observe_application_commit_causality(selected.product());
         let request = live_scope();
         let principal = world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 authenticated_principal(
                     &(host_custody.phase_for_application(&world.application)).test_host_request(),
                     &world,
@@ -34,7 +34,7 @@ fn external_receipt_clones_do_not_pin_an_evicted_historical_basis() {
         let account = world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 resolved_account(
                     &(host_custody.phase_for_application(&world.application)).test_host_request(),
                     &world,
@@ -46,7 +46,7 @@ fn external_receipt_clones_do_not_pin_an_evicted_historical_basis() {
         let first = world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 admitted_program_with_emit(
                     &host_custody.phase_for_application(&world.application),
                     &world,
@@ -61,7 +61,7 @@ fn external_receipt_clones_do_not_pin_an_evicted_historical_basis() {
         let retry = world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 admitted_program_with_emit(
                     &host_custody.phase_for_application(&world.application),
                     &world,
@@ -89,7 +89,7 @@ fn external_receipt_clones_do_not_pin_an_evicted_historical_basis() {
             let current_account = world
                 .application
                 .with_host_advancement(|phase| {
-                    let host_custody = phase.test_host_request();
+                    let host_custody = phase.test_host_request_for_test();
                     resolved_account(
                         &(host_custody.phase_for_application(&world.application))
                             .test_host_request(),
@@ -103,7 +103,7 @@ fn external_receipt_clones_do_not_pin_an_evicted_historical_basis() {
             let program = world
                 .application
                 .with_host_advancement(|phase| {
-                    let host_custody = phase.test_host_request();
+                    let host_custody = phase.test_host_request_for_test();
                     admitted_program_with_emit(
                         &host_custody.phase_for_application(&world.application),
                         &world,
@@ -126,9 +126,9 @@ fn external_receipt_clones_do_not_pin_an_evicted_historical_basis() {
             current_status = replacement;
         }
         assert!(
-            world
+            (*world
                 .application
-                .primary_provider
+                .primary_provider_for_test())
                 .committed_application_emissions(original.committed_product_publication())
                 .is_empty(),
             "the first batch must be absent from the bounded live source"
@@ -151,22 +151,22 @@ fn external_receipt_clones_do_not_pin_an_evicted_historical_basis() {
         assert_eq!(recovered.emitted_effect_count(), 1);
         let external_recovered_clone = recovered.clone();
         assert_eq!(
-            world
+            (*world
                 .application
-                .primary_provider
+                .primary_provider_for_test())
                 .retained_receipt_basis_count(),
             64,
             "completed evidence must not grow the bounded receipt-basis owner"
         );
         let expired_read =
-            WorthQueryApplicationHistoricalRead::at_application_commit(&external_recovered_clone);
+            WorthQueryApplicationHistoricalRead::at_application_commit_for_test(&external_recovered_clone);
         let denial = world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 world
                     .application
-                    .admit_application_historical_basis(
+                    .admit_application_historical_basis_for_test(
                         &host_custody.borrowed_request_for_test(),
                         expired_read,
                         &request,

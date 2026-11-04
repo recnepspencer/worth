@@ -104,7 +104,7 @@ fn funded_capture_capability_input_holds_payload_until_its_last_native_owner() {
                 )
                 .unwrap();
             let admitted = world
-                .selected_product(&phase.test_host_request())
+                .selected_product(&phase.test_host_request_for_test())
                 .admit_encoded_capability_access(
                     &phase,
                     &program_publication_access(),
@@ -141,7 +141,7 @@ fn funded_capture_capability_input_holds_payload_until_its_last_native_owner() {
                 "retained original meaning keeps the native payload's final-owner custody"
             );
             assert_eq!(
-                retained.retained_governed_input::<CapabilityTouchInput>().unwrap().amount,
+                retained.retained_governed_input_for_test::<CapabilityTouchInput>().unwrap().amount,
                 50,
             );
             drop(retained);

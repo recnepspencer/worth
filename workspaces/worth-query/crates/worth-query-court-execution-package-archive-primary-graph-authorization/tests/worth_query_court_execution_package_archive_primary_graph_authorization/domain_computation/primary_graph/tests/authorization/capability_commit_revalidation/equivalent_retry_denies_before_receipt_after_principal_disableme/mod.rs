@@ -8,7 +8,7 @@ fn equivalent_retry_denies_before_receipt_after_principal_disablement() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let (first, retry) = world
@@ -19,11 +19,11 @@ fn equivalent_retry_denies_before_receipt_after_principal_disablement() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             disable_mapping(
                 &host_custody.borrowed_request_for_test(),
                 &world,
-                principal.mapping_entity_id(),
+                principal.mapping_entity_id_for_test(),
             )
         })
         .expect("the fixture read owns its installed host call");

@@ -15,7 +15,7 @@ pub fn observe_one_shot(
     occurrences: &mut GraphWorkOccurrences,
 ) -> LaneObservation {
     let capability = admit_touch_account_capability(
-        &(phase_custody).test_host_request(),
+        &(phase_custody).test_host_request_for_test(),
         context.world,
         context.principal,
         context.request,
@@ -24,9 +24,9 @@ pub fn observe_one_shot(
     let access = WorthQueryApplicationQueryAccessContext::new(context.principal, context.account);
     let plan = context
         .world
-        .selected_product(&(phase_custody).test_host_request())
+        .selected_product(&(phase_custody).test_host_request_for_test())
         .admit_governed_application_query(
-            &phase_custody.phase_for_application(&context.world.application),
+            &phase_custody.phase_for_application_for_test(&context.world.application),
             context.query,
             &access,
             capability,
@@ -41,7 +41,7 @@ pub fn observe_one_shot(
         .world
         .application
         .execute_application_query_one_shot(
-            &phase_custody.phase_for_application(&context.world.application),
+            &phase_custody.phase_for_application_for_test(&context.world.application),
             plan,
         )
         .unwrap();
@@ -54,7 +54,7 @@ pub fn observe_continuation(
     occurrences: &mut GraphWorkOccurrences,
 ) -> ContinuationObservation {
     let capability = admit_touch_account_capability(
-        &(phase_custody).test_host_request(),
+        &(phase_custody).test_host_request_for_test(),
         context.world,
         context.principal,
         context.request,
@@ -63,9 +63,9 @@ pub fn observe_continuation(
     let access = WorthQueryApplicationQueryAccessContext::new(context.principal, context.account);
     let plan = context
         .world
-        .selected_product(&(phase_custody).test_host_request())
+        .selected_product(&(phase_custody).test_host_request_for_test())
         .admit_governed_application_query_continuation(
-            &phase_custody.phase_for_application(&context.world.application),
+            &phase_custody.phase_for_application_for_test(&context.world.application),
             context.query,
             &access,
             capability,
@@ -80,7 +80,7 @@ pub fn observe_continuation(
         .world
         .application
         .execute_application_query_continuation_page(
-            &phase_custody.phase_for_application(&context.world.application),
+            &phase_custody.phase_for_application_for_test(&context.world.application),
             plan,
         )
         .unwrap();
@@ -90,7 +90,7 @@ pub fn observe_continuation(
     let first_next_page_ordinal = continuation.page_ordinal();
 
     let fresh = admit_touch_account_capability(
-        &(phase_custody).test_host_request(),
+        &(phase_custody).test_host_request_for_test(),
         context.world,
         context.principal,
         context.request,
@@ -100,7 +100,7 @@ pub fn observe_continuation(
         .world
         .application
         .readmit_governed_application_query_continuation(
-            &phase_custody.phase_for_application(&context.world.application),
+            &phase_custody.phase_for_application_for_test(&context.world.application),
             context.query,
             &access,
             fresh,
@@ -113,7 +113,7 @@ pub fn observe_continuation(
         .world
         .application
         .execute_application_query_continuation_page(
-            &phase_custody.phase_for_application(&context.world.application),
+            &phase_custody.phase_for_application_for_test(&context.world.application),
             plan,
         )
         .unwrap();

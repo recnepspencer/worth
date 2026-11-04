@@ -25,7 +25,7 @@ fn unheld_performed_sources_release_the_oldest_in_commit_order() {
         let change = Arc::new(receipt.take_performed_relational_product_change().unwrap());
         let observation = receipt
             .committed_product_publication()
-            .take_output_demand_observation()
+            .take_output_demand_observation_for_test()
             .unwrap();
         sources.push(WorthQueryPerformedOutputDemandSource {
             receipt,
@@ -35,19 +35,19 @@ fn unheld_performed_sources_release_the_oldest_in_commit_order() {
         });
         current = replacement;
     }
-    let oldest = sources[0].change.product_commit().clone();
-    let occurrence = sources[0].receipt.product_branch().occurrence();
+    let oldest = (*sources[0].change_for_test()).product_commit().clone();
+    let occurrence = (*sources[0].receipt_for_test()).product_branch().occurrence();
     assert!(sources
         .windows(2)
-        .all(|pair| pair[0].change.product_commit() < pair[1].change.product_commit()));
+        .all(|pair| (*pair[0].change_for_test()).product_commit() < (*pair[1].change_for_test()).product_commit()));
     let mut state = DemandRegistryState::default();
     for index in [7, 3, 5, 1, 6, 2, 4, 0] {
         let source = sources[index].clone();
         state.source_custody.insert(
-            source.change.product_commit().clone(),
+            (*source.change_for_test()).product_commit().clone(),
             SourceCustody {
                 occurrence,
-                root_kind: PreparedOutputRootKind::Required(TypeId::of::<()>()),
+                root_kind: PreparedOutputRootKind::Required(TypeId::of_for_test::<()>()),
                 source: Some(source),
                 discovery: None,
                 bound_sources: None,
@@ -62,16 +62,16 @@ fn unheld_performed_sources_release_the_oldest_in_commit_order() {
     }
     for slot in 1..=3 {
         let mut row = record(occurrence, DemandState::Admitted, 0);
-        row.source_commits.push(oldest.clone());
-        state.records.insert(key("release-proof", 1, slot), row);
+        (*row.source_commits_for_test()).push(oldest.clone());
+        (*state.records_for_test()).insert(key("release-proof", 1, slot), row);
     }
 
-    let released = state.release_unheld_performed_source().unwrap();
+    let released = state.release_unheld_performed_source_for_test().unwrap();
     assert!(released.is_some());
     assert!(!state.source_custody.contains_key(&oldest));
     assert_eq!(state.source_custody.len(), 7);
-    assert!(state
-        .records
+    assert!((*state
+        .records_for_test())
         .values()
         .all(|row| !row.source_commits.contains(&oldest)));
 }

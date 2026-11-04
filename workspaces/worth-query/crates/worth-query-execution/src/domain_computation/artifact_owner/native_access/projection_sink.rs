@@ -99,3 +99,5 @@ impl WorthQueryArtifactProjectionSink {
             && (self.pending_row.as_ptr() as usize).is_multiple_of(bytes)
     }
 }
+
+mod court_doors_for_test;

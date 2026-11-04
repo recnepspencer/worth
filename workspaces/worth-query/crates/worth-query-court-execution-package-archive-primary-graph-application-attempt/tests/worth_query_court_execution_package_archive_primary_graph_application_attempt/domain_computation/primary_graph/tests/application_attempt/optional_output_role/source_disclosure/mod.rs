@@ -88,7 +88,7 @@ fn non_correctable_source_keeps_disclosure_and_releases_its_native_input() {
     .unwrap();
     let sibling = world.application.with_funded_application_advancement(&request,
         worth_execution::ExecutionAllocationPolicy::Execution(&caller), |phase| {
-        let custody = phase.test_host_request();
+        let custody = phase.test_host_request_for_test();
         let principal = authenticated_principal(&custody, &world, &request);
         let account = resolved_account(&custody, &world, "open", &request);
         let installed = world.application.installed_schema()
@@ -132,12 +132,12 @@ fn non_correctable_source_keeps_disclosure_and_releases_its_native_input() {
         };
         let source_commit = receipt.commit_reference().clone();
         let source_branch = receipt.product_branch();
-        assert!(world.application.primary_provider.observe_completed_application(&source_commit).is_some());
+        assert!((*world.application.primary_provider_for_test()).observe_completed_application(&source_commit).is_some());
         let carrier = receipt.authority_binding().clone();
         drop(receipt);
-        assert!(carrier.retained_governed_input_carrier().is_none());
-        let disclosure = carrier.original_inspection_disclosure().expect("actual source captured inspection meaning");
-        assert_eq!(disclosure.scope().subject(), account.entity_id());
+        assert!(carrier.retained_governed_input_carrier_for_test().is_none());
+        let disclosure = carrier.original_inspection_disclosure_for_test().expect("actual source captured inspection meaning");
+        assert_eq!(disclosure.scope().subject(), account.entity_id_for_test());
         assert_eq!(disclosure.association().source_type(), std::any::TypeId::of::<OptionalOutputMutationBinding>());
         assert_eq!(disclosure.disclosure().query(), world.application.installed_schema().installed_query_binding::<
             worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::current_output_source::TestAccountSourceBinding,
@@ -151,10 +151,10 @@ fn non_correctable_source_keeps_disclosure_and_releases_its_native_input() {
         let holding_payload = parent.charged_memory_bytes();
         drop(carrier);
         assert_eq!(parent.charged_memory_bytes(), holding_payload, "the source clone keeps its funded payload");
-        assert!(sibling.original_inspection_disclosure().is_some());
+        assert!(sibling.original_inspection_disclosure_for_test().is_some());
         let closed = world.application.on_branch(source_branch).close(&phase).expect("the ordinary product occurrence closes");
         assert!(closed.is_complete());
-        assert!(world.application.primary_provider.observe_completed_application(&source_commit).is_some(), "native history still owns the completed source after ordinary close");
+        assert!((*world.application.primary_provider_for_test()).observe_completed_application(&source_commit).is_some(), "native history still owns the completed source after ordinary close");
         sibling
     }).unwrap();
     drop(world);
@@ -195,9 +195,9 @@ fn serial_placement_source_capture_preserves_success_and_original_cancellation()
             .application
             .with_host_advancement(|phase| {
                 world
-                    .selected_product(&phase.test_host_request())
+                    .selected_product(&phase.test_host_request_for_test())
                     .product()
-                    .observation()
+                    .observation_for_test()
                     .clone()
             })
             .unwrap();
@@ -207,7 +207,7 @@ fn serial_placement_source_capture_preserves_success_and_original_cancellation()
             let execution = phase.checked_execution_request_for(world.application.product_runtime()).unwrap();
             let (accounted, _) = execution.run_native_with_checkpoint(|context| context.has_accounting()).unwrap();
             assert!(!accounted, "the original serial placement keeps its actual native cost posture");
-            let custody = phase.test_host_request();
+            let custody = phase.test_host_request_for_test();
             let principal = authenticated_principal(&custody, &world, &request);
             let account = resolved_account(&custody, &world, "open", &request);
             let installed = world.application.installed_schema().installed_mutation_binding::<OptionalOutputMutationBinding>().unwrap();
@@ -234,8 +234,8 @@ fn serial_placement_source_capture_preserves_success_and_original_cancellation()
                 assert_eq!(denial.kind(), WorthQueryApplicationAttemptDenialKind::Cancelled);
             } else {
                 let WorthQueryApplicationCommitOutcome::Committed(receipt) = world.application.compare_and_commit_application_in_advancement(&phase, captured.unwrap(), idempotency, execution.allocation_policy()) else { panic!("unaccounted original source remains lawful") };
-                assert!(receipt.authority_binding().original_inspection_disclosure().is_some());
-                assert!(receipt.authority_binding().retained_governed_input_carrier().is_none());
+                assert!(receipt.authority_binding().original_inspection_disclosure_for_test().is_some());
+                assert!(receipt.authority_binding().retained_governed_input_carrier_for_test().is_none());
             }
         });
         if cancel_capture {
@@ -250,9 +250,9 @@ fn serial_placement_source_capture_preserves_success_and_original_cancellation()
             .application
             .with_host_advancement(|phase| {
                 world
-                    .selected_product(&phase.test_host_request())
+                    .selected_product(&phase.test_host_request_for_test())
                     .product()
-                    .observation()
+                    .observation_for_test()
                     .clone()
             })
             .unwrap();

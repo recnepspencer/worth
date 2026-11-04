@@ -50,3 +50,6 @@ impl<Schema, Principal, PrincipalIdentity>
         self.selected
     }
 }
+
+#[path = "issued_principal_court_doors_for_test.rs"]
+mod court_doors_for_test;

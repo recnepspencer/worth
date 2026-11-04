@@ -84,3 +84,6 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
         }
     }
 }
+
+#[path = "external_settlement_court_doors_for_test.rs"]
+mod court_doors_for_test;

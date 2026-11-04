@@ -18,7 +18,7 @@ use worth_query_execution::facade::domain_computation::WorthQueryApplicationComm
 pub fn queue() -> RequiredFrontier<()> {
     RequiredFrontier {
         members: vec![RequiredMember {
-            ready: MemberInput::native(()),
+            ready: MemberInput::native_for_test(()),
             caller: false,
             caller_successor: false,
             resolved_successor: false,
@@ -33,7 +33,7 @@ pub fn queue() -> RequiredFrontier<()> {
 fn a_caller_refusal_has_no_reinspection_transition() {
     let mut frontier = queue();
     frontier.members[0].caller = true;
-    assert!(frontier.queued_member(0).is_none());
+    assert!(frontier.queued_member_for_test(0).is_none());
 }
 #[test]
 fn a_stale_queue_publication_without_another_publication_is_held() {
@@ -53,7 +53,7 @@ pub fn assert_publication_credit(replay: bool, publish: bool) {
             .application
             .with_host_advancement(|phase| {
                 let execution = phase
-                    .execution_request_for(&world.application.product_runtime)
+                    .execution_request_for_for_test(&(*world.application.product_runtime_for_test()))
                     .unwrap();
                 let runtime = &world.application;
 
@@ -68,7 +68,7 @@ pub fn assert_publication_credit(replay: bool, publish: bool) {
                     positioned: &positioned,
                     runtime,
                 };
-                let source = WorthQueryObservedSourceEpoch::new(
+                let source = WorthQueryObservedSourceEpoch::new_for_test(
                     [1; 32],
                     [2; 32],
                     worth_relational::facade::identity::EntityId::new(
@@ -79,13 +79,13 @@ pub fn assert_publication_credit(replay: bool, publish: bool) {
                     shared
                         .selected()
                         .product()
-                        .observation()
+                        .observation_for_test()
                         .lifecycle_incarnation(),
                     0,
                     [3; 32],
                 );
                 let key = |producer: &str| {
-                    WorthQueryOutputDemandKey::new(
+                    WorthQueryOutputDemandKey::new_for_test(
                         "performed-member-test-family",
                         producer.to_owned(),
                         WorthQueryProducerApplicability::new(
@@ -98,9 +98,9 @@ pub fn assert_publication_credit(replay: bool, publish: bool) {
                 let a = key("A");
                 let m = key("M");
                 let mut record = PerformedMembers::start();
-                let inspected = record.inspection();
+                let inspected = record.inspection_for_test();
                 let permission = record
-                    .fresh(
+                    .fresh_for_test(
                         &execution,
                         &a,
                         source.clone(),
@@ -108,7 +108,7 @@ pub fn assert_publication_credit(replay: bool, publish: bool) {
                     )
                     .unwrap_or_else(|_| panic!("A's first preparation is admitted"))
                     .unwrap();
-                let permission = record.attach_successor(permission, &a).unwrap();
+                let permission = record.attach_successor_for_test(permission, &a).unwrap();
                 if publish {
                     let outcome = if replay {
                         WorthQueryApplicationCommitOutcome::AlreadyCommitted(receipt)
@@ -117,13 +117,13 @@ pub fn assert_publication_credit(replay: bool, publish: bool) {
                     };
                     let publication = commit_receipt("actual publication", outcome)
                         .unwrap_or_else(|_| panic!("receipt retained"));
-                    record.publication(permission, publication, |member| member.performed());
+                    record.publication_for_test(permission, publication, |member| member.performed());
                 }
                 assert!(
-                    record.reinspection(&a, inspected).unwrap().is_none(),
+                    record.reinspection_for_test(&a, inspected).unwrap().is_none(),
                     "a member's own publication pays for no retry"
                 );
-                let credit = record.reinspection(&m, inspected).unwrap();
+                let credit = record.reinspection_for_test(&m, inspected).unwrap();
                 assert_eq!(
                     credit.is_some(),
                     publish && !replay,
@@ -131,16 +131,16 @@ pub fn assert_publication_credit(replay: bool, publish: bool) {
                 );
                 let mut frontier = queue();
                 assert_eq!(
-                    frontier.queued_member(0).unwrap().refused(credit),
+                    frontier.queued_member_for_test(0).unwrap().refused(credit),
                     publish && !replay
                 );
-                let inspected_again = record.inspection();
-                let credit = record.reinspection(&m, inspected_again).unwrap();
+                let inspected_again = record.inspection_for_test();
+                let credit = record.reinspection_for_test(&m, inspected_again).unwrap();
                 assert!(
                     credit.is_none(),
                     "one publication cannot pay for two inspections"
                 );
-                assert!(!frontier.queued_member(0).unwrap().refused(credit));
+                assert!(!frontier.queued_member_for_test(0).unwrap().refused(credit));
                 assert!(matches!(frontier.members[0].state, MemberState::Pending));
             })
             .expect("the owner proof owns its request");

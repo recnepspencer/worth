@@ -104,3 +104,5 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
         Ok(settled.combine(compact))
     }
 }
+
+mod court_doors_for_test;

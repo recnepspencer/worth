@@ -26,7 +26,7 @@ fn workflow_restore_rejection_after_admission_is_terminal_even_after_clean_relea
             .release_count();
         let recovery = {
             let fixture_phase_result = {
-                let installed_fixture_phase = yielded.fixture_phase(active_request);
+                let installed_fixture_phase = yielded.fixture_phase_for_test(active_request);
                 yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
             };
             match fixture_phase_result {

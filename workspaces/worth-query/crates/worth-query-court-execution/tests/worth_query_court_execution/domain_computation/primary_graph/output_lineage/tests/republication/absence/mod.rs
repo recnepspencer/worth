@@ -24,8 +24,8 @@ fn republication_keeps_a_performed_read_without_inventing_cutoff_proofs() {
             generation,
             |row| {
                 let mut row = performed(row, &selection, &consumed, &witness);
-                row.completed_decision_reuse = None;
-                row.prepared_input_reuse_key = None;
+                (*row.completed_decision_reuse_mut_for_test()) = None;
+                (*row.prepared_input_reuse_key_mut_for_test()) = None;
                 row
             },
             &facts,
@@ -36,10 +36,10 @@ fn republication_keeps_a_performed_read_without_inventing_cutoff_proofs() {
             .expect("a performed read does not require input-cutoff proofs")
             .expect("the republication installs");
         let row = stage.restored();
-        assert!(row.completed_handler_facts.is_some());
-        assert!(row.completed_decision_reuse.is_none());
-        assert!(row.prepared_input_reuse_key.is_none());
-        assert!(matches!(row.mutable.lock().unwrap().computation,
+        assert!((*row.completed_handler_facts_for_test()).is_some());
+        assert!((*row.completed_decision_reuse_for_test()).is_none());
+        assert!((*row.prepared_input_reuse_key_for_test()).is_none());
+        assert!(matches!((*row.mutable_for_test()).lock().unwrap().computation,
             worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::retained_computation::RecordedComputation::Absent(
                 worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::prior_absence::PriorAbsence::Republished)));
     });
@@ -55,21 +55,21 @@ fn restoring_existing_unverified_facts_drops_state_as_restored() {
     let sealed = sealed_run_for_lineage_test();
     staged(request_execution, |mut stage| {
         let facts: Arc<[Fact]> = Arc::from([source_entity(1)]);
-        let computation = stage.lineage.retain_computation(sealed);
+        let computation = stage.lineage.retain_computation_for_test(sealed);
         assert!(matches!(computation, RecordedComputation::Retained(_)));
         let generation = stage.restored_generation() - 1;
         let cell = stage.retain(
             generation,
             |mut row| {
-                row.mutable.get_mut().unwrap().computation = computation;
+                (*row.mutable_for_test()).get_mut().unwrap().computation = computation;
                 row
             },
             &facts,
         );
         let record = cell.get().unwrap();
-        record.restore(Arc::clone(&facts).into(), None);
+        record.restore_for_test(Arc::clone(&facts).into(), None);
         assert!(matches!(
-            record.mutable.lock().unwrap().computation,
+            (*record.mutable_for_test()).lock().unwrap().computation,
             RecordedComputation::Absent(PriorAbsence::Restored)
         ));
     });
@@ -122,11 +122,11 @@ pub fn republish_untracked(
             .unwrap()
             .expect("untracked decision context prevents cutoff, not republication");
         let row = stage.restored();
-        assert!(row.completed_handler_facts.is_some());
-        assert!(row.completed_decision_reuse.is_none());
-        assert!(row.prepared_input_reuse_key.is_none());
+        assert!((*row.completed_handler_facts_for_test()).is_some());
+        assert!((*row.completed_decision_reuse_for_test()).is_none());
+        assert!((*row.prepared_input_reuse_key_for_test()).is_none());
         assert!(matches!(
-            row.mutable.lock().unwrap().computation,
+            (*row.mutable_for_test()).lock().unwrap().computation,
             RecordedComputation::Absent(PriorAbsence::Republished)
         ));
     });

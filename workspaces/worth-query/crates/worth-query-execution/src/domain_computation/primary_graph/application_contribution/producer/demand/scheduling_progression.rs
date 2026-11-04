@@ -279,3 +279,5 @@ pub fn scheduling_refusal(
     }
     Err(bridge_denial(producer_identity, error))
 }
+
+mod court_doors_for_test;

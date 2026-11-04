@@ -14,7 +14,7 @@ fn dependent_second_scope_reconstructs_atomically_with_original_read_results() {
             let execution = phase
                 .checked_execution_request_for(world.application.product_runtime())
                 .unwrap();
-            let selected = world.selected_product(&phase.test_host_request());
+            let selected = world.selected_product(&phase.test_host_request_for_test());
             let root = selected
                 .resolve_entity(
                     &phase,
@@ -24,7 +24,7 @@ fn dependent_second_scope_reconstructs_atomically_with_original_read_results() {
                     WorthQueryPrincipalResolutionMode::Ordinary,
                 )
                 .unwrap();
-            let graph = world.application.runtime.primary_graph().unwrap();
+            let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
             let field = AccountLabel::reference();
             let locator = graph
                 .layout
@@ -38,7 +38,7 @@ fn dependent_second_scope_reconstructs_atomically_with_original_read_results() {
                 &world,
                 WorkerIntentBatch::new("dependent-second-scope").push(MutationIntent::Entity(
                     EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
-                        entity_id: root.entity_id(),
+                        entity_id: root.entity_id_for_test(),
                         fields: AspectFieldPatch::from(BTreeMap::from([(
                             locator,
                             StringApplicationValueBinding::encode(&"unrelated".to_owned()).unwrap(),
@@ -50,7 +50,7 @@ fn dependent_second_scope_reconstructs_atomically_with_original_read_results() {
         .unwrap();
     world.application.with_application_advancement(&request, |phase| {
         let execution = phase.checked_execution_request_for(world.application.product_runtime()).unwrap();
-        let selected = world.selected_product(&phase.test_host_request());
+        let selected = world.selected_product(&phase.test_host_request_for_test());
         let principal = selected.resolve_authenticated_principal(
             &phase, &world.binding, &external, &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
@@ -71,7 +71,7 @@ fn dependent_second_scope_reconstructs_atomically_with_original_read_results() {
             ), &membership_query, &entry_query, &entry_query, selected.product(),
         ).unwrap();
         let membership = world.application.execute_application_query_one_shot(
-            &phase, selected.retain_selection(&execution).unwrap().admit_application_query(
+            &phase, selected.retain_selection_for_test(&execution).unwrap().admit_application_query(
                 &phase, &membership_query, &access, ApplicationQueryParameterSet::new(),
                 worth_query_execution::facade::domain_computation::WorthQueryProductQueryControls::new(std::num::NonZeroUsize::new(membership_query.read_graph().maximum_result_count()).expect("the fixture uses a nonzero installed query result contract"), &request),
             ).unwrap(),
@@ -87,7 +87,7 @@ let first = |selector: &String| {
                 WorthQueryPrincipalResolutionMode::Ordinary,
             ).unwrap();
             let access = WorthQueryApplicationQueryAccessContext::new(&principal, &root);
-            let plan = selected.retain_selection(&execution).unwrap().admit_application_query(
+            let plan = selected.retain_selection_for_test(&execution).unwrap().admit_application_query(
                 &phase, &entry_query, &access, ApplicationQueryParameterSet::new(),
                 worth_query_execution::facade::domain_computation::WorthQueryProductQueryControls::new(std::num::NonZeroUsize::new(entry_query.read_graph().maximum_result_count()).expect("the fixture uses a nonzero installed query result contract"), &request),
             ).unwrap();
@@ -108,10 +108,10 @@ let second = |row: &AccountSummaryResult| {
                 &phase, AccountStatus::reference(), row.label().to_owned(), &request,
                 WorthQueryPrincipalResolutionMode::Ordinary,
             ).unwrap();
-            assert_ne!(root.entity_id(), first_scope.entity_id());
-            second_root.set(Some(root.entity_id()));
+            assert_ne!(root.entity_id_for_test(), first_scope.entity_id_for_test());
+            second_root.set(Some(root.entity_id_for_test()));
             let access = WorthQueryApplicationQueryAccessContext::new(&principal, &root);
-            let plan = selected.retain_selection(&execution).unwrap().admit_application_query(
+            let plan = selected.retain_selection_for_test(&execution).unwrap().admit_application_query(
                 &phase, &entry_query, &access, ApplicationQueryParameterSet::new(),
                 worth_query_execution::facade::domain_computation::WorthQueryProductQueryControls::new(std::num::NonZeroUsize::new(entry_query.read_graph().maximum_result_count()).expect("the fixture uses a nonzero installed query result contract"), &request),
             ).unwrap();
@@ -119,7 +119,7 @@ let second = |row: &AccountSummaryResult| {
                 &phase, plan, &batch.borrow(),
             ).unwrap();
             let result = issued.into_result();
-            assert_eq!(result.observed_sources()[0].source_root(), root.entity_id());
+            assert_eq!(result.observed_sources()[0].source_root_for_test(), root.entity_id_for_test());
             Ok(result)
         };
 let members = |row: &worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::application_queries::public_membership::PublicAccountMembershipResult| {
@@ -149,7 +149,7 @@ let members = |row: &worth_query_testkit_execution_primary_graph_application_con
             },
         ).unwrap();
         assert_eq!(keys.len(), 1);
-        assert_eq!(keys[0].root(), first_scope.entity_id());
+        assert_eq!(keys[0].root(), first_scope.entity_id_for_test());
         assert!(second_root.get().is_some());
         assert_eq!(projections.get(), 1);
         let snapshot = world.application.observe_managed_derived_view(&view).unwrap();

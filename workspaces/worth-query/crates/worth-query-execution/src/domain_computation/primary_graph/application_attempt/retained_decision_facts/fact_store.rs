@@ -153,3 +153,5 @@ mod tests {
         send_sync::<crate::domain_computation::primary_graph::WorthQueryApplicationOperationInvariantProjectionSnapshot<(), ()>>();
     }
 }
+
+mod court_doors_for_test;

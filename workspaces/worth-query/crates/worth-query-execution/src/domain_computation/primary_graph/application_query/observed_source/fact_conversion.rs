@@ -218,3 +218,5 @@ fn adjacency_fact(adjacency: &WorthQueryObservedAdjacencyRevision, control: crat
         endpoints: crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints::preserve(&adjacency.endpoints, control)?,
     })
 }
+
+mod court_doors_for_test;

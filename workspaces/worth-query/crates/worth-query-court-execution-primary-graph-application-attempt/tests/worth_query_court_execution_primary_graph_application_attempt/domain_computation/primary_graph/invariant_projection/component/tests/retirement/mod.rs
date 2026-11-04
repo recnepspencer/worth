@@ -32,7 +32,7 @@ fn member_retirement_preserves_component_name_and_invalidates_old_membership() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host = phase.test_host_request();
+            let host = phase.test_host_request_for_test();
             publish_relational_mutation_on_application(
                 &host.borrowed_request_for_test(),
                 &world.application,
@@ -48,8 +48,8 @@ fn member_retirement_preserves_component_name_and_invalidates_old_membership() {
         world.invariant.project(&phase, |reader| {
             let root = reader.resolve_entity(NodeKey::reference(), 1_u64).unwrap();
             // Ordinary coupling excludes an audit-retained relation to a retired member.
-            let kind = reader.layout.relation("B").unwrap().kind;
-            let physical = reader.read_adjacency("B", root.entity_id(), kind,
+            let kind = (*reader.layout_for_test()).relation("B").unwrap().kind;
+            let physical = reader.read_adjacency_for_test("B", root.entity_id(), kind,
                 worth_query_declaration::facade::application_schema::RelationDirection::Forward).unwrap();
             assert!(physical.into_records().is_empty(), "the authored B1->2 edge is no longer live coupling");
             let current = reader.component_of(Shells::reference(), &root).unwrap();
@@ -57,10 +57,10 @@ fn member_retirement_preserves_component_name_and_invalidates_old_membership() {
                 .collect::<BTreeSet<_>>();
             assert_eq!(keys, BTreeSet::from([0, 1]));
             assert_eq!(current.identity(), prior.output().1.identity(), "retirement without a split preserves the persistent name");
-            let pin = reader.runtime.read_truth().pin_read_capability(reader.snapshot, &[], reader.execution).unwrap();
-            assert_ne!(pin.snapshot().version_id(), prior.output().1.aggregate().source().version_id());
-            let equal = reader.execution.run_native_with_checkpoint(|context|
-                prior.output().1.aggregate().remains_equal_at(&pin, reader.execution, context, None).unwrap()).unwrap();
+            let pin = (*reader.runtime_for_test()).read_truth().pin_read_capability((*reader.snapshot_for_test()), &[], (*reader.execution_for_test())).unwrap();
+            assert_ne!(pin.snapshot().version_id(), prior.output().1.aggregate().source_for_test().version_id());
+            let equal = (*reader.execution_for_test()).run_native_with_checkpoint(|context|
+                prior.output().1.aggregate().remains_equal_at_for_test(&pin, (*reader.execution_for_test()), context, None).unwrap()).unwrap();
             assert!(!equal.0, "actual changed-product membership cannot reuse the old component answer");
         }, Allocation::SystemAllocation).unwrap();
     }).unwrap();

@@ -44,17 +44,17 @@ pub fn publish_definition(
     builder.start(&terminal);
     let definition = builder.finish().unwrap().validate().unwrap();
     let before = selected(world, execution);
-    let handle = world
+    let handle = (*world
         .application
-        .runtime
+        .runtime_for_test())
         .primary_graph()
         .unwrap()
         .integration_handle();
     let inventories = handle.with_runtime(execution, |runtime| {
         [
-            layout.lineage.entity_kind,
-            layout.definition.entity_kind,
-            layout.node.entity_kind,
+            (*layout.lineage_for_test()).entity_kind,
+            (*layout.definition_for_test()).entity_kind,
+            (*layout.node_for_test()).entity_kind,
         ]
         .map(|kind| {
             runtime
@@ -88,16 +88,16 @@ pub fn publish_definition(
     let lineage = only_new_entity(
         world,
         execution,
-        layout.lineage.entity_kind,
+        (*layout.lineage_for_test()).entity_kind,
         &inventories[0],
     );
     let entity = only_new_entity(
         world,
         execution,
-        layout.definition.entity_kind,
+        (*layout.definition_for_test()).entity_kind,
         &inventories[1],
     );
-    let node = only_new_entity(world, execution, layout.node.entity_kind, &inventories[2]);
+    let node = only_new_entity(world, execution, (*layout.node_for_test()).entity_kind, &inventories[2]);
     let retained = selected(world, execution);
     let compiled_node = handle.with_runtime(execution, |runtime| {
         let mut observed = Vec::new();
@@ -126,6 +126,6 @@ pub fn publish_definition(
     })
     .unwrap();
     binding
-        .bind(semantic, definition.content_identity().clone(), revision)
+        .bind_for_test(semantic, definition.content_identity().clone(), revision)
         .unwrap()
 }

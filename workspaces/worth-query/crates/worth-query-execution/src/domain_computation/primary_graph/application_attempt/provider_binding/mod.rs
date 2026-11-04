@@ -231,3 +231,5 @@ pub(super) fn invalid_emission_denial() -> WorthQueryApplicationAttemptDenial {
         "application emission batch",
     )
 }
+
+mod court_doors_for_test;

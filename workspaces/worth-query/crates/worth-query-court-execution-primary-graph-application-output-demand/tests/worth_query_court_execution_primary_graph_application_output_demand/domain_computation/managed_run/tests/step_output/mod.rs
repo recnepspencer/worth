@@ -74,7 +74,7 @@ fn each_streamed_chunk_requires_consumption_before_the_next_provider_step() {
             resource_request,
         );
         let first = expect_chunk({
-            let installed_fixture_phase = active.fixture_phase(execution);
+            let installed_fixture_phase = active.fixture_phase_for_test(execution);
             active.advance(&installed_fixture_phase)
         });
         assert_eq!(first.queue_depth(), 1);
@@ -86,7 +86,7 @@ fn each_streamed_chunk_requires_consumption_before_the_next_provider_step() {
             _ => panic!("consuming the first chunk did not release the next step"),
         };
         let second = expect_chunk({
-            let installed_fixture_phase = active.fixture_phase(execution);
+            let installed_fixture_phase = active.fixture_phase_for_test(execution);
             active.advance(&installed_fixture_phase)
         });
         assert_eq!(advances.load(Ordering::Relaxed), 2);
@@ -131,7 +131,7 @@ fn stalled_consumer_cancellation_releases_the_chunk_before_terminal_cleanup() {
                 },
                 resource_request,
             );
-            let installed_fixture_phase = fixture_state.fixture_phase(execution);
+            let installed_fixture_phase = fixture_state.fixture_phase_for_test(execution);
             fixture_state.advance(&installed_fixture_phase)
         });
         pending
@@ -171,7 +171,7 @@ fn foreign_consumer_failure_preserves_queue_occupancy_for_owner_cleanup() {
                 },
                 resource_request,
             );
-            let installed_fixture_phase = fixture_state.fixture_phase(execution);
+            let installed_fixture_phase = fixture_state.fixture_phase_for_test(execution);
             fixture_state.advance(&installed_fixture_phase)
         });
         let terminal = std::thread::spawn(move || match pending.acknowledge() {
@@ -217,7 +217,7 @@ fn exact_capacity_chunk_drains_before_completion() {
             },
             resource_request,
         );
-        let installed_running_phase = execution.phase_for_direct(&running);
+        let installed_running_phase = execution.phase_for_direct_for_test(&running);
 
         let active = running
             .begin_graph_execution(
@@ -323,7 +323,7 @@ fn pending_and_paused_abandonment_release_queue_and_output_retention() {
                 },
                 resource_request,
             );
-            let installed_fixture_phase = fixture_state.fixture_phase(execution);
+            let installed_fixture_phase = fixture_state.fixture_phase_for_test(execution);
             fixture_state.advance(&installed_fixture_phase)
         });
         let terminal = match pending.abandon() {
@@ -343,7 +343,7 @@ fn pending_and_paused_abandonment_release_queue_and_output_retention() {
                 },
                 resource_request,
             );
-            let installed_fixture_phase = fixture_state.fixture_phase(execution);
+            let installed_fixture_phase = fixture_state.fixture_phase_for_test(execution);
             fixture_state.advance(&installed_fixture_phase)
         });
         let paused = match pending.acknowledge() {
@@ -370,7 +370,7 @@ pub fn start_projection(
         provider,
         resource_request,
     );
-    let installed_running_phase = execution.phase_for_direct(&running);
+    let installed_running_phase = execution.phase_for_direct_for_test(&running);
 
     running
         .begin_graph_execution(

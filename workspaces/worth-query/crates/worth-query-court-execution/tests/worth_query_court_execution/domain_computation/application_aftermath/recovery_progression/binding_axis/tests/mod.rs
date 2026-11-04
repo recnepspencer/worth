@@ -16,9 +16,9 @@ pub fn assert_axis_drift(
     ) -> WorthQueryRecoveryHandleBindingAxisProbe,
 ) {
     let baseline = WorthQueryRecoveryHandleBindingAxisProbe::real().finish();
-    let truth = WorthQueryRecoveryBindingCurrentTruth::axis_probe(&baseline);
+    let truth = WorthQueryRecoveryBindingCurrentTruth::axis_probe_for_test(&baseline);
     truth
-        .check(&baseline)
+        .check_for_test(&baseline)
         .expect("production-derived twin admits");
 
     let drifted = mutate(
@@ -26,7 +26,7 @@ pub fn assert_axis_drift(
         &baseline,
     )
     .finish();
-    let denied = truth.check(&drifted).expect_err("drifted binding denies");
+    let denied = truth.check_for_test(&drifted).expect_err("drifted binding denies");
     assert_eq!(denied.kind(), kind);
 }
 
@@ -98,7 +98,7 @@ fn foreign_principal_drift_denies_distinctly() {
         WorthQueryRecoveryHandleDenialKind::ForeignPrincipal,
         |probe, baseline| {
             let current = baseline.principal_scope();
-            let principal_scope = WorthQueryOperationScopeBinding::axis_probe_scope(
+            let principal_scope = WorthQueryOperationScopeBinding::axis_probe_scope_for_test(
                 current.runtime_authority(),
                 current.binding_identity().clone(),
                 current.operation_authority_identity(),

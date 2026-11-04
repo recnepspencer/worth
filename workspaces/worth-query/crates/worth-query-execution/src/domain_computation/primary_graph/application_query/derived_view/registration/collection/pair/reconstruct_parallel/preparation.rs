@@ -244,3 +244,5 @@ impl<'a, S: ApplicationSchema, FQ, FP, FR, SQ, SP, SR, A, I, C>
         Ok(())
     }
 }
+
+mod court_doors_for_test;

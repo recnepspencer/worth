@@ -22,15 +22,15 @@ fn newer_root_retires_only_its_matching_source() {
     let (scope, occurrence) = real_scope_and_occurrence();
     let older = BoundOutputSource {
         scope,
-        identity: key("producer", 5, 1).source,
+        identity: (*key("producer", 5, 1).source_for_test()),
     };
     let sibling = BoundOutputSource {
         scope,
-        identity: key("producer", 5, 2).source,
+        identity: (*key("producer", 5, 2).source_for_test()),
     };
     let newer = BoundOutputSource {
         scope,
-        identity: key("producer", 6, 1).source,
+        identity: (*key("producer", 6, 1).source_for_test()),
     };
     assert_eq!(root_revision_order(&older, &newer), Some(Ordering::Less));
     assert_eq!(
@@ -40,7 +40,7 @@ fn newer_root_retires_only_its_matching_source() {
     assert_eq!(root_revision_order(&older, &sibling), None);
     let mut custody = SourceCustody {
         occurrence,
-        root_kind: PreparedOutputRootKind::Discovered(TypeId::of::<()>()),
+        root_kind: PreparedOutputRootKind::Discovered(TypeId::of_for_test::<()>()),
         source: None,
         discovery: None,
         bound_sources: Some(vec![older.clone(), sibling.clone()]),
@@ -51,14 +51,14 @@ fn newer_root_retires_only_its_matching_source() {
         cleanup: Default::default(),
         completed: false,
     };
-    custody.retire_superseded_roots(&[newer, sibling.clone()]);
+    custody.retire_superseded_roots_for_test(&[newer, sibling.clone()]);
     assert_eq!(
-        custody.source_denial(&older.identity).unwrap().kind(),
+        custody.source_denial_for_test(&(*older.identity_for_test())).unwrap().kind(),
         WorthQueryOutputDemandDenialKind::Superseded
     );
-    assert!(custody.source_denial(&sibling.identity).is_none());
+    assert!(custody.source_denial_for_test(&(*sibling.identity_for_test())).is_none());
     assert!(
-        custody.retired.is_none(),
+        (*custody.retired_for_test()).is_none(),
         "one stale root cannot retire its sibling custody"
     );
 }

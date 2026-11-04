@@ -8,22 +8,22 @@ fn cold_warm_and_stale_snapshots_follow_real_coordinator_phases() {
     let world = AggregateWorld::values([7]);
     world
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
 
-            let cold = world.observe(&(world.fixture_phase(&host_custody)).test_host_request());
+            let cold = world.observe(&(world.fixture_phase(&host_custody)).test_host_request_for_test());
             assert_eq!(cold.result, Ok((7, 1)));
             assert_eq!(cold.work.aggregate_lookups(), 1);
             assert_eq!(cold.work.aggregate_cache_hits(), 0);
             assert_eq!(cold.work.aggregate_rebuild_input_rows(), 1);
 
-            let warm = world.observe(&(world.fixture_phase(&host_custody)).test_host_request());
+            let warm = world.observe(&(world.fixture_phase(&host_custody)).test_host_request_for_test());
             assert_eq!(warm.result, Ok((7, 1)));
             assert_eq!(warm.work.aggregate_lookups(), 1);
             assert_eq!(warm.work.aggregate_cache_hits(), 1);
             assert_eq!(warm.work.aggregate_rebuild_input_rows(), 0);
 
             world.replace_amount(&world.fixture_phase(&host_custody), "source-0", 11);
-            let stale = world.observe(&(world.fixture_phase(&host_custody)).test_host_request());
+            let stale = world.observe(&(world.fixture_phase(&host_custody)).test_host_request_for_test());
             assert_eq!(stale.result, Ok((11, 1)));
             assert_eq!(stale.work.aggregate_lookups(), 1);
             assert_eq!(stale.work.aggregate_cache_hits(), 0);
@@ -60,9 +60,9 @@ fn prelookup_and_midscan_budgets_deny_on_the_real_relational_reads() {
     assert_eq!(midscan.work.field_reads(), 0);
     world
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
 
-            let retry = world.observe(&(world.fixture_phase(&host_custody)).test_host_request());
+            let retry = world.observe(&(world.fixture_phase(&host_custody)).test_host_request_for_test());
             assert_eq!(retry.result, Ok((7, 2)));
             assert_eq!(retry.work.aggregate_cache_hits(), 0);
             assert_eq!(retry.work.aggregate_rebuild_input_rows(), 2);
@@ -101,7 +101,7 @@ fn outgoing_and_field_budgets_count_only_performed_work_and_do_not_poison() {
     assert_eq!(field_denial.work.field_reads(), 0);
     field_world
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
 
             let field_retry = field_world.observe(&host_custody);
             assert_eq!(field_retry.result, Ok((7, 1)));
@@ -129,7 +129,7 @@ fn partial_outgoing_denial_carries_exact_scan_work_and_does_not_poison() {
     assert_eq!(partial_outgoing.work.field_reads(), 0);
     ambiguous_world
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
 
             let ambiguous_retry = ambiguous_world.observe(&host_custody);
             assert_eq!(
@@ -147,7 +147,7 @@ fn ambiguous_source_denial_records_work_and_never_poisons_the_cache() {
     let world = AggregateWorld::ambiguous(7);
     world
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
 
             assert_repeatable_denial(
                 &world.fixture_phase(&host_custody),
@@ -168,7 +168,7 @@ fn absent_scalar_denial_records_work_and_never_poisons_the_cache() {
     let world = AggregateWorld::missing_value();
     world
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
 
             assert_repeatable_denial(
                 &world.fixture_phase(&host_custody),
@@ -189,7 +189,7 @@ fn arithmetic_overflow_records_every_examined_row_without_cache_poisoning() {
     let world = AggregateWorld::values([i64::MAX, 1]);
     world
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
 
             assert_repeatable_denial(
                 &world.fixture_phase(&host_custody),
@@ -218,7 +218,7 @@ pub fn assert_repeatable_denial(
     expected: DenialWorkExpectation,
 ) {
     for attempt in 0..2 {
-        let observed = world.observe(&(phase_custody).test_host_request());
+        let observed = world.observe(&(phase_custody).test_host_request_for_test());
         assert_eq!(
             observed.result,
             Err(expected.kind),
@@ -241,7 +241,7 @@ fn a_fork_summarizes_only_its_own_contributions_after_its_parent_moves_on() {
     let main = world.main_branch();
     world
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
 
             let (first, second) = (
                 world.source(&world.fixture_phase(&host_custody), "source-0"),

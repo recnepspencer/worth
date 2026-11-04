@@ -88,7 +88,7 @@ pub fn capability(
     world
         .application
         .with_host_advancement(|phase| {
-            let selected = world.selected_product(&phase.test_host_request());
+            let selected = world.selected_product(&phase.test_host_request_for_test());
             let principal = selected
                 .resolve_authenticated_principal(
                     &phase,
@@ -98,7 +98,7 @@ pub fn capability(
                     WorthQueryPrincipalResolutionMode::Ordinary,
                 )
                 .unwrap();
-            admit_touch_account_capability(&phase.test_host_request(), world, &principal, request)
+            admit_touch_account_capability(&phase.test_host_request_for_test(), world, &principal, request)
                 .unwrap()
         })
         .unwrap()
@@ -114,7 +114,7 @@ pub fn read<B: DiagnosticBinding>(
     world
         .application
         .with_host_advancement(|phase| {
-            let selected = world.selected_product(&phase.test_host_request());
+            let selected = world.selected_product(&phase.test_host_request_for_test());
             let principal = selected
                 .resolve_authenticated_principal(
                     &phase,
@@ -140,7 +140,7 @@ pub fn read<B: DiagnosticBinding>(
                 .unwrap()
                 .into_query();
             let capability = admit_touch_account_capability(
-                &phase.test_host_request(),
+                &phase.test_host_request_for_test(),
                 world,
                 &principal,
                 request,

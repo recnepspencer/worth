@@ -16,7 +16,7 @@ fn zero_memory_cancellation_and_expired_deadline_refuse_before_any_read() {
     let scope = live_scope();
     let selected = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
         .expect("the fixture read owns its installed host call");
     let external = world.authenticate("alice", Duration::from_secs(60), &scope);
     let principal = world
@@ -61,13 +61,13 @@ fn zero_memory_cancellation_and_expired_deadline_refuse_before_any_read() {
     let membership = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             world
                 .application
                 .execute_application_query_one_shot(
                     &phase,
                     selected
-                        .retain_selection(&host_custody.borrowed_request_for_test())
+                        .retain_selection_for_test(&host_custody.borrowed_request_for_test())
                         .unwrap()
                         .admit_application_query(
                             &phase,
@@ -92,7 +92,7 @@ fn zero_memory_cancellation_and_expired_deadline_refuse_before_any_read() {
         world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 for index in 0..4 {
                     let memory = if index == 0 { Some(0) } else { None };
                     let lease = host_custody
@@ -159,7 +159,7 @@ fn zero_memory_cancellation_and_expired_deadline_refuse_before_any_read() {
                             |_: &String| {
                                 prepared += 1;
                                 let first = selected
-                                    .retain_selection(&host_custody.borrowed_request_for_test())
+                                    .retain_selection_for_test(&host_custody.borrowed_request_for_test())
                                     .unwrap()
                                     .admit_application_query(
                                         &phase,
@@ -170,7 +170,7 @@ fn zero_memory_cancellation_and_expired_deadline_refuse_before_any_read() {
                                     )
                                     .unwrap();
                                 let second = selected
-                                    .retain_selection(&host_custody.borrowed_request_for_test())
+                                    .retain_selection_for_test(&host_custody.borrowed_request_for_test())
                                     .unwrap()
                                     .admit_application_query(
                                         &phase,

@@ -29,7 +29,7 @@ fn certified_placement_perturbs_the_actual_owned_wave() {
                 .map(|value| {
                     value
                         .unwrap()
-                        .into_slots()
+                        .into_slots_for_test()
                         .pop()
                         .unwrap()
                         .into_value::<(u64, bool)>()

@@ -12,7 +12,7 @@ fn native_value_decode_refusal_cancels_live_custody_before_delivery_consumption(
     let mut lease = context
         .world
         .application
-        .with_host_advancement(|phase| context.open(&phase.test_host_request()))
+        .with_host_advancement(|phase| context.open(&phase.test_host_request_for_test()))
         .unwrap();
     let bridge = observer(&lease);
     commit_live_activity_with_identity(
@@ -23,11 +23,11 @@ fn native_value_decode_refusal_cancels_live_custody_before_delivery_consumption(
         229,
         93,
     );
-    lease.queue.fill(
-        &context.world.application.primary_provider.live_delivery,
-        lease.basis.as_mut().expect("opening owns its native basis"),
+    (*lease.queue_for_test()).fill(
+        &(*context.world.application.primary_provider_for_test()).live_delivery,
+        (*lease.basis_for_test()).as_mut().expect("opening owns its native basis"),
         LiveAccountActivityCause::effect(),
-        lease.controls.buffer_capacity(),
+        (*lease.controls_for_test()).buffer_capacity(),
         |_| true,
     );
     assert!(
@@ -41,7 +41,7 @@ fn native_value_decode_refusal_cancels_live_custody_before_delivery_consumption(
         WorthQueryValueDecodeDenial::CodecRejected,
     );
     assert!(matches!(
-        lease.handle_projection_denial(cause),
+        lease.handle_projection_denial_for_test(cause),
         WorthQueryApplicationLiveOutcome::ProjectionDenied(observed) if observed == cause
     ));
     assert_terminal(
@@ -69,7 +69,7 @@ fn cancellation_and_deadline_terminalize_all_live_resources() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             context.open(&host_custody)
         })
         .expect("the fixture read owns its installed host call");
@@ -79,10 +79,10 @@ fn cancellation_and_deadline_terminalize_all_live_resources() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             assert!(matches!(
                 {
-                    let installed_fixture_phase = lease.fixture_phase(&host_custody);
+                    let installed_fixture_phase = lease.fixture_phase_for_test(&host_custody);
                     lease.next(
                         &installed_fixture_phase,
                         &context.principal,
@@ -106,7 +106,7 @@ fn cancellation_and_deadline_terminalize_all_live_resources() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             deadline_context.open(&host_custody)
         })
         .expect("the fixture read owns its installed host call");
@@ -119,10 +119,10 @@ fn cancellation_and_deadline_terminalize_all_live_resources() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             assert!(matches!(
                 {
-                    let installed_fixture_phase = deadline_lease.fixture_phase(&host_custody);
+                    let installed_fixture_phase = deadline_lease.fixture_phase_for_test(&host_custody);
                     deadline_lease.next(
                         &installed_fixture_phase,
                         &deadline_context.principal,
@@ -149,7 +149,7 @@ fn read_stops_survive_a_failed_live_lease_termination() {
         let mut lease = context
             .world
             .application
-            .with_host_advancement(|phase| context.open(&phase.test_host_request()))
+            .with_host_advancement(|phase| context.open(&phase.test_host_request_for_test()))
             .unwrap();
         if mode == 2 {
             commit_live_activity_with_identity(
@@ -166,14 +166,14 @@ fn read_stops_survive_a_failed_live_lease_termination() {
                 .world
                 .application
                 .with_host_advancement(|phase| {
-                    context.principal(&phase.test_host_request(), "alice")
+                    context.principal(&phase.test_host_request_for_test(), "alice")
                 })
                 .unwrap()
         });
         // Hold the real owned read work away from finalization: Bridge can end,
         // but the managed read cannot finish without this completion evidence.
-        let _held_work = lease
-            .initial_read_work
+        let _held_work = (*lease
+            .initial_read_work_for_test())
             .take()
             .expect("an open lease owns read work");
         let expired = context.already_expired_request();
@@ -184,8 +184,8 @@ fn read_stops_survive_a_failed_live_lease_termination() {
             .world
             .application
             .with_host_advancement(|phase| {
-                let host = phase.test_host_request();
-                let installed_phase = lease.fixture_phase(&host);
+                let host = phase.test_host_request_for_test();
+                let installed_phase = lease.fixture_phase_for_test(&host);
                 let execution = installed_phase
                     .execution_request_for(context.world.application.product_runtime())
                     .unwrap();

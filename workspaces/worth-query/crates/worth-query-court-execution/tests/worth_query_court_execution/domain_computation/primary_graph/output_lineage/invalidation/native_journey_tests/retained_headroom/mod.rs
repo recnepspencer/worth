@@ -5,26 +5,26 @@ pub use crate::domain_computation::primary_graph::output_lineage::invalidation::
 fn unrelated_publications_keep_shared_upstream_and_consumer_without_hypothetical_copy() {
     let world = installed_authorization_world(true);
     world.application.with_host_advancement(|phase| {
-        let custody = phase.test_host_request();
+        let custody = phase.test_host_request_for_test();
         let execution = &custody.borrowed_request_for_test();
         let selected = world.selected_product(&custody);
         let entity = selected.resolve_entity(&phase, AccountStatus::reference(),
             "open".into(), &live_scope(), WorthQueryPrincipalResolutionMode::Ordinary)
-            .unwrap().entity_id();
-        let (_, product, _) = selected.into_parts();
+            .unwrap().entity_id_for_test();
+        let (_, product, _) = selected.into_parts_for_test();
         let coordinate = ProductCoordinate {
             occurrence: product.observation().lifecycle_incarnation(),
             generation: product.observation().reference_generation().get(),
         };
         let source = |binding| SemanticSource {
-            runtime_authority: world.application.runtime.authority_identity().as_u64(),
-            schema: world.application.installed_schema.binding_identity(),
-            scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity(entity),
-            output_binding: OutputBindingIdentity::declared(binding),
+            runtime_authority: (*world.application.runtime_for_test()).authority_identity().as_u64(),
+            schema: (*world.application.installed_schema_for_test()).binding_identity(),
+            scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity),
+            output_binding: OutputBindingIdentity::declared_for_test(binding),
         };
-        let upstream = RecordedSettlementIdentity::retain(&source("StatusOutput"), coordinate, 0);
-        let consumer = RecordedSettlementIdentity::retain(&source("DownstreamOutput"), coordinate, 0);
-        let graph = world.application.runtime.primary_graph().unwrap();
+        let upstream = RecordedSettlementIdentity::retain_for_test(&source("StatusOutput"), coordinate, 0);
+        let consumer = RecordedSettlementIdentity::retain_for_test(&source("DownstreamOutput"), coordinate, 0);
+        let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
         let status_ref = AccountStatus::reference();
         let status = graph.layout().field_locator(status_ref.entity(), status_ref.aspect(), status_ref.field())
             .unwrap().clone();

@@ -25,7 +25,7 @@ fn cancellation_at_registration_binding_is_cancelled_not_denied() {
     world
         .application
         .with_host_advancement(|active_phase| {
-            let host_custody = active_phase.test_host_request();
+            let host_custody = active_phase.test_host_request_for_test();
             let phase = &active_phase;
             let head = || {
                 world
@@ -57,7 +57,7 @@ fn cancellation_at_registration_binding_is_cancelled_not_denied() {
             let admitted = admit_provider_session(
                 phase,
                 &mut running,
-                &world.application.primary_graph_authority,
+                &(*world.application.primary_graph_authority_for_test()),
                 attempt_basis.retained_product(),
                 mutation_run,
             )
@@ -65,12 +65,12 @@ fn cancellation_at_registration_binding_is_cancelled_not_denied() {
             // The request stops after session admission, so the first owner
             // consult to observe it is registration's decision-fact binding.
             cancellation.cancel();
-            let Err(failure) = admitted.register(
+            let Err(failure) = admitted.register_for_test(
                 &mut authorization,
                 provider_attempt,
                 attempt_basis,
-                WorthQueryProviderAttemptRegistrationContext::new(
-                    &world.application.primary_provider,
+                WorthQueryProviderAttemptRegistrationContext::new_for_test(
+                    &(*world.application.primary_provider_for_test()),
                     &admission,
                     idempotency,
                     outcome_identity,
@@ -96,7 +96,7 @@ fn cancellation_at_registration_binding_is_cancelled_not_denied() {
                     lease,
                     running,
                     cleanup,
-                    request: admission.publication_request().clone(),
+                    request: admission.publication_request_for_test().clone(),
                 },
             );
             assert!(matches!(
@@ -104,9 +104,9 @@ fn cancellation_at_registration_binding_is_cancelled_not_denied() {
                 WorthQueryApplicationCommitOutcome::Cancelled
             ));
             assert_eq!(
-                world
+                (*world
                     .application
-                    .primary_provider
+                    .primary_provider_for_test())
                     .application_attempt_resource_count(),
                 0
             );

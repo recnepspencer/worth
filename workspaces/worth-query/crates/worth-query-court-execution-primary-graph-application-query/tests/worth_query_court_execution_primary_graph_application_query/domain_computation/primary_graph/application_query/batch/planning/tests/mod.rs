@@ -16,10 +16,10 @@ fn installed_schedule_preserves_exact_slots_and_plan_association() {
             .unwrap()
     };
     let read = issue();
-    let runtime = read.runtime;
-    let schema = read.schema.clone();
-    let query = read.query.clone();
-    let roots = read.roots;
+    let runtime = (*read.runtime_for_test());
+    let schema = (*read.schema_for_test()).clone();
+    let query = (*read.query_for_test()).clone();
+    let roots = (*read.roots_for_test());
     let batch = world
         .application
         .application_query_batch_from_installed_reads(&[read])
@@ -36,13 +36,13 @@ fn installed_schedule_preserves_exact_slots_and_plan_association() {
         Err(WorthQueryApplicationQueryBatchResourceDenial::PlanningFrozen)
     ));
     let item = batch
-        .take_planned_read(runtime, &schema, &query, roots)
+        .take_planned_read_for_test(runtime, &schema, &query, roots)
         .unwrap()
         .unwrap();
     assert!(item.belongs_to(&batch));
     assert!(!item.belongs_to(&foreign));
     assert!(matches!(
-        batch.take_planned_read(runtime, &schema, &query, roots),
+        batch.take_planned_read_for_test(runtime, &schema, &query, roots),
         Err(WorthQueryApplicationQueryBatchResourceDenial::UnplannedRead)
     ));
 }

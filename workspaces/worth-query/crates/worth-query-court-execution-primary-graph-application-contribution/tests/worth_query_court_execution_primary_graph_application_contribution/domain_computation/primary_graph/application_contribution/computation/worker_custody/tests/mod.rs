@@ -25,7 +25,7 @@ fn author_held_application_and_product_handles_receive_nested_opening() {
         cancellation.token(),
     );
     for workers in [0, 1, 2, 4] {
-        let root = QueryRequestExecution::open(
+        let root = QueryRequestExecution::open_for_test(
             if workers == 0 {
                 worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(test_policy(
                     NonZeroUsize::MIN,
@@ -43,7 +43,7 @@ fn author_held_application_and_product_handles_receive_nested_opening() {
             .map(|_| {
                 let application = application.clone();
                 PreparedMember {
-                    requests: vec![PreparedCompute::new(move |_| {
+                    requests: vec![PreparedCompute::new_for_test(move |_| {
                         assert!(active(), "the dispatch owns the worker marker");
                         // A bounded number of calls is the watchdog: every call must
                         // return its refusal, and no recursive advance can start.

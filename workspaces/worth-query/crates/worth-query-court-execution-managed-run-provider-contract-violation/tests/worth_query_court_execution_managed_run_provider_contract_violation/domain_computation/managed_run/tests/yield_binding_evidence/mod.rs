@@ -15,7 +15,7 @@ fn direct_yield_exposes_one_cross_owner_authority_chain() {
             YieldProvider::installed(5),
             resource_request,
         );
-        let installed_running_phase = execution.phase_for_direct(&running);
+        let installed_running_phase = execution.phase_for_direct_for_test(&running);
 
         let active = running
             .begin_graph_execution(

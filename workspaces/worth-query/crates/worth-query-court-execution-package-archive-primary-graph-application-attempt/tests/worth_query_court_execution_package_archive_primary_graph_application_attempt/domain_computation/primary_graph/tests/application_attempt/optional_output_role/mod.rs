@@ -40,7 +40,7 @@ pub use worth_query_declaration::facade::application_schema::TypedMutationPrecon
 #[test]
 fn an_unbound_at_most_one_role_commits_without_that_output() {
     let committed = committed_outputs(OptionalOutputPlan::RequiredOnly);
-    let outputs = committed.outputs_of::<OptionalOutputs>().unwrap();
+    let outputs = committed.outputs_of_for_test::<OptionalOutputs>().unwrap();
 
     assert!(outputs.entity::<OptionalSubject>().is_ok());
     assert!(
@@ -51,8 +51,8 @@ fn an_unbound_at_most_one_role_commits_without_that_output() {
         "the unbound optional role reads as None"
     );
     assert_eq!(
-        committed.workflow_content_identity(),
-        committed_outputs(OptionalOutputPlan::RequiredOnly).workflow_content_identity(),
+        committed.workflow_content_identity_for_test(),
+        committed_outputs(OptionalOutputPlan::RequiredOnly).workflow_content_identity_for_test(),
         "an absent optional output has one stable canonical form"
     );
 }
@@ -60,7 +60,7 @@ fn an_unbound_at_most_one_role_commits_without_that_output() {
 #[test]
 fn a_bound_at_most_one_role_commits_with_that_output() {
     let committed = committed_outputs(OptionalOutputPlan::RequiredAndOptional);
-    let outputs = committed.outputs_of::<OptionalOutputs>().unwrap();
+    let outputs = committed.outputs_of_for_test::<OptionalOutputs>().unwrap();
 
     assert_eq!(
         outputs
@@ -70,8 +70,8 @@ fn a_bound_at_most_one_role_commits_with_that_output() {
         Some(outputs.entity::<OptionalSubject>().unwrap().entity_id())
     );
     assert_ne!(
-        committed.workflow_content_identity(),
-        committed_outputs(OptionalOutputPlan::RequiredOnly).workflow_content_identity(),
+        committed.workflow_content_identity_for_test(),
+        committed_outputs(OptionalOutputPlan::RequiredOnly).workflow_content_identity_for_test(),
         "a present optional output is distinct from an absent one"
     );
 }
@@ -102,8 +102,8 @@ fn an_optional_role_read_as_exactly_one_is_refused() {
         cardinality: ApplicationMutationOutputRoleCardinality::ExactlyOne,
         entity_name:
             <Account as ApplicationEntityMarkerIdentity<IdentityExecutionSchema>>::IDENTIFIER,
-        entity_type: TypeId::of::<Account>(),
-        contract_type: TypeId::of::<OptionalOutputs>(),
+        entity_type: TypeId::of_for_test::<Account>(),
+        contract_type: TypeId::of_for_test::<OptionalOutputs>(),
     };
     for plan in [
         OptionalOutputPlan::RequiredOnly,
@@ -111,7 +111,7 @@ fn an_optional_role_read_as_exactly_one_is_refused() {
     ] {
         assert_eq!(
             committed_outputs(plan)
-                .bound_entity(&companion_as_required)
+                .bound_entity_for_test(&companion_as_required)
                 .err(),
             Some(WorthQueryApplicationOutputProjectionDenial::CardinalityMismatch),
             "{plan:?}"
@@ -226,7 +226,7 @@ pub fn execute_report_for_input(
     world
         .application
         .with_application_advancement(&request, |phase| {
-            let custody = phase.test_host_request();
+            let custody = phase.test_host_request_for_test();
             let principal = authenticated_principal(&custody, world, &request);
             let account = resolved_account(&custody, world, &input.status, &request);
             let operation = world

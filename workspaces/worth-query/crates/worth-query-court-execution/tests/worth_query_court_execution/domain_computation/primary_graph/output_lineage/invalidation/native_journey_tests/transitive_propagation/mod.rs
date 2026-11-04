@@ -6,7 +6,7 @@ fn native_invalidation_marks_the_second_and_third_downstream_levels() {
     let world = installed_authorization_world(true);
     world.application.with_host_advancement(|phase| {
     let execution = phase.borrowed_request_for_test();
-    let selected = world.selected_product(&phase.test_host_request());
+    let selected = world.selected_product(&phase.test_host_request_for_test());
     let entity = selected
         .resolve_entity(
             &phase,
@@ -16,13 +16,13 @@ fn native_invalidation_marks_the_second_and_third_downstream_levels() {
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap()
-        .entity_id();
-    let (_, product, _) = selected.into_parts();
+        .entity_id_for_test();
+    let (_, product, _) = selected.into_parts_for_test();
     let coordinate = ProductCoordinate {
         occurrence: product.observation().lifecycle_incarnation(),
         generation: product.observation().reference_generation().get(),
     };
-    let graph = world.application.runtime.primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let handle = graph.integration_handle();
     let owner = &handle.source_owner.invalidation_owner;
     let status_ref = AccountStatus::reference();
@@ -32,17 +32,17 @@ fn native_invalidation_marks_the_second_and_third_downstream_levels() {
         .unwrap()
         .clone();
     let identities = [
-        OutputBindingIdentity::declared("StatusOutput"),
-        OutputBindingIdentity::declared("LabelOutput"),
-        OutputBindingIdentity::declared("DownstreamOutput"),
-        OutputBindingIdentity::declared("LateOutput"),
+        OutputBindingIdentity::declared_for_test("StatusOutput"),
+        OutputBindingIdentity::declared_for_test("LabelOutput"),
+        OutputBindingIdentity::declared_for_test("DownstreamOutput"),
+        OutputBindingIdentity::declared_for_test("LateOutput"),
     ]
     .map(|output_binding| {
-        RecordedSettlementIdentity::retain(
+        RecordedSettlementIdentity::retain_for_test(
             &SemanticSource {
-                runtime_authority: world.application.runtime.authority_identity().as_u64(),
-                schema: world.application.installed_schema.binding_identity(),
-                scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity(entity),
+                runtime_authority: (*world.application.runtime_for_test()).authority_identity().as_u64(),
+                schema: (*world.application.installed_schema_for_test()).binding_identity(),
+                scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity),
                 output_binding,
             },
             coordinate,

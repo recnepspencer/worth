@@ -24,7 +24,7 @@ fn real_installed_workflow_seals_its_evidence_stage_and_converges() {
 
         let epoch = workflow_epoch_fixture(FixtureDisposition::Converged, resource_request);
 
-        let installed_fixture_phase = epoch.fixture_phase(execution);
+        let installed_fixture_phase = epoch.fixture_phase_for_test(execution);
         let execution = &installed_fixture_phase;
         let rejection = match epoch.begin_stage_iteration(
             execution,
@@ -115,7 +115,7 @@ pub fn start_workflow_peer(
 ) -> WorthQueryStartedWorkflowConvergenceIteration {
     let epoch = workflow_epoch_fixture(FixtureDisposition::Converged, resource_request);
     {
-        let installed_fixture_phase = epoch.fixture_phase(execution);
+        let installed_fixture_phase = epoch.fixture_phase_for_test(execution);
         epoch.begin_stage_iteration(
             &installed_fixture_phase,
             WORKFLOW_STAGE,
@@ -131,7 +131,7 @@ pub fn complete_workflow_peer(
 ) -> String {
     let outcome = {
         let fixture_phase_result = {
-            let installed_fixture_phase = started.fixture_phase(execution);
+            let installed_fixture_phase = started.fixture_phase_for_test(execution);
             started.advance(&installed_fixture_phase)
         };
         match fixture_phase_result {
@@ -173,7 +173,7 @@ fn incompatible_stage_queue_contract_denies_before_iteration_and_terminates_clea
             resource_request,
         );
 
-        let installed_fixture_phase = epoch.fixture_phase(execution);
+        let installed_fixture_phase = epoch.fixture_phase_for_test(execution);
         let execution = &installed_fixture_phase;
         let rejection = match epoch.begin_stage_iteration(
             execution,

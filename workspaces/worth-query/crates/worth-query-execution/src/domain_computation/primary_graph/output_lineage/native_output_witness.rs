@@ -275,3 +275,5 @@ impl RoleProbe {
             == Some(self.kind))
     }
 }
+
+mod court_doors_for_test;

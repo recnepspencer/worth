@@ -90,7 +90,7 @@ pub fn journey(case: Case) {
     let foreign_scope = live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &scope);
     world.application.with_host_advancement(|phase| {
-        let host = phase.test_host_request();
+        let host = phase.test_host_request_for_test();
         let issued = host.borrowed_request_for_test();
         let selected = world.selected_product(&host);
         let principal = selected.resolve_authenticated_principal(
@@ -102,9 +102,9 @@ pub fn journey(case: Case) {
             let fork = world.application.branches().fork(world.application.current_world())
                 .components(|components| components.fork_relational().reuse_exact_signal_basis())
                 .create(&phase).unwrap();
-            let product = world.application.product_runtime().admit_product_occurrence(fork.occurrence()).unwrap();
-            let sibling = world.application.select_product_branch(&issued, product.observation().branch_identity()).unwrap();
-            assert_ne!(sibling.product().relational_basis().descriptor(), selected.product().relational_basis().descriptor());
+            let product = world.application.product_runtime().admit_product_occurrence_for_test(fork.occurrence_for_test()).unwrap();
+            let sibling = world.application.select_product_branch_for_test(&issued, product.observation().branch_identity()).unwrap();
+            assert_ne!(sibling.product().relational_basis().descriptor(), selected.product().relational_basis_for_test().descriptor());
             sibling
         });
         let sibling_principal = sibling.as_ref().map(|sibling| sibling.resolve_authenticated_principal(
@@ -118,7 +118,7 @@ pub fn journey(case: Case) {
             "dependent-neutral", &membership_query, &entry_query, &entry_query, selected.product(),
         ).unwrap();
         let membership = world.application.execute_application_query_one_shot(&phase,
-            selected.retain_selection(&issued).unwrap().admit_application_query(&phase,
+            selected.retain_selection_for_test(&issued).unwrap().admit_application_query(&phase,
                 &membership_query, &access, ApplicationQueryParameterSet::new(), worth_query_execution::facade::domain_computation::WorthQueryProductQueryControls::new(std::num::NonZeroUsize::new(membership_query.read_graph().maximum_result_count()).expect("the fixture uses a nonzero installed query result contract"), &scope),
             ).unwrap(),
         ).unwrap();
@@ -155,13 +155,13 @@ pub fn journey(case: Case) {
                     let local = selected.resolve_entity(&phase, AccountStatus::reference(), "open".into(),
                         &scope, WorthQueryPrincipalResolutionMode::Ordinary).unwrap();
                     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &local);
-                    let plan = selected.retain_selection(&issued).unwrap().admit_application_query(
+                    let plan = selected.retain_selection_for_test(&issued).unwrap().admit_application_query(
                         &phase, &entry_query, &access, ApplicationQueryParameterSet::new(), worth_query_execution::facade::domain_computation::WorthQueryProductQueryControls::new(std::num::NonZeroUsize::new(entry_query.read_graph().maximum_result_count()).expect("the fixture uses a nonzero installed query result contract"), &scope),
                     ).unwrap();
                     let result = read.execute(plan)?;
                     assert_eq!(result.rows()[0].label(), "unrelated");
                     if failure && case == Case::RepeatedRead {
-                        let plan = selected.retain_selection(&issued).unwrap().admit_application_query(
+                        let plan = selected.retain_selection_for_test(&issued).unwrap().admit_application_query(
                             &phase, &entry_query, &access, ApplicationQueryParameterSet::new(), worth_query_execution::facade::domain_computation::WorthQueryProductQueryControls::new(std::num::NonZeroUsize::new(entry_query.read_graph().maximum_result_count()).expect("the fixture uses a nonzero installed query result contract"), &scope),
                         ).unwrap();
                         assert_eq!(read.execute(plan).err(), Some(Denial::IncompleteDependencies));
@@ -177,7 +177,7 @@ pub fn journey(case: Case) {
                     let selector = if failure && case == Case::WrongScope { "open" } else { first.label() };
                     let local = selected.resolve_entity(&phase, AccountStatus::reference(), selector.to_owned(),
                         local_scope, WorthQueryPrincipalResolutionMode::Ordinary).unwrap();
-                    assert!(failure && case == Case::WrongScope || local.entity_id() != root.entity_id());
+                    assert!(failure && case == Case::WrongScope || local.entity_id() != root.entity_id_for_test());
                     let access = WorthQueryApplicationQueryAccessContext::new(principal, &local);
                     let plan = if failure && case == Case::ForeignBatch {
                         let mut retained = selected.retain_selection(&issued).unwrap();
@@ -205,19 +205,19 @@ pub fn journey(case: Case) {
 
                     if failure && case == Case::AfterProjection { cancellation.cancel(); }
                     if failure && case == Case::StaleProduct {
-                        let graph = world.application.runtime.primary_graph().unwrap();
+                        let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
                         let field = AccountLabel::reference();
                         let locator = graph.layout.field_locator(field.entity(), field.aspect(), field.field()).unwrap().clone();
                         let prepared = graph.managed_derived_views().prepare_publication(
                             publication_basis(selected.product()),
-                            &[ViewChange::Aspect(root.entity_id(), locator.aspect().aspect_key().clone())], 100_000,
+                            &[ViewChange::Aspect(root.entity_id_for_test(), locator.aspect().aspect_key().clone())], 100_000,
                         );
                         request.in_scope(|lease| {
                         let active = ExecutionRequest::leased(lease.expect("projection lends the active host descendant"));
                         worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::product_publication::publish_relational_mutation(
                             &active, &world, WorkerIntentBatch::new("dependent-during-projection").push(
                                 MutationIntent::Entity(EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
-                                    entity_id: root.entity_id(), fields: AspectFieldPatch::from(BTreeMap::from([(
+                                    entity_id: root.entity_id_for_test(), fields: AspectFieldPatch::from(BTreeMap::from([(
                                         locator, StringApplicationValueBinding::encode(&"changed-link".to_owned()).unwrap(),
                                     )])),
                                 })),
@@ -244,7 +244,7 @@ pub fn journey(case: Case) {
         assert_eq!(snapshot.selected_commit(), selected.product().selected_commit());
         let original = snapshot.get(key).unwrap().unwrap();
         assert_eq!(original.0, "secondary");
-        assert_eq!(key.root(), root.entity_id());
+        assert_eq!(key.root(), root.entity_id_for_test());
         if !matches!(case, Case::Success | Case::LeasedSuccess) {
             let projected_before = projections.get();
             let result = run(true);

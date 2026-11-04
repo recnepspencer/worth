@@ -63,7 +63,7 @@ pub fn assert_original_installation_cause(
         .installed_query_binding::<Uninstalled>()
         .err()
         .expect("not declared by the real schema");
-    let denied = WorthQueryApplicationInspectionDenial::new(
+    let denied = WorthQueryApplicationInspectionDenial::new_for_test(
         InspectionCause::Binding(CaptureStop::Kernel(ScopeStop::Failure(
             MapKernelFailure::Domain(InspectionBindingDenial::Installation(original.clone())),
         ))),

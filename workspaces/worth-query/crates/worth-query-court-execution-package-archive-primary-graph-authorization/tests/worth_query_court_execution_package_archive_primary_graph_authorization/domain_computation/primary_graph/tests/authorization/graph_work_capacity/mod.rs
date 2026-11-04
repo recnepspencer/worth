@@ -16,14 +16,14 @@ fn operation_graph_capacity_denial_and_drop_return_exact_reservations() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             let borrowed_execution = host_custody.borrowed_request_for_test();
             let execution = &borrowed_execution;
             let principal = world
                 .application
-                .select_product_branch(
+                .select_product_branch_for_test(
                     execution,
-                    world.application.product_runtime().default_branch(),
+                    world.application.product_runtime().default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_authenticated_principal(
@@ -36,9 +36,9 @@ fn operation_graph_capacity_denial_and_drop_return_exact_reservations() {
                 .unwrap();
             let account = world
                 .application
-                .select_product_branch(
+                .select_product_branch_for_test(
                     execution,
-                    world.application.product_runtime().default_branch(),
+                    world.application.product_runtime().default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(

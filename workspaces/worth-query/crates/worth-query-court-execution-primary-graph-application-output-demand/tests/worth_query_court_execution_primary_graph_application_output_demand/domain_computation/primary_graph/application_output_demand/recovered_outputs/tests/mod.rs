@@ -12,7 +12,7 @@ pub fn partition(number: u64) -> [u8; 32] {
 }
 
 pub fn unrelated_restored_selection(population: u64) {
-    let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity(
+    let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(
             worth_relational::facade::identity::EntityId::new(
                 worth_relational::facade::identity::PartitionId::main(),
                 1,
@@ -28,15 +28,15 @@ pub fn unrelated_restored_selection(population: u64) {
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let mut metadata = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::metadata_funding::CheckpointMetadataFunding::new(&execution).unwrap();
     metadata
-        .slots::<WorthQueryReadmittedAcceptedOutput>((population + 1) as usize, &execution)
+        .slots_for_test::<WorthQueryReadmittedAcceptedOutput>((population + 1) as usize, &execution)
         .unwrap();
     metadata
-        .bytes("producer".len() * (population + 1) as usize, &execution)
+        .bytes_for_test("producer".len() * (population + 1) as usize, &execution)
         .unwrap();
     metadata
-        .slots::<String>((population + 1) as usize, &execution)
+        .slots_for_test::<String>((population + 1) as usize, &execution)
         .unwrap();
-    metadata.slots::<Vec<worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryCheckpointOutputRole>>((population + 1) as usize, &execution).unwrap();
+    metadata.slots_for_test::<Vec<worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryCheckpointOutputRole>>((population + 1) as usize, &execution).unwrap();
     let records = (0..=population)
             .map(|number| WorthQueryReadmittedAcceptedOutput {
                 checkpoint: WorthQueryAcceptedOutputCheckpointIdentity {
@@ -57,15 +57,15 @@ pub fn unrelated_restored_selection(population: u64) {
             })
             .collect();
     let recovered =
-        WorthQueryRecoveredOutputs::from_records(records, metadata, &execution).unwrap();
+        WorthQueryRecoveredOutputs::from_records_for_test(records, metadata, &execution).unwrap();
     assert_eq!(recovered.iter().count(), (population + 1) as usize);
     let selected = recovered
-        .matching_source_partition(scope, partition(0))
+        .matching_source_partition_for_test(scope, partition(0))
         .collect::<Vec<_>>();
     assert_eq!(selected.len(), 1);
     assert_eq!(selected[0].checkpoint.source_partition, partition(0));
     assert!(recovered
-        .matching_source_partition(scope, [0xff; 32])
+        .matching_source_partition_for_test(scope, [0xff; 32])
         .next()
         .is_none());
 }

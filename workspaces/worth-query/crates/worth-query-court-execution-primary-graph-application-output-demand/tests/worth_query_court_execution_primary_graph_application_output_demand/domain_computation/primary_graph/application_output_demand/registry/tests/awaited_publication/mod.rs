@@ -22,8 +22,8 @@ pub fn scenario(rejoin: bool, late_hold: bool) {
             limits: worth_query_execution::facade::domain_computation::WorthQueryOutputDemandResourceProfile::standard().limits(),
             retained_program_basis: None,
         });
-        registry
-            .state
+        (*registry
+            .state_for_test())
             .lock()
             .unwrap()
             .records
@@ -34,7 +34,7 @@ pub fn scenario(rejoin: bool, late_hold: bool) {
         if late_hold {
             drop(stale);
             let key = newest_key.clone();
-            let returned = registry.hold_required_successor(Box::new(refreshing), |successor| {
+            let returned = registry.hold_required_successor_for_test(Box::new(refreshing), |successor| {
                 successor
                     .downcast_ref::<WorthQueryOutputDemandInterest>()
                     .map(|interest| &interest.key)
@@ -44,13 +44,13 @@ pub fn scenario(rejoin: bool, late_hold: bool) {
                 "no stale owner awaits this late successor; the registry must give it back"
             );
             drop(returned);
-            assert!(!registry.state.lock().unwrap().records.contains_key(&key));
+            assert!(!(*registry.state_for_test()).lock().unwrap().records.contains_key(&key));
 
             return;
         }
         drop(refreshing);
         {
-            let state = registry.state.lock().unwrap();
+            let state = (*registry.state_for_test()).lock().unwrap();
             assert!(
                 state.records.contains_key(&newest_key),
                 "the freshest Published answer still belongs to the stale owner"
@@ -62,14 +62,14 @@ pub fn scenario(rejoin: bool, late_hold: bool) {
         }
         if rejoin {
             let (owner, joined_source) = registry
-                .rejoin_refreshed(&stale)
+                .rejoin_refreshed_for_test(&stale)
                 .unwrap()
                 .expect("the stale owner rejoins its exact latest answer");
             assert_eq!(owner.key, newest_key);
             assert!(Arc::ptr_eq(&joined_source, &source));
             drop(joined_source);
             drop(stale);
-            let Admission::AdvanceCheckpoint { claim, checkpoint } = registry.begin(&owner) else {
+            let Admission::AdvanceCheckpoint { claim, checkpoint } = registry.begin_for_test(&owner) else {
                 panic!("the rejoined owner alone claims the authentic Published checkpoint");
             };
             let WorthQueryOutputCheckpoint::Published {
@@ -81,7 +81,7 @@ pub fn scenario(rejoin: bool, late_hold: bool) {
                 panic!("one undelivered publication is owed");
             };
             registry
-                .finish_checkpoint(
+                .finish_checkpoint_for_test(
                     &owner,
                     claim,
                     WorthQueryOutputCheckpoint::Delivered {
@@ -92,7 +92,7 @@ pub fn scenario(rejoin: bool, late_hold: bool) {
                     None,
                 )
                 .unwrap();
-            let Admission::AdvanceCheckpoint { claim, checkpoint } = registry.begin(&owner) else {
+            let Admission::AdvanceCheckpoint { claim, checkpoint } = registry.begin_for_test(&owner) else {
                 panic!("the rejoined owner completes the delivered answer");
             };
             let WorthQueryOutputCheckpoint::Delivered {
@@ -105,10 +105,10 @@ pub fn scenario(rejoin: bool, late_hold: bool) {
             };
             let ready = ready_backing.complete(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryCompletedOutputDemand {
                 authority: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryAcceptedOutputAuthority::Committed(receipt),
-                readiness: worth_query_execution::facade::domain_computation::WorthQueryOutputReadinessDeliveryEvidence::without_execution(),
+                readiness: worth_query_execution::facade::domain_computation::WorthQueryOutputReadinessDeliveryEvidence::without_execution_for_test(),
             });
             registry
-                .finish_checkpoint(
+                .finish_checkpoint_for_test(
                     &owner,
                     claim,
                     WorthQueryOutputCheckpoint::Ready(ready),
@@ -116,21 +116,21 @@ pub fn scenario(rejoin: bool, late_hold: bool) {
                 )
                 .unwrap();
             assert!(
-                matches!(registry.begin(&owner), Admission::Ready(_)),
+                matches!(registry.begin_for_test(&owner), Admission::Ready(_)),
                 "no second delivery"
             );
             drop(owner);
             assert!(
-                registry.state.lock().unwrap().records[&newest_key].has_cached_ready(),
+                (*registry.state_for_test()).lock().unwrap().records[&newest_key].has_cached_ready(),
                 "closing the owner keeps its delivered Ready cache"
             );
 
-            registry.release_product_occurrence(occurrence());
+            registry.release_product_occurrence_for_test(occurrence());
         } else {
             drop(stale);
             assert!(
-                !registry
-                    .state
+                !(*registry
+                    .state_for_test())
                     .lock()
                     .unwrap()
                     .records
@@ -167,17 +167,17 @@ fn closing_the_last_stale_owner_releases_its_held_successor() {
         let successor = admit(&registry, &newest_key);
         publish(&registry, &successor, receipt);
         assert!(registry
-            .hold_required_successor(Box::new(successor), |successor| successor
+            .hold_required_successor_for_test(Box::new(successor), |successor| successor
                 .downcast_ref::<WorthQueryOutputDemandInterest>()
                 .map(|interest| &interest.key))
             .is_none());
-        assert!(registry.state.lock().unwrap().records[&newest_key]
+        assert!((*registry.state_for_test()).lock().unwrap().records[&newest_key]
             .held_successor
             .is_some());
         drop(stale);
         assert!(
-            !registry
-                .state
+            !(*registry
+                .state_for_test())
                 .lock()
                 .unwrap()
                 .records

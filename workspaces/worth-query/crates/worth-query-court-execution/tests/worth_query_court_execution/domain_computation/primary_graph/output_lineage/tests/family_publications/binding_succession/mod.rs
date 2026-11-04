@@ -5,9 +5,9 @@ use worth_relational::facade::mvcc::CompanionPreflightStop as Stop;
 
 pub fn scope(court: &Court) -> WorthQueryOperationScopeBinding {
     let entity = court.source.scope;
-    WorthQueryOperationScopeBinding::axis_probe_scope(
-        court.source.runtime_authority,
-        court.source.schema.clone(),
+    WorthQueryOperationScopeBinding::axis_probe_scope_for_test(
+        (*court.source.runtime_authority_for_test()),
+        (*court.source.schema_for_test()).clone(),
         "index selection",
         entity.partition_id(),
         entity.local_slot(),
@@ -21,11 +21,11 @@ pub fn scope(court: &Court) -> WorthQueryOperationScopeBinding {
 pub fn resolve(court: &Court) -> Result<WorthQueryPriorOutputBindingResolution, Stop> {
     court
         .lineage
-        .resolve_binding_succession::<Preserve, Initial>(
+        .resolve_binding_succession_for_test::<Preserve, Initial>(
             &worth_execution::ExecutionRequest::serial(&court.request),
             &scope(court),
-            court.coordinate.occurrence,
-            court.coordinate.generation,
+            (*court.coordinate.occurrence_for_test()),
+            (*court.coordinate.generation_for_test()),
             [1; 32],
         )
 }
@@ -63,16 +63,16 @@ fn paired_prior_tracks_publication_not_old_binding_or_inherited_settlement() {
         true,
     );
     assert!(Arc::ptr_eq(
-        &resolve(&court).unwrap().correspondence.unwrap(),
+        &(*resolve(&court).unwrap().correspondence_for_test()).unwrap(),
         &reissued
     ));
-    court.coordinate.generation = 4;
+    (*court.coordinate.generation_mut_for_test()) = 4;
     assert!(Arc::ptr_eq(
-        &resolve(&court).unwrap().correspondence.unwrap(),
+        &(*resolve(&court).unwrap().correspondence_for_test()).unwrap(),
         &preserved
     ));
     let ancestor = court.coordinate;
-    court.lineage.origins.insert(court.child, ancestor);
+    (*court.lineage.origins_for_test()).insert(court.child, ancestor);
     court.coordinate = ProductCoordinate {
         occurrence: court.child,
         generation: 2,
@@ -85,17 +85,17 @@ fn paired_prior_tracks_publication_not_old_binding_or_inherited_settlement() {
         true,
     );
     assert!(Arc::ptr_eq(
-        &resolve(&court).unwrap().correspondence.unwrap(),
+        &(*resolve(&court).unwrap().correspondence_for_test()).unwrap(),
         &child
     ));
-    court.coordinate.generation = 0;
+    (*court.coordinate.generation_mut_for_test()) = 0;
     assert!(Arc::ptr_eq(
-        &resolve(&court).unwrap().correspondence.unwrap(),
+        &(*resolve(&court).unwrap().correspondence_for_test()).unwrap(),
         &preserved
     ));
-    court.lineage.origins.remove(&court.child);
+    (*court.lineage.origins_for_test()).remove(&court.child);
     assert!(
-        resolve(&court).unwrap().correspondence.is_none(),
+        (*resolve(&court).unwrap().correspondence_for_test()).is_none(),
         "unselected ancestry is absent"
     );
 }
@@ -103,7 +103,7 @@ fn paired_prior_tracks_publication_not_old_binding_or_inherited_settlement() {
 #[test]
 fn paired_prior_refuses_ambiguous_foreign_and_cancelled_selection() {
     let mut court = Court::new();
-    assert!(resolve(&court).unwrap().correspondence.is_none());
+    assert!((*resolve(&court).unwrap().correspondence_for_test()).is_none());
     court.publish::<Initial>(
         2,
         Some(1),
@@ -120,9 +120,9 @@ fn paired_prior_refuses_ambiguous_foreign_and_cancelled_selection() {
     );
     for _ in 0..2 {
         assert!(matches!(resolve(&court), Err(Stop::SelectedSourceMismatch)));
-        court
+        (*court
             .lineage
-            .output_families
+            .output_families_for_test())
             .get_mut("family")
             .unwrap()
             .reverse();
@@ -132,11 +132,11 @@ fn paired_prior_refuses_ambiguous_foreign_and_cancelled_selection() {
         matches!(
             court
                 .lineage
-                .resolve_binding_succession::<OtherRole, Initial>(
+                .resolve_binding_succession_for_test::<OtherRole, Initial>(
                     execution,
                     &scope(&court),
-                    court.coordinate.occurrence,
-                    court.coordinate.generation,
+                    (*court.coordinate.occurrence_for_test()),
+                    (*court.coordinate.generation_for_test()),
                     [1; 32],
                 ),
             Err(Stop::SelectedSourceMismatch)
@@ -153,11 +153,11 @@ fn paired_prior_refuses_ambiguous_foreign_and_cancelled_selection() {
     assert!(matches!(
         court
             .lineage
-            .resolve_binding_succession::<Preserve, Initial>(
+            .resolve_binding_succession_for_test::<Preserve, Initial>(
                 &worth_execution::ExecutionRequest::serial(&request),
                 &scope(&court),
-                court.coordinate.occurrence,
-                court.coordinate.generation,
+                (*court.coordinate.occurrence_for_test()),
+                (*court.coordinate.generation_for_test()),
                 [1; 32],
             ),
         Err(Stop::Execution(

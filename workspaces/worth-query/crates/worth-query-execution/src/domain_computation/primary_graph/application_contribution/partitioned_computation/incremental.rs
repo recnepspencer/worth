@@ -294,3 +294,5 @@ fn enter<'key, Schema, Operation>(
         reader.enter_carried(&COMPARATOR, key.clone(), read);
     }
 }
+
+mod court_doors_for_test;

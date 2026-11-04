@@ -9,9 +9,9 @@ pub fn currency_consumer(consumer: u8) {
         "counted-currency",
         WorthQueryPrincipalMappingStatus::Enabled,
     )]);
-    let handle = world
+    let handle = (*world
         .application
-        .runtime
+        .runtime_for_test())
         .primary_graph()
         .unwrap()
         .integration_handle();
@@ -39,7 +39,7 @@ pub fn currency_consumer(consumer: u8) {
  });
 }
 pub fn assert_consumer(stop: Result<Kind, Control>, consumer: u8) {
-    let failure = WorthQueryProviderSessionFailure::checked_read_stopped(
+    let failure = WorthQueryProviderSessionFailure::checked_read_stopped_for_test(
         stop,
         WorthQueryProviderSessionProtocolStage::Commit,
         "real currency stop",

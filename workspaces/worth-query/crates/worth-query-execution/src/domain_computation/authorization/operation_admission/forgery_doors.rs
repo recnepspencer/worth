@@ -26,11 +26,11 @@ impl<Schema, Operation, Input, Scope>
         }
     }
 
-    pub(in crate::domain_computation) fn flip_core_seal_byte_for_test(&mut self) {
+    pub fn flip_core_seal_byte_for_test(&mut self) {
         self.core.operation_authority_identity_bytes[0] ^= 0x01;
     }
 
-    pub(in crate::domain_computation) fn forge_tag_input_type_for_test<Forged: 'static>(&mut self) {
+    pub fn forge_tag_input_type_for_test<Forged: 'static>(&mut self) {
         self.tag.input_type = EqualityTypeId::of::<Forged>();
     }
 
@@ -40,7 +40,7 @@ impl<Schema, Operation, Input, Scope>
 
     /// Offers `successor`'s core as this brand's next phase through the real
     /// rewrap, so continuity is judged where production judges it.
-    pub(in crate::domain_computation) fn rewrap_successor_for_test(
+    pub fn rewrap_successor_for_test(
         self,
         successor: Self,
     ) -> Result<Self, WorthQueryOperationAuthorizationDenial> {

@@ -30,34 +30,34 @@ pub fn suspend_restore_and_read() {
     with_generated_own_write(|world, receipt, _, _| {
         let application = &world.application;
         let request = live_scope();
-        let graph = application.runtime.primary_graph().unwrap();
+        let graph = (*application.runtime_for_test()).primary_graph().unwrap();
         let handle = graph.integration_handle();
         let selected = world
             .application
             .with_host_advancement(|phase| {
-                let phase_custody = &phase.test_host_request();
+                let phase_custody = &phase.test_host_request_for_test();
 
                 world.selected_product(phase_custody)
             })
             .expect("the fixture read owns its installed host call");
-        let (_, product, basis) = selected.into_parts();
+        let (_, product, basis) = selected.into_parts_for_test();
         let observation = product.observation();
         let exact = handle.output_lineage.lock().unwrap().qualified_output::<OwnWriteOutputs>(
-            application.runtime.authority_identity().as_u64(),
-            &application.installed_schema.binding_identity(), receipt.principal_scope().scope(),
+            (*application.runtime_for_test()).authority_identity().as_u64(),
+            &(*application.installed_schema_for_test()).binding_identity(), receipt.principal_scope().scope(),
             observation.lifecycle_incarnation(), observation.reference_generation().get(),
-            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryRuntimeSourceIdentity::new([11;32]),
-            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryCheckpointSourceIdentity::new([11;32]),
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryRuntimeSourceIdentity::new_for_test([11;32]),
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryCheckpointSourceIdentity::new_for_test([11;32]),
         ).expect("the real committed record qualifies its suspension");
         // Provider registration is irrelevant to record continuity; all runtime,
         // correspondence, facts and source identity come from that exact record.
         let producer = ProducerQualification {
 
-            binding_type: TypeId::of::<OwnWriteOutputs>(),
-            output_binding_type: TypeId::of::<OwnWriteOutputs>(),
+            binding_type: TypeId::of_for_test::<OwnWriteOutputs>(),
+            output_binding_type: TypeId::of_for_test::<OwnWriteOutputs>(),
             binding_identity: "test-own-write", provider_identity: "test-own-write",
-            runtime_source_identity: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryRuntimeSourceIdentity::new([11;32]),
-            checkpoint_source_identity: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryCheckpointSourceIdentity::new([11;32]),
+            runtime_source_identity: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryRuntimeSourceIdentity::new_for_test([11;32]),
+            checkpoint_source_identity: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryCheckpointSourceIdentity::new_for_test([11;32]),
             recorded_source_identity: exact.source_identity,
             source_partition_identity: exact.source_partition_identity,
             producer_dependency_identity: exact.producer_dependency_identity,
@@ -78,7 +78,7 @@ pub fn suspend_restore_and_read() {
             .application
             .with_host_advancement(|phase| {
                 let borrowed_execution = phase
-                    .execution_request_for(&world.application.product_runtime)
+                    .execution_request_for_for_test(&(*world.application.product_runtime_for_test()))
                     .expect("fixture borrows its runtime request");
                 let execution = &borrowed_execution;
 
@@ -142,7 +142,7 @@ pub fn suspend_restore_and_read() {
             .application
             .with_host_advancement(|phase| {
                 let borrowed_execution = phase
-                    .execution_request_for(&world.application.product_runtime)
+                    .execution_request_for_for_test(&(*world.application.product_runtime_for_test()))
                     .expect("fixture borrows its runtime request");
                 let execution = &borrowed_execution;
 
@@ -170,7 +170,7 @@ pub fn suspend_restore_and_read() {
                     .unwrap()
                     .execute(
                         phase
-                            .execution_request_for(&application.product_runtime)
+                            .execution_request_for_for_test(&(*application.product_runtime_for_test()))
                             .expect("publication uses its runtime phase"),
                     )
             })
@@ -190,16 +190,16 @@ pub fn suspend_restore_and_read() {
         let (_, product, basis) = world
             .application
             .with_host_advancement(|phase| {
-                let phase_custody = &phase.test_host_request();
+                let phase_custody = &phase.test_host_request_for_test();
 
-                world.selected_product(phase_custody).into_parts()
+                world.selected_product(phase_custody).into_parts_for_test()
             })
             .expect("the fixture read owns its installed host call");
         let prepared = world
             .application
             .with_host_advancement(|phase| {
                 let borrowed_execution = phase
-                    .execution_request_for(&world.application.product_runtime)
+                    .execution_request_for_for_test(&(*world.application.product_runtime_for_test()))
                     .expect("fixture borrows its runtime request");
                 let execution = &borrowed_execution;
 
@@ -233,7 +233,7 @@ pub fn suspend_restore_and_read() {
                     .unwrap()
                     .execute(
                         phase
-                            .execution_request_for(&application.product_runtime)
+                            .execution_request_for_for_test(&(*application.product_runtime_for_test()))
                             .expect("publication uses its runtime phase"),
                     )
             })
@@ -252,11 +252,11 @@ pub fn suspend_restore_and_read() {
             .application
             .with_host_advancement(|phase| {
                 let borrowed_execution = phase
-                    .execution_request_for(&world.application.product_runtime)
+                    .execution_request_for_for_test(&(*world.application.product_runtime_for_test()))
                     .expect("fixture borrows its runtime request");
                 let execution = &borrowed_execution;
 
-                application.record_restored_generated_output(
+                application.record_restored_generated_output_for_test(
                     execution,
                     &observation,
                     exact.correspondence,
@@ -273,7 +273,7 @@ pub fn suspend_restore_and_read() {
             .install_output_families(BTreeMap::from([(
                 "test.retained-account-capacity".to_owned().into(),
                 vec![(
-                    TypeId::of::<OwnWriteOutputs>(),
+                    TypeId::of_for_test::<OwnWriteOutputs>(),
                     "computed-account".to_owned(),
                 )],
             )]));
@@ -281,11 +281,11 @@ pub fn suspend_restore_and_read() {
             .application
             .with_host_advancement(|phase| {
                 let (_, product, _) = world
-                    .selected_product(&phase.test_host_request())
-                    .into_parts();
+                    .selected_product(&phase.test_host_request_for_test())
+                    .into_parts_for_test();
                 let observation = product.observation();
                 let execution = phase
-                    .execution_request_for(&application.product_runtime)
+                    .execution_request_for_for_test(&(*application.product_runtime_for_test()))
                     .unwrap();
                 let family = handle
                     .output_lineage
@@ -293,8 +293,8 @@ pub fn suspend_restore_and_read() {
                     .unwrap()
                     .resolve_current_family(
                         &execution,
-                        application.runtime.authority_identity().as_u64(),
-                        &application.installed_schema.binding_identity(),
+                        (*application.runtime_for_test()).authority_identity().as_u64(),
+                        &(*application.installed_schema_for_test()).binding_identity(),
                         receipt.principal_scope().scope(),
                         "test.retained-account-capacity",
                         observation.lifecycle_incarnation(),
@@ -314,7 +314,7 @@ pub fn suspend_restore_and_read() {
         let principal = world
             .application
             .with_host_advancement(|phase| {
-                let phase_custody = &phase.test_host_request();
+                let phase_custody = &phase.test_host_request_for_test();
 
                 authenticated_principal(&(phase_custody).test_host_request(), world, &request)
             })
@@ -322,7 +322,7 @@ pub fn suspend_restore_and_read() {
         let account = world
             .application
             .with_host_advancement(|phase| {
-                let phase_custody = &phase.test_host_request();
+                let phase_custody = &phase.test_host_request_for_test();
 
                 resolved_account(&(phase_custody).test_host_request(), world, "2", &request)
             })
@@ -334,7 +334,7 @@ pub fn suspend_restore_and_read() {
         let admitted = world
             .application
             .with_host_advancement(|phase| {
-                let phase_custody = &phase.test_host_request();
+                let phase_custody = &phase.test_host_request_for_test();
 
                 world
                     .selected_product(phase_custody)
@@ -352,7 +352,7 @@ pub fn suspend_restore_and_read() {
         let answer = world
             .application
             .with_host_advancement(|phase| {
-                let phase_custody = &phase.test_host_request();
+                let phase_custody = &phase.test_host_request_for_test();
 
                 world
                     .invariant

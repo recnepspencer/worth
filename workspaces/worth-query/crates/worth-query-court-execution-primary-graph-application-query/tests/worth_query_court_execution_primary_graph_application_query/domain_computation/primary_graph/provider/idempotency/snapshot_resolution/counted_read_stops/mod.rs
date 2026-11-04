@@ -15,9 +15,9 @@ fn durable_idempotency_door_preserves_stops_at_every_consult() {
         .application
         .with_host_advancement(|phase| {
             let execution = phase.borrowed_request_for_test();
-            let provider = &world.application.primary_provider;
+            let provider = &(*world.application.primary_provider_for_test());
             let layout = provider.graph.layout.provider_idempotency().clone();
-            let binding = WorthQueryApplicationIdempotencyBinding::new([9; 32], [7; 32]);
+            let binding = WorthQueryApplicationIdempotencyBinding::new_for_test([9; 32], [7; 32]);
             publish_relational_mutation(
                 &execution,
                 &world,
@@ -27,15 +27,15 @@ fn durable_idempotency_door_preserves_stops_at_every_consult() {
                 .push(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::idempotency::idempotency_create_intent(
                     &layout,
                     binding,
-                    WorthQueryApplicationCommitOutcomeIdentity::restore(1).unwrap(),
+                    WorthQueryApplicationCommitOutcomeIdentity::restore_for_test(1).unwrap(),
                     0,
                     worth_relational::facade::identity::PartitionId(1),
                 )),
             );
-            let selected = world.selected_product(&phase.test_host_request());
-            let snapshot = selected.application_basis().snapshot_handle();
+            let selected = world.selected_product(&phase.test_host_request_for_test());
+            let snapshot = selected.application_basis_for_test().snapshot_handle();
             let affinity = WorthQueryProductIdempotencyAffinity::from_observation(
-                selected.product().observation(),
+                selected.product().observation_for_test(),
             );
             provider.graph.with_runtime(&execution, |runtime| {
                 worth_query_execution::test_read_stops::every_consult_under(

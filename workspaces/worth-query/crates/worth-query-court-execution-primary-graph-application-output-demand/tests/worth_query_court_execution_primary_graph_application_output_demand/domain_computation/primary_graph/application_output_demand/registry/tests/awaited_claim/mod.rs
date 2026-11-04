@@ -19,7 +19,7 @@ pub fn last_claim_closes(held_successor: bool) {
     worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|_| {
         let registry = WorthQueryOutputDemandRegistry::default();
         let unrelated = crate::domain_computation::primary_graph::application_output_demand::registry::tests::reservation_baseline::install(
-            &mut registry.state.lock().unwrap(),
+            &mut (*registry.state_mut_for_test()).lock().unwrap(),
             receipt.clone(),
         );
         let stale_key = key("claim-awaited", 1, 1);
@@ -32,7 +32,7 @@ pub fn last_claim_closes(held_successor: bool) {
         // The registry's release of its own claim, rather than native
         // certification of the dependency, is the boundary under test.
         {
-            let mut state = registry.state.lock().unwrap();
+            let mut state = (*registry.state_for_test()).lock().unwrap();
             let claims = vec![Arc::new(stale_key.clone())];
 
             state.records.get_mut(&dependent_key).unwrap().prerequisites = claims;
@@ -47,7 +47,7 @@ pub fn last_claim_closes(held_successor: bool) {
         publish(&registry, &newest, receipt);
         if held_successor {
             assert!(registry
-                .hold_required_successor(Box::new(newest), |held| held
+                .hold_required_successor_for_test(Box::new(newest), |held| held
                     .downcast_ref::<WorthQueryOutputDemandInterest>()
                     .map(|interest| &interest.key))
                 .is_none());
@@ -55,7 +55,7 @@ pub fn last_claim_closes(held_successor: bool) {
             drop(newest);
         }
         assert!(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::refreshed_rejoin::awaited_by_stale_owner(
-            &registry.state.lock().unwrap().records,
+            &(*registry.state_for_test()).lock().unwrap().records,
             &newest_key
         ));
         drop(dependent);
@@ -64,11 +64,11 @@ pub fn last_claim_closes(held_successor: bool) {
         // admission and exact charges belong to the every-unit drain table.
 
         registry
-            .drain_terminal_cleanup_admitted(&source_owner())
+            .drain_terminal_cleanup_admitted_for_test(&source_owner())
             .unwrap();
 
         {
-            let state = registry.state.lock().unwrap();
+            let state = (*registry.state_for_test()).lock().unwrap();
             assert!(
                 !state.records.contains_key(&newest_key),
                 "the last claim's release retires the answer and any held successor"
@@ -78,12 +78,12 @@ pub fn last_claim_closes(held_successor: bool) {
                 "the superseded row is retired too"
             );
             assert!(state.records.iter().all(|(key, record)| key == &unrelated ||
-                !matches!(&record.state, DemandState::Output(output) if matches!(output.checkpoint,
+                !matches!(&record.state, DemandState::Output(output) if matches!((*output.checkpoint_for_test()),
                     Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint::Published { .. })))));
         }
 
-        assert!(registry
-            .state
+        assert!((*registry
+            .state_for_test())
             .lock()
             .unwrap()
             .records

@@ -35,7 +35,7 @@ fn installed_components_require_native_support_in_both_planning_lanes() {
     )
     .unwrap();
     assert_eq!(ordinary, admitted);
-    let layout = world.application.runtime.primary_graph().unwrap().layout();
+    let layout = (*world.application.runtime_for_test()).primary_graph().unwrap().layout();
     let actual=worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::runtime_support::primary_graph_support_inventory(query.read_graph(), layout, None, None, &ordinary).unwrap();
     assert!(
         match_graph_index_inventory_for_requirements(&ordinary, &actual)

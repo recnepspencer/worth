@@ -6,7 +6,7 @@ fn map_read_preserves_its_callers_work_stop_and_releases_transient_memory() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             let borrowed_execution = host_custody.borrowed_request_for_test();
             let execution = &borrowed_execution;
             let old = world.selected_product(
@@ -21,7 +21,7 @@ fn map_read_preserves_its_callers_work_stop_and_releases_transient_memory() {
                     WorthQueryPrincipalResolutionMode::Ordinary,
                 )
                 .unwrap();
-            let graph = world.application.runtime.primary_graph().unwrap();
+            let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
             let field = AccountStatus::reference();
             let locator = graph
                 .layout
@@ -35,7 +35,7 @@ fn map_read_preserves_its_callers_work_stop_and_releases_transient_memory() {
                 &world,
                 WorkerIntentBatch::new("two-lookup-candidates").push(MutationIntent::Entity(
                     EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
-                        entity_id: unrelated.entity_id(),
+                        entity_id: unrelated.entity_id_for_test(),
                         fields: AspectFieldPatch::from(BTreeMap::from([(
                             locator,
                             StringApplicationValueBinding::encode(&"open".to_owned()).unwrap(),
@@ -77,7 +77,7 @@ fn map_read_preserves_its_callers_work_stop_and_releases_transient_memory() {
                 .certification_query(NestedAccountQuery::reference())
                 .unwrap();
             let first = selected
-                .retain_selection(execution)
+                .retain_selection_for_test(execution)
                 .unwrap()
                 .admit_application_query(
                     &host_custody.phase_for_application(&world.application),
@@ -88,7 +88,7 @@ fn map_read_preserves_its_callers_work_stop_and_releases_transient_memory() {
                 )
                 .unwrap();
             let second = selected
-                .retain_selection(execution)
+                .retain_selection_for_test(execution)
                 .unwrap()
                 .admit_application_query(
                     &host_custody.phase_for_application(&world.application),
@@ -104,13 +104,13 @@ fn map_read_preserves_its_callers_work_stop_and_releases_transient_memory() {
             execution
                 .in_scope(|lease| {
                     worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::derived_view::registration::collection::pair::reconstruction::owner_stage::run(lease, |context| {
-                        plans.admit(execution, &world.application, root.entity_id(), context)
+                        plans.admit_for_test(execution, &world.application, root.entity_id_for_test(), context)
                     })
                 })
                 .unwrap()
                 .unwrap();
             let input = plans
-                .worker(execution,  root.entity_id())
+                .worker_for_test(execution,  root.entity_id_for_test())
                 .unwrap();
             let map = ExecutionMap::<_, ()>::from_keyless_values(BTreeMap::from([(PartitionIdentity::new(1), input)]))
             .unwrap();
@@ -140,7 +140,7 @@ fn map_read_preserves_its_callers_work_stop_and_releases_transient_memory() {
                                     root: stopped_root, denial,
                                 }),
                             } if identity == PartitionIdentity::new(1)
-                                && stopped_root == root.entity_id()
+                                && stopped_root == root.entity_id_for_test()
                                 && matches!(denial.kind(),
                                     worth_query_execution::facade::domain_computation::WorthQueryApplicationOneShotDenialKind::ExecutionRequest(
                                         worth_query_execution::facade::domain_computation::WorthQueryProviderSessionDenialKind::ExecutionResource {

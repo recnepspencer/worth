@@ -9,7 +9,7 @@ pub fn reducing_member(
     rendezvous: Option<Arc<(Mutex<usize>, std::sync::Condvar)>>,
 ) -> PreparedMember {
     PreparedMember {
-        requests: vec![PreparedCompute::new(move |member| {
+        requests: vec![PreparedCompute::new_for_test(move |member| {
             if let Some(rendezvous) = &rendezvous {
                 let mut entered = rendezvous.0.lock().unwrap();
                 *entered += 1;
@@ -23,7 +23,7 @@ pub fn reducing_member(
                     "diagnostic member rendezvous hang guard expired: second slot unavailable"
                 );
             }
-            member.compute(|managed, _, _| {
+            member.compute_for_test(|managed, _, _| {
                 let invocations = std::sync::atomic::AtomicUsize::new(0);
                 let map = ExecutionMap::<_, ()>::from_native_partitions(
                     [3_u64, 7].into_iter().enumerate().map(|(rank, value)| (
@@ -74,7 +74,7 @@ fn certification_preserves_nested_results_without_billing_the_advancement() {
                 .map(|settled| {
                     settled
                         .unwrap()
-                        .into_slots()
+                        .into_slots_for_test()
                         .pop()
                         .unwrap()
                         .into_value::<Result<(u64, Option<(u64, u64)>), ()>>()

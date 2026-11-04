@@ -18,7 +18,7 @@ pub fn commit_at(ceiling: u64) -> (bool, Option<Evidence>, Vec<u64>) {
     let program = world
         .application
         .with_host_advancement(|phase| {
-            let host = phase.test_host_request();
+            let host = phase.test_host_request_for_test();
             let principal = authenticated_principal(&host, &world, &scope);
             let account = resolved_account(&host, &world, "open", &scope);
             retained_status_program(

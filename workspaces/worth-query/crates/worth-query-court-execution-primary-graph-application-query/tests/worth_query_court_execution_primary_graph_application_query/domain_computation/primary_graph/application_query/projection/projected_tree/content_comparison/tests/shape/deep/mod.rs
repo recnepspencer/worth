@@ -3,7 +3,7 @@ use crate::domain_computation::primary_graph::application_query::projection::pro
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::projection::projected_tree::content_storage::ProjectionContentStorageFault as Fault;
 pub fn deep(key: &Arc<ApplicationQueryResultSlotKey>) -> WorthQueryApplicationProjectionNode {
     let mut root = shape(key);
-    root.relations[0].rows[0] = shape(key);
+    (*root.relations_for_test())[0].rows[0] = shape(key);
     root
 }
 pub fn compare(
@@ -25,7 +25,7 @@ fn descendant_provenance_and_empty_support_cannot_be_omitted() {
     assert_eq!(compare(deep(&key), deep(&key)), Ok(true));
     for axis in 0..17 {
         let mut hostile = deep(&key);
-        let child = &mut hostile.relations[0].rows[0];
+        let child = &mut (*hostile.relations_mut_for_test())[0].rows[0];
         match axis {
             0 => child.fields[0].value = AspectValue::String("changed".into()),
             1 => child.fields[0].slot_key = slot("deep"), // same text, foreign namespace
@@ -54,9 +54,9 @@ fn descendant_provenance_and_empty_support_cannot_be_omitted() {
         assert_eq!(compare(deep(&key), hostile), Ok(false), "axis {axis}");
     }
     let mut empty = deep(&key);
-    empty.relations[0].rows[0].relations[0].rows.clear();
+    (*empty.relations_for_test())[0].rows[0].relations[0].rows.clear();
     let mut same_empty = deep(&key);
-    same_empty.relations[0].rows[0].relations[0].rows.clear();
+    (*same_empty.relations_for_test())[0].rows[0].relations[0].rows.clear();
     assert_eq!(compare(empty, same_empty), Ok(true));
 }
 #[test]
@@ -104,9 +104,9 @@ fn finite_stack_refuses_before_unfunded_or_undeclared_growth() {
         Err("original-work")
     );
     let mut deeper = deep(&key);
-    deeper.relations[0].rows[0].relations[0].rows[0] = deep(&key);
+    (*deeper.relations_for_test())[0].rows[0].relations[0].rows[0] = deep(&key);
     let mut same = deep(&key);
-    same.relations[0].rows[0].relations[0].rows[0] = deep(&key);
+    (*same.relations_for_test())[0].rows[0].relations[0].rows[0] = deep(&key);
     assert_eq!(
         tree(deeper).same_source_content(
             &tree(same),

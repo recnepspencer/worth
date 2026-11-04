@@ -14,7 +14,7 @@ fn aggregate_sealing_keeps_original_bodies_without_granting_relation_write_facts
     let world = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::decision::identity::install();
     let request = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
     world.application.with_host_advancement(|phase| {
-        let host=phase.test_host_request();
+        let host=phase.test_host_request_for_test();
         let execution=host.execution_request_for(world.application.product_runtime()).unwrap();
         let (admission,root)=authorize(&world,&phase,&execution,&request,0,ReplaceNext::reference());
         let (_,projection,_)=world.invariant.project_admitted_operation(&phase,&admission,|reader,root| {
@@ -22,18 +22,18 @@ fn aggregate_sealing_keeps_original_bodies_without_granting_relation_write_facts
             reader.decision_orbit_of(Next::reference(),root).unwrap();
         },Allocation::SystemAllocation).unwrap().into_parts();
         let attempt=world.application.begin_projected_application_read_attempt(&phase,admission,projection,Allocation::SystemAllocation).unwrap();
-        let expected=attempt.expected_facts.as_ref().unwrap();
+        let expected=(*attempt.expected_facts_for_test()).as_ref().unwrap();
         let keys:Vec<_>=expected.iter().collect();
         assert_eq!(keys.len(),2);
         let WorthQueryApplicationFactKey::Aggregate(key)=*keys.iter().find(|key|matches!(key,WorthQueryApplicationFactKey::Aggregate(_))).unwrap() else {panic!("the aggregate and walk are distinct typed dependencies")};
-        let original=std::sync::Arc::clone(expected.aggregate(key,attempt.admission.admission_identity(),
-            &attempt.admission.retain_graph_contract(),attempt.lease.snapshot()).unwrap());
+        let original=std::sync::Arc::clone(expected.aggregate(key,(*attempt.admission_for_test()).admission_identity(),
+            &(*attempt.admission_for_test()).retain_graph_contract(),(*attempt.lease_for_test()).snapshot()).unwrap());
         let (other,_)=authorize(&world,&phase,&execution,&request,0,ReplaceNext::reference());
-        let denial=worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::aggregate::observe(&execution,&other,&attempt.lease,&attempt.read_scope,expected,key,None).err().unwrap();
+        let denial=worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::aggregate::observe(&execution,&other,&(*attempt.lease_for_test()),&(*attempt.read_scope_for_test()),expected,key,None).err().unwrap();
         assert_eq!(denial.kind(),WorthQueryApplicationAttemptDenialKind::ProjectionAdmissionMismatch,
             "even identical graph truth and contracts cannot relabel the actual value to another admission");
         let completed=attempt.complete_projected_dependencies(&phase,Allocation::SystemAllocation).unwrap();
-        let values:Vec<_>=completed.facts.iter().filter_map(|fact|match fact {
+        let values:Vec<_>=(*completed.facts_for_test()).iter().filter_map(|fact|match fact {
             Fact::Aggregate {observation}=>Some(observation),_=>None,
         }).collect();
         assert_eq!(values.len(),1);
@@ -41,9 +41,9 @@ fn aggregate_sealing_keeps_original_bodies_without_granting_relation_write_facts
         assert_eq!(original.native().len(),3);
 
         assert!(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::encoding::encode_funded(
-            &[Fact::Aggregate { observation: original.clone() }],worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new(Allocation::SystemAllocation,Some(&request))).is_err(),
+            &[Fact::Aggregate { observation: original.clone() }],worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new_for_test(Allocation::SystemAllocation,Some(&request))).is_err(),
             "live aggregate facts deliberately have no checkpoint reconstruction door");
-        let selected=world.application.select_product_branch(&execution,world.application.product_runtime().default_branch()).unwrap();
+        let selected=world.application.select_product_branch_for_test(&execution,world.application.product_runtime().default_branch_for_test()).unwrap();
         let target=selected.resolve_entity(&phase,NodeKey::reference(),1,&request,WorthQueryPrincipalResolutionMode::Ordinary).unwrap();
         let denied=completed.projected_relation(Next::reference(),&root,&target).err().unwrap();
         assert_eq!(denied.kind(),WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact,
@@ -60,7 +60,7 @@ fn aggregate_descriptors_without_issued_values_cannot_complete() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host = phase.test_host_request();
+            let host = phase.test_host_request_for_test();
             let execution = host
                 .execution_request_for(world.application.product_runtime())
                 .unwrap();
@@ -93,8 +93,8 @@ fn aggregate_descriptors_without_issued_values_cannot_complete() {
                     Allocation::SystemAllocation,
                 )
                 .unwrap();
-            let descriptor = recorded
-                .expected_facts
+            let descriptor = (*recorded
+                .expected_facts_for_test())
                 .as_ref()
                 .unwrap()
                 .iter()
@@ -134,10 +134,10 @@ fn aggregate_descriptors_without_issued_values_cannot_complete() {
                 .unwrap();
             let denial = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::aggregate::observe(
                 &execution,
-                &raw.admission,
-                &raw.lease,
-                &raw.read_scope,
-                raw.expected_facts.as_ref().unwrap(),
+                &(*raw.admission_for_test()),
+                &(*raw.lease_for_test()),
+                &(*raw.read_scope_for_test()),
+                (*raw.expected_facts_for_test()).as_ref().unwrap(),
                 &descriptor,
                 None,
             )
@@ -147,15 +147,15 @@ fn aggregate_descriptors_without_issued_values_cannot_complete() {
                 denial.kind(),
                 WorthQueryApplicationAttemptDenialKind::ProjectionAdmissionMismatch
             );
-            let denied = raw
-                .lease
+            let denied = (*raw
+                .lease_for_test())
                 .handle()
                 .with_runtime(&execution, |runtime| {
                     worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::fact_observation::observe_fact(
                         &execution,
                         runtime,
-                        raw.lease.snapshot(),
-                        &raw.lease.layout,
+                        (*raw.lease_for_test()).snapshot(),
+                        &(*raw.lease_for_test()).layout,
                         &WorthQueryApplicationFactKey::Aggregate(descriptor),
                     )
                 })
@@ -192,7 +192,7 @@ fn failed_aggregate_calls_veto_sealing_before_a_key_exists_and_after_success() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host = phase.test_host_request();
+            let host = phase.test_host_request_for_test();
             let execution = host
                 .execution_request_for(world.application.product_runtime())
                 .unwrap();

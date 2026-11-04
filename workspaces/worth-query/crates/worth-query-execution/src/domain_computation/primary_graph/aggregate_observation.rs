@@ -113,3 +113,5 @@ impl<Member> AggregateObservation<Member> {
         &self.source
     }
 }
+
+mod court_doors_for_test;

@@ -13,7 +13,7 @@ pub fn returned_findings(
     let memory = execution
         .reserve(1024)
         .expect("bounded finding reservation");
-    WorthQueryCurrentBodyRequirementAssessment::new(
+    WorthQueryCurrentBodyRequirementAssessment::new_for_test(
         vec![WorthQueryOperationBodyRequirementFinding::new(
             ApplicationFieldBindingLocus::new("Account", "AccountPolicy", "AccountNote"),
             false,
@@ -41,7 +41,7 @@ fn returned_findings_retain_native_request_memory_until_the_result_drops() {
         .application
         .with_host_advancement(|phase| {
             let execution = phase
-                .execution_for(&world.application.product_runtime)
+                .execution_for_for_test(&(*world.application.product_runtime_for_test()))
                 .unwrap();
             let available = match execution.reserve(1_u64 << 60) {
                 Err(Resource::MemoryLimit { admitted, .. }) => admitted,

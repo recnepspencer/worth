@@ -12,7 +12,7 @@ fn governed_query_cannot_open_a_persistent_view_without_read_reauthorization() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
 
             let selected = world.selected_product(
                 &(host_custody.phase_for_application(&world.application)).test_host_request(),
@@ -41,7 +41,7 @@ fn prepared_view_publication_preserves_unaffected_arc_and_colds_membership_chang
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
 
             let selected = world.selected_product(
                 &(host_custody.phase_for_application(&world.application)).test_host_request(),
@@ -108,7 +108,7 @@ fn prepared_view_publication_preserves_unaffected_arc_and_colds_membership_chang
             let retained_product = world.selected_product(
                 &(host_custody.phase_for_application(&world.application)).test_host_request(),
             );
-            assert_eq!(open.entity_id(), key.root());
+            assert_eq!(open.entity_id_for_test(), key.root());
             world
                 .application
                 .reconstruct_managed_derived_view(
@@ -125,7 +125,7 @@ fn prepared_view_publication_preserves_unaffected_arc_and_colds_membership_chang
                 .get(&key)
                 .unwrap()
                 .unwrap();
-            let graph = world.application.runtime.primary_graph().unwrap();
+            let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
             let field = AccountLabel::reference();
             let locator = graph
                 .layout
@@ -151,12 +151,12 @@ fn prepared_view_publication_preserves_unaffected_arc_and_colds_membership_chang
             let prepared = graph.managed_derived_views().prepare_publication(
                 publication_basis(retained_product.product()),
                 &[ViewChange::Aspect(
-                    unrelated.entity_id(),
+                    unrelated.entity_id_for_test(),
                     locator.aspect().aspect_key().clone(),
                 )],
                 100_000,
             );
-            change_label(unrelated.entity_id(), "other-changed");
+            change_label(unrelated.entity_id_for_test(), "other-changed");
             let after = world.selected_product(
                 &(host_custody.phase_for_application(&world.application)).test_host_request(),
             );
@@ -173,12 +173,12 @@ fn prepared_view_publication_preserves_unaffected_arc_and_colds_membership_chang
             let prepared = graph.managed_derived_views().prepare_publication(
                 publication_basis(after.product()),
                 &[ViewChange::Aspect(
-                    open.entity_id(),
+                    open.entity_id_for_test(),
                     locator.aspect().aspect_key().clone(),
                 )],
                 100_000,
             );
-            change_label(open.entity_id(), "primary-changed");
+            change_label(open.entity_id_for_test(), "primary-changed");
             let after = world.selected_product(
                 &(host_custody.phase_for_application(&world.application)).test_host_request(),
             );

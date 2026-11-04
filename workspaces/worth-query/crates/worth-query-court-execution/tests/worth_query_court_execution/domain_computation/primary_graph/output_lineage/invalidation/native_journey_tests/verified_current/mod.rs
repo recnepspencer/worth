@@ -12,7 +12,7 @@ fn repeated_current_certification_preserves_image_and_retention_and_rejects_a_ra
     let world = installed_authorization_world(true);
     let selected = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
         .expect("the fixture read owns its installed host call");
     let entity = world
         .application
@@ -26,23 +26,23 @@ fn repeated_current_certification_preserves_image_and_retention_and_rejects_a_ra
                     WorthQueryPrincipalResolutionMode::Ordinary,
                 )
                 .unwrap()
-                .entity_id()
+                .entity_id_for_test()
         })
         .expect("the fixture read owns its installed host call");
-    let (_, product, _) = selected.into_parts();
+    let (_, product, _) = selected.into_parts_for_test();
     let coordinate = ProductCoordinate {
         occurrence: product.observation().lifecycle_incarnation(),
         generation: product.observation().reference_generation().get(),
     };
     let source = SemanticSource {
-        runtime_authority: world.application.runtime.authority_identity().as_u64(),
-        schema: world.application.installed_schema.binding_identity(),
-        scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity(entity),
-        output_binding: OutputBindingIdentity::declared("StatusOutput"),
+        runtime_authority: (*world.application.runtime_for_test()).authority_identity().as_u64(),
+        schema: (*world.application.installed_schema_for_test()).binding_identity(),
+        scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity),
+        output_binding: OutputBindingIdentity::declared_for_test("StatusOutput"),
     };
-    let prior = RecordedSettlementIdentity::retain(&source, coordinate, 0);
-    let current = RecordedSettlementIdentity::retain(&source, coordinate, 1);
-    let graph = world.application.runtime.primary_graph().unwrap();
+    let prior = RecordedSettlementIdentity::retain_for_test(&source, coordinate, 0);
+    let current = RecordedSettlementIdentity::retain_for_test(&source, coordinate, 1);
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let handle = graph.integration_handle();
     let owner = &handle.source_owner.invalidation_owner;
     let status_ref = AccountStatus::reference();
@@ -61,7 +61,7 @@ fn repeated_current_certification_preserves_image_and_retention_and_rejects_a_ra
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             let request_execution = &host_custody.borrowed_request_for_test();
             handle.with_runtime_mut(request_execution, |runtime| {
                 write_field(request_execution, runtime, entity, label, "prime");
@@ -80,7 +80,7 @@ fn repeated_current_certification_preserves_image_and_retention_and_rejects_a_ra
                     &basis,
                     OrdSet::new(),
                 );
-                let relation = StableEqualityConsequence::native_actor_fixture(
+                let relation = StableEqualityConsequence::native_actor_fixture_for_test(
                     Arc::clone(&prior),
                     Arc::clone(&current),
                     &basis,
@@ -91,7 +91,7 @@ let alias = owner
                     computation: None,
                     work_membership: None,
                     identity: Arc::clone(&current),
-                    facts: RetainedSourceFacts::for_test(false, Arc::clone(&facts)),
+                    facts: RetainedSourceFacts::for_test_for_test(false, Arc::clone(&facts)),
                     output_facts: None,
                     read_basis: basis.clone(),
                     stale_at_read_basis: OrdSet::new(),
@@ -117,9 +117,9 @@ let cell = owner
 
                 for with_downstream in [false, true] {
                     if with_downstream {
-                        let downstream = RecordedSettlementIdentity::retain(
+                        let downstream = RecordedSettlementIdentity::retain_for_test(
                             &SemanticSource {
-                                output_binding: OutputBindingIdentity::declared("DownstreamOutput"),
+                                output_binding: OutputBindingIdentity::declared_for_test("DownstreamOutput"),
                                 ..source.clone()
                             },
                             coordinate,
@@ -147,7 +147,7 @@ let prepared = owner
                         &snapshot,
                         &basis,
                         &current,
-                        &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts::for_test(false, Arc::clone(&facts)).for_comparison().unwrap(),
+                        &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts::for_test_for_test(false, Arc::clone(&facts)).for_comparison().unwrap(),
                     )
                     .unwrap()
                     .expect("complete clean actor coverage certifies current");
@@ -175,11 +175,11 @@ let stale = owner
                 &snapshot,
                 &basis,
                 &current,
-                &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts::for_test(false, Arc::clone(&facts)).for_comparison().unwrap(),
+                &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts::for_test_for_test(false, Arc::clone(&facts)).for_comparison().unwrap(),
             )
             .unwrap()
             .unwrap();
-let other = RecordedSettlementIdentity::retain(&source, coordinate, 2);
+let other = RecordedSettlementIdentity::retain_for_test(&source, coordinate, 2);
                 register(
                     owner,
                     Arc::clone(&other),

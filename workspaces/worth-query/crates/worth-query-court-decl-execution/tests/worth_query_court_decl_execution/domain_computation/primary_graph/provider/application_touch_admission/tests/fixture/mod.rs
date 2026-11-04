@@ -110,7 +110,7 @@ impl World {
             .installed_packages()
             .bind_application_schema(declaration)
             .unwrap();
-        let (layout, registry) = WorthQueryPrimaryGraphLayout::lower(
+        let (layout, registry) = WorthQueryPrimaryGraphLayout::lower_for_test(
             schema.installed_declaration(),
             schema.native_contracts(),
             &worth_relational::facade::schema::RelationalSchemaRegistry::new(),
@@ -126,7 +126,7 @@ impl World {
         if !required {
             values.insert(
                 layout
-                    .field_locator("Node", "Identity", "Key")
+                    .field_locator_for_test("Node", "Identity", "Key")
                     .unwrap()
                     .clone(),
                 encode("sentinel"),
@@ -135,7 +135,7 @@ impl World {
         for (field, value) in fields {
             values.insert(
                 layout
-                    .field_locator(entity_name, aspect, field)
+                    .field_locator_for_test(entity_name, aspect, field)
                     .unwrap()
                     .clone(),
                 encode(value),
@@ -151,7 +151,7 @@ impl World {
             WorkerIntentBatch::new("authentic-touch-baseline").push(MutationIntent::Create(
                 CreateIntent::Entity(EntitySpec {
                     partition_id: worth_relational::facade::identity::PartitionId::main(),
-                    kind_id: layout.entity_kind(entity_name).unwrap(),
+                    kind_id: layout.entity_kind_for_test(entity_name).unwrap(),
                     client_key: worth_relational::facade::symbols::ClientKey::raw(
                         "native-touch-baseline",
                     ),

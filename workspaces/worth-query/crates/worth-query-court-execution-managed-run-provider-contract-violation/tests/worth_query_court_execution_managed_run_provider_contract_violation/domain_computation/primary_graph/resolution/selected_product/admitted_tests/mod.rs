@@ -10,7 +10,7 @@ fn admitted_selected_principal_matches_ordinary_and_certification() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             let borrowed_execution = host_custody.borrowed_request_for_test();
             let execution = &borrowed_execution;
             let selected = world.selected_product(
@@ -33,7 +33,7 @@ fn admitted_selected_principal_matches_ordinary_and_certification() {
                 WorthQueryPrincipalResolutionMode::Certification,
             ] {
                 let fresh = selected
-                    .resolve_authenticated_principal_admitted(
+                    .resolve_authenticated_principal_admitted_for_test(
                         execution,
                         &world.binding,
                         &external,
@@ -41,9 +41,9 @@ fn admitted_selected_principal_matches_ordinary_and_certification() {
                         mode,
                     )
                     .expect("admitted principal uses the same selected truth");
-                assert_eq!(fresh.principal_entity_id(), legacy.principal_entity_id());
-                assert_eq!(fresh.mapping_entity_id(), legacy.mapping_entity_id());
-                assert_eq!(fresh.target_relation_id(), legacy.target_relation_id());
+                assert_eq!(fresh.principal_entity_id(), legacy.principal_entity_id_for_test());
+                assert_eq!(fresh.mapping_entity_id(), legacy.mapping_entity_id_for_test());
+                assert_eq!(fresh.target_relation_id(), legacy.target_relation_id_for_test());
                 assert_eq!(fresh.principal_identity(), legacy.principal_identity());
                 assert_eq!(
                     fresh.examined_candidate_count(),

@@ -83,3 +83,5 @@ pub(super) fn history_basis(
         (true, WorkflowInstanceObservationPurpose::ReadOnly) => HistoryBasis::ReadOnly,
     }
 }
+
+mod court_doors_for_test;

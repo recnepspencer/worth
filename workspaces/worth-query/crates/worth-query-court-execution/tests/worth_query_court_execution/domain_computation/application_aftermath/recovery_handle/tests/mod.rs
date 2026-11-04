@@ -10,13 +10,13 @@ use worth_query_installation::facade::PublishedAftermathPosture;
 
 #[test]
 fn concurrent_receipt_claims_register_exactly_one_handle() {
-    let registry = Arc::new(WorthQueryRecoveryHandleRegistry::new());
+    let registry = Arc::new(WorthQueryRecoveryHandleRegistry::new_for_test());
     let claim = real_claim(7);
     let left_registry = Arc::clone(&registry);
     let left_claim = claim.clone();
-    let left = std::thread::spawn(move || left_registry.register_once(left_claim));
+    let left = std::thread::spawn(move || left_registry.register_once_for_test(left_claim));
     let right_registry = Arc::clone(&registry);
-    let right = std::thread::spawn(move || right_registry.register_once(claim));
+    let right = std::thread::spawn(move || right_registry.register_once_for_test(claim));
 
     let results = [
         left.join().expect("left claim"),
@@ -25,25 +25,25 @@ fn concurrent_receipt_claims_register_exactly_one_handle() {
     assert_eq!(results.iter().filter(|result| result.is_ok()).count(), 1);
     assert_eq!(results.iter().filter(|result| result.is_err()).count(), 1);
     let slot = results.into_iter().find_map(Result::ok).expect("one slot");
-    assert!(registry.mark_terminal(slot, WorthQueryRecoveryResourceTerminal::Disposed));
-    registry.assert_no_live_handles();
+    assert!(registry.mark_terminal_for_test(slot, WorthQueryRecoveryResourceTerminal::Disposed));
+    registry.assert_no_live_handles_for_test();
 }
 
 #[test]
 fn recovery_registry_enumerates_terminates_and_covers_four_paths_without_leak() {
-    let registry = WorthQueryRecoveryHandleRegistry::new();
-    let slot = registry.register_axis_probe();
-    assert!(registry.is_live(slot));
-    assert!(registry.enumerate_live().contains(&slot));
-    assert!(registry.mark_terminal(slot, WorthQueryRecoveryResourceTerminal::ForceTerminated));
-    assert!(!registry.is_live(slot));
+    let registry = WorthQueryRecoveryHandleRegistry::new_for_test();
+    let slot = registry.register_axis_probe_for_test();
+    assert!(registry.is_live_for_test(slot));
+    assert!(registry.enumerate_live_for_test().contains(&slot));
+    assert!(registry.mark_terminal_for_test(slot, WorthQueryRecoveryResourceTerminal::ForceTerminated));
+    assert!(!registry.is_live_for_test(slot));
     assert_eq!(
-        registry.terminal_of(slot),
+        registry.terminal_of_for_test(slot),
         Some(WorthQueryRecoveryResourceTerminal::ForceTerminated)
     );
-    registry.assert_no_live_handles();
+    registry.assert_no_live_handles_for_test();
 
-    let registry = WorthQueryRecoveryHandleRegistry::new();
+    let registry = WorthQueryRecoveryHandleRegistry::new_for_test();
     let terminals = [
         WorthQueryRecoveryResourceTerminal::Consumed,
         WorthQueryRecoveryResourceTerminal::Expired,
@@ -51,12 +51,12 @@ fn recovery_registry_enumerates_terminates_and_covers_four_paths_without_leak() 
         WorthQueryRecoveryResourceTerminal::ForceTerminated,
     ];
     for terminal in terminals {
-        let slot = registry.register_axis_probe();
-        assert!(registry.mark_terminal(slot, terminal));
-        assert!(!registry.is_live(slot));
-        assert_eq!(registry.terminal_of(slot), Some(terminal));
+        let slot = registry.register_axis_probe_for_test();
+        assert!(registry.mark_terminal_for_test(slot, terminal));
+        assert!(!registry.is_live_for_test(slot));
+        assert_eq!(registry.terminal_of_for_test(slot), Some(terminal));
     }
-    registry.assert_no_live_handles();
+    registry.assert_no_live_handles_for_test();
 }
 
 // Q8.21-L11 boundary, stated where it is cheapest to state: which fates keep a
@@ -73,32 +73,32 @@ fn only_relinquishment_returns_a_commits_mint_claim() {
         WorthQueryRecoveryResourceTerminal::Disposed,
         WorthQueryRecoveryResourceTerminal::ForceTerminated,
     ] {
-        let registry = WorthQueryRecoveryHandleRegistry::new();
+        let registry = WorthQueryRecoveryHandleRegistry::new_for_test();
         let claim = real_claim(3);
-        let slot = registry.register_once(claim.clone()).expect("first claim");
-        assert!(registry.mark_terminal(slot, retaining));
+        let slot = registry.register_once_for_test(claim.clone()).expect("first claim");
+        assert!(registry.mark_terminal_for_test(slot, retaining));
         registry
-            .register_once(claim)
+            .register_once_for_test(claim)
             .expect_err("an exercised recovery stays spent forever");
         // Relinquishing after a real terminal must not give the claim back.
-        assert!(!registry.relinquish(slot));
-        registry.assert_no_live_handles();
+        assert!(!registry.relinquish_for_test(slot));
+        registry.assert_no_live_handles_for_test();
     }
 
-    let registry = WorthQueryRecoveryHandleRegistry::new();
+    let registry = WorthQueryRecoveryHandleRegistry::new_for_test();
     let claim = real_claim(3);
-    let first = registry.register_once(claim.clone()).expect("first claim");
-    assert!(registry.relinquish(first));
+    let first = registry.register_once_for_test(claim.clone()).expect("first claim");
+    assert!(registry.relinquish_for_test(first));
     let second = registry
-        .register_once(claim)
+        .register_once_for_test(claim)
         .expect("a relinquished attempt leaves the commit recoverable");
     assert_ne!(
         first, second,
         "the retry gets a fresh slot, not the old one"
     );
-    assert!(registry.is_live(second));
-    assert!(registry.mark_terminal(second, WorthQueryRecoveryResourceTerminal::Consumed));
-    registry.assert_no_live_handles();
+    assert!(registry.is_live_for_test(second));
+    assert!(registry.mark_terminal_for_test(second, WorthQueryRecoveryResourceTerminal::Consumed));
+    registry.assert_no_live_handles_for_test();
 }
 
 #[test]
@@ -112,7 +112,7 @@ fn world_construction_installs_via_production_derivation() {
 
 pub fn real_claim(provider_runtime_instance_id: u64) -> WorthQueryRecoveryMintClaim {
     let receipt = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application();
-    WorthQueryRecoveryMintClaim::new(
+    WorthQueryRecoveryMintClaim::new_for_test(
         provider_runtime_instance_id,
         receipt
             .committed_product_publication()

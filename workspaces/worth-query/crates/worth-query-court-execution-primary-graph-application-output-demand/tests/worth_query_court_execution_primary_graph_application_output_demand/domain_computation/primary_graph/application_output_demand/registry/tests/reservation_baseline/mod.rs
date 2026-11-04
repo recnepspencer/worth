@@ -15,8 +15,8 @@ pub fn install(
         .committed_product_publication()
         .composite_commit()
         .clone();
-    let backing = PreparedReadyBacking::new();
-    let output = WorthQueryOutputProgress::new(WorthQueryOutputCheckpoint::Published {
+    let backing = PreparedReadyBacking::new_for_test();
+    let output = WorthQueryOutputProgress::new_for_test(WorthQueryOutputCheckpoint::Published {
         receipt,
         delivery: WorthQueryPendingOutputDelivery::NoChange,
         ready_backing: backing,
@@ -24,12 +24,12 @@ pub fn install(
     // The receipt is real; this local lifetime fixture declares an interested
     // checkpoint and its already funded performed obligation directly.
     let mut row = record(occurrence(), DemandState::Output(output), 1);
-    row.performed_obligations.push(PerformedOutputObligation {
+    (*row.performed_obligations_for_test()).push(PerformedOutputObligation {
         source_commit: commit,
-        source: key.source.clone(),
+        source: (*key.source_for_test()).clone(),
     });
-    state.records.insert(key.clone(), row);
-    let member = state.prepare_required_member(&key).unwrap();
-    state.install_required_member(member);
+    (*state.records_for_test()).insert(key.clone(), row);
+    let member = state.prepare_required_member_for_test(&key).unwrap();
+    state.install_required_member_for_test(member);
     key
 }

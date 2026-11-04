@@ -21,7 +21,7 @@ fn revocation_after_cursor_denies_the_next_page_from_current_truth() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             context.elevated_access(&host_custody)
         })
         .expect("the fixture read owns its installed host call");
@@ -29,7 +29,7 @@ fn revocation_after_cursor_denies_the_next_page_from_current_truth() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             context
                 .world
                 .selected_product(&host_custody)
@@ -51,7 +51,7 @@ fn revocation_after_cursor_denies_the_next_page_from_current_truth() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             context
                 .world
                 .application
@@ -71,7 +71,7 @@ fn revocation_after_cursor_denies_the_next_page_from_current_truth() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             context.elevated_access(
                 &(host_custody.phase_for_application(&context.world.application))
                     .test_host_request(),
@@ -85,7 +85,7 @@ fn revocation_after_cursor_denies_the_next_page_from_current_truth() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             context
                 .world
                 .application
@@ -123,7 +123,7 @@ fn revocation_after_selected_plan_denies_before_result_delivery() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             context.elevated_access(&host_custody)
         })
         .expect("the fixture read owns its installed host call");
@@ -131,7 +131,7 @@ fn revocation_after_selected_plan_denies_before_result_delivery() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             context
                 .world
                 .selected_product(&host_custody)
@@ -156,7 +156,7 @@ fn revocation_after_selected_plan_denies_before_result_delivery() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             context
                 .world
                 .application

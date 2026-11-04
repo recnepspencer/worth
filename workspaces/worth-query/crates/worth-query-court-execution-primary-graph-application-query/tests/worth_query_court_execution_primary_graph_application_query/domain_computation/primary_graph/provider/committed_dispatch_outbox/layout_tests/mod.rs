@@ -16,9 +16,9 @@ use worth_query_testkit_execution_primary_graph_application_contribution::domain
 #[test]
 fn installed_outbox_layout_preserves_every_frozen_physical_field_name() {
     let world = installed_authorization_world(true);
-    let layout = world
+    let layout = (*world
         .application
-        .primary_provider
+        .primary_provider_for_test())
         .graph
         .layout
         .provider_dispatch_outbox();

@@ -9,7 +9,7 @@ fn replacement_policy_path_for_the_same_grant_cannot_launder_request_support() {
     let requester = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             crate::domain_computation::primary_graph::tests::authorization::capability_elevation::approval_transition::authenticated(
                 &host_custody,
                 &world,
@@ -21,28 +21,28 @@ fn replacement_policy_path_for_the_same_grant_cannot_launder_request_support() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             let borrowed_execution = host_custody.borrowed_request_for_test();
             let execution = &borrowed_execution;
             crate::domain_computation::primary_graph::tests::authorization::capability_elevation::review_support_mutation::replace_support_grantor_with_custodian(
                 &host_custody,
                 execution,
                 &world,
-                requester.principal_entity_id(),
+                requester.principal_entity_id_for_test(),
             )
         })
         .expect("the fixture read owns its installed host call");
     let approver = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             crate::domain_computation::primary_graph::tests::authorization::capability_elevation::approval_transition::authenticated(&host_custody, &world, "bob", &request)
         })
         .expect("the fixture read owns its installed host call");
     let access = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             crate::domain_computation::primary_graph::tests::authorization::capability_elevation::approval_transition::approval_access(
                 &host_custody,
                 &world,
@@ -56,7 +56,7 @@ fn replacement_policy_path_for_the_same_grant_cannot_launder_request_support() {
     let Err(denial) = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             world.application.authorize_elevation_approval(
                 &host_custody.phase_for_application(&world.application),
                 requested,
@@ -79,13 +79,13 @@ fn replacement_policy_path_for_the_same_grant_cannot_launder_request_support() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             assert_requested_without_approval(
                 &host_custody.phase_for_application(&world.application),
                 &host_custody.borrowed_request_for_test(),
                 &world,
                 &denial.into_requested(),
-                approver.principal_entity_id(),
+                approver.principal_entity_id_for_test(),
             )
         })
         .expect("the fixture read owns its installed host call");

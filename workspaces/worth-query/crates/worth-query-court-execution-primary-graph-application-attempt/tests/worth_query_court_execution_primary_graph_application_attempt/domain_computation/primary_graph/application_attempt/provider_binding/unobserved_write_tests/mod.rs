@@ -21,7 +21,7 @@ fn unobserved_effect_keeps_coordinates_at_public_lowering_without_idempotency_re
     let (principal, account, mut program, before) = world
         .application
         .with_host_advancement(|phase| {
-            let host = phase.test_host_request();
+            let host = phase.test_host_request_for_test();
             let principal = authenticated_principal(&host, &world, &request);
             let account = resolved_account(&host, &world, "open", &request);
             let program =
@@ -29,15 +29,15 @@ fn unobserved_effect_keeps_coordinates_at_public_lowering_without_idempotency_re
             let before = world
                 .selected_product(&host)
                 .product()
-                .observation()
+                .observation_for_test()
                 .clone();
             (principal, account, program, before)
         })
         .unwrap();
     let field = AccountLabel::reference();
-    let locator = world
+    let locator = (*world
         .application
-        .primary_provider
+        .primary_provider_for_test())
         .graph
         .layout
         .field_locator(field.entity(), field.aspect(), field.field())
@@ -79,17 +79,17 @@ fn unobserved_effect_keeps_coordinates_at_public_lowering_without_idempotency_re
     let after = world
         .application
         .with_host_advancement(|phase| {
-            let host = phase.test_host_request();
+            let host = phase.test_host_request_for_test();
             let unchanged = resolved_account(&host, &world, "open", &request);
             assert_eq!(
-                unchanged.entity_id(),
+                unchanged.entity_id_for_test(),
                 account.entity_id(),
                 "even the preceding Status effect did not publish"
             );
             world
                 .selected_product(&host)
                 .product()
-                .observation()
+                .observation_for_test()
                 .clone()
         })
         .unwrap();

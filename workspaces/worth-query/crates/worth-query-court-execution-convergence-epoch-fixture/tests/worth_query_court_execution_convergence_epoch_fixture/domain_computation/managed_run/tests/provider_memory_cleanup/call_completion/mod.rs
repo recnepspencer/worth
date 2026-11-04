@@ -8,7 +8,7 @@ pub fn complete_call(
     scope: &str,
 ) -> WorthQueryRunningDirectRun {
     let active = {
-        let installed_fixture_phase = running.fixture_phase(execution);
+        let installed_fixture_phase = running.fixture_phase_for_test(execution);
         running.begin_graph_execution(
             &installed_fixture_phase,
             graph,
@@ -18,7 +18,7 @@ pub fn complete_call(
     .expect("provider call should start");
     {
         let fixture_phase_result = {
-            let installed_fixture_phase = active.fixture_phase(execution);
+            let installed_fixture_phase = active.fixture_phase_for_test(execution);
             active.advance(&installed_fixture_phase)
         };
         match fixture_phase_result {
@@ -36,7 +36,7 @@ pub fn complete_workflow_memory_call(
     scope: &str,
 ) -> worth_query_execution::facade::domain_computation::WorthQueryRunningWorkflowRun {
     let active = {
-        let installed_fixture_phase = running.fixture_phase(execution);
+        let installed_fixture_phase = running.fixture_phase_for_test(execution);
         running.begin_stage_graph_execution(
             &installed_fixture_phase,
             "stage",
@@ -47,7 +47,7 @@ pub fn complete_workflow_memory_call(
     .expect("workflow memory provider call should start");
     {
         let fixture_phase_result = {
-            let installed_fixture_phase = active.fixture_phase(execution);
+            let installed_fixture_phase = active.fixture_phase_for_test(execution);
             active.advance(&installed_fixture_phase)
         };
         match fixture_phase_result {

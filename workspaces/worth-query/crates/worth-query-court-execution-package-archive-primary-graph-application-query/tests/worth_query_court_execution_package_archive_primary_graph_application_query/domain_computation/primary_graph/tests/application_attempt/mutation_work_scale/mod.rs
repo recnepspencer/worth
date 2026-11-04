@@ -166,7 +166,7 @@ pub fn mutation_work(
     let program = world
         .application
         .with_host_advancement(|phase| {
-            let custody = phase.test_host_request();
+            let custody = phase.test_host_request_for_test();
             let phase_custody = &custody;
             grow_unrelated_accounts(
                 &phase_custody.borrowed_request_for_test(),
@@ -204,7 +204,7 @@ pub fn no_demand_mutation_work(
     let program = world
         .application
         .with_host_advancement(|phase| {
-            no_demand_mutation_program(&phase.test_host_request(), &world, wide)
+            no_demand_mutation_program(&phase.test_host_request_for_test(), &world, wide)
         })
         .expect("the fixture preparation owns its host call");
     commit_work(&world, program, idempotency_key)
@@ -221,9 +221,9 @@ pub fn no_demand_mutation_program(
     Account,
 > {
     let request = live_scope();
-    let principal = authenticated_principal(&(phase_custody).test_host_request(), world, &request);
+    let principal = authenticated_principal(&(phase_custody).test_host_request_for_test(), world, &request);
     let account = resolved_account(
-        &(phase_custody).test_host_request(),
+        &(phase_custody).test_host_request_for_test(),
         world,
         "open",
         &request,
@@ -234,9 +234,9 @@ pub fn no_demand_mutation_program(
         .installed_operation(TouchAccountOperation::reference())
         .unwrap();
     let admission = world
-        .selected_product(&(phase_custody).test_host_request())
+        .selected_product(&(phase_custody).test_host_request_for_test())
         .authorize_operation(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             &principal,
             &account,
             &operation,
@@ -246,7 +246,7 @@ pub fn no_demand_mutation_program(
         .unwrap();
     let other = wide.then(|| {
         resolved_account(
-            &(phase_custody).test_host_request(),
+            &(phase_custody).test_host_request_for_test(),
             world,
             "unrelated",
             &request,
@@ -255,7 +255,7 @@ pub fn no_demand_mutation_program(
     let (_, projection, _) = world
         .invariant
         .project_admitted_operation(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             &admission,
             |reader, projected| {
                 reader
@@ -277,7 +277,7 @@ pub fn no_demand_mutation_program(
     let reads = world
         .application
         .begin_projected_application_read_attempt(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             admission,
             projection,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -285,7 +285,7 @@ pub fn no_demand_mutation_program(
         .unwrap();
     let mut effects = reads
         .complete_projected_dependencies(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap()
@@ -336,7 +336,7 @@ pub fn grow_unrelated_accounts(
     if count == 0 {
         return;
     }
-    let graph = world.application.primary_provider.graph.clone();
+    let graph = (*world.application.primary_provider_for_test()).graph.clone();
     let kind = graph
         .layout
         .entity_kind(Account::reference().name())

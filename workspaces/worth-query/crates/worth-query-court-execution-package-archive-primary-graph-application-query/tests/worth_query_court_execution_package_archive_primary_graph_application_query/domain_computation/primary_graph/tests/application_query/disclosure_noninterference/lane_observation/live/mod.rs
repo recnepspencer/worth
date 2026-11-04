@@ -27,7 +27,7 @@ pub fn observe(
         .world
         .application
         .with_host_advancement(|phase| {
-            let custody = phase.test_host_request();
+            let custody = phase.test_host_request_for_test();
             let phase_custody = &custody;
             let query = installed_governed_query(context.world);
             let account = resolve_account(

@@ -193,7 +193,7 @@ fn admission_from_a_prior_start_cannot_enter_a_fresh_provider_start() {
             },
             resource_request,
         );
-        let installed_running_phase = execution.phase_for_direct(&running);
+        let installed_running_phase = execution.phase_for_direct_for_test(&running);
 
         let first_failure = match running.begin_graph_execution(
             &installed_running_phase,
@@ -243,7 +243,7 @@ fn ignored_second_execution_admission_denies_the_provider_start() {
             MultipleAdmissionProvider,
             resource_request,
         );
-        let installed_running_phase = execution.phase_for_direct(&running);
+        let installed_running_phase = execution.phase_for_direct_for_test(&running);
 
         let failure = match running.begin_graph_execution(
             &installed_running_phase,
@@ -305,7 +305,7 @@ fn rejection_after_admission_releases_the_runtime_owned_execution_explicitly() {
         assert_eq!(destructor_attempts.load(Ordering::Acquire), 1);
         failure
             .into_running()
-            .terminate_for_convergence(WorthQueryManagedRunTerminalKind::Failed)
+            .terminate_for_convergence_for_test(WorthQueryManagedRunTerminalKind::Failed)
             .cleanup()
             .expect("contained start rejection preserves cleanup authority");
     });
@@ -349,7 +349,7 @@ fn panic_after_admission_contains_an_independent_destructor_panic() {
         assert_eq!(destructor_attempts.load(Ordering::Acquire), 1);
         let cleanup = failure
             .into_running()
-            .terminate_for_convergence(WorthQueryManagedRunTerminalKind::Failed)
+            .terminate_for_convergence_for_test(WorthQueryManagedRunTerminalKind::Failed)
             .cleanup()
             .expect("contained start panic preserves lower cleanup authority");
         assert_eq!(

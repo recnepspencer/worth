@@ -15,7 +15,7 @@ fn unchanged_facts_carry_every_partition_to_the_same_outcome() {
         first.work.field_reads() > 0,
         "the original owner read its inputs"
     );
-    *installed.owner.calls.lock().unwrap() = [0; 4];
+    *(*installed.owner_for_test()).calls.lock().unwrap() = [0; 4];
 
     let next = attempt(&world, &installed, Some(prior_of(first, false)));
     assert_eq!(
@@ -26,7 +26,7 @@ fn unchanged_facts_carry_every_partition_to_the_same_outcome() {
     assert!(matches!(next.runs.as_slice(), [(Run::Incremental, None)]));
     assert!(next.gathered.is_empty(), "no partition is gathered again");
     assert_eq!(
-        *installed.owner.calls.lock().unwrap(),
+        *(*installed.owner_for_test()).calls.lock().unwrap(),
         [0; 4],
         "the second retained attempt invokes neither membership, key, gather nor kernel owners"
     );
@@ -45,7 +45,7 @@ fn a_moved_gather_fact_gathers_only_its_partition_again() {
         let world = installed_authorization_world(true);
         let installed = installed(StatusRead::Gather(1), reducer);
         let first = first_run(&world, &installed);
-        *installed.owner.bump.lock().unwrap() = 10;
+        *(*installed.owner_for_test()).bump.lock().unwrap() = 10;
 
         let next = attempt(&world, &installed, Some(prior_of(first, true)));
         assert!(matches!(next.runs.as_slice(), [(Run::Incremental, None)]));
@@ -90,20 +90,20 @@ fn another_input_or_edition_or_an_evicted_state_runs_in_full() {
     let installed = installed(StatusRead::Gather(1), sum);
     let first = first_run(&world, &installed);
     let total = *first.outcome.as_ref().unwrap();
-    let mut state = first.sealed.unwrap().unwrap().state;
+    let mut state = (*first.sealed.unwrap().unwrap().state_for_test());
     state.basis = state.basis.with_input_digest_for_test([0; 32]);
     let state = std::sync::Arc::new(state);
     let cases = [
         (
-            ComputationPrior::new(edition(), Ok(Arc::clone(&state)), None),
+            ComputationPrior::new_for_test(edition(), Ok(Arc::clone(&state)), None),
             Cause::InputChanged,
         ),
         (
-            ComputationPrior::new(InstalledProducerEdition::for_test([8; 32]), Ok(state), None),
+            ComputationPrior::new_for_test(InstalledProducerEdition::for_test_for_test([8; 32]), Ok(state), None),
             Cause::OtherEdition,
         ),
         (
-            ComputationPrior::new(edition(), Err(Cause::Evicted), None),
+            ComputationPrior::new_for_test(edition(), Err(Cause::Evicted), None),
             Cause::Evicted,
         ),
     ];
@@ -126,7 +126,7 @@ fn growing_past_the_ceiling_is_denied_as_a_full_run_is_denied() {
         let world = installed_authorization_world(true);
         let installed = installed(StatusRead::Gather(status), sum);
 
-        *installed.owner.work.lock().unwrap() = [KERNEL_WORK, KERNEL_WORK];
+        *(*installed.owner_for_test()).work.lock().unwrap() = [KERNEL_WORK, KERNEL_WORK];
         let (declared, full_tree_work) = declared_cost(&world);
         let first = first_run(&world, &installed);
         assert_eq!(
@@ -134,13 +134,13 @@ fn growing_past_the_ceiling_is_denied_as_a_full_run_is_denied() {
             declared,
             "cost declared before the run"
         );
-        let moved = first
+        let moved = (*first
             .sealed
             .as_ref()
             .unwrap()
             .as_ref()
             .unwrap()
-            .state
+            .state_for_test())
             .facts
             .facts()
             .find_map(|(_, _, readers)| match readers.partitions() {
@@ -152,7 +152,7 @@ fn growing_past_the_ceiling_is_denied_as_a_full_run_is_denied() {
         // putting the stop inside a kernel in either identity ordering.
         let grown = WORK_CEILING + KERNEL_WORK + usize::try_from(full_tree_work).unwrap() + 1
             - usize::try_from(declared).unwrap();
-        installed.owner.work.lock().unwrap()[usize::from(status == 0)] = grown;
+        (*installed.owner_for_test()).work.lock().unwrap()[usize::from(status == 0)] = grown;
         let preparation = declared - 2 * KERNEL_WORK as u64 - full_tree_work;
         let compute_ceiling = WORK_CEILING as u64 - preparation;
         let request = live_scope();
@@ -206,7 +206,7 @@ pub fn declared_cost(world: &AuthorizationWorld) -> (u64, u64) {
     world
         .application
         .with_application_advancement(&request, |phase| {
-            let custody = phase.test_host_request();
+            let custody = phase.test_host_request_for_test();
             let principal = authenticated_principal(&custody, world, &request);
             let account = resolved_account(&custody, world, "open", &request);
             let operation = world

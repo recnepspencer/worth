@@ -69,7 +69,7 @@ fn complete_declared_paths_preserve_cycles_reverse_and_actual_origins() {
         .iter()
         .map(|source| {
             (
-                source.source_root(),
+                source.source_root_for_test(),
                 source.footprint_for_test().root_selection.as_ref().unwrap(),
             )
         })
@@ -108,7 +108,7 @@ fn complete_declared_paths_preserve_cycles_reverse_and_actual_origins() {
     assert_eq!(keys(&guarded_result), [2, 3, 4]);
     for source in guarded_result.observed_sources() {
         let selection = source.footprint_for_test().root_selection.as_ref().unwrap();
-        let body = &selection.walks.as_ref().unwrap().values()[0];
+        let body = &(*selection.walks_for_test()).as_ref().unwrap().values()[0];
         assert_eq!(
             body.key().roots().len(),
             1,

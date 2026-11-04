@@ -44,7 +44,7 @@ pub fn check(case: Case) {
     world
         .application
         .with_host_advancement(|phase| {
-            let host = phase.test_host_request();
+            let host = phase.test_host_request_for_test();
             let request = host.borrowed_request_for_test();
             let selected = world.selected_product(&host);
             let principal = selected
@@ -72,7 +72,7 @@ pub fn check(case: Case) {
                 .certification_query(PublicScopedAccountSummaryQuery::reference())
                 .unwrap();
             let plan = selected
-                .retain_selection(&request)
+                .retain_selection_for_test(&request)
                 .unwrap()
                 .admit_application_query(
                     &phase,
@@ -86,7 +86,7 @@ pub fn check(case: Case) {
             match case {
                 Case::Panic => {
                     use worth_query_execution::court_doors_for_test::domain_computation::provider_session::graph_obligation::owner_execution::pin_panic::PanicDuringPinGuardForTest;
-                    let _panic = PanicDuringPinGuardForTest::install_on_this_thread();
+                    let _panic = PanicDuringPinGuardForTest::install_on_this_thread_for_test();
                     let panic = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                         let _ = plan.graph_work.prepare_query_read(
                             plan.basis.identity(), &request, plan.basis.snapshot_handle(), |_| vec![],
@@ -131,7 +131,7 @@ pub fn check(case: Case) {
                         Ok(_) => panic!("the unavailable native source unexpectedly pinned"),
                     };
                     let outer =
-                        denial::session(cause, root.entity_id(), &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::read_execution::read_plan::ReadPlan::of(&plan));
+                        denial::session(cause, root.entity_id_for_test(), &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::read_execution::read_plan::ReadPlan::of(&plan));
                     let expected = if matches!(case, Case::Snapshot) {
                         OneShot::ProjectionUnavailable
                     } else {
@@ -142,7 +142,7 @@ pub fn check(case: Case) {
                             root: refused_root,
                             denial,
                         } => {
-                            assert_eq!(refused_root, root.entity_id());
+                            assert_eq!(refused_root, root.entity_id_for_test());
                             assert_eq!(denial.kind(), expected);
                         }
                         other => {
@@ -166,7 +166,7 @@ pub fn missing_door_index(live: bool, predicate_missing: bool) {
     world
         .application
         .with_host_advancement(|phase| {
-            let host = phase.test_host_request();
+            let host = phase.test_host_request_for_test();
             let request = host.borrowed_request_for_test();
             let selected = world.selected_product(&host);
             let principal = selected
@@ -202,10 +202,10 @@ pub fn missing_door_index(live: bool, predicate_missing: bool) {
                     current_controls(&scope),
                 )
                 .unwrap();
-            let graph = &world.application.primary_provider.graph;
+            let graph = &(*world.application.primary_provider_for_test()).graph;
             // Keep all installed bindings except the precise missing index.
             let mut layout = installed_layout();
-            for (key, field) in layout.equality_fields_mut() {
+            for (key, field) in layout.equality_fields_mut_for_test() {
                 field.equality_index_id = graph
                     .layout
                     .equality_field(&key.0, &key.1, &key.2)
@@ -218,8 +218,8 @@ pub fn missing_door_index(live: bool, predicate_missing: bool) {
                 }
             }
             if !live && !predicate_missing {
-                assert!(plan.continuation_index_id.is_some());
-                plan.continuation_index_id = Some(DerivedIndexId(u64::MAX));
+                assert!((*plan.continuation_index_id_for_test()).is_some());
+                (*plan.continuation_index_id_mut_for_test()) = Some(DerivedIndexId(u64::MAX));
             }
 
             let actual = graph.source_owner.with_runtime(&request, |runtime| {
@@ -229,7 +229,7 @@ pub fn missing_door_index(live: bool, predicate_missing: bool) {
                         &request,
                         &layout,
                         &plan,
-                        root.identity_value().clone(),
+                        root.identity_value_for_test().clone(),
                     )
                     .map(|_| ())
                 } else {

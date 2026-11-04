@@ -26,13 +26,13 @@ fn distinct_absent_predicates_survive_sealing_and_compare_only_their_own_matches
     let actor = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let operation = world
@@ -44,7 +44,7 @@ fn distinct_absent_predicates_survive_sealing_and_compare_only_their_own_matches
         .application
         .with_host_advancement(|phase| {
             world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&(phase).test_host_request_for_test())
                 .authorize_operation(
                     &phase,
                     &actor,
@@ -103,8 +103,8 @@ fn distinct_absent_predicates_survive_sealing_and_compare_only_their_own_matches
                 .unwrap()
         })
         .expect("the fixture read owns its installed host call");
-    let predicates = reads
-        .facts
+    let predicates = (*reads
+        .facts_for_test())
         .iter()
         .filter(|fact| matches!(fact, Fact::IndexedEntitySelection { .. }))
         .cloned()
@@ -117,7 +117,7 @@ fn distinct_absent_predicates_survive_sealing_and_compare_only_their_own_matches
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             assert!(currentness(
                 &phase,
                 &host_custody.borrowed_request_for_test(),
@@ -129,7 +129,7 @@ fn distinct_absent_predicates_survive_sealing_and_compare_only_their_own_matches
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             assert!(currentness(
                 &phase,
                 &host_custody.borrowed_request_for_test(),
@@ -146,7 +146,7 @@ fn distinct_absent_predicates_survive_sealing_and_compare_only_their_own_matches
     let results = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             predicates
                 .iter()
                 .map(|fact| {
@@ -173,17 +173,17 @@ pub fn currentness(
     world: &AuthorizationWorld,
     fact: &Fact,
 ) -> bool {
-    let selected = world.selected_product(&(phase_custody).test_host_request());
-    world
+    let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
+    (*world
         .application
-        .primary_provider
+        .primary_provider_for_test())
         .graph
         .with_runtime(execution, |runtime| {
             let movement = fact
-                .source_currentness_in(
+                .source_currentness_in_for_test(
                     runtime,
                     execution,
-                    selected.application_basis().snapshot_handle(),
+                    selected.application_basis_for_test().snapshot_handle(),
                 )
                 .unwrap()
                 .unwrap();
@@ -212,14 +212,14 @@ pub fn set_unrelated_value(
     field: (&str, &str, &str),
 ) {
     let account = resolved_account(
-        &(phase_custody).test_host_request(),
+        &(phase_custody).test_host_request_for_test(),
         world,
         "unrelated",
         &live_scope(),
     );
-    let installed = world
+    let installed = (*world
         .application
-        .runtime
+        .runtime_for_test())
         .primary_graph()
         .unwrap()
         .layout
@@ -239,7 +239,7 @@ pub fn set_unrelated_value(
         world,
         WorkerIntentBatch::new("indexed-selection-currentness").push(MutationIntent::Entity(
             EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
-                entity_id: account.entity_id(),
+                entity_id: account.entity_id_for_test(),
                 fields,
             }),
         )),

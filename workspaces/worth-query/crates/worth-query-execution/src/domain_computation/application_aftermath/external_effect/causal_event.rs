@@ -113,7 +113,7 @@ impl WorthQueryAdmittedExternalDispatchAttempt {
         }
     }
 
-    pub(in crate::domain_computation) const fn ordinal_for_test(&self) -> u64 {
+    pub const fn ordinal_for_test(&self) -> u64 {
         self.ordinal.value_for_test()
     }
 }

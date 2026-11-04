@@ -133,7 +133,7 @@ fn ten_thousand_partitions_gather_and_compute_only_the_one_whose_fact_moved() {
     let first = attempt(
         &world,
         &installed,
-        Some(ComputationPrior::new(edition(), Err(Cause::FirstRun), None)),
+        Some(ComputationPrior::new_for_test(edition(), Err(Cause::FirstRun), None)),
     );
     assert!(matches!(
         first.runs.as_slice(),
@@ -141,15 +141,15 @@ fn ten_thousand_partitions_gather_and_compute_only_the_one_whose_fact_moved() {
     ));
     let partitions = usize::try_from(PARTITIONS).unwrap();
     assert_eq!(first.gathered.len(), partitions);
-    assert_eq!(installed.owner.take_calls(), [1, partitions, partitions]);
+    assert_eq!((*installed.owner_for_test()).take_calls(), [1, partitions, partitions]);
     let outcome = *first.outcome.as_ref().unwrap();
     assert_eq!(outcome.0, PARTITIONS * (PARTITIONS + 1) / 2);
 
-    let mut state = first
+    let mut state = (*first
         .sealed
         .unwrap()
         .expect("a producer's run retains")
-        .state;
+        .state_for_test());
     let (key, entity_id) = state
         .facts
         .facts()
@@ -164,12 +164,12 @@ fn ten_thousand_partitions_gather_and_compute_only_the_one_whose_fact_moved() {
         &key,
         WorthQueryApplicationObservedFact::SourceEntity { entity_id },
     );
-    let prior = ComputationPrior::new(edition(), Ok(std::sync::Arc::new(state)), None);
+    let prior = ComputationPrior::new_for_test(edition(), Ok(std::sync::Arc::new(state)), None);
 
     let next = attempt(&world, &installed, Some(prior));
     assert!(matches!(next.runs.as_slice(), [(Run::Incremental, None)]));
     assert_eq!(next.gathered, [1]);
-    assert_eq!(installed.owner.take_calls(), [0, 0, 1]);
+    assert_eq!((*installed.owner_for_test()).take_calls(), [0, 0, 1]);
     assert_eq!(
         next.outcome.unwrap(),
         outcome,

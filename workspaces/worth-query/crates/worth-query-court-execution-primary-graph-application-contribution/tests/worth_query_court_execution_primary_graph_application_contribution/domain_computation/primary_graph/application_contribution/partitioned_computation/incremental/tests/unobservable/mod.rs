@@ -30,7 +30,7 @@ fn an_unobservable_key_gathers_its_partition_again_and_denies_nothing() {
     let installed = installed(StatusRead::Gather(1), sum);
     let first = first_run(&world, &installed);
     let outcome = *first.outcome.as_ref().unwrap();
-    let mut state = first.sealed.unwrap().unwrap().state;
+    let mut state = (*first.sealed.unwrap().unwrap().state_for_test());
     let key = state
         .facts
         .facts()
@@ -50,7 +50,7 @@ fn an_unobservable_key_gathers_its_partition_again_and_denies_nothing() {
         locator,
     };
     state.facts.rename_key(&key, undeclared);
-    let prior = ComputationPrior::new(edition(), Ok(std::sync::Arc::new(state)), None);
+    let prior = ComputationPrior::new_for_test(edition(), Ok(std::sync::Arc::new(state)), None);
 
     let next = attempt(&world, &installed, Some(prior));
     assert!(matches!(next.runs.as_slice(), [(Run::Incremental, None)]));
@@ -71,7 +71,7 @@ fn more_retained_keys_than_the_request_work_runs_in_full_uncompared() {
     let installed = installed(StatusRead::Gather(1), sum);
     let first = first_run(&world, &installed);
     let outcome = *first.outcome.as_ref().unwrap();
-    let mut state = first.sealed.unwrap().unwrap().state;
+    let mut state = (*first.sealed.unwrap().unwrap().state_for_test());
     let key = state
         .facts
         .facts()
@@ -96,7 +96,7 @@ fn more_retained_keys_than_the_request_work_runs_in_full_uncompared() {
         }),
     );
     assert!(state.facts.facts().count() > OBSERVATION_WORK_CEILING);
-    let prior = ComputationPrior::new(edition(), Ok(std::sync::Arc::new(state)), None);
+    let prior = ComputationPrior::new_for_test(edition(), Ok(std::sync::Arc::new(state)), None);
 
     fact_verification_on_this_thread_for_test();
     let next = attempt(&world, &installed, Some(prior));
@@ -124,7 +124,7 @@ fn a_few_adjacency_keys_whose_worst_case_passes_the_request_work_run_in_full() {
     let installed = installed(StatusRead::Gather(1), sum);
     let first = first_run(&world, &installed);
     let outcome = *first.outcome.as_ref().unwrap();
-    let mut state = first.sealed.unwrap().unwrap().state;
+    let mut state = (*first.sealed.unwrap().unwrap().state_for_test());
     let key = state
         .facts
         .facts()
@@ -147,7 +147,7 @@ fn a_few_adjacency_keys_whose_worst_case_passes_the_request_work_run_in_full() {
             maximum_work_units: third,
         }),
     );
-    let prior = ComputationPrior::new(edition(), Ok(std::sync::Arc::new(state)), None);
+    let prior = ComputationPrior::new_for_test(edition(), Ok(std::sync::Arc::new(state)), None);
 
     fact_verification_on_this_thread_for_test();
     let next = attempt(&world, &installed, Some(prior));

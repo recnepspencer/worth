@@ -189,3 +189,5 @@ impl Drop for QueryFactCoverage {
         self.owner.release_query_read(self);
     }
 }
+
+mod court_doors_for_test;

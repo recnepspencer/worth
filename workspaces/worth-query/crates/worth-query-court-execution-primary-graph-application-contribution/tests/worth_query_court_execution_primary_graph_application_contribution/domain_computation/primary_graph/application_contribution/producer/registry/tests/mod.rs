@@ -36,39 +36,39 @@ fn every_producer_edition_includes_the_application_build_even_without_input_reus
             ),
         ),
     ] {
-        let mut declaration = declared(TypeId::of::<InstalledProducer>());
-        declaration.input_reuse = input_reuse;
-        let installed = InstalledProducerEdition::from_declaration(&declaration, first).unwrap();
-        let reopened = InstalledProducerEdition::from_declaration(&declaration, first).unwrap();
-        let rebuilt = InstalledProducerEdition::from_declaration(&declaration, next).unwrap();
+        let mut declaration = declared(TypeId::of_for_test::<InstalledProducer>());
+        (*declaration.input_reuse_mut_for_test()) = input_reuse;
+        let installed = InstalledProducerEdition::from_declaration_for_test(&declaration, first).unwrap();
+        let reopened = InstalledProducerEdition::from_declaration_for_test(&declaration, first).unwrap();
+        let rebuilt = InstalledProducerEdition::from_declaration_for_test(&declaration, next).unwrap();
         assert_eq!(installed, reopened);
-        assert_eq!(installed.build_identity(), first);
-        assert_eq!(rebuilt.build_identity(), next);
-        assert_ne!(installed.digest(), rebuilt.digest());
+        assert_eq!(installed.build_identity_for_test(), first);
+        assert_eq!(rebuilt.build_identity_for_test(), next);
+        assert_ne!(installed.digest_for_test(), rebuilt.digest_for_test());
     }
 }
 
 #[test]
 fn producer_input_reuse_is_portable_installed_meaning_bound_to_the_handler() {
-    let base = declared(TypeId::of::<InstalledProducer>());
+    let base = declared(TypeId::of_for_test::<InstalledProducer>());
     let mut opted_in = base.clone();
-    opted_in.input_reuse = Some(
+    (*opted_in.input_reuse_mut_for_test()) = Some(
         worth_query_execution::facade::application_contribution::WorthQueryProducerInputReuseContract::canonical_bitwise(
             worth_query_execution::facade::application_contribution::WorthQueryDecisionContextDependencies::NONE,
         ),
     );
     let mut changed_handler = opted_in.clone();
-    changed_handler.handler_identity = "another-handler".into();
+    (*changed_handler.handler_identity_mut_for_test()) = "another-handler".into();
     let mut changed_dependencies = opted_in.clone();
-    changed_dependencies.input_reuse = Some(
+    (*changed_dependencies.input_reuse_mut_for_test()) = Some(
         worth_query_execution::facade::application_contribution::WorthQueryProducerInputReuseContract::canonical_bitwise(
             worth_query_execution::facade::application_contribution::WorthQueryDecisionContextDependencies::KEY,
         ),
     );
 
-    assert!(!base.has_same_meaning_as(&opted_in));
+    assert!(!base.has_same_meaning_as_for_test(&opted_in));
     let edition = |declaration| {
-        InstalledProducerEdition::from_declaration(
+        InstalledProducerEdition::from_declaration_for_test(
             declaration,
             worth_foundational::facade::ApplicationBuildIdentity::parse(
                 "11111111-1111-1111-1111-111111111111",
@@ -76,7 +76,7 @@ fn producer_input_reuse_is_portable_installed_meaning_bound_to_the_handler() {
             .unwrap(),
         )
         .unwrap()
-        .digest()
+        .digest_for_test()
     };
     assert_ne!(edition(&base), edition(&opted_in));
     assert_ne!(edition(&opted_in), edition(&changed_handler));
@@ -85,30 +85,30 @@ fn producer_input_reuse_is_portable_installed_meaning_bound_to_the_handler() {
 
 #[test]
 fn producer_meaning_rejects_a_distinct_rust_binding_type_reusing_the_identity() {
-    let installed = declared(TypeId::of::<InstalledProducer>());
-    let substituted = declared(TypeId::of::<SubstitutedProducer>());
+    let installed = declared(TypeId::of_for_test::<InstalledProducer>());
+    let substituted = declared(TypeId::of_for_test::<SubstitutedProducer>());
 
-    assert_eq!(installed.identity, substituted.identity);
-    assert!(!installed.has_same_meaning_as(&substituted));
+    assert_eq!((*installed.identity_for_test()), (*substituted.identity_for_test()));
+    assert!(!installed.has_same_meaning_as_for_test(&substituted));
 }
 
 #[test]
 fn producer_meaning_rejects_a_provider_version_change() {
-    let installed = declared(TypeId::of::<InstalledProducer>());
+    let installed = declared(TypeId::of_for_test::<InstalledProducer>());
     let mut changed = installed.clone();
-    changed.provider_identity = "provider.v2".into();
+    (*changed.provider_identity_mut_for_test()) = "provider.v2".into();
 
-    assert!(!installed.has_same_meaning_as(&changed));
+    assert!(!installed.has_same_meaning_as_for_test(&changed));
 }
 
 #[test]
 fn one_mutation_binding_cannot_own_two_producer_lineage_slots() {
-    let first = declared(TypeId::of::<InstalledProducer>());
-    let mut second = declared(TypeId::of::<SubstitutedProducer>());
-    second.identity = "producer.two".into();
+    let first = declared(TypeId::of_for_test::<InstalledProducer>());
+    let mut second = declared(TypeId::of_for_test::<SubstitutedProducer>());
+    (*second.identity_mut_for_test()) = "producer.two".into();
     let declarations = std::collections::BTreeMap::from([
-        (first.identity.clone(), first),
-        (second.identity.clone(), second),
+        ((*first.identity_for_test()).clone(), first),
+        ((*second.identity_for_test()).clone(), second),
     ]);
 
     assert_eq!(
@@ -119,7 +119,7 @@ fn one_mutation_binding_cannot_own_two_producer_lineage_slots() {
 
 #[test]
 fn checkpoint_role_must_match_installed_producer_meaning() {
-    let installed = declared(TypeId::of::<InstalledProducer>());
+    let installed = declared(TypeId::of_for_test::<InstalledProducer>());
     let checkpoint = checkpoint(vec![role("unexpected")]);
 
     assert!(validate_checkpoint_output_meaning(&installed, &checkpoint)
@@ -140,8 +140,8 @@ fn checkpoint_producer_must_be_installed() {
 
 #[test]
 fn checkpoint_cannot_omit_an_exact_installed_role() {
-    let mut installed = declared(TypeId::of::<InstalledProducer>());
-    installed.output_role_descriptors = vec![<Required as DeclaredRole>::DESCRIPTOR];
+    let mut installed = declared(TypeId::of_for_test::<InstalledProducer>());
+    (*installed.output_role_descriptors_mut_for_test()) = vec![<Required as DeclaredRole>::DESCRIPTOR];
 
     assert!(
         validate_checkpoint_output_meaning(&installed, &checkpoint(Vec::new()))
@@ -152,14 +152,14 @@ fn checkpoint_cannot_omit_an_exact_installed_role() {
 
 #[test]
 fn checkpoint_may_omit_only_an_at_most_one_installed_role() {
-    let mut installed = declared(TypeId::of::<InstalledProducer>());
-    installed.output_role_descriptors = vec![
+    let mut installed = declared(TypeId::of_for_test::<InstalledProducer>());
+    (*installed.output_role_descriptors_mut_for_test()) = vec![
         <Required as DeclaredRole>::DESCRIPTOR,
         <Optional as DeclaredRole>::DESCRIPTOR,
     ];
     let checkpoint_of = |names: &[&str]| {
         let mut checkpoint = checkpoint(names.iter().map(|name| role(name)).collect());
-        for role in std::sync::Arc::get_mut(&mut checkpoint.roles).expect("unique fixture roles") {
+        for role in std::sync::Arc::get_mut(&mut (*checkpoint.roles_mut_for_test())).expect("unique fixture roles") {
             role.entity_name = Account::IDENTIFIER.into();
         }
         checkpoint
@@ -182,10 +182,10 @@ fn checkpoint_may_omit_only_an_at_most_one_installed_role() {
 
 #[test]
 fn checkpoint_cannot_underfill_an_installed_role_family() {
-    let mut installed = declared(TypeId::of::<InstalledProducer>());
-    installed.output_role_families = vec![<Member as DeclaredFamily>::DESCRIPTOR];
+    let mut installed = declared(TypeId::of_for_test::<InstalledProducer>());
+    (*installed.output_role_families_mut_for_test()) = vec![<Member as DeclaredFamily>::DESCRIPTOR];
     let mut checkpoint = checkpoint(vec![role("member.one")]);
-    std::sync::Arc::get_mut(&mut checkpoint.roles).expect("unique fixture roles")[0].entity_name =
+    std::sync::Arc::get_mut(&mut (*checkpoint.roles_mut_for_test())).expect("unique fixture roles")[0].entity_name =
         Account::IDENTIFIER.into();
 
     assert!(validate_checkpoint_output_meaning(&installed, &checkpoint)
@@ -203,7 +203,7 @@ pub fn checkpoint(
         producer: ("producer".to_owned()).into(),
         posture: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointPosture::Performed,
         source: [0; 32],
-        scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity(
+        scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(
             worth_relational::facade::identity::EntityId::new(
                 worth_relational::facade::identity::PartitionId(1), 1, 1,
             ),
@@ -243,7 +243,7 @@ pub fn declared(binding_type: TypeId) -> DeclaredProducerBinding {
         identity: "producer".into(),
         source_selector: "source".into(),
         output_family: "family".into(),
-        output_family_type: TypeId::of::<()>(),
+        output_family_type: TypeId::of_for_test::<()>(),
         output_role_descriptors: Vec::new(),
         output_role_families: Vec::new(),
         output_role: "output".into(),
@@ -259,11 +259,11 @@ pub fn declared(binding_type: TypeId) -> DeclaredProducerBinding {
         output_equivalence: None,
         installed_output_equivalence: None,
         binding_type,
-        source_type: TypeId::of::<()>(),
-        operation_binding_type: TypeId::of::<()>(),
-        operation_type: TypeId::of::<()>(),
-        provider_type: TypeId::of::<()>(),
-        output_contract_type: TypeId::of::<()>(),
+        source_type: TypeId::of_for_test::<()>(),
+        operation_binding_type: TypeId::of_for_test::<()>(),
+        operation_type: TypeId::of_for_test::<()>(),
+        provider_type: TypeId::of_for_test::<()>(),
+        output_contract_type: TypeId::of_for_test::<()>(),
     }
 }
 
@@ -304,24 +304,24 @@ impl WorthQueryApplicationOutputRoleFamily for Member {
 fn cascade_ownership_is_installed_identity_and_family_wide_meaning() {
     use worth_foundational::facade::ApplicationBuildIdentity;
     use worth_foundational::facade::ProducerPublicationOwnership;
-    let independent = declared(TypeId::of::<InstalledProducer>());
+    let independent = declared(TypeId::of_for_test::<InstalledProducer>());
     let mut owned = independent.clone();
-    owned.ownership = ProducerPublicationOwnership::SourceScopeCascade;
-    owned.owned_scope_entity = Some("Account".into());
-    assert!(!independent.has_same_meaning_as(&owned));
+    (*owned.ownership_mut_for_test()) = ProducerPublicationOwnership::SourceScopeCascade;
+    (*owned.owned_scope_entity_mut_for_test()) = Some("Account".into());
+    assert!(!independent.has_same_meaning_as_for_test(&owned));
     let build = ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap();
     let edition = |declaration| {
-        InstalledProducerEdition::from_declaration(declaration, build)
+        InstalledProducerEdition::from_declaration_for_test(declaration, build)
             .unwrap()
-            .digest()
+            .digest_for_test()
     };
     assert_ne!(edition(&independent), edition(&owned));
     let mut other_kind = owned.clone();
-    other_kind.owned_scope_entity = Some("Principal".into());
-    assert!(!owned.has_same_meaning_as(&other_kind));
+    (*other_kind.owned_scope_entity_mut_for_test()) = Some("Principal".into());
+    assert!(!owned.has_same_meaning_as_for_test(&other_kind));
     assert_ne!(edition(&owned), edition(&other_kind));
     let mut preserve = independent.clone();
-    preserve.identity = "preserve".into();
+    (*preserve.identity_mut_for_test()) = "preserve".into();
     let mixed = std::collections::BTreeMap::from([
         ("initial".into(), owned.clone()),
         ("preserve".into(), preserve),
@@ -329,7 +329,7 @@ fn cascade_ownership_is_installed_identity_and_family_wide_meaning() {
     let denial = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::registry::scope_ownership::require_family_agreement(&mixed).unwrap_err();
     assert_eq!(denial.kind(), DenialKind::ProducerFamilyOwnershipMismatch);
     let mut preserve = owned.clone();
-    preserve.identity = "preserve".into();
+    (*preserve.identity_mut_for_test()) = "preserve".into();
     assert!(
         worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::registry::scope_ownership::require_family_agreement(&std::collections::BTreeMap::from([
             ("initial".into(), owned),

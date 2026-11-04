@@ -80,7 +80,7 @@ fn readmission_transfers_saturated_capacity_without_a_second_reservation() {
         );
         let active = {
             let fixture_phase_result = {
-                let installed_fixture_phase = yielded.fixture_phase(active_request);
+                let installed_fixture_phase = yielded.fixture_phase_for_test(active_request);
                 yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
             };
             match fixture_phase_result {
@@ -101,7 +101,7 @@ fn readmission_transfers_saturated_capacity_without_a_second_reservation() {
 
         let completion = {
             let fixture_phase_result = {
-                let installed_fixture_phase = active.fixture_phase(execution);
+                let installed_fixture_phase = active.fixture_phase_for_test(execution);
                 active.advance(&installed_fixture_phase)
             };
             match fixture_phase_result {
@@ -192,7 +192,7 @@ pub fn execute_repeated_yield_world(
         RepeatedYieldProvider { step_count: 3 },
         resource_request,
     );
-    let installed_running_phase = execution.phase_for_direct(&running);
+    let installed_running_phase = execution.phase_for_direct_for_test(&running);
 
     let active = running
         .begin_graph_execution(
@@ -222,7 +222,7 @@ pub fn execute_repeated_yield_world(
                 };
                 let active = {
                     let fixture_phase_result = {
-                        let installed_fixture_phase = yielded.fixture_phase(active_request);
+                        let installed_fixture_phase = yielded.fixture_phase_for_test(active_request);
                         yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
                     };
                     match fixture_phase_result {

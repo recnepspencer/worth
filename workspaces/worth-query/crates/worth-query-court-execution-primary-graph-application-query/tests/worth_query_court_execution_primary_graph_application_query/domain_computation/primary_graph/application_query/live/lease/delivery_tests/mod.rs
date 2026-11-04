@@ -40,12 +40,12 @@ fn governed_live_delivery_reuses_only_query_owned_current_authority() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             world
                 .application
-                .select_product_branch(
+                .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch(),
+                    world.application.product_runtime().default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_authenticated_principal(
@@ -62,12 +62,12 @@ fn governed_live_delivery_reuses_only_query_owned_current_authority() {
     let committer = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             world
                 .application
-                .select_product_branch(
+                .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch(),
+                    world.application.product_runtime().default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_authenticated_principal(
@@ -88,12 +88,12 @@ fn governed_live_delivery_reuses_only_query_owned_current_authority() {
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             world
                 .application
-                .select_product_branch(
+                .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch(),
+                    world.application.product_runtime().default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
@@ -110,7 +110,7 @@ fn governed_live_delivery_reuses_only_query_owned_current_authority() {
         .application
         .with_host_advancement(|phase| {
             admit_touch_account_capability(
-                &(phase).test_host_request(),
+                &(phase).test_host_request_for_test(),
                 &world,
                 &principal,
                 &request,
@@ -122,7 +122,7 @@ fn governed_live_delivery_reuses_only_query_owned_current_authority() {
         .application
         .with_host_advancement(|phase| {
             world
-        .selected_product(&(phase).test_host_request(), )
+        .selected_product(&(phase).test_host_request_for_test(), )
         .open_governed_application_query_live::<
             GovernedLiveAccountActivityQuery,
             AccountSummaryParameters,
@@ -185,12 +185,12 @@ fn revoked_capability_stops_governed_live_delivery_before_projection() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             world
                 .application
-                .select_product_branch(
+                .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch(),
+                    world.application.product_runtime().default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_authenticated_principal(
@@ -207,12 +207,12 @@ fn revoked_capability_stops_governed_live_delivery_before_projection() {
     let committer = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             world
                 .application
-                .select_product_branch(
+                .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch(),
+                    world.application.product_runtime().default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_authenticated_principal(
@@ -233,12 +233,12 @@ fn revoked_capability_stops_governed_live_delivery_before_projection() {
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             world
                 .application
-                .select_product_branch(
+                .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch(),
+                    world.application.product_runtime().default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
@@ -255,7 +255,7 @@ fn revoked_capability_stops_governed_live_delivery_before_projection() {
         .application
         .with_host_advancement(|phase| {
             admit_touch_account_capability(
-                &(phase).test_host_request(),
+                &(phase).test_host_request_for_test(),
                 &world,
                 &principal,
                 &request,
@@ -267,7 +267,7 @@ fn revoked_capability_stops_governed_live_delivery_before_projection() {
         .application
         .with_host_advancement(|phase| {
             world
-        .selected_product(&(phase).test_host_request(), )
+        .selected_product(&(phase).test_host_request_for_test(), )
         .open_governed_application_query_live::<
             GovernedLiveAccountActivityQuery,
             AccountSummaryParameters,
@@ -295,9 +295,9 @@ fn revoked_capability_stops_governed_live_delivery_before_projection() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             revoke_current_capability(
-                &(phase).test_host_request(),
+                &(phase).test_host_request_for_test(),
                 &host_custody.borrowed_request_for_test(),
                 &world,
             )

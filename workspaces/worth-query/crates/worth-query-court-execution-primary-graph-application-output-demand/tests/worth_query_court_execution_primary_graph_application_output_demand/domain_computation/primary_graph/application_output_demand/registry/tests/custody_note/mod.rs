@@ -25,10 +25,10 @@ pub fn fixture(
         .committed_product_publication()
         .composite_commit()
         .clone();
-    let mut state = registry.state.lock().unwrap();
-    let mut next = record(receipt.product_branch().occurrence(), copy_ready(ready), 1);
-    next.source_commits.push(commit.clone());
-    let next_wake = Arc::clone(&next.wake);
+    let mut state = (*registry.state_for_test()).lock().unwrap();
+    let mut next = record(receipt.product_branch().occurrence_for_test(), copy_ready(ready), 1);
+    (*next.source_commits_for_test()).push(commit.clone());
+    let next_wake = Arc::clone(&(*next.wake_for_test()));
     state.records.insert(newest.clone(), next);
     state.records.insert(
         old.clone(),
@@ -36,7 +36,7 @@ pub fn fixture(
             framework_required_count: 1,
             ..record(
                 occurrence(),
-                DemandState::Failed(WorthQueryOutputDemandDenial::new(
+                DemandState::Failed(WorthQueryOutputDemandDenial::new_for_test(
                     WorthQueryOutputDemandDenialKind::Superseded,
                     "newer row",
                 )),
@@ -49,24 +49,24 @@ pub fn fixture(
         ..record(occurrence(), copy_ready(ready), 1)
     };
     let mut row = row;
-    row.required_interests = 1;
+    (*row.required_interests_mut_for_test()) = 1;
 
-    let wake = Arc::clone(&row.wake);
+    let wake = Arc::clone(&(*row.wake_for_test()));
     state.records.insert(dependent.clone(), row);
     let member = state.prepare_required_member(&newest).unwrap();
     state.install_required_member(member);
     state.source_custody.insert(
         commit,
         SourceCustody {
-            occurrence: receipt.product_branch().occurrence(),
-            root_kind: PreparedOutputRootKind::Discovered(EqualityTypeId::of::<()>()),
+            occurrence: receipt.product_branch().occurrence_for_test(),
+            root_kind: PreparedOutputRootKind::Discovered(EqualityTypeId::of_for_test::<()>()),
             source: None,
             discovery: None,
             bound_sources: Some(vec![BoundOutputSource {
                 scope,
-                identity: newest.source.clone(),
+                identity: (*newest.source_for_test()).clone(),
             }]),
-            consumed_sources: vec![newest.source.clone()],
+            consumed_sources: vec![(*newest.source_for_test()).clone()],
             retired_sources: Vec::new(),
             retired: None,
             token_count: 0,
@@ -77,7 +77,7 @@ pub fn fixture(
     retain_owned_key(&mut state, &dependent);
     retain_owned_key(&mut state, &newest);
     drop(state);
-    registry.complete_prepared_source(receipt);
+    registry.complete_prepared_source_for_test(receipt);
     let next_owner = interest(&registry, newest.clone(), next_wake);
     let dependent_owner = required_interest(&registry, dependent, wake);
     (registry, next_owner, dependent_owner, newest)
@@ -95,9 +95,9 @@ fn registry_custody_note_survives_a_held_drain_and_claim_transfer() {
     );
     let commit = receipt.committed_product_publication().composite_commit();
     drop(owner);
-    registry.state.lock().unwrap().drain_next_foreign_custody();
+    (*registry.state_for_test()).lock().unwrap().drain_next_foreign_custody();
     {
-        let state = registry.state.lock().unwrap();
+        let state = (*registry.state_for_test()).lock().unwrap();
         assert!(
             state.source_custody.contains_key(commit),
             "stale claim still holds custody"
@@ -109,7 +109,7 @@ fn registry_custody_note_survives_a_held_drain_and_claim_transfer() {
     }
     drop(dependent);
     registry.drain_closed_cleanup_admitted().unwrap();
-    let mut state = registry.state.lock().unwrap();
+    let mut state = (*registry.state_for_test()).lock().unwrap();
     assert_eq!(state.records[&newest].framework_required_count, 1);
     state.drain_next_foreign_custody();
     assert!(!state.source_custody.contains_key(commit));
@@ -124,11 +124,11 @@ pub fn copy_ready(ready: &DemandState) -> DemandState {
     let DemandState::Output(output) = ready else {
         panic!("Ready fixture")
     };
-    let Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint::Ready(completion)) = &output.checkpoint
+    let Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint::Ready(completion)) = &(*output.checkpoint_for_test())
     else {
         panic!("Ready fixture")
     };
-    DemandState::Output(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputProgress::new(
+    DemandState::Output(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputProgress::new_for_test(
         worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint::Ready(completion.clone()),
     ))
 }

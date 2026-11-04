@@ -18,7 +18,7 @@ fn a_take_checks_the_live_stage_under_its_own_lock() {
             publish(&registry, &first, receipt.clone());
             let held: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::held_successor::HeldRequiredSuccessor = Box::new(row.clone());
             assert!(registry
-                .hold_required_successor(held, |held| held
+                .hold_required_successor_for_test(held, |held| held
                     .downcast_ref::<WorthQueryOutputDemandKey>())
                 .is_none());
             assert!(matches!(
@@ -26,41 +26,41 @@ fn a_take_checks_the_live_stage_under_its_own_lock() {
                 OutputRowStage::Published
             ));
             let restore = if stopped {
-                let mut state = registry.state.lock().unwrap();
+                let mut state = (*registry.state_for_test()).lock().unwrap();
                 let DemandState::Output(output) = &mut state.records.get_mut(&row).unwrap().state
                 else {
                     panic!("published output")
                 };
-                output.stop(WorthQueryOutputDemandDenial::new(
+                output.stop_for_test(WorthQueryOutputDemandDenial::new_for_test(
                     WorthQueryOutputDemandDenialKind::Closed,
                     "",
                 ));
                 None
             } else {
-                let Admission::AdvanceCheckpoint { claim, checkpoint } = registry.begin(&first)
+                let Admission::AdvanceCheckpoint { claim, checkpoint } = registry.begin_for_test(&first)
                 else {
                     panic!("the intervening call claims delivery")
                 };
                 Some((claim, checkpoint))
             };
-            let count = registry
-                .state
+            let count = (*registry
+                .state_for_test())
                 .lock()
                 .unwrap()
                 .records
                 .publication_count_for_test();
             assert!(
                 registry
-                    .take_published_held_successor(&row)
+                    .take_published_held_successor_for_test(&row)
                     .unwrap()
                     .is_none(),
                 "stopped={stopped}: the stale observation cannot move a successor"
             );
             assert!(registry
-                .take_published_held_successor(&row)
+                .take_published_held_successor_for_test(&row)
                 .unwrap()
                 .is_none());
-            let state = registry.state.lock().unwrap();
+            let state = (*registry.state_for_test()).lock().unwrap();
             assert_eq!(state.records.publication_count_for_test(), count);
             assert!(
                 state.records[&row].held_successor.is_some(),
@@ -69,19 +69,19 @@ fn a_take_checks_the_live_stage_under_its_own_lock() {
             drop(state);
             if let Some((claim, checkpoint)) = restore {
                 registry
-                    .finish_checkpoint(&first, claim, checkpoint, None)
+                    .finish_checkpoint_for_test(&first, claim, checkpoint, None)
                     .unwrap();
                 assert!(registry
-                    .take_published_held_successor(&row)
+                    .take_published_held_successor_for_test(&row)
                     .unwrap()
                     .is_some());
                 assert!(registry
-                    .take_published_held_successor(&row)
+                    .take_published_held_successor_for_test(&row)
                     .unwrap()
                     .is_none());
                 assert_eq!(
-                    registry
-                        .state
+                    (*registry
+                        .state_for_test())
                         .lock()
                         .unwrap()
                         .records
@@ -97,14 +97,14 @@ fn a_take_checks_the_live_stage_under_its_own_lock() {
 fn an_erased_successor_without_a_row_key_is_returned_without_effects() {
     let registry = WorthQueryOutputDemandRegistry::default();
     let held = registry
-        .hold_required_successor(Box::new(7_u32), |held| {
+        .hold_required_successor_for_test(Box::new(7_u32), |held| {
             held.downcast_ref::<WorthQueryOutputDemandKey>()
         })
         .expect("an invalid successor is returned to its owner");
     assert_eq!(*held.downcast::<u32>().unwrap(), 7);
     assert_eq!(
-        registry
-            .state
+        (*registry
+            .state_for_test())
             .lock()
             .unwrap()
             .records

@@ -55,17 +55,17 @@ fn aftermath_sealing_interruption_reaches_commit_evidence() {
         use worth_query_execution::facade::domain_computation::WorthQueryApplicationManagedCleanupFailure as Cleanup;
         use worth_query_execution::facade::domain_computation::WorthQueryApplicationUnresolvedCommitEvidence as Evidence;
         let expected_failure =
-            worth_query_execution::facade::domain_computation::WorthQueryProviderSessionFailure::checked_read_stopped(
+            worth_query_execution::facade::domain_computation::WorthQueryProviderSessionFailure::checked_read_stopped_for_test(
                 Err(expected),
                 worth_query_execution::facade::domain_computation::WorthQueryProviderSessionProtocolStage::Commit,
                 "request stopped during aftermath sealing",
             );
-        let mut expected_evidence = Evidence::from_provider_session_failure(
+        let mut expected_evidence = Evidence::from_provider_session_failure_for_test(
             Recovery::CommitRecoveryRequired,
             &expected_failure,
         );
         if reject_cleanup {
-            expected_evidence = expected_evidence.with_cleanup_failure();
+            expected_evidence = expected_evidence.with_cleanup_failure_for_test();
         }
         assert_eq!(
             evidence.cleanup_failure(),
@@ -89,8 +89,8 @@ fn native_preparation_control_stop_keeps_failed_cleanup_evidence_at_the_commit_d
         let program = world
             .application
             .with_host_advancement(|phase| {
-                let principal = authenticated_principal(&phase.test_host_request(), &world, &setup);
-                let account = resolved_account(&phase.test_host_request(), &world, "open", &setup);
+                let principal = authenticated_principal(&phase.test_host_request_for_test(), &world, &setup);
+                let account = resolved_account(&phase.test_host_request_for_test(), &world, "open", &setup);
                 admitted_program(
                     &phase,
                     &world,
@@ -137,15 +137,15 @@ fn native_preparation_control_stop_keeps_failed_cleanup_evidence_at_the_commit_d
             worth_query_execution::facade::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled
         };
         let failure =
-            worth_query_execution::facade::domain_computation::WorthQueryProviderSessionFailure::checked_read_stopped(
+            worth_query_execution::facade::domain_computation::WorthQueryProviderSessionFailure::checked_read_stopped_for_test(
                 Err(stop),
                 worth_query_execution::facade::domain_computation::WorthQueryProviderSessionProtocolStage::Commit,
                 "managed mutation run failed to finish after provider progression",
             );
         assert_eq!(
             evidence,
-            Evidence::from_provider_session_failure(Recovery::CommitRecoveryRequired, &failure)
-                .with_cleanup_failure()
+            Evidence::from_provider_session_failure_for_test(Recovery::CommitRecoveryRequired, &failure)
+                .with_cleanup_failure_for_test()
         );
     }
 }

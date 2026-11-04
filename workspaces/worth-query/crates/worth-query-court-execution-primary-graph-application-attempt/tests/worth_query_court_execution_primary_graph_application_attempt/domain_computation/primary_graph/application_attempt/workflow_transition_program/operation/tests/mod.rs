@@ -44,14 +44,14 @@ fn workflow_operation_custody_requires_the_exact_same_runtime_commit_proof() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
             resolved_account(
-                &(phase).test_host_request(),
+                &(phase).test_host_request_for_test(),
                 &world,
                 "second-recoverable-commit",
                 &request,
@@ -67,7 +67,7 @@ fn workflow_operation_custody_requires_the_exact_same_runtime_commit_proof() {
         .application
         .with_host_advancement(|phase| {
             world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&(phase).test_host_request_for_test())
                 .authorize_operation(
                     &phase,
                     &principal,
@@ -110,7 +110,7 @@ fn workflow_operation_custody_requires_the_exact_same_runtime_commit_proof() {
     );
     assert_eq!(
         receipt_identity_from_outcome(
-            first_receipt.runtime_authority().as_u64(),
+            first_receipt.runtime_authority_for_test().as_u64(),
             first_receipt
                 .outcome_identity()
                 .expect("committed outcome identity")

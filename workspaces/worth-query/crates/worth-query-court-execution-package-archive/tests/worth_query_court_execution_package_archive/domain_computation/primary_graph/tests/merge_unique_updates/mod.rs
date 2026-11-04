@@ -231,7 +231,7 @@ impl UpdateWorld {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         prepared: &PreparedMergeExecution,
     ) -> Result<(), Kind> {
-        let unique = WorthQueryUniqueFieldFixture::new(KIND, locator("label"), Some(self.index));
+        let unique = WorthQueryUniqueFieldFixture::new_for_test(KIND, locator("label"), Some(self.index));
         admit_merge_unique_values(unique.fields(), &self.runtime, execution, prepared)
             .map_err(|denial| denial.kind())
     }

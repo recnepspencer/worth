@@ -9,17 +9,17 @@ fn registry_current_successor_pin_acknowledges_only_its_native_current_proof() {
     for foreign in [false, true] {
         let registry = WorthQueryOutputDemandRegistry::default();
         let mut old = key_with_identity("answering-producer", 1, 1, 10);
-        old.applicability = worth_query_execution::facade::application_contribution::WorthQueryProducerApplicability::new(
+        (*old.applicability_mut_for_test()) = worth_query_execution::facade::application_contribution::WorthQueryProducerApplicability::new(
             "registry-fixture", worth_query_execution::facade::application_contribution::WorthQueryProducerLifecyclePosture::Initial);
         let newest = key_with_identity("answering-producer", 2, 1, 11);
         let other = key("foreign-answer", 2, 2);
         let (old_member, answer_member, other_member) = {
-            let mut state = registry.state.lock().unwrap();
+            let mut state = (*registry.state_for_test()).lock().unwrap();
             state.records.insert(
                 old.clone(),
                 record(
                     occurrence(),
-                    DemandState::Failed(WorthQueryOutputDemandDenial::new(
+                    DemandState::Failed(WorthQueryOutputDemandDenial::new_for_test(
                         WorthQueryOutputDemandDenialKind::Superseded,
                         "",
                     )),
@@ -46,7 +46,7 @@ fn registry_current_successor_pin_acknowledges_only_its_native_current_proof() {
             )
         };
         let mut work = old_member.fixture_selected_work();
-        registry.pin_current_required_successor(&mut work).unwrap();
+        registry.pin_current_required_successor_for_test(&mut work).unwrap();
         // The cause stays on the predecessor even though its answer is newer.
         assert_eq!(work.key(), &old);
         CurrentProof::with_current_fixture_basis(

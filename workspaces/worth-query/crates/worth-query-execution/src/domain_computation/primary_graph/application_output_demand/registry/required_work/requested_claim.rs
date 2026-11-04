@@ -143,3 +143,5 @@ fn capacity_denial() -> WorthQueryOutputDemandDenial {
         "exact requested output claim exceeds required custody",
     )
 }
+
+mod court_doors_for_test;

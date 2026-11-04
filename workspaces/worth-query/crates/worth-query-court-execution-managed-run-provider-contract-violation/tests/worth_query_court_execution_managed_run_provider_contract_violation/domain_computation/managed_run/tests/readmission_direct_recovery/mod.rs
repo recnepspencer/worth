@@ -19,7 +19,7 @@ fn provider_restore_panic_remains_typed_recovery_with_retained_authority() {
         let recovery = {
             let fixture_phase_result = {
                 let fixture_target = yielded;
-                let installed_fixture_phase = fixture_target.fixture_phase(active_request);
+                let installed_fixture_phase = fixture_target.fixture_phase_for_test(active_request);
                 fixture_target.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
             };
             match fixture_phase_result {
@@ -78,7 +78,7 @@ fn provider_restore_rejection_after_admission_carries_exact_release_evidence() {
         let recovery = {
             let fixture_phase_result = {
                 let fixture_target = yielded;
-                let installed_fixture_phase = fixture_target.fixture_phase(active_request);
+                let installed_fixture_phase = fixture_target.fixture_phase_for_test(active_request);
                 fixture_target.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
             };
             match fixture_phase_result {
@@ -150,7 +150,7 @@ fn restore_panic_and_replacement_destructor_panic_flow_into_terminal_cleanup() {
         let recovery = {
             let fixture_phase_result = {
                 let fixture_target = yielded;
-                let installed_fixture_phase = fixture_target.fixture_phase(active_request);
+                let installed_fixture_phase = fixture_target.fixture_phase_for_test(active_request);
                 fixture_target.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
             };
             match fixture_phase_result {

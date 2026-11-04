@@ -32,7 +32,7 @@ pub fn check(door: Door) {
     let (selected, principal, account) = world
         .application
         .with_host_advancement(|phase| {
-            let selected = world.selected_product(&phase.test_host_request());
+            let selected = world.selected_product(&phase.test_host_request_for_test());
             let principal = selected
                 .resolve_authenticated_principal(
                     &phase,
@@ -63,7 +63,7 @@ pub fn check(door: Door) {
                 let execution = phase
                     .checked_execution_request_for(world.application.product_runtime())
                     .unwrap();
-                let selected = selected.retain_selection(&execution).unwrap();
+                let selected = selected.retain_selection_for_test(&execution).unwrap();
                 let control =
                     FreshnessCancellationGuardForTest::install_on_this_thread(cancellation, 0);
                 let refusal = selected
@@ -92,9 +92,9 @@ pub fn check(door: Door) {
         let plan = world
             .application
             .with_host_advancement(|phase| {
-                let host = phase.test_host_request();
+                let host = phase.test_host_request_for_test();
                 selected
-                    .retain_selection(&host.borrowed_request_for_test())
+                    .retain_selection_for_test(&host.borrowed_request_for_test())
                     .unwrap()
                     .admit_application_query(
                         &phase,

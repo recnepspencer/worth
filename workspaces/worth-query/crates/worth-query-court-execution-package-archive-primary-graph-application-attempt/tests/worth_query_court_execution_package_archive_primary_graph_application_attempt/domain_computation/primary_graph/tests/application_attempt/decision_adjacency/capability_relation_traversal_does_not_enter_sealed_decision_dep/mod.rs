@@ -20,7 +20,7 @@ fn capability_relation_traversal_does_not_enter_sealed_decision_dependencies() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             resolved_principal(
                 &phase,
                 &host_custody.borrowed_request_for_test(),
@@ -39,7 +39,7 @@ fn capability_relation_traversal_does_not_enter_sealed_decision_dependencies() {
         .application
         .with_host_advancement(|phase| {
             world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&(phase).test_host_request_for_test())
                 .authorize_operation(
                     &phase,
                     &actor,

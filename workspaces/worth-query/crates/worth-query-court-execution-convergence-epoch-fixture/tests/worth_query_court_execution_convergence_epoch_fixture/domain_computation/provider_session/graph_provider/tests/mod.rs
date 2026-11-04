@@ -223,7 +223,7 @@ fn provider_session_rejects_an_installed_but_undeclared_graph_authority() {
                 WorthQueryGraphProviderCallKind::Project,
                 "foreign-graph",
             )
-            .with_managed_execution_snapshot("snapshot"),
+            .with_managed_execution_snapshot_for_test("snapshot"),
             attempt.attempt.evidence(),
             attempt.attempt.resources().shared_envelope(),
         )
@@ -247,7 +247,7 @@ fn direct_provider_session_rejects_a_caller_authored_workflow_stage() {
                 "invented-stage",
                 "invented",
             )
-            .with_managed_execution_snapshot("snapshot"),
+            .with_managed_execution_snapshot_for_test("snapshot"),
             attempt.attempt.evidence(),
             attempt.attempt.resources().shared_envelope(),
         )

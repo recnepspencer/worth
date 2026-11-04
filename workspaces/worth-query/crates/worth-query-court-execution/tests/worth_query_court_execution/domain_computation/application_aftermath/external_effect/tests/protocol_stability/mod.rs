@@ -196,6 +196,6 @@ pub fn outbox(
         branch: "main",
     })
     .unwrap();
-    WorthQueryDispatchOutboxRecord::from_installed_contract(correlation, contract, payload, 9)
+    WorthQueryDispatchOutboxRecord::from_installed_contract_for_test(correlation, contract, payload, 9)
         .unwrap()
 }

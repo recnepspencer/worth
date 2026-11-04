@@ -57,7 +57,7 @@ fn workflow_stage_provider_call_uses_stage_resources_and_receipt_evidence() {
             WorthQueryOperationGraphAccess::Project,
         );
         let running = admitted_workflow(&runtime, &operation, resources, resource_request);
-        let installed_running_phase = execution.phase_for_workflow(&running);
+        let installed_running_phase = execution.phase_for_workflow_for_test(&running);
 
         let active = running
             .begin_stage_graph_execution(
@@ -144,7 +144,7 @@ fn workflow_step_derives_artifact_and_checkpoint_evidence_from_governed_ports() 
             output,
         );
         let running = admitted_workflow(&runtime, &operation, resources, resource_request);
-        let installed_running_phase = execution.phase_for_workflow(&running);
+        let installed_running_phase = execution.phase_for_workflow_for_test(&running);
 
         let active = running
             .begin_stage_graph_execution(

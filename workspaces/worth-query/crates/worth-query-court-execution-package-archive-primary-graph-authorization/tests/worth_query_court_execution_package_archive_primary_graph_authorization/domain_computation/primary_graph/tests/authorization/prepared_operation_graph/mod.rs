@@ -22,8 +22,8 @@ fn installed_operation_template_keeps_exact_operation_and_support_authority() {
         .expect("same declaration in a foreign installed runtime");
     let request = application_resource_request(operation.contracts())
         .expect("actual installed execution strategy has a request");
-    let current_support = current.application.graph_work_resource_support_ref();
-    let foreign_support = foreign.application.graph_work_resource_support_ref();
+    let current_support = current.application.graph_work_resource_support_ref_for_test();
+    let foreign_support = foreign.application.graph_work_resource_support_ref_for_test();
     let prepared = prepare_application_operation_graph_work(&operation, &request, current_support)
         .expect("the actual installed operation is supported");
 

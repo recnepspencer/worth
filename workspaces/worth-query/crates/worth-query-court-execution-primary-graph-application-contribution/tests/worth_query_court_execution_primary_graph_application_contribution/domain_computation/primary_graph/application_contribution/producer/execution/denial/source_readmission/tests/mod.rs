@@ -55,7 +55,7 @@ fn current_control_stays_caller_local_while_intrinsic_managed_refusals_do_not() 
         use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandDenial;
         use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandRecoveryPosture as Posture;
     let original =
-        WorthQueryOutputDemandDenial::new(DemandKind::CurrentControlBusy, "current control");
+        WorthQueryOutputDemandDenial::new_for_test(DemandKind::CurrentControlBusy, "current control");
     assert!(managed_authority_rejection(Cause::CurrentControl(
         &original
     )));
@@ -67,7 +67,7 @@ fn current_control_stays_caller_local_while_intrinsic_managed_refusals_do_not() 
     else {
         panic!("current control must not fail a shared output");
     };
-    let denial = rejected.into_denial();
+    let denial = rejected.into_denial_for_test();
     assert_eq!(denial.kind(), DemandKind::CurrentControlBusy);
     assert_eq!(denial.recovery_posture(), Posture::Retryable);
 }
@@ -87,7 +87,7 @@ fn carried_native_read_stop_survives_producer_admission_and_body_receivers() {
         partition_identity: None,
         policy_ancestor: None,
     };
-    let admission = WorthQueryApplicationQueryAdmissionDenial::new(
+    let admission = WorthQueryApplicationQueryAdmissionDenial::new_for_test(
         AdmissionKind::ExecutionRequest(native),
         "actual source read",
     );
@@ -99,7 +99,7 @@ fn carried_native_read_stop_survives_producer_admission_and_body_receivers() {
     assert_eq!(stopped.kind(), expected);
     assert_eq!(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::execution::denial::projection_budget(Projection::InvariantAdmission(
             Invariant::ExecutionRequest(worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkExhausted))), Some(expected.clone()));
-    let attempt = WorthQueryApplicationAttemptDenial::relational_read_stopped(
+    let attempt = WorthQueryApplicationAttemptDenial::relational_read_stopped_for_test(
         worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkExhausted,
         "body",
     );
@@ -115,7 +115,7 @@ fn carried_native_read_stop_survives_producer_admission_and_body_receivers() {
         (NativeStop::Cancelled, DemandKind::Cancelled),
         (NativeStop::DeadlineElapsed, DemandKind::TimedOut),
     ] {
-        let attempt = WorthQueryApplicationAttemptDenial::relational_read_stopped(cause, "body");
+        let attempt = WorthQueryApplicationAttemptDenial::relational_read_stopped_for_test(cause, "body");
         let ProducerExecutionStop::RequestAdmissionDenied(rejected) =
                 worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::execution::denial::execution_failed(
                     "producer",
@@ -124,7 +124,7 @@ fn carried_native_read_stop_survives_producer_admission_and_body_receivers() {
             else {
                 panic!("body control stop must stay with the request");
             };
-        assert_eq!(rejected.into_denial().kind(), expected);
+        assert_eq!(rejected.into_denial_for_test().kind(), expected);
     }
 }
 
@@ -168,12 +168,12 @@ fn unpartitioned_kernel_stops_stay_request_local_across_source_and_commit() {
     ] {
         let source = query_admission_denied(
             "producer",
-            WorthQueryApplicationQueryAdmissionDenial::new(
+            WorthQueryApplicationQueryAdmissionDenial::new_for_test(
                 AdmissionKind::ExecutionRequest(native),
                 "source request executor stopped",
             ),
         )
-        .into_output_denial();
+        .into_output_denial_for_test();
         let commit = provider_session_execution_denied(
             Ok(native),
             Stage::ProviderCommit,

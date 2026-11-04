@@ -54,7 +54,7 @@ pub fn check(case: usize) {
     world
         .application
         .with_host_advancement(|phase| {
-            let host = phase.test_host_request();
+            let host = phase.test_host_request_for_test();
             let execution = host.borrowed_request_for_test();
             let old = world.selected_product(&host);
             let principal = old
@@ -84,7 +84,7 @@ pub fn check(case: usize) {
             let controls =
                 || WorthQueryProductQueryControls::new(NonZeroUsize::new(10).unwrap(), &scope);
             let admit = || {
-                old.retain_selection(&execution)
+                old.retain_selection_for_test(&execution)
                     .unwrap()
                     .admit_application_query(
                         &phase,
@@ -156,12 +156,12 @@ pub fn check(case: usize) {
                     Ok(_) => panic!("cancelled pin was admitted"),
                 };
                 assert_eq!(
-                    denial::session(cause, root.entity_id(), &ReadPlan::of(&first)),
+                    denial::session(cause, root.entity_id_for_test(), &ReadPlan::of(&first)),
                     Denial::Cancelled
                 );
                 return;
             }
-            let graph = &world.application.primary_provider.graph;
+            let graph = &(*world.application.primary_provider_for_test()).graph;
             let label = AccountLabel::reference();
             let locator = graph
                 .layout
@@ -173,7 +173,7 @@ pub fn check(case: usize) {
                 &world,
                 WorkerIntentBatch::new("changed-pinned-member").push(MutationIntent::Entity(
                     EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
-                        entity_id: root.entity_id(),
+                        entity_id: root.entity_id_for_test(),
                         fields: AspectFieldPatch::from(std::collections::BTreeMap::from([(
                             locator,
                             StringApplicationValueBinding::encode(&"after-commit".to_owned())
@@ -184,7 +184,7 @@ pub fn check(case: usize) {
             );
             let current = world.selected_product(&host);
             let later = current
-                .retain_selection(&execution)
+                .retain_selection_for_test(&execution)
                 .unwrap()
                 .admit_application_query(
                     &phase,

@@ -16,9 +16,9 @@ use worth_query_execution::court_doors_for_test::domain_computation::primary_gra
 #[test]
 fn a_closing_dependent_keeps_its_claim_while_the_newest_row_still_refreshes() {
     let (registry, interest, old, newest) = claim_on_superseded(DemandState::Running);
-    let dependent = interest.key.clone();
+    let dependent = (*interest.key_for_test()).clone();
     drop(interest);
-    let state = registry.state.lock().unwrap();
+    let state = (*registry.state_for_test()).lock().unwrap();
     // The superseded Ready stays for a World that supersedes the refresh.
     assert_eq!(state.records[&old].framework_required_count, 1);
     assert_eq!(state.records[&newest].framework_required_count, 0);
@@ -27,9 +27,9 @@ fn a_closing_dependent_keeps_its_claim_while_the_newest_row_still_refreshes() {
 #[test]
 fn a_reclaim_keeps_a_superseded_row_whose_claim_did_not_move() {
     let (registry, interest, old, newest) = claim_on_superseded(ready());
-    let dependent = interest.key.clone();
+    let dependent = (*interest.key_for_test()).clone();
     {
-        let mut state = registry.state.lock().unwrap();
+        let mut state = (*registry.state_for_test()).lock().unwrap();
         // The newest row is no required member: the claim has no key to move to.
         state.required_keys.clear();
     }
@@ -37,26 +37,26 @@ fn a_reclaim_keeps_a_superseded_row_whose_claim_did_not_move() {
     // row's claim cannot move, so it is passed over and nothing is reclaimed.
     assert!(!registry.reclaim_unheld_observation().unwrap());
     {
-        let state = registry.state.lock().unwrap();
+        let state = (*registry.state_for_test()).lock().unwrap();
         assert_eq!(state.records[&old].framework_required_count, 1);
         assert_eq!(claims(&state.records[&dependent]), vec![old.clone()]);
     }
     // The dependent's own retirement releases the claim on a row still there.
-    registry
-        .state
+    (*registry
+        .state_for_test())
         .lock()
         .unwrap()
         .records
         .get_mut(&dependent)
         .unwrap()
-        .state = DemandState::Failed(WorthQueryOutputDemandDenial::new(
+        .state = DemandState::Failed(WorthQueryOutputDemandDenial::new_for_test(
         WorthQueryOutputDemandDenialKind::Superseded,
         "dependent retired",
     ));
     drop(interest);
     while registry.reclaim_unheld_observation().unwrap() {}
     registry.drain_closed_cleanup_admitted().unwrap();
-    let state = registry.state.lock().unwrap();
+    let state = (*registry.state_for_test()).lock().unwrap();
     assert!(!state.records.contains_key(&dependent));
     assert!(!state.records.contains_key(&old));
     assert!(state.records.contains_key(&newest));
@@ -70,39 +70,39 @@ fn an_unpublished_refresh_its_last_owner_lets_go_gives_the_occurrence_back() {
         framework_required_count: 1,
         ..record(occurrence(), ready(), 0)
     };
-    let DemandState::Output(output) = &mut replaced_record.state else {
+    let DemandState::Output(output) = &mut (*replaced_record.state_mut_for_test()) else {
         unreachable!("the replaced row holds a Ready");
     };
-    output.finish_stopped(WorthQueryOutputDemandDenial::new(
+    output.finish_stopped_for_test(WorthQueryOutputDemandDenial::new_for_test(
         WorthQueryOutputDemandDenialKind::Superseded,
         "",
     ));
     let refresh_record = DemandRecord {
-        successor_of: Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::succession::Succession::new([0; 32])),
+        successor_of: Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::succession::Succession::new_for_test([0; 32])),
         ..record(occurrence(), DemandState::Scheduled, 1)
     };
-    let wake = Arc::clone(&refresh_record.wake);
+    let wake = Arc::clone(&(*refresh_record.wake_for_test()));
     {
-        let mut state = registry.state.lock().unwrap();
+        let mut state = (*registry.state_for_test()).lock().unwrap();
         state.records.insert(replaced.clone(), replaced_record);
         state.records.insert(refresh.clone(), refresh_record);
     }
     drop(interest(&registry, refresh.clone(), wake));
-    let state = registry.state.lock().unwrap();
+    let state = (*registry.state_for_test()).lock().unwrap();
     assert!(!state.records.contains_key(&refresh));
     // The Ready the refresh replaced answers for the occurrence again.
     assert!(
         matches!(&state.records[&replaced].state, DemandState::Output(output)
-        if matches!(output.advancement(), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputAdvancement::Idle))
+        if matches!(output.advancement_for_test(), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputAdvancement::Idle))
     );
 }
 #[test]
 fn a_closing_dependent_moves_its_claim_once_the_newest_row_is_ready() {
     let (registry, interest, old, newest) = claim_on_superseded(ready());
-    let dependent = interest.key.clone();
+    let dependent = (*interest.key_for_test()).clone();
     drop(interest);
     registry.drain_closed_cleanup_admitted().unwrap();
-    let state = registry.state.lock().unwrap();
+    let state = (*registry.state_for_test()).lock().unwrap();
     assert!(!state.records.contains_key(&old));
     assert_eq!(state.records[&newest].framework_required_count, 1);
     assert_eq!(claims(&state.records[&dependent]), vec![newest]);

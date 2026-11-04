@@ -154,3 +154,5 @@ fn check_request(execution: &worth_execution::ExecutionRequest<'_, '_>) -> Resul
         Denial::new(Kind::ReadExecution(cause), "conditional commit watch request stopped")
     })
 }
+
+mod court_doors_for_test;

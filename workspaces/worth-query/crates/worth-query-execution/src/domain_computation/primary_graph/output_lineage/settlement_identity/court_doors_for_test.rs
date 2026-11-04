@@ -4,7 +4,8 @@ use super::*;
 impl RecordedSettlementIdentity {
     #[doc(hidden)]
     pub fn address_for_test(
-        &self) -> (
+        &self,
+    ) -> (
         worth_runtime_world::facade::ProductBranchIncarnation,
         u64,
         usize,
@@ -17,5 +18,16 @@ impl RecordedSettlementIdentity {
     #[doc(hidden)]
     pub fn source_for_test(&self) -> &SemanticSource {
         Self::source(self)
+    }
+}
+
+impl RecordedSettlementIdentity {
+    #[doc(hidden)]
+    pub fn retain_for_test(
+        source: &SemanticSource,
+        coordinate: ProductCoordinate,
+        slot: usize,
+    ) -> Arc<Self> {
+        Self::retain(source, coordinate, slot)
     }
 }

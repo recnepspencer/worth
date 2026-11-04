@@ -130,7 +130,7 @@ fn yielded_cleanup_maps_double_artifact_release_panic_into_recovery_evidence() {
         let world = double_panicking_yield_world("yielded-artifact-double-panic", resource_request);
         let active = {
             let fixture_target = world.running;
-            let installed_fixture_phase = fixture_target.fixture_phase(execution);
+            let installed_fixture_phase = fixture_target.fixture_phase_for_test(execution);
             fixture_target.begin_stage_graph_execution(
                 &installed_fixture_phase,
                 "producer",
@@ -145,7 +145,7 @@ fn yielded_cleanup_maps_double_artifact_release_panic_into_recovery_evidence() {
         let paused = {
             let fixture_phase_result = {
                 let fixture_target = active;
-                let installed_fixture_phase = fixture_target.fixture_phase(execution);
+                let installed_fixture_phase = fixture_target.fixture_phase_for_test(execution);
                 fixture_target.advance(&installed_fixture_phase)
             };
             match fixture_phase_result {

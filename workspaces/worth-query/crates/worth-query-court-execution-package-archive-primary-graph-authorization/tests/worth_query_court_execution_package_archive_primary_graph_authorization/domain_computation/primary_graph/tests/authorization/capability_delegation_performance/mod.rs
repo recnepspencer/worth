@@ -90,7 +90,7 @@ fn exact_pair_population_overflow_denies_before_authority() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
 
@@ -98,7 +98,7 @@ fn exact_pair_population_overflow_denies_before_authority() {
         .application
         .with_host_advancement(|phase| {
             admitted_capability_access(
-                &(phase).test_host_request(),
+                &(phase).test_host_request_for_test(),
                 &world,
                 &principal,
                 &request,
@@ -122,7 +122,7 @@ pub fn admission_work(world: AuthorizationWorld) -> DelegationAdmissionWork {
     world
         .application
         .with_host_advancement(|phase| {
-            let custody = phase.test_host_request();
+            let custody = phase.test_host_request_for_test();
             let phase_custody = &custody;
             let principal =
                 authenticated_principal(&(phase_custody).test_host_request(), &world, &request);

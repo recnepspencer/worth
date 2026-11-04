@@ -16,7 +16,7 @@ pub fn change_spare<const O: bool>(
     world
         .application
         .with_host_advancement(|phase| {
-            let host = phase.test_host_request();
+            let host = phase.test_host_request_for_test();
             let execution = host
                 .execution_request_for(world.application.product_runtime())
                 .unwrap();
@@ -70,9 +70,9 @@ pub fn change_spare<const O: bool>(
                 .unwrap();
             let selected = world
                 .application
-                .select_product_branch(
+                .select_product_branch_for_test(
                     &execution,
-                    world.application.product_runtime().default_branch(),
+                    world.application.product_runtime().default_branch_for_test(),
                 )
                 .unwrap();
             let spare = if create {

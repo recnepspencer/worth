@@ -9,11 +9,11 @@ fn repeated_restored_admission_joins_one_semantic_source_record() {
     let product = world
         .application
         .product_runtime()
-        .admit_product_branch(world.application.product_runtime().default_branch())
+        .admit_product_branch_for_test(world.application.product_runtime().default_branch_for_test())
         .expect("the fixture's default product occurrence is live");
     let observation = product.observation().clone();
     let occurrence = observation.lifecycle_incarnation();
-    let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity(
+    let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(
         root(1),
     );
     let registry = WorthQueryOutputDemandRegistry::default();
@@ -22,7 +22,7 @@ fn repeated_restored_admission_joins_one_semantic_source_record() {
     let (_lineage, settlement) =
         worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::output_lineage::registry_fixture::recorded_settlement();
     let (first, inserted) = registry
-        .admit_restored(
+        .admit_restored_for_test(
             key_with_identity("restored", 1, 1, 80),
             scope,
             occurrence,
@@ -33,7 +33,7 @@ fn repeated_restored_admission_joins_one_semantic_source_record() {
         )
         .expect("the recovered output admits its first demand");
     let (second, reinserted) = registry
-        .admit_restored(
+        .admit_restored_for_test(
             key_with_identity("restored", 2, 1, 80),
             scope,
             occurrence,
@@ -47,10 +47,10 @@ fn repeated_restored_admission_joins_one_semantic_source_record() {
     assert!(inserted);
     assert!(!reinserted);
     assert_eq!(first.key, second.key);
-    assert_eq!(registry.state.lock().unwrap().records.len(), 1);
-    assert_eq!(registry.accepted_checkpoint_identities().len(), 1);
+    assert_eq!((*registry.state_for_test()).lock().unwrap().records.len(), 1);
+    assert_eq!(registry.accepted_checkpoint_identities_for_test().len(), 1);
     assert!(
-        registry.posts_settlement(&settlement).unwrap(),
+        registry.posts_settlement_for_test(&settlement).unwrap(),
         "a dependent claims the restored output through its posted settlement"
     );
 }
@@ -79,7 +79,7 @@ pub fn restored_output(
         ),
         observation,
         source_scope: scope,
-        source_identity: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryCheckpointSourceIdentity::new([0x55; 32]),
+        source_identity: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryCheckpointSourceIdentity::new_for_test([0x55; 32]),
         observed_source_facts: Arc::<[_]>::from([]).into(),
         native_output_witness: None,
     }

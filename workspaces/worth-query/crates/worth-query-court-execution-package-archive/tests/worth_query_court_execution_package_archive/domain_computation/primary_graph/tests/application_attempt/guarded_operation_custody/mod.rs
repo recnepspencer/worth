@@ -16,13 +16,13 @@ fn guarded_operation_custody_recovers_only_the_exact_committed_mutation() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let operation = world
@@ -34,7 +34,7 @@ fn guarded_operation_custody_recovers_only_the_exact_committed_mutation() {
         .application
         .with_host_advancement(|phase| {
             world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&(phase).test_host_request_for_test())
                 .authorize_operation(
                     &phase,
                     &principal,
@@ -58,7 +58,7 @@ fn guarded_operation_custody_recovers_only_the_exact_committed_mutation() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             assert!(matches!(
                 world
                     .application
@@ -87,7 +87,7 @@ fn guarded_operation_custody_recovers_only_the_exact_committed_mutation() {
         let WorthQueryGuardedWorkflowOperationCustody::Committed(recovered) = world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 world
                     .application
                     .resolve_admitted_guarded_workflow_operation_custody(
@@ -112,7 +112,7 @@ fn guarded_operation_custody_recovers_only_the_exact_committed_mutation() {
         world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 assert!(matches!(
                     world
                         .application
@@ -132,7 +132,7 @@ fn guarded_operation_custody_recovers_only_the_exact_committed_mutation() {
     let denial = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             world
                 .application
                 .resolve_admitted_guarded_workflow_operation_custody(
@@ -158,13 +158,13 @@ fn reserved_publication_custody_is_indeterminate_until_its_owner_releases_it() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let operation = world
@@ -176,7 +176,7 @@ fn reserved_publication_custody_is_indeterminate_until_its_owner_releases_it() {
         .application
         .with_host_advancement(|phase| {
             world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&(phase).test_host_request_for_test())
                 .authorize_operation(
                     &phase,
                     &principal,
@@ -193,14 +193,14 @@ fn reserved_publication_custody_is_indeterminate_until_its_owner_releases_it() {
     let reservation = world
         .application
         .with_host_advancement(|phase| {
-            world
+            (*world
                 .application
-                .primary_provider
+                .primary_provider_for_test())
                 .reserve_application_publication_recovery(
                     world
-                        .selected_product(&(phase).test_host_request())
+                        .selected_product(&(phase).test_host_request_for_test())
                         .product()
-                        .observation(),
+                        .observation_for_test(),
                     None,
                 )
                 .expect("the owner reserves the exact product incarnation")
@@ -209,7 +209,7 @@ fn reserved_publication_custody_is_indeterminate_until_its_owner_releases_it() {
     let WorthQueryGuardedWorkflowOperationCustody::Indeterminate(denial) = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             world
                 .application
                 .resolve_admitted_guarded_workflow_operation_custody(
@@ -233,7 +233,7 @@ fn reserved_publication_custody_is_indeterminate_until_its_owner_releases_it() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             assert!(matches!(
                 world
                     .application

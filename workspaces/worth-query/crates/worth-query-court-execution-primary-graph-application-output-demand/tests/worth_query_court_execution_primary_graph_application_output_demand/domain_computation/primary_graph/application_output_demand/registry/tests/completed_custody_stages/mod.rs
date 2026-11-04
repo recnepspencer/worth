@@ -22,19 +22,19 @@ pub fn completed_stage(claimed_with_ready: bool) {
     let row_key = key("completed-stage", 5, 1);
     let bound = BoundOutputSource {
         scope,
-        identity: row_key.source.clone(),
+        identity: (*row_key.source_for_test()).clone(),
     };
     let mut state = DemandRegistryState::default();
     state.source_custody.insert(
         commit.clone(),
         SourceCustody {
             cleanup: Default::default(),
-            occurrence: receipt.product_branch().occurrence(),
-            root_kind: PreparedOutputRootKind::Discovered(TypeId::of::<()>()),
+            occurrence: receipt.product_branch().occurrence_for_test(),
+            root_kind: PreparedOutputRootKind::Discovered(TypeId::of_for_test::<()>()),
             source: None,
             discovery: None,
             bound_sources: Some(vec![bound.clone()]),
-            consumed_sources: vec![bound.identity],
+            consumed_sources: vec![(*bound.identity_for_test())],
             retired_sources: Vec::new(),
             retired: None,
             token_count: 0,
@@ -44,21 +44,21 @@ pub fn completed_stage(claimed_with_ready: bool) {
     let output = if claimed_with_ready {
         let completion = ReadyCompletion::for_test(WorthQueryCompletedOutputDemand {
             authority: WorthQueryAcceptedOutputAuthority::Committed(receipt),
-            readiness: worth_query_execution::facade::domain_computation::WorthQueryOutputReadinessDeliveryEvidence::without_execution(),
+            readiness: worth_query_execution::facade::domain_computation::WorthQueryOutputReadinessDeliveryEvidence::without_execution_for_test(),
         });
-        let mut progress = WorthQueryOutputProgress::restored(completion);
-        progress.claim(WorthQueryOutputClaimIdentity(1));
+        let mut progress = WorthQueryOutputProgress::restored_for_test(completion);
+        progress.claim_for_test(WorthQueryOutputClaimIdentity(1));
         progress
     } else {
-        WorthQueryOutputProgress::stopped_without_checkpoint(WorthQueryOutputDemandDenial::new(
+        WorthQueryOutputProgress::stopped_without_checkpoint_for_test(WorthQueryOutputDemandDenial::new_for_test(
             WorthQueryOutputDemandDenialKind::NoEffect,
             "finished without an answer",
         ))
     };
     let mut row = record(occurrence(), DemandState::Output(output), 0);
-    row.source_commits.push(commit.clone());
-    state.records.insert(row_key.clone(), row);
-    state.note_custody(&commit);
+    (*row.source_commits_for_test()).push(commit.clone());
+    (*state.records_for_test()).insert(row_key.clone(), row);
+    state.note_custody_for_test(&commit);
     state.prune_completed_custody().unwrap();
     assert_eq!(
         state.source_custody.contains_key(&commit),
@@ -66,28 +66,28 @@ pub fn completed_stage(claimed_with_ready: bool) {
         "an active checkpoint owner retains custody; a finished unowned row does not"
     );
     assert_eq!(
-        state.records[&row_key].source_commits.contains(&commit),
+        (*state.records_for_test())[&row_key].source_commits.contains(&commit),
         claimed_with_ready
     );
     if claimed_with_ready {
         {
-            let DemandState::Output(output) = &mut state.records.get_mut(&row_key).unwrap().state
+            let DemandState::Output(output) = &mut (*state.records_mut_for_test()).get_mut(&row_key).unwrap().state
             else {
                 panic!("the actual checkpoint row is retained")
             };
-            output.reopen();
+            output.reopen_for_test();
             assert!(matches!(
-                output.checkpoint,
+                (*output.checkpoint_for_test()),
                 Some(WorthQueryOutputCheckpoint::Ready(_))
             ));
         }
-        state.note_custody(&commit);
+        state.note_custody_for_test(&commit);
         state.prune_completed_custody().unwrap();
         assert!(
             state.source_custody.is_empty(),
             "the completed claim releases its custody"
         );
-        assert!(state.records[&row_key].source_commits.is_empty());
+        assert!((*state.records_for_test())[&row_key].source_commits.is_empty());
     }
 }
 #[test]

@@ -17,8 +17,8 @@ fn refused_capture_drops_before_the_result_observation() {
     let seen = Cell::new(usize::MAX);
     let capture = CaptureDrop(&seen);
     let mut root = request();
-    root.declared_work = Some(0);
-    let refused = root.run_advancement(None, None, move |_| {
+    (*root.declared_work_mut_for_test()) = Some(0);
+    let refused = root.run_advancement_for_test(None, None, move |_| {
         drop(capture);
         panic!("zero work cannot invoke the body")
     });
@@ -60,15 +60,15 @@ fn native_late_refusal_contains_result_drop_panic_and_preserves_cancellation() {
         NonZeroUsize::MIN,
     );
     let cancellation = worth_execution::CancellationSource::new();
-    let root = QueryRequestExecution::open_control(
+    let root = QueryRequestExecution::open_control_for_test(
         worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(policy),
         cancellation.token(),
         None,
     );
-    assert!(!root.has_accounting());
+    assert!(!root.has_accounting_for_test());
     let drops = Cell::new(0);
     let caught = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        root.run_advancement(None, None, |_| {
+        root.run_advancement_for_test(None, None, |_| {
             cancellation.cancel();
             ResultDrop {
                 drops: &drops,
@@ -89,7 +89,7 @@ fn native_late_refusal_contains_result_drop_panic_and_preserves_cancellation() {
     let records = worth_query_execution::facade::domain_computation::advancement_observations_on_this_thread_for_test();
     assert_eq!(records.len(), 1);
     assert_eq!(records[0].refusal, refused);
-    assert_eq!(request().run_advancement(None, None, |_| 19), Ok(19));
+    assert_eq!(request().run_advancement_for_test(None, None, |_| 19), Ok(19));
     assert_eq!(
         worth_query_execution::facade::domain_computation::advancement_observations_on_this_thread_for_test().len(),
         1
@@ -101,17 +101,17 @@ fn accounted_completion_keeps_its_value_when_the_body_cancels_the_request() {
     let _observation =
         worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation::install_on_this_thread();
     let cancellation = worth_execution::CancellationSource::new();
-    let root = QueryRequestExecution::open_control(
+    let root = QueryRequestExecution::open_control_for_test(
         worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(
             worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy(NonZeroUsize::MIN, None),
         ),
         cancellation.token(),
         None,
     );
-    assert!(root.has_accounting());
+    assert!(root.has_accounting_for_test());
     let drops = Cell::new(0);
     let returned = root
-        .run_advancement(None, None, |_| {
+        .run_advancement_for_test(None, None, |_| {
             cancellation.cancel();
             ResultDrop {
                 drops: &drops,
@@ -160,7 +160,7 @@ fn body_panic_leaves_the_slot_empty_and_resumes_the_identical_payload() {
         records[0].refusal,
         Some(WorthQueryAdvancementDenial::Panicked)
     );
-    assert_eq!(root.run_advancement(None, None, |_| 23), Ok(23));
+    assert_eq!(root.run_advancement_for_test(None, None, |_| 23), Ok(23));
     assert_eq!(
         worth_query_execution::facade::domain_computation::advancement_observations_on_this_thread_for_test().len(),
         1

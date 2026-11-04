@@ -22,15 +22,15 @@ fn completion_failure_publishes_no_member_or_suffix() {
                 policy,
             }
         });
-        let execution = QueryRequestExecution::open(placement, &scope);
+        let execution = QueryRequestExecution::open_for_test(placement, &scope);
         let mut applied = Vec::new();
         let plans = MEMBERS
             .into_iter()
             .map(|rank| {
-                OwnerPlan::new(
-                    vec![PreparedCompute::declared_test_request(rank, false)],
+                OwnerPlan::new_for_test(
+                    vec![PreparedCompute::declared_test_request_for_test(rank, false)],
                     move |mut slots| {
-                        let (actual_rank, _) = slots.pop().unwrap().into_value::<(usize, bool)>();
+                        let (actual_rank, _) = slots.pop().unwrap().into_value_for_test::<(usize, bool)>();
                         if actual_rank == FAILURE {
                             Err(actual_rank)
                         } else {
@@ -44,13 +44,13 @@ fn completion_failure_publishes_no_member_or_suffix() {
             .execution_request()
             .unwrap()
             .run_native(|_| {
-                let cursor = CanonicalApplyCursor::compute(
+                let cursor = CanonicalApplyCursor::compute_for_test(
                     CanonicalUniqueVec::try_from_sorted_unique(vec![0, 1, 2, 3]).unwrap(),
                     plans,
                     &execution,
                 );
 
-                cursor.apply(
+                cursor.apply_for_test(
                     |key, result| {
                         result?;
                         applied.push(key);

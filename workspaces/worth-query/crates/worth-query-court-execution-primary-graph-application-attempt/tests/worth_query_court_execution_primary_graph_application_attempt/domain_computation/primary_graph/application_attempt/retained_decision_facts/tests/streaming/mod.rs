@@ -26,13 +26,13 @@ fn borrowed_predicate_writer_matches_independent_historical_scalar_bytes() {
         ),
     ];
     for (value, expected) in cases {
-        let key = AdmittedFactKey::from_borrowed(
+        let key = AdmittedFactKey::from_borrowed_for_test(
             |writer| write!(writer, "application-indexed-entity-selection:{}", 41),
             Some((&value, 2)),
             control(Policy::SystemAllocation),
         )
         .unwrap();
-        assert_eq!(key.locator(), b"application-indexed-entity-selection:41");
+        assert_eq!(key.locator_for_test(), b"application-indexed-entity-selection:41");
         assert_eq!(key.predicate_material(), Some((expected.as_bytes(), 2)));
     }
 }
@@ -51,14 +51,14 @@ fn actual_borrowed_material_retains_its_key_byte_charge_past_lease_drop() {
     let parent = authority().request_lease(request(quote)).unwrap();
     let key = {
         let child = parent.child(request(quote)).unwrap();
-        AdmittedFactKey::from_borrowed(
+        AdmittedFactKey::from_borrowed_for_test(
             |writer| writer.write_str("i"),
             Some((&AspectValue::Null, 2)),
             control(Policy::Execution(&child)),
         )
         .unwrap()
     };
-    assert_eq!(key.locator(), b"i");
+    assert_eq!(key.locator_for_test(), b"i");
     assert_eq!(key.predicate_material(), Some((expected.as_slice(), 2)));
     assert!(matches!(
         parent.reserve_memory(1),

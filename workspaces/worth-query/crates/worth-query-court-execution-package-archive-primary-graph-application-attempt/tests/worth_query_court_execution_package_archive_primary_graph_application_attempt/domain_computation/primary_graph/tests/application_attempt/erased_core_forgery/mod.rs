@@ -11,7 +11,7 @@ macro_rules! admit {
             .application
             .with_host_advancement(|phase| {
                 $world
-                    .selected_product(&(phase).test_host_request())
+                    .selected_product(&(phase).test_host_request_for_test())
                     .authorize_operation(
                         &phase,
                         $principal,

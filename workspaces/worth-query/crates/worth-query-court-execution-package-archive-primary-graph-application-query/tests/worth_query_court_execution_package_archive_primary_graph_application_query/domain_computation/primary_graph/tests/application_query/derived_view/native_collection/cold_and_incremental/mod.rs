@@ -8,7 +8,7 @@ fn one_collection_cold_reads_two_declared_queries_then_refreshes_only_dirty_entr
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             let borrowed_execution = host_custody.borrowed_request_for_test();
             let request_execution = &borrowed_execution;
             let selected = world.selected_product(
@@ -88,7 +88,7 @@ fn one_collection_cold_reads_two_declared_queries_then_refreshes_only_dirty_entr
                 .unwrap();
             assert_eq!(membership.rows().len(), 1);
             assert_eq!(membership.rows()[0].tag, "open");
-            assert_eq!(membership.rows()[0].members, vec![open.entity_id()]);
+            assert_eq!(membership.rows()[0].members, vec![open.entity_id_for_test()]);
             let keys = world
                 .application
                 .reconstruct_managed_derived_collection_pair(
@@ -104,7 +104,7 @@ fn one_collection_cold_reads_two_declared_queries_then_refreshes_only_dirty_entr
                     },
                     |_: &String| {
                         let first = selected
-                            .retain_selection(request_execution)
+                            .retain_selection_for_test(request_execution)
                             .unwrap()
                             .admit_application_query(
                                 &host_custody.phase_for_application(&world.application),
@@ -115,7 +115,7 @@ fn one_collection_cold_reads_two_declared_queries_then_refreshes_only_dirty_entr
                             )
                             .unwrap();
                         let second = selected
-                            .retain_selection(request_execution)
+                            .retain_selection_for_test(request_execution)
                             .unwrap()
                             .admit_application_query(
                                 &host_custody.phase_for_application(&world.application),
@@ -159,7 +159,7 @@ fn one_collection_cold_reads_two_declared_queries_then_refreshes_only_dirty_entr
                     },
                     |_: &String| {
                         let first = selected
-                            .retain_selection(request_execution)
+                            .retain_selection_for_test(request_execution)
                             .unwrap()
                             .admit_application_query(
                                 &host_custody.phase_for_application(&world.application),
@@ -170,7 +170,7 @@ fn one_collection_cold_reads_two_declared_queries_then_refreshes_only_dirty_entr
                             )
                             .unwrap();
                         let second = selected
-                            .retain_selection(request_execution)
+                            .retain_selection_for_test(request_execution)
                             .unwrap()
                             .admit_application_query(
                                 &host_custody.phase_for_application(&world.application),
@@ -203,7 +203,7 @@ fn one_collection_cold_reads_two_declared_queries_then_refreshes_only_dirty_entr
                     .unwrap(),
             ));
 
-            let graph = world.application.runtime.primary_graph().unwrap();
+            let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
             let field = AccountLabel::reference();
             let locator = graph
                 .layout
@@ -229,13 +229,13 @@ fn one_collection_cold_reads_two_declared_queries_then_refreshes_only_dirty_entr
             let prepared = graph.managed_derived_views().prepare_publication(
                 publication_basis(selected.product()),
                 &[ViewChange::Aspect(
-                    unrelated.entity_id(),
+                    unrelated.entity_id_for_test(),
                     locator.aspect().aspect_key().clone(),
                 )],
                 100_000,
             );
             drop(selected);
-            change_label(unrelated.entity_id(), "other-changed");
+            change_label(unrelated.entity_id_for_test(), "other-changed");
             let after = world.selected_product(
                 &(host_custody.phase_for_application(&world.application)).test_host_request(),
             );
@@ -260,13 +260,13 @@ fn one_collection_cold_reads_two_declared_queries_then_refreshes_only_dirty_entr
             let prepared = graph.managed_derived_views().prepare_publication(
                 publication_basis(after.product()),
                 &[ViewChange::Aspect(
-                    open.entity_id(),
+                    open.entity_id_for_test(),
                     locator.aspect().aspect_key().clone(),
                 )],
                 100_000,
             );
             drop(after);
-            change_label(open.entity_id(), "primary-changed");
+            change_label(open.entity_id_for_test(), "primary-changed");
             let fresh = world.selected_product(
                 &(host_custody.phase_for_application(&world.application)).test_host_request(),
             );

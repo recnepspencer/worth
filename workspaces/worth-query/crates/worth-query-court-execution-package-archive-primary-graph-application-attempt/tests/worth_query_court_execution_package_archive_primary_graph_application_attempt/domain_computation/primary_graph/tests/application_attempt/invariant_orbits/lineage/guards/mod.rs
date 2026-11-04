@@ -46,7 +46,7 @@ fn swallowed_lineage_cancellation_vetoes_the_original_admitted_projection() {
     let admission = world
         .application
         .with_host_advancement(|phase| {
-            let host = phase.test_host_request();
+            let host = phase.test_host_request_for_test();
             let execution = host
                 .execution_request_for(world.application.product_runtime())
                 .unwrap();

@@ -7,23 +7,23 @@ fn measured_call_shape_view_keeps_its_own_grant_after_the_sequence_drops() {
     let world = installed_authorization_world(true);
     let first = first_run(&world, &installed(StatusRead::Gather(1), sum));
     let sealed = first.sealed.unwrap().unwrap();
-    let prior = sealed
-        .state
+    let prior = (*sealed
+        .state_for_test())
         .typed
         .downcast_ref::<worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::retained::RetainedPartitions<Parity, Number, u64>>()
         .unwrap();
     let request = live_scope();
-    let execution = QueryRequestExecution::open(
+    let execution = QueryRequestExecution::open_for_test(
         RuntimeWorldExecutionPlacement::Serial(test_policy(
             std::num::NonZeroUsize::MIN,
             Some(1 << 30),
         )),
         &request,
     );
-    let sequence=worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::operation_reader::computation_calls::sequence::ComputationCallSequence::build(||std::iter::once((ComputationRead::Membership,&prior.membership.charge,prior.membership.declared_units))
+    let sequence=worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::operation_reader::computation_calls::sequence::ComputationCallSequence::build_for_test(||std::iter::once((ComputationRead::Membership,&prior.membership.charge,prior.membership.declared_units))
         .chain(prior.item_keys.iter().map(|(item,call)|(ComputationRead::ItemKey(*item),&call.charge,call.declared_units)))
         .chain(prior.partitions.iter().map(|(id,partition)|(ComputationRead::Partition(*id),&partition.gather,Some(0)))),&execution).unwrap();
-    let shape = Arc::clone(sequence.shape());
+    let shape = Arc::clone(sequence.shape_for_test());
     drop(sequence);
     assert!(
         execution.reserve(1 << 30).is_err(),
@@ -42,8 +42,8 @@ fn measured_call_sequence_refuses_before_copy_and_holds_its_view_until_final_dro
     let world = installed_authorization_world(true);
     let first = first_run(&world, &installed(StatusRead::Gather(1), sum));
     let sealed = first.sealed.unwrap().unwrap();
-    let prior = sealed
-        .state
+    let prior = (*sealed
+        .state_for_test())
         .typed
         .downcast_ref::<worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::retained::RetainedPartitions<Parity, Number, u64>>()
         .unwrap();
@@ -58,7 +58,7 @@ fn measured_call_sequence_refuses_before_copy_and_holds_its_view_until_final_dro
         ))
     };
     let request = live_scope();
-    let narrow = QueryRequestExecution::open(
+    let narrow = QueryRequestExecution::open_for_test(
         RuntimeWorldExecutionPlacement::Serial(test_policy(std::num::NonZeroUsize::MIN, Some(1))),
         &request,
     );
@@ -67,7 +67,7 @@ fn measured_call_sequence_refuses_before_copy_and_holds_its_view_until_final_dro
         Err(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::operation_reader::computation_calls::sequence::CallSequenceDenial::Storage(worth_execution::ExecutionOrderedMapDenial::Allocation(_)))
     ));
     assert_eq!(sequence.bytes(), before);
-    let fresh = QueryRequestExecution::open(
+    let fresh = QueryRequestExecution::open_for_test(
         RuntimeWorldExecutionPlacement::Serial(test_policy(
             std::num::NonZeroUsize::MIN,
             Some(1 << 30),
@@ -91,13 +91,13 @@ fn measured_call_scope_index_requires_a_reaching_call_inside_the_carried_range()
     let world = installed_authorization_world(true);
     let first = first_run(&world, &installed(StatusRead::Gather(1), sum));
     let sealed = first.sealed.unwrap().unwrap();
-    let prior = sealed
-        .state
+    let prior = (*sealed
+        .state_for_test())
         .typed
         .downcast_ref::<worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::retained::RetainedPartitions<Parity, Number, u64>>()
         .unwrap();
-    let entity = sealed
-        .state
+    let entity = (*sealed
+        .state_for_test())
         .facts
         .facts()
         .find_map(|(_, fact, _)| match fact {

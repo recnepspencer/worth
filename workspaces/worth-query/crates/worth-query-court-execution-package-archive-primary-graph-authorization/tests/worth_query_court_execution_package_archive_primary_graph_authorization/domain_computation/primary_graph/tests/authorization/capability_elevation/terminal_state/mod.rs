@@ -25,13 +25,13 @@ pub fn elevation_status(
 ) -> CapabilityElevationStatus {
     let identity = world
         .application
-        .select_product_branch(
+        .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch(),
+            world.application.product_runtime().default_branch_for_test(),
         )
         .expect("the selected product branch remains admitted")
         .resolve_entity(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             CapabilityElevationIdentity::reference(),
             "elevation-2".to_owned(),
             &live_scope(),
@@ -39,9 +39,9 @@ pub fn elevation_status(
         )
         .unwrap();
     let field = CapabilityElevationStatusField::reference();
-    let locator = world
+    let locator = (*world
         .application
-        .runtime
+        .runtime_for_test())
         .primary_graph()
         .unwrap()
         .layout()
@@ -65,9 +65,9 @@ pub fn review_status(
 ) -> CapabilityReviewStatus {
     let (review, kind) = resolved_review(phase_custody, execution, world);
     let field = CapabilityReviewStatusField::reference();
-    let locator = world
+    let locator = (*world
         .application
-        .runtime
+        .runtime_for_test())
         .primary_graph()
         .unwrap()
         .layout()
@@ -85,17 +85,17 @@ pub fn has_exact_reviewer(
     reviewer: EntityId,
 ) -> bool {
     let (review, _) = resolved_review(phase_custody, execution, world);
-    let graph = world.application.runtime.primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let relation_kind = graph
         .layout()
         .relation(CapabilityReviewer::reference().name())
         .unwrap()
         .kind;
-    let selected = world.selected_product(&(phase_custody).test_host_request());
+    let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
     graph
         .integration_handle()
         .with_runtime_mut(execution, |runtime| {
-            let snapshot = selected.application_basis().snapshot_handle();
+            let snapshot = selected.application_basis_for_test().snapshot_handle();
             runtime
                 .read_truth()
                 .bounded_incoming_relations_of_kind_at_version(
@@ -124,30 +124,30 @@ pub fn has_exact_approver(
 ) -> bool {
     let elevation = world
         .application
-        .select_product_branch(
+        .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch(),
+            world.application.product_runtime().default_branch_for_test(),
         )
         .expect("the selected product branch remains admitted")
         .resolve_entity(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             CapabilityElevationIdentity::reference(),
             "elevation-2".to_owned(),
             &live_scope(),
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap();
-    let graph = world.application.runtime.primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let relation_kind = graph
         .layout()
         .relation(CapabilityElevationApprover::reference().name())
         .unwrap()
         .kind;
-    let selected = world.selected_product(&(phase_custody).test_host_request());
+    let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
     graph
         .integration_handle()
         .with_runtime_mut(execution, |runtime| {
-            let snapshot = selected.application_basis().snapshot_handle();
+            let snapshot = selected.application_basis_for_test().snapshot_handle();
             runtime
                 .read_truth()
                 .bounded_incoming_relations_of_kind_at_version(
@@ -175,13 +175,13 @@ pub fn resolved_review(
 ) -> (EntityId, KindId) {
     let identity = world
         .application
-        .select_product_branch(
+        .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch(),
+            world.application.product_runtime().default_branch_for_test(),
         )
         .expect("the selected product branch remains admitted")
         .resolve_entity(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             CapabilityReviewIdentity::reference(),
             "review-2".to_owned(),
             &live_scope(),
@@ -201,9 +201,9 @@ pub fn observed_field<Schema>(
 where
     Schema: worth_query_installation::facade::ApplicationSchema,
 {
-    let graph = runtime.runtime.primary_graph().unwrap();
+    let graph = (*runtime.runtime_for_test()).primary_graph().unwrap();
     let selected = runtime
-        .select_product_branch(execution, runtime.product_runtime().default_branch())
+        .select_product_branch_for_test(execution, runtime.product_runtime().default_branch_for_test())
         .expect("the selected product branch remains admitted");
     graph
         .integration_handle()

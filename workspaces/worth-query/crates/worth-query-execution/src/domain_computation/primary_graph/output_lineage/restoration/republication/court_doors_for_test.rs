@@ -1,0 +1,71 @@
+//! Sealed test doors over this module's private members.
+use super::*;
+
+impl WorthQueryApplicationOutputLineage {
+    #[doc(hidden)]
+    pub fn prepare_republication_for_test(
+        &self,
+        output_binding: TypeId,
+        runtime_authority: u64,
+        schema: &ApplicationSchemaBindingIdentity,
+        scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+        suspended_occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
+        suspended_generation: u64,
+        source_partition_identity: [u8; 32],
+        correspondence: &Arc<WorthQueryApplicationOutputCorrespondence>,
+        suspended_facts: &super::super::super::RetainedSourceFacts,
+        witness: Arc<OnceLock<SealedNativeOutputWitness>>,
+
+        control: crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl<'_, '_>,
+    ) -> Option<RepublishedOutput> {
+        Self::prepare_republication(
+            self,
+            output_binding,
+            runtime_authority,
+            schema,
+            scope,
+            suspended_occurrence,
+            suspended_generation,
+            source_partition_identity,
+            correspondence,
+            suspended_facts,
+            witness,
+            control,
+        )
+    }
+}
+
+impl WorthQueryApplicationOutputLineage {
+    #[doc(hidden)]
+    pub fn record_republished_restoration_for_test(
+        &mut self,
+        output_binding: TypeId,
+        runtime_authority: u64,
+        schema: ApplicationSchemaBindingIdentity,
+        scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+        observation: &worth_runtime_world::facade::ProductBranchObservation,
+        correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
+        source_identity: RecordedSourceIdentity,
+        source_partition_identity: [u8; 32],
+        producer_dependency_identity: Option<[u8; 32]>,
+        idempotency_key_identity: [u8; 32],
+        suspended_facts: super::super::super::RetainedSourceFacts,
+        republished: RepublishedOutput,
+    ) -> Option<RepublishedRecord> {
+        Self::record_republished_restoration(
+            self,
+            output_binding,
+            runtime_authority,
+            schema,
+            scope,
+            observation,
+            correspondence,
+            source_identity,
+            source_partition_identity,
+            producer_dependency_identity,
+            idempotency_key_identity,
+            suspended_facts,
+            republished,
+        )
+    }
+}

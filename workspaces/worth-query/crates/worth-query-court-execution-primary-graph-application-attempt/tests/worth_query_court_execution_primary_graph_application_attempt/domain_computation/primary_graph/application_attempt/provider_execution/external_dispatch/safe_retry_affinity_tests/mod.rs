@@ -74,7 +74,7 @@ pub fn real_handle_under(seed: u8, label: &str, request: WorthQueryRequestScope)
     let admission = world
         .application
         .with_host_advancement(|phase| {
-            let host = phase.test_host_request();
+            let host = phase.test_host_request_for_test();
             let principal = authenticated_principal(&host, &world, &request);
             let account = resolved_account(&host, &world, label, &request);
             let operation = world
@@ -118,12 +118,12 @@ pub fn performed_redispatch(
 ) -> WorthQueryPerformedExternalRedispatch {
     world
         .application
-        .with_application_advancement(admission.publication_request(), |phase| {
+        .with_application_advancement(admission.publication_request_for_test(), |phase| {
             world
                 .application
                 .redispatch_admitted_external_effect(&phase, handle, authority, admission)
         })
-        .unwrap_or_else(|cause| Err(WorthQueryExternalRedispatchDenial::advancement(cause)))
+        .unwrap_or_else(|cause| Err(WorthQueryExternalRedispatchDenial::advancement_for_test(cause)))
         .expect("the public redispatch route performs the exact bound outbox")
 }
 
@@ -177,12 +177,12 @@ fn redispatch_without_an_installed_transport_names_the_missing_transport() {
     let authority = authority(&world, &handle, &admission);
     let denied = world
         .application
-        .with_application_advancement(admission.publication_request(), |phase| {
+        .with_application_advancement(admission.publication_request_for_test(), |phase| {
             world
                 .application
                 .redispatch_admitted_external_effect(&phase, &handle, &authority, &admission)
         })
-        .unwrap_or_else(|cause| Err(WorthQueryExternalRedispatchDenial::advancement(cause)))
+        .unwrap_or_else(|cause| Err(WorthQueryExternalRedispatchDenial::advancement_for_test(cause)))
         .expect_err("no installed transport means no physical attempt");
     assert_eq!(
         denied,
@@ -204,14 +204,14 @@ fn safe_retry_denies_when_the_handle_carries_no_co_committed_outbox() {
     let source_authority = authority(&world, &source, &admission);
     let redispatch = performed_redispatch(&world, &source, &source_authority, &admission);
     drop(source);
-    let outboxless = WorthQueryRecoveryHandle::axis_probe(
+    let outboxless = WorthQueryRecoveryHandle::axis_probe_for_test(
         WorthQueryRecoveryHandleBindingAxisProbe::real()
             .without_dispatch_outbox()
             .finish(),
     );
-    let authority = WorthQueryRecoveryEffectAuthority::mint(
-        outboxless.runtime_authority(),
-        outboxless.authority_identity(),
+    let authority = WorthQueryRecoveryEffectAuthority::mint_for_test(
+        outboxless.runtime_authority_for_test(),
+        outboxless.authority_identity_for_test(),
     );
     let denied = safe_retry_recovery_handle(outboxless, &authority, redispatch)
         .expect_err("no bound outbox means no proof can match");
@@ -238,12 +238,12 @@ fn redispatch_names_fresh_authority_and_current_admission_failures_apart() {
     let redispatch = |authority, admission: &RecoveryAdmission| {
         world
             .application
-            .with_application_advancement(admission.publication_request(), |phase| {
+            .with_application_advancement(admission.publication_request_for_test(), |phase| {
                 world
                     .application
                     .redispatch_admitted_external_effect(&phase, &handle, authority, admission)
             })
-            .unwrap_or_else(|cause| Err(WorthQueryExternalRedispatchDenial::advancement(cause)))
+            .unwrap_or_else(|cause| Err(WorthQueryExternalRedispatchDenial::advancement_for_test(cause)))
             .expect_err("each presented failure refuses before transport")
     };
 

@@ -15,25 +15,25 @@ fn foreign_runtime_phase_refuses_query_and_commit_before_source_read() {
             let a_principal = a
                 .application
                 .with_host_advancement(|phase| {
-                    authenticated_principal(&phase.test_host_request(), &a, &request)
+                    authenticated_principal(&phase.test_host_request_for_test(), &a, &request)
                 })
                 .expect("installed host call opens");
             let b_principal = b
                 .application
                 .with_host_advancement(|phase| {
-                    authenticated_principal(&phase.test_host_request(), &b, &request)
+                    authenticated_principal(&phase.test_host_request_for_test(), &b, &request)
                 })
                 .expect("installed host call opens");
             let a_account = a
                 .application
                 .with_host_advancement(|phase| {
-                    resolved_account(&phase.test_host_request(), &a, "open", &request)
+                    resolved_account(&phase.test_host_request_for_test(), &a, "open", &request)
                 })
                 .expect("installed host call opens");
             let b_account = b
                 .application
                 .with_host_advancement(|phase| {
-                    resolved_account(&phase.test_host_request(), &b, "open", &request)
+                    resolved_account(&phase.test_host_request_for_test(), &b, "open", &request)
                 })
                 .expect("installed host call opens");
             let a_program = a
@@ -50,11 +50,11 @@ fn foreign_runtime_phase_refuses_query_and_commit_before_source_read() {
                 .expect("installed host call opens");
             let a_product = a
                 .application
-                .with_host_advancement(|phase| a.selected_product(&phase.test_host_request()))
+                .with_host_advancement(|phase| a.selected_product(&phase.test_host_request_for_test()))
                 .expect("installed host call opens");
             let b_product = b
                 .application
-                .with_host_advancement(|phase| b.selected_product(&phase.test_host_request()))
+                .with_host_advancement(|phase| b.selected_product(&phase.test_host_request_for_test()))
                 .expect("installed host call opens");
             reports();
             a.application.with_application_advancement(&request, |phase| {
@@ -143,7 +143,7 @@ fn mutable_principal_reader_moves_the_installed_source_counter() {
     let external = world.authenticate("alice", std::time::Duration::from_secs(60), &request);
     let selected = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&phase.test_host_request()))
+        .with_host_advancement(|phase| world.selected_product(&phase.test_host_request_for_test()))
         .expect("installed host call opens");
     world
         .application

@@ -27,7 +27,7 @@ fn allocation_cause_keeps_its_error_source_type() {
         worth_execution::ExecutionAllocationPolicy::Execution(&lease),
     )
     .unwrap_err();
-    let denial = WorthQueryApplicationAttemptDenial::allocation_denied("attempt", cause);
+    let denial = WorthQueryApplicationAttemptDenial::allocation_denied_for_test("attempt", cause);
     let source = denial
         .source()
         .unwrap()

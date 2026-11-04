@@ -99,18 +99,18 @@ pub fn native_attempt<Owned: TestOwner>(
     world
         .application
         .with_application_advancement(&request, |phase| {
-            let phase_custody = phase.test_host_request();
+            let phase_custody = phase.test_host_request_for_test();
             let admission = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tests::projected_attempt::admit(world, &request, &phase);
             let execution = phase
-                .execution_for(&world.application.product_runtime)
+                .execution_for_for_test(&(*world.application.product_runtime_for_test()))
                 .unwrap();
             assert!(!execution.has_accounting());
             let allocation = execution.allocation_policy().unwrap();
             runs();
             tree_runs();
-            installed.owner.gathered().lock().unwrap().clear();
-            ComputationPrior::hand_in_test(Some(prior));
-            SealedComputationRun::keep_in_test(None);
+            (*installed.owner_for_test()).gathered().lock().unwrap().clear();
+            ComputationPrior::hand_in_test_for_test(Some(prior));
+            SealedComputationRun::keep_in_test_for_test(None);
             let mut value = None;
             let completed = world
                 .invariant
@@ -123,7 +123,7 @@ pub fn native_attempt<Owned: TestOwner>(
                             .unwrap()
                             .run_native(|_| {
                                 installed
-                                    .prepare_through(reader, execution, root)
+                                    .prepare_through_for_test(reader, execution, root)
                                     .unwrap()
                                     .compute(WorthQueryManagedComputationExecution::new(execution))
                             })
@@ -151,18 +151,18 @@ pub fn native_attempt<Owned: TestOwner>(
                 )
                 .unwrap();
             let sealed =
-                SealedComputationRun::kept_in_test().expect("native producer retains its state");
+                SealedComputationRun::kept_in_test_for_test().expect("native producer retains its state");
             assert!(
-                sealed.state.facts.facts().next().is_some(),
+                (*sealed.state_for_test()).facts.facts().next().is_some(),
                 "real reads remain retained"
             );
-            assert_eq!(sealed.state.facts.observation_work_bound(), None);
-            let typed = sealed
-                .state
+            assert_eq!((*sealed.state_for_test()).facts.observation_work_bound(), None);
+            let typed = (*sealed
+                .state_for_test())
                 .typed
                 .downcast_ref::<worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::retained::RetainedPartitions<Parity, Number, u64>>()
                 .unwrap();
-            assert!(sealed.attribution_memory.is_none());
+            assert!((*sealed.attribution_memory_for_test()).is_none());
             assert_eq!(typed.call_sequence.bytes(), None);
             assert_eq!(typed.partitions.bytes(), None);
             execution
@@ -193,7 +193,7 @@ pub fn native_attempt<Owned: TestOwner>(
             );
             assert_eq!(typed.native_run.accounted_cost(), None);
             assert_eq!(*typed.tree.result(), value.unwrap());
-            let mut gathered = installed.owner.gathered().lock().unwrap().clone();
+            let mut gathered = (*installed.owner_for_test()).gathered().lock().unwrap().clone();
             gathered.sort_unstable();
             observed = Some(NativeAttempt {
                 value: value.unwrap(),
@@ -202,14 +202,14 @@ pub fn native_attempt<Owned: TestOwner>(
                 trees: tree_runs(),
                 gathered,
             });
-            ComputationPrior::hand_in_test(None);
+            ComputationPrior::hand_in_test_for_test(None);
         })
         .unwrap();
     observed.unwrap()
 }
 
 pub fn retained_prior(sealed: SealedComputationRun) -> ComputationPrior {
-    ComputationPrior::new(edition(), Ok(Arc::new(sealed.state)), None)
+    ComputationPrior::new_for_test(edition(), Ok(Arc::new((*sealed.state_for_test()))), None)
 }
 
 #[test]
@@ -228,13 +228,13 @@ fn worker_only_partition_run_retains_facts_reuses_and_observes_a_real_source_edi
     );
     let base = installed(StatusRead::Gather(1), sum);
     let installed = NativeInstalled::new(
-        PollOnly(Arc::clone(&base.owner)),
+        PollOnly(Arc::clone(&(*base.owner_for_test()))),
         ComputationRetention::ProducerOperation,
     );
     let first = native_attempt(
         &world,
         &installed,
-        ComputationPrior::new(edition(), Err(Cause::FirstRun), None),
+        ComputationPrior::new_for_test(edition(), Err(Cause::FirstRun), None),
     );
     assert_eq!(first.value, 10 + "primary".len() as u64);
     assert_eq!(first.gathered, [0, 1]);
@@ -250,12 +250,12 @@ fn worker_only_partition_run_retains_facts_reuses_and_observes_a_real_source_edi
         first.trees.as_slice(),
         [TreeRun::Full(Cause::FirstRun, _)]
     ));
-    let calls = *base.owner.calls.lock().unwrap();
+    let calls = *(*base.owner_for_test()).calls.lock().unwrap();
     let unchanged = native_attempt(&world, &installed, retained_prior(first.sealed));
     assert_eq!(unchanged.value, first.value);
     assert!(unchanged.gathered.is_empty());
     assert_eq!(
-        *base.owner.calls.lock().unwrap(),
+        *(*base.owner_for_test()).calls.lock().unwrap(),
         calls,
         "all actual owner calls carry"
     );
@@ -263,9 +263,9 @@ fn worker_only_partition_run_retains_facts_reuses_and_observes_a_real_source_edi
         unchanged.runs.as_slice(),
         [(Run::Incremental, None)]
     ));
-    let subject = unchanged
+    let subject = (*unchanged
         .sealed
-        .state
+        .state_for_test())
         .facts
         .facts()
         .find_map(|(_, fact, _)| {
@@ -277,9 +277,9 @@ fn worker_only_partition_run_retains_facts_reuses_and_observes_a_real_source_edi
         })
         .unwrap();
     let field = AccountLabel::reference();
-    let locator = world
+    let locator = (*world
         .application
-        .primary_provider
+        .primary_provider_for_test())
         .graph
         .layout
         .field_locator(field.entity(), field.aspect(), field.field())
@@ -291,7 +291,7 @@ fn worker_only_partition_run_retains_facts_reuses_and_observes_a_real_source_edi
         .application
         .with_application_advancement(&request, |phase| {
             let execution = phase
-                .execution_for(&world.application.product_runtime)
+                .execution_for_for_test(&(*world.application.product_runtime_for_test()))
                 .unwrap();
             assert!(!execution.has_accounting());
             let execution = execution.execution_request().unwrap();
@@ -328,7 +328,7 @@ fn worker_only_partition_run_retains_facts_reuses_and_observes_a_real_source_edi
     let fresh = native_attempt(
         &world,
         &installed,
-        ComputationPrior::new(edition(), Err(Cause::FirstRun), None),
+        ComputationPrior::new_for_test(edition(), Err(Cause::FirstRun), None),
     );
     assert_eq!(
         edited.value, fresh.value,

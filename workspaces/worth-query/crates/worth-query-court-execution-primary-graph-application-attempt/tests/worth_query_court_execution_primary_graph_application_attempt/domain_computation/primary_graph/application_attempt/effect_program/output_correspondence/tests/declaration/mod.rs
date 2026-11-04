@@ -144,7 +144,7 @@ where
         posture,
         cardinality,
         entity_name: Target::IDENTIFIER,
-        entity_type: TypeId::of::<Target>(),
-        contract_type: TypeId::of::<Contract>(),
+        entity_type: TypeId::of_for_test::<Target>(),
+        contract_type: TypeId::of_for_test::<Contract>(),
     }
 }

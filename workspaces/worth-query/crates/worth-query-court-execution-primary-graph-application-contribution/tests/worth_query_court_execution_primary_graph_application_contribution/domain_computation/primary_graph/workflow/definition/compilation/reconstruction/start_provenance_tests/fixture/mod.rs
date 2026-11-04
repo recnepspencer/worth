@@ -33,10 +33,10 @@ pub fn admitted_actor(world: &AuthorizationWorld) -> WorkflowAdmittedActor {
         .application
         .with_host_advancement(|phase| {
             let request = live_scope();
-            let host = phase.test_host_request();
+            let host = phase.test_host_request_for_test();
             let principal = authenticated_principal(&host, world, &request);
             let account = resolved_account(&host, world, "open", &request);
-            WorkflowAdmittedActor::from_admission(&admitted_operation(
+            WorkflowAdmittedActor::from_admission_for_test(&admitted_operation(
                 &phase, world, &principal, &account, &request,
             ))
         })
@@ -52,9 +52,9 @@ pub fn selected(
 ) {
     let (_, product, lease) = world
         .application
-        .select_product_branch(
+        .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch(),
+            world.application.product_runtime().default_branch_for_test(),
         )
         .unwrap()
         .into_parts();
@@ -180,9 +180,9 @@ pub fn only_new_entity(
     before: &[EntityId],
 ) -> EntityId {
     let selected = selected(world, execution);
-    let handle = world
+    let handle = (*world
         .application
-        .runtime
+        .runtime_for_test())
         .primary_graph()
         .unwrap()
         .integration_handle();
@@ -238,12 +238,12 @@ pub fn publish_instance_value(
         layout,
         revision,
         identity,
-        actor.entity().partition_id,
+        actor.entity_for_test().partition_id,
     );
     let basis = selected(world, execution);
-    let handle = world
+    let handle = (*world
         .application
-        .runtime
+        .runtime_for_test())
         .primary_graph()
         .unwrap()
         .integration_handle();
@@ -252,7 +252,7 @@ pub fn publish_instance_value(
             .read_truth()
             .visible_entities_of_kind(
                 execution,
-                layout.instance.entity_kind,
+                (*layout.instance_for_test()).entity_kind,
                 basis.1.snapshot_handle().version_id(),
             )
             .unwrap()
@@ -268,7 +268,7 @@ pub fn publish_instance_value(
         identity,
         &value,
         1,
-        actor.entity(),
+        actor.entity_for_test(),
         WorkflowLineageCarry::default(),
         actor,
         |effect| {
@@ -285,8 +285,8 @@ pub fn publish_instance_value(
     publish_effects(
         world,
         execution,
-        compiled.definition().partition_id,
+        compiled.definition_for_test().partition_id,
         effects,
     );
-    only_new_entity(world, execution, layout.instance.entity_kind, &before)
+    only_new_entity(world, execution, (*layout.instance_for_test()).entity_kind, &before)
 }

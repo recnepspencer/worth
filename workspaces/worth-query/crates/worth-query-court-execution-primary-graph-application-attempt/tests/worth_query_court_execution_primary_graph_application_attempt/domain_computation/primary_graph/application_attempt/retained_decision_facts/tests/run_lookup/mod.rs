@@ -11,13 +11,13 @@ fn full_key_run_lookup_preserves_endpoints_and_interior_matches() {
     let policy = control(Policy::SystemAllocation);
     let empty = Run::<Body>::empty(0, policy).unwrap();
     assert!(empty
-        .locate(&key(b"same", None, policy), policy)
+        .locate_for_test(&key(b"same", None, policy), policy)
         .unwrap()
         .is_none());
 
     let mut run = Run::empty(3, policy).unwrap();
     for (ordinal, limit) in [2, 4, 6].into_iter().enumerate() {
-        *run.slots[ordinal].borrow_mut() = Some(RetainedFact {
+        *(*run.slots_for_test())[ordinal].borrow_mut() = Some(RetainedFact {
             key: key(b"same", Some((b"predicate", limit)), policy),
             value: Body {
                 scalar: limit as u64,
@@ -25,11 +25,11 @@ fn full_key_run_lookup_preserves_endpoints_and_interior_matches() {
             },
             ordinal,
         });
-        run.used += 1;
+        (*run.used_mut_for_test()) += 1;
     }
     for limit in [2, 4, 6] {
         let probe = key(b"same", Some((b"predicate", limit)), policy);
-        let found = run.locate(&probe, policy).unwrap().unwrap().borrow();
+        let found = run.locate_for_test(&probe, policy).unwrap().unwrap().borrow();
         assert_eq!(found.as_ref().unwrap().value.scalar, limit as u64);
     }
     for (locator, predicate) in [
@@ -44,7 +44,7 @@ fn full_key_run_lookup_preserves_endpoints_and_interior_matches() {
         (b"same".as_slice(), Some((b"predicate".as_slice(), 7))),
     ] {
         assert!(run
-            .locate(&key(locator, predicate, policy), policy)
+            .locate_for_test(&key(locator, predicate, policy), policy)
             .unwrap()
             .is_none());
     }

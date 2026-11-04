@@ -22,17 +22,17 @@ fn earlier_completion_failure_wins_over_later_compute_panic() {
                 policy,
             }
         });
-        let execution = QueryRequestExecution::open(placement, &scope);
+        let execution = QueryRequestExecution::open_for_test(placement, &scope);
         let mut completed = Vec::new();
         let plans = (0..3)
             .map(|rank| {
                 let compute = if rank == 2 {
-                    PreparedCompute::new::<(usize, bool)>(|_| panic!("later member fails"))
+                    PreparedCompute::new_for_test::<(usize, bool)>(|_| panic!("later member fails"))
                 } else {
-                    PreparedCompute::declared_test_request(rank, false)
+                    PreparedCompute::declared_test_request_for_test(rank, false)
                 };
-                OwnerPlan::new(vec![compute], move |mut slots| {
-                    let rank = slots.pop().unwrap().into_value::<(usize, bool)>().0;
+                OwnerPlan::new_for_test(vec![compute], move |mut slots| {
+                    let rank = slots.pop().unwrap().into_value_for_test::<(usize, bool)>().0;
                     if rank == 0 {
                         Err(rank)
                     } else {
@@ -46,16 +46,16 @@ fn earlier_completion_failure_wins_over_later_compute_panic() {
             .execution_request()
             .unwrap()
             .run_native(|_| {
-                let cursor = CanonicalApplyCursor::compute(
+                let cursor = CanonicalApplyCursor::compute_for_test(
                     CanonicalUniqueVec::try_from_sorted_unique(vec![0, 1, 2]).unwrap(),
                     plans,
                     &execution,
                 );
-                assert!(matches!(cursor.slots[2].1,
+                assert!(matches!((*cursor.slots_for_test())[2].1,
                     Err(worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial::Panicked)),
                     "the later compute failure must actually be reached");
 
-                result = Some(cursor.apply(|key, result| {
+                result = Some(cursor.apply_for_test(|key, result| {
                             result?;
                             completed.push(key);
                             Ok(())

@@ -22,19 +22,19 @@ fn exhausted_affected_source_read_cannot_stamp_an_old_sum_current() {
     let world = AggregateWorld::values([7]);
     world
         .with_host_advancement(|phase| {
-            let custody = phase.test_host_request();
+            let custody = phase.test_host_request_for_test();
             let phase = world.fixture_phase(&custody);
             let healthy = custody.borrowed_request_for_test();
             assert_eq!(world.observe(&custody).result, Ok((7, 1)));
             assert_eq!(world.observe(&custody).work.aggregate_cache_hits(), 1);
             let source = world.source(&phase, "source-0");
-            let locator = world
+            let locator = (*world
                 .authority
-                .layout
+                .layout_for_test())
                 .field_locator("AggregateSource", "SourceFacts", "SourceAmount")
                 .unwrap()
                 .clone();
-            world.authority.graph.with_runtime_mut(&healthy, |runtime| {
+            (*world.authority.graph_for_test()).with_runtime_mut(&healthy, |runtime| {
                 let identity = runtime.main_branch_identity();
                 let (_, basis) = runtime.observe_branch(&identity).unwrap();
                 let before = runtime
@@ -64,7 +64,7 @@ fn exhausted_affected_source_read_cannot_stamp_an_old_sum_current() {
                     )
                     .unwrap();
                 let committed = transaction.commit(&healthy, runtime).unwrap();
-                let retained = world.authority.graph.aggregate_projections.lock().unwrap().clone();
+                let retained = (*world.authority.graph_for_test()).aggregate_projections.lock().unwrap().clone();
                 let runtime_cell = std::cell::RefCell::new(&mut *runtime);
                 worth_query_execution::test_read_stops::every_consult_under(&healthy, |request| retained.clone().refresh_after_commit(request, &mut runtime_cell.borrow_mut(), &before, &committed.snapshot, committed.patch()), worth_relational::facade::transactions::RelationalExecutionDenialCause::Cancelled, worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkExhausted);
                 let map = ExecutionMap::<_, u64>::from_keyless_partitions(BTreeMap::from([(
@@ -88,9 +88,9 @@ fn exhausted_affected_source_read_cannot_stamp_an_old_sum_current() {
                                     healthy.consult(),
                                     Err(WorkCeilingDenial::Stopped(MapKernelStop::WorkCeiling))
                                 );
-                                let stopped = world
+                                let stopped = (*world
                                     .authority
-                                    .graph
+                                    .graph_for_test())
                                     .aggregate_projections
                                     .lock()
                                     .unwrap()

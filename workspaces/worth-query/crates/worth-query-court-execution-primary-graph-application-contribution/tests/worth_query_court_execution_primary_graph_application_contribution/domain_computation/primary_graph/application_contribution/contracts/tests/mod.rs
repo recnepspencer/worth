@@ -30,24 +30,24 @@ fn distinct_family_types_cannot_share_one_declared_identity_at_installation() {
     let mut catalog = WorthQueryApplicationContractCatalog::<IdentityExecutionSchema>::default();
     let mut first = producer("initial", "source", &[INITIAL]);
     let mut second = producer("preserve", "source", &[PRESERVE]);
-    first.output_family = FirstFamily::IDENTITY.into();
-    second.output_family = SecondFamily::IDENTITY.into();
-    first.supported = vec![INITIAL, PRESERVE];
-    second.supported = first.supported.clone();
-    first.output_family_type = TypeId::of::<FirstFamily>();
-    second.output_family_type = first.output_family_type;
-    catalog.producers.insert("initial".into(), first);
-    catalog.producers.insert("preserve".into(), second);
+    (*first.output_family_mut_for_test()) = FirstFamily::IDENTITY.into();
+    (*second.output_family_mut_for_test()) = SecondFamily::IDENTITY.into();
+    (*first.supported_mut_for_test()) = vec![INITIAL, PRESERVE];
+    (*second.supported_mut_for_test()) = (*first.supported_for_test()).clone();
+    (*first.output_family_type_mut_for_test()) = TypeId::of_for_test::<FirstFamily>();
+    (*second.output_family_type_mut_for_test()) = (*first.output_family_type_for_test());
+    (*catalog.producers_for_test()).insert("initial".into(), first);
+    (*catalog.producers_for_test()).insert("preserve".into(), second);
     catalog
-        .validate()
+        .validate_for_test()
         .expect("one family may have two lifecycle bindings");
-    catalog
-        .producers
+    (*catalog
+        .producers_for_test())
         .get_mut("preserve")
         .unwrap()
-        .output_family_type = TypeId::of::<SecondFamily>();
+        .output_family_type = TypeId::of_for_test::<SecondFamily>();
     let denied = catalog
-        .validate()
+        .validate_for_test()
         .expect_err("different types cannot declare the same family");
     assert_eq!(denied.kind(), DenialKind::ProducerBindingMeaningMismatch);
     assert_eq!(denied.subject(), "family");
@@ -74,16 +74,16 @@ impl<const N: u8>
 #[test]
 fn output_family_meaning_cannot_change_with_source_binding() {
     let mut catalog = WorthQueryApplicationContractCatalog::<TestSchema>::default();
-    catalog.producers.insert(
+    (*catalog.producers_for_test()).insert(
         "initial".to_owned(),
         producer("initial", "create-source", &[INITIAL]),
     );
-    catalog.producers.insert(
+    (*catalog.producers_for_test()).insert(
         "preserve".to_owned(),
         producer("preserve", "edit-source", &[PRESERVE]),
     );
 
-    let denial = catalog.validate().unwrap_err();
+    let denial = catalog.validate_for_test().unwrap_err();
     assert_eq!(denial.kind(), DenialKind::ProducerBindingMeaningMismatch);
     assert_eq!(denial.subject(), "family");
 }
@@ -95,11 +95,11 @@ fn output_family_meaning_cannot_change_with_source_binding() {
 fn a_producer_role_naming_a_family_member_is_denied() {
     for output_role in ["created.primary", "created."] {
         let mut catalog = WorthQueryApplicationContractCatalog::<TestSchema>::default();
-        catalog
-            .producers
+        (*catalog
+            .producers_for_test())
             .insert("initial".to_owned(), family_producer(output_role));
 
-        let denial = catalog.validate().unwrap_err();
+        let denial = catalog.validate_for_test().unwrap_err();
         assert_eq!(denial.kind(), DenialKind::ProducerBindingMeaningMismatch);
         assert_eq!(denial.subject(), "initial");
     }
@@ -109,21 +109,21 @@ fn a_producer_role_naming_a_family_member_is_denied() {
 fn producer_output_role_must_be_bound_by_every_commit() {
     let mut catalog = WorthQueryApplicationContractCatalog::<TestSchema>::default();
     let mut binding = producer("initial", "create-source", &[INITIAL]);
-    binding.output_role_descriptors =
+    (*binding.output_role_descriptors_mut_for_test()) =
         vec![<OptionalOutput as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR];
-    catalog.producers.insert("initial".to_owned(), binding);
+    (*catalog.producers_for_test()).insert("initial".to_owned(), binding);
 
-    let denial = catalog.validate().unwrap_err();
+    let denial = catalog.validate_for_test().unwrap_err();
     assert_eq!(denial.kind(), DenialKind::ProducerBindingMeaningMismatch);
     assert_eq!(denial.subject(), "initial");
 }
 
 pub fn family_producer(output_role: &str) -> DeclaredProducerBinding {
     let mut binding = producer("initial", "create-source", &[INITIAL]);
-    binding.output_role_descriptors.clear();
-    binding.output_role_families =
+    (*binding.output_role_descriptors_for_test()).clear();
+    (*binding.output_role_families_mut_for_test()) =
         vec![<Created as WorthQueryApplicationDeclaredOutputRoleFamily>::DESCRIPTOR];
-    binding.output_role = output_role.to_owned();
+    (*binding.output_role_mut_for_test()) = output_role.to_owned();
     binding
 }
 
@@ -139,7 +139,7 @@ pub fn producer(
         identity: identity.to_owned(),
         source_selector: source.to_owned(),
         output_family: "family".to_owned(),
-        output_family_type: TypeId::of::<()>(),
+        output_family_type: TypeId::of_for_test::<()>(),
         output_role_descriptors: vec![
             <Output as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR,
         ],
@@ -156,12 +156,12 @@ pub fn producer(
         input_reuse: None,
         output_equivalence: None,
         installed_output_equivalence: None,
-        binding_type: TypeId::of::<()>(),
-        source_type: TypeId::of::<()>(),
-        provider_type: TypeId::of::<()>(),
-        operation_binding_type: TypeId::of::<()>(),
-        operation_type: TypeId::of::<()>(),
-        output_contract_type: TypeId::of::<()>(),
+        binding_type: TypeId::of_for_test::<()>(),
+        source_type: TypeId::of_for_test::<()>(),
+        provider_type: TypeId::of_for_test::<()>(),
+        operation_binding_type: TypeId::of_for_test::<()>(),
+        operation_type: TypeId::of_for_test::<()>(),
+        output_contract_type: TypeId::of_for_test::<()>(),
     }
 }
 

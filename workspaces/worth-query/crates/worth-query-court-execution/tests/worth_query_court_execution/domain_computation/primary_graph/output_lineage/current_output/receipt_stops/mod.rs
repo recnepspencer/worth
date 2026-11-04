@@ -7,16 +7,16 @@ use worth_relational::facade::mvcc::CompanionPreflightStop;
 fn receipt_lineage_preserves_original_cancellation_and_deadline() {
     worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::output_lineage::own_write_fixture::with_committed_own_write(|world, receipt, _cell, _resources| {
         let selected = world.application.with_host_advancement(|phase| {
-            world.selected_product(&phase.test_host_request())
+            world.selected_product(&phase.test_host_request_for_test())
         }).unwrap();
-        let graph = world.application.runtime.primary_graph().unwrap();
+        let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
         let handle = graph.integration_handle();
         let lineage = handle.output_lineage.lock().unwrap();
 
         let check = |execution: &ExecutionRequest<'_, '_>| lineage.current_output_matches_receipt(
-            world.application.runtime.authority_identity().as_u64(),
-            &world.application.installed_schema.binding_identity(),
-            selected.product().observation(), &receipt, execution);
+            (*world.application.runtime_for_test()).authority_identity().as_u64(),
+            &(*world.application.installed_schema_for_test()).binding_identity(),
+            selected.product().observation_for_test(), &receipt, execution);
         let live = worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request();
 
         let cancelled = CancellationSource::new();

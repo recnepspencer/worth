@@ -15,35 +15,35 @@ fn checkpoint_capture_includes_only_idle_ready_outputs_in_canonical_order() {
     let idempotency = receipt
         .idempotency_binding()
         .bind_source_partition(&[17; 32])
-        .bind_producing_implementation(implementation);
+        .bind_producing_implementation_for_test(implementation);
     let receipt = receipt.with_idempotency_binding_for_test(idempotency);
-    let occurrence = receipt.product_branch().occurrence();
+    let occurrence = receipt.product_branch().occurrence_for_test();
     let registry = WorthQueryOutputDemandRegistry::default();
     let z_key = key("z-producer", 1, 1);
-    let z_source = z_key.source.checkpoint_identity().bytes();
+    let z_source = (*z_key.source_for_test()).checkpoint_identity().bytes();
     let a_key = key("a-producer", 1, 2);
-    let a_source = a_key.source.checkpoint_identity().bytes();
+    let a_source = (*a_key.source_for_test()).checkpoint_identity().bytes();
     let ready = |receipt| {
-        DemandState::Output(WorthQueryOutputProgress::new(
+        DemandState::Output(WorthQueryOutputProgress::new_for_test(
             WorthQueryOutputCheckpoint::Ready(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::ready_backing::ReadyCompletion::for_test(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryCompletedOutputDemand {
                 authority: WorthQueryAcceptedOutputAuthority::Committed(receipt),
-                readiness: worth_query_execution::facade::domain_computation::WorthQueryOutputReadinessDeliveryEvidence::for_test(),
+                readiness: worth_query_execution::facade::domain_computation::WorthQueryOutputReadinessDeliveryEvidence::for_test_for_test(),
 
             })),
         ))
     };
-    registry.state.lock().unwrap().records.extend([
+    (*registry.state_for_test()).lock().unwrap().records.extend([
         (z_key, record(occurrence, ready(receipt.clone()), 1)),
         (a_key, record(occurrence, ready(receipt.clone()), 1)),
         (
             key("published", 1, 3),
             record(
                 occurrence,
-                DemandState::Output(WorthQueryOutputProgress::new(
+                DemandState::Output(WorthQueryOutputProgress::new_for_test(
                     WorthQueryOutputCheckpoint::Published {
                         receipt: receipt.clone(),
                         delivery: WorthQueryPendingOutputDelivery::NoChange,
-                        ready_backing: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::ready_backing::PreparedReadyBacking::for_test(),
+                        ready_backing: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::ready_backing::PreparedReadyBacking::for_test_for_test(),
                     },
                 )),
                 1,
@@ -51,22 +51,22 @@ fn checkpoint_capture_includes_only_idle_ready_outputs_in_canonical_order() {
         ),
     ]);
     let stopped_key = key("stopped", 1, 4);
-    let mut stopped = WorthQueryOutputProgress::new(WorthQueryOutputCheckpoint::Ready(
+    let mut stopped = WorthQueryOutputProgress::new_for_test(WorthQueryOutputCheckpoint::Ready(
         worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::ready_backing::ReadyCompletion::for_test(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryCompletedOutputDemand {
             authority: WorthQueryAcceptedOutputAuthority::Committed(receipt),
-            readiness: worth_query_execution::facade::domain_computation::WorthQueryOutputReadinessDeliveryEvidence::for_test(),
+            readiness: worth_query_execution::facade::domain_computation::WorthQueryOutputReadinessDeliveryEvidence::for_test_for_test(),
         }),
     ));
-    stopped.stop(WorthQueryOutputDemandDenial::new(
+    stopped.stop_for_test(WorthQueryOutputDemandDenial::new_for_test(
         WorthQueryOutputDemandDenialKind::Superseded,
         "stopped before capture",
     ));
-    registry.state.lock().unwrap().records.insert(
+    (*registry.state_for_test()).lock().unwrap().records.insert(
         stopped_key,
         record(occurrence, DemandState::Output(stopped), 1),
     );
 
-    let accepted = registry.accepted_checkpoint_identities();
+    let accepted = registry.accepted_checkpoint_identities_for_test();
 
     assert_eq!(accepted.len(), 2);
     assert_eq!(accepted[0].producer.as_str(), "a-producer");

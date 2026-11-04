@@ -34,7 +34,7 @@ fn ambiguous_index_and_changed_mapping_revoke_application_principal_proof() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             append_duplicate_mapping(&host_custody.borrowed_request_for_test(), &world, "alice")
         })
         .expect("the fixture read owns its installed host call");
@@ -45,7 +45,7 @@ fn ambiguous_index_and_changed_mapping_revoke_application_principal_proof() {
         .with_host_advancement(|phase| {
             assert_eq!(
                 world
-                    .selected_product(&(phase).test_host_request(),)
+                    .selected_product(&(phase).test_host_request_for_test(),)
                     .resolve_authenticated_principal(
                         &phase,
                         &world.binding,
@@ -69,7 +69,7 @@ fn ambiguous_index_and_changed_mapping_revoke_application_principal_proof() {
         .application
         .with_host_advancement(|phase| {
             fresh_world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&(phase).test_host_request_for_test())
                 .resolve_authenticated_principal(
                     &phase,
                     &fresh_world.binding,
@@ -83,11 +83,11 @@ fn ambiguous_index_and_changed_mapping_revoke_application_principal_proof() {
     fresh_world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             disable_mapping(
                 &host_custody.borrowed_request_for_test(),
                 &fresh_world,
-                principal.mapping_entity_id(),
+                principal.mapping_entity_id_for_test(),
             )
         })
         .expect("the fixture read owns its installed host call");
@@ -96,7 +96,7 @@ fn ambiguous_index_and_changed_mapping_revoke_application_principal_proof() {
         .with_host_advancement(|phase| {
             assert_eq!(
                 fresh_world
-                    .selected_product(&(phase).test_host_request(),)
+                    .selected_product(&(phase).test_host_request_for_test(),)
                     .validate_authenticated_principal(&phase, &principal, &fresh_scope)
                     .unwrap_err()
                     .kind(),
@@ -117,7 +117,7 @@ fn application_principal_proof_expires_with_its_external_authentication() {
         .application
         .with_host_advancement(|phase| {
             world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&(phase).test_host_request_for_test())
                 .resolve_authenticated_principal(
                     &phase,
                     &world.binding,
@@ -134,7 +134,7 @@ fn application_principal_proof_expires_with_its_external_authentication() {
         .with_host_advancement(|phase| {
             assert_eq!(
                 world
-                    .selected_product(&(phase).test_host_request(),)
+                    .selected_product(&(phase).test_host_request_for_test(),)
                     .validate_authenticated_principal(&phase, &principal, &scope)
                     .unwrap_err()
                     .kind(),
@@ -155,7 +155,7 @@ fn changed_typed_principal_identity_revokes_the_resolved_proof() {
         .application
         .with_host_advancement(|phase| {
             world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&(phase).test_host_request_for_test())
                 .resolve_authenticated_principal(
                     &phase,
                     &world.binding,
@@ -170,11 +170,11 @@ fn changed_typed_principal_identity_revokes_the_resolved_proof() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             change_principal_identity(
                 &host_custody.borrowed_request_for_test(),
                 &world,
-                principal.principal_entity_id(),
+                principal.principal_entity_id_for_test(),
                 2,
             )
         })
@@ -184,7 +184,7 @@ fn changed_typed_principal_identity_revokes_the_resolved_proof() {
         .with_host_advancement(|phase| {
             assert_eq!(
                 world
-                    .selected_product(&(phase).test_host_request(),)
+                    .selected_product(&(phase).test_host_request_for_test(),)
                     .validate_authenticated_principal(&phase, &principal, &scope)
                     .unwrap_err()
                     .kind(),
@@ -202,7 +202,7 @@ pub fn change_principal_identity(
     principal_id: worth_relational::facade::identity::EntityId,
     identity: u64,
 ) {
-    let graph = world.application.runtime.primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let layout = graph
         .layout
         .principal_binding(world.binding.binding())
@@ -229,7 +229,7 @@ pub fn disable_mapping(
     world: &worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::IdentityWorld,
     mapping_id: worth_relational::facade::identity::EntityId,
 ) {
-    let graph = world.application.runtime.primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let layout = graph
         .layout
         .principal_binding(world.binding.binding())
@@ -259,7 +259,7 @@ pub fn append_duplicate_mapping(
     world: &worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::IdentityWorld,
     subject: &str,
 ) {
-    let graph = world.application.runtime.primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let layout = graph
         .layout
         .principal_binding(world.binding.binding())

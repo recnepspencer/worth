@@ -24,14 +24,14 @@ fn governed_upper_bound_support_is_revalidated_at_request_commit() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let program = world
         .application
         .with_host_advancement(|phase| {
             crate::domain_computation::primary_graph::tests::authorization::capability_elevation::request_transition::request_reads(
-                &(phase).test_host_request(),
+                &(phase).test_host_request_for_test(),
                 &world,
                 &principal,
                 &request,
@@ -45,9 +45,9 @@ fn governed_upper_bound_support_is_revalidated_at_request_commit() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             revoke_current_capability(
-                &(phase).test_host_request(),
+                &(phase).test_host_request_for_test(),
                 &host_custody.borrowed_request_for_test(),
                 &world,
             )
@@ -80,14 +80,14 @@ fn provider_time_rejects_a_request_program_after_its_exact_window_expires() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let program = world
         .application
         .with_host_advancement(|phase| {
             crate::domain_computation::primary_graph::tests::authorization::capability_elevation::request_transition::request_reads(
-                &(phase).test_host_request(),
+                &(phase).test_host_request_for_test(),
                 &world,
                 &principal,
                 &request,
@@ -119,12 +119,12 @@ fn provider_time_rejects_a_request_program_after_its_exact_window_expires() {
     let elevation = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             world
                 .application
-                .select_product_branch(
+                .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch(),
+                    world.application.product_runtime().default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
@@ -144,12 +144,12 @@ fn provider_time_rejects_a_request_program_after_its_exact_window_expires() {
     let review = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             world
                 .application
-                .select_product_branch(
+                .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch(),
+                    world.application.product_runtime().default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(

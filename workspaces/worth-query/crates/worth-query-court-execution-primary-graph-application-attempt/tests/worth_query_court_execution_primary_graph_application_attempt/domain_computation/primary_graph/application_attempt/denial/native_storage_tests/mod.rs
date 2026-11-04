@@ -18,7 +18,7 @@ fn storage_refusal_keeps_its_category_subject_and_original_cause() {
             cause,
         };
         let denied =
-            WorthQueryApplicationAttemptDenial::native_storage_unavailable(native, "account owner");
+            WorthQueryApplicationAttemptDenial::native_storage_unavailable_for_test(native, "account owner");
         assert_eq!(
             denied.kind(),
             WorthQueryApplicationAttemptDenialKind::StorageUnavailable

@@ -20,9 +20,9 @@ pub fn relational_head(
     world: &AuthorizationWorld,
 ) -> RelationalCommitReceipt {
     world
-        .selected_product(&(phase_custody).test_host_request())
+        .selected_product(&(phase_custody).test_host_request_for_test())
         .product()
-        .relational_basis()
+        .relational_basis_for_test()
         .observation()
         .commit_receipt()
         .cloned()
@@ -43,13 +43,13 @@ fn right_record_wrong_field_retention_denial_commits_nothing() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let before = world
@@ -65,7 +65,7 @@ fn right_record_wrong_field_retention_denial_commits_nothing() {
         .application
         .with_host_advancement(|phase| {
             world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&(phase).test_host_request_for_test())
                 .authorize_operation(
                     &phase,
                     &principal,
@@ -148,13 +148,13 @@ fn two_field_same_record_retains_one_exact_prior_truth() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let operation = world
@@ -166,7 +166,7 @@ fn two_field_same_record_retains_one_exact_prior_truth() {
         .application
         .with_host_advancement(|phase| {
             world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&(phase).test_host_request_for_test())
                 .authorize_operation(
                     &phase,
                     &principal,
@@ -236,7 +236,7 @@ fn two_field_same_record_retains_one_exact_prior_truth() {
         panic!("same-record inverse must commit: {outcome:?}");
     };
     let retained = receipt
-        .retained_preimage()
+        .retained_preimage_for_test()
         .expect("recorded inverse retains both fields");
 
     assert_eq!(retained.fields().len(), 2);

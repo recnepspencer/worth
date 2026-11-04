@@ -15,7 +15,7 @@ fn copied_primary_dependencies_cannot_forge_delegation_target_support() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             let borrowed_execution = host_custody.borrowed_request_for_test();
             let execution = &borrowed_execution;
             let principal = authenticated_principal(
@@ -31,7 +31,7 @@ fn copied_primary_dependencies_cannot_forge_delegation_target_support() {
             );
             let authority = admission.workflow_approval_authority().unwrap();
             let support = serde_json::json!({
-                "request": admission.workflow_approval_request_snapshot(execution).unwrap().unwrap(),
+                "request": admission.workflow_approval_request_snapshot_for_test(execution).unwrap().unwrap(),
                 "grant": authority.grant,
                 "capability_authority_identity": authority.capability_authority_identity,
                 "posture": "active",
@@ -39,7 +39,7 @@ fn copied_primary_dependencies_cannot_forge_delegation_target_support() {
                 "timeline": authority.timeline.canonical_name(),
                 "expiry": 300,
                 "lineage": serde_json::from_str::<serde_json::Value>(
-                    &admission.workflow_approval_lineage_snapshot(execution).unwrap().unwrap()
+                    &admission.workflow_approval_lineage_snapshot_for_test(execution).unwrap().unwrap()
                 ).unwrap(),
             })
             .to_string();
@@ -67,7 +67,7 @@ fn delegation_support_comparator_rejects_independent_native_source_aba() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             let borrowed_execution = host_custody.borrowed_request_for_test();
             let execution = &borrowed_execution;
             let principal = authenticated_principal(
@@ -85,7 +85,7 @@ fn delegation_support_comparator_rejects_independent_native_source_aba() {
             // This comparator court uses a separate real native source. It does not
             // claim production delegation issuance.
             let support = serde_json::json!({
-                "request": admission.workflow_approval_request_snapshot(execution).unwrap().unwrap(),
+                "request": admission.workflow_approval_request_snapshot_for_test(execution).unwrap().unwrap(),
                 "grant": authority.grant,
                 "capability_authority_identity": authority.capability_authority_identity,
                 "posture": "active",
@@ -93,13 +93,13 @@ fn delegation_support_comparator_rejects_independent_native_source_aba() {
                 "timeline": authority.timeline.canonical_name(),
                 "expiry": 300,
                 "lineage": serde_json::from_str::<serde_json::Value>(
-                    &admission.workflow_approval_lineage_snapshot(execution).unwrap().unwrap()
+                    &admission.workflow_approval_lineage_snapshot_for_test(execution).unwrap().unwrap()
                 ).unwrap(),
             })
             .to_string();
             let mut dependencies: serde_json::Value = serde_json::from_str(
                 &admission
-                    .workflow_approval_dependencies_snapshot(execution)
+                    .workflow_approval_dependencies_snapshot_for_test(execution)
                     .unwrap()
                     .unwrap(),
             )
@@ -198,14 +198,14 @@ fn delegation_support_comparator_rejects_independent_native_source_aba() {
             );
             let original_dependencies: serde_json::Value = serde_json::from_str(
                 &admission
-                    .workflow_approval_dependencies_snapshot(execution)
+                    .workflow_approval_dependencies_snapshot_for_test(execution)
                     .unwrap()
                     .unwrap(),
             )
             .unwrap();
             let fresh_dependencies: serde_json::Value = serde_json::from_str(
                 &fresh
-                    .workflow_approval_dependencies_snapshot(execution)
+                    .workflow_approval_dependencies_snapshot_for_test(execution)
                     .unwrap()
                     .unwrap(),
             )
@@ -215,8 +215,8 @@ fn delegation_support_comparator_rejects_independent_native_source_aba() {
                 fresh_dependencies["primary"]
             );
             assert_eq!(
-                admission.workflow_approval_lineage_snapshot(execution).unwrap(),
-                fresh.workflow_approval_lineage_snapshot(execution).unwrap()
+                admission.workflow_approval_lineage_snapshot_for_test(execution).unwrap(),
+                fresh.workflow_approval_lineage_snapshot_for_test(execution).unwrap()
             );
             let denial = world
                 .application
@@ -237,11 +237,11 @@ pub fn native_stamp_for_independent_grant(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::authorization_world_installation::AuthorizationWorld,
 ) -> worth_relational::facade::authorization::RelationalAuthorizationDependencyWire {
-    let selected = world.selected_product(&(phase_custody).test_host_request());
-    let snapshot = selected.application_basis().snapshot_handle().clone();
-    let graph = world.application.runtime.primary_graph().unwrap();
+    let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
+    let snapshot = selected.application_basis_for_test().snapshot_handle().clone();
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let grant = grant(
-        &(phase_custody).test_host_request(),
+        &(phase_custody).test_host_request_for_test(),
         execution,
         world,
         "unrelated-capability-0",
@@ -288,7 +288,7 @@ fn expired_retained_support_is_denied_before_native_replay() {
     world.authorization_time.hold(time(100));
     let request = live_scope();
     world.application.with_host_advancement(|phase| {
-let host_custody = phase.test_host_request();
+let host_custody = phase.test_host_request_for_test();
 let borrowed_execution = host_custody.borrowed_request_for_test();
 let execution = &borrowed_execution;
 let principal = authenticated_principal(
@@ -308,13 +308,13 @@ let principal = authenticated_principal(
             worth_foundational::facade::AspectValue::UInt64(primary_expiry) if primary_expiry > 108
         ));
         let support = serde_json::json!({
-            "request": admission.workflow_approval_request_snapshot(execution).unwrap().unwrap(),
+            "request": admission.workflow_approval_request_snapshot_for_test(execution).unwrap().unwrap(),
             "grant": authority.grant,
             "capability_authority_identity": authority.capability_authority_identity,
             "posture": "active",
             "role": "delegation_target",
             "lineage": serde_json::from_str::<serde_json::Value>(
-                &admission.workflow_approval_lineage_snapshot(execution).unwrap().unwrap()
+                &admission.workflow_approval_lineage_snapshot_for_test(execution).unwrap().unwrap()
             ).unwrap(),
             "timeline": authority.timeline.canonical_name(),
             "expiry": 105,
@@ -322,7 +322,7 @@ let principal = authenticated_principal(
         .to_string();
         let mut dependencies: serde_json::Value = serde_json::from_str(
             &admission
-                .workflow_approval_dependencies_snapshot(execution)
+                .workflow_approval_dependencies_snapshot_for_test(execution)
                 .unwrap()
                 .unwrap(),
         )

@@ -18,12 +18,12 @@ fn changed_identity_field_makes_resolved_scope_stale_before_admission() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             world
                 .application
-                .select_product_branch(
+                .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch(),
+                    world.application.product_runtime().default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_authenticated_principal(
@@ -39,12 +39,12 @@ fn changed_identity_field_makes_resolved_scope_stale_before_admission() {
     let account = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             world
                 .application
-                .select_product_branch(
+                .select_product_branch_for_test(
                     &host_custody.borrowed_request_for_test(),
-                    world.application.product_runtime().default_branch(),
+                    world.application.product_runtime().default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
@@ -60,7 +60,7 @@ fn changed_identity_field_makes_resolved_scope_stale_before_admission() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             change_account_status(
                 &host_custody.borrowed_request_for_test(),
                 &world,
@@ -76,7 +76,7 @@ fn changed_identity_field_makes_resolved_scope_stale_before_admission() {
         .application
         .with_host_advancement(|phase| {
             world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&(phase).test_host_request_for_test())
                 .admit_application_query(
                     &phase,
                     &query,
@@ -103,9 +103,9 @@ pub fn change_account_status(
     account: worth_relational::facade::identity::EntityId,
     new_status: &str,
 ) {
-    let graph = world
+    let graph = (*world
         .application
-        .runtime
+        .runtime_for_test())
         .primary_graph()
         .expect("test world publishes a primary graph");
     let status_field = AccountStatus::reference();

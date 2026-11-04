@@ -66,3 +66,5 @@ pub fn reserve_buffer(
 ) -> Result<worth_execution::ExecutionByteBuffer, WorthQueryCheckpointCaptureDenial> {
     worth_execution::ExecutionByteBuffer::allocate(total, policy).map_err(Into::into)
 }
+
+mod court_doors_for_test;

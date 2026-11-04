@@ -36,16 +36,16 @@ fn scalar_readiness_uses_exact_declared_and_installed_binding() {
     .bind_application_schema(declaration.clone())
     .unwrap();
     let field =
-        FieldExpectation::declared(declaration.erased(), Value::reference::<Scalar>()).unwrap();
-    field.seal(&installed).unwrap();
+        FieldExpectation::declared_for_test(declaration.erased(), Value::reference::<Scalar>()).unwrap();
+    field.seal_for_test(&installed).unwrap();
     assert!(matches!(
-        field.aspect.shape(),
+        (*field.aspect_for_test()).shape(),
         AspectShape::Scalar(domain::ScalarAspectType::UInt64)
     ));
-    assert_eq!(field.aspect.absence(), AbsenceLaw::Optional);
-    assert!(field.mask().is_whole_aspect());
+    assert_eq!((*field.aspect_for_test()).absence(), AbsenceLaw::Optional);
+    assert!(field.mask_for_test().is_whole_aspect());
     assert_eq!(
-        field.native_binding,
+        (*field.native_binding_for_test()),
         domain::AspectBinding::EntityField {
             field: domain::FieldKey::new("Value").unwrap(),
         }
@@ -54,13 +54,13 @@ fn scalar_readiness_uses_exact_declared_and_installed_binding() {
         domain::FieldKey::new("Value").unwrap(),
     )]);
     assert_eq!(
-        field.aspect.admits_projection_mask(&raw),
+        (*field.aspect_for_test()).admits_projection_mask(&raw),
         Err(worth_foundational::facade::MaskAdmissibilityDenial::FieldMaskRequiresStruct)
     );
     let alias =
-        FieldExpectation::declared(declaration.erased(), Alias::reference::<Scalar>()).unwrap_err();
+        FieldExpectation::declared_for_test(declaration.erased(), Alias::reference::<Scalar>()).unwrap_err();
     assert_eq!(
-        alias.field_locus(),
+        alias.field_locus_for_test(),
         Some(&schema::ApplicationFieldBindingLocus::new(
             "Entity",
             "Publication",
@@ -92,11 +92,11 @@ fn scalar_readiness_uses_exact_declared_and_installed_binding() {
         .unwrap();
     assert_eq!(
         node.dependencies()[ordinal].binding(),
-        &field.native_binding
+        &(*field.native_binding_for_test())
     );
     assert_eq!(
         node.dependencies()[ordinal].projection_mask(),
-        &field.mask()
+        &field.mask_for_test()
     );
     assert_eq!(
         node.dependencies()[ordinal].relevant_changes(),

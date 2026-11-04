@@ -15,7 +15,7 @@ fn unavailable_predicate_snapshot_keeps_masters_kind_and_query_subject() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host = phase.test_host_request();
+            let host = phase.test_host_request_for_test();
             let request = host.borrowed_request_for_test();
             let selected = world.selected_product(&host);
             let principal = selected
@@ -43,7 +43,7 @@ fn unavailable_predicate_snapshot_keeps_masters_kind_and_query_subject() {
                 .certification_query(LiveAccountActivityQuery::reference())
                 .unwrap();
             let plan = selected
-                .retain_selection(&request)
+                .retain_selection_for_test(&request)
                 .unwrap()
                 .admit_application_query(
                     &phase,
@@ -60,7 +60,7 @@ fn unavailable_predicate_snapshot_keeps_masters_kind_and_query_subject() {
             let read = match read_bounded_root_rows(
                 &runtime,
                 &request,
-                &world.application.primary_provider.graph.layout,
+                &(*world.application.primary_provider_for_test()).graph.layout,
                 &plan,
                 None,
             ) {
@@ -89,7 +89,7 @@ fn unavailable_root_path_snapshot_keeps_masters_kind_and_query_subject() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host = phase.test_host_request();
+            let host = phase.test_host_request_for_test();
             let request = host.borrowed_request_for_test();
             let selected = world.selected_product(&host);
             let principal = selected
@@ -117,7 +117,7 @@ fn unavailable_root_path_snapshot_keeps_masters_kind_and_query_subject() {
                 .certification_query(CrossRootQuery::reference())
                 .unwrap();
             let plan = selected
-                .retain_selection(&request)
+                .retain_selection_for_test(&request)
                 .unwrap()
                 .admit_application_query(
                     &phase,
@@ -134,7 +134,7 @@ fn unavailable_root_path_snapshot_keeps_masters_kind_and_query_subject() {
             let read = match read_bounded_root_rows(
                 &runtime,
                 &request,
-                &world.application.primary_provider.graph.layout,
+                &(*world.application.primary_provider_for_test()).graph.layout,
                 &plan,
                 None,
             ) {

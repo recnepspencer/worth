@@ -123,9 +123,9 @@ pub fn actor_and_account(
     let scope = live_scope();
     let account = world
         .application
-        .select_product_branch(
+        .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch(),
+            world.application.product_runtime().default_branch_for_test(),
         )
         .expect("the selected product branch remains admitted")
         .resolve_entity(
@@ -147,9 +147,9 @@ pub fn actor(
 ) -> EntityId {
     world
         .application
-        .select_product_branch(
+        .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch(),
+            world.application.product_runtime().default_branch_for_test(),
         )
         .expect("the selected product branch remains admitted")
         .resolve_entity(
@@ -171,9 +171,9 @@ pub fn resolve_action_record(
 ) -> EntityId {
     world
         .application
-        .select_product_branch(
+        .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch(),
+            world.application.product_runtime().default_branch_for_test(),
         )
         .expect("the selected product branch remains admitted")
         .resolve_entity(
@@ -191,9 +191,9 @@ pub fn relation_kind(
     world: &AuthorizationWorld,
     name: &str,
 ) -> worth_relational::facade::identity::KindId {
-    world
+    (*world
         .application
-        .runtime
+        .runtime_for_test())
         .primary_graph()
         .unwrap()
         .layout()
@@ -210,12 +210,12 @@ pub fn current_relation(
     source: EntityId,
     target: EntityId,
 ) -> RelationId {
-    let graph = world.application.runtime.primary_graph().unwrap();
-    let selected = world.selected_product(&(phase_custody).test_host_request());
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
+    let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
     graph
         .integration_handle()
         .with_runtime_mut(execution, |runtime| {
-            let snapshot = selected.application_basis().snapshot_handle();
+            let snapshot = selected.application_basis_for_test().snapshot_handle();
 
             runtime
                 .read_truth()

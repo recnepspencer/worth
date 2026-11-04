@@ -27,7 +27,7 @@ fn retained_endpoint_capture_and_union_keep_full_exact_ids_and_charge_coexistenc
     let retained_two = u64::try_from(Layout::array::<EntityId>(2).unwrap().size()).unwrap();
     let budget = quote + retained_two;
     let parent = authority().request_lease(request(budget)).unwrap();
-    let left = AdmittedAdjacencyEndpoints::capture(
+    let left = AdmittedAdjacencyEndpoints::capture_for_test(
         &[id(3), id(1), id(3)],
         control(Policy::Execution(&parent)),
     )
@@ -35,13 +35,13 @@ fn retained_endpoint_capture_and_union_keep_full_exact_ids_and_charge_coexistenc
     assert_eq!(&*left, &[id(1), id(3)]);
     let shared = left.clone();
     let right =
-        AdmittedAdjacencyEndpoints::capture(&[id(4), id(3)], control(Policy::SystemAllocation))
+        AdmittedAdjacencyEndpoints::capture_for_test(&[id(4), id(3)], control(Policy::SystemAllocation))
             .unwrap();
     // The parent holds the old two-ID backing while its child admits the new
     // three-ID backing. These charges coexist at the common parent ledger.
     let child = parent.child(request(quote)).unwrap();
     let union = left
-        .union(&right, control(Policy::Execution(&child)))
+        .union_for_test(&right, control(Policy::Execution(&child)))
         .unwrap();
     assert_eq!(&*union, &[id(1), id(3), id(4)]);
     drop(child);
@@ -53,11 +53,11 @@ fn retained_endpoint_capture_and_union_keep_full_exact_ids_and_charge_coexistenc
     assert_eq!(parent.reserve_memory(budget).unwrap().bytes(), budget);
     let short = authority().request_lease(request(quote)).unwrap();
     let held =
-        AdmittedAdjacencyEndpoints::capture(&[id(1)], control(Policy::Execution(&short))).unwrap();
+        AdmittedAdjacencyEndpoints::capture_for_test(&[id(1)], control(Policy::Execution(&short))).unwrap();
     let incoming =
-        AdmittedAdjacencyEndpoints::capture(&[id(2), id(3)], control(Policy::SystemAllocation))
+        AdmittedAdjacencyEndpoints::capture_for_test(&[id(2), id(3)], control(Policy::SystemAllocation))
             .unwrap();
-    let denied = match held.union(&incoming, control(Policy::Execution(&short))) {
+    let denied = match held.union_for_test(&incoming, control(Policy::Execution(&short))) {
         Err(StoreDenial::Allocation(denied)) => denied,
         _ => panic!("old endpoint backing must remain charged during replacement"),
     };

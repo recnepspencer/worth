@@ -256,3 +256,5 @@ impl std::fmt::Debug for WorthQueryRecoveryHandle {
             .finish_non_exhaustive()
     }
 }
+
+mod court_doors_for_test;

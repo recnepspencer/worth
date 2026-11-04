@@ -15,7 +15,7 @@ pub fn assert_original_join_cancellation(
         .application
         .with_host_advancement(|phase| {
             world
-                .selected_product(&phase.test_host_request())
+                .selected_product(&phase.test_host_request_for_test())
                 .combine_query_dependencies(&phase, access, std::iter::empty())
                 .expect("an original empty group is lawfully retained")
         })
@@ -27,7 +27,7 @@ pub fn assert_original_join_cancellation(
         let scope = WorthQueryRequestScope::new(None, cancel.token());
         let visits = std::cell::Cell::new(0);
         let attempt = world.application.with_application_advancement(&scope, |phase| {
-            let selected = world.selected_product(&phase.test_host_request());
+            let selected = world.selected_product(&phase.test_host_request_for_test());
             let groups = [&empty, original].into_iter().inspect(|_| {
                 visits.set(visits.get() + 1);
                 if visits.get() == stop_at { cancel.cancel(); }
@@ -50,7 +50,7 @@ pub fn assert_original_join_cancellation(
     world
         .application
         .with_host_advancement(|phase| {
-            let selected = world.selected_product(&phase.test_host_request());
+            let selected = world.selected_product(&phase.test_host_request_for_test());
             let joined = selected
                 .combine_query_dependencies(&phase, access, [&empty, original].into_iter())
                 .expect("a fresh original request retains the same complete groups");

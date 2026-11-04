@@ -6,7 +6,7 @@ use worth_query_execution::facade::domain_computation::WorthQueryProviderSession
 #[test]
 fn scheduling_progression_preserves_admission_stops_at_every_consult() {
     let mut world = installed_authorization_world(true);
-    world.application.program_support = Some(
+    (*world.application.program_support_mut_for_test()) = Some(
         worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::program_roster::installed_program_support(
             world.application.installed_schema(),
         ),
@@ -22,7 +22,7 @@ fn scheduling_progression_preserves_admission_stops_at_every_consult() {
         .unwrap();
     let source = observed_account_source(&world);
     let (_, route) = installation();
-    world.application.output_producer_routes.insert(
+    (*world.application.output_producer_routes_for_test()).insert(
         "scheduling-busy".to_owned(),
         worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::scheduling::WorthQueryInstalledOutputProducerRoute {
             scheduling: route,
@@ -46,7 +46,7 @@ fn scheduling_progression_preserves_admission_stops_at_every_consult() {
     // propagate every stop before the bridge is contacted.
     world.application.with_host_advancement(|phase| {
         worth_query_execution::test_read_stops::every_consult_under(&phase.borrowed_request_for_test(),
-            |execution| world.application.schedule_selected_output_producer(
+            |execution| world.application.schedule_selected_output_producer_for_test(
                 execution, &phase, &selected, world.application.current_world(), &source, None,
              ).map(|_| ()).map_err(|denial| denial.kind()).or_else(|kind| {
                 if matches!(&kind, WorthQueryOutputDemandDenialKind::BridgeConditional(native)

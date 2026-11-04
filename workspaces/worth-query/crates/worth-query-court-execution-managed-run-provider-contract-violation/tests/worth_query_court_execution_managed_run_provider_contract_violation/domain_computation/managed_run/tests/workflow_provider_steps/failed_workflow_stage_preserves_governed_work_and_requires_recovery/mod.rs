@@ -35,7 +35,7 @@ fn failed_workflow_stage_preserves_governed_work_and_requires_recovery() {
             WorthQueryOperationGraphAccess::Project,
         );
         let running = admitted_workflow(&runtime, &operation, resources, resource_request);
-        let installed_running_phase = execution.phase_for_workflow(&running);
+        let installed_running_phase = execution.phase_for_workflow_for_test(&running);
 
         let active = running
             .begin_stage_graph_execution(

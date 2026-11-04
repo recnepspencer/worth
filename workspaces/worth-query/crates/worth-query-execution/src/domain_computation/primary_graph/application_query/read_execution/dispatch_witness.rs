@@ -245,3 +245,5 @@ impl DispatchWitness {
         (state.map_charge, state.map_prefix, state.costs.clone())
     }
 }
+
+mod court_doors_for_test;

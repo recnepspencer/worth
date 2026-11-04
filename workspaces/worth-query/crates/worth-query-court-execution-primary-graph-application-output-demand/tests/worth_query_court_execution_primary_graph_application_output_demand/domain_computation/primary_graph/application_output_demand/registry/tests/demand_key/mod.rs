@@ -18,11 +18,11 @@ fn family_key_order_follows_declared_identity() {
         let keys = families.map(|(type_id, identity)| {
             (
                 type_id,
-                WorthQueryOutputDemandKey::new(
+                WorthQueryOutputDemandKey::new_for_test(
                     identity,
-                    source.producer_identity().to_owned(),
+                    source.producer_identity_for_test().to_owned(),
                     source.applicability(),
-                    source.source_epoch().clone(),
+                    source.source_epoch_for_test().clone(),
                 ),
             )
         });
@@ -34,25 +34,25 @@ fn family_key_order_follows_declared_identity() {
 fn same_observation_preserve_is_a_strict_successor_but_a_distinct_exact_row() {
     let initial = initial();
     let mut preserve = initial.clone();
-    preserve.producer = "preserve".into();
-    preserve.applicability = WorthQueryProducerApplicability::new(
+    (*preserve.producer_mut_for_test()) = "preserve".into();
+    (*preserve.applicability_mut_for_test()) = WorthQueryProducerApplicability::new(
         "registry-fixture",
         WorthQueryProducerLifecyclePosture::Preserve,
     );
     assert_ne!(initial, preserve);
-    assert!(initial.same_occurrence(&preserve));
-    assert!(!initial.same_semantic_source(&preserve));
-    assert_eq!(initial.replacement_order(&preserve), Some(Ordering::Less));
+    assert!(initial.same_occurrence_for_test(&preserve));
+    assert!(!initial.same_semantic_source_for_test(&preserve));
+    assert_eq!(initial.replacement_order_for_test(&preserve), Some(Ordering::Less));
     assert_eq!(
-        preserve.replacement_order(&initial),
+        preserve.replacement_order_for_test(&initial),
         Some(Ordering::Greater)
     );
-    preserve.producer = initial.producer.clone();
+    (*preserve.producer_mut_for_test()) = (*initial.producer_for_test()).clone();
     assert_ne!(initial, preserve);
-    assert!(initial.same_semantic_source(&preserve));
-    assert_eq!(initial.replacement_order(&preserve), Some(Ordering::Less));
+    assert!(initial.same_semantic_source_for_test(&preserve));
+    assert_eq!(initial.replacement_order_for_test(&preserve), Some(Ordering::Less));
     assert_eq!(
-        preserve.replacement_order(&initial),
+        preserve.replacement_order_for_test(&initial),
         Some(Ordering::Greater)
     );
 }
@@ -60,13 +60,13 @@ fn same_observation_preserve_is_a_strict_successor_but_a_distinct_exact_row() {
 fn incomparable_preserve_bindings_do_not_pick_a_successor_by_iteration_order() {
     let initial = initial();
     let mut left = initial.clone();
-    left.producer = "left-preserve".into();
-    left.applicability = WorthQueryProducerApplicability::new(
+    (*left.producer_mut_for_test()) = "left-preserve".into();
+    (*left.applicability_mut_for_test()) = WorthQueryProducerApplicability::new(
         "registry-fixture",
         WorthQueryProducerLifecyclePosture::Preserve,
     );
     let mut right = left.clone();
-    right.producer = "right-preserve".into();
+    (*right.producer_mut_for_test()) = "right-preserve".into();
     for candidates in [[&left, &right], [&right, &left]] {
         assert!(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::refreshed_rejoin::newest_lawful_successor(
             candidates.into_iter(),
@@ -79,26 +79,26 @@ fn incomparable_preserve_bindings_do_not_pick_a_successor_by_iteration_order() {
 fn family_scope_profile_and_source_movement_do_not_forge_a_successor() {
     let initial = initial();
     let mut foreign = initial.clone();
-    foreign.family = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_family_identity::OutputFamilyIdentity::declared("other-output-family");
-    assert!(!initial.same_occurrence(&foreign));
-    assert!(!initial.same_semantic_source(&foreign));
-    assert_eq!(initial.replacement_order(&foreign), None);
+    (*foreign.family_mut_for_test()) = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_family_identity::OutputFamilyIdentity::declared_for_test("other-output-family");
+    assert!(!initial.same_occurrence_for_test(&foreign));
+    assert!(!initial.same_semantic_source_for_test(&foreign));
+    assert_eq!(initial.replacement_order_for_test(&foreign), None);
 
     let mut unrelated = initial.clone();
-    unrelated.producer = "unrelated".into();
-    assert_eq!(initial.replacement_order(&unrelated), None);
-    unrelated.applicability = WorthQueryProducerApplicability::new(
+    (*unrelated.producer_mut_for_test()) = "unrelated".into();
+    assert_eq!(initial.replacement_order_for_test(&unrelated), None);
+    (*unrelated.applicability_mut_for_test()) = WorthQueryProducerApplicability::new(
         "another-profile",
         WorthQueryProducerLifecyclePosture::Preserve,
     );
-    assert_eq!(initial.replacement_order(&unrelated), None);
+    assert_eq!(initial.replacement_order_for_test(&unrelated), None);
 
     let mut backdated = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::support::key("preserve", 6, 1);
-    backdated.applicability = WorthQueryProducerApplicability::new(
+    (*backdated.applicability_mut_for_test()) = WorthQueryProducerApplicability::new(
         "registry-fixture",
         WorthQueryProducerLifecyclePosture::Preserve,
     );
-    assert_eq!(backdated.replacement_order(&initial), Some(Ordering::Less));
+    assert_eq!(backdated.replacement_order_for_test(&initial), Some(Ordering::Less));
     let other_root = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::support::key("preserve", 8, 2);
-    assert_eq!(initial.replacement_order(&other_root), None);
+    assert_eq!(initial.replacement_order_for_test(&other_root), None);
 }

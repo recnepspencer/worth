@@ -11,12 +11,12 @@ fn decision_failure_retains_its_original_detail_and_native_cause_allocations() {
         Arc::clone(&detail),
     );
     let header = std::mem::size_of::<[usize; 2]>() as u64;
-    assert!(Arc::ptr_eq(&failure.detail, &detail));
+    assert!(Arc::ptr_eq(&(*failure.detail_for_test()), &detail));
     assert_eq!(
         failure.additional_charged_bytes(),
         header + detail.len() as u64
     );
-    let failure = failure.with_native_query_read_stop(
+    let failure = failure.with_native_query_read_stop_for_test(
         worth_relational::facade::runtime::QueryReadExecutionStop::ReadRequest(
             worth_relational::facade::indexes::RelationalExecutionDenialCause::Cancelled,
         ),

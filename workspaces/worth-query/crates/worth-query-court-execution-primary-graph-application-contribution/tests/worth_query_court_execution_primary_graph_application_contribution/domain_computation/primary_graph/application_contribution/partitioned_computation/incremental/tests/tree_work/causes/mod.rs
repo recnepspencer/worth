@@ -65,23 +65,23 @@ fn edit_encoding_denial_rebuilds_and_matches_reuse_off() {
         panic!("real native Value run")
     };
     let request = live_scope();
-    let execution = QueryRequestExecution::open(serial_placement(), &request);
+    let execution = QueryRequestExecution::open_for_test(serial_placement(), &request);
     let retained = RetainedPartitions {
-        call_sequence: Arc::clone(&prior.call_sequence),
-        items: prior.items,
-        digests: prior.digests,
-        membership: prior.membership,
-        item_keys: prior.item_keys,
-        routing: prior.routing,
-        partitions: prior.partitions,
+        call_sequence: Arc::clone(&(*prior.call_sequence_for_test())),
+        items: (*prior.items_for_test()),
+        digests: (*prior.digests_for_test()),
+        membership: (*prior.membership_for_test()),
+        item_keys: (*prior.item_keys_for_test()),
+        routing: (*prior.routing_for_test()),
+        partitions: (*prior.partitions_for_test()),
         native_run,
         tree: ReductionTree::<Value, fn(&Value, &Value) -> Value>::try_from_declared_native(
             plan(&keys),
             keys.iter().map(|id| (*id, value(1))).collect(),
             value(0),
             combine as fn(&Value, &Value) -> Value,
-            Some(execution.dispatch().unwrap().native_lease_for_test()),
-            || execution.checkpoint(),
+            Some(execution.dispatch_for_test().unwrap().native_lease_for_test()),
+            || execution.checkpoint_for_test(),
         )
         .unwrap()
         .0,
@@ -108,10 +108,10 @@ fn edit_encoding_denial_rebuilds_and_matches_reuse_off() {
             )
         };
         let edited = run(plan(&keys).checked_build_work());
-        assert!(matches!(edited.report, TreeRun::Rebuilt(observed, _) if observed == cause));
-        assert!(matches!(edited.outcome, Err(actual) if actual == denial));
+        assert!(matches!((*edited.report_for_test()), TreeRun::Rebuilt(observed, _) if observed == cause));
+        assert!(matches!((*edited.outcome_for_test()), Err(actual) if actual == denial));
         let rebuilt = run(None);
-        assert!(matches!(rebuilt.outcome, Err(actual) if actual == denial));
+        assert!(matches!((*rebuilt.outcome_for_test()), Err(actual) if actual == denial));
         let fresh = ReductionTree::<Value, fn(&Value, &Value) -> Value>::try_from_declared_native(
             plan(&keys),
             keys.iter()
@@ -128,10 +128,10 @@ fn edit_encoding_denial_rebuilds_and_matches_reuse_off() {
                 .collect(),
             value(0),
             combine as fn(&Value, &Value) -> Value,
-            Some(execution.dispatch().unwrap().native_lease_for_test()),
-            || execution.checkpoint(),
+            Some(execution.dispatch_for_test().unwrap().native_lease_for_test()),
+            || execution.checkpoint_for_test(),
         );
-        let fresh = fresh.map_err(WorthQueryPartitionedComputationDenial::<u32>::from_reduction);
+        let fresh = fresh.map_err(WorthQueryPartitionedComputationDenial::<u32>::from_reduction_for_test);
         assert!(matches!(fresh, Err(actual) if actual == denial));
     }
 }
@@ -143,7 +143,7 @@ fn supplied_native_counter_failure_is_normalized_and_its_metrics_are_carried() {
     // Supply a typed native failure to exercise production normalization and metric carriage.
     use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tree_attempt::TreeAttempt;
     let native =
-        TreeAttempt::<(), _>::native(Err(ReductionRunFailure::<worth_execution::MapKernelStop> {
+        TreeAttempt::<(), _>::native_for_test(Err(ReductionRunFailure::<worth_execution::MapKernelStop> {
             reason: ReductionRunStop::WorkCounterOverflow,
             metrics: worth_execution::ReductionMetrics::from_accounting(
                 worth_execution::ReductionAccounting {
@@ -155,14 +155,14 @@ fn supplied_native_counter_failure_is_normalized_and_its_metrics_are_carried() {
             ),
         }));
 
-    let reported = native.finish_edits::<u32>().resolve(|| {
-        TreeAttempt::<(), ReductionRunFailure<worth_execution::MapKernelStop>>::native(Ok((
+    let reported = native.finish_edits_for_test::<u32>().resolve(|| {
+        TreeAttempt::<(), ReductionRunFailure<worth_execution::MapKernelStop>>::native_for_test(Ok((
             (),
             worth_execution::ReductionMetrics::default(),
         )))
-        .map_result(|outcome| {
+        .map_result_for_test(|outcome| {
             outcome.map_err(
-                worth_query_execution::facade::application_contribution::WorthQueryPartitionedComputationDenial::from_reduction,
+                worth_query_execution::facade::application_contribution::WorthQueryPartitionedComputationDenial::from_reduction_for_test,
             )
         })
     });
@@ -190,13 +190,13 @@ fn supplied_native_counter_failure_is_normalized_and_its_metrics_are_carried() {
         ),
         (ReductionDenial::ReducerPanic, Rebuild::ReducerPanicked),
     ] {
-        let supplied = TreeAttempt::<(), _>::native(Err(ReductionRunFailure {
+        let supplied = TreeAttempt::<(), _>::native_for_test(Err(ReductionRunFailure {
             reason: ReductionRunStop::<worth_execution::MapKernelStop>::Denial(reason),
             metrics: worth_execution::ReductionMetrics::default(),
         }));
-        let reported = supplied.finish_edits::<u32>().resolve(|| {
-            TreeAttempt::<(), ReductionRunFailure<worth_execution::MapKernelStop>>::native(Ok(((), worth_execution::ReductionMetrics::default())))
-            .map_result(|outcome| outcome.map_err(worth_query_execution::facade::application_contribution::WorthQueryPartitionedComputationDenial::from_reduction))
+        let reported = supplied.finish_edits_for_test::<u32>().resolve(|| {
+            TreeAttempt::<(), ReductionRunFailure<worth_execution::MapKernelStop>>::native_for_test(Ok(((), worth_execution::ReductionMetrics::default())))
+            .map_result_for_test(|outcome| outcome.map_err(worth_query_execution::facade::application_contribution::WorthQueryPartitionedComputationDenial::from_reduction_for_test))
         });
         assert!(matches!(reported.report, TreeRun::Rebuilt(actual, _) if actual == cause));
     }

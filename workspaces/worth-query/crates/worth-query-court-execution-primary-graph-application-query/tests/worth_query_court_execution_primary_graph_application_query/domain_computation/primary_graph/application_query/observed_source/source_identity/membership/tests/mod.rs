@@ -29,7 +29,7 @@ fn retained_selection_compares_a_fresh_meaning_without_revision_identity() {
     let selection = worth_query_execution::facade::domain_computation::WorthQueryApplicationBasisSelectionIdentity::Relational;
     let meaning = |endpoints, revision| {
         registry
-            .intern(
+            .intern_for_test(
                 &[7; 32],
                 &[8; 32],
                 footprint(endpoints, revision),
@@ -53,10 +53,10 @@ fn retained_selection_compares_a_fresh_meaning_without_revision_identity() {
     let revision_only = carrier(meaning(vec![entity(2)], 9));
     let different = carrier(meaning(vec![entity(3)], 9));
     assert!(before
-        .same_selected_membership_as(&revision_only, &mut |_| Ok(()))
+        .same_selected_membership_as_for_test(&revision_only, &mut |_| Ok(()))
         .unwrap());
     assert!(!before
-        .same_selected_membership_as(&different, &mut |_| Ok(()))
+        .same_selected_membership_as_for_test(&different, &mut |_| Ok(()))
         .unwrap());
 }
 #[test]
@@ -85,13 +85,13 @@ fn text_comparison_reads_initialized_utf8_not_spare_capacity() {
 fn selected_membership_propagates_owned_admission_and_final_poll_stops() {
     let selected = WorthQueryObservedSourceSelection::selecting_for_test(1);
     let mut calls = 0;
-    let stopped = selected.same_selected_membership_as(&selected, &mut |_| {
+    let stopped = selected.same_selected_membership_as_for_test(&selected, &mut |_| {
         calls += 1;
         Err(Cause::Cancelled)
     });
     assert_eq!(stopped, Err(Cause::Cancelled));
     assert_eq!(calls, 1);
-    let last = selected.same_selected_membership_as(&selected, &mut |work| {
+    let last = selected.same_selected_membership_as_for_test(&selected, &mut |work| {
         if work == 0 {
             Err(Cause::DeadlineElapsed)
         } else {

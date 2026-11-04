@@ -32,9 +32,9 @@ fn decode_scope_keeps_worker_only_native_and_preserves_an_accounted_ancestor() {
     let request = ExecutionRequest::serial(&backing);
     let native = ValueDecodeState::new(Default::default());
     native
-        .run(&request, |session| {
+        .run_for_test(&request, |session| {
             assert!(session.checkpoint.is_none());
-            assert!(native.memory.borrow().is_none());
+            assert!((*native.memory_for_test()).borrow().is_none());
         })
         .unwrap();
 
@@ -51,9 +51,9 @@ fn decode_scope_keeps_worker_only_native_and_preserves_an_accounted_ancestor() {
     ExecutionRequest::serial(&parent)
         .run(ExecutionWorkCeiling::new(None), |_| {
             accounted
-                .run(&request, |session| {
+                .run_for_test(&request, |session| {
                     assert!(session.checkpoint.is_some());
-                    assert!(accounted.memory.borrow().is_some());
+                    assert!((*accounted.memory_for_test()).borrow().is_some());
                 })
                 .unwrap();
         })
@@ -69,10 +69,10 @@ fn cancelled_native_decode_stops_before_body_and_keeps_its_original_refusal() {
     let called = Cell::new(false);
     cancellation.cancel();
     let expected = Stop::Scope(WorkCeilingDenial::Stopped(MapKernelStop::Cancelled));
-    assert_eq!(state.run(&request, |_| called.set(true)), Err(expected));
+    assert_eq!(state.run_for_test(&request, |_| called.set(true)), Err(expected));
     assert!(!called.get());
-    assert_eq!(state.denial(), Some(expected));
-    assert_eq!(state.run(&request, |_| called.set(true)), Err(expected));
+    assert_eq!(state.denial_for_test(), Some(expected));
+    assert_eq!(state.run_for_test(&request, |_| called.set(true)), Err(expected));
     assert!(!called.get());
-    assert!(state.memory.borrow().is_none());
+    assert!((*state.memory_for_test()).borrow().is_none());
 }

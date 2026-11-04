@@ -49,7 +49,7 @@ fn occupied_real_registration_cleans_the_conflict_and_preserves_an_interleaved_p
     world
         .application
         .with_host_advancement(|active_phase| {
-            let host_custody = active_phase.test_host_request();
+            let host_custody = active_phase.test_host_request_for_test();
             let phase = &active_phase;
 
             let (victim, peer) = equivalent_programs(
@@ -100,42 +100,42 @@ pub fn reject_occupied_registration(
     let reservation_basis = WorthQueryApplicationAttemptBasis::capture(
         &world.application,
         &admission,
-        lease.snapshot(),
+        lease.snapshot_for_test(),
         lease.product(),
     )
     .expect("the real running attempt must recapture its own exact basis");
     let admitted_session = admit_provider_session(
         execution,
         &mut running,
-        &world.application.primary_graph_authority,
+        &(*world.application.primary_graph_authority_for_test()),
         attempt_basis.retained_product(),
         unbound_run,
     )
     .unwrap_or_else(|_| panic!("the real victim session must reach provider registration"));
-    let reserved_affinity = admitted_session
-        .staged
+    let reserved_affinity = (*admitted_session
+        .staged_for_test())
         .bind_application_attempt(reservation_basis)
         .expect("the real terminal session must bind its captured attempt basis");
-    let reservation = world
+    let reservation = (*world
         .application
-        .primary_provider
+        .primary_provider_for_test())
         .reserve_application_attempt(&reserved_affinity)
         .expect("the rightful reservation must occupy the actual attempt store");
     assert_eq!(
-        world
+        (*world
             .application
-            .primary_provider
+            .primary_provider_for_test())
             .application_attempt_resource_count(),
         2,
         "the peer registration and victim reservation must coexist before cleanup"
     );
 
-    let failure = match admitted_session.register(
+    let failure = match admitted_session.register_for_test(
         &mut authorization,
         provider_attempt,
         attempt_basis,
-        WorthQueryProviderAttemptRegistrationContext::new(
-            &world.application.primary_provider,
+        WorthQueryProviderAttemptRegistrationContext::new_for_test(
+            &(*world.application.primary_provider_for_test()),
             &admission,
             idempotency,
             outcome_identity,
@@ -154,9 +154,9 @@ pub fn reject_occupied_registration(
         ) if denial.stage() == WorthQueryApplicationCommitDenialStage::ProviderPlan
     ));
     assert_eq!(
-        world
+        (*world
             .application
-            .primary_provider
+            .primary_provider_for_test())
             .application_attempt_resource_count(),
         1,
         "duplicate-registration cleanup must release only its exact stale reservation"
@@ -173,7 +173,7 @@ pub fn reject_occupied_registration(
             lease,
             running,
             cleanup,
-            request: admission.publication_request().clone(),
+            request: admission.publication_request_for_test().clone(),
         },
     )
 }
@@ -204,18 +204,18 @@ pub fn while_peer_is_registered(
     let admitted = admit_provider_session(
         execution,
         &mut running,
-        &world.application.primary_graph_authority,
-        product.retained_clone(),
+        &(*world.application.primary_graph_authority_for_test()),
+        product.retained_clone_for_test(),
         mutation_run,
     )
     .unwrap_or_else(|_| panic!("the interleaved peer session must reach registration"));
     let registered = admitted
-        .register(
+        .register_for_test(
             &mut authorization,
             provider_attempt,
             attempt_basis,
-            WorthQueryProviderAttemptRegistrationContext::new(
-                &world.application.primary_provider,
+            WorthQueryProviderAttemptRegistrationContext::new_for_test(
+                &(*world.application.primary_provider_for_test()),
                 &admission,
                 idempotency,
                 outcome_identity,
@@ -228,9 +228,9 @@ pub fn while_peer_is_registered(
         .finish_registration()
         .expect("the peer registration must preserve its authorization facts");
     assert_eq!(
-        world
+        (*world
             .application
-            .primary_provider
+            .primary_provider_for_test())
             .application_attempt_resource_count(),
         1,
         "the peer must occupy the actual application-attempt store"
@@ -238,22 +238,22 @@ pub fn while_peer_is_registered(
 
     let victim = while_registered();
     assert_eq!(
-        world
+        (*world
             .application
-            .primary_provider
+            .primary_provider_for_test())
             .application_attempt_resource_count(),
         1,
         "victim cleanup must preserve the exact registered peer"
     );
 
-    let commit_lane = world
+    let commit_lane = (*world
         .application
-        .primary_provider
-        .application_branch_commit_lane(product.observation());
+        .primary_provider_for_test())
+        .application_branch_commit_lane(product.observation_for_test());
     let coordination = commit_lane.enter();
     let authority = WorthQueryApplicationCommitProgressionAuthority {
         application: &world.application,
-        provider: &world.application.primary_provider,
+        provider: &(*world.application.primary_provider_for_test()),
         admission: &admission,
         authorization,
         idempotency,
@@ -276,7 +276,7 @@ pub fn while_peer_is_registered(
                 lease,
                 running,
                 None,
-                admission.publication_request().clone(),
+                admission.publication_request_for_test().clone(),
             ),
     );
     assert!(matches!(
@@ -302,7 +302,7 @@ pub fn start(
         &phase.borrowed_request_for_test(),
         phase,
         &world.application,
-        WorthQueryApplicationCommitPreparationRequest::new(program, idempotency, None, None),
+        WorthQueryApplicationCommitPreparationRequest::new_for_test(program, idempotency, None, None),
     );
     let WorthQueryApplicationCommitPreparation::Ready(prepared) = prepared else {
         panic!("registration fixture must reach ordinary prepared posture")
@@ -317,11 +317,11 @@ pub fn equivalent_programs(
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     replacement: &str,
 ) -> (RetainedProgram, RetainedProgram) {
-    let principal = authenticated_principal(&(phase_custody).test_host_request(), world, request);
-    let account = resolved_account(&(phase_custody).test_host_request(), world, "open", request);
+    let principal = authenticated_principal(&(phase_custody).test_host_request_for_test(), world, request);
+    let account = resolved_account(&(phase_custody).test_host_request_for_test(), world, "open", request);
     (
         retained_status_program(
-            &(phase_custody).test_host_request(),
+            &(phase_custody).test_host_request_for_test(),
             world,
             &principal,
             &account,
@@ -330,7 +330,7 @@ pub fn equivalent_programs(
             RetentionMutationBreadth::Narrow,
         ),
         retained_status_program(
-            &(phase_custody).test_host_request(),
+            &(phase_custody).test_host_request_for_test(),
             world,
             &principal,
             &account,

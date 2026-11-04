@@ -12,8 +12,8 @@ use std::sync::atomic::Ordering;
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::decision::identity;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::aggregate_observation::AggregateObservation;
 pub fn body(run: &SealedComputationRun) -> Arc<AggregateObservation> {
-    let values: Vec<_> = run
-        .state
+    let values: Vec<_> = (*run
+        .state_for_test())
         .facts
         .facts()
         .filter_map(|(_, fact, _)| match fact {
@@ -34,7 +34,7 @@ fn actual_aggregate_inputs_force_fresh_computation_before_reuse_in_both_postures
         let first = crate::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tests::structural_walk::attempt::run_aggregate(
             &world,
             &installed,
-            Some(ComputationPrior::new(
+            Some(ComputationPrior::new_for_test(
                 worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tests::edition(),
                 Err(Cause::FirstRun),
                 None,
@@ -42,9 +42,9 @@ fn actual_aggregate_inputs_force_fresh_computation_before_reuse_in_both_postures
             accounted,
             Cause::FirstRun,
         );
-        assert!(first.state.facts.has_aggregate());
+        assert!((*first.state_for_test()).facts.has_aggregate());
         let original = body(&first);
-        let prior = ComputationPrior::new(worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tests::edition(), Ok(Arc::new(first.state)), None);
+        let prior = ComputationPrior::new_for_test(worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tests::edition(), Ok(Arc::new((*first.state_for_test()))), None);
         let next = crate::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tests::structural_walk::attempt::run_aggregate(
             &world,
             &installed,
@@ -52,10 +52,10 @@ fn actual_aggregate_inputs_force_fresh_computation_before_reuse_in_both_postures
             accounted,
             Cause::AggregateRead,
         );
-        assert_eq!(installed.owner.gathers.load(Ordering::Relaxed), 2);
+        assert_eq!((*installed.owner_for_test()).gathers.load(Ordering::Relaxed), 2);
         let current = body(&next);
         assert!(!Arc::ptr_eq(&original, &current));
-        assert_ne!(original.source(), current.source());
+        assert_ne!(original.source_for_test(), current.source_for_test());
         assert_eq!(
             original, current,
             "actual truth excludes source cookie, payer and incident history"

@@ -104,7 +104,7 @@ pub fn admit_and_complete(
         Err(_) => panic!("rightful workflow authority must start"),
     };
 
-    let installed_fixture_phase = epoch.fixture_phase(execution);
+    let installed_fixture_phase = epoch.fixture_phase_for_test(execution);
     let execution = &installed_fixture_phase;
     let started = match epoch.begin_stage_iteration(
         execution,

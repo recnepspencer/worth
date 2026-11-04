@@ -58,7 +58,7 @@ fn over_ceiling_workflow_artifacts_deny_yield_without_consuming_the_run() {
             resources,
             resource_request,
         );
-        let installed_running_phase = execution.phase_for_workflow(&running);
+        let installed_running_phase = execution.phase_for_workflow_for_test(&running);
 
         let production = running
             .artifacts()

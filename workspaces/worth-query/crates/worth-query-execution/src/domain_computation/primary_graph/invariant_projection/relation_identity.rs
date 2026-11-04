@@ -34,3 +34,5 @@ impl<Schema, Relation, From, To> WorthQueryInvariantRelation<Schema, Relation, F
         self.relation_id
     }
 }
+
+mod court_doors_for_test;

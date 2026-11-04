@@ -80,7 +80,7 @@ pub fn close_access(
     WorthQueryOperationAuthorizationDenial,
 >{
     close_access_with_input(
-        &(phase_custody).test_host_request(),
+        &(phase_custody).test_host_request_for_test(),
         world,
         principal,
         request,
@@ -114,7 +114,7 @@ pub fn close_access_with_input(
     world
         .selected_product(phase_custody)
         .admit_capability_access(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             principal,
             &capability,
             input,
@@ -137,7 +137,7 @@ pub fn review_access(
     WorthQueryOperationAuthorizationDenial,
 >{
     review_access_with_input(
-        &(phase_custody).test_host_request(),
+        &(phase_custody).test_host_request_for_test(),
         world,
         principal,
         request,
@@ -171,7 +171,7 @@ pub fn review_access_with_input(
     world
         .selected_product(phase_custody)
         .admit_capability_access(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             principal,
             &capability,
             input,
@@ -191,7 +191,7 @@ pub fn materialize_close(
     Account,
 > {
     close_reads(
-        &(phase_custody).test_host_request(),
+        &(phase_custody).test_host_request_for_test(),
         world,
         request,
         approved,
@@ -210,7 +210,7 @@ pub fn close_exact(
     let program = world
         .application
         .with_application_advancement(request, |phase| {
-            let phase_custody = phase.test_host_request();
+            let phase_custody = phase.test_host_request_for_test();
             materialize_close(
                 &(phase_custody).test_host_request(),
                 world,
@@ -240,7 +240,7 @@ pub fn materialize_review(
     Account,
 > {
     review_reads(
-        &(phase_custody).test_host_request(),
+        &(phase_custody).test_host_request_for_test(),
         world,
         request,
         mandatory,
@@ -266,7 +266,7 @@ pub fn review_reads(
     let admission = world
         .application
         .authorize_mandatory_review(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             mandatory,
             access,
             &operation,
@@ -276,7 +276,7 @@ pub fn review_reads(
     let (_, projection, _) = world
         .invariant
         .project_admitted_operation(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             &admission,
             |reader, _| {
                 seal_lifecycle_facts(reader);
@@ -294,14 +294,14 @@ pub fn review_reads(
     world
         .application
         .begin_projected_application_read_attempt(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             admission,
             projection,
             AllocationPolicy::SystemAllocation,
         )
         .unwrap()
         .complete_projected_dependencies(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap()
@@ -315,7 +315,7 @@ pub fn review_exact(
     let program = world
         .application
         .with_application_advancement(request, |phase| {
-            let phase_custody = phase.test_host_request();
+            let phase_custody = phase.test_host_request_for_test();
             materialize_review(&phase_custody, world, request, mandatory)
         })
         .expect("the lifecycle materialization owns its host call");

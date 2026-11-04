@@ -70,15 +70,15 @@ pub fn installed<S: Fixture>() -> domain::WorthQueryInstalledApplicationSchema<S
     .unwrap()
 }
 pub fn declaration<S: Fixture>() -> DeclaredProducerBinding {
-    let mut declaration = declared(TypeId::of::<InstalledProducer>());
+    let mut declaration = declared(TypeId::of_for_test::<InstalledProducer>());
     let field =
         WorthQueryProducerOutputEquivalence::<S, Role<S>>::exact_u64(Value::reference::<S>())
-            .into_field();
-    declaration.output_equivalence = Some(field.clone());
-    declaration.installed_output_equivalence = Some(
+            .into_field_for_test();
+    (*declaration.output_equivalence_mut_for_test()) = Some(field.clone());
+    (*declaration.installed_output_equivalence_mut_for_test()) = Some(
         seal(
-            &declaration.identity,
-            &declaration.output_role,
+            &(*declaration.identity_for_test()),
+            &(*declaration.output_role_for_test()),
             &field,
             &installed::<S>(),
         )
@@ -87,7 +87,7 @@ pub fn declaration<S: Fixture>() -> DeclaredProducerBinding {
     declaration
 }
 pub fn edition(declaration: &DeclaredProducerBinding) -> [u8; 32] {
-    InstalledProducerEdition::from_declaration(
+    InstalledProducerEdition::from_declaration_for_test(
         declaration,
         worth_foundational::facade::ApplicationBuildIdentity::parse(
             "11111111-1111-1111-1111-111111111111",
@@ -95,7 +95,7 @@ pub fn edition(declaration: &DeclaredProducerBinding) -> [u8; 32] {
         .unwrap(),
     )
     .unwrap()
-    .digest()
+    .digest_for_test()
 }
 
 #[test]
@@ -103,18 +103,18 @@ fn installed_output_equivalence_binds_field_shape_revision_role_and_opt_in() {
     let structure = declaration::<Struct>();
     assert_eq!(edition(&structure), edition(&declaration::<Struct>()));
     for distinct in [
-        declared(TypeId::of::<InstalledProducer>()),
+        declared(TypeId::of_for_test::<InstalledProducer>()),
         declaration::<Scalar>(),
         declaration::<RevisionTwo>(),
     ] {
-        assert!(!structure.has_same_meaning_as(&distinct));
+        assert!(!structure.has_same_meaning_as_for_test(&distinct));
         assert_ne!(edition(&structure), edition(&distinct));
     }
-    let field = structure.output_equivalence.as_ref().unwrap();
+    let field = (*structure.output_equivalence_for_test()).as_ref().unwrap();
     let different_role = seal("producer", "another-role", field, &installed::<Struct>()).unwrap();
     assert_ne!(
-        structure.installed_output_equivalence.unwrap().meaning,
-        different_role.meaning
+        (*structure.installed_output_equivalence_for_test()).unwrap().meaning,
+        (*different_role.meaning_for_test())
     );
 }
 
@@ -123,7 +123,7 @@ fn missing_output_field_refuses_instead_of_substituting_its_sibling() {
     let field = WorthQueryProducerOutputEquivalence::<Missing, Role<Missing>>::exact_u64(
         Value::reference::<Missing>(),
     )
-    .into_field();
+    .into_field_for_test();
     let denied = seal("producer", "number", &field, &installed::<Missing>()).unwrap_err();
     assert_eq!(denied.kind(), worth_query_execution::facade::domain_computation::WorthQueryPrimaryGraphInstallationDenialKind::ProducerBindingMeaningMismatch);
     assert!(denied
@@ -135,17 +135,17 @@ fn missing_output_field_refuses_instead_of_substituting_its_sibling() {
 fn edition_refuses_unsealed_or_substituted_output_equivalence() {
     let valid = declaration::<Struct>();
     let mut unsealed = valid.clone();
-    unsealed.installed_output_equivalence = None;
+    (*unsealed.installed_output_equivalence_mut_for_test()) = None;
     let mut substituted = valid.clone();
-    substituted.output_equivalence = Some(
+    (*substituted.output_equivalence_mut_for_test()) = Some(
         WorthQueryProducerOutputEquivalence::<Struct, Role<Struct>>::exact_u64(
             Sibling::reference::<Struct>(),
         )
-        .into_field(),
+        .into_field_for_test(),
     );
-    assert!(!valid.has_same_meaning_as(&substituted));
+    assert!(!valid.has_same_meaning_as_for_test(&substituted));
     for invalid in [unsealed, substituted] {
-        assert!(InstalledProducerEdition::from_declaration(
+        assert!(InstalledProducerEdition::from_declaration_for_test(
             &invalid,
             worth_foundational::facade::ApplicationBuildIdentity::parse(
                 "11111111-1111-1111-1111-111111111111",

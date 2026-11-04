@@ -45,7 +45,7 @@ fn workflow_readmission_rolls_generation_and_preserves_occurrence_state() {
         let reservations = yielded.inspection().retained_capacity_reservation_count();
         let readmitted = {
             let fixture_phase_result = {
-                let installed_fixture_phase = yielded.fixture_phase(active_request);
+                let installed_fixture_phase = yielded.fixture_phase_for_test(active_request);
                 yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
             };
             match fixture_phase_result {
@@ -118,7 +118,7 @@ fn workflow_readmission_rolls_generation_and_preserves_occurrence_state() {
 
         let completion = {
             let fixture_phase_result = {
-                let installed_fixture_phase = active.fixture_phase(execution);
+                let installed_fixture_phase = active.fixture_phase_for_test(execution);
                 active.advance(&installed_fixture_phase)
             };
             match fixture_phase_result {
@@ -161,7 +161,7 @@ fn workflow_provider_restore_denial_keeps_frozen_generation_retryable() {
             .production_generation();
         let denied = {
             let fixture_phase_result = {
-                let installed_fixture_phase = yielded.fixture_phase(active_request);
+                let installed_fixture_phase = yielded.fixture_phase_for_test(active_request);
                 yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
             };
             match fixture_phase_result {
@@ -214,7 +214,7 @@ fn workflow_restore_panic_can_recover_only_through_terminal_cleanup() {
             .production_generation();
         let recovery = {
             let fixture_phase_result = {
-                let installed_fixture_phase = yielded.fixture_phase(active_request);
+                let installed_fixture_phase = yielded.fixture_phase_for_test(active_request);
                 yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
             };
             match fixture_phase_result {

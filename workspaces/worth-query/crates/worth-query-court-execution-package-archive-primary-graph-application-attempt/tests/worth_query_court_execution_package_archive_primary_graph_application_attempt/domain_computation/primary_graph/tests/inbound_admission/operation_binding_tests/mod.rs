@@ -26,9 +26,9 @@ fn equal_contract_on_another_operation_cannot_claim_the_original_dispatch() {
             .receive_inbound_occurrence(&world.verifier, &envelope, &request),
         Err(WorthQueryInboundAdmissionDenial::UnsupportedOutbox)
     ));
-    assert!(world
+    assert!((*world
         .application
-        .primary_provider
+        .primary_provider_for_test())
         .lookup_completed_inbound(outbox.correlation())
         .unwrap()
         .is_none());
@@ -62,7 +62,7 @@ fn workflow_settlement_joins_the_original_committed_operation_to_world_terminal(
         .expect("original dispatch outbox");
     assert!(!world
         .application
-        .resolve_guarded_workflow_external_settlement(&original)
+        .resolve_guarded_workflow_external_settlement_for_test(&original)
         .expect("terminal index is available before completion"));
 
     let envelope = signed_envelope(record, [0xB2; 32], record.payload(), false);
@@ -78,9 +78,9 @@ fn workflow_settlement_joins_the_original_committed_operation_to_world_terminal(
             .posture(),
         WorthQueryInboundReceiptPosture::Performed,
     );
-    let terminal = world
+    let terminal = (*world
         .application
-        .primary_provider
+        .primary_provider_for_test())
         .lookup_completed_inbound(record.correlation())
         .expect("canonical terminal index remains available")
         .expect("World performed a terminal completion");
@@ -100,11 +100,11 @@ fn workflow_settlement_joins_the_original_committed_operation_to_world_terminal(
     ));
     assert!(world
         .application
-        .resolve_guarded_workflow_external_settlement(&original)
+        .resolve_guarded_workflow_external_settlement_for_test(&original)
         .expect("the original receipt resolves exact owner completion"));
     assert!(!world
         .application
-        .resolve_guarded_workflow_external_settlement(&other)
+        .resolve_guarded_workflow_external_settlement_for_test(&other)
         .expect("the other operation remains pending"));
 }
 
@@ -160,15 +160,15 @@ fn duplicate_callback_keeps_the_original_terminal_out_of_a_sibling_fork() {
 
     assert!(world
         .application
-        .resolve_guarded_workflow_external_settlement(&original)
+        .resolve_guarded_workflow_external_settlement_for_test(&original)
         .expect("the original owner still observes completion"));
     assert!(!world
         .application
-        .resolve_guarded_workflow_external_settlement(&sibling)
+        .resolve_guarded_workflow_external_settlement_for_test(&sibling)
         .expect("the sibling owner remains pending"));
-    let terminal = world
+    let terminal = (*world
         .application
-        .primary_provider
+        .primary_provider_for_test())
         .lookup_completed_inbound(original_record.correlation())
         .unwrap()
         .unwrap();

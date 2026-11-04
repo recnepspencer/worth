@@ -9,7 +9,7 @@ fn original_governed_input_is_owned_by_the_committed_occurrence() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&phase.test_host_request(), &world, &request)
+            authenticated_principal(&phase.test_host_request_for_test(), &world, &request)
         })
         .expect("the installed host admits principal resolution");
     let (program, _) = world
@@ -38,9 +38,9 @@ fn original_governed_input_is_owned_by_the_committed_occurrence() {
     drop(receipt);
     drop(copy);
 
-    let occurrence = world
+    let occurrence = (*world
         .application
-        .primary_provider
+        .primary_provider_for_test())
         .observe_completed_application(&source_commit)
         .expect("the provider retains the performed source independently of receipts");
     assert_eq!(

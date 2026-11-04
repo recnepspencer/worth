@@ -13,9 +13,9 @@ pub fn body<Q>(
     source: &WorthQueryObservedSource<Q>,
     request: &WorthQueryRequestScope,
 ) -> Arc<ComponentSelection> {
-    let layout = world.application.runtime.primary_graph().unwrap().layout();
+    let layout = (*world.application.runtime_for_test()).primary_graph().unwrap().layout();
     let facts = source
-        .retained_checkpoint_facts(layout, Some(request), Allocation::SystemAllocation)
+        .retained_checkpoint_facts_for_test(layout, Some(request), Allocation::SystemAllocation)
         .unwrap();
     let mut bodies = facts.iter().filter_map(|fact| match fact {
         WorthQueryApplicationObservedFact::ComponentSelection { observation } => {
@@ -165,12 +165,12 @@ fn query_component_currentness_includes_coupling_even_when_native_membership_ret
         fresh.aggregates()[0].native().members().collect::<Vec<_>>()
     );
     let lease = crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::declared_queries::currentness::snapshot(&world, &execution);
-    lease.handle().with_runtime(&execution, |runtime| {
+    lease.handle_for_test().with_runtime(&execution, |runtime| {
         assert!(original.aggregates()[0]
-            .remains_equal(runtime, &execution, lease.snapshot(), None)
+            .remains_equal_for_test(runtime, &execution, lease.snapshot_for_test(), None)
             .unwrap());
         assert!(!original
-            .remains_equal(runtime, &execution, lease.snapshot(), None)
+            .remains_equal_for_test(runtime, &execution, lease.snapshot_for_test(), None)
             .unwrap());
     });
 }
@@ -202,8 +202,8 @@ fn empty_query_census_retains_negative_guard_and_ignores_unrelated_field_changes
         ));
         let lease = crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::declared_queries::currentness::snapshot(&world, &execution);
         assert_eq!(
-            lease.handle().with_runtime(&execution, |runtime| original
-                .remains_equal(runtime, &execution, lease.snapshot(), None)
+            lease.handle_for_test().with_runtime(&execution, |runtime| original
+                .remains_equal_for_test(runtime, &execution, lease.snapshot_for_test(), None)
                 .unwrap()),
             expected
         );

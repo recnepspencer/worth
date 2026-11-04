@@ -11,7 +11,7 @@ fn registry_post_commit_discovery_releases_an_unposted_displaced() {
     let selected = Arc::new(key("retirement-result", 2, 1));
 
     {
-        let mut state = registry.state.lock().unwrap();
+        let mut state = (*registry.state_for_test()).lock().unwrap();
         state.records.insert(
             selected.as_ref().clone(),
             record(occurrence(), DemandState::Running, 1),
@@ -24,7 +24,7 @@ fn registry_post_commit_discovery_releases_an_unposted_displaced() {
     // This invokes the same completion entry as both publication callers. The real
     // recorded identity has no demand posting; the owner must retain its
     // release when this tiny later-maintenance admission cannot retire it.
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::settlement_retirement::SupersededSettlements::new(registry.clone(), selected)
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::settlement_retirement::SupersededSettlements::new_for_test(registry.clone(), selected)
         .retire(Some(Arc::clone(&displaced)), &owner);
     assert_eq!(
         Arc::strong_count(&displaced),

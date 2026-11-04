@@ -22,7 +22,7 @@ fn nested_partition_workers_keep_the_member_reentry_refusal() {
         None,
         cancellation.token(),
     );
-    let root = QueryRequestExecution::open(
+    let root = QueryRequestExecution::open_for_test(
         worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Leased {
             authority: test_authority(),
             policy: test_policy(NonZeroUsize::new(4).unwrap(), None),
@@ -35,9 +35,9 @@ fn nested_partition_workers_keep_the_member_reentry_refusal() {
     let watchdog = Arc::new(std::sync::atomic::AtomicBool::new(false));
     let exceeded = watchdog.clone();
     let member = PreparedMember {
-        requests: vec![PreparedCompute::new(
+        requests: vec![PreparedCompute::new_for_test(
             move |member| {
-                let (managed, _) = member.into_parts();
+                let (managed, _) = member.into_parts_for_test();
                 let map = worth_execution::ExecutionMap::<_, u64>::from_keyless_partitions(
                     (0..4)
                         .map(|rank| {

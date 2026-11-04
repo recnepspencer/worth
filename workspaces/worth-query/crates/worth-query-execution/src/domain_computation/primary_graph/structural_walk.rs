@@ -98,3 +98,5 @@ impl PartialEq for StructuralWalkObservation {
     }
 }
 impl Eq for StructuralWalkObservation {}
+
+mod court_doors_for_test;

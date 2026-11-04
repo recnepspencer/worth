@@ -25,7 +25,7 @@ pub fn workflow_yield_with_pending_artifact(
         .start()
         .unwrap_or_else(|_| panic!("artifact workflow convergence must start"));
     let started = {
-        let installed_fixture_phase = epoch.fixture_phase(execution);
+        let installed_fixture_phase = epoch.fixture_phase_for_test(execution);
         epoch.begin_stage_iteration(
             &installed_fixture_phase,
             WORKFLOW_STAGE,
@@ -35,7 +35,7 @@ pub fn workflow_yield_with_pending_artifact(
     .unwrap_or_else(|_| panic!("artifact workflow iteration must start"));
     let paused = {
         let fixture_phase_result = {
-            let installed_fixture_phase = started.fixture_phase(execution);
+            let installed_fixture_phase = started.fixture_phase_for_test(execution);
             started.advance(&installed_fixture_phase)
         };
         match fixture_phase_result {

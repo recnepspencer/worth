@@ -11,7 +11,7 @@ use worth_relational::facade::mvcc::CompanionPreflightStop as Stop;
 use worth_relational::facade::mvcc::RelationalPublicationDeferred;
 
 pub fn stopped(stop: Stop) -> WorthQueryOutputDemandDenial {
-    let deferred = WorthQueryProviderSessionCommitDeferred::new(
+    let deferred = WorthQueryProviderSessionCommitDeferred::new_for_test(
         WorthQueryProviderSessionCommitDeferredKind::RelationalDeferred(
             RelationalPublicationDeferred::CompanionPreflight(stop),
         ),
@@ -20,7 +20,7 @@ pub fn stopped(stop: Stop) -> WorthQueryOutputDemandDenial {
     commit_receipt(
         "producer",
         WorthQueryApplicationCommitOutcome::Deferred(
-            worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitDeferred::from_provider_session(deferred),
+            worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitDeferred::from_provider_session_for_test(deferred),
         ),
     )
     .unwrap_err()
@@ -254,7 +254,7 @@ fn consumed_verification_capacity_reaches_the_original_demand_denial() {
             Default::default(),
         );
         if let Some(stop) = capacity {
-            failure = failure.with_output_verification_capacity_stop(stop);
+            failure = failure.with_output_verification_capacity_stop_for_test(stop);
         }
         let commit = provider_session_denied(failure);
         assert_eq!(commit.stage(), Stage::ProviderCommit);

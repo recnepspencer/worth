@@ -31,31 +31,31 @@ fn paired_retirement_support_checks_original_and_target_exact_metadata() {
     let world = installed_authorization_world(true);
     world.application.with_host_advancement(|phase| {
         let execution = phase.borrowed_request_for_test();
-        let host = phase.test_host_request();
+        let host = phase.test_host_request_for_test();
         let custody = host.phase_for_application(&world.application);
         let before = world.selected_product(&host);
         let entity = before.resolve_entity(
             &custody, AccountIdentity::reference(), "account-2".into(), &live_scope(),
             WorthQueryPrincipalResolutionMode::Ordinary,
-        ).unwrap().entity_id();
+        ).unwrap().entity_id_for_test();
         let other = before.resolve_entity(
             &custody, AccountIdentity::reference(), "account-1".into(), &live_scope(),
             WorthQueryPrincipalResolutionMode::Ordinary,
-        ).unwrap().entity_id();
+        ).unwrap().entity_id_for_test();
         let delete = |entity| WorkerIntentBatch::new("retirement-support").push(
             MutationIntent::Entity(EntityMutationIntent::Delete(DeleteEntityIntent { entity_id: entity }))
         );
         publish_relational_mutation(&execution, &world, delete(entity));
         let original = world.selected_product(&host);
-        let graph = world.application.runtime.primary_graph().unwrap();
+        let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
         let fact = graph.integration_handle().with_runtime(&execution, |runtime| {
-            let view = runtime.read_truth().project_snapshot(original.application_basis().snapshot_handle()).unwrap();
+            let view = runtime.read_truth().project_snapshot(original.application_basis_for_test().snapshot_handle()).unwrap();
             let retired = view.read_entity_retirement(&execution, entity).unwrap().unwrap();
             assert_eq!(retired.entity_id(), entity);
             Fact::RetiredOutputEntity {
                 entity_id: entity, kind: retired.kind_id(),
                 created_at: retired.created_at_version(), deleted_at: retired.deleted_at_version(),
-                read_locator: Fact::Entity { entity_id: entity, kind: retired.kind_id() }.locator_identity(),
+                read_locator: Fact::Entity { entity_id: entity, kind: retired.kind_id() }.locator_identity_for_test(),
             }
         });
         // A real unrelated lifecycle publication moves the selected head but
@@ -63,11 +63,11 @@ fn paired_retirement_support_checks_original_and_target_exact_metadata() {
         publish_relational_mutation(&execution, &world, delete(other));
         let target = world.selected_product(&host);
         graph.integration_handle().with_runtime(&execution, |runtime| {
-            let before_snapshot = before.application_basis().snapshot_handle();
-            let original_snapshot = original.application_basis().snapshot_handle();
-            let target_snapshot = target.application_basis().snapshot_handle();
-            let original_basis = original.product().relational_basis();
-            let target_basis = target.product().relational_basis();
+            let before_snapshot = before.application_basis_for_test().snapshot_handle();
+            let original_snapshot = original.application_basis_for_test().snapshot_handle();
+            let target_snapshot = target.application_basis_for_test().snapshot_handle();
+            let original_basis = original.product().relational_basis_for_test();
+            let target_basis = target.product().relational_basis_for_test();
             let target_commit = target_basis.observation().commit_id().unwrap();
             let limits = || RelationalAuthoredWritePageLimits {
                 maximum_entries: NonZeroUsize::MIN,
@@ -78,7 +78,7 @@ fn paired_retirement_support_checks_original_and_target_exact_metadata() {
             let target_view = runtime.read_truth().project_snapshot(target_snapshot).unwrap();
             let facts = payload(fact.clone());
             let selection = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::product_operation::correction_source::restored_support::overlap::select(execution, &facts, runtime, &original_view, &target_view).unwrap();
-            let keys = selection.keys.iter().cloned().collect::<Vec<_>>();
+            let keys = (*selection.keys_for_test()).iter().cloned().collect::<Vec<_>>();
             assert_eq!(keys, [RelationalAuthoredWriteSelector::Record {
                 record: RecordRef::Entity(entity), scope: RelationalAuthoredWriteScope::Lifecycle,
             }]);
@@ -93,7 +93,7 @@ fn paired_retirement_support_checks_original_and_target_exact_metadata() {
             let selected = runtime.select_exact_commit(&target_basis.observation(), target_commit)
                 .into_outcome().unwrap();
             let mut crossing_retirement = runtime.authored_write_history_cursor(
-                execution, before.product().relational_basis(), selected, &keys,
+                execution, before.product().relational_basis_for_test(), selected, &keys,
             ).unwrap();
             let page = crossing_retirement.next_page(runtime, execution, limits()).unwrap();
             assert!(page.is_complete());

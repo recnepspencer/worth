@@ -14,14 +14,14 @@ pub fn selected() -> std::sync::Arc<PositionedRelationalSnapshot> {
     world
         .application
         .with_host_advancement(|phase| {
-            world
+            (*world
                 .application
-                .runtime
+                .runtime_for_test())
                 .primary_graph()
                 .unwrap()
                 .with_runtime(
                     &phase
-                        .execution_request_for(&world.application.product_runtime)
+                        .execution_request_for_for_test(&(*world.application.product_runtime_for_test()))
                         .unwrap(),
                     |runtime| {
                         let basis = runtime
@@ -40,7 +40,7 @@ pub fn selected() -> std::sync::Arc<PositionedRelationalSnapshot> {
         .expect("the wave-admission proof owns its request")
 }
 pub fn compute_plan() -> OwnerPlan<'static, (), ()> {
-    OwnerPlan::new(vec![PreparedCompute::new(|_| ())], |slots| {
+    OwnerPlan::new_for_test(vec![PreparedCompute::new_for_test(|_| ())], |slots| {
         assert_eq!(slots.len(), 1);
         Ok(())
     })
@@ -87,7 +87,7 @@ fn wave_admission_requires_the_same_owner_and_native_basis() {
         let outcome = registry.admit_prepared_wave(
             &basis,
             worth_proof::CanonicalUniqueVec::try_from_sorted_unique(vec![0]).unwrap(),
-            vec![compute_plan().with_inputs(inputs)],
+            vec![compute_plan().with_inputs_for_test(inputs)],
         );
         assert_eq!(
             outcome.is_ok(),

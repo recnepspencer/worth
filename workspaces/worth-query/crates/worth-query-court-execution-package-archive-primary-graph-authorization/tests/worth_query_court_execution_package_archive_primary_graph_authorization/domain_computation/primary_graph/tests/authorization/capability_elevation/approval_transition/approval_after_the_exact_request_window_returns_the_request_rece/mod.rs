@@ -17,14 +17,14 @@ fn approval_after_the_exact_request_window_returns_the_request_receipt() {
     let approver = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             authenticated(&host_custody, &world, "bob", &request)
         })
         .expect("the fixture read owns its installed host call");
     let access = world
         .application
         .with_host_advancement(|phase| {
-            approval_access(&(phase).test_host_request(), &world, &approver, &request).unwrap()
+            approval_access(&(phase).test_host_request_for_test(), &world, &approver, &request).unwrap()
         })
         .expect("the fixture read owns its installed host call");
     let denial = world

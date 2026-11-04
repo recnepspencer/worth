@@ -9,7 +9,7 @@ fn correction_disclosure_requires_the_original_native_root_after_filtering() {
     world
         .application
         .with_host_advancement(|phase| {
-            let selected = world.selected_product(&phase.test_host_request());
+            let selected = world.selected_product(&phase.test_host_request_for_test());
             let principal = selected
                 .resolve_authenticated_principal(
                     &phase,
@@ -28,12 +28,12 @@ fn correction_disclosure_requires_the_original_native_root_after_filtering() {
                     WorthQueryPrincipalResolutionMode::Ordinary,
                 )
                 .unwrap();
-            let original_subject = account.entity_id();
+            let original_subject = account.entity_id_for_test();
             let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
             let query = installed_query(&world);
             for (status, expected) in [("open", true), ("no matching account", false)] {
                 let plan = world
-                    .selected_product(&phase.test_host_request())
+                    .selected_product(&phase.test_host_request_for_test())
                     .admit_application_query(
                         &phase,
                         &query,
@@ -45,12 +45,12 @@ fn correction_disclosure_requires_the_original_native_root_after_filtering() {
                     )
                     .unwrap();
                 let execution = phase
-                    .execution_request_for(&world.application.product_runtime)
+                    .execution_request_for_for_test(&(*world.application.product_runtime_for_test()))
                     .unwrap();
                 assert_eq!(
                     world
                         .application
-                        .execute_correction_disclosure(&execution, plan, original_subject)
+                        .execute_correction_disclosure_for_test(&execution, plan, original_subject)
                         .unwrap(),
                     expected
                 );
@@ -63,7 +63,7 @@ fn correction_disclosure_requires_the_original_native_root_after_filtering() {
                 .certification_query(worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::CrossRootQuery::reference())
                 .unwrap();
             let ordinary_plan = world
-                .selected_product(&phase.test_host_request())
+                .selected_product(&phase.test_host_request_for_test())
                 .admit_application_query(
                     &phase,
                     &related,
@@ -81,7 +81,7 @@ fn correction_disclosure_requires_the_original_native_root_after_filtering() {
                 "the related-root refusal must distinguish a real nonempty read"
             );
             let plan = world
-                .selected_product(&phase.test_host_request())
+                .selected_product(&phase.test_host_request_for_test())
                 .admit_application_query(
                     &phase,
                     &related,
@@ -91,11 +91,11 @@ fn correction_disclosure_requires_the_original_native_root_after_filtering() {
                 )
                 .unwrap();
             let execution = phase
-                .execution_request_for(&world.application.product_runtime)
+                .execution_request_for_for_test(&(*world.application.product_runtime_for_test()))
                 .unwrap();
             assert!(!world
                 .application
-                .execute_correction_disclosure(&execution, plan, original_subject)
+                .execute_correction_disclosure_for_test(&execution, plan, original_subject)
                 .unwrap());
         })
         .unwrap();
@@ -107,7 +107,7 @@ fn correction_disclosure_never_calls_the_application_projector() {
     let request = live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     world.application.with_host_advancement(|phase| {
-        let selected = world.selected_product(&phase.test_host_request());
+        let selected = world.selected_product(&phase.test_host_request_for_test());
         let principal = selected.resolve_authenticated_principal(
             &phase, &world.binding, &external, &request, WorthQueryPrincipalResolutionMode::Ordinary,
         ).unwrap();
@@ -115,19 +115,19 @@ fn correction_disclosure_never_calls_the_application_projector() {
             &phase, AccountStatus::reference(), "open".to_owned(), &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         ).unwrap();
-        let subject = account.entity_id();
+        let subject = account.entity_id_for_test();
         let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
         let query = installed_forged_selector_query(&world);
-        let plan = world.selected_product(&phase.test_host_request()).admit_application_query(
+        let plan = world.selected_product(&phase.test_host_request_for_test()).admit_application_query(
             &phase, &query, &access,
             ApplicationQueryParameterSet::new().bind(status_parameter(), "open".to_owned()).unwrap(),
             current_controls(&request),
         ).unwrap();
-        let execution = phase.execution_request_for(&world.application.product_runtime).unwrap();
-        assert!(world.application.execute_correction_disclosure(&execution, plan, subject).unwrap());
+        let execution = phase.execution_request_for_for_test(&(*world.application.product_runtime_for_test())).unwrap();
+        assert!(world.application.execute_correction_disclosure_for_test(&execution, plan, subject).unwrap());
         // The unchanged ordinary projection is a distinguishing counterpart: its
         // forged field selector fails, while the native root above remains real.
-        let plan = world.selected_product(&phase.test_host_request()).admit_application_query(
+        let plan = world.selected_product(&phase.test_host_request_for_test()).admit_application_query(
             &phase, &query, &access,
             ApplicationQueryParameterSet::new().bind(status_parameter(), "open".to_owned()).unwrap(),
             current_controls(&request),

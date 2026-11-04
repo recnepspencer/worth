@@ -37,7 +37,7 @@ fn recovery_capacity_denies_before_any_selected_product_head_moves() {
         .expect("the fixture read owns its installed host call");
     let root = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
         .expect("the fixture read owns its installed host call");
     let sibling_a = world
         .application
@@ -63,28 +63,28 @@ fn recovery_capacity_denies_before_any_selected_product_head_moves() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let world_head_before = sibling_b.product().selected_commit().clone();
     let relational_head_before = sibling_b
         .product()
-        .observation()
+        .observation_for_test()
         .basis()
         .relational_basis()
         .descriptor()
         .clone();
     let relational_branch = relational_head_before.branch_id().clone();
     let publication_cost_scope =
-        world
+        (*world
             .application
-            .primary_provider
+            .primary_provider_for_test())
             .graph
             .with_runtime(request_execution, |runtime| {
                 let identity = runtime
@@ -95,20 +95,20 @@ fn recovery_capacity_denies_before_any_selected_product_head_moves() {
                     vec![identity],
                 )
             });
-    let provider_publications_before = world
+    let provider_publications_before = (*world
         .application
-        .primary_provider
+        .primary_provider_for_test())
         .published_application_commit_count();
 
-    let root_slot = world
+    let root_slot = (*world
         .application
-        .primary_provider
-        .reserve_application_publication_recovery(root.product().observation(), None)
+        .primary_provider_for_test())
+        .reserve_application_publication_recovery(root.product().observation_for_test(), None)
         .expect("total minus one recovery slot remains admissible");
-    let sibling_a_slot = world
+    let sibling_a_slot = (*world
         .application
-        .primary_provider
-        .reserve_application_publication_recovery(sibling_a.product().observation(), None)
+        .primary_provider_for_test())
+        .reserve_application_publication_recovery(sibling_a.product().observation_for_test(), None)
         .expect("the final installed recovery slot remains admissible");
     let denied_program = world
         .application
@@ -139,9 +139,9 @@ fn recovery_capacity_denies_before_any_selected_product_head_moves() {
         WorthQueryApplicationCommitOutcome::Aborted
     ));
     assert_eq!(
-        world
+        (*world
             .application
-            .primary_provider
+            .primary_provider_for_test())
             .pending_application_publication_count_for_test(),
         2,
         "the denied attempt must not acquire or disturb either retained slot"
@@ -160,7 +160,7 @@ fn recovery_capacity_denies_before_any_selected_product_head_moves() {
     assert_eq!(
         after_denial
             .product()
-            .observation()
+            .observation_for_test()
             .basis()
             .relational_basis()
             .descriptor(),
@@ -168,9 +168,9 @@ fn recovery_capacity_denies_before_any_selected_product_head_moves() {
         "recovery capacity must deny before the Relational head moves"
     );
     let publication_cost =
-        world
+        (*world
             .application
-            .primary_provider
+            .primary_provider_for_test())
             .graph
             .with_runtime(request_execution, |runtime| {
                 runtime
@@ -183,9 +183,9 @@ fn recovery_capacity_denies_before_any_selected_product_head_moves() {
         "capacity denial must precede Relational publication owner contact"
     );
     assert_eq!(
-        world
+        (*world
             .application
-            .primary_provider
+            .primary_provider_for_test())
             .published_application_commit_count(),
         provider_publications_before,
         "capacity denial must publish no application causality"
@@ -222,9 +222,9 @@ fn recovery_capacity_denies_before_any_selected_product_head_moves() {
     drop(committed);
     drop(sibling_a_slot);
     assert_eq!(
-        world
+        (*world
             .application
-            .primary_provider
+            .primary_provider_for_test())
             .pending_application_publication_count_for_test(),
         0
     );

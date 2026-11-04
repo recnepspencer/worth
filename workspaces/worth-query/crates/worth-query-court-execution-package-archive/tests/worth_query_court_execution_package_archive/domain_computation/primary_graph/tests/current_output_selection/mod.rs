@@ -64,7 +64,7 @@ fn current_output_rejects_a_foreign_producer_identity_with_its_typed_cause() {
         .application
         .with_host_advancement(|phase| {
             world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&(phase).test_host_request_for_test())
                 .authorize_operation(
                     &phase,
                     &principal,
@@ -115,7 +115,7 @@ fn current_output_exhaustion_denies_the_admitted_projection() {
         .application
         .with_host_advancement(|phase| {
             world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&(phase).test_host_request_for_test())
                 .authorize_operation(
                     &phase,
                     &principal,
@@ -166,7 +166,7 @@ pub fn retire_open_account(
                 world,
             );
             let admission = world
-                .selected_product(&(phase_custody).test_host_request())
+                .selected_product(&(phase_custody).test_host_request_for_test())
                 .authorize_operation(
                     phase_custody,
                     &principal,
@@ -219,7 +219,7 @@ pub fn retire_open_account(
         .expect("the retirement preparation owns its host call");
     let outcome = world.application.compare_and_commit_application(
         program,
-        WorthQueryApplicationIdempotencyBinding::new([201; 32], [202; 32]),
+        WorthQueryApplicationIdempotencyBinding::new_for_test([201; 32], [202; 32]),
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     );
     if !matches!(outcome, WorthQueryApplicationCommitOutcome::Committed(_)) {
@@ -252,9 +252,9 @@ pub fn admitted_touch_parts(
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
-        .select_product_branch(
+        .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch(),
+            world.application.product_runtime().default_branch_for_test(),
         )
         .unwrap()
         .resolve_authenticated_principal(
@@ -267,9 +267,9 @@ pub fn admitted_touch_parts(
         .unwrap();
     let scope = world
         .application
-        .select_product_branch(
+        .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch(),
+            world.application.product_runtime().default_branch_for_test(),
         )
         .unwrap()
         .resolve_entity(

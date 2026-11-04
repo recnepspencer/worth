@@ -296,3 +296,5 @@ impl WorthQueryApplicationProjectedRelation {
 }
 
 pub(in crate::domain_computation::primary_graph::application_query::projection) mod materialization;
+
+mod court_doors_for_test;

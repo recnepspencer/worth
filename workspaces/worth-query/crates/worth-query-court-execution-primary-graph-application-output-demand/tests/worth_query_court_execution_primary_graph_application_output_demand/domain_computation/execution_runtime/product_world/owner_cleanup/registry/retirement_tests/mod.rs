@@ -40,7 +40,7 @@ impl WorthQueryProductRetentionFollower for Probe {
         );
         let entry = self.entry.lock().unwrap().as_ref().unwrap().clone();
         assert!(
-            entry.record.try_lock().is_ok(),
+            (*entry.record_for_test()).try_lock().is_ok(),
             "notification is beyond actual cleanup entry mutex"
         );
         self.notifications.fetch_add(1, Ordering::SeqCst);
@@ -49,7 +49,7 @@ impl WorthQueryProductRetentionFollower for Probe {
 pub struct Hook(WorthQueryProductBranchOwnerCleanupRegistry);
 impl Drop for Hook {
     fn drop(&mut self) {
-        self.0.replace_after_component_progress_hook(None);
+        self.0.replace_after_component_progress_hook_for_test(None);
     }
 }
 pub fn with_cleanup(
@@ -79,10 +79,10 @@ pub fn with_cleanup(
                 .unwrap()
         })
         .unwrap();
-    let mut runtime = world.application.product_runtime.clone();
+    let mut runtime = (*world.application.product_runtime_for_test()).clone();
     // Isolate this protocol observer from the real provider's follower. The World
     // reference, Native/Signal components and deletion ports are the real owners.
-    runtime.owner_cleanup = WorthQueryProductBranchOwnerCleanupRegistry::new(None);
+    runtime.owner_cleanup = WorthQueryProductBranchOwnerCleanupRegistry::new_for_test(None);
     let probe = Arc::new(Probe {
         runtime: runtime
             .source
@@ -115,14 +115,14 @@ fn managed_source_retirement_partial_failure_notifies_only_beyond_outer_and_entr
         let cancel = CancellationSource::new();
         let host = SerialRequest::from_memory(memory.clone(), cancel.token(), None);
         let token = cancel.clone();
-        runtime
-            .owner_cleanup
+        (*runtime
+            .owner_cleanup_for_test())
             .replace_after_component_progress_hook(Some(Box::new(move || token.cancel())));
-        let hook = Hook(runtime.owner_cleanup.clone());
+        let hook = Hook((*runtime.owner_cleanup_for_test()).clone());
         let mut retirements = OwnerCleanupRetirements::default();
         let outer = probe.outer.lock().unwrap();
         let failed = cleanup
-            .retry_in_request_with_retirements(&ExecutionRequest::serial(&host), &mut retirements)
+            .retry_in_request_with_retirements_for_test(&ExecutionRequest::serial(&host), &mut retirements)
             .expect_err("Native completed but the next Signal checkpoint must stop");
         assert_eq!(failed.denial(), WorthQueryProductBranchOwnerCleanupDenial::Execution(
             worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial::Interrupted(
@@ -148,7 +148,7 @@ fn managed_source_retirement_partial_failure_notifies_only_beyond_outer_and_entr
             1,
             "Native deletion is not repeated"
         );
-        assert!(runtime.pending_owner_cleanup().is_empty());
+        assert!(runtime.pending_owner_cleanup_for_test().is_empty());
     });
 }
 
@@ -159,18 +159,18 @@ fn managed_source_retirement_completed_cleanup_survives_actual_final_poll_stop()
         let cancel = CancellationSource::new();
         let host = SerialRequest::from_memory(memory.clone(), cancel.token(), None);
         let token = cancel.clone();
-        runtime
-            .owner_cleanup
+        (*runtime
+            .owner_cleanup_for_test())
             .replace_after_component_progress_hook(Some(Box::new(move || token.cancel())));
-        let _hook = Hook(runtime.owner_cleanup.clone());
+        let _hook = Hook((*runtime.owner_cleanup_for_test()).clone());
         let mut retirements = OwnerCleanupRetirements::default();
         let outer = probe.outer.lock().unwrap();
         let completed = cleanup
-            .retry_in_request_with_retirements(&ExecutionRequest::serial(&host), &mut retirements)
+            .retry_in_request_with_retirements_for_test(&ExecutionRequest::serial(&host), &mut retirements)
             .expect("actual completion cannot become an unavailable retry handle after final poll");
         assert!(cancel.token().is_cancelled());
         assert_eq!(completed.retired_component_count(), 1);
-        assert!(runtime.pending_owner_cleanup().is_empty());
+        assert!(runtime.pending_owner_cleanup_for_test().is_empty());
         assert_eq!(probe.notifications.load(Ordering::SeqCst), 0);
         drop(outer);
         drop(retirements);

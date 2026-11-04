@@ -65,14 +65,14 @@ impl ApplicationSchema for Events {
 #[test]
 fn typed_ordered_event_schema_installs_exact_native_roles_and_full_physical_roster() {
     let (layout, registry) = installed_schema_layout::<Events>();
-    let event = layout.entity_kind("Event").unwrap();
-    let row = layout.entity_kind("Row").unwrap();
-    let previous = layout.relation("Previous").unwrap().kind;
-    let introduces = layout.relation("Introduces").unwrap().kind;
-    let retires = layout.relation("Retires").unwrap().kind;
+    let event = layout.entity_kind_for_test("Event").unwrap();
+    let row = layout.entity_kind_for_test("Row").unwrap();
+    let previous = (*layout.relation("Previous").unwrap().kind_for_test());
+    let introduces = (*layout.relation("Introduces").unwrap().kind_for_test());
+    let retires = (*layout.relation("Retires").unwrap().kind_for_test());
     let live = layout.derived_relation("Live").unwrap();
     assert_eq!(
-        live.handle.parts().nodes,
+        (*live.handle_for_test()).parts().nodes,
         vec![
             Native::Stored {
                 relation: previous,
@@ -97,17 +97,17 @@ fn typed_ordered_event_schema_installs_exact_native_roles_and_full_physical_rost
         ]
     );
     assert_eq!(
-        live.from,
+        (*live.from_for_test()),
         ApplicationGraphMemberMeaning::Entity("Event".into())
     );
-    assert_eq!(live.to, ApplicationGraphMemberMeaning::Entity("Row".into()));
+    assert_eq!((*live.to_for_test()), ApplicationGraphMemberMeaning::Entity("Row".into()));
     let expected = std::collections::BTreeSet::from([
         (previous, event, event),
         (introduces, event, row),
         (retires, event, row),
     ]);
     assert_eq!(
-        live.handle
+        (*live.handle_for_test())
             .physical_sources()
             .iter()
             .copied()
@@ -121,17 +121,17 @@ fn typed_ordered_event_schema_installs_exact_native_roles_and_full_physical_rost
             .collect::<std::collections::BTreeSet<_>>(),
         expected
     );
-    assert!(live.carriers.is_empty());
+    assert!((*live.carriers_for_test()).is_empty());
     assert_eq!(
         registry
-            .derived_relation(&live.handle.parts().identity)
+            .derived_relation(&(*live.handle_for_test()).parts().identity)
             .unwrap(),
-        live.handle,
+        (*live.handle_for_test()),
         "lowering retains the actual registry issuer, not a rebuilt equal recipe"
     );
     let composed = layout.derived_relation("PreviousLive").unwrap();
     assert!(matches!(
-        composed.handle.parts().nodes[4],
+        (*composed.handle_for_test()).parts().nodes[4],
         Native::OrderedEvents {
             predecessor: 1,
             introduced: 2,
@@ -139,7 +139,7 @@ fn typed_ordered_event_schema_installs_exact_native_roles_and_full_physical_rost
         }
     ));
     assert!(matches!(
-        composed.handle.parts().nodes[5],
+        (*composed.handle_for_test()).parts().nodes[5],
         Native::Compose { left: 0, right: 4 }
     ));
 }

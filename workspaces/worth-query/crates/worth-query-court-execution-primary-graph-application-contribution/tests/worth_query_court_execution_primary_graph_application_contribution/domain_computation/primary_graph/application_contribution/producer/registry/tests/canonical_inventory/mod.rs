@@ -9,22 +9,22 @@ pub struct SecondBinding;
 
 #[test]
 fn binding_visits_follow_declared_producer_order_and_deduplicate_by_equality() {
-    let a = TypeId::of::<FirstBinding>();
-    let b = TypeId::of::<SecondBinding>();
+    let a = TypeId::of_for_test::<FirstBinding>();
+    let b = TypeId::of_for_test::<SecondBinding>();
     assert_ne!(a, b);
     for (first, second) in [(a, b), (b, a)] {
         let mut alpha = declared(first);
-        alpha.identity = "alpha-producer".into();
-        alpha.operation_binding_type = first;
+        (*alpha.identity_mut_for_test()) = "alpha-producer".into();
+        (*alpha.operation_binding_type_mut_for_test()) = first;
         let mut middle = alpha.clone();
-        middle.identity = "middle-producer".into();
+        (*middle.identity_mut_for_test()) = "middle-producer".into();
         let mut zulu = declared(second);
-        zulu.identity = "zulu-producer".into();
-        zulu.operation_binding_type = second;
+        (*zulu.identity_mut_for_test()) = "zulu-producer".into();
+        (*zulu.operation_binding_type_mut_for_test()) = second;
         let declarations = BTreeMap::from([
-            (zulu.identity.as_str(), &zulu),
-            (middle.identity.as_str(), &middle),
-            (alpha.identity.as_str(), &alpha),
+            ((*zulu.identity_for_test()).as_str(), &zulu),
+            ((*middle.identity_for_test()).as_str(), &middle),
+            ((*alpha.identity_for_test()).as_str(), &alpha),
         ]);
         let families = declared_output_family_bindings(declarations.values().copied());
         assert_eq!(

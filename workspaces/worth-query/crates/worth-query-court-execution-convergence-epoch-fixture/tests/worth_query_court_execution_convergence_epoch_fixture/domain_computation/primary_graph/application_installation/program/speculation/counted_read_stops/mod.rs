@@ -97,7 +97,7 @@ fn begin_preview_preserves_admission_stops_at_every_consult() {
         |request, ceiling| runtime.with_application_advancement(request, |phase| {
             let ordinal = identity.get();
             identity.set(ordinal + 1);
-            phase.execution_request_for(&runtime.product_runtime).unwrap().run(worth_execution::ExecutionWorkCeiling::new(Some(ceiling)), |_| {
+            phase.execution_request_for_for_test(&(*runtime.product_runtime_for_test())).unwrap().run(worth_execution::ExecutionWorkCeiling::new(Some(ceiling)), |_| {
                 runtime.begin_preview(&phase, &observation, WorthQueryApplicationPreviewRequest::new(format!("counted-preview-{ordinal}")))
                 .map(|session| session.discard().unwrap())
                 .inspect_err(|denial| {
@@ -156,7 +156,7 @@ fn readmit_preview_keeps_source_selection_stops_at_every_consult() {
             let preview = runtime.with_host_advancement(|phase| runtime.begin_preview(&phase, &observation, WorthQueryApplicationPreviewRequest::new(format!("readmit-preview-{ordinal}")))).unwrap().unwrap();
             let preview = std::cell::RefCell::new(Some(preview));
             counted(&|request, ceiling| runtime.with_application_advancement(request, |phase| {
-                phase.execution_request_for(&runtime.product_runtime).unwrap().run(worth_execution::ExecutionWorkCeiling::new(Some(ceiling)), |_| preview.borrow_mut().take().unwrap().readmit(&phase, &runtime).map(|readmitted| readmitted.discard().unwrap()).map_err(|(preview, denial)| { preview.discard().unwrap(); denial })).unwrap().0
+                phase.execution_request_for_for_test(&(*runtime.product_runtime_for_test())).unwrap().run(worth_execution::ExecutionWorkCeiling::new(Some(ceiling)), |_| preview.borrow_mut().take().unwrap().readmit(&phase, &runtime).map(|readmitted| readmitted.discard().unwrap()).map_err(|(preview, denial)| { preview.discard().unwrap(); denial })).unwrap().0
             }).unwrap())
         },
         WorthQueryApplicationPreviewReadmissionDenial::SourceSelection(Branch::Stopped(Err(Control::Cancelled))),
@@ -276,15 +276,15 @@ fn failed_preview_discard_retains_original_owner_after_every_readmission_stop() 
             let mut preview = runtime.with_host_advancement(|phase| runtime.begin_preview(
                 &phase, &observation, WorthQueryApplicationPreviewRequest::new(format!("discard-refusal-{ordinal}")),
             )).unwrap().unwrap();
-            let observer = preview.handle.liveness_observer();
-            let original = preview.handle.execution_record().digest().to_owned();
+            let observer = (*preview.handle_for_test()).liveness_observer();
+            let original = (*preview.handle_for_test()).execution_record().digest().to_owned();
             let fault = preview.reject_discard_for_test();
             let preview = std::cell::RefCell::new(Some(preview));
             let retained = std::cell::RefCell::new(None);
             let answer = counted(&|request, ceiling| runtime.with_application_advancement(request, |phase| {
-                phase.execution_request_for(&runtime.product_runtime).unwrap().run(worth_execution::ExecutionWorkCeiling::new(Some(ceiling)), |_| {
+                phase.execution_request_for_for_test(&(*runtime.product_runtime_for_test())).unwrap().run(worth_execution::ExecutionWorkCeiling::new(Some(ceiling)), |_| {
                     let (preview, cause) = match preview.borrow_mut().take().unwrap().readmit(&phase, &runtime) {
-                        Ok(readmitted) => (readmitted.session, None),
+                        Ok(readmitted) => ((*readmitted.session_for_test()), None),
                         Err((preview, denial)) => (preview, Some(denial)),
                     };
                     let (preview, denial) = preview.discard().unwrap_err();

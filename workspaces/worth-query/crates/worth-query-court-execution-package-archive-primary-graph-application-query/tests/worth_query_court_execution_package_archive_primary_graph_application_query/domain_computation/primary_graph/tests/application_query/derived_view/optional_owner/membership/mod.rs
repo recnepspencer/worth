@@ -9,7 +9,7 @@ pub fn read(
 {
     let request = live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
-    let selected = world.selected_product(&(phase_custody).test_host_request());
+    let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
     let principal = selected
         .resolve_authenticated_principal(
             phase_custody,

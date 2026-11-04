@@ -83,3 +83,5 @@ impl<'a> WorthQueryManagedIndexControl<'a> {
         self.first.borrow_mut().get_or_insert(cause).clone()
     }
 }
+
+mod court_doors_for_test;

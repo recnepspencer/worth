@@ -158,3 +158,5 @@ fn author_slots<T>(
     }
     Ok(slots.seal()?)
 }
+
+mod court_doors_for_test;

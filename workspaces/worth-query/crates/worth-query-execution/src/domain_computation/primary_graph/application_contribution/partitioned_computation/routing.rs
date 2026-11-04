@@ -142,3 +142,5 @@ impl ComputationPartitionRouting {
             .flat_map(|members| members.iter().copied())
     }
 }
+
+mod court_doors_for_test;

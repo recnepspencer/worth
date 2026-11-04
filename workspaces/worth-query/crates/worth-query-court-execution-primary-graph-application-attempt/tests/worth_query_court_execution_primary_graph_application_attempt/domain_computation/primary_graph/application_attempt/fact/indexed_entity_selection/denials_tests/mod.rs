@@ -17,9 +17,9 @@ fn indexed_reobservation_preserves_native_request_and_lookup_denials() {
     let world = installed_authorization_world(true);
     let selected = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
         .expect("the fixture read owns its installed host call");
-    let graph = world.application.runtime.primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let field = AccountNote::reference();
     let locator = graph
         .layout
@@ -34,7 +34,7 @@ fn indexed_reobservation_preserves_native_request_and_lookup_denials() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             graph
                 .integration_handle()
                 .with_runtime(request_execution, |runtime| {
@@ -45,7 +45,7 @@ fn indexed_reobservation_preserves_native_request_and_lookup_denials() {
                         let result = observe_checked(
                             runtime,
                             &host_custody.borrowed_request_for_test(),
-                            selected.application_basis().snapshot_handle(),
+                            selected.application_basis_for_test().snapshot_handle(),
                             DerivedIndexId(u64::MAX),
                             kind,
                             locator.clone(),

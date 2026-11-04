@@ -318,3 +318,5 @@ fn copy_currentness(currentness: SettlementCurrentness<'_>) -> SourceSettlementC
         SettlementCurrentness::Foreign => SourceSettlementCurrentness::Foreign,
     }
 }
+
+mod court_doors_for_test;

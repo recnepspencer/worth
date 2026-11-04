@@ -40,7 +40,7 @@ fn owner_sized_image_grows_from_actual_census_and_preserves_clean_arcs() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             let borrowed_execution = host_custody.borrowed_request_for_test();
             let request_execution = &borrowed_execution;
             let resolve = |label: &str| {
@@ -72,7 +72,7 @@ fn owner_sized_image_grows_from_actual_census_and_preserves_clean_arcs() {
                     WorthQueryPrincipalResolutionMode::Ordinary,
                 )
                 .unwrap();
-            let graph = world.application.runtime.primary_graph().unwrap();
+            let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
             let kind = graph
                 .layout
                 .relation(AccountOwner::reference().name())
@@ -87,14 +87,14 @@ fn owner_sized_image_grows_from_actual_census_and_preserves_clean_arcs() {
                             partition_id: PartitionId::main(),
                             kind_id: kind,
                             client_key: ClientKey::raw(key),
-                            source: EntityReference::Existing(owner.entity_id()),
+                            source: EntityReference::Existing(owner.entity_id_for_test()),
                             target: EntityReference::Existing(account),
                             fields: AspectFieldPatch::default(),
                         }),
                     )),
                 );
             };
-            bind(primary.entity_id(), "first-owner-member");
+            bind(primary.entity_id_for_test(), "first-owner-member");
             let selected = world.selected_product(
                 &(host_custody.phase_for_application(&world.application)).test_host_request(),
             );
@@ -214,7 +214,7 @@ fn owner_sized_image_grows_from_actual_census_and_preserves_clean_arcs() {
                             WorthQueryApplicationQueryAccessContext::new(&principal, scope);
                         let admit = || {
                             selected
-                                .retain_selection(request_execution)
+                                .retain_selection_for_test(request_execution)
                                 .unwrap()
                                 .admit_application_query(
                                     &host_custody.phase_for_application(&world.application),
@@ -237,7 +237,7 @@ fn owner_sized_image_grows_from_actual_census_and_preserves_clean_arcs() {
                     },
                 )
                 .unwrap();
-            assert_eq!(keys[0].root(), primary.entity_id());
+            assert_eq!(keys[0].root(), primary.entity_id_for_test());
             let before = world
                 .application
                 .observe_managed_derived_view(&view)
@@ -248,10 +248,10 @@ fn owner_sized_image_grows_from_actual_census_and_preserves_clean_arcs() {
 
             let prepared = graph.managed_derived_views().prepare_publication(
                 publication_basis(selected.product()),
-                &[ViewChange::Adjacency(owner.entity_id(), kind, 0)],
+                &[ViewChange::Adjacency(owner.entity_id_for_test(), kind, 0)],
                 100_000,
             );
-            bind(secondary.entity_id(), "second-owner-member");
+            bind(secondary.entity_id_for_test(), "second-owner-member");
             let after = world.selected_product(
                 &(host_custody.phase_for_application(&world.application)).test_host_request(),
             );
@@ -335,7 +335,7 @@ fn owner_sized_image_grows_from_actual_census_and_preserves_clean_arcs() {
                 reconciled
                     .keys()
                     .iter()
-                    .filter(|key| key.root() == secondary.entity_id())
+                    .filter(|key| key.root() == secondary.entity_id_for_test())
                     .count(),
                 1
             );

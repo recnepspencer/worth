@@ -16,7 +16,7 @@ fn direct_yield_retains_exact_authorities_and_releases_them_explicitly() {
             YieldProvider::installed(5),
             resource_request,
         );
-        let installed_running_phase = execution.phase_for_direct(&running);
+        let installed_running_phase = execution.phase_for_direct_for_test(&running);
 
         let logical_run_identity = running.logical_run_identity().to_owned();
         let attempt_identity = running.identity().to_owned();
@@ -92,7 +92,7 @@ fn direct_yield_denials_preserve_the_paused_execution_authority() {
             YieldProvider::without_installed_yield(),
             resource_request,
         );
-        let installed_running_phase = execution.phase_for_direct(&running);
+        let installed_running_phase = execution.phase_for_direct_for_test(&running);
 
         let active = running
             .begin_graph_execution(
@@ -139,7 +139,7 @@ fn checkpoint_claim_is_required_even_when_yield_is_installed() {
             YieldProvider::without_checkpoint_evidence(),
             resource_request,
         );
-        let installed_running_phase = execution.phase_for_direct(&running);
+        let installed_running_phase = execution.phase_for_direct_for_test(&running);
 
         let active = running
             .begin_graph_execution(
@@ -190,7 +190,7 @@ fn suspension_failure_terminalizes_signal_but_preserves_cleanup_authority() {
             YieldProvider::suspension_failure(),
             resource_request,
         );
-        let installed_running_phase = execution.phase_for_direct(&running);
+        let installed_running_phase = execution.phase_for_direct_for_test(&running);
 
         let active = running
             .begin_graph_execution(
@@ -277,7 +277,7 @@ fn suspension_panic_and_oversized_checkpoint_follow_the_same_recovery_lane() {
     ] {
         let (running, graph) =
             managed_graph_run_with_provider(WorthQueryOperationGraphAccess::Observe, provider, resource_request);
-    let installed_running_phase = execution.phase_for_direct(&running);
+    let installed_running_phase = execution.phase_for_direct_for_test(&running);
 
         let active = running
             .begin_graph_execution(&installed_running_phase,
@@ -321,7 +321,7 @@ fn direct_yield_preserves_exact_applied_effect_evidence() {
             YieldProvider::installed_with_partial_effect(5),
             resource_request,
         );
-        let installed_running_phase = execution.phase_for_direct(&running);
+        let installed_running_phase = execution.phase_for_direct_for_test(&running);
 
         let active = running
             .begin_graph_execution(

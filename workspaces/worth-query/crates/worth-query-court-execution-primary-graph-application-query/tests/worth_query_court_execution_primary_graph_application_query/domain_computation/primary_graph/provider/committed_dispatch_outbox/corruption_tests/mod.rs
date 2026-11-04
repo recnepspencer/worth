@@ -43,7 +43,7 @@ fn every_valid_persisted_field_substitution_breaks_whole_record_affinity() {
         let (provider, binding, commit, runtime_id) =
             committed_substituted_row(execution, field, replacement);
         assert_eq!(
-            provider.observe_expected(execution, &binding, &commit, runtime_id),
+            provider.observe_expected_for_test(execution, &binding, &commit, runtime_id),
             Err(Denial::RecordMismatch),
             "field {field} must participate in whole-record affinity"
         );
@@ -64,7 +64,7 @@ fn malformed_values_in_an_actual_committed_row_deny_before_record_copy_fallback(
         let (provider, binding, commit, runtime_id) =
             committed_substituted_row(execution, field, replacement);
         assert_eq!(
-            provider.observe_expected(execution, &binding, &commit, runtime_id),
+            provider.observe_expected_for_test(execution, &binding, &commit, runtime_id),
             Err(Denial::Malformed),
             "malformed persisted field {field} must be decoded, not replaced from the binding"
         );
@@ -77,7 +77,7 @@ fn a_committed_record_of_another_kind_denies_before_projection() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let world = installed_authorization_world(true);
-    let provider = &world.application.primary_provider;
+    let provider = &(*world.application.primary_provider_for_test());
     let record = record();
     let (binding, commit, runtime_id) = provider.graph.with_runtime_mut(execution, |runtime| {
         let (outbox_intent, pending) = bind_dispatch_outbox_create_intent(
@@ -86,11 +86,11 @@ fn a_committed_record_of_another_kind_denies_before_projection() {
             worth_relational::facade::identity::PartitionId::main(),
         )
         .unwrap();
-        let idempotency = WorthQueryApplicationIdempotencyBinding::new([91; 32], [92; 32]);
+        let idempotency = WorthQueryApplicationIdempotencyBinding::new_for_test([91; 32], [92; 32]);
         let idempotency_intent = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::idempotency::idempotency_create_intent(
             provider.graph.layout.provider_idempotency(),
             idempotency,
-            WorthQueryApplicationCommitOutcomeIdentity::mint().unwrap(),
+            WorthQueryApplicationCommitOutcomeIdentity::mint_for_test().unwrap(),
             0,
             worth_relational::facade::identity::PartitionId::main(),
         );
@@ -111,9 +111,9 @@ fn a_committed_record_of_another_kind_denies_before_projection() {
                 .push(idempotency_intent),
          worth_execution::ExecutionAllocationPolicy::SystemAllocation).expect("test staging stays within configured resource budgets");
         let committed = transaction.commit(execution, runtime).unwrap();
-        let correct = WorthQueryCommittedDispatchOutboxBinding::fixture_from_commit(
+        let correct = WorthQueryCommittedDispatchOutboxBinding::fixture_from_commit_for_test(
             provider.graph.layout.provider_dispatch_outbox(),
-            Some(pending.record()),
+            Some(pending.record_for_test()),
             &committed,
         )
         .unwrap()
@@ -121,7 +121,7 @@ fn a_committed_record_of_another_kind_denies_before_projection() {
         let wrong_ref = committed
             .changed_records
             .iter()
-            .find(|record_ref| *record_ref != correct.record_ref())
+            .find(|record_ref| *record_ref != correct.record_ref_for_test())
             .unwrap()
             .clone();
         let binding = WorthQueryCommittedDispatchOutboxBinding::fixture(record.clone(), wrong_ref);
@@ -147,7 +147,7 @@ fn a_deleted_record_is_non_visible_at_the_requested_commit_without_binding_fallb
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let world = installed_authorization_world(true);
-    let provider = &world.application.primary_provider;
+    let provider = &(*world.application.primary_provider_for_test());
     let record = record();
     let (binding, deletion_commit, runtime_id) = provider.graph.with_runtime_mut(execution, |runtime| {
         let (intent, pending) = bind_dispatch_outbox_create_intent(
@@ -169,14 +169,14 @@ fn a_deleted_record_is_non_visible_at_the_requested_commit_without_binding_fallb
 };
         create.push_batch(WorkerIntentBatch::new("live-outbox-before-delete").push(intent), worth_execution::ExecutionAllocationPolicy::SystemAllocation).expect("test staging stays within configured resource budgets");
         let created = create.commit(execution, runtime).unwrap();
-        let binding = WorthQueryCommittedDispatchOutboxBinding::fixture_from_commit(
+        let binding = WorthQueryCommittedDispatchOutboxBinding::fixture_from_commit_for_test(
             provider.graph.layout.provider_dispatch_outbox(),
-            Some(pending.record()),
+            Some(pending.record_for_test()),
             &created,
         )
         .unwrap()
         .unwrap();
-        let RecordRef::Entity(entity_id) = binding.record_ref().clone() else {
+        let RecordRef::Entity(entity_id) = binding.record_ref_for_test().clone() else {
             panic!("outbox binding is an entity")
         };
         retain_commit_basis(provider, runtime, &created);
@@ -225,7 +225,7 @@ pub fn committed_substituted_row(
     u64,
 ) {
     let world = installed_authorization_world(true);
-    let provider = world.application.primary_provider.clone();
+    let provider = (*world.application.primary_provider_for_test()).clone();
     let record = record();
     let layout = provider.graph.layout.provider_dispatch_outbox().clone();
     let branch = primary_relational_branch_id();
@@ -269,7 +269,7 @@ pub fn committed_substituted_row(
             })
             .unwrap();
         let binding = WorthQueryCommittedDispatchOutboxBinding::fixture(
-            pending.record().clone(),
+            pending.record_for_test().clone(),
             RecordRef::Entity(corrupted_id),
         );
         let commit = committed.outcome().commit.clone();
@@ -350,7 +350,7 @@ pub fn record() -> WorthQueryDispatchOutboxRecord {
         branch: "main",
     })
     .unwrap();
-    WorthQueryDispatchOutboxRecord::from_installed_contract(
+    WorthQueryDispatchOutboxRecord::from_installed_contract_for_test(
         correlation,
         &InstalledExternalEffectContract::Declared {
             correlation_family:

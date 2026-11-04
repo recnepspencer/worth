@@ -9,7 +9,7 @@ fn concurrent_independent_attempts_preserve_one_product_winner_and_the_exact_los
         let principal = world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 authenticated_principal(
                     &(host_custody.phase_for_application(&world.application)).test_host_request(),
                     &world,
@@ -20,7 +20,7 @@ fn concurrent_independent_attempts_preserve_one_product_winner_and_the_exact_los
         let accounts = world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 [
                     resolved_account(
                         &(host_custody.phase_for_application(&world.application))
@@ -44,7 +44,7 @@ fn concurrent_independent_attempts_preserve_one_product_winner_and_the_exact_los
         let selected = world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 world.selected_product(
                     &(host_custody.phase_for_application(&world.application)).test_host_request(),
                 )
@@ -54,10 +54,10 @@ fn concurrent_independent_attempts_preserve_one_product_winner_and_the_exact_los
             world
                 .application
                 .with_host_advancement(|phase| {
-                    let host_custody = phase.test_host_request();
-                    world
+                    let host_custody = phase.test_host_request_for_test();
+                    (*world
                         .application
-                        .primary_provider
+                        .primary_provider_for_test())
                         .graph
                         .with_runtime(&host_custody.borrowed_request_for_test(), |runtime| {
                             runtime.history().immutable_commit_count()
@@ -69,7 +69,7 @@ fn concurrent_independent_attempts_preserve_one_product_winner_and_the_exact_los
         let first = world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 admitted_program(
                     &host_custody.phase_for_application(&world.application),
                     &world,
@@ -83,7 +83,7 @@ fn concurrent_independent_attempts_preserve_one_product_winner_and_the_exact_los
         let second = world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 admitted_program(
                     &host_custody.phase_for_application(&world.application),
                     &world,
@@ -124,7 +124,7 @@ fn concurrent_independent_attempts_preserve_one_product_winner_and_the_exact_los
             let current = world
                 .application
                 .with_host_advancement(|phase| {
-                    let host_custody = phase.test_host_request();
+                    let host_custody = phase.test_host_request_for_test();
                     world.selected_product(
                         &(host_custody.phase_for_application(&world.application))
                             .test_host_request(),
@@ -147,7 +147,7 @@ fn concurrent_independent_attempts_preserve_one_product_winner_and_the_exact_los
         let current = world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 world.selected_product(
                     &(host_custody.phase_for_application(&world.application)).test_host_request(),
                 )
@@ -178,7 +178,7 @@ fn concurrent_independent_attempts_preserve_one_product_winner_and_the_exact_los
                 baseline + 1,
                 "no-effect loser must leave no lower commit"
             );
-            let readmitted = world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request(); admitted_program(&host_custody.phase_for_application(&world.application),
+            let readmitted = world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request_for_test(); admitted_program(&host_custody.phase_for_application(&world.application),
                 &world,
                 &principal,
                 &accounts[loser_index],
@@ -195,7 +195,7 @@ fn concurrent_independent_attempts_preserve_one_product_winner_and_the_exact_los
                 fresh.committed_product_publication(),
                 winner.committed_product_publication()
             );
-            let after = world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request(); world.selected_product(&(host_custody.phase_for_application(&world.application)).test_host_request(), ) }).expect("the fixture read owns its installed host call");
+            let after = world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request_for_test(); world.selected_product(&(host_custody.phase_for_application(&world.application)).test_host_request(), ) }).expect("the fixture read owns its installed host call");
             assert_eq!(
                 after.product().relational_basis_descriptor(),
                 fresh.basis_descriptor()
@@ -213,7 +213,7 @@ fn concurrent_independent_attempts_preserve_one_product_winner_and_the_exact_los
                 baseline + 1,
                 "pre-effect product-basis loser must leave no lower commit"
             );
-            let readmitted = world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request(); admitted_program(&host_custody.phase_for_application(&world.application),
+            let readmitted = world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request_for_test(); admitted_program(&host_custody.phase_for_application(&world.application),
                 &world,
                 &principal,
                 &accounts[loser_index],
@@ -244,7 +244,7 @@ fn concurrent_independent_attempts_preserve_one_product_winner_and_the_exact_los
                 baseline + 2,
                 "retained loser must represent its actual owner movement"
             );
-            let after = world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request(); world.selected_product(&(host_custody.phase_for_application(&world.application)).test_host_request(), ) }).expect("the fixture read owns its installed host call");
+            let after = world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request_for_test(); world.selected_product(&(host_custody.phase_for_application(&world.application)).test_host_request(), ) }).expect("the fixture read owns its installed host call");
             assert_eq!(
                 after.product().selected_commit(),
                 current.product().selected_commit(),

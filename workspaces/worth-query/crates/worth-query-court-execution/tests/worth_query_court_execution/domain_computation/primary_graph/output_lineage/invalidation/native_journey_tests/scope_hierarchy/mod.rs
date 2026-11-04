@@ -35,18 +35,18 @@ pub fn run(
 ) -> worth_query_execution::facade::domain_computation::WorthQueryNativeMarkingWork {
     let world = crate::domain_computation::primary_graph::output_lineage::invalidation::native_journey_tests::population_world::install((siblings + 1) * DEPTH);
     world.application.with_host_advancement(|phase| {
- let custody = phase.test_host_request();
+ let custody = phase.test_host_request_for_test();
  let phase_custody = &custody;
  let execution = &phase_custody.borrowed_request_for_test();
 
     let (_, product, _) = world
         .selected_product(&(phase_custody).test_host_request())
-        .into_parts();
+        .into_parts_for_test();
     let coordinate = ProductCoordinate {
         occurrence: product.observation().lifecycle_incarnation(),
         generation: product.observation().reference_generation().get(),
     };
-    let graph = world.application.runtime.primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let handle = graph.integration_handle();
     let owner = &handle.source_owner.invalidation_owner;
     let kind = graph
@@ -88,12 +88,12 @@ pub fn run(
         let (before_handle, before) = snapshot(runtime);
         let registries: Vec<_> = entities.iter().map(|_| WorthQueryOutputDemandRegistry::default()).collect();
         let members: Vec<_> = registries.iter().zip(&entities).map(|(registry, entity)|
-            registry.fixture_scope_work_membership(coordinate.occurrence, *entity)).collect();
-        let outputs: Vec<_> = entities.iter().map(|entity| RecordedSettlementIdentity::retain(&SemanticSource {
-            runtime_authority: world.application.runtime.authority_identity().as_u64(),
-            schema: world.application.installed_schema.binding_identity().clone(),
-            scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity(*entity),
-            output_binding: OutputBindingIdentity::declared("ScopeOutput"),
+            registry.fixture_scope_work_membership((*coordinate.occurrence_for_test()), *entity)).collect();
+        let outputs: Vec<_> = entities.iter().map(|entity| RecordedSettlementIdentity::retain_for_test(&SemanticSource {
+            runtime_authority: (*world.application.runtime_for_test()).authority_identity().as_u64(),
+            schema: (*world.application.installed_schema_for_test()).binding_identity().clone(),
+            scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(*entity),
+            output_binding: OutputBindingIdentity::declared_for_test("ScopeOutput"),
         }, coordinate, 0)).collect();
         for n in 0..entities.len() {
             // Each distinct Native scope above the leaf consumes exactly its
@@ -103,7 +103,7 @@ pub fn run(
                 computation: None,
                 work_membership: Some(Arc::clone(&members[n].1)),
                 identity: Arc::clone(&outputs[n]),
-                facts: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts::for_test(false,
+                facts: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts::for_test_for_test(false,
                     if leaf { Arc::from([field_fact(execution, runtime, &before_handle, entities[n], label.clone())]) } else { Arc::from([]) }),
                 output_facts: None, read_basis: before.clone(), stale_at_read_basis: OrdSet::new(), requirement: None,
                 upstream: if leaf { OrdSet::new() } else { OrdSet::unit(Arc::clone(&outputs[n - 1])) },
@@ -113,11 +113,11 @@ pub fn run(
             for _ in 0..2 {
 
 
-let initial = registries[n].next_required_work(owner).unwrap().unwrap();
+let initial = registries[n].next_required_work_for_test(owner).unwrap().unwrap();
 assert!(matches!(initial.kind(), SelectedRequiredWorkKind::Local { .. } | SelectedRequiredWorkKind::UnresolvedInitial));
                 initial.acknowledge_fixture();
             }
-            assert!(registries[n].next_required_work(owner).unwrap().is_none());
+            assert!(registries[n].next_required_work_for_test(owner).unwrap().is_none());
         }
         write_field(execution, runtime, entities[0], label, "after");
         let (after_handle, after) = snapshot(runtime);
@@ -130,7 +130,7 @@ let report = owner.native_marking_report(&after).unwrap().unwrap();
         assert_eq!(counts.downstream_edges, DEPTH as u64 - 1);
         for (n, registry) in registries.iter().enumerate() {
 
-            let candidate = registry.next_required_work(owner).unwrap();
+            let candidate = registry.next_required_work_for_test(owner).unwrap();
             if n < DEPTH {
                 let candidate = candidate.expect("each ancestor has one Native pending cue");
                 assert!(matches!(candidate.kind(), SelectedRequiredWorkKind::Native { .. }));
@@ -139,7 +139,7 @@ let report = owner.native_marking_report(&after).unwrap().unwrap();
                 assert!(candidate.is_none(), "sibling scope {n} contributes zero candidates, hence zero Ready selections");
                 assert!(matches!(currentness(owner, &after, &outputs[n]), SourceSettlementCurrentness::Clean));
             }
-            assert!(registry.next_required_work(owner).unwrap().is_none(), "one cue per dirty scope");
+            assert!(registry.next_required_work_for_test(owner).unwrap().is_none(), "one cue per dirty scope");
         }
         for snapshot in [before_handle, after_handle] { runtime.snapshots().release_snapshot(&snapshot).unwrap(); }
         counts

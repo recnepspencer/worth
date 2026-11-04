@@ -48,15 +48,15 @@ pub fn try_with_reader<Output>(
     Output,
     worth_query_execution::facade::domain_computation::WorthQueryOperationProjectionDenial,
 > {
-    let principal = authenticated_principal(&(phase_custody).test_host_request(), world, request);
-    let account = resolved_account(&(phase_custody).test_host_request(), world, "open", request);
+    let principal = authenticated_principal(&(phase_custody).test_host_request_for_test(), world, request);
+    let account = resolved_account(&(phase_custody).test_host_request_for_test(), world, "open", request);
     let operation = world
         .application
         .installed_schema()
         .installed_operation(ProgramRequiredOperation::reference())
         .unwrap();
     let admission = world
-        .selected_product(&(phase_custody).test_host_request())
+        .selected_product(&(phase_custody).test_host_request_for_test())
         .authorize_operation(
             phase_custody,
             &principal,
@@ -76,14 +76,14 @@ pub fn try_with_reader<Output>(
     let affinity = admission.operation_scope_binding().clone();
     let context = std::cell::Cell::new(DecisionContextUse::default());
     let interruption = std::cell::Cell::new(None);
-    let execution = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::QueryRequestExecution::open(world.application.product_runtime().owner.execution_placement(), admission.publication_request());
+    let execution = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::QueryRequestExecution::open_for_test((*world.application.product_runtime().owner_for_test()).execution_placement(), admission.publication_request_for_test());
     world
         .invariant
         .project_admitted_operation(
             phase_custody,
             &admission,
             |reader, scope| {
-                let mut decision = DecisionReader::new(
+                let mut decision = DecisionReader::new_for_test(
                     reader,
                     scope,
                     principal.principal_identity(),
@@ -92,8 +92,8 @@ pub fn try_with_reader<Output>(
                     &execution,
                     &context,
                     &interruption,
-                    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::handler::conditional_definition::ConditionalDefinitionAdmission::new(
-                        &world.application, admission.graph_work().mutation_product(),
+                    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::handler::conditional_definition::ConditionalDefinitionAdmission::new_for_test(
+                        &world.application, admission.graph_work_for_test().mutation_product(),
                     ),
                 );
                 action(&mut decision)

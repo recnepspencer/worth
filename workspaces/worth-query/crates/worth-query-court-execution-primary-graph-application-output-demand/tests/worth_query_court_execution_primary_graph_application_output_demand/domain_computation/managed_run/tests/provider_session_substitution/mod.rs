@@ -141,7 +141,7 @@ fn token_minted_for_an_earlier_plan_cannot_open_a_later_plan() {
         );
         let first_identity = first.identity().to_owned();
         let first_failure = {
-            let installed_fixture_phase = first.fixture_phase(execution);
+            let installed_fixture_phase = first.fixture_phase_for_test(execution);
             first
                 .admit_provider_execution_plan(&world.graph)
                 .expect("first plan should admit")
@@ -169,7 +169,7 @@ fn token_minted_for_an_earlier_plan_cannot_open_a_later_plan() {
         );
         assert_ne!(second.identity(), first_identity);
         let substitution = {
-            let installed_fixture_phase = second.fixture_phase(execution);
+            let installed_fixture_phase = second.fixture_phase_for_test(execution);
             second
                 .admit_provider_execution_plan(&world.graph)
                 .expect("second plan should admit")
@@ -256,7 +256,7 @@ pub fn start_run(
 
 pub fn cleanup(running: WorthQueryRunningDirectRun) {
     running
-        .terminate_for_convergence(WorthQueryManagedRunTerminalKind::Failed)
+        .terminate_for_convergence_for_test(WorthQueryManagedRunTerminalKind::Failed)
         .cleanup()
         .expect("substitution fixture cleanup should complete");
 }

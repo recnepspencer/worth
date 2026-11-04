@@ -143,7 +143,7 @@ fn ignored_governed_denials_and_zero_progress_completion_cannot_advance() {
             };
             let (running, graph) =
                 managed_graph_run_with_provider(access, HostileProvider(port), resource_request);
-            let installed_running_phase = execution.phase_for_direct(&running);
+            let installed_running_phase = execution.phase_for_direct_for_test(&running);
 
             let active = running
                 .begin_graph_execution(
@@ -203,7 +203,7 @@ fn failed_provider_output_is_released_without_queue_publication() {
             HostileProvider(HostilePort::OutputThenFailure),
             resource_request,
         );
-        let installed_running_phase = execution.phase_for_direct(&running);
+        let installed_running_phase = execution.phase_for_direct_for_test(&running);
 
         let active = running
             .begin_graph_execution(

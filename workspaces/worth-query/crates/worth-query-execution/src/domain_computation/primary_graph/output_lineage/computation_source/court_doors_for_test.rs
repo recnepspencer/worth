@@ -4,9 +4,18 @@ use super::*;
 impl ComputationSourceEvidence {
     #[doc(hidden)]
     pub fn retain_facts_for_test(
-        self, facts: impl Into<
+        self,
+        facts: impl Into<
             crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
-        >) -> super::super::RetainedSourceFacts {
+        >,
+    ) -> super::super::RetainedSourceFacts {
         Self::retain_facts(self, facts)
+    }
+}
+
+impl ComputationSourceEvidence {
+    #[doc(hidden)]
+    pub fn unavailable_for_test() -> Self {
+        Self::unavailable()
     }
 }

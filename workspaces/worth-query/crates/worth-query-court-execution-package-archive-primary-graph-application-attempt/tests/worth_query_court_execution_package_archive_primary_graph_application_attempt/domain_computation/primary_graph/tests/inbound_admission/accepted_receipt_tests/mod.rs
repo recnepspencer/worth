@@ -33,7 +33,7 @@ fn verified_second_callback_is_accepted_while_publication_slot_is_busy() {
     let first_envelope = signed_envelope(first_record, [0xd1; 32], first_record.payload(), false);
     let WorthQueryInboundAdmission::New(first_accepted, true) = world
         .application
-        .admit_inbound_occurrence(&handle, &first_envelope)
+        .admit_inbound_occurrence_for_test(&handle, &first_envelope)
         .unwrap()
     else {
         panic!("first authenticated owner must reserve the publication slot");
@@ -56,7 +56,7 @@ fn verified_second_callback_is_accepted_while_publication_slot_is_busy() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             assert_eq!(
                 completion_records(&host_custody.borrowed_request_for_test(), &world),
                 0
@@ -79,7 +79,7 @@ fn verified_second_callback_is_accepted_while_publication_slot_is_busy() {
             assert_eq!(
                 world
                     .application
-                    .progress_accepted_inbound_occurrence(
+                    .progress_accepted_inbound_occurrence_for_test(
                         &phase.borrowed_request_for_test(),
                         phase,
                         first_accepted,
@@ -98,7 +98,7 @@ fn verified_second_callback_is_accepted_while_publication_slot_is_busy() {
             assert_eq!(
                 world
                     .application
-                    .progress_retained_inbound_occurrence(
+                    .progress_retained_inbound_occurrence_for_test(
                         &phase.borrowed_request_for_test(),
                         phase,
                         *second_record.correlation().bytes(),
@@ -113,7 +113,7 @@ fn verified_second_callback_is_accepted_while_publication_slot_is_busy() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             assert_eq!(
                 completion_records(&host_custody.borrowed_request_for_test(), &world),
                 2
@@ -222,7 +222,7 @@ fn dropping_admitted_public_phase_releases_publication_slot_but_keeps_custody() 
             assert_eq!(
                 world
                     .application
-                    .progress_retained_inbound_occurrence(
+                    .progress_retained_inbound_occurrence_for_test(
                         &phase.borrowed_request_for_test(),
                         phase,
                         *record.correlation().bytes(),
@@ -262,7 +262,7 @@ fn old_executed_phase_drop_cannot_release_a_new_publication_claim() {
 
     let reclaimed = world
         .application
-        .admit_inbound_occurrence(&world.verifier, &envelope)
+        .admit_inbound_occurrence_for_test(&world.verifier, &envelope)
         .unwrap();
     let WorthQueryInboundAdmission::Duplicate(accepted, WorthQueryInboundPublicationClaim::Claimed) =
         reclaimed
@@ -273,7 +273,7 @@ fn old_executed_phase_drop_cannot_release_a_new_publication_claim() {
     assert!(matches!(
         world
             .application
-            .admit_inbound_occurrence(&world.verifier, &envelope)
+            .admit_inbound_occurrence_for_test(&world.verifier, &envelope)
             .unwrap(),
         WorthQueryInboundAdmission::Duplicate(_, WorthQueryInboundPublicationClaim::Publishing)
     ));
@@ -284,7 +284,7 @@ fn old_executed_phase_drop_cannot_release_a_new_publication_claim() {
             assert_eq!(
                 world
                     .application
-                    .progress_accepted_inbound_occurrence(
+                    .progress_accepted_inbound_occurrence_for_test(
                         &phase.borrowed_request_for_test(),
                         phase,
                         accepted,

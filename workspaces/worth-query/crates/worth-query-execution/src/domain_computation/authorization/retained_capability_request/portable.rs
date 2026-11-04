@@ -206,3 +206,5 @@ fn portable_value(value: &AspectValue) -> bool {
             | AspectValue::ContentRef(_)
     )
 }
+
+mod court_doors_for_test;

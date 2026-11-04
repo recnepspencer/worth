@@ -115,7 +115,7 @@ impl WorthQueryCommittedDispatchOutboxObservation {
 
     /// Substitution probe for proving the exact World publication is paired
     /// with its own Relational owner row before transport admission.
-    pub(in crate::domain_computation::primary_graph) fn with_product_publication_for_test(
+    pub fn with_product_publication_for_test(
         mut self,
         publication: WorthQueryCommittedProductPublication,
     ) -> Self {
@@ -302,3 +302,5 @@ use record_read::CommittedOutboxRead;
 #[cfg(test)]
 #[path = "committed_dispatch_outbox/restoration_tests.rs"]
 mod restoration_tests;
+
+mod court_doors_for_test;

@@ -48,7 +48,7 @@ fn forbidden_root_guard_influence_denies_before_result_construction() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
 
             let capability = admit_touch_account_capability(
                 &(host_custody.phase_for_application(&context.world.application))
@@ -97,7 +97,7 @@ pub fn execute_governed_root_guard(label: &str) -> usize {
         .world
         .application
         .with_host_advancement(|phase| {
-            let custody = phase.test_host_request();
+            let custody = phase.test_host_request_for_test();
             let phase_custody = &custody;
             let capability = admit_touch_account_capability(
                 phase_custody,
@@ -145,17 +145,17 @@ pub fn root_guard_context(label: &str) -> RootGuardContext {
     let (principal, account) = world
         .application
         .with_host_advancement(|phase| {
-            let host_request = phase.test_host_request();
+            let host_request = phase.test_host_request_for_test();
             let phase_custody = &host_request;
             let borrowed_execution = phase
-                .execution_request_for(world.application.product_runtime())
+                .execution_request_for_for_test(world.application.product_runtime())
                 .expect("the fixture lends its installed phase");
             let execution = &borrowed_execution;
             let principal = world
                 .application
-                .select_product_branch(
+                .select_product_branch_for_test(
                     execution,
-                    world.application.product_runtime().default_branch(),
+                    world.application.product_runtime().default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_authenticated_principal(
@@ -168,9 +168,9 @@ pub fn root_guard_context(label: &str) -> RootGuardContext {
                 .unwrap();
             let account = world
                 .application
-                .select_product_branch(
+                .select_product_branch_for_test(
                     execution,
-                    world.application.product_runtime().default_branch(),
+                    world.application.product_runtime().default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(

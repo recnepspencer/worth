@@ -23,7 +23,7 @@ impl WorthQueryRuntimeTimeSource for FixedTime {
 }
 
 pub fn clock(now: Option<u64>) -> WorthQueryRuntimeClock {
-    WorthQueryRuntimeClock::from_source(FixedTime(now))
+    WorthQueryRuntimeClock::from_source_for_test(FixedTime(now))
 }
 
 pub fn kind<Value>(

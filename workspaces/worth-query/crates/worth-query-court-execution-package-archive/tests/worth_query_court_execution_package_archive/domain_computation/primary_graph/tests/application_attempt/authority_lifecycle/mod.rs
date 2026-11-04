@@ -26,14 +26,14 @@ fn admission_from_an_equivalent_foreign_runtime_opens_no_application_door() {
     let principal = source_world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             authenticated_principal(&host_custody, &source_world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = source_world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             resolved_account(&host_custody, &source_world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
@@ -46,7 +46,7 @@ fn admission_from_an_equivalent_foreign_runtime_opens_no_application_door() {
         .application
         .with_host_advancement(|phase| {
             source_world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&(phase).test_host_request_for_test())
                 .authorize_operation(
                     &phase,
                     &principal,
@@ -76,7 +76,7 @@ fn admission_from_an_equivalent_foreign_runtime_opens_no_application_door() {
     let read_denial = target_world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             target_world
                 .application
                 .begin_application_read_attempt(
@@ -96,7 +96,7 @@ fn admission_from_an_equivalent_foreign_runtime_opens_no_application_door() {
         .application
         .with_host_advancement(|phase| {
             source_world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&(phase).test_host_request_for_test())
                 .authorize_operation(
                     &phase,
                     &principal,
@@ -144,13 +144,13 @@ fn cancellation_after_program_preparation_prevents_provider_commit() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let program = world
@@ -180,7 +180,7 @@ fn cancellation_after_program_preparation_prevents_provider_commit() {
     let _still_open = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "open", &fresh_request)
+            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &fresh_request)
         })
         .expect("the fixture read owns its installed host call");
 }
@@ -196,13 +196,13 @@ fn cancelled_admission_cannot_inspect_provider_idempotency() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let operation = world
@@ -214,7 +214,7 @@ fn cancelled_admission_cannot_inspect_provider_idempotency() {
         .application
         .with_host_advancement(|phase| {
             world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&(phase).test_host_request_for_test())
                 .authorize_operation(
                     &phase,
                     &principal,

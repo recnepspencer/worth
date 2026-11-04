@@ -58,7 +58,7 @@ fn governance_matches_only_the_managed_session_that_minted_it() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
 
             let first = admit_plan(
                 &host_custody.phase_for_application(&context.world.application),
@@ -84,13 +84,13 @@ fn governance_matches_only_the_managed_session_that_minted_it() {
                 second.graph_work_managed_run_identity()
             );
 
-            assert!(!first.governance.computation_matches(
+            assert!(!(*first.governance_for_test()).computation_matches(
                 &foreign_plan.graph_work,
-                foreign_plan.runtime_authority,
-                first.query.identity(),
-                first.parameters.identity(),
-                first.principal.principal_entity_id(),
-                first.scope.entity_id(),
+                (*foreign_plan.runtime_authority_for_test()),
+                (*first.query_for_test()).identity(),
+                (*first.parameters_for_test()).identity(),
+                first.principal.principal_entity_id_for_test(),
+                (*first.scope_for_test()).entity_id(),
             ));
         })
         .expect("the fixture block owns its installed host call")
@@ -110,7 +110,7 @@ fn governance_rejects_real_query_parameter_principal_and_scope_substitution() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             let borrowed_execution = host_custody.borrowed_request_for_test();
             let execution = &borrowed_execution;
             let plan = admit_plan(
@@ -140,9 +140,9 @@ fn governance_rejects_real_query_parameter_principal_and_scope_substitution() {
             let account_two = context
                 .world
                 .application
-                .select_product_branch(
+                .select_product_branch_for_test(
                     execution,
-                    context.world.application.product_runtime().default_branch(),
+                    context.world.application.product_runtime().default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
@@ -154,66 +154,66 @@ fn governance_rejects_real_query_parameter_principal_and_scope_substitution() {
                 )
                 .unwrap();
 
-            assert!(!plan.governance.computation_matches(
+            assert!(!(*plan.governance_for_test()).computation_matches(
                 &plan.graph_work,
-                plan.runtime_authority,
+                (*plan.runtime_authority_for_test()),
                 alternate_query.identity(),
-                plan.parameters.identity(),
-                plan.principal.principal_entity_id(),
-                plan.scope.entity_id(),
+                (*plan.parameters_for_test()).identity(),
+                plan.principal.principal_entity_id_for_test(),
+                (*plan.scope_for_test()).entity_id(),
             ));
-            assert!(!plan.governance.computation_matches(
+            assert!(!(*plan.governance_for_test()).computation_matches(
                 &plan.graph_work,
-                plan.runtime_authority,
-                plan.query.identity(),
+                (*plan.runtime_authority_for_test()),
+                (*plan.query_for_test()).identity(),
                 alternate_parameters.identity(),
-                plan.principal.principal_entity_id(),
-                plan.scope.entity_id(),
+                plan.principal.principal_entity_id_for_test(),
+                (*plan.scope_for_test()).entity_id(),
             ));
-            assert!(!plan.governance.computation_matches(
+            assert!(!(*plan.governance_for_test()).computation_matches(
                 &plan.graph_work,
-                plan.runtime_authority,
-                plan.query.identity(),
-                plan.parameters.identity(),
-                bob.principal_entity_id(),
-                plan.scope.entity_id(),
+                (*plan.runtime_authority_for_test()),
+                (*plan.query_for_test()).identity(),
+                (*plan.parameters_for_test()).identity(),
+                bob.principal_entity_id_for_test(),
+                (*plan.scope_for_test()).entity_id(),
             ));
-            assert!(!plan.governance.computation_matches(
+            assert!(!(*plan.governance_for_test()).computation_matches(
                 &plan.graph_work,
-                plan.runtime_authority,
-                plan.query.identity(),
-                plan.parameters.identity(),
-                plan.principal.principal_entity_id(),
+                (*plan.runtime_authority_for_test()),
+                (*plan.query_for_test()).identity(),
+                (*plan.parameters_for_test()).identity(),
+                plan.principal.principal_entity_id_for_test(),
                 account_two.entity_id(),
             ));
 
             for matches in [
-                plan.governance.readmission_matches(
-                    plan.runtime_authority,
+                (*plan.governance_for_test()).readmission_matches(
+                    (*plan.runtime_authority_for_test()),
                     alternate_query.identity(),
-                    plan.parameters.identity(),
-                    plan.principal.principal_entity_id(),
-                    plan.scope.entity_id(),
+                    (*plan.parameters_for_test()).identity(),
+                    plan.principal.principal_entity_id_for_test(),
+                    (*plan.scope_for_test()).entity_id(),
                 ),
-                plan.governance.readmission_matches(
-                    plan.runtime_authority,
-                    plan.query.identity(),
+                (*plan.governance_for_test()).readmission_matches(
+                    (*plan.runtime_authority_for_test()),
+                    (*plan.query_for_test()).identity(),
                     alternate_parameters.identity(),
-                    plan.principal.principal_entity_id(),
-                    plan.scope.entity_id(),
+                    plan.principal.principal_entity_id_for_test(),
+                    (*plan.scope_for_test()).entity_id(),
                 ),
-                plan.governance.readmission_matches(
-                    plan.runtime_authority,
-                    plan.query.identity(),
-                    plan.parameters.identity(),
-                    bob.principal_entity_id(),
-                    plan.scope.entity_id(),
+                (*plan.governance_for_test()).readmission_matches(
+                    (*plan.runtime_authority_for_test()),
+                    (*plan.query_for_test()).identity(),
+                    (*plan.parameters_for_test()).identity(),
+                    bob.principal_entity_id_for_test(),
+                    (*plan.scope_for_test()).entity_id(),
                 ),
-                plan.governance.readmission_matches(
-                    plan.runtime_authority,
-                    plan.query.identity(),
-                    plan.parameters.identity(),
-                    plan.principal.principal_entity_id(),
+                (*plan.governance_for_test()).readmission_matches(
+                    (*plan.runtime_authority_for_test()),
+                    (*plan.query_for_test()).identity(),
+                    (*plan.parameters_for_test()).identity(),
+                    plan.principal.principal_entity_id_for_test(),
                     account_two.entity_id(),
                 ),
             ] {
@@ -237,10 +237,10 @@ pub fn governance_context(label: &str) -> GovernanceContext {
     let (principal, account) = world
         .application
         .with_host_advancement(|phase| {
-            let host_request = phase.test_host_request();
+            let host_request = phase.test_host_request_for_test();
             let phase_custody = &host_request;
             let borrowed_execution = phase
-                .execution_request_for(world.application.product_runtime())
+                .execution_request_for_for_test(world.application.product_runtime())
                 .expect("the fixture lends its installed phase");
             let execution = &borrowed_execution;
             let principal = resolve_principal(
@@ -252,9 +252,9 @@ pub fn governance_context(label: &str) -> GovernanceContext {
             );
             let account = world
                 .application
-                .select_product_branch(
+                .select_product_branch_for_test(
                     execution,
-                    world.application.product_runtime().default_branch(),
+                    world.application.product_runtime().default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
@@ -287,13 +287,13 @@ pub fn resolve_principal(
     let external = world.authenticate(subject, Duration::from_secs(60), request);
     world
         .application
-        .select_product_branch(
+        .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch(),
+            world.application.product_runtime().default_branch_for_test(),
         )
         .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             &world.binding,
             &external,
             request,
@@ -330,7 +330,7 @@ pub fn admit_plan<'a>(
     Account,
 >{
     let capability = admit_touch_account_capability(
-        &(phase_custody).test_host_request(),
+        &(phase_custody).test_host_request_for_test(),
         &context.world,
         &context.principal,
         &context.request,
@@ -338,7 +338,7 @@ pub fn admit_plan<'a>(
     .unwrap();
     context
         .world
-        .selected_product(&(phase_custody).test_host_request())
+        .selected_product(&(phase_custody).test_host_request_for_test())
         .admit_governed_application_query(
             phase_custody,
             query,
@@ -372,13 +372,13 @@ pub fn governance_matches_plan(
         Account,
     >,
 ) -> bool {
-    owner.governance.computation_matches(
+    (*owner.governance_for_test()).computation_matches(
         &candidate.graph_work,
-        candidate.runtime_authority,
-        owner.query.identity(),
-        owner.parameters.identity(),
-        owner.principal.principal_entity_id(),
-        owner.scope.entity_id(),
+        (*candidate.runtime_authority_for_test()),
+        (*owner.query_for_test()).identity(),
+        (*owner.parameters_for_test()).identity(),
+        owner.principal.principal_entity_id_for_test(),
+        (*owner.scope_for_test()).entity_id(),
     )
 }
 

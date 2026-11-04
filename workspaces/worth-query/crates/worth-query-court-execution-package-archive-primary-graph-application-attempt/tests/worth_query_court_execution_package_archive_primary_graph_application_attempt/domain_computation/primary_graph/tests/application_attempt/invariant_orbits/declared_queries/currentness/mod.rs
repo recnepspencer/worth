@@ -18,13 +18,13 @@ fn retained_query_aggregate_identity_is_not_hidden_by_its_walk_companion() {
         worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::declared_queries::read::run(&world, Orbit::reference(), 3),
     ];
     let bodies = results.each_ref().map(|result| {
-        let layout = world.application.runtime.primary_graph().unwrap().layout();
-        let facts = result.result_set_observation().source().retained_checkpoint_facts(layout, Some(&request), Allocation::SystemAllocation).unwrap();
+        let layout = (*world.application.runtime_for_test()).primary_graph().unwrap().layout();
+        let facts = result.result_set_observation().source().retained_checkpoint_facts_for_test(layout, Some(&request), Allocation::SystemAllocation).unwrap();
         let aggregate = facts.iter().find_map(|fact| match fact { WorthQueryApplicationObservedFact::Aggregate { observation } => Some(Arc::clone(observation)), _ => None }).unwrap();
         let walk = facts.iter().find_map(|fact| match fact { WorthQueryApplicationObservedFact::StructuralWalk { observation } => Some(Arc::clone(observation)), _ => None }).unwrap();
         assert_eq!(facts.iter().filter(|fact| matches!(fact, WorthQueryApplicationObservedFact::Aggregate { .. } | WorthQueryApplicationObservedFact::StructuralWalk { .. })).count(), 2);
         for source in result.observed_sources() {
-            let row = source.retained_checkpoint_facts(layout, Some(&request), Allocation::SystemAllocation).unwrap();
+            let row = source.retained_checkpoint_facts_for_test(layout, Some(&request), Allocation::SystemAllocation).unwrap();
             assert!(row.iter().any(|fact| matches!(fact, WorthQueryApplicationObservedFact::Aggregate { observation } if Arc::ptr_eq(observation, &aggregate))));
             assert!(row.iter().any(|fact| matches!(fact, WorthQueryApplicationObservedFact::StructuralWalk { observation } if Arc::ptr_eq(observation, &walk))));
         }
@@ -41,15 +41,15 @@ fn retained_query_aggregate_identity_is_not_hidden_by_its_walk_companion() {
     }
     let lease = snapshot(&world, &execution);
     for (index, (aggregate, walk)) in bodies.iter().enumerate() {
-        lease.handle().with_runtime(&execution, |runtime| {
+        lease.handle_for_test().with_runtime(&execution, |runtime| {
             let mut extent = None;
             let aggregate_fact = WorthQueryApplicationObservedFact::Aggregate { observation: Arc::clone(aggregate) };
-            let movement = aggregate_fact.source_currentness_with(runtime, &execution, lease.snapshot(), &mut extent, None).unwrap().unwrap().movement();
+            let movement = aggregate_fact.source_currentness_with_for_test(runtime, &execution, lease.snapshot_for_test(), &mut extent, None).unwrap().unwrap().movement();
             assert_eq!(movement == worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::movement::Movement::Unmoved, index == winner);
-            let again = aggregate_fact.source_currentness_with(runtime, &execution, lease.snapshot(), &mut extent, None).unwrap().unwrap().movement();
+            let again = aggregate_fact.source_currentness_with_for_test(runtime, &execution, lease.snapshot_for_test(), &mut extent, None).unwrap().unwrap().movement();
             assert_eq!(movement, again);
             let walk_fact = WorthQueryApplicationObservedFact::StructuralWalk { observation: Arc::clone(walk) };
-            assert_eq!(walk_fact.source_currentness_with(runtime, &execution, lease.snapshot(), &mut extent, None).unwrap().unwrap().movement(), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::movement::Movement::Moved);
+            assert_eq!(walk_fact.source_currentness_with_for_test(runtime, &execution, lease.snapshot_for_test(), &mut extent, None).unwrap().unwrap().movement(), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::movement::Movement::Moved);
         });
     }
 }
@@ -59,9 +59,9 @@ pub fn snapshot(
 ) -> WorthQueryApplicationSnapshotLease {
     let selected = world
         .application
-        .select_product_branch(
+        .select_product_branch_for_test(
             execution,
-            world.application.product_runtime().default_branch(),
+            world.application.product_runtime().default_branch_for_test(),
         )
         .unwrap();
     let completed = world
@@ -75,6 +75,6 @@ pub fn snapshot(
         .unwrap();
     let ((), snapshot, _) = completed.into_parts();
     snapshot
-        .into_lease_and_realized_scope(selected.product().retained_clone())
+        .into_lease_and_realized_scope_for_test(selected.product().retained_clone())
         .0
 }

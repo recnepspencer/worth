@@ -43,7 +43,7 @@ fn actual_content_controls_and_resource_stops_keep_their_own_native_disposition(
                 panic!("control must relinquish only this request");
             };
             assert_eq!(
-                rejected.into_denial().kind(),
+                rejected.into_denial_for_test().kind(),
                 if deadline {
                     WorthQueryOutputDemandDenialKind::TimedOut
                 } else {

@@ -16,9 +16,9 @@ use worth_foundational::facade::AspectValue;
 #[test]
 fn durable_field_dependency_roundtrips_presence_and_denies_partial_revision() {
     let world = installed_authorization_world(true);
-    let layout = &world
+    let layout = &(*world
         .application
-        .runtime
+        .runtime_for_test())
         .primary_graph()
         .unwrap()
         .layout

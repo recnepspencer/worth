@@ -90,11 +90,11 @@ fn native_value_key_and_membership_edits_carry_unaffected_partitions() {
     let mut previous = native_attempt(
         &world,
         &installed,
-        ComputationPrior::new(edition(), Err(Cause::FirstRun), None),
+        ComputationPrior::new_for_test(edition(), Err(Cause::FirstRun), None),
     );
-    let subject = previous
+    let subject = (*previous
         .sealed
-        .state
+        .state_for_test())
         .facts
         .facts()
         .find_map(|(_, fact, _)| {
@@ -114,9 +114,9 @@ fn native_value_key_and_membership_edits_carry_unaffected_partitions() {
         ("urimar", vec![1]),     // remove an odd member
     ] {
         let field = AccountLabel::reference();
-        let locator = world
+        let locator = (*world
             .application
-            .primary_provider
+            .primary_provider_for_test())
             .graph
             .layout
             .field_locator(field.entity(), field.aspect(), field.field())
@@ -124,7 +124,7 @@ fn native_value_key_and_membership_edits_carry_unaffected_partitions() {
             .clone();
         let request = live_scope();
         world.application.with_application_advancement(&request, |phase| {
-            let active = phase.execution_for(&world.application.product_runtime).unwrap();
+            let active = phase.execution_for_for_test(&(*world.application.product_runtime_for_test())).unwrap();
             let execution = active.execution_request().unwrap();
             worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::product_publication::publish_relational_mutation(
                 &execution, &world, WorkerIntentBatch::new("native-membership-edit").push(
@@ -147,12 +147,12 @@ fn native_value_key_and_membership_edits_carry_unaffected_partitions() {
         let fresh = native_attempt(
             &world,
             &installed,
-            ComputationPrior::new(edition(), Err(Cause::FirstRun), None),
+            ComputationPrior::new_for_test(edition(), Err(Cause::FirstRun), None),
         );
         assert_eq!(edited.value, fresh.value);
-        let retained = edited
+        let retained = (*edited
             .sealed
-            .state
+            .state_for_test())
             .typed
             .downcast_ref::<worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::retained::RetainedPartitions<Parity, Number, u64>>(
             )

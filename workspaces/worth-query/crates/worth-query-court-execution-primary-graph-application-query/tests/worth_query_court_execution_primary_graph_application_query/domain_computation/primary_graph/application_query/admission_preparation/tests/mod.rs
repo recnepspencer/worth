@@ -16,7 +16,7 @@ fn published_schema_validation_keeps_query_and_generation_authority() {
         .unwrap();
     assert!(world
         .application
-        .validate_installed_query(&local_query)
+        .validate_installed_query_for_test(&local_query)
         .is_ok());
 
     let foreign = installed_capability_live_world_with_label("foreign");
@@ -28,7 +28,7 @@ fn published_schema_validation_keeps_query_and_generation_authority() {
     assert_eq!(
         world
             .application
-            .validate_installed_query(&foreign_query)
+            .validate_installed_query_for_test(&foreign_query)
             .unwrap_err()
             .kind(),
         WorthQueryApplicationQueryAdmissionDenialKind::InstalledQuery(
@@ -36,33 +36,33 @@ fn published_schema_validation_keeps_query_and_generation_authority() {
         )
     );
 
-    let rebuilt = Arc::new(world.application.runtime.installed_packages().rebuild());
-    world
+    let rebuilt = Arc::new((*world.application.runtime_for_test()).installed_packages().rebuild());
+    (*world
         .application
-        .runtime
+        .runtime_for_test())
         .replace_rebuilt_installation(rebuilt)
         .unwrap();
     assert!(world
         .application
-        .validate_installed_query(&local_query)
+        .validate_installed_query_for_test(&local_query)
         .is_ok());
 
     let successor = Arc::new(
-        world
+        (*world
             .application
-            .runtime
+            .runtime_for_test())
             .installed_packages()
             .successor_generation(),
     );
-    world
+    (*world
         .application
-        .runtime
+        .runtime_for_test())
         .commit_successor_installation(successor)
         .unwrap();
     assert_eq!(
         world
             .application
-            .validate_installed_query(&local_query)
+            .validate_installed_query_for_test(&local_query)
             .unwrap_err()
             .kind(),
         WorthQueryApplicationQueryAdmissionDenialKind::InstalledQuery(

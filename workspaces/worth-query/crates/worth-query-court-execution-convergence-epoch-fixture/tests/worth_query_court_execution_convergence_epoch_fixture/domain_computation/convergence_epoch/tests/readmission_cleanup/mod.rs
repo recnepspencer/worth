@@ -116,13 +116,13 @@ pub fn direct_cleanup_required(
         .unwrap_or_else(|_| panic!("direct cleanup fixture authorities must admit"))
         .start();
     let started = {
-        let installed_fixture_phase = epoch.fixture_phase(execution);
+        let installed_fixture_phase = epoch.fixture_phase_for_test(execution);
         epoch.begin_iteration(&installed_fixture_phase, call("direct-readmission-cleanup"))
     }
     .unwrap_or_else(|_| panic!("direct cleanup fixture iteration must start"));
     let paused = {
         let fixture_phase_result = {
-            let installed_fixture_phase = started.fixture_phase(execution);
+            let installed_fixture_phase = started.fixture_phase_for_test(execution);
             started.advance(&installed_fixture_phase)
         };
         match fixture_phase_result {
@@ -137,7 +137,7 @@ pub fn direct_cleanup_required(
     let epoch_identity = yielded.epoch_identity().to_owned();
     {
         let fixture_phase_result = {
-            let installed_fixture_phase = yielded.fixture_phase(active_request);
+            let installed_fixture_phase = yielded.fixture_phase_for_test(active_request);
             yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
         };
         match fixture_phase_result {
@@ -174,7 +174,7 @@ pub fn workflow_cleanup_required(
         .start()
         .unwrap_or_else(|_| panic!("workflow cleanup fixture must start"));
     let started = {
-        let installed_fixture_phase = epoch.fixture_phase(execution);
+        let installed_fixture_phase = epoch.fixture_phase_for_test(execution);
         epoch.begin_stage_iteration(
             &installed_fixture_phase,
             WORKFLOW_STAGE,
@@ -184,7 +184,7 @@ pub fn workflow_cleanup_required(
     .unwrap_or_else(|_| panic!("workflow cleanup fixture iteration must start"));
     let paused = {
         let fixture_phase_result = {
-            let installed_fixture_phase = started.fixture_phase(execution);
+            let installed_fixture_phase = started.fixture_phase_for_test(execution);
             started.advance(&installed_fixture_phase)
         };
         match fixture_phase_result {
@@ -199,7 +199,7 @@ pub fn workflow_cleanup_required(
     let epoch_identity = yielded.epoch_identity().to_owned();
     {
         let fixture_phase_result = {
-            let installed_fixture_phase = yielded.fixture_phase(active_request);
+            let installed_fixture_phase = yielded.fixture_phase_for_test(active_request);
             yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
         };
         match fixture_phase_result {

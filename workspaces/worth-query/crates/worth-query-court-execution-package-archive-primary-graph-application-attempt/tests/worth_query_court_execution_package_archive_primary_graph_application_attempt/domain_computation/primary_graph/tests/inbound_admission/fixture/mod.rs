@@ -85,13 +85,13 @@ impl InboundWorld {
             .with_application_advancement(request, |phase| {
                 let phase_custody = &phase;
                 let execution = &phase
-                    .execution_request_for(self.application.product_runtime())
+                    .execution_request_for_for_test(self.application.product_runtime())
                     .expect("fixture phase belongs to its application");
                 let branch = self.application.current_world();
                 let identity = self
                     .application
                     .product_runtime()
-                    .admit_product_occurrence(branch.occurrence())
+                    .admit_product_occurrence_for_test(branch.occurrence_for_test())
                     .unwrap()
                     .branch_identity()
                     .clone();
@@ -99,7 +99,7 @@ impl InboundWorld {
                 let external = authenticate(self.application.installed_schema(), &request);
                 let selected = self
                     .application
-                    .select_product_branch(execution, &identity)
+                    .select_product_branch_for_test(execution, &identity)
                     .unwrap();
                 let binding = self
                     .application
@@ -117,7 +117,7 @@ impl InboundWorld {
                     .unwrap();
                 let target = self
                     .application
-                    .select_product_branch(execution, &identity)
+                    .select_product_branch_for_test(execution, &identity)
                     .unwrap()
                     .resolve_entity(
                         phase_custody,
@@ -129,7 +129,7 @@ impl InboundWorld {
                     .unwrap();
                 let admission = self
                     .application
-                    .select_product_branch(execution, &identity)
+                    .select_product_branch_for_test(execution, &identity)
                     .unwrap()
                     .authorize_operation(
                         phase_custody,
@@ -180,7 +180,7 @@ impl InboundWorld {
         fingerprint[8] = 2;
         match self.application.compare_and_commit_application(
             program,
-            WorthQueryApplicationIdempotencyBinding::new(key, fingerprint),
+            WorthQueryApplicationIdempotencyBinding::new_for_test(key, fingerprint),
             ExecutionAllocationPolicy::SystemAllocation,
         ) {
             WorthQueryApplicationCommitOutcome::Committed(receipt) => receipt,
@@ -236,19 +236,19 @@ impl InboundWorld {
             .with_application_advancement(request, |phase| {
                 let phase_custody = &phase;
                 let execution = &phase
-                    .execution_request_for(self.application.product_runtime())
+                    .execution_request_for_for_test(self.application.product_runtime())
                     .expect("fixture phase belongs to its application");
                 let identity = self
                     .application
                     .product_runtime()
-                    .admit_product_occurrence(branch.occurrence())
+                    .admit_product_occurrence_for_test(branch.occurrence_for_test())
                     .unwrap()
                     .branch_identity()
                     .clone();
                 let external = authenticate(self.application.installed_schema(), request);
                 let selected = self
                     .application
-                    .select_product_branch(execution, &identity)
+                    .select_product_branch_for_test(execution, &identity)
                     .unwrap();
                 let binding = self
                     .application
@@ -266,7 +266,7 @@ impl InboundWorld {
                     .unwrap();
                 let target = self
                     .application
-                    .select_product_branch(execution, &identity)
+                    .select_product_branch_for_test(execution, &identity)
                     .unwrap()
                     .resolve_entity(
                         phase_custody,
@@ -283,7 +283,7 @@ impl InboundWorld {
                     .unwrap();
                 let admission = self
                     .application
-                    .select_product_branch(execution, &identity)
+                    .select_product_branch_for_test(execution, &identity)
                     .unwrap()
                     .authorize_operation(
                         phase_custody,
@@ -331,7 +331,7 @@ impl InboundWorld {
             .expect("the fixture preparation owns its host call");
         self.application.compare_and_commit_application(
             program,
-            WorthQueryApplicationIdempotencyBinding::new([seed; 32], [seed.wrapping_add(1); 32]),
+            WorthQueryApplicationIdempotencyBinding::new_for_test([seed; 32], [seed.wrapping_add(1); 32]),
             ExecutionAllocationPolicy::SystemAllocation,
         )
     }

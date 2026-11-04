@@ -9,19 +9,19 @@ fn stale_identity_is_refused_before_counted_native_field_provider_work() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let other = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "unrelated", &request)
+            resolved_account(&(phase).test_host_request_for_test(), &world, "unrelated", &request)
         })
         .expect("the fixture read owns its installed host call");
     let operation = world
@@ -33,7 +33,7 @@ fn stale_identity_is_refused_before_counted_native_field_provider_work() {
         .application
         .with_host_advancement(|phase| {
             world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&(phase).test_host_request_for_test())
                 .authorize_operation(
                     &phase,
                     &principal,
@@ -83,7 +83,7 @@ fn stale_identity_is_refused_before_counted_native_field_provider_work() {
     let newer = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "changed", &request)
+            resolved_account(&(phase).test_host_request_for_test(), &world, "changed", &request)
         })
         .expect("the fixture read owns its installed host call");
     let denial = world
@@ -99,7 +99,7 @@ fn stale_identity_is_refused_before_counted_native_field_provider_work() {
                 )
                 .unwrap();
             take_native_field_contacts();
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             attempt
                 .observe_field(
                     &host_custody.borrowed_request_for_test(),

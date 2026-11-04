@@ -27,11 +27,11 @@ fn caller_cancellation_and_deadline_at_each_root_preserve_a_canonical_boundary()
                 );
                 let boundary = observed.map.1;
                 let point = observed.interruption_point.as_ref().unwrap();
-                assert_eq!(point.root, observed.roots[index]);
-                assert!(point.fresh);
+                assert_eq!((*point.root_for_test()), observed.roots[index]);
+                assert!((*point.fresh_for_test()));
                 assert!(observed.roots[..index]
                     .iter()
-                    .all(|root| point.completed.contains(root)));
+                    .all(|root| (*point.completed_for_test()).contains(root)));
                 // The witness waits for whole predecessor kernels, so even a
                 // wider dispatch cannot stop before this constructed boundary.
                 assert_eq!(
@@ -70,7 +70,7 @@ fn query_scope_interruption_at_finalization_does_not_interrupt_worker_reads() {
                 "a prepared worker has no Query scope safe point or clock"
             );
             assert_eq!(ignored_scope.map.1, count);
-            assert!(ignored_scope.interruption_point.as_ref().unwrap().fresh);
+            assert!((*ignored_scope.interruption_point.as_ref().unwrap().fresh_for_test()));
             assert!(ignored_scope.values.is_empty());
             // Owner finalization validates its admitted Query scope, separately
             // from interruption of the caller's worker request.

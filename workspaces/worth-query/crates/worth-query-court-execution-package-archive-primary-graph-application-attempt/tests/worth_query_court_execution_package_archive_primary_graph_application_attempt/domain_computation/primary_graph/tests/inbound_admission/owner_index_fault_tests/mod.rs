@@ -12,9 +12,9 @@ fn authenticated_callback_retries_before_acceptance_while_owner_index_is_unavail
     let record = dispatched.dispatch_outbox().unwrap();
     let envelope = signed_envelope(record, [0xd4; 32], record.payload(), false);
     let request = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
-    world
+    (*world
         .application
-        .primary_provider
+        .primary_provider_for_test())
         .destroy_completed_inbound_index_for_test();
     assert!(matches!(
         world

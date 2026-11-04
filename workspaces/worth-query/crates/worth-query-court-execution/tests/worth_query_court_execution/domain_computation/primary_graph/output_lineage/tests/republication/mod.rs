@@ -79,7 +79,7 @@ pub fn staged(
     world.application.with_host_advancement(|phase| {
     let phase_custody = &phase;
     let output = world
-        .selected_product(&(phase_custody).test_host_request(), )
+        .selected_product(&(phase_custody).test_host_request_for_test(), )
         .resolve_entity(phase_custody,
             AccountStatus::reference(),
             "open".to_owned(),
@@ -87,8 +87,8 @@ pub fn staged(
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap()
-        .entity_id();
-    let graph = world.application.runtime.primary_graph().unwrap();
+        .entity_id_for_test();
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let layout = graph.layout();
     // Two World publications put the restoration two product generations
     // after the occurrence's first, so earlier records have an address.
@@ -113,16 +113,16 @@ pub fn staged(
     let product = world
         .application
         .product_runtime()
-        .admit_product_branch(world.application.product_runtime().default_branch())
+        .admit_product_branch_for_test(world.application.product_runtime().default_branch_for_test())
         .expect("the fixture's default product occurrence is live");
     let observation = product.observation();
     assert!(observation.reference_generation().get() >= 2);
     let handle = graph.integration_handle();
     let owner = &handle.source_owner.invalidation_owner;
     let correspondence = Arc::new(
-        WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles(
-TypeId::of::<()>(),
-TypeId::of::<()>(),
+        WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles_for_test(
+TypeId::of_for_test::<()>(),
+TypeId::of_for_test::<()>(),
 std::iter::empty(),
 &[WorthQueryCheckpointOutputRole {
                 role: "account".to_owned(),
@@ -130,7 +130,7 @@ std::iter::empty(),
                 entity_name: "Account".to_owned(),
                 entity: output,
             }],
-|_| Some(TypeId::of::<()>()),
+|_| Some(TypeId::of_for_test::<()>()),
 &phase_custody.borrowed_request_for_test(),
 )
         .unwrap(),
@@ -160,7 +160,7 @@ std::iter::empty(),
             });
         }
 let seal = || {
-            SealedNativeOutputWitness::from_checkpoint_facts(&correspondence, layout, &native)
+            SealedNativeOutputWitness::from_checkpoint_facts_for_test(&correspondence, layout, &native)
             .unwrap()
             .expect("the installed output's native facts seal a witness")
         };
@@ -172,14 +172,14 @@ let seal = || {
         sealed
     });
     let source = SemanticSource {
-        runtime_authority: world.application.runtime.authority_identity().as_u64(),
-        schema: world.application.installed_schema.binding_identity(),
-        scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity(entity(1)),
-        output_binding: OutputBindingIdentity::declared("RestoredOutputBinding"),
+        runtime_authority: (*world.application.runtime_for_test()).authority_identity().as_u64(),
+        schema: (*world.application.installed_schema_for_test()).binding_identity(),
+        scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity(1)),
+        output_binding: OutputBindingIdentity::declared_for_test("RestoredOutputBinding"),
     };
     let mut lineage = WorthQueryApplicationOutputLineage::default();
     lineage.fixture_binding(
-        TypeId::of::<RestoredOutputBinding>(),
+        TypeId::of_for_test::<RestoredOutputBinding>(),
         "RestoredOutputBinding",
     );
     test(Stage {
@@ -210,9 +210,9 @@ impl Stage<'_> {
     ) -> Arc<OnceLock<RecordedOutput>> {
         assert!(generation < self.restored_generation());
         let occurrence = self.observation.lifecycle_incarnation();
-        let records = self
+        let records = (*self
             .lineage
-            .by_source
+            .by_source_for_test())
             .entry(self.source.clone())
             .or_default()
             .entry(occurrence)
@@ -232,8 +232,8 @@ impl Stage<'_> {
             prepared_input_reuse_key: None,
             native_output_witness: OnceLock::new(),
             computation_source: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false),
-            mutable: Mutex::new(RecordedOutputMutable::new(None, (Some(Arc::clone(facts))).map(|facts| worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false).retain_facts(facts)), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::retained_computation::RecordedComputation::Absent(PriorAbsence::Restored))),
-            settlement_identity: RecordedSettlementIdentity::retain(
+            mutable: Mutex::new(RecordedOutputMutable::new_for_test(None, (Some(Arc::clone(facts))).map(|facts| worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false).retain_facts_for_test(facts)), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::retained_computation::RecordedComputation::Absent(PriorAbsence::Restored))),
+            settlement_identity: RecordedSettlementIdentity::retain_for_test(
                 &self.source,
                 ProductCoordinate {
                     occurrence,
@@ -249,7 +249,7 @@ impl Stage<'_> {
         });
         assert!(cell.set(recorded).is_ok());
         records.push(Arc::clone(&cell));
-        self.lineage.partition_index.insert(
+        (*self.lineage.partition_index_for_test()).insert(
             self.source.clone(),
             occurrence,
             generation,
@@ -268,11 +268,11 @@ impl Stage<'_> {
         facts: &Arc<[Fact]>,
         witness: &Witness,
     ) -> Option<Option<Continued>> {
-        let republished = self.lineage.prepare_republication(self.lineage.binding_type(&self.source.output_binding), self.source.runtime_authority, &self.source.schema, self.source.scope, self.observation.lifecycle_incarnation(), suspended_generation, PARTITION, &self.correspondence, &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts::for_test(false, Arc::clone(facts)), Arc::clone(witness), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None))?;
-        let record = self.lineage.record_republished_restoration(
-            self.lineage.binding_type(&self.source.output_binding),
-            self.source.runtime_authority,
-            self.source.schema.clone(),
+        let republished = self.lineage.prepare_republication_for_test(self.lineage.binding_type_for_test(&(*self.source.output_binding_for_test())), (*self.source.runtime_authority_for_test()), &(*self.source.schema_for_test()), self.source.scope, self.observation.lifecycle_incarnation(), suspended_generation, PARTITION, &self.correspondence, &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts::for_test_for_test(false, Arc::clone(facts)), Arc::clone(witness), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new_for_test(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None))?;
+        let record = self.lineage.record_republished_restoration_for_test(
+            self.lineage.binding_type_for_test(&(*self.source.output_binding_for_test())),
+            (*self.source.runtime_authority_for_test()),
+            (*self.source.schema_for_test()).clone(),
             self.source.scope,
             self.observation,
             Arc::clone(&self.correspondence),
@@ -280,7 +280,7 @@ impl Stage<'_> {
             PARTITION,
             None,
             IDEMPOTENCY_KEY,
-            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts::for_test(
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts::for_test_for_test(
                 false,
                 Arc::clone(facts),
             ),
@@ -297,7 +297,7 @@ impl Stage<'_> {
 
     /// The only row at the restoration's own address.
     pub fn restored(&self) -> &RecordedOutput {
-        let rows = &self.lineage.by_source[&self.source][&self.observation.lifecycle_incarnation()]
+        let rows = &(*self.lineage.by_source_for_test())[&self.source][&self.observation.lifecycle_incarnation()]
             [&self.restored_generation()];
         assert_eq!(rows.len(), 1, "one restoration address holds one row");
         rows[0].get().unwrap()

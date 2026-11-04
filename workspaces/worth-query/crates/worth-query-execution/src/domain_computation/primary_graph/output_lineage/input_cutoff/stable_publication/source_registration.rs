@@ -88,3 +88,5 @@ impl<'selected> StableEqualityConsequence<'selected> {
         self.selected
     }
 }
+
+mod court_doors_for_test;

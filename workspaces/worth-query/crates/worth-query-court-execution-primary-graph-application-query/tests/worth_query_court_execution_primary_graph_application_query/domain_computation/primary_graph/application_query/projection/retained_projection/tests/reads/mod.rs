@@ -35,7 +35,7 @@ pub fn read(
     } else {
         schema.certification_query(Query::reference()).unwrap()
     };
-    let selected = world.selected_product(&phase.test_host_request());
+    let selected = world.selected_product(&phase.test_host_request_for_test());
     let principal = selected
         .resolve_authenticated_principal(
             phase,
@@ -99,7 +99,7 @@ pub fn set_label(
         ),
         worth_foundational::facade::AspectValue::String(value.into()),
     )]));
-    let custody = phase.test_host_request();
+    let custody = phase.test_host_request_for_test();
     publish_relational_mutation(
         &custody.borrowed_request_for_test(),
         world,

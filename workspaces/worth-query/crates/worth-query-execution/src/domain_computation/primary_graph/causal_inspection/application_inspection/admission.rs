@@ -126,3 +126,5 @@ pub fn require_request(
         .consult()
         .map_err(InspectionAdmissionDenial::Request)
 }
+
+mod court_doors_for_test;

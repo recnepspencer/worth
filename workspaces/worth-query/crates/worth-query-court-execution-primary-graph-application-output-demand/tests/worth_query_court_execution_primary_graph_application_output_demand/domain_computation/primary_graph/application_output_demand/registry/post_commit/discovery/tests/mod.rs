@@ -13,7 +13,7 @@ fn registry_completed_discovery_body_keeps_its_occurrence_bound() {
     for (neighbors, entries) in [(1, 1), (64, 4)] {
         let registry = WorthQueryOutputDemandRegistry::default();
         let selected = key("posted-discovery", 3, 1);
-        let mut state = registry.state.lock().unwrap();
+        let mut state = (*registry.state_for_test()).lock().unwrap();
         for generation in 1..=3 {
             state.records.insert(
                 key("posted-discovery", generation, 1),
@@ -25,7 +25,7 @@ fn registry_completed_discovery_body_keeps_its_occurrence_bound() {
                 &receipts[..entries],
                 neighbors,
             );
-        let _published = SupersededSettlements::new(registry.clone(), Arc::new(selected.clone()));
+        let _published = SupersededSettlements::new_for_test(registry.clone(), Arc::new(selected.clone()));
         let before = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::record_map::occurrence_rows_visited();
         assert!(after_publication(&state, &selected).is_empty());
         contacts.push(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::record_map::occurrence_rows_visited() - before);

@@ -34,17 +34,17 @@ fn neutral_native_population_keeps_logical_marking_local_and_matches_revision_or
 pub fn run_population(population: usize) -> WorthQueryNativeMarkingWork {
     let world = crate::domain_computation::primary_graph::output_lineage::invalidation::native_journey_tests::population_world::install(population);
     world.application.with_host_advancement(|phase| {
- let custody = phase.test_host_request();
+ let custody = phase.test_host_request_for_test();
  let phase_custody = &custody;
  let execution = &phase_custody.borrowed_request_for_test();
 
     let selected = world.selected_product(&(phase_custody).test_host_request());
-    let (_, product, _) = selected.into_parts();
+    let (_, product, _) = selected.into_parts_for_test();
     let coordinate = ProductCoordinate {
         occurrence: product.observation().lifecycle_incarnation(),
         generation: product.observation().reference_generation().get(),
     };
-    let graph = world.application.runtime.primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let handle = graph.integration_handle();
     let owner = &handle.source_owner.invalidation_owner;
     let kind = graph
@@ -97,13 +97,13 @@ pub fn run_population(population: usize) -> WorthQueryNativeMarkingWork {
         release_test_commit_snapshot(runtime, &committed);
         let (before_handle, before) = snapshot(runtime);
         let source = |entity, binding| SemanticSource {
-            runtime_authority: world.application.runtime.authority_identity().as_u64(),
-            schema: world.application.installed_schema.binding_identity().clone(),
-            scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity(entity),
+            runtime_authority: (*world.application.runtime_for_test()).authority_identity().as_u64(),
+            schema: (*world.application.installed_schema_for_test()).binding_identity().clone(),
+            scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity),
             output_binding: binding,
         };
         let identities: Vec<_> = entities.iter().map(|entity|
-            RecordedSettlementIdentity::retain(&source(*entity, OutputBindingIdentity::declared("LabelOutput")), coordinate, 0)).collect();
+            RecordedSettlementIdentity::retain_for_test(&source(*entity, OutputBindingIdentity::declared_for_test("LabelOutput")), coordinate, 0)).collect();
         // This oracle reads Native revisions directly; it does not call the
         // marking verifier or derive expected ordinals from actor postings.
         let old_revisions: Vec<_> = entities.iter().map(|entity| {
@@ -117,8 +117,8 @@ pub fn run_population(population: usize) -> WorthQueryNativeMarkingWork {
                 field_fact(execution, runtime, &before_handle, *entity, status.clone()),
             ]), &before, OrdSet::new());
         }
-        let downstream = RecordedSettlementIdentity::retain(
-            &source(entities[0], OutputBindingIdentity::declared("DownstreamOutput")), coordinate, 0,
+        let downstream = RecordedSettlementIdentity::retain_for_test(
+            &source(entities[0], OutputBindingIdentity::declared_for_test("DownstreamOutput")), coordinate, 0,
         );
         register(owner, downstream.clone(), Arc::from([]), &before,
             OrdSet::unit(identities[0].clone()));
@@ -150,8 +150,8 @@ let report = owner.native_marking_report(&after)
             SourceSettlementCurrentness::PendingUpstream(edges) if edges == OrdSet::unit(identities[0].clone())));
         assert!(owner.native_marking_report(&before).unwrap().is_none(),
             "a historical image cannot report the newer Native delivery");
-        let late = RecordedSettlementIdentity::retain(
-            &source(entities[0], OutputBindingIdentity::declared("LateOutput")), coordinate, 0,
+        let late = RecordedSettlementIdentity::retain_for_test(
+            &source(entities[0], OutputBindingIdentity::declared_for_test("LateOutput")), coordinate, 0,
         );
         register(owner, late, Arc::from([field_fact(execution, runtime, &after_handle, entities[0], label.clone())]),
             &after, OrdSet::new());

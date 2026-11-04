@@ -75,3 +75,5 @@ impl PreparedNativeOutputWitness {
         Ok(Some(prepared))
     }
 }
+
+mod court_doors_for_test;

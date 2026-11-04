@@ -117,3 +117,5 @@ fn entry(locus: &str, value: CanonicalBasisValue) -> CanonicalBasisEntry {
         value,
     )
 }
+
+mod court_doors_for_test;

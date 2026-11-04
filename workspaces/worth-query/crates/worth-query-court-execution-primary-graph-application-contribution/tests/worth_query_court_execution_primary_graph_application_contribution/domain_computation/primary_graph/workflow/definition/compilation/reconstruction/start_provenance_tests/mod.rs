@@ -33,9 +33,9 @@ fn started_revision_actual_producer_is_immutable_but_current_revision_can_change
     assert_ne!(original, successor);
     let original_payer = payer();
     let execution = ExecutionRequest::leased(&original_payer);
-    let layout = world
+    let layout = (*world
         .application
-        .runtime
+        .runtime_for_test())
         .primary_graph()
         .unwrap()
         .layout
@@ -44,9 +44,9 @@ fn started_revision_actual_producer_is_immutable_but_current_revision_can_change
     let actor = admitted_actor(&world);
     let instance = publish_instance(&world, &execution, &layout, original, "original", actor);
     let before = selected(&world, &execution);
-    let handle = world
+    let handle = (*world
         .application
-        .runtime
+        .runtime_for_test())
         .primary_graph()
         .unwrap()
         .integration_handle();
@@ -211,17 +211,17 @@ fn started_revision_current_capture_restore_retains_exact_data_after_original_pa
     let (support, original, _) = installed_provenance_support(world.application.installed_schema());
     let original_payer = payer();
     let execution = ExecutionRequest::leased(&original_payer);
-    let layout = world
+    let layout = (*world
         .application
-        .runtime
+        .runtime_for_test())
         .primary_graph()
         .unwrap()
         .layout
         .workflow()
         .clone();
-    let recovery_config = world
+    let recovery_config = (*world
         .application
-        .runtime
+        .runtime_for_test())
         .primary_graph()
         .unwrap()
         .integration_handle()
@@ -234,9 +234,9 @@ fn started_revision_current_capture_restore_retains_exact_data_after_original_pa
         "capture",
         admitted_actor(&world),
     );
-    let handle = world
+    let handle = (*world
         .application
-        .runtime
+        .runtime_for_test())
         .primary_graph()
         .unwrap()
         .integration_handle();

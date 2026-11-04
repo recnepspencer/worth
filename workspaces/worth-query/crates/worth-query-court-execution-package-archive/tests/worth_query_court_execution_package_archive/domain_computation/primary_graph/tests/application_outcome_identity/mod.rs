@@ -6,11 +6,11 @@ use worth_query_execution::facade::domain_computation::WorthQueryOperationAuthor
 
 #[test]
 fn application_outcome_families_draw_non_aliasing_exact_identities() {
-    let denial = WorthQueryOperationAuthorizationDenial::new(
+    let denial = WorthQueryOperationAuthorizationDenial::new_for_test(
         WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::PermissionDenied),
         "identity-family-denial",
     );
-    let disclosure = WorthQueryApplicationDisclosureReceipt::governed(
+    let disclosure = WorthQueryApplicationDisclosureReceipt::governed_for_test(
         "identity-family-disclosure",
         Vec::new(),
         Vec::new(),
@@ -18,7 +18,7 @@ fn application_outcome_families_draw_non_aliasing_exact_identities() {
         [7; 32],
         0,
     );
-    let commit = WorthQueryApplicationCommitOutcomeIdentity::mint().unwrap();
+    let commit = WorthQueryApplicationCommitOutcomeIdentity::mint_for_test().unwrap();
 
     let denial = denial.identity().unwrap().get();
     let disclosure = disclosure.outcome_identity().unwrap().get();

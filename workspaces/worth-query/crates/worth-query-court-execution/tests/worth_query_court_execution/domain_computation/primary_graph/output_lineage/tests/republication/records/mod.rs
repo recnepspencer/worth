@@ -19,7 +19,7 @@ pub const INPUT: [u8; 32] = [0x61; 32];
 pub const DECISION_KEY: [u8; 32] = [0x71; 32];
 
 pub fn decision(key: [u8; 32]) -> PreparedDecisionReuseContext {
-    PreparedDecisionReuseContext::new(
+    PreparedDecisionReuseContext::new_for_test(
         WorthQueryProducerInputReuseContract::canonical_bitwise(
             WorthQueryDecisionContextDependencies::KEY,
         ),
@@ -34,10 +34,10 @@ pub fn input_key(
     selection: &WorthQueryObservedSourceSelection,
     input: [u8; 32],
 ) -> PreparedInputReuseKey {
-    PreparedInputReuseKey::new(
+    PreparedInputReuseKey::new_for_test(
         selection.clone(),
         input,
-        InstalledProducerEdition::for_test([0x51; 32]),
+        InstalledProducerEdition::for_test_for_test([0x51; 32]),
     )
 }
 
@@ -50,7 +50,7 @@ pub fn performed(
 ) -> RecordedOutput {
     let boundary = CompletedHandlerFactBoundary::completed_for_test(1);
     let completed = boundary
-        .seal_decision_reuse(
+        .seal_decision_reuse_for_test(
             decision(DECISION_KEY),
             DecisionContextUse::default().key_for_test(),
         )
@@ -70,17 +70,17 @@ pub fn performed(
 }
 
 pub fn assert_continues_the_performed_read(row: &RecordedOutput) {
-    assert!(row.performed_origin.is_none());
-    assert_eq!(row.verification_requirement(), None);
+    assert!((*row.performed_origin_for_test()).is_none());
+    assert_eq!(row.verification_requirement_for_test(), None);
     assert_eq!(
-        row.completed_handler_facts
+        (*row.completed_handler_facts_for_test())
             .as_ref()
             .unwrap()
             .handler_fact_count(),
         1
     );
-    let completed = row.completed_decision_reuse.as_ref().unwrap();
-    let same = |key| decision(key).matches_completed(completed);
+    let completed = (*row.completed_decision_reuse_for_test()).as_ref().unwrap();
+    let same = |key| decision(key).matches_completed_for_test(completed);
     assert!(same(DECISION_KEY));
     assert!(!same([0x72; 32]));
 }
@@ -90,7 +90,7 @@ pub fn continues_input(
     selection: &WorthQueryObservedSourceSelection,
     input: [u8; 32],
 ) -> bool {
-    row.prepared_input_reuse_key
+    (*row.prepared_input_reuse_key_for_test())
         .as_ref()
         .unwrap()
         .same_prepared_input_as(&input_key(selection, input), &mut |_| Ok(()))
@@ -100,7 +100,7 @@ pub fn continues_input(
 /// A real completed boundary refuses reuse when its context is untracked.
 pub fn untracked(row: RecordedOutput, context: DecisionContextUse) -> RecordedOutput {
     let boundary = CompletedHandlerFactBoundary::completed_for_test(1);
-    let completed = boundary.seal_decision_reuse(decision(DECISION_KEY), context);
+    let completed = boundary.seal_decision_reuse_for_test(decision(DECISION_KEY), context);
     assert!(completed.is_none());
     RecordedOutput {
         producing_implementation: None,

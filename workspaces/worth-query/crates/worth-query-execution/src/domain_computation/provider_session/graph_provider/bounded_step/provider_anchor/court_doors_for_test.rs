@@ -4,7 +4,10 @@ use super::*;
 impl WorthQueryGraphProviderAnchor {
     #[doc(hidden)]
     pub fn discard_provisional_overlay_for_test(
-        &self, execution: worth_execution::ExecutionRequest<'_, '_>, evidence: WorthQueryProvisionalOverlayEvidenceView<'_>) -> Result<(), WorthQueryProvisionalFailure> {
+        &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+        evidence: WorthQueryProvisionalOverlayEvidenceView<'_>,
+    ) -> Result<(), WorthQueryProvisionalFailure> {
         Self::discard_provisional_overlay(self, execution, evidence)
     }
 }
@@ -12,7 +15,18 @@ impl WorthQueryGraphProviderAnchor {
 impl WorthQueryGraphProviderAnchor {
     #[doc(hidden)]
     pub fn stage_provisional_overlay_for_test(
-        &self, session: WorthQueryProviderSessionView<'_>, program: WorthQueryProvisionalEffectProgramView<'_>, admission: WorthQueryProvisionalOverlayAdmission) -> Result<WorthQueryProvisionalOverlayEvidence, WorthQueryProvisionalFailure> {
+        &self,
+        session: WorthQueryProviderSessionView<'_>,
+        program: WorthQueryProvisionalEffectProgramView<'_>,
+        admission: WorthQueryProvisionalOverlayAdmission,
+    ) -> Result<WorthQueryProvisionalOverlayEvidence, WorthQueryProvisionalFailure> {
         Self::stage_provisional_overlay(self, session, program, admission)
+    }
+}
+
+impl WorthQueryGraphProviderAnchor {
+    #[doc(hidden)]
+    pub fn retains_convergence_and_phase_seven_through_ten_for_test(&self) -> bool {
+        Self::retains_convergence_and_phase_seven_through_ten(self)
     }
 }

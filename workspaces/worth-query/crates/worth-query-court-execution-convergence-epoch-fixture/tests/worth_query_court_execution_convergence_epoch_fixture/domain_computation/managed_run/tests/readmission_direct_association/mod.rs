@@ -128,7 +128,7 @@ pub fn direct_recovery_cleanup(
     {
         let fixture_phase_result = {
             let fixture_target = yielded;
-            let installed_fixture_phase = fixture_target.fixture_phase(active_request);
+            let installed_fixture_phase = fixture_target.fixture_phase_for_test(active_request);
             fixture_target.readmit_same_runtime(&installed_fixture_phase, runtime, bridge)
         };
         match fixture_phase_result {
@@ -230,7 +230,7 @@ fn same_scope_peer_inspection_survives_denial_while_the_other_owner_cleans_up() 
         let first = {
             let fixture_phase_result = {
                 let fixture_target = first;
-                let installed_fixture_phase = fixture_target.fixture_phase(active_request);
+                let installed_fixture_phase = fixture_target.fixture_phase_for_test(active_request);
                 fixture_target.readmit_same_runtime(
                     &installed_fixture_phase,
                     &runtime,
@@ -249,7 +249,7 @@ fn same_scope_peer_inspection_survives_denial_while_the_other_owner_cleans_up() 
         let active = {
             let fixture_phase_result = {
                 let fixture_target = first;
-                let installed_fixture_phase = fixture_target.fixture_phase(active_request);
+                let installed_fixture_phase = fixture_target.fixture_phase_for_test(active_request);
                 fixture_target.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
             };
             match fixture_phase_result {
@@ -262,7 +262,7 @@ fn same_scope_peer_inspection_survives_denial_while_the_other_owner_cleans_up() 
         let terminal = {
             let fixture_phase_result = {
                 let fixture_target = active;
-                let installed_fixture_phase = fixture_target.fixture_phase(execution);
+                let installed_fixture_phase = fixture_target.fixture_phase_for_test(execution);
                 fixture_target.advance(&installed_fixture_phase)
             };
             match fixture_phase_result {
@@ -324,7 +324,7 @@ pub fn yield_peer(
         .start();
     let active = {
         let fixture_target = running;
-        let installed_fixture_phase = fixture_target.fixture_phase(execution);
+        let installed_fixture_phase = fixture_target.fixture_phase_for_test(execution);
         fixture_target.begin_graph_execution(
             &installed_fixture_phase,
             graph,
@@ -338,7 +338,7 @@ pub fn yield_peer(
     let paused = {
         let fixture_phase_result = {
             let fixture_target = active;
-            let installed_fixture_phase = fixture_target.fixture_phase(execution);
+            let installed_fixture_phase = fixture_target.fixture_phase_for_test(execution);
             fixture_target.advance(&installed_fixture_phase)
         };
         match fixture_phase_result {

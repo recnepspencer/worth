@@ -19,13 +19,13 @@ fn world_unwind_retains_and_releases_the_exact_query_idempotency_slot() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&phase.test_host_request(), &world, &request)
+            authenticated_principal(&phase.test_host_request_for_test(), &world, &request)
         })
         .expect("installed host call opens");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&phase.test_host_request(), &world, "open", &request)
+            resolved_account(&phase.test_host_request_for_test(), &world, "open", &request)
         })
         .expect("installed host call opens");
     let program = world
@@ -96,9 +96,9 @@ fn world_unwind_retains_and_releases_the_exact_query_idempotency_slot() {
         "only the unwind guard inspects its exact World recovery identity",
     );
     assert_eq!(
-        world
+        (*world
             .application
-            .primary_provider
+            .primary_provider_for_test())
             .unpublished_idempotency_count(),
         1,
     );
@@ -132,9 +132,9 @@ fn world_unwind_retains_and_releases_the_exact_query_idempotency_slot() {
         .unwrap();
     assert_eq!(receipt.retired_component_count(), 0);
     assert_eq!(
-        world
+        (*world
             .application
-            .primary_provider
+            .primary_provider_for_test())
             .unpublished_idempotency_count(),
         0,
         "cleanup releases Query's exact recovery-indexed slot",

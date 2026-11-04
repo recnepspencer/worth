@@ -12,7 +12,7 @@ fn empty_path_union_stales_when_a_matching_edge_is_inserted() {
         .application
         .with_host_advancement(|phase| {
             world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&(phase).test_host_request_for_test())
                 .resolve_authenticated_principal(
                     &phase,
                     &world.binding,
@@ -27,7 +27,7 @@ fn empty_path_union_stales_when_a_matching_edge_is_inserted() {
         .application
         .with_host_advancement(|phase| {
             world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&(phase).test_host_request_for_test())
                 .resolve_entity(
                     &phase,
                     AccountStatus::reference(),
@@ -43,7 +43,7 @@ fn empty_path_union_stales_when_a_matching_edge_is_inserted() {
         .installed_schema()
         .certification_query(CrossRootQuery::reference())
         .unwrap();
-    let graph = world.application.runtime.primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let primary_kind = graph
         .layout
         .relation(worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::AccountPrimaryActivity::reference().name())
@@ -51,12 +51,12 @@ fn empty_path_union_stales_when_a_matching_edge_is_inserted() {
         .kind;
     let selected = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
         .expect("the fixture read owns its installed host call");
     let (relations, primary_target) = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             graph
                 .integration_handle()
                 .with_runtime(request_execution, |runtime| {
@@ -65,11 +65,11 @@ fn empty_path_union_stales_when_a_matching_edge_is_inserted() {
                         .visible_relations_of_kind(
                             &host_custody.borrowed_request_for_test(),
                             primary_kind,
-                            selected.application_basis().snapshot_handle().version_id(),
+                            selected.application_basis_for_test().snapshot_handle().version_id(),
                         )
                         .expect("fixture read request remains live")
                         .into_iter()
-                        .find(|relation| relation.source == account.entity_id())
+                        .find(|relation| relation.source == account.entity_id_for_test())
                         .unwrap()
                         .target;
                     let relations = [
@@ -85,11 +85,11 @@ fn empty_path_union_stales_when_a_matching_edge_is_inserted() {
                             .visible_relations_of_kind(
                                 &host_custody.borrowed_request_for_test(),
                                 kind,
-                                selected.application_basis().snapshot_handle().version_id(),
+                                selected.application_basis_for_test().snapshot_handle().version_id(),
                             )
                             .expect("fixture read request remains live")
                             .into_iter()
-                            .filter(|relation| relation.source == account.entity_id())
+                            .filter(|relation| relation.source == account.entity_id_for_test())
                             .collect::<Vec<_>>()
                     })
                     .collect::<Vec<_>>();
@@ -110,7 +110,7 @@ fn empty_path_union_stales_when_a_matching_edge_is_inserted() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::product_publication::publish_relational_mutation(
                 &host_custody.borrowed_request_for_test(),
                 &world,
@@ -127,7 +127,7 @@ fn empty_path_union_stales_when_a_matching_edge_is_inserted() {
                 .execute_application_query_one_shot(
                     &phase,
                     world
-                        .selected_product(&(phase).test_host_request())
+                        .selected_product(&(phase).test_host_request_for_test())
                         .admit_application_query(
                             &phase,
                             &query,
@@ -147,20 +147,20 @@ fn empty_path_union_stales_when_a_matching_edge_is_inserted() {
     let observed = source
         .adjacencies
         .iter()
-        .find(|adjacency| adjacency.relation_kind == primary_kind)
+        .find(|adjacency| (*adjacency.relation_kind_for_test()) == primary_kind)
         .unwrap();
     let fact = WorthQueryApplicationObservedFact::SourceAdjacencyRevision {
-        relation_kind: observed.relation_kind,
-        anchor: observed.anchor,
+        relation_kind: (*observed.relation_kind_for_test()),
+        anchor: (*observed.anchor_for_test()),
         direction: observed.direction,
-        native_revision: observed.native_revision,
-        comparison_work_limit: observed.comparison_work_limit,
+        native_revision: (*observed.native_revision_for_test()),
+        comparison_work_limit: (*observed.comparison_work_limit_for_test()),
         endpoints: worth_query_execution::facade::domain_computation::WorthQueryApplicationSourceAdjacencyEndpoints::from_observed(&(Vec::new()), worth_execution::ExecutionAllocationPolicy::SystemAllocation, None).unwrap(),
     };
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::product_publication::publish_relational_mutation(
                 &host_custody.borrowed_request_for_test(),
                 &world,
@@ -169,7 +169,7 @@ fn empty_path_union_stales_when_a_matching_edge_is_inserted() {
                         partition_id: PartitionId::main(),
                         kind_id: primary_kind,
                         client_key: ClientKey::raw("new-primary-path"),
-                        source: EntityReference::Existing(account.entity_id()),
+                        source: EntityReference::Existing(account.entity_id_for_test()),
                         target: EntityReference::Existing(primary_target),
                         fields: AspectFieldPatch::default(),
                     }),
@@ -179,19 +179,19 @@ fn empty_path_union_stales_when_a_matching_edge_is_inserted() {
         .expect("the fixture read owns its installed host call");
     let current = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
         .expect("the fixture read owns its installed host call");
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             assert!(!graph
                 .integration_handle()
                 .with_runtime(request_execution, |runtime| {
-                    fact.source_currentness_in(
+                    fact.source_currentness_in_for_test(
                         runtime,
                         &host_custody.borrowed_request_for_test(),
-                        current.application_basis().snapshot_handle(),
+                        current.application_basis_for_test().snapshot_handle(),
                     )
                     .unwrap()
                     .unwrap()
@@ -222,7 +222,7 @@ fn empty_path_union_stales_when_a_matching_edge_is_inserted() {
         .expect("the fixture read owns its installed host call");
     assert_eq!(matching.rows().len(), 1);
     assert_ne!(
-        empty.result_set_observation().idempotency_identity(),
-        matching.result_set_observation().idempotency_identity()
+        empty.result_set_observation().idempotency_identity_for_test(),
+        matching.result_set_observation().idempotency_identity_for_test()
     );
 }

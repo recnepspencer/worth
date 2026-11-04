@@ -24,7 +24,7 @@ pub use crate::domain_computation::primary_graph::application_contribution::part
 /// The prior a producer hands its next run from `sealed`, with the fact the
 /// membership read moved, and the fact every key read when `keys`.
 pub fn moved_facts(sealed: SealedComputationRun, keys: bool) -> ComputationPrior {
-    let mut state = sealed.state;
+    let mut state = (*sealed.state_for_test());
     let moved = |read: ComputationRead| {
         matches!(read, ComputationRead::Membership)
             || keys && matches!(read, ComputationRead::ItemKey(_))
@@ -46,7 +46,7 @@ pub fn moved_facts(sealed: SealedComputationRun, keys: bool) -> ComputationPrior
         let moved = WorthQueryApplicationObservedFact::SourceEntity { entity_id };
         state.facts.replace_fact(&key, moved);
     }
-    ComputationPrior::new(edition(), Ok(std::sync::Arc::new(state)), None)
+    ComputationPrior::new_for_test(edition(), Ok(std::sync::Arc::new(state)), None)
 }
 
 /// The edits of the alphabet, each over the items' identities, keys and
@@ -167,8 +167,8 @@ fn every_edit_retains_what_a_fresh_full_run_retains() {
         let mut entries = (1..=6)
             .map(|id| (id, (id % 3, 10 * id)))
             .collect::<BTreeMap<_, _>>();
-        *installed.owner.entries.lock().unwrap() = entries.clone();
-        let fresh = || Some(ComputationPrior::new(edition(), Err(Cause::FirstRun), None));
+        *(*installed.owner_for_test()).entries.lock().unwrap() = entries.clone();
+        let fresh = || Some(ComputationPrior::new_for_test(edition(), Err(Cause::FirstRun), None));
         let mut last = attempt(&world, &installed, fresh())
             .sealed
             .unwrap()
@@ -180,7 +180,7 @@ fn every_edit_retains_what_a_fresh_full_run_retains() {
             }
             applied.insert(edit);
             let before = std::mem::replace(
-                &mut *installed.owner.entries.lock().unwrap(),
+                &mut *(*installed.owner_for_test()).entries.lock().unwrap(),
                 entries.clone(),
             );
             // Every fourth step moves the label every key read, so every item
@@ -191,9 +191,9 @@ fn every_edit_retains_what_a_fresh_full_run_retains() {
                 .iter()
                 .filter(|(id, entry)| keys || before.get(id) != Some(entry));
             let touched = touched.map(|(id, _)| *id).collect::<Vec<_>>();
-            installed.owner.keyed.lock().unwrap().clear();
+            (*installed.owner_for_test()).keyed.lock().unwrap().clear();
             let next = attempt(&world, &installed, Some(moved_facts(last, keys)));
-            let keyed = std::mem::take(&mut *installed.owner.keyed.lock().unwrap());
+            let keyed = std::mem::take(&mut *(*installed.owner_for_test()).keyed.lock().unwrap());
             let full = attempt(&world, &installed, fresh());
             let context = format!("seed {seed:#x}, step {step}, {edit:?}, items {entries:?}");
             assert!(
@@ -223,11 +223,11 @@ fn every_record_absence_rebuilds_the_same_state_as_a_fresh_run() {
         Rerouted::default(),
         ComputationRetention::ProducerOperation,
     );
-    *installed.owner.entries.lock().unwrap() = (1..=6).map(|id| (id, (id % 3, 10 * id))).collect();
+    *(*installed.owner_for_test()).entries.lock().unwrap() = (1..=6).map(|id| (id, (id % 3, 10 * id))).collect();
     let full = attempt(
         &world,
         &installed,
-        Some(ComputationPrior::new(edition(), Err(Cause::FirstRun), None)),
+        Some(ComputationPrior::new_for_test(edition(), Err(Cause::FirstRun), None)),
     );
     let expected = retained(full.sealed.as_ref().unwrap().as_ref().unwrap());
     for (absence, cause) in [
@@ -250,13 +250,13 @@ fn every_record_absence_rebuilds_the_same_state_as_a_fresh_run() {
             Cause::CollisionSuppressed,
         ),
     ] {
-        installed.owner.keyed.lock().unwrap().clear();
+        (*installed.owner_for_test()).keyed.lock().unwrap().clear();
         let next = attempt(
             &world,
             &installed,
-            Some(ComputationPrior::new(
+            Some(ComputationPrior::new_for_test(
                 edition(),
-                Err(absence.full_cause()),
+                Err(absence.full_cause_for_test()),
                 None,
             )),
         );
@@ -264,7 +264,7 @@ fn every_record_absence_rebuilds_the_same_state_as_a_fresh_run() {
             matches!(next.runs.as_slice(), [(Run::Full(observed), Some(_))] if *observed == cause)
         );
         assert_eq!(
-            *installed.owner.keyed.lock().unwrap(),
+            *(*installed.owner_for_test()).keyed.lock().unwrap(),
             (1..=6).collect::<Vec<_>>(),
             "every key is routed afresh"
         );
@@ -292,18 +292,18 @@ fn a_missing_call_measurement_is_recorded_as_unmeasured_at_the_discard() {
     let first = first_run(&world, &installed);
     let report = first.runs[0].1.unwrap();
     let sealed = first.sealed.unwrap().unwrap();
-    let typed = sealed
-        .state
+    let typed = (*sealed
+        .state_for_test())
         .typed
         .downcast_ref::<RetainedPartitions<Parity, Number, u64>>()
         .unwrap();
     let mut recording =
-        FullRecording::<Parity, Number>::new(RetainedBasisToken(sealed.state.basis.clone()));
+        FullRecording::<Parity, Number>::new_for_test(RetainedBasisToken::new_for_test((*sealed.state_for_test()).basis.clone()));
     // A reader that could not measure the call supplies None here. This
     // invokes the production discard, with a real completed reduction tree.
-    recording.membership(None, &typed.items, Arc::clone(&typed.digests));
+    recording.membership_for_test(None, &typed.items, Arc::clone(&typed.digests));
     let request = live_scope();
-    let execution = QueryRequestExecution::open(
+    let execution = QueryRequestExecution::open_for_test(
         RuntimeWorldExecutionPlacement::Serial(
             worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy(
                 std::num::NonZeroUsize::MIN,
@@ -313,7 +313,7 @@ fn a_missing_call_measurement_is_recorded_as_unmeasured_at_the_discard() {
         &request,
     );
     let result = recording
-        .complete::<u64, u64>(
+        .complete_for_test::<u64, u64>(
             None,
             typed.tree.clone(),
             &execution,

@@ -53,7 +53,7 @@ fn encoded_query_clones_preserve_shared_backing_through_native_handoff() {
     let (world, _receipt) = recoverable_application_world(142, "checkpoint-backing-proof");
     let publication = world.application.publication();
     let native = b"literal-native-backing-payload";
-    let (checkpoint, sections) = WorthQueryApplicationCheckpoint::encode(
+    let (checkpoint, sections) = WorthQueryApplicationCheckpoint::encode_for_test(
         RelationalNativeCheckpoint::from_untrusted_bytes(native.to_vec()),
         publication,
         &[],
@@ -61,7 +61,7 @@ fn encoded_query_clones_preserve_shared_backing_through_native_handoff() {
     )
     .expect("the actual production formatter creates an authenticated Query frame");
     assert_eq!(sections.total_bytes(), checkpoint.bytes().len());
-    assert_three_handoffs_share_backing(checkpoint, native, publication.bootstrap_commit_id().0);
+    assert_three_handoffs_share_backing(checkpoint, native, publication.bootstrap_commit_id_for_test().0);
 }
 
 pub fn assert_three_handoffs_share_backing(
@@ -78,7 +78,7 @@ pub fn assert_three_handoffs_share_backing(
         assert_eq!(clone.bytes().as_ptr(), checkpoint.bytes().as_ptr());
     }
     drop(checkpoint);
-    let decoded = clones.map(|clone| clone.decode().expect("Query framing is admitted"));
+    let decoded = clones.map(|clone| clone.decode_for_test().expect("Query framing is admitted"));
     for handoff in &decoded {
         assert_eq!(handoff.native.bytes(), native_bytes);
         assert_eq!(handoff.native.bytes().as_ptr(), expected);

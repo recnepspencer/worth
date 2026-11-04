@@ -14,13 +14,13 @@ fn birth_subject_provenance_and_start_actor_remain_readable() {
     let (support, revision, _) = installed_provenance_support(world.application.installed_schema());
     let payer = payer();
     let execution = ExecutionRequest::leased(&payer);
-    let graph = world.application.runtime.primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let layout = graph.layout.workflow().clone();
     let (_, product, _lease) = world
         .application
-        .select_product_branch(
+        .select_product_branch_for_test(
             &execution,
-            world.application.product_runtime().default_branch(),
+            world.application.product_runtime().default_branch_for_test(),
         )
         .unwrap()
         .into_parts();
@@ -32,7 +32,7 @@ fn birth_subject_provenance_and_start_actor_remain_readable() {
         &layout,
         revision,
         "birth-read",
-        actor.entity().partition_id,
+        actor.entity_for_test().partition_id,
     );
     let subject_kind = graph.layout.entity_kind(Account::IDENTIFIER).unwrap();
     let before = selected(&world, &execution);
@@ -54,7 +54,7 @@ fn birth_subject_provenance_and_start_actor_remain_readable() {
             })
         });
     let created = CreatedEntityRef {
-        partition_id: compiled.definition().partition_id,
+        partition_id: compiled.definition_for_test().partition_id,
         kind_id: subject_kind,
         client_key: ClientKey::raw("birth-subject"),
     };
@@ -87,7 +87,7 @@ fn birth_subject_provenance_and_start_actor_remain_readable() {
     publish_effects(
         &world,
         &execution,
-        compiled.definition().partition_id,
+        compiled.definition_for_test().partition_id,
         effects,
     );
     let subject = only_new_entity(&world, &execution, subject_kind, &inventories[0]);
@@ -120,16 +120,16 @@ fn birth_subject_provenance_and_start_actor_remain_readable() {
                 branch,
                 instance,
                 true,
-                compiled.lineage(),
+                compiled.lineage_for_test(),
                 &revision,
                 &support,
                 resources,
             )
             .expect("governed reader accepts complete native birth facts");
-            assert_eq!(record.subject, subject);
-            assert_eq!(record.original_start_revision, revision);
+            assert_eq!((*record.subject_for_test()), subject);
+            assert_eq!((*record.original_start_revision_for_test()), revision);
             assert!(
-                record.reference.is_some(),
+                (*record.reference_for_test()).is_some(),
                 "current birth retains an actual command locator"
             );
             let mut facts = Vec::new();
@@ -150,7 +150,7 @@ fn birth_subject_provenance_and_start_actor_remain_readable() {
                     current.1.snapshot_handle(),
                     &layout,
                     instance,
-                    actor.entity(),
+                    actor.entity_for_test(),
                     &mut Vec::new(),
                 )
                 .is_err(),
@@ -168,7 +168,7 @@ fn birth_subject_provenance_and_start_actor_remain_readable() {
                     &mut Vec::new(),
                 )
                 .unwrap();
-            assert_eq!(start, Some(actor.entity()));
+            assert_eq!(start, Some(actor.entity_for_test()));
         });
     // Deliberate native corruption, not an alternate valid encoding: the
     // authoritative birth edge must never coexist with coordinate claims.

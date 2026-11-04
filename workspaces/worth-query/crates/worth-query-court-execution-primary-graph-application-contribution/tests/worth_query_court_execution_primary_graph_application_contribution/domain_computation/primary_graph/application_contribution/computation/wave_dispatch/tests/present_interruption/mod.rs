@@ -18,13 +18,13 @@ fn a_present_interruption_dispatches_no_member_at_any_matrix_width() {
                     policy,
                 }
             });
-            let root = QueryRequestExecution::open(placement, &scope);
+            let root = QueryRequestExecution::open_for_test(placement, &scope);
             let entered = Arc::new(std::sync::atomic::AtomicUsize::new(0));
             let members = (0..4)
                 .map(|_| {
                     let entered = entered.clone();
                     PreparedMember {
-                        requests: vec![PreparedCompute::new(move |_| {
+                        requests: vec![PreparedCompute::new_for_test(move |_| {
                             entered.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
                         })],
                     }

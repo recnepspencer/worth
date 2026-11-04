@@ -19,7 +19,7 @@ fn registry_binding_reader_ignores_logically_absent_completed_custody() {
     let change = Arc::new(active.take_performed_relational_product_change().unwrap());
     let observation = active
         .committed_product_publication()
-        .take_output_demand_observation()
+        .take_output_demand_observation_for_test()
         .unwrap();
     let source = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryPerformedOutputDemandSource {
         receipt: active,
@@ -33,30 +33,30 @@ fn registry_binding_reader_ignores_logically_absent_completed_custody() {
         "binding-active",
         "binding-completed",
     );
-    let current_commit = source.change.product_commit().clone();
+    let current_commit = (*source.change_for_test()).product_commit().clone();
     let completed_commit = completed
         .committed_product_publication()
         .composite_commit()
         .clone();
-    let occurrence = source.receipt.product_branch().occurrence();
+    let occurrence = (*source.receipt_for_test()).product_branch().occurrence();
     let (scope, _) = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::source_custody::real_scope_and_occurrence();
     for seed in 0..16 {
         let selected = BoundOutputSource {
             scope,
-            identity: key("binding", seed + 1, 3).source,
+            identity: (*key("binding", seed + 1, 3).source_for_test()),
         };
         let newer = BoundOutputSource {
             scope,
-            identity: key("binding", seed + 2, 3).source,
+            identity: (*key("binding", seed + 2, 3).source_for_test()),
         };
         let make = || {
             let registry = WorthQueryOutputDemandRegistry::default();
-            let mut state = registry.state.lock().unwrap();
+            let mut state = (*registry.state_for_test()).lock().unwrap();
             state.source_custody.insert(
                 current_commit.clone(),
                 SourceCustody {
                     occurrence,
-                    root_kind: PreparedOutputRootKind::Discovered(EqualityTypeId::of::<()>()),
+                    root_kind: PreparedOutputRootKind::Discovered(EqualityTypeId::of_for_test::<()>()),
                     source: Some(source.clone()),
                     discovery: None,
                     bound_sources: None,
@@ -72,11 +72,11 @@ fn registry_binding_reader_ignores_logically_absent_completed_custody() {
                 completed_commit.clone(),
                 SourceCustody {
                     occurrence,
-                    root_kind: PreparedOutputRootKind::Discovered(EqualityTypeId::of::<()>()),
+                    root_kind: PreparedOutputRootKind::Discovered(EqualityTypeId::of_for_test::<()>()),
                     source: None,
                     discovery: None,
                     bound_sources: Some(vec![newer.clone()]),
-                    consumed_sources: vec![newer.identity.clone()],
+                    consumed_sources: vec![(*newer.identity_for_test()).clone()],
                     retired_sources: Vec::new(),
                     retired: None,
                     token_count: 0,
@@ -85,17 +85,17 @@ fn registry_binding_reader_ignores_logically_absent_completed_custody() {
                 },
             );
             drop(state);
-            registry.complete_prepared_source(&completed);
+            registry.complete_prepared_source_for_test(&completed);
             registry
         };
         let eager = make();
-        eager.state.lock().unwrap().prune_completed_custody();
+        (*eager.state_for_test()).lock().unwrap().prune_completed_custody();
         eager
-            .bind_prepared_output_source(&current_commit, selected.clone())
+            .bind_prepared_output_source_for_test(&current_commit, selected.clone())
             .unwrap();
         let deferred = make();
         assert!(
-            deferred.state.lock().unwrap().source_custody[&completed_commit]
+            (*deferred.state_for_test()).lock().unwrap().source_custody[&completed_commit]
                 .source
                 .is_none()
         );
@@ -104,14 +104,14 @@ fn registry_binding_reader_ignores_logically_absent_completed_custody() {
             1,
             "a completed cleanup note retains no performed source"
         );
-        assert!(deferred.state.lock().unwrap().pending_custody_prune());
+        assert!((*deferred.state_for_test()).lock().unwrap().pending_custody_prune());
         deferred
-            .bind_prepared_output_source(&current_commit, selected.clone())
+            .bind_prepared_output_source_for_test(&current_commit, selected.clone())
             .unwrap();
-        let a = eager.state.lock().unwrap();
-        let mut b = deferred.state.lock().unwrap();
+        let a = (*eager.state_for_test()).lock().unwrap();
+        let mut b = (*deferred.state_for_test()).lock().unwrap();
         assert!(a.source_custody[&current_commit]
-            .source_denial(&selected.identity)
+            .source_denial(&(*selected.identity_for_test()))
             .is_none());
         assert_eq!(
             b.source_custody[&current_commit].retired_sources,
@@ -125,7 +125,7 @@ fn registry_binding_reader_ignores_logically_absent_completed_custody() {
             state
                 .source_custody
                 .keys()
-                .filter(|commit| !state.custody_prunable(commit))
+                .filter(|commit| !state.custody_prunable_for_test(commit))
                 .cloned()
                 .collect::<Vec<_>>()
         };

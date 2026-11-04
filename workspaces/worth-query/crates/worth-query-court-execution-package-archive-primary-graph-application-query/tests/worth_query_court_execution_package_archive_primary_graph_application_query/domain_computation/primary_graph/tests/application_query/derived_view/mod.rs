@@ -41,9 +41,9 @@ impl WorthQueryManagedDerivedValue for SceneLabel {
 pub fn publication_basis(product: &WorthQueryProductBranchLease) -> ViewPublicationBasis<'_> {
     ViewPublicationBasis {
         before: product.selected_commit(),
-        relational_branch: product.relational_basis().identity().branch_id(),
+        relational_branch: product.relational_basis_for_test().identity().branch_id(),
         product_branch: product.branch_identity(),
-        incarnation: product.observation().lifecycle_incarnation(),
+        incarnation: product.observation_for_test().lifecycle_incarnation(),
     }
 }
 

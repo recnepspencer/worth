@@ -9,13 +9,13 @@ pub fn run(
     let (lineage, identity) = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::output_lineage::registry_fixture::recorded_settlement();
     let cancel = seed & 1 == 0;
     {
-        let mut state = world.registry.state.lock().unwrap();
+        let mut state = (*world.registry.state_for_test()).lock().unwrap();
         state
             .records
             .get_mut(&world.keys[2])
             .unwrap()
             .required_interests = 1;
-        world.owners[2].as_mut().unwrap().requires_output = true;
+        (*world.owners[2].as_mut().unwrap().requires_output_mut_for_test()) = true;
     }
     worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::application_output_demand::registry::prerequisite_claims::custody_note_steps::unhold(
         world.owners[2].as_ref().unwrap(),
@@ -36,10 +36,10 @@ pub fn run(
         divergences,
         false,
     );
-    world.registry.finish_scheduling(
+    world.registry.finish_scheduling_for_test(
         world.owners[2].as_ref().unwrap(),
         None,
-        &mut Err(WorthQueryOutputDemandDenial::new(
+        &mut Err(WorthQueryOutputDemandDenial::new_for_test(
             WorthQueryOutputDemandDenialKind::Superseded,
             "unhold fixture finished",
         )),
@@ -51,7 +51,7 @@ pub fn run(
     if let Some(entry) = world.model.custody.get_mut(&1) {
         entry.tokens = 0;
     }
-    world.registry.release_prepared_token(&context.commit(1));
+    world.registry.release_prepared_token_for_test(&context.commit(1));
     world.model.settle();
     for _ in 0..4 {
         world.admission().unwrap();

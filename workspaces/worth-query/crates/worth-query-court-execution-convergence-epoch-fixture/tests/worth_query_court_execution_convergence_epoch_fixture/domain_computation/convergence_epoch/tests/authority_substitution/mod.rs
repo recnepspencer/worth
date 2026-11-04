@@ -354,7 +354,7 @@ pub fn finish_epoch(
     execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     epoch: worth_query_execution::facade::convergence_epoch::WorthQueryIteratingDirectConvergenceEpoch,
 ) {
-    let installed_phase = epoch.fixture_phase(execution);
+    let installed_phase = epoch.fixture_phase_for_test(execution);
     let execution = &installed_phase;
     let started = match epoch.begin_iteration(execution, call("substitution-recovery")) {
         Ok(started) => started,

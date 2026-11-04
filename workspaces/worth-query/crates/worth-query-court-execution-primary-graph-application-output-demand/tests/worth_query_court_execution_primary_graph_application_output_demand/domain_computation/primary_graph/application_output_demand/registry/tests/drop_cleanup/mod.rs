@@ -13,11 +13,11 @@ pub fn fixture(
     let registry = WorthQueryOutputDemandRegistry::default();
     let selected = key("custody-unrelated-0", 1, 100);
     let ready = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::closed_retirement::ready();
-    let mut state = registry.state.lock().unwrap();
+    let mut state = (*registry.state_for_test()).lock().unwrap();
     worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::walk_bounds::add_live_custody(&mut state, &receipts, 1);
     for mut row in state.records.values_mut() {
         row.interests = 0;
-        row.state = DemandState::Failed(WorthQueryOutputDemandDenial::new(
+        row.state = DemandState::Failed(WorthQueryOutputDemandDenial::new_for_test(
             WorthQueryOutputDemandDenialKind::NoEffect,
             "completed",
         ));
@@ -43,14 +43,14 @@ pub fn fixture(
         .unwrap()
         .completed = true;
     drop(state);
-    registry.complete_prepared_source(&receipts[0]);
+    registry.complete_prepared_source_for_test(&receipts[0]);
     (registry, selected, receipts)
 }
 
 #[test]
 fn registry_interest_drop_leaves_custody_note_without_sweeping() {
     let (registry, selected, receipts) = fixture(false);
-    let wake = Arc::clone(&registry.state.lock().unwrap().records[&selected].wake);
+    let wake = Arc::clone(&(*registry.state_for_test()).lock().unwrap().records[&selected].wake);
     let owner = interest(&registry, selected, wake);
     let before = contacts();
     drop(owner);
@@ -62,7 +62,7 @@ fn registry_interest_drop_leaves_custody_note_without_sweeping() {
     let commit = receipts[0]
         .committed_product_publication()
         .composite_commit();
-    let mut state = registry.state.lock().unwrap();
+    let mut state = (*registry.state_for_test()).lock().unwrap();
     assert!(state.pending_custody_prune());
     assert!(state.source_custody[commit].cleanup.queued);
     state.drain_completed_custody();
@@ -77,9 +77,9 @@ fn registry_prepared_token_drop_leaves_custody_note_without_sweeping() {
         .committed_product_publication()
         .composite_commit();
     let before = contacts();
-    registry.release_prepared_token(commit);
+    registry.release_prepared_token_for_test(commit);
     assert_eq!(contacts(), before, "token Drop does not inspect custody");
-    let mut state = registry.state.lock().unwrap();
+    let mut state = (*registry.state_for_test()).lock().unwrap();
     assert_eq!(state.source_custody[commit].token_count, 0);
     assert!(state.source_custody[commit].cleanup.queued);
     state.drain_completed_custody();

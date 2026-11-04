@@ -6,7 +6,7 @@ fn unrelated_identical_row_cannot_make_owner_mapping_ambiguous() {
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let world = installed_authorization_world(true);
-    let provider = &world.application.primary_provider;
+    let provider = &(*world.application.primary_provider_for_test());
     let record = record_for(5);
     provider
         .graph
@@ -55,24 +55,24 @@ fn unrelated_identical_row_cannot_make_owner_mapping_ambiguous() {
                 .expect("test staging stays within configured resource budgets");
             let committed = transaction.commit(request_execution, runtime).unwrap();
             assert_ne!(
-                committed.created_entity(pending.created_entity()),
+                committed.created_entity(pending.created_entity_for_test()),
                 committed.created_entity(&unrelated_created),
                 "each exact create reference retains its own owner-minted identity"
             );
-            let binding = WorthQueryCommittedDispatchOutboxBinding::fixture_from_commit(
+            let binding = WorthQueryCommittedDispatchOutboxBinding::fixture_from_commit_for_test(
                 provider.graph.layout.provider_dispatch_outbox(),
-                Some(pending.record()),
+                Some(pending.record_for_test()),
                 &committed,
             )
             .unwrap()
             .unwrap();
-            assert_eq!(binding.record(), &record);
+            assert_eq!(binding.record_for_test(), &record);
             assert_eq!(
-                binding.record_ref(),
-                &RecordRef::Entity(committed.created_entity(pending.created_entity()).unwrap(),)
+                binding.record_ref_for_test(),
+                &RecordRef::Entity(committed.created_entity(pending.created_entity_for_test()).unwrap(),)
             );
             assert_eq!(
-                WorthQueryCommittedDispatchOutboxBinding::fixture_from_commit(
+                WorthQueryCommittedDispatchOutboxBinding::fixture_from_commit_for_test(
                     provider.graph.layout.provider_dispatch_outbox(),
                     Some(&record_for(6)),
                     &committed,
@@ -90,7 +90,7 @@ fn another_committed_record_ref_cannot_substitute_for_the_bound_outbox() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let world = installed_authorization_world(true);
-    let provider = &world.application.primary_provider;
+    let provider = &(*world.application.primary_provider_for_test());
     let first = record_for(61);
     let second = record_for(62);
     let (first_binding, second_binding, commit, runtime_id) =
@@ -122,7 +122,7 @@ fn another_committed_record_ref_cannot_substitute_for_the_bound_outbox() {
                 .expect("test staging stays within configured resource budgets");
             let committed = transaction.commit(execution, runtime).unwrap();
             let bind = |record| {
-                WorthQueryCommittedDispatchOutboxBinding::fixture_from_commit(
+                WorthQueryCommittedDispatchOutboxBinding::fixture_from_commit_for_test(
                     provider.graph.layout.provider_dispatch_outbox(),
                     Some(record),
                     &committed,

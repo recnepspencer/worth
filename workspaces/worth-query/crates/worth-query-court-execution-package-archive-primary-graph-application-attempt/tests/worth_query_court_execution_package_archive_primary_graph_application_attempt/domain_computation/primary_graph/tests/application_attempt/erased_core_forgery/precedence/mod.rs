@@ -15,7 +15,7 @@ pub fn expiring(
         .application
         .with_host_advancement(|phase| {
             world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&(phase).test_host_request_for_test())
                 .resolve_authenticated_principal(
                     &phase,
                     &world.binding,
@@ -101,7 +101,7 @@ fn a_forged_and_expired_core_is_refused_as_forged_at_every_entry() {
     let read = world
         .application
         .with_host_advancement(|phase| {
-            let custody = phase.test_host_request();
+            let custody = phase.test_host_request_for_test();
             world
                 .application
                 .begin_application_read_attempt(

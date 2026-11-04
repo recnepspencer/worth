@@ -36,10 +36,10 @@ pub fn durable_approval_basis_with_dependency_snapshot(
     replacement_dependencies: Option<&str>,
 ) -> WorthQueryWorkflowApprovalAuthorityBasis {
     let authority = admission.workflow_approval_authority().unwrap();
-    let request = WorthQueryRetainedCapabilityRequest::decode_workflow_approval_request(
+    let request = WorthQueryRetainedCapabilityRequest::decode_workflow_approval_request_for_test(
         execution,
         &admission
-            .workflow_approval_request_snapshot(execution)
+            .workflow_approval_request_snapshot_for_test(execution)
             .unwrap()
             .unwrap(),
     )
@@ -47,19 +47,19 @@ pub fn durable_approval_basis_with_dependency_snapshot(
     let principal = decode_principal(
         execution,
         &admission
-            .workflow_approval_principal_snapshot(execution)
+            .workflow_approval_principal_snapshot_for_test(execution)
             .unwrap()
             .unwrap(),
     )
     .unwrap();
     let original_lineage = admission
-        .workflow_approval_lineage_snapshot(execution)
+        .workflow_approval_lineage_snapshot_for_test(execution)
         .unwrap()
         .unwrap();
     let lineage =
         decode_lineage(execution, replacement_lineage.unwrap_or(&original_lineage)).unwrap();
     let original_support = admission
-        .workflow_approval_support_snapshot(execution)
+        .workflow_approval_support_snapshot_for_test(execution)
         .unwrap()
         .unwrap();
     let support = decode_workflow_approval_support(
@@ -68,7 +68,7 @@ pub fn durable_approval_basis_with_dependency_snapshot(
     )
     .unwrap();
     let original_dependencies = admission
-        .workflow_approval_dependencies_snapshot(execution)
+        .workflow_approval_dependencies_snapshot_for_test(execution)
         .unwrap()
         .unwrap();
     let mut dependency_snapshot: serde_json::Value =
@@ -77,7 +77,7 @@ pub fn durable_approval_basis_with_dependency_snapshot(
         dependency_snapshot["support"] = dependency_snapshot["primary"].clone();
     }
     let dependencies =
-        worth_query_execution::court_doors_for_test::domain_computation::authorization::workflow_approval_dependencies::WorthQueryWorkflowApprovalDependencies::decode(
+        worth_query_execution::court_doors_for_test::domain_computation::authorization::workflow_approval_dependencies::WorthQueryWorkflowApprovalDependencies::decode_for_test(
             execution,
             &dependency_snapshot.to_string(),
         )
@@ -85,7 +85,7 @@ pub fn durable_approval_basis_with_dependency_snapshot(
     let worth_foundational::facade::AspectValue::UInt64(expiry) = authority.expiry else {
         panic!("the fixture uses an unsigned capability expiry");
     };
-    WorthQueryWorkflowApprovalAuthorityBasis::from_retained_approval(
+    WorthQueryWorkflowApprovalAuthorityBasis::from_retained_approval_for_test(
         request,
         principal,
         authority.grant,

@@ -17,15 +17,15 @@ fn scalar_source_bytes_include_variable_width_backing_capacity() {
     let text = InternedString::Raw(retained("candidate", 224));
 
     assert_eq!(
-        WorthQueryArtifactProviderValueView::Decimal(&decimal).physical_bytes(),
+        WorthQueryArtifactProviderValueView::Decimal(&decimal).physical_bytes_for_test(),
         std::mem::size_of_val(&decimal) + 128
     );
     assert_eq!(
-        WorthQueryArtifactProviderValueView::Rational(&rational).physical_bytes(),
+        WorthQueryArtifactProviderValueView::Rational(&rational).physical_bytes_for_test(),
         std::mem::size_of_val(&rational) + 96 + 160
     );
     assert_eq!(
-        WorthQueryArtifactProviderValueView::String(&text).physical_bytes(),
+        WorthQueryArtifactProviderValueView::String(&text).physical_bytes_for_test(),
         std::mem::size_of_val(&text) + 224
     );
 }
@@ -38,7 +38,7 @@ fn bulk_source_bytes_equal_inline_slice_plus_every_nested_capacity() {
     ];
 
     assert_eq!(
-        WorthQueryArtifactProviderFieldSlice::String(&values).physical_bytes(),
+        WorthQueryArtifactProviderFieldSlice::String(&values).physical_bytes_for_test(),
         std::mem::size_of_val(values.as_slice()) + 64 + 192
     );
 }

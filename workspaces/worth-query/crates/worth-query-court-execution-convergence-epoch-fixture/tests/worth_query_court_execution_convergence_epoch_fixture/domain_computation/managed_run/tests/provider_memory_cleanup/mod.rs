@@ -194,7 +194,7 @@ fn provider_start_failure_preserves_escaped_arena_recovery() {
             },
             resource_request,
         );
-        let installed_running_phase = execution.phase_for_direct(&running);
+        let installed_running_phase = execution.phase_for_direct_for_test(&running);
 
         let failure = match running.begin_graph_execution(
             &installed_running_phase,
@@ -214,7 +214,7 @@ fn provider_start_failure_preserves_escaped_arena_recovery() {
         assert!(failure.provider_retained_bytes() >= 24);
         let terminal = failure
             .into_running()
-            .terminate_for_convergence(WorthQueryManagedRunTerminalKind::Failed);
+            .terminate_for_convergence_for_test(WorthQueryManagedRunTerminalKind::Failed);
         let pending = terminal
             .cleanup()
             .expect_err("escaped start memory must keep cleanup pending");

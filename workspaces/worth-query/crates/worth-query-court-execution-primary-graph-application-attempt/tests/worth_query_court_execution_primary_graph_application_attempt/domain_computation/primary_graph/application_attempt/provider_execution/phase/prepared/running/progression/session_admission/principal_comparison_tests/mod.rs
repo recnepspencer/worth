@@ -26,20 +26,20 @@ fn principal_staleness_and_request_stop_keep_their_distinct_answers() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let program = world
         .application
         .with_host_advancement(|phase| {
             retained_status_program(
-                &(phase).test_host_request(),
+                &(phase).test_host_request_for_test(),
                 &world,
                 &principal,
                 &account,
@@ -59,7 +59,7 @@ fn principal_staleness_and_request_stop_keep_their_distinct_answers() {
                     &phase.borrowed_request_for_test(),
                     phase,
                     &world.application,
-                    WorthQueryApplicationCommitPreparationRequest::new(
+                    WorthQueryApplicationCommitPreparationRequest::new_for_test(
                         program,
                         idempotency(187, 188),
                         None,
@@ -87,7 +87,7 @@ fn principal_staleness_and_request_stop_keep_their_distinct_answers() {
                 let admitted_session = admit_provider_session(
                     phase,
                     &mut running,
-                    &world.application.primary_graph_authority,
+                    &(*world.application.primary_graph_authority_for_test()),
                     attempt_basis.retained_product(),
                     mutation_run,
                 )
@@ -96,12 +96,12 @@ fn principal_staleness_and_request_stop_keep_their_distinct_answers() {
                     registered,
                     mutation_run,
                 } = admitted_session
-                    .register(
+                    .register_for_test(
                         &mut authorization,
                         provider_attempt,
                         attempt_basis,
-                        WorthQueryProviderAttemptRegistrationContext::new(
-                            &world.application.primary_provider,
+                        WorthQueryProviderAttemptRegistrationContext::new_for_test(
+                            &(*world.application.primary_provider_for_test()),
                             &admission,
                             retained_idempotency,
                             outcome_identity,
@@ -114,10 +114,10 @@ fn principal_staleness_and_request_stop_keep_their_distinct_answers() {
                     &phase.borrowed_request_for_test(),
                     &world,
                     &request,
-                    principal.target_relation_id(),
+                    principal.target_relation_id_for_test(),
                 );
                 mutation_run
-                    .finish(
+                    .finish_for_test(
                         running,
                         worth_query_execution::facade::domain_computation::WorthQueryManagedRunTerminalKind::Failed,
                         lease.release_custody(),

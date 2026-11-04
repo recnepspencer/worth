@@ -43,9 +43,9 @@ pub struct EmissionObservation {
 
 pub fn observe(prepared: WorthQueryPreparedApplicationProviderAttempt) -> LoweringObservation {
     let WorthQueryPreparedApplicationProviderAttempt { effects, .. } = prepared;
-    let steps = effects.expected_steps().iter().map(observe_step).collect();
-    let intents = effects.batch().intents.clone();
-    let emissions = effects.into_emissions();
+    let steps = effects.expected_steps_for_test().iter().map(observe_step).collect();
+    let intents = effects.batch_for_test().intents.clone();
+    let emissions = effects.into_emissions_for_test();
     let emissions = emissions.into_emissions();
     LoweringObservation {
         steps,
@@ -67,7 +67,7 @@ pub fn assert_created_partition(
     prepared: WorthQueryPreparedApplicationProviderAttempt,
     expected: PartitionId,
 ) {
-    for intent in &prepared.effects.batch().intents {
+    for intent in &(*prepared.effects_for_test()).batch().intents {
         match intent {
             MutationIntent::Create(CreateIntent::Entity(spec)) => {
                 assert_eq!(spec.partition_id, expected);

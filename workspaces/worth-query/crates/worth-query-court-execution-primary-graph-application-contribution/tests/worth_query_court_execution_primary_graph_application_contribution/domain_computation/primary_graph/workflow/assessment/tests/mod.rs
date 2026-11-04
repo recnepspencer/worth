@@ -36,20 +36,20 @@ fn evidence_and_each_dependency_charge_their_field_widths_and_nothing_else_does(
     let primary = installed_layout();
     let layout = primary.workflow();
     let evidence = BTreeMap::from([
-        (layout.assessment_evidence.identity.clone(), text("abcd")),
+        ((*layout.assessment_evidence.identity_for_test()).clone(), text("abcd")),
         (
-            layout.assessment_evidence.retained_bytes.clone(),
+            (*layout.assessment_evidence.retained_bytes_for_test()).clone(),
             AspectValue::UInt64(u64::MAX),
         ),
     ]);
     let dependency = BTreeMap::from([
-        (layout.evidence_dependency.fact_kind.clone(), text("field")),
+        ((*layout.evidence_dependency.fact_kind_for_test()).clone(), text("field")),
         (
-            layout.evidence_dependency.native_revision.clone(),
+            (*layout.evidence_dependency.native_revision_for_test()).clone(),
             AspectValue::UInt64(3),
         ),
         (
-            layout.evidence_dependency.field_presence.clone(),
+            (*layout.evidence_dependency.field_presence_for_test()).clone(),
             AspectValue::Bool(true),
         ),
     ]);
@@ -57,20 +57,20 @@ fn evidence_and_each_dependency_charge_their_field_widths_and_nothing_else_does(
     let charge = |effect| workflow_evidence_retained_bytes(layout, &effect);
     assert_eq!(
         charge(created(
-            layout.assessment_evidence.entity_kind,
+            (*layout.assessment_evidence.entity_kind_for_test()),
             evidence.clone()
         )),
         5 + 9
     );
     assert_eq!(
-        charge(created(layout.evidence_dependency.entity_kind, dependency)),
+        charge(created((*layout.evidence_dependency.entity_kind_for_test()), dependency)),
         6 + 9 + 2
     );
-    assert_eq!(charge(created(layout.transition.entity_kind, evidence)), 0);
+    assert_eq!(charge(created((*layout.transition_for_test()).entity_kind, evidence)), 0);
     assert_eq!(
         charge(WorthQueryApplicationRealizedEffect::CreateRelation {
             fields: Default::default(),
-            kind: layout.evidence_dependency_relation,
+            kind: (*layout.evidence_dependency_relation_for_test()),
             key: "evidence-dependency".to_owned(),
             from: EntityReference::Existing(entity(1)),
             to: EntityReference::Existing(entity(2)),
@@ -108,7 +108,7 @@ fn performed_entity_kind_dependency_uses_a_distinct_durable_shape() {
     };
     let evidence = CreatedEntityRef {
         partition_id: worth_relational::facade::identity::PartitionId::main(),
-        kind_id: layout.assessment_evidence.entity_kind,
+        kind_id: (*layout.assessment_evidence.entity_kind_for_test()),
         client_key: ClientKey::raw("evidence"),
     };
     let projected = |fact| {
@@ -133,21 +133,21 @@ fn performed_entity_kind_dependency_uses_a_distinct_durable_shape() {
         entity_id: dependent,
     });
     assert_eq!(
-        legacy.get(&layout.evidence_dependency.fact_kind),
+        legacy.get(&(*layout.evidence_dependency.fact_kind_for_test())),
         Some(&text("entity"))
     );
-    assert!(!legacy.contains_key(&layout.evidence_dependency.native_entity_kind));
+    assert!(!legacy.contains_key(&(*layout.evidence_dependency.native_entity_kind_for_test())));
 
     let exact = projected(Fact::Entity {
         entity_id: dependent,
         kind,
     });
     assert_eq!(
-        exact.get(&layout.evidence_dependency.fact_kind),
+        exact.get(&(*layout.evidence_dependency.fact_kind_for_test())),
         Some(&text("entity-kind"))
     );
     assert_eq!(
-        exact.get(&layout.evidence_dependency.native_entity_kind),
+        exact.get(&(*layout.evidence_dependency.native_entity_kind_for_test())),
         Some(&AspectValue::UInt64(u64::from(kind.as_u32())))
     );
 }

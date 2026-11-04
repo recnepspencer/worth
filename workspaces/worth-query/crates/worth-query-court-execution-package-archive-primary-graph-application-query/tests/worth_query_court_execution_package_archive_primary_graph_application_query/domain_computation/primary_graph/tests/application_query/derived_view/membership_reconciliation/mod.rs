@@ -8,7 +8,7 @@ pub use worth_foundational::facade::AspectFieldLocator;
 fn certified_membership_changes_retain_clean_arcs_and_read_only_new_or_dirty_entries() {
     let world = installed_authorization_world(true);
     world.application.with_host_advancement(|phase| {
-        let host_custody = phase.test_host_request();
+        let host_custody = phase.test_host_request_for_test();
         let borrowed_execution = host_custody.borrowed_request_for_test();
         let request_execution = &borrowed_execution;
 
@@ -155,7 +155,7 @@ fn certified_membership_changes_retain_clean_arcs_and_read_only_new_or_dirty_ent
                 members,
                 |_: &String| {
                     let first = selected
-                        .retain_selection(request_execution)
+                        .retain_selection_for_test(request_execution)
                         .unwrap()
                         .admit_application_query(
                             &host_custody.phase_for_application(&world.application),
@@ -166,7 +166,7 @@ fn certified_membership_changes_retain_clean_arcs_and_read_only_new_or_dirty_ent
                         )
                         .unwrap();
                     let second = selected
-                        .retain_selection(request_execution)
+                        .retain_selection_for_test(request_execution)
                         .unwrap()
                         .admit_application_query(
                             &host_custody.phase_for_application(&world.application),
@@ -191,7 +191,7 @@ fn certified_membership_changes_retain_clean_arcs_and_read_only_new_or_dirty_ent
             .get(&key)
             .unwrap()
             .unwrap();
-        let graph = world.application.runtime.primary_graph().unwrap();
+        let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
         let (tag_locator, label_locator) = crate::domain_computation::primary_graph::tests::application_query::derived_view::membership_reconciliation::collection_locators::membership_and_label(&world);
         let change =
             |before: &WorthQueryProductBranchLease, locator: &AspectFieldLocator, value: &str| {

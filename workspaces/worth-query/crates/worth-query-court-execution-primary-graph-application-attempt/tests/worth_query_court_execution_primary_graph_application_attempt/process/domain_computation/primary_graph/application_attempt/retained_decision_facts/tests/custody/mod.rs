@@ -66,7 +66,7 @@ fn before_growth_refusal_and_merge_replacement_coexistence_release_exact_backing
     let _serial = SERIAL.lock().unwrap();
     let zero = authority().request_lease(request(0)).unwrap();
     let mut empty = RetainedFactStore::<Body>::new(control(Policy::Execution(&zero))).unwrap();
-    let denied = match empty.insert(
+    let denied = match empty.insert_for_test(
         key(b"x", None, control(Policy::SystemAllocation)),
         Body {
             scalar: 1,
@@ -99,7 +99,7 @@ fn before_growth_refusal_and_merge_replacement_coexistence_release_exact_backing
     let mut right = Run::empty(1, policy).unwrap();
     for (run, locator, ordinal) in [(&mut left, b"a", 0), (&mut right, b"b", 1)] {
         // Explicit system key bytes excluded in this inline merge proof.
-        *run.slots[0].borrow_mut() = Some(RetainedFact {
+        *(*run.slots_for_test())[0].borrow_mut() = Some(RetainedFact {
             key: key(locator, None, control(Policy::SystemAllocation)),
             value: Body {
                 scalar: ordinal as u64,
@@ -107,9 +107,9 @@ fn before_growth_refusal_and_merge_replacement_coexistence_release_exact_backing
             },
             ordinal,
         });
-        run.used = 1;
+        (*run.used_mut_for_test()) = 1;
     }
-    let denied = match Run::merge(left, right, policy) {
+    let denied = match Run::merge_for_test(left, right, policy) {
         Err(StoreDenial::Allocation(denied)) => denied,
         _ => panic!("old+new coexistence must require a second actual layout"),
     };
@@ -130,7 +130,7 @@ fn before_growth_refusal_and_merge_replacement_coexistence_release_exact_backing
     let directory_lease = authority().request_lease(request(directory_quote)).unwrap();
     let mut directory =
         RunDirectory::<Body>::new(control(Policy::Execution(&directory_lease))).unwrap();
-    let denied = match directory.ensure(1, control(Policy::Execution(&directory_lease))) {
+    let denied = match directory.ensure_for_test(1, control(Policy::Execution(&directory_lease))) {
         Err(StoreDenial::Allocation(denied)) => denied,
         _ => panic!("replacement fits alone; coexistence must still require the old layout"),
     };
@@ -174,7 +174,7 @@ fn final_array_and_key_charges_survive_child_drop_and_exhausted_iterator() {
         let mut store = RetainedFactStore::new(policy).unwrap();
         for (ordinal, locator) in [b"c", b"a", b"b"].into_iter().enumerate() {
             store
-                .insert(
+                .insert_for_test(
                     key(locator, None, policy),
                     Body {
                         scalar: ordinal as u64,
@@ -185,7 +185,7 @@ fn final_array_and_key_charges_survive_child_drop_and_exhausted_iterator() {
                 )
                 .unwrap();
         }
-        store.finish(policy).unwrap()
+        store.finish_for_test(policy).unwrap()
     };
     assert_eq!(records.charged_payload_bytes(), Some(final_quote));
     assert!(matches!(
@@ -226,7 +226,7 @@ fn live_child_stop_refuses_partial_success_without_stopping_parent() {
     let mut store = RetainedFactStore::new(policy).unwrap();
     let incoming = key(b"", None, policy);
     stop.cancel();
-    let denied = store.insert(
+    let denied = store.insert_for_test(
         incoming,
         Body {
             scalar: 1,
@@ -239,7 +239,7 @@ fn live_child_stop_refuses_partial_success_without_stopping_parent() {
         matches!(denied, Err(StoreDenial::Allocation(ref denied)) if denied.classify() == Kind::Request(worth_execution::WorkCeilingDenial::Stopped(worth_execution::MapKernelStop::Cancelled)))
     );
     assert!(matches!(
-        store.finish(policy),
+        store.finish_for_test(policy),
         Err(StoreDenial::Allocation(ref denial)) if denial.classify() == Kind::Request(worth_execution::WorkCeilingDenial::Stopped(worth_execution::MapKernelStop::Cancelled))
     ));
     assert!(!parent_stop.is_cancelled());

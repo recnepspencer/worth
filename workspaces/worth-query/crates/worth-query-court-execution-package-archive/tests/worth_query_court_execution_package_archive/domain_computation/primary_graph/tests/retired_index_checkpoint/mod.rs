@@ -44,12 +44,12 @@ fn a_store_holding_the_retired_correlation_index_opens_and_runs() {
     let world = installed_world(&[("alice", WorthQueryPrincipalMappingStatus::Enabled)]);
     let principal = world
         .application
-        .with_host_advancement(|phase| resolve_alice(&(phase).test_host_request(), &world, 1))
+        .with_host_advancement(|phase| resolve_alice(&(phase).test_host_request_for_test(), &world, 1))
         .expect("the fixture read owns its installed host call");
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             set_principal_identity(
                 &host_custody.borrowed_request_for_test(),
                 &world,
@@ -61,7 +61,7 @@ fn a_store_holding_the_retired_correlation_index_opens_and_runs() {
     let retired = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             persist_as_the_retired_code_did(&host_custody.borrowed_request_for_test(), &world)
         })
         .expect("the fixture read owns its installed host call");
@@ -82,7 +82,7 @@ fn a_store_holding_the_retired_correlation_index_opens_and_runs() {
     let principal = restored
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             resolve_alice(&host_custody, &restored, 2)
         })
         .expect("the fixture read owns its installed host call");
@@ -90,7 +90,7 @@ fn a_store_holding_the_retired_correlation_index_opens_and_runs() {
     restored
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             set_principal_identity(
                 &host_custody.borrowed_request_for_test(),
                 &restored,
@@ -113,7 +113,7 @@ fn a_store_holding_the_retired_correlation_index_opens_and_runs() {
     restored
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             resolve_alice(&host_custody, &restored, 3)
         })
         .expect("the fixture read owns its installed host call");
@@ -134,7 +134,7 @@ fn a_store_holding_the_retired_correlation_index_opens_and_runs() {
     reopened
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             resolve_alice(&host_custody, &reopened, 3)
         })
         .expect("the fixture read owns its installed host call");
@@ -146,7 +146,7 @@ pub fn persist_as_the_retired_code_did(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &IdentityWorld,
 ) -> DerivedIndexId {
-    let graph = world.application.runtime.primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let correlation = graph
         .layout
         .provider_inbound_completion()
@@ -185,7 +185,7 @@ pub fn assert_retired_index_is_inert(
     world: &IdentityWorld,
     retired: DerivedIndexId,
 ) {
-    let graph = world.application.runtime.primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let handle = graph.integration_handle();
     assert!(!handle.primary_index_ids.contains(&retired));
     handle.with_runtime(request_execution, |runtime| {
@@ -206,9 +206,9 @@ pub fn resolve_alice(
     let scope = live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &scope);
     let principal = world
-        .selected_product(&(phase_custody).test_host_request())
+        .selected_product(&(phase_custody).test_host_request_for_test())
         .resolve_authenticated_principal(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             &world.binding,
             &external,
             &scope,
@@ -216,7 +216,7 @@ pub fn resolve_alice(
         )
         .expect("the installed identity index answers");
     assert_eq!(*principal.principal_identity(), identity);
-    principal.principal_entity_id()
+    principal.principal_entity_id_for_test()
 }
 
 pub fn set_principal_identity(
@@ -225,7 +225,7 @@ pub fn set_principal_identity(
     principal: EntityId,
     identity: u64,
 ) {
-    let graph = world.application.runtime.primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let locator = graph
         .layout
         .principal_binding(world.binding.binding())
@@ -252,7 +252,7 @@ pub fn with_runtime<T>(
     world: &IdentityWorld,
     read: impl FnOnce(&RelationalRuntime) -> T,
 ) -> T {
-    let graph = world.application.runtime.primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     graph
         .integration_handle()
         .with_runtime(request_execution, read)

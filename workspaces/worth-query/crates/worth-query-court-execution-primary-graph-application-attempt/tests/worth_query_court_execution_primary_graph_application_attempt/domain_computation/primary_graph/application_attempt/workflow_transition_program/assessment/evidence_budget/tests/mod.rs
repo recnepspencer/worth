@@ -25,28 +25,28 @@ pub fn evidence_effects(
     };
     [
         entity(
-            layout.assessment_evidence.entity_kind,
+            (*layout.assessment_evidence.entity_kind_for_test()),
             BTreeMap::from([
                 (
-                    layout.assessment_evidence.publication_identity.clone(),
+                    (*layout.assessment_evidence.publication_identity_for_test()).clone(),
                     text(publication),
                 ),
                 (
-                    layout.assessment_evidence.retained_bytes.clone(),
+                    (*layout.assessment_evidence.retained_bytes_for_test()).clone(),
                     AspectValue::UInt64(0),
                 ),
             ]),
         ),
         entity(
-            layout.evidence_dependency.entity_kind,
+            (*layout.evidence_dependency.entity_kind_for_test()),
             BTreeMap::from([
-                (layout.evidence_dependency.fact_kind.clone(), text("field")),
+                ((*layout.evidence_dependency.fact_kind_for_test()).clone(), text("field")),
                 (
-                    layout.evidence_dependency.native_revision.clone(),
+                    (*layout.evidence_dependency.native_revision_for_test()).clone(),
                     AspectValue::UInt64(3),
                 ),
                 (
-                    layout.evidence_dependency.field_presence.clone(),
+                    (*layout.evidence_dependency.field_presence_for_test()).clone(),
                     AspectValue::Bool(true),
                 ),
             ]),

@@ -8,13 +8,13 @@ fn lifecycle_replay_resolvers_have_no_replay_for_an_ordinary_admission() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let first = world
@@ -37,7 +37,7 @@ fn lifecycle_replay_resolvers_have_no_replay_for_an_ordinary_admission() {
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "lifecycle", &request)
+            resolved_account(&(phase).test_host_request_for_test(), &world, "lifecycle", &request)
         })
         .expect("the fixture read owns its installed host call");
     let operation = world
@@ -49,7 +49,7 @@ fn lifecycle_replay_resolvers_have_no_replay_for_an_ordinary_admission() {
         .application
         .with_host_advancement(|phase| {
             world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&(phase).test_host_request_for_test())
                 .authorize_operation(
                     &phase,
                     &principal,
@@ -113,7 +113,7 @@ fn lifecycle_replay_resolvers_have_no_replay_for_an_ordinary_admission() {
                     .installed_operation(worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::TouchAccountOperation::reference())
                     .unwrap();
                 let admission = world
-                    .selected_product(&(phase).test_host_request())
+                    .selected_product(&(phase).test_host_request_for_test())
                     .authorize_operation(
                         &phase,
                         &principal,

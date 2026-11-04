@@ -11,7 +11,7 @@ fn approved_receipt_rejects_another_elevation_and_a_narrowed_amount() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             authenticated_principal(&host_custody, &world, &request)
         })
         .expect("the fixture read owns its installed host call");
@@ -24,7 +24,7 @@ fn approved_receipt_rejects_another_elevation_and_a_narrowed_amount() {
         let denial = world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 world
                     .selected_product(&host_custody)
                     .admit_approved_elevation_access(
@@ -56,7 +56,7 @@ fn approved_receipt_from_another_runtime_cannot_open_active_use() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             authenticated_principal(&host_custody, &world, &request)
         })
         .expect("the fixture read owns its installed host call");
@@ -65,7 +65,7 @@ fn approved_receipt_from_another_runtime_cannot_open_active_use() {
     let denial = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             world
                 .selected_product(&host_custody)
                 .admit_approved_elevation_access(
@@ -95,7 +95,7 @@ fn approved_touch_elevation_cannot_authorize_a_disbursement_request() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             authenticated_principal(&host_custody, &world, &request)
         })
         .expect("the fixture read owns its installed host call");
@@ -107,7 +107,7 @@ fn approved_touch_elevation_cannot_authorize_a_disbursement_request() {
         world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 world
             .selected_product(&host_custody)
             .admit_approved_elevation_access(
@@ -138,14 +138,14 @@ fn missing_direct_elevation_resource_denies_active_admission() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             authenticated_principal(&host_custody, &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             let borrowed_execution = host_custody.borrowed_request_for_test();
             let execution = &borrowed_execution;
             crate::domain_computation::primary_graph::tests::authorization::capability_elevation::mutation::replace_elevation_resource(
@@ -161,7 +161,7 @@ fn missing_direct_elevation_resource_denies_active_admission() {
     let denial = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             crate::domain_computation::primary_graph::tests::authorization::capability_elevation::admit(
                 &host_custody,
                 &world,
@@ -190,14 +190,14 @@ fn additional_foreign_elevation_resource_denies_fresh_active_admission() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             authenticated_principal(&host_custody, &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             crate::domain_computation::primary_graph::tests::authorization::capability_elevation::mutation::add_elevation_resource(
                 &host_custody,
                 &host_custody.borrowed_request_for_test(),
@@ -211,7 +211,7 @@ fn additional_foreign_elevation_resource_denies_fresh_active_admission() {
     let denial = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             crate::domain_computation::primary_graph::tests::authorization::capability_elevation::admit(
                 &host_custody,
                 &world,
@@ -240,14 +240,14 @@ fn retargeted_direct_elevation_resource_stales_admitted_authority() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             authenticated_principal(&host_custody, &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let access = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             crate::domain_computation::primary_graph::tests::authorization::capability_elevation::admit(
                 &host_custody,
                 &world,
@@ -262,7 +262,7 @@ fn retargeted_direct_elevation_resource_stales_admitted_authority() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             let borrowed_execution = host_custody.borrowed_request_for_test();
             let execution = &borrowed_execution;
             crate::domain_computation::primary_graph::tests::authorization::capability_elevation::mutation::replace_elevation_resource(
@@ -285,7 +285,7 @@ fn retargeted_direct_elevation_resource_stales_admitted_authority() {
     let denial = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             world
                 .application
                 .authorize_capability_operation(
@@ -314,14 +314,14 @@ fn additional_foreign_elevation_resource_stales_admitted_authority() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             authenticated_principal(&host_custody, &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let access = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             crate::domain_computation::primary_graph::tests::authorization::capability_elevation::admit(
                 &host_custody,
                 &world,
@@ -336,7 +336,7 @@ fn additional_foreign_elevation_resource_stales_admitted_authority() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             crate::domain_computation::primary_graph::tests::authorization::capability_elevation::mutation::add_elevation_resource(
                 &host_custody,
                 &host_custody.borrowed_request_for_test(),
@@ -357,7 +357,7 @@ fn additional_foreign_elevation_resource_stales_admitted_authority() {
     let denial = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             world
                 .application
                 .authorize_capability_operation(

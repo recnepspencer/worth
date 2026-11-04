@@ -9,9 +9,9 @@ fn dropping_the_arming_guard_clears_the_interleaving() {
         .application
         .interleave_before_owned_reobservation_for_test(|| panic!("a dropped arm must never run"));
     drop(guard);
-    let control = &world
+    let control = &(*world
         .application
-        .primary_provider
+        .primary_provider_for_test())
         .application_attempt_operation_control
         .caller_pass;
     control.run_interleaving();

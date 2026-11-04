@@ -101,14 +101,19 @@ impl DemandRegistryState {
 
 impl DemandRecord {
     #[doc(hidden)]
-    pub fn source_commits_for_test(&self) -> &Vec<worth_runtime_world::facade::CompositeCommitIdentity> {
+    pub fn source_commits_for_test(
+        &self,
+    ) -> &Vec<worth_runtime_world::facade::CompositeCommitIdentity> {
         &self.source_commits
     }
 }
 
 impl DemandRecord {
     #[doc(hidden)]
-    pub fn source_scope_for_test(&self) -> &Option<crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding> {
+    pub fn source_scope_for_test(
+        &self,
+    ) -> &Option<crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding>
+    {
         &self.source_scope
     }
 }
@@ -129,7 +134,10 @@ impl DemandRecord {
 
 impl DemandRecord {
     #[doc(hidden)]
-    pub fn source_scope_mut_for_test(&mut self) -> &mut Option<crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding> {
+    pub fn source_scope_mut_for_test(
+        &mut self,
+    ) -> &mut Option<crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding>
+    {
         &mut self.source_scope
     }
 }
@@ -143,7 +151,9 @@ impl SourceCustody {
 
 impl DemandRegistryState {
     #[doc(hidden)]
-    pub fn required_keys_for_test(&self) -> &std::collections::BTreeSet<Arc<WorthQueryOutputDemandKey>> {
+    pub fn required_keys_for_test(
+        &self,
+    ) -> &std::collections::BTreeSet<Arc<WorthQueryOutputDemandKey>> {
         &self.required_keys
     }
 }
@@ -157,7 +167,9 @@ impl DemandRecord {
 
 impl DemandRecord {
     #[doc(hidden)]
-    pub fn work_membership_mut_for_test(&mut self) -> &mut Option<Arc<required_work::RequiredWorkMembership>> {
+    pub fn work_membership_mut_for_test(
+        &mut self,
+    ) -> &mut Option<Arc<required_work::RequiredWorkMembership>> {
         &mut self.work_membership
     }
 }
@@ -178,14 +190,18 @@ impl DemandRecord {
 
 impl DemandRecord {
     #[doc(hidden)]
-    pub fn readmission_source_for_test(&self) -> &Option<Arc<source_readmission::RequiredOutputReadmission>> {
+    pub fn readmission_source_for_test(
+        &self,
+    ) -> &Option<Arc<source_readmission::RequiredOutputReadmission>> {
         &self.readmission_source
     }
 }
 
 impl DemandRecord {
     #[doc(hidden)]
-    pub fn required_stop_for_test(&self) -> &Option<crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind> {
+    pub fn required_stop_for_test(
+        &self,
+    ) -> &Option<crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind> {
         &self.required_stop
     }
 }
@@ -206,28 +222,36 @@ impl DemandRecord {
 
 impl DemandRecord {
     #[doc(hidden)]
-    pub fn performed_source_mut_for_test(&mut self) -> &mut Option<WorthQueryPerformedOutputDemandSource> {
+    pub fn performed_source_mut_for_test(
+        &mut self,
+    ) -> &mut Option<WorthQueryPerformedOutputDemandSource> {
         &mut self.performed_source
     }
 }
 
 impl DemandRecord {
     #[doc(hidden)]
-    pub fn readmission_source_mut_for_test(&mut self) -> &mut Option<Arc<source_readmission::RequiredOutputReadmission>> {
+    pub fn readmission_source_mut_for_test(
+        &mut self,
+    ) -> &mut Option<Arc<source_readmission::RequiredOutputReadmission>> {
         &mut self.readmission_source
     }
 }
 
 impl DemandRegistryState {
     #[doc(hidden)]
-    pub fn required_work_queue_mut_for_test(&mut self) -> &mut Option<Arc<required_work::RequiredWorkQueue>> {
+    pub fn required_work_queue_mut_for_test(
+        &mut self,
+    ) -> &mut Option<Arc<required_work::RequiredWorkQueue>> {
         &mut self.required_work_queue
     }
 }
 
 impl DemandRecord {
     #[doc(hidden)]
-    pub fn source_commits_mut_for_test(&mut self) -> &mut Vec<worth_runtime_world::facade::CompositeCommitIdentity> {
+    pub fn source_commits_mut_for_test(
+        &mut self,
+    ) -> &mut Vec<worth_runtime_world::facade::CompositeCommitIdentity> {
         &mut self.source_commits
     }
 }
@@ -241,59 +265,165 @@ impl DemandRecord {
 
 impl DemandRegistryState {
     #[doc(hidden)]
-    pub fn required_keys_mut_for_test(&mut self) -> &mut std::collections::BTreeSet<Arc<WorthQueryOutputDemandKey>> {
+    pub fn required_keys_mut_for_test(
+        &mut self,
+    ) -> &mut std::collections::BTreeSet<Arc<WorthQueryOutputDemandKey>> {
         &mut self.required_keys
     }
 }
 
 impl BoundOutputSource {
     #[doc(hidden)]
-    pub fn new_for_test(scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding, identity: SourceEpoch) -> Self {
+    pub fn new_for_test(
+        scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+        identity: SourceEpoch,
+    ) -> Self {
         Self { scope, identity }
     }
 }
 
 impl DemandRecord {
     #[doc(hidden)]
-    pub fn new_for_test(work_membership: Option<Arc<required_work::RequiredWorkMembership>>, interests: usize, required_interests: usize, performed_obligations: Vec<PerformedOutputObligation>, framework_required_count: usize, prerequisites: Vec<Arc<WorthQueryOutputDemandKey>>, claim_batch: Option<claim_readthrough::ClaimBatch>, checkpoint_prerequisites: Option<prerequisite_claims::CheckpointPrerequisiteClaims>, prepared_prerequisite_claims: usize, pending_cleanup_next: Option<Arc<WorthQueryOutputDemandKey>>, pending_cleanup_queued: bool, closed_cleanup: cleanup::ClosedCleanupLinks, settlements: Vec<
+    pub fn new_for_test(
+        work_membership: Option<Arc<required_work::RequiredWorkMembership>>,
+        interests: usize,
+        required_interests: usize,
+        performed_obligations: Vec<PerformedOutputObligation>,
+        framework_required_count: usize,
+        prerequisites: Vec<Arc<WorthQueryOutputDemandKey>>,
+        claim_batch: Option<claim_readthrough::ClaimBatch>,
+        checkpoint_prerequisites: Option<prerequisite_claims::CheckpointPrerequisiteClaims>,
+        prepared_prerequisite_claims: usize,
+        pending_cleanup_next: Option<Arc<WorthQueryOutputDemandKey>>,
+        pending_cleanup_queued: bool,
+        closed_cleanup: cleanup::ClosedCleanupLinks,
+        settlements: Vec<
         Arc<crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity>,
-    >, product_occurrence: worth_runtime_world::facade::ProductBranchIncarnation, source_scope: Option<crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding>, source_commits: Vec<worth_runtime_world::facade::CompositeCommitIdentity>, state: DemandState, performed_source: Option<WorthQueryPerformedOutputDemandSource>, readmission_source: Option<Arc<source_readmission::RequiredOutputReadmission>>, successor_of: Option<succession::Succession>, required_stop: Option<crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind>, held_successor: Option<held_successor::HeldRequiredSuccessor>, wake: Arc<DemandWake>) -> Self {
-        Self { work_membership, interests, required_interests, performed_obligations, framework_required_count, prerequisites, claim_batch, checkpoint_prerequisites, prepared_prerequisite_claims, pending_cleanup_next, pending_cleanup_queued, closed_cleanup, settlements, product_occurrence, source_scope, source_commits, state, performed_source, readmission_source, successor_of, required_stop, held_successor, wake }
+    >,
+        product_occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
+        source_scope: Option<
+            crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+        >,
+        source_commits: Vec<worth_runtime_world::facade::CompositeCommitIdentity>,
+        state: DemandState,
+        performed_source: Option<WorthQueryPerformedOutputDemandSource>,
+        readmission_source: Option<Arc<source_readmission::RequiredOutputReadmission>>,
+        successor_of: Option<succession::Succession>,
+        required_stop: Option<
+            crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind,
+        >,
+        held_successor: Option<held_successor::HeldRequiredSuccessor>,
+        wake: Arc<DemandWake>,
+    ) -> Self {
+        Self {
+            work_membership,
+            interests,
+            required_interests,
+            performed_obligations,
+            framework_required_count,
+            prerequisites,
+            claim_batch,
+            checkpoint_prerequisites,
+            prepared_prerequisite_claims,
+            pending_cleanup_next,
+            pending_cleanup_queued,
+            closed_cleanup,
+            settlements,
+            product_occurrence,
+            source_scope,
+            source_commits,
+            state,
+            performed_source,
+            readmission_source,
+            successor_of,
+            required_stop,
+            held_successor,
+            wake,
+        }
     }
 }
 
 impl DemandWake {
     #[doc(hidden)]
     pub fn new_for_test(generation: Mutex<u64>, changed: Condvar) -> Self {
-        Self { generation, changed }
+        Self {
+            generation,
+            changed,
+        }
     }
 }
 
 impl PerformedOutputObligation {
     #[doc(hidden)]
-    pub fn new_for_test(source_commit: worth_runtime_world::facade::CompositeCommitIdentity, source: SourceEpoch) -> Self {
-        Self { source_commit, source }
+    pub fn new_for_test(
+        source_commit: worth_runtime_world::facade::CompositeCommitIdentity,
+        source: SourceEpoch,
+    ) -> Self {
+        Self {
+            source_commit,
+            source,
+        }
     }
 }
 
 impl SourceCustody {
     #[doc(hidden)]
-    pub fn new_for_test(occurrence: worth_runtime_world::facade::ProductBranchIncarnation, root_kind: PreparedOutputRootKind, source: Option<WorthQueryPerformedOutputDemandSource>, discovery: Option<DiscoveredSourceRecovery>, consumed_sources: Vec<SourceEpoch>, retired_sources: Vec<(SourceEpoch, WorthQueryOutputDemandDenial)>, bound_sources: Option<Vec<BoundOutputSource>>, retired: Option<WorthQueryOutputDemandDenial>, token_count: usize, cleanup: cleanup::CustodyCleanupLinks, completed: bool) -> Self {
-        Self { occurrence, root_kind, source, discovery, consumed_sources, retired_sources, bound_sources, retired, token_count, cleanup, completed }
+    pub fn new_for_test(
+        occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
+        root_kind: PreparedOutputRootKind,
+        source: Option<WorthQueryPerformedOutputDemandSource>,
+        discovery: Option<DiscoveredSourceRecovery>,
+        consumed_sources: Vec<SourceEpoch>,
+        retired_sources: Vec<(SourceEpoch, WorthQueryOutputDemandDenial)>,
+        bound_sources: Option<Vec<BoundOutputSource>>,
+        retired: Option<WorthQueryOutputDemandDenial>,
+        token_count: usize,
+        cleanup: cleanup::CustodyCleanupLinks,
+        completed: bool,
+    ) -> Self {
+        Self {
+            occurrence,
+            root_kind,
+            source,
+            discovery,
+            consumed_sources,
+            retired_sources,
+            bound_sources,
+            retired,
+            token_count,
+            cleanup,
+            completed,
+        }
     }
 }
 
 impl WorthQueryCompletedOutputDemand {
     #[doc(hidden)]
-    pub fn new_for_test(authority: WorthQueryAcceptedOutputAuthority, readiness: super::super::WorthQueryOutputReadinessDeliveryEvidence) -> Self {
-        Self { authority, readiness }
+    pub fn new_for_test(
+        authority: WorthQueryAcceptedOutputAuthority,
+        readiness: super::super::WorthQueryOutputReadinessDeliveryEvidence,
+    ) -> Self {
+        Self {
+            authority,
+            readiness,
+        }
     }
 }
 
 impl WorthQueryOutputDemandInterest {
     #[doc(hidden)]
-    pub fn new_for_test(key: WorthQueryOutputDemandKey, requires_output: bool, notifications: WorthQueryOutputDemandNotifications, owner: WorthQueryOutputDemandRegistry) -> Self {
-        Self { key, requires_output, notifications, owner }
+    pub fn new_for_test(
+        key: WorthQueryOutputDemandKey,
+        requires_output: bool,
+        notifications: WorthQueryOutputDemandNotifications,
+        owner: WorthQueryOutputDemandRegistry,
+    ) -> Self {
+        Self {
+            key,
+            requires_output,
+            notifications,
+            owner,
+        }
     }
 }
 
@@ -306,9 +436,187 @@ impl WorthQueryOutputDemandNotifications {
 
 impl WorthQueryPerformedOutputDemandSource {
     #[doc(hidden)]
-    pub fn new_for_test(receipt: crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt, change: Arc<
+    pub fn new_for_test(
+        receipt: crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+        change: Arc<
         crate::domain_computation::execution_runtime::product_world::WorthQueryPerformedRelationalProductChange,
-    >, observation: worth_runtime_world::facade::ProductBranchObservation, output_source_identity: Option<SourceEpoch>) -> Self {
-        Self { receipt, change, observation, output_source_identity }
+    >,
+        observation: worth_runtime_world::facade::ProductBranchObservation,
+        output_source_identity: Option<SourceEpoch>,
+    ) -> Self {
+        Self {
+            receipt,
+            change,
+            observation,
+            output_source_identity,
+        }
+    }
+}
+
+impl WorthQueryCompletedOutputDemand {
+    #[doc(hidden)]
+    pub fn authority_for_test(&self) -> &WorthQueryAcceptedOutputAuthority {
+        &self.authority
+    }
+}
+
+impl SourceCustody {
+    #[doc(hidden)]
+    pub fn bound_sources_for_test(&self) -> &Option<Vec<BoundOutputSource>> {
+        &self.bound_sources
+    }
+}
+
+impl WorthQueryPerformedOutputDemandSource {
+    #[doc(hidden)]
+    pub fn change_for_test(&self) -> &Arc<
+        crate::domain_computation::execution_runtime::product_world::WorthQueryPerformedRelationalProductChange,
+    >{
+        &self.change
+    }
+}
+
+impl SourceCustody {
+    #[doc(hidden)]
+    pub fn completed_for_test(&self) -> &bool {
+        &self.completed
+    }
+}
+
+impl SourceCustody {
+    #[doc(hidden)]
+    pub fn consumed_sources_for_test(&self) -> &Vec<SourceEpoch> {
+        &self.consumed_sources
+    }
+}
+
+impl DemandRegistryState {
+    #[doc(hidden)]
+    pub fn custody_cleanup_for_test(&self) -> &cleanup::CustodyCleanupQueue {
+        &self.custody_cleanup
+    }
+}
+
+impl DemandRecord {
+    #[doc(hidden)]
+    pub fn interests_for_test(&self) -> &usize {
+        &self.interests
+    }
+}
+
+impl SourceCustody {
+    #[doc(hidden)]
+    pub fn occurrence_for_test(&self) -> &worth_runtime_world::facade::ProductBranchIncarnation {
+        &self.occurrence
+    }
+}
+
+impl WorthQueryPerformedOutputDemandSource {
+    #[doc(hidden)]
+    pub fn receipt_for_test(
+        &self,
+    ) -> &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt {
+        &self.receipt
+    }
+}
+
+impl SourceCustody {
+    #[doc(hidden)]
+    pub fn retired_for_test(&self) -> &Option<WorthQueryOutputDemandDenial> {
+        &self.retired
+    }
+}
+
+impl SourceCustody {
+    #[doc(hidden)]
+    pub fn root_kind_for_test(&self) -> &PreparedOutputRootKind {
+        &self.root_kind
+    }
+}
+
+impl DemandRecord {
+    #[doc(hidden)]
+    pub fn settlements_for_test(
+        &self,
+    ) -> &Vec<
+        Arc<crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity>,
+    > {
+        &self.settlements
+    }
+}
+
+impl SourceCustody {
+    #[doc(hidden)]
+    pub fn source_for_test(&self) -> &Option<WorthQueryPerformedOutputDemandSource> {
+        &self.source
+    }
+}
+
+impl SourceCustody {
+    #[doc(hidden)]
+    pub fn token_count_for_test(&self) -> &usize {
+        &self.token_count
+    }
+}
+
+impl SourceCustody {
+    #[doc(hidden)]
+    pub fn completed_mut_for_test(&mut self) -> &mut bool {
+        &mut self.completed
+    }
+}
+
+impl DemandRecord {
+    #[doc(hidden)]
+    pub fn required_interests_mut_for_test(&mut self) -> &mut usize {
+        &mut self.required_interests
+    }
+}
+
+impl DemandRecord {
+    #[doc(hidden)]
+    pub fn required_stop_mut_for_test(
+        &mut self,
+    ) -> &mut Option<crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind>
+    {
+        &mut self.required_stop
+    }
+}
+
+impl WorthQueryOutputDemandInterest {
+    #[doc(hidden)]
+    pub fn requires_output_mut_for_test(&mut self) -> &mut bool {
+        &mut self.requires_output
+    }
+}
+
+impl SourceCustody {
+    #[doc(hidden)]
+    pub fn retired_mut_for_test(&mut self) -> &mut Option<WorthQueryOutputDemandDenial> {
+        &mut self.retired
+    }
+}
+
+impl WorthQueryOutputDemandRegistry {
+    #[doc(hidden)]
+    pub fn state_mut_for_test(&mut self) -> &mut Arc<Mutex<DemandRegistryState>> {
+        &mut self.state
+    }
+}
+
+impl SourceCustody {
+    #[doc(hidden)]
+    pub fn token_count_mut_for_test(&mut self) -> &mut usize {
+        &mut self.token_count
+    }
+}
+
+impl SourceCustody {
+    #[doc(hidden)]
+    pub fn source_denial_for_test(
+        &self,
+        identity: &SourceEpoch,
+    ) -> Option<WorthQueryOutputDemandDenial> {
+        Self::source_denial(self, identity)
     }
 }

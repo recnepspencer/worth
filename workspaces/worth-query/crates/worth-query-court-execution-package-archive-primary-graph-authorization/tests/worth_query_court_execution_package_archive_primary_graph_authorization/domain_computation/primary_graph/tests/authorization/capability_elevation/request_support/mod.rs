@@ -21,7 +21,7 @@ pub fn commit_request(
     let program = world
         .application
         .with_application_advancement(request, |phase| {
-            let custody = phase.test_host_request();
+            let custody = phase.test_host_request_for_test();
             let phase_custody = &custody;
             let principal =
                 authenticated_principal(&(phase_custody).test_host_request(), world, request);
@@ -52,7 +52,7 @@ pub fn resolve_exact_request_identities(
     world
         .application
         .with_application_advancement(request, |phase| {
-            let custody = phase.test_host_request();
+            let custody = phase.test_host_request_for_test();
             let phase_custody = &custody;
             crate::domain_computation::primary_graph::tests::authorization::capability_elevation::request_transition::resolve_created_identities(
                 phase_custody,

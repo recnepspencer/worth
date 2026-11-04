@@ -25,7 +25,7 @@ pub fn check(at_observation: bool) {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&phase.test_host_request(), &world, &scope)
+            authenticated_principal(&phase.test_host_request_for_test(), &world, &scope)
         })
         .unwrap();
     world.application.with_application_advancement(&scope, |phase| {
@@ -34,7 +34,7 @@ pub fn check(at_observation: bool) {
         } else {
             worth_query_execution::court_doors_for_test::domain_computation::authorization::capability_observation::grant_selection::late_cancellation::CancelGrantSelectionGuardForTest::install_on_this_thread(cancellation.clone())
         };
-        let refusal = admitted_capability_access(&phase.test_host_request(), &world, &principal, &scope, 100).err().unwrap();
+        let refusal = admitted_capability_access(&phase.test_host_request_for_test(), &world, &principal, &scope, 100).err().unwrap();
         assert_eq!(refusal.kind(), worth_query_execution::facade::domain_computation::WorthQueryOperationAuthorizationDenialKind::Stopped(Err(worth_query_execution::facade::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled)));
     }).unwrap();
 }

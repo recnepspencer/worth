@@ -10,7 +10,11 @@ impl WorthQueryPrimaryGraphLayout {
 
 impl WorthQueryPrimaryGraphLayout {
     #[doc(hidden)]
-    pub fn lower_for_test( schema: &ErasedApplicationSchemaDeclaration, native_contracts: &WorthQueryInstalledApplicationSchemaContractCatalog, existing_registry: &RelationalSchemaRegistry) -> Result<(Self, RelationalSchemaRegistry), WorthQueryPrimaryGraphInstallationDenial> {
+    pub fn lower_for_test(
+        schema: &ErasedApplicationSchemaDeclaration,
+        native_contracts: &WorthQueryInstalledApplicationSchemaContractCatalog,
+        existing_registry: &RelationalSchemaRegistry,
+    ) -> Result<(Self, RelationalSchemaRegistry), WorthQueryPrimaryGraphInstallationDenial> {
         Self::lower(schema, native_contracts, existing_registry)
     }
 }
@@ -18,7 +22,11 @@ impl WorthQueryPrimaryGraphLayout {
 impl WorthQueryPrimaryGraphLayout {
     #[doc(hidden)]
     pub fn field_locator_for_test(
-        &self, entity: &str, aspect: &str, field: &str) -> Option<&AspectFieldLocator> {
+        &self,
+        entity: &str,
+        aspect: &str,
+        field: &str,
+    ) -> Option<&AspectFieldLocator> {
         Self::field_locator(self, entity, aspect, field)
     }
 }
@@ -33,7 +41,11 @@ impl WorthQueryPrimaryRelationLayout {
 impl WorthQueryPrimaryGraphLayout {
     #[doc(hidden)]
     pub fn field_for_test(
-        &self, entity: &str, aspect: &str, field: &str) -> Option<&WorthQueryPrimaryFieldLayout> {
+        &self,
+        entity: &str,
+        aspect: &str,
+        field: &str,
+    ) -> Option<&WorthQueryPrimaryFieldLayout> {
         Self::field(self, entity, aspect, field)
     }
 }
@@ -63,5 +75,28 @@ impl WorthQueryPrimaryFieldLayout {
     #[doc(hidden)]
     pub fn locator_into_for_test(self) -> AspectFieldLocator {
         self.locator
+    }
+}
+
+impl WorthQueryPrimaryGraphLayout {
+    #[doc(hidden)]
+    pub fn aspect_contracts_for_test(
+        &self,
+    ) -> &BTreeMap<String, BTreeMap<AspectKey, DeclaredAspectContractBinding>> {
+        &self.aspect_contracts
+    }
+}
+
+impl WorthQueryPrimaryGraphLayout {
+    #[doc(hidden)]
+    pub fn entity_kinds_for_test(&self) -> &BTreeMap<String, KindId> {
+        &self.entity_kinds
+    }
+}
+
+impl WorthQueryPrimaryGraphLayout {
+    #[doc(hidden)]
+    pub fn provider_idempotency_for_test(&self) -> &WorthQueryProviderIdempotencyLayout {
+        Self::provider_idempotency(self)
     }
 }

@@ -18,13 +18,13 @@ use worth_query_execution::facade::domain_computation::WorthQueryApplicationComm
 #[test]
 fn active_program_names_an_operation_missing_from_its_declared_routes() {
     let mut world = installed_authorization_world(true);
-    world.application.program_support = Some(installed_program_support(
-        &world.application.installed_schema,
+    (*world.application.program_support_mut_for_test()) = Some(installed_program_support(
+        &(*world.application.installed_schema_for_test()),
     ));
 
     let request = live_scope();
     world.application.with_host_advancement(|phase| {
-let host_custody = phase.test_host_request();
+let host_custody = phase.test_host_request_for_test();
 let borrowed_execution = host_custody.borrowed_request_for_test();
 let execution = &borrowed_execution;
 seed_program_activation(execution, &world, &rostered_program_revision());
@@ -84,7 +84,7 @@ let principal = authenticated_principal(
             .begin_effect_program()
             .finish()
             .unwrap();
-        let support = world.application.program_support.as_ref().unwrap();
+        let support = (*world.application.program_support_for_test()).as_ref().unwrap();
         let occurrence = resolve_occurrence_program(execution, support, &program).unwrap();
         let denial =
             require_occurrence_acts_through::<TouchAccountOperation>(&occurrence).unwrap_err();

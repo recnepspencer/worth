@@ -88,13 +88,13 @@ fn equal_version_snapshot_from_another_branch_cannot_satisfy_affinity() {
         .snapshots()
         .snapshot_for_observation(&substitute_basis.observation())
         .unwrap();
-    let affinity = WorthQueryGraphWorkBranchAffinity::from_snapshot(&admitted);
+    let affinity = WorthQueryGraphWorkBranchAffinity::from_snapshot_for_test(&admitted);
 
-    assert!(affinity.admits_snapshot(&admitted));
-    assert!(!affinity.admits_snapshot(&substitute));
-    assert_eq!(affinity.relational(), admitted.branch_id());
+    assert!(affinity.admits_snapshot_for_test(&admitted));
+    assert!(!affinity.admits_snapshot_for_test(&substitute));
+    assert_eq!(affinity.relational_for_test(), admitted.branch_id());
     assert_eq!(
-        affinity.truth(),
+        affinity.truth_for_test(),
         &TruthBranchIdentity::from_relational_branch_id(admitted.branch_id().0.clone())
     );
     assert!(runtime.snapshots().release_snapshot(&admitted).is_ok());

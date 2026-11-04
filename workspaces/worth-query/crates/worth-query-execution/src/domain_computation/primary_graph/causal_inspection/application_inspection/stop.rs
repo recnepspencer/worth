@@ -280,3 +280,5 @@ impl std::fmt::Debug for WorthQueryApplicationInspectionDenial {
 
 #[cfg(test)]
 mod projection_tests;
+
+mod court_doors_for_test;

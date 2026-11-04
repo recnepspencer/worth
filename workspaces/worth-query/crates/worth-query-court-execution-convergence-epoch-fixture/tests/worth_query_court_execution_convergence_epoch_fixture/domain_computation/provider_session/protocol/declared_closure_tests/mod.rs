@@ -14,7 +14,7 @@ fn read_only_roles_receive_no_effect_authority() {
         ..WorthQueryProviderPlanDeclaredClosure::default()
     };
     bind_direct_role_closure(&mut read_only, &effects, &invariants);
-    assert!(read_only.effect.is_empty());
+    assert!((*read_only.effect_for_test()).is_empty());
 
     let mut touched = WorthQueryProviderPlanDeclaredClosure {
         read: vec!["owner:observe".to_owned()],
@@ -22,7 +22,7 @@ fn read_only_roles_receive_no_effect_authority() {
         ..WorthQueryProviderPlanDeclaredClosure::default()
     };
     bind_direct_role_closure(&mut touched, &effects, &invariants);
-    assert_eq!(touched.effect, effects);
+    assert_eq!((*touched.effect_for_test()), effects);
 }
 
 #[test]
@@ -37,8 +37,8 @@ fn mixed_application_candidate_retains_domain_and_platform_effect_closure() {
         &effects,
         &invariants,
     );
-    assert_eq!(closure.effect, ["payment", "mutation"]);
-    assert_eq!(closure.invariant, invariants);
+    assert_eq!((*closure.effect_for_test()), ["payment", "mutation"]);
+    assert_eq!((*closure.invariant_for_test()), invariants);
 
     bind_application_candidate_effect_closure(
         &mut closure,
@@ -47,8 +47,8 @@ fn mixed_application_candidate_retains_domain_and_platform_effect_closure() {
         &effects,
         &invariants,
     );
-    assert_eq!(closure.effect, ["mutation"]);
-    assert!(closure.invariant.is_empty());
+    assert_eq!((*closure.effect_for_test()), ["mutation"]);
+    assert!((*closure.invariant_for_test()).is_empty());
 
     bind_application_candidate_effect_closure(
         &mut closure,
@@ -57,8 +57,8 @@ fn mixed_application_candidate_retains_domain_and_platform_effect_closure() {
         &effects,
         &invariants,
     );
-    assert_eq!(closure.effect, effects);
-    assert_eq!(closure.invariant, invariants);
+    assert_eq!((*closure.effect_for_test()), effects);
+    assert_eq!((*closure.invariant_for_test()), invariants);
 }
 
 #[test]

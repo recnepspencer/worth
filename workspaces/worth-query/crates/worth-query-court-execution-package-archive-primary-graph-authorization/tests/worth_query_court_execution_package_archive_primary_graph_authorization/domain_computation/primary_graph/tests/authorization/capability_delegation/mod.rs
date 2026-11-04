@@ -36,7 +36,7 @@ fn lawful_multi_link_delegation_is_one_composite_exact_authorization_fact() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
 
@@ -44,7 +44,7 @@ fn lawful_multi_link_delegation_is_one_composite_exact_authorization_fact() {
         .application
         .with_host_advancement(|phase| {
             admitted_capability_access(
-                &(phase).test_host_request(),
+                &(phase).test_host_request_for_test(),
                 &world,
                 &principal,
                 &request,
@@ -74,7 +74,7 @@ fn exact_parent_policy_cannot_borrow_an_alternate_grant_path() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             replace_parent_grantor_with_child_grantee(
                 &phase,
                 &host_custody.borrowed_request_for_test(),
@@ -86,7 +86,7 @@ fn exact_parent_policy_cannot_borrow_an_alternate_grant_path() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
 
@@ -94,7 +94,7 @@ fn exact_parent_policy_cannot_borrow_an_alternate_grant_path() {
         .application
         .with_host_advancement(|phase| {
             admitted_capability_access(
-                &(phase).test_host_request(),
+                &(phase).test_host_request_for_test(),
                 &world,
                 &principal,
                 &request,
@@ -157,10 +157,10 @@ pub fn apply_parent_drift(
             StringApplicationValueBinding::encode(&"closed".to_owned()).unwrap(),
         ),
         ParentDrift::Resource => {
-            replace_parent_resource(&(phase_custody).test_host_request(), world)
+            replace_parent_resource(&(phase_custody).test_host_request_for_test(), world)
         }
         ParentDrift::DelegationGrantor => replace_child_grantor_with_grantee(
-            &(phase_custody).test_host_request(),
+            &(phase_custody).test_host_request_for_test(),
             execution,
             world,
         ),
@@ -234,32 +234,32 @@ pub fn replace_parent_grantee(
     world: &worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::authorization_world_installation::AuthorizationWorld,
 ) {
     let child = grant(
-        &(phase_custody).test_host_request(),
+        &(phase_custody).test_host_request_for_test(),
         execution,
         world,
         "capability-child",
     );
     let parent = grant(
-        &(phase_custody).test_host_request(),
+        &(phase_custody).test_host_request_for_test(),
         execution,
         world,
         "capability-parent",
     );
     let grantee_kind = relation_kind(world, CapabilityGrantee::reference().name());
     replace_relation_source(
-        &(phase_custody).test_host_request(),
+        &(phase_custody).test_host_request_for_test(),
         execution,
         world,
         grantee_kind,
         relation_source(
-            &(phase_custody).test_host_request(),
+            &(phase_custody).test_host_request_for_test(),
             execution,
             world,
             grantee_kind,
             parent,
         ),
         relation_source(
-            &(phase_custody).test_host_request(),
+            &(phase_custody).test_host_request_for_test(),
             execution,
             world,
             grantee_kind,
@@ -276,13 +276,13 @@ pub fn replace_parent_grantor_with_child_grantee(
     world: &worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::authorization_world_installation::AuthorizationWorld,
 ) {
     let child = grant(
-        &(phase_custody).test_host_request(),
+        &(phase_custody).test_host_request_for_test(),
         execution,
         world,
         "capability-child",
     );
     let parent = grant(
-        &(phase_custody).test_host_request(),
+        &(phase_custody).test_host_request_for_test(),
         execution,
         world,
         "capability-parent",
@@ -290,19 +290,19 @@ pub fn replace_parent_grantor_with_child_grantee(
     let grantor_kind = relation_kind(world, CapabilityGrantor::reference().name());
     let grantee_kind = relation_kind(world, CapabilityGrantee::reference().name());
     replace_relation_source(
-        &(phase_custody).test_host_request(),
+        &(phase_custody).test_host_request_for_test(),
         execution,
         world,
         grantor_kind,
         relation_source(
-            &(phase_custody).test_host_request(),
+            &(phase_custody).test_host_request_for_test(),
             execution,
             world,
             grantor_kind,
             parent,
         ),
         relation_source(
-            &(phase_custody).test_host_request(),
+            &(phase_custody).test_host_request_for_test(),
             execution,
             world,
             grantee_kind,
@@ -319,14 +319,14 @@ pub fn replace_parent_policy_path(
     world: &worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::authorization_world_installation::AuthorizationWorld,
 ) {
     let parent = grant(
-        &(phase_custody).test_host_request(),
+        &(phase_custody).test_host_request_for_test(),
         execution,
         world,
         "capability-parent",
     );
     let grantor_kind = relation_kind(world, CapabilityGrantor::reference().name());
     let grantor = relation_source(
-        &(phase_custody).test_host_request(),
+        &(phase_custody).test_host_request_for_test(),
         execution,
         world,
         grantor_kind,

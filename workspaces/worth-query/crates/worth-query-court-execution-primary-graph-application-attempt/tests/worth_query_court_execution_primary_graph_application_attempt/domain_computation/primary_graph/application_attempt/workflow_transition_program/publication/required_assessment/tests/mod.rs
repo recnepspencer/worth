@@ -19,9 +19,9 @@ fn exact_requirement_distinguishes_proposal_and_coverage_with_same_execution_aff
         program_revision: "revision-a".to_owned(),
     };
     let mut revised_proposal = original.clone();
-    revised_proposal.proposal_identity = "proposal-b".to_owned();
+    (*revised_proposal.proposal_identity_mut_for_test()) = "proposal-b".to_owned();
     assert_ne!(original, revised_proposal);
     let mut revised_coverage = original.clone();
-    revised_coverage.coverage_identity = "coverage-b".to_owned();
+    (*revised_coverage.coverage_identity_mut_for_test()) = "coverage-b".to_owned();
     assert_ne!(original, revised_coverage);
 }

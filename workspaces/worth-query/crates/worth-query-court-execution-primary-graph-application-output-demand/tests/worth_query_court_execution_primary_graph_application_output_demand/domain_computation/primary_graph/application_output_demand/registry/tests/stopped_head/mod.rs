@@ -17,39 +17,39 @@ fn stopped_head_is_released_by_every_finish_route() {
             let peer = admit(&registry, &row);
             publish(&registry, &owner, receipt.clone());
             assert_eq!(
-                registry
-                    .state
+                (*registry
+                    .state_for_test())
                     .lock()
                     .unwrap()
                     .records
                     .publication_count_for_test(),
                 1
             );
-            let stop = WorthQueryOutputDemandDenial::new(
+            let stop = WorthQueryOutputDemandDenial::new_for_test(
                 WorthQueryOutputDemandDenialKind::ProductDelivery(Box::new(
                     worth_query_execution::facade::product::WorthQueryPerformedRelationalProductChangeDeliveryDenialKind::ForeignProductRoot)), "");
             match route {
                 0 => {
-                    let mut state = registry.state.lock().unwrap();
+                    let mut state = (*registry.state_for_test()).lock().unwrap();
                     let DemandState::Output(output) =
                         &mut state.records.get_mut(&row).unwrap().state
                     else {
                         panic!("published row")
                     };
-                    output.stop(stop.clone());
+                    output.stop_for_test(stop.clone());
                 }
                 1 => {
-                    let Admission::AdvanceCheckpoint { claim, checkpoint } = registry.begin(&owner)
+                    let Admission::AdvanceCheckpoint { claim, checkpoint } = registry.begin_for_test(&owner)
                     else {
                         panic!("Published is claimed")
                     };
                     registry
-                        .finish_checkpoint(&owner, claim, checkpoint, Some(&stop))
+                        .finish_checkpoint_for_test(&owner, claim, checkpoint, Some(&stop))
                         .unwrap();
                 }
                 2 => {
                     let (finish, claim, checkpoint) = registry
-                        .prepare_selected_checkpoint_finish(&owner)
+                        .prepare_selected_checkpoint_finish_for_test(&owner)
                         .unwrap()
                         .claim()
                         .unwrap()
@@ -58,13 +58,13 @@ fn stopped_head_is_released_by_every_finish_route() {
                 }
                 _ => unreachable!(),
             }
-            let state = registry.state.lock().unwrap();
+            let state = (*registry.state_for_test()).lock().unwrap();
             let count = state.records.publication_count_for_test();
             let DemandState::Output(output) = &state.records[&row].state else {
                 panic!("checkpoint retained")
             };
             assert!(matches!(
-                output.advancement(),
+                output.advancement_for_test(),
                 WorthQueryOutputAdvancement::Stopped { .. }
             ));
             assert_eq!(
@@ -73,7 +73,7 @@ fn stopped_head_is_released_by_every_finish_route() {
             );
             drop(state);
             assert!(
-                matches!(registry.begin(&peer), Admission::Failed(ref denial) if denial.kind() == stop.kind())
+                matches!(registry.begin_for_test(&peer), Admission::Failed(ref denial) if denial.kind() == stop.kind())
             );
         }
     });

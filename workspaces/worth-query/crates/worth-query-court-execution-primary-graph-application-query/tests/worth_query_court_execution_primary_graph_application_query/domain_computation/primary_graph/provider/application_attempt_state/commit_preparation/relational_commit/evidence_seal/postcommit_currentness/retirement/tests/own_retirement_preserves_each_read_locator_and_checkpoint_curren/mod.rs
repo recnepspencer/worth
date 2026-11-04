@@ -10,7 +10,7 @@ fn own_retirement_preserves_each_read_locator_and_checkpoint_currentness() {
     world.application.with_host_advancement(|phase| {
             let borrowed = phase.borrowed_request_for_test();
             let execution = &borrowed;
-let host_custody = phase.test_host_request();
+let host_custody = phase.test_host_request_for_test();
 
 let (entity, kind, facts) = reads(
             &host_custody.phase_for_application(&world.application),
@@ -18,7 +18,7 @@ let (entity, kind, facts) = reads(
             &world,
             "account-2",
         );
-        let locators = facts.iter().map(Fact::locator_identity).collect::<Vec<_>>();
+        let locators = facts.iter().map(Fact::locator_identity_for_test).collect::<Vec<_>>();
         assert!(
             rebase_current(
                 &host_custody.phase_for_application(&world.application),
@@ -47,7 +47,7 @@ let (entity, kind, facts) = reads(
         assert_eq!(
             retired
                 .iter()
-                .map(Fact::locator_identity)
+                .map(Fact::locator_identity_for_test)
                 .collect::<Vec<_>>(),
             locators
         );

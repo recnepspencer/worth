@@ -93,8 +93,8 @@ pub fn run(
     let program = world
         .application
         .with_host_advancement(|phase| {
-            let principal = authenticated_principal(&phase.test_host_request(), &world, &request);
-            let account = resolved_account(&phase.test_host_request(), &world, "open", &request);
+            let principal = authenticated_principal(&phase.test_host_request_for_test(), &world, &request);
+            let account = resolved_account(&phase.test_host_request_for_test(), &world, "open", &request);
             admitted_program(
                 &phase,
                 &world,
@@ -156,13 +156,13 @@ pub fn run(
             Stop::Denied(denial.stage(), denial.execution_denial_cause())
         };
         assert_eq!(
-            world
+            (*world
                 .application
-                .primary_provider
+                .primary_provider_for_test())
                 .published_application_commit_count(),
             0
         );
         Some(stop)
     };
-    (probe.consults(), stop)
+    (probe.consults_for_test(), stop)
 }

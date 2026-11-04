@@ -61,3 +61,5 @@ impl<Key> PartitionMetadata<Key> {
         self.entries.accounted_bytes()
     }
 }
+
+mod court_doors_for_test;

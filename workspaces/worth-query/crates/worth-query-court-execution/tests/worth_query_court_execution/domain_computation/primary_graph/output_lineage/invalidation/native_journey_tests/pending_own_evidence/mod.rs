@@ -14,7 +14,7 @@ fn pending_candidate_rejects_changed_own_evidence_without_certifying_upstream() 
     let world = installed_authorization_world(true);
     let selected = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
         .expect("the fixture read owns its installed host call");
     let entity = world
         .application
@@ -28,15 +28,15 @@ fn pending_candidate_rejects_changed_own_evidence_without_certifying_upstream() 
                     WorthQueryPrincipalResolutionMode::Ordinary,
                 )
                 .unwrap()
-                .entity_id()
+                .entity_id_for_test()
         })
         .expect("the fixture read owns its installed host call");
-    let (_, product, _) = selected.into_parts();
+    let (_, product, _) = selected.into_parts_for_test();
     let coordinate = ProductCoordinate {
         occurrence: product.observation().lifecycle_incarnation(),
         generation: product.observation().reference_generation().get(),
     };
-    let graph = world.application.runtime.primary_graph().unwrap();
+    let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let layout = graph.layout();
     let handle = graph.integration_handle();
     let owner = &handle.source_owner.invalidation_owner;
@@ -52,25 +52,25 @@ fn pending_candidate_rejects_changed_own_evidence_without_certifying_upstream() 
         .clone();
     let source = |output_binding| {
         SemanticSource {
-        runtime_authority: world.application.runtime.authority_identity().as_u64(),
-        schema: world.application.installed_schema.binding_identity().clone(),
-        scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity(entity),
+        runtime_authority: (*world.application.runtime_for_test()).authority_identity().as_u64(),
+        schema: (*world.application.installed_schema_for_test()).binding_identity().clone(),
+        scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity),
         output_binding,
     }
     };
-    let a = RecordedSettlementIdentity::retain(
-        &source(OutputBindingIdentity::declared("StatusOutput")),
+    let a = RecordedSettlementIdentity::retain_for_test(
+        &source(OutputBindingIdentity::declared_for_test("StatusOutput")),
         coordinate,
         0,
     );
-    let b = RecordedSettlementIdentity::retain(
-        &source(OutputBindingIdentity::declared("DownstreamOutput")),
+    let b = RecordedSettlementIdentity::retain_for_test(
+        &source(OutputBindingIdentity::declared_for_test("DownstreamOutput")),
         coordinate,
         0,
     );
-    let correspondence = WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles(
-        TypeId::of::<()>(),
-        TypeId::of::<()>(),
+    let correspondence = WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles_for_test(
+        TypeId::of_for_test::<()>(),
+        TypeId::of_for_test::<()>(),
         std::iter::empty(),
         &[WorthQueryCheckpointOutputRole {
             role: "account".into(),
@@ -78,7 +78,7 @@ fn pending_candidate_rejects_changed_own_evidence_without_certifying_upstream() 
             entity_name: "Account".into(),
             entity,
         }],
-        |_| Some(TypeId::of::<()>()),
+        |_| Some(TypeId::of_for_test::<()>()),
         &worth_execution::ExecutionRequest::serial(&worth_execution::SerialRequest::from_memory(
             worth_execution::SerialMemoryBudget::new(None),
             worth_execution::CancellationToken::new(),
@@ -86,7 +86,7 @@ fn pending_candidate_rejects_changed_own_evidence_without_certifying_upstream() 
         )),
     )
     .unwrap();
-    world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request(); let execution = &host_custody.borrowed_request_for_test(); handle.with_runtime_mut(&host_custody.borrowed_request_for_test(), |runtime| {
+    world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request_for_test(); let execution = &host_custody.borrowed_request_for_test(); handle.with_runtime_mut(&host_custody.borrowed_request_for_test(), |runtime| {
         write_field(&host_custody.borrowed_request_for_test(), runtime, entity, label.clone(), "prime");
         let (before_handle, before) = snapshot(runtime);
         let a_facts: Arc<[_]> =
@@ -126,7 +126,7 @@ fn pending_candidate_rejects_changed_own_evidence_without_certifying_upstream() 
                     .unwrap(),
             });
         }
-let witness = SealedNativeOutputWitness::from_checkpoint_facts(&correspondence, layout, &output_facts)
+let witness = SealedNativeOutputWitness::from_checkpoint_facts_for_test(&correspondence, layout, &output_facts)
         .unwrap()
         .unwrap();
 
@@ -141,7 +141,7 @@ let witness = SealedNativeOutputWitness::from_checkpoint_facts(&correspondence, 
         ));
 
         assert_eq!(
-            ConsumedOutputEvidence::verify_many_with_admission(&host_custody.borrowed_request_for_test(),
+            ConsumedOutputEvidence::verify_many_with_admission_for_test(&host_custody.borrowed_request_for_test(),
                 std::slice::from_ref(&b_evidence),
                 owner,
                 runtime,
@@ -152,9 +152,9 @@ let witness = SealedNativeOutputWitness::from_checkpoint_facts(&correspondence, 
         );
 
         assert_eq!(
-            ConsumedOutputEvidence::verify_at_observation(&host_custody.borrowed_request_for_test(),
+            ConsumedOutputEvidence::verify_at_observation_for_test(&host_custody.borrowed_request_for_test(),
                 &b,
-                &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts::for_test(false, Arc::from([])).for_comparison().unwrap(),
+                &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts::for_test_for_test(false, Arc::from([])).for_comparison().unwrap(),
                 &[],
                 None,
                 &witness,
@@ -169,7 +169,7 @@ let witness = SealedNativeOutputWitness::from_checkpoint_facts(&correspondence, 
         let (changed_handle, changed) = snapshot(runtime);
 
         assert_eq!(
-            ConsumedOutputEvidence::verify_many_with_admission(&host_custody.borrowed_request_for_test(),
+            ConsumedOutputEvidence::verify_many_with_admission_for_test(&host_custody.borrowed_request_for_test(),
                 std::slice::from_ref(&b_evidence),
                 owner,
                 runtime,

@@ -27,13 +27,13 @@ fn direct_report_origin_matches_the_installed_provider_observation() {
         );
         let started = {
             let fixture_state = fixture.admit();
-            let installed_fixture_phase = fixture_state.fixture_phase(execution);
+            let installed_fixture_phase = fixture_state.fixture_phase_for_test(execution);
             fixture_state.begin_iteration(&installed_fixture_phase, request("direct-report-origin"))
         }
         .unwrap_or_else(|_| panic!("direct report origin iteration must start"));
         let terminal = {
             let fixture_phase_result = {
-                let installed_fixture_phase = started.fixture_phase(execution);
+                let installed_fixture_phase = started.fixture_phase_for_test(execution);
                 started.advance(&installed_fixture_phase)
             };
             match fixture_phase_result {
@@ -68,7 +68,7 @@ fn workflow_report_origin_matches_the_installed_provider_observation() {
         );
         let started = {
             let fixture_state = fixture.admit();
-            let installed_fixture_phase = fixture_state.fixture_phase(execution);
+            let installed_fixture_phase = fixture_state.fixture_phase_for_test(execution);
             fixture_state.begin_stage_iteration(
                 &installed_fixture_phase,
                 WORKFLOW_STAGE,
@@ -78,7 +78,7 @@ fn workflow_report_origin_matches_the_installed_provider_observation() {
         .unwrap_or_else(|_| panic!("workflow report origin iteration must start"));
         let terminal = {
             let fixture_phase_result = {
-                let installed_fixture_phase = started.fixture_phase(execution);
+                let installed_fixture_phase = started.fixture_phase_for_test(execution);
                 started.advance(&installed_fixture_phase)
             };
             match fixture_phase_result {

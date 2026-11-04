@@ -16,7 +16,7 @@ fn two_distinct_roots_hold_the_whole_native_read_without_the_owner_lock() {
     let scope = live_scope();
     let selected = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
         .expect("the fixture read owns its installed host call");
     let external = world.authenticate("alice", Duration::from_secs(60), &scope);
     let principal = world
@@ -54,15 +54,15 @@ fn two_distinct_roots_hold_the_whole_native_read_without_the_owner_lock() {
         .installed_schema()
         .certification_query(PublicScopedAccountSummaryQuery::reference())
         .unwrap();
-    let owner_probe = world
+    let owner_probe = (*world
         .application
-        .primary_provider
+        .primary_provider_for_test())
         .graph
         .source_owner
         .read_lock_probe_for_test();
     assert!(!owner_probe.is_locked_for_test());
     world.application.with_host_advancement(|phase| {
-        let host_custody = phase.test_host_request();
+        let host_custody = phase.test_host_request_for_test();
         let lease = host_custody.borrowed_request_for_test().in_scope(|parent| {
             let parent = parent.expect("the host lends its active lease");
             parent.child(worth_execution::LeaseRequest {
@@ -81,7 +81,7 @@ fn two_distinct_roots_hold_the_whole_native_read_without_the_owner_lock() {
             WorthQueryApplicationQueryAccessContext::new(&principal, root)
         }).collect::<Vec<_>>();
         let mut plans = access.iter().map(|access| {
-            let admit = || selected.retain_selection(&host_custody.borrowed_request_for_test())
+            let admit = || selected.retain_selection_for_test(&host_custody.borrowed_request_for_test())
                 .unwrap().admit_application_query(
                     &phase, &query, access, ApplicationQueryParameterSet::new(), current_controls(&scope),
                 ).unwrap();
@@ -89,13 +89,13 @@ fn two_distinct_roots_hold_the_whole_native_read_without_the_owner_lock() {
         }).collect::<Vec<_>>();
         request.in_scope(|lease| worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::derived_view::registration::collection::pair::reconstruction::owner_stage::run(lease, |context| {
             for (pair, root) in plans.iter_mut().zip(&roots) {
-                pair.admit(&host_custody.borrowed_request_for_test(), &world.application, root.entity_id(), context)?;
+                pair.admit_for_test(&host_custody.borrowed_request_for_test(), &world.application, root.entity_id_for_test(), context)?;
             }
             Ok(())
         })).unwrap().unwrap();
         let (witness, _installed) = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::read_execution::dispatch_witness::DispatchWitness::install(None);
         let held: NativeReadRendezvousGuardForTest = witness.hold_native_reads_for_test(
-            [roots[0].entity_id(), roots[1].entity_id()], owner_probe.clone(), &request,
+            [roots[0].entity_id_for_test(), roots[1].entity_id_for_test()], owner_probe.clone(), &request,
         );
         let before_release = owner_probe.acquisitions_for_test();
         witness.release_native_snapshot_for_test();
@@ -106,7 +106,7 @@ fn two_distinct_roots_hold_the_whole_native_read_without_the_owner_lock() {
 
 let partitions = plans.iter_mut().zip(&roots).enumerate().map(|(index, (pair, root))| {
 
-            (PartitionIdentity::new(index as u64 + 1), pair.worker_with_pins(&request,  root.entity_id(), &mut pins).unwrap())
+            (PartitionIdentity::new(index as u64 + 1), pair.worker_with_pins_for_test(&request,  root.entity_id_for_test(), &mut pins).unwrap())
         }).collect();
         assert_eq!(worth_query_execution::facade::domain_computation::installed_source_reads_on_this_thread_for_test() - reads_before, 2, "one owner pin per query side, shared across both roots");
         let map = ExecutionMap::<_, ()>::from_keyless_values(partitions).unwrap();
@@ -117,8 +117,8 @@ let partitions = plans.iter_mut().zip(&roots).enumerate().map(|(index, (pair, ro
             MapOutcome::Complete { values: results, .. } => {
                 assert_eq!(results.len(), 2);
                 for (result, root) in results.iter().zip(&roots) {
-                    assert_eq!(result.first.raw.raw.rows.raw_rows()[0].entity_id(), root.entity_id());
-                    assert_eq!(result.second.raw.raw.rows.raw_rows()[0].entity_id(), root.entity_id());
+                    assert_eq!(result.first.raw.raw.rows.raw_rows()[0].entity_id(), root.entity_id_for_test());
+                    assert_eq!(result.second.raw.raw.rows.raw_rows()[0].entity_id(), root.entity_id_for_test());
                 }
             }
             MapOutcome::Stopped { reason, .. } => panic!("the declared complete read was stopped: {reason:?}"),

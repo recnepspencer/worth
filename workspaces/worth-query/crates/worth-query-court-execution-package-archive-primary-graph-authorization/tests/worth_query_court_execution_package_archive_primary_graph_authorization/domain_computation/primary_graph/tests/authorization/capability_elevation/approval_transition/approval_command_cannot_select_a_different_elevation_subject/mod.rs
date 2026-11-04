@@ -8,14 +8,14 @@ fn approval_command_cannot_select_a_different_elevation_subject() {
     let approver = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             authenticated(&host_custody, &world, "bob", &request)
         })
         .expect("the fixture read owns its installed host call");
     let access = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             approval_access_for_elevation(&host_custody, &world, &approver, &request, "elevation-1")
                 .expect("the approver independently holds command authority for elevation-1")
         })
@@ -24,7 +24,7 @@ fn approval_command_cannot_select_a_different_elevation_subject() {
     let denial = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
             world
                 .application
                 .authorize_elevation_approval(

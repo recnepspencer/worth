@@ -129,24 +129,24 @@ pub fn catalog(contracts: Vec<Contract>) -> Catalog {
         // These are owner-private declaration inputs, not executable producer
         // grants or installed receipts. The package validator is the oracle;
         // runtime installation is covered separately by the existing owner11.
-        catalog.conditionals.insert(
+        (*catalog.conditionals_for_test()).insert(
             format!("conditional-{ordinal}"),
             DeclaredConditionalBinding {
                 owner: Schema::OWNER.to_owned(),
                 contract,
                 required_producers: vec![format!("producer-{ordinal}")],
                 binding_type: match ordinal {
-                    0 => TypeId::of::<TouchAccountOperation>(),
-                    1 => TypeId::of::<PatchAccountDraftOperation>(),
-                    _ => TypeId::of::<TouchAccountInput>(),
+                    0 => TypeId::of_for_test::<TouchAccountOperation>(),
+                    1 => TypeId::of_for_test::<PatchAccountDraftOperation>(),
+                    _ => TypeId::of_for_test::<TouchAccountInput>(),
                 },
                 operation_type: match ordinal {
-                    1 => TypeId::of::<PatchAccountDraftOperation>(),
-                    _ => TypeId::of::<TouchAccountOperation>(),
+                    1 => TypeId::of_for_test::<PatchAccountDraftOperation>(),
+                    _ => TypeId::of_for_test::<TouchAccountOperation>(),
                 },
                 installed_type: match ordinal {
-                    0 => TypeId::of::<TouchAccountInput>(),
-                    _ => TypeId::of::<PatchAccountDraftInput>(),
+                    0 => TypeId::of_for_test::<TouchAccountInput>(),
+                    _ => TypeId::of_for_test::<PatchAccountDraftInput>(),
                 },
             },
         );
@@ -155,8 +155,8 @@ pub fn catalog(contracts: Vec<Contract>) -> Catalog {
 }
 
 pub fn snapshot(catalog: &Catalog) -> Vec<(String, String, Contract, Vec<String>, TypeId, TypeId)> {
-    catalog
-        .conditionals
+    (*catalog
+        .conditionals_for_test())
         .iter()
         .map(|(identity, declaration)| {
             (

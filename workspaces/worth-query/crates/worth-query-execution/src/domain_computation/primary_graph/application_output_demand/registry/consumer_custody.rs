@@ -80,3 +80,5 @@ fn interest_count_overflow() -> WorthQueryOutputDemandDenial {
         "consumer interest count is not representable",
     )
 }
+
+mod court_doors_for_test;

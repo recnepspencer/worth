@@ -62,7 +62,7 @@ macro_rules! admit {
             .application
             .with_host_advancement(|phase| {
                 $world
-                    .selected_product(&(phase).test_host_request())
+                    .selected_product(&(phase).test_host_request_for_test())
                     .authorize_operation(
                         &phase,
                         $principal,
@@ -84,7 +84,7 @@ pub fn party(
     world
         .application
         .with_host_advancement(|phase| {
-            let custody = phase.test_host_request();
+            let custody = phase.test_host_request_for_test();
             (
                 authenticated_principal(&custody, world, request),
                 resolved_account(&custody, world, "open", request),

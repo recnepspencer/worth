@@ -5,26 +5,26 @@ impl Context {
     pub fn assert_protected_context(&self) {
         let host = payer();
         let execution = worth_execution::ExecutionRequest::serial(&host);
-        let graph = self.world.application.runtime.primary_graph().unwrap();
+        let graph = (*self.world.application.runtime_for_test()).primary_graph().unwrap();
         let layout = graph.layout.workflow();
         let edge = self.read(|execution, runtime, snapshot, layout| {
-            let entry = observe_adjacency(
+            let entry = (*observe_adjacency(
                 runtime,
                 execution,
                 snapshot,
-                layout.operation_output.membership,
+                (*layout.operation_output.membership_for_test()),
                 self.transition,
                 Direction::Outgoing,
                 8,
             )
             .unwrap()
             .unwrap()[0]
-                .to;
+                .to_for_test());
             observe_adjacency(
                 runtime,
                 execution,
                 snapshot,
-                layout.operation_output.target,
+                (*layout.operation_output.target_for_test()),
                 entry,
                 Direction::Outgoing,
                 4,
@@ -33,7 +33,7 @@ impl Context {
             .unwrap()
             .remove(0)
         });
-        let alternate = if edge.to == self.created {
+        let alternate = if (*edge.to_for_test()) == self.created {
             self.source
         } else {
             self.created
@@ -41,7 +41,7 @@ impl Context {
         let mutations = [
             MutationIntent::Entity(EntityMutationIntent::UpdateFields(
                 UpdateEntityFieldsIntent {
-                    entity_id: edge.from,
+                    entity_id: (*edge.from_for_test()),
                     fields: AspectFieldPatch::from(BTreeMap::from([(
                         layout.operation_output.role.clone(),
                         text_value("rewritten"),
@@ -50,23 +50,23 @@ impl Context {
             )),
             MutationIntent::Relation(RelationMutationIntent::UpdateEndpoints(
                 UpdateRelationEndpointsIntent {
-                    relation_id: edge.relation_id,
+                    relation_id: (*edge.relation_id_for_test()),
                     kind_id: layout.operation_output.target,
-                    source: EntityReference::Existing(edge.from),
+                    source: EntityReference::Existing((*edge.from_for_test())),
                     target: EntityReference::Existing(alternate),
                 },
             )),
             MutationIntent::Relation(RelationMutationIntent::Delete(DeleteRelationIntent {
-                relation_id: edge.relation_id,
+                relation_id: (*edge.relation_id_for_test()),
             })),
         ];
         for (index, mutation) in mutations.into_iter().enumerate() {
             let (_, product, _lease) = self
                 .world
                 .application
-                .select_product_branch(
+                .select_product_branch_for_test(
                     &execution,
-                    self.world.application.product_runtime().default_branch(),
+                    self.world.application.product_runtime().default_branch_for_test(),
                 )
                 .unwrap()
                 .into_parts();

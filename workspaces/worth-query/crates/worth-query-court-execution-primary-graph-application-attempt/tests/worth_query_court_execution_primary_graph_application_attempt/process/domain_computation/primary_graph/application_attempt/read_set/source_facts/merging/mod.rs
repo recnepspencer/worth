@@ -27,7 +27,7 @@ pub fn adjacency(
 }
 
 pub fn control() -> StorageControl<'static, 'static> {
-    StorageControl::new(
+    StorageControl::new_for_test(
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         None,
     )
@@ -37,7 +37,7 @@ pub fn keyed(
 ) -> Option<RetainedSourceFacts> {
     let mut store = AuthoringSourceFacts::new(control()).unwrap();
     for fact in facts {
-        store.capture(fact, control()).unwrap();
+        store.capture_for_test(fact, control()).unwrap();
     }
-    Some(store.finish(control()).unwrap())
+    Some(store.finish_for_test(control()).unwrap())
 }

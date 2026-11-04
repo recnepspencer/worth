@@ -40,29 +40,29 @@ fn bootstrap_metadata_keeps_its_charge_and_refuses_an_unfunded_row() {
         let before = lease.charged_memory_bytes();
         let decoded = checkpoint
             .clone()
-            .decode_with_execution(&execution)
+            .decode_with_execution_for_test(&execution)
             .unwrap();
         assert!(
             lease.charged_memory_bytes() > before,
             "decoded metadata retains its reservation beyond decode scope"
         );
-        let recovered = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::recovered_outputs::WorthQueryRecoveredOutputs::from_checkpoint(
-            decoded, &execution, |accepted| worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles(
-                worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId::of::<()>(),
-                worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId::of::<()>(), std::iter::empty(), &accepted.roles, |_| Some(worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId::of::<()>()), &execution)
+        let recovered = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::recovered_outputs::WorthQueryRecoveredOutputs::from_checkpoint_for_test(
+            decoded, &execution, |accepted| worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles_for_test(
+                worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId::of_for_test::<()>(),
+                worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId::of_for_test::<()>(), std::iter::empty(), &(*accepted.roles_for_test()), |_| Some(worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId::of_for_test::<()>()), &execution)
                 .map(std::sync::Arc::new)).unwrap();
         let escaped = recovered.iter().next().unwrap().clone();
         let twin = escaped.clone();
-        assert!(std::sync::Arc::ptr_eq(&escaped.checkpoint.producer, &twin.checkpoint.producer));
-        assert!(std::sync::Arc::ptr_eq(&escaped.checkpoint.roles, &twin.checkpoint.roles));
-        assert!(std::sync::Arc::ptr_eq(escaped.checkpoint.producer_facts.as_ref().unwrap(),
-            twin.checkpoint.producer_facts.as_ref().unwrap()));
-        assert_eq!(twin.checkpoint.producer_facts.as_ref().unwrap().as_slice(), source);
+        assert!(std::sync::Arc::ptr_eq(&(*escaped.checkpoint.producer_for_test()), &(*twin.checkpoint.producer_for_test())));
+        assert!(std::sync::Arc::ptr_eq(&(*escaped.checkpoint.roles_for_test()), &(*twin.checkpoint.roles_for_test())));
+        assert!(std::sync::Arc::ptr_eq((*escaped.checkpoint.producer_facts_for_test()).as_ref().unwrap(),
+            (*twin.checkpoint.producer_facts_for_test()).as_ref().unwrap()));
+        assert_eq!((*twin.checkpoint.producer_facts_for_test()).as_ref().unwrap().as_slice(), source);
         drop(recovered);
         drop(escaped);
         assert!(lease.charged_memory_bytes() > before,
             "the last escaped identity and correspondence keep their independent payers after runtime metadata drops");
-        assert_eq!(twin.checkpoint.producer.as_str(), "producer");
+        assert_eq!((*twin.checkpoint.producer_for_test()).as_str(), "producer");
         drop(twin);
         assert_eq!(lease.charged_memory_bytes(), before);
 
@@ -74,7 +74,7 @@ fn bootstrap_metadata_keeps_its_charge_and_refuses_an_unfunded_row() {
         // cannot counterfeit the row allocation refusal this case protects.
         let denial = checkpoint
             .clone()
-            .decode_current_body(&execution)
+            .decode_current_body_for_test(&execution)
             .err()
             .expect("a row cannot allocate before its bootstrap payer admits it");
         use worth_query_execution::facade::application_contribution::WorthQueryManagedComputationResourceDenial as Resource;
@@ -89,7 +89,7 @@ fn bootstrap_metadata_keeps_its_charge_and_refuses_an_unfunded_row() {
         );
         assert_eq!(checkpoint.bytes(), original);
         drop(held);
-        let retry = checkpoint.decode_with_execution(&execution).unwrap();
+        let retry = checkpoint.decode_with_execution_for_test(&execution).unwrap();
         assert_eq!(retry.accepted_outputs.len(), 1);
     })
     .unwrap();
@@ -105,20 +105,20 @@ fn actor_fact_execution_causes_remain_native_at_bootstrap() {
         (Native::Cancelled, Control::Cancelled),
         (Native::DeadlineElapsed, Control::TimedOut),
     ] {
-        let denial = CheckpointDecodeDenial::from_fact(FactDecodeDenial::Execution(cause))
-            .into_installation_denial();
+        let denial = CheckpointDecodeDenial::from_fact_for_test(FactDecodeDenial::Execution(cause))
+            .into_installation_denial_for_test();
         assert!(
             matches!(denial.kind(), Kind::ExecutionControlStopped { kind } if kind == expected)
         );
     }
-    let denial = CheckpointDecodeDenial::from_fact(FactDecodeDenial::Execution(
+    let denial = CheckpointDecodeDenial::from_fact_for_test(FactDecodeDenial::Execution(
         Native::PolicyMemoryExhausted {
             requested: 37,
             admitted: 11,
             ancestor: 0,
         },
     ))
-    .into_installation_denial();
+    .into_installation_denial_for_test();
     use worth_query_execution::facade::application_contribution::WorthQueryManagedComputationResourceDenial as Resource;
     use worth_query_execution::facade::application_contribution::WorthQueryMemoryLimitLevel as Level;
     use worth_query_execution::facade::domain_computation::WorthQueryProviderSessionDenialKind as Provider;

@@ -28,7 +28,7 @@ fn cutoff_candidate_pins_the_selected_ancestor_partition() {
     let product = world
         .application
         .product_runtime()
-        .admit_product_branch(world.application.product_runtime().default_branch())
+        .admit_product_branch_for_test(world.application.product_runtime().default_branch_for_test())
         .expect("a real product occurrence is live");
     let parent = product.observation();
     let intent = ProductBranchCreationIntent::from_source(
@@ -42,7 +42,7 @@ fn cutoff_candidate_pins_the_selected_ancestor_partition() {
     let RuntimeWorldBranchCreationOutcome::Performed(child) = world
         .application
         .product_runtime()
-        .create_product_branch(
+        .create_product_branch_for_test(
             execution,
             &product,
             None,
@@ -54,14 +54,14 @@ fn cutoff_candidate_pins_the_selected_ancestor_partition() {
         panic!("the product owner must create the fork");
     };
 
-    let runtime_authority = world.application.runtime.authority_identity().as_u64();
-    let schema = world.application.installed_schema.binding_identity();
+    let runtime_authority = (*world.application.runtime_for_test()).authority_identity().as_u64();
+    let schema = (*world.application.installed_schema_for_test()).binding_identity();
     let scope_entity = worth_relational::facade::identity::EntityId::new(
         worth_relational::facade::identity::PartitionId::main(),
         1,
         1,
     );
-    let scope = WorthQueryOperationScopeBinding::axis_probe_scope(
+    let scope = WorthQueryOperationScopeBinding::axis_probe_scope_for_test(
         runtime_authority,
         schema.clone(),
         "cutoff-selection",
@@ -76,7 +76,7 @@ fn cutoff_candidate_pins_the_selected_ancestor_partition() {
         runtime_authority,
         schema: schema.clone(),
         scope: scope.scope(),
-        output_binding: OutputBindingIdentity::declared("RestoredOutputBinding"),
+        output_binding: OutputBindingIdentity::declared_for_test("RestoredOutputBinding"),
     };
     let target_partition = [0x11; 32];
     let sibling_partition = [0x22; 32];
@@ -84,12 +84,12 @@ fn cutoff_candidate_pins_the_selected_ancestor_partition() {
     let sibling = Arc::new(WorthQueryApplicationOutputCorrespondence::default());
     let mut lineage = WorthQueryApplicationOutputLineage::default();
     lineage.fixture_binding(
-        TypeId::of::<RestoredOutputBinding>(),
+        TypeId::of_for_test::<RestoredOutputBinding>(),
         "RestoredOutputBinding",
     );
 
-    lineage.record_recovered_prior_output(
-        lineage.binding_type(&source.output_binding),
+    lineage.record_recovered_prior_output_for_test(
+        lineage.binding_type_for_test(&(*source.output_binding_for_test())),
         runtime_authority,
         schema.clone(),
         source.scope,
@@ -102,8 +102,8 @@ fn cutoff_candidate_pins_the_selected_ancestor_partition() {
         [0x41; 32],
         None,
     );
-    lineage.record_recovered_prior_output(
-        lineage.binding_type(&source.output_binding),
+    lineage.record_recovered_prior_output_for_test(
+        lineage.binding_type_for_test(&(*source.output_binding_for_test())),
         runtime_authority,
         schema,
         source.scope,
@@ -116,8 +116,8 @@ fn cutoff_candidate_pins_the_selected_ancestor_partition() {
         [0x42; 32],
         None,
     );
-    lineage.register_fork(parent, &child);
-    let selected_cell = &lineage.by_source[&source][&parent.lifecycle_incarnation()]
+    lineage.register_fork_for_test(parent, &child);
+    let selected_cell = &(*lineage.by_source_for_test())[&source][&parent.lifecycle_incarnation()]
         [&parent.reference_generation().get()][0];
     let selected_identity = &selected_cell.get().unwrap().settlement_identity;
     assert!(matches!(&selected_cell.get().unwrap().mutable.lock().unwrap().computation,
@@ -125,7 +125,7 @@ fn cutoff_candidate_pins_the_selected_ancestor_partition() {
             worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::prior_absence::PriorAbsence::Restored)));
 
     let selected = lineage
-        .prior_input_cutoff_candidate::<RestoredOutputBinding>(
+        .prior_input_cutoff_candidate_for_test::<RestoredOutputBinding>(
             &scope,
             &child,
             target_partition,
@@ -143,7 +143,7 @@ fn cutoff_candidate_pins_the_selected_ancestor_partition() {
     );
 
     let next_generation = parent.reference_generation().get() + 1;
-    let _unpublished = lineage.partition_index.insert_vacancy(
+    let _unpublished = (*lineage.partition_index_for_test()).insert_vacancy(
         source.clone(),
         ProductCoordinate {
             occurrence: parent.lifecycle_incarnation(),
@@ -151,8 +151,8 @@ fn cutoff_candidate_pins_the_selected_ancestor_partition() {
         },
         Some(target_partition),
     );
-    let prior = lineage
-        .partition_index
+    let prior = (*lineage
+        .partition_index_for_test())
         .latest_admitted(
             execution,
             &source,

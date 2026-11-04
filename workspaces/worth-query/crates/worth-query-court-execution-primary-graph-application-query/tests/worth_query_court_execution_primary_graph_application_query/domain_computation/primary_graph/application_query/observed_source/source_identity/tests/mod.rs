@@ -17,15 +17,15 @@ fn refused_comparison_preserves_ordinal_and_live_coordinate_for_retry() {
     // Descriptive registry mechanics need no runtime, Native read or epoch grant.
     let selection = WorthQueryApplicationBasisSelectionIdentity::Relational;
     let first = registry
-        .intern(&[7; 32], &[8; 32], footprint(root, true), &selection)
+        .intern_for_test(&[7; 32], &[8; 32], footprint(root, true), &selection)
         .unwrap();
-    let ordinal = registry.state.lock().unwrap().next_ordinal;
+    let ordinal = (*registry.state_for_test()).lock().unwrap().next_ordinal;
     let refusal = worth_relational::facade::transactions::RelationalExecutionDenialCause::PolicyMemoryExhausted {
         requested: 97,
         admitted: 53,
         ancestor: 11,
     };
-    let denied = registry.intern_compared(
+    let denied = registry.intern_compared_for_test(
         &[7; 32],
         &[8; 32],
         footprint(root, false),
@@ -34,17 +34,17 @@ fn refused_comparison_preserves_ordinal_and_live_coordinate_for_retry() {
     );
     assert_eq!(denied.err(), Some(refusal));
     {
-        let state = registry.state.lock().unwrap();
+        let state = (*registry.state_for_test()).lock().unwrap();
         assert_eq!(state.next_ordinal, ordinal);
         assert_eq!(state.meanings.len(), 1);
     }
     let retry = registry
-        .intern(&[7; 32], &[8; 32], footprint(root, true), &selection)
+        .intern_for_test(&[7; 32], &[8; 32], footprint(root, true), &selection)
         .unwrap();
     assert!(Arc::ptr_eq(&first, &retry));
     drop(first);
     drop(retry);
-    assert!(registry.state.lock().unwrap().meanings.is_empty());
+    assert!((*registry.state_for_test()).lock().unwrap().meanings.is_empty());
 }
 
 #[test]
@@ -55,16 +55,16 @@ fn exact_meaning_is_reused_but_a_changed_footprint_gets_a_new_identity() {
     let root = EntityId::new(PartitionId::main(), 1, 1);
     let selection = product_selection();
     let first = registry
-        .intern(&[7; 32], &[8; 32], footprint(root, true), &selection)
+        .intern_for_test(&[7; 32], &[8; 32], footprint(root, true), &selection)
         .unwrap();
     let equivalent = registry
-        .intern(&[7; 32], &[8; 32], footprint(root, true), &selection)
+        .intern_for_test(&[7; 32], &[8; 32], footprint(root, true), &selection)
         .unwrap();
     let changed = registry
-        .intern(&[7; 32], &[8; 32], footprint(root, false), &selection)
+        .intern_for_test(&[7; 32], &[8; 32], footprint(root, false), &selection)
         .unwrap();
     let returned = registry
-        .intern(&[7; 32], &[8; 32], footprint(root, true), &selection)
+        .intern_for_test(&[7; 32], &[8; 32], footprint(root, true), &selection)
         .unwrap();
     assert_eq!(first.identity(), equivalent.identity());
     assert_ne!(first.identity(), changed.identity());
@@ -83,10 +83,10 @@ fn result_set_membership_is_not_a_row_source_with_the_same_footprint() {
     let root = EntityId::new(PartitionId::main(), 1, 1);
     let selection = product_selection();
     let row = registry
-        .intern(&[7; 32], &[8; 32], footprint(root, true), &selection)
+        .intern_for_test(&[7; 32], &[8; 32], footprint(root, true), &selection)
         .unwrap();
     let set = registry
-        .intern_result_set(&[7; 32], &[8; 32], footprint(root, true), &selection)
+        .intern_result_set_for_test(&[7; 32], &[8; 32], footprint(root, true), &selection)
         .unwrap();
     assert_ne!(row.identity(), set.identity());
     assert_ne!(row.checkpoint_identity(), set.checkpoint_identity());
@@ -100,9 +100,9 @@ fn epoch_rejects_a_meaning_from_another_source_coordinate() {
     let root = EntityId::new(PartitionId::main(), 1, 1);
     let selection = product_selection();
     let meaning = registry
-        .intern(&[7; 32], &[8; 32], footprint(root, true), &selection)
+        .intern_for_test(&[7; 32], &[8; 32], footprint(root, true), &selection)
         .unwrap();
-    assert!(WorthQueryObservedSourceEpoch::from_observation(
+    assert!(WorthQueryObservedSourceEpoch::from_observation_for_test(
         &[9; 32], &[8; 32], root, &selection, meaning,
     )
     .is_none());
@@ -117,14 +117,14 @@ fn released_meaning_removes_only_its_fixed_coordinate() {
     let second_root = EntityId::new(PartitionId::main(), 2, 1);
     let selection = product_selection();
     let first = registry
-        .intern(&[7; 32], &[8; 32], footprint(first_root, true), &selection)
+        .intern_for_test(&[7; 32], &[8; 32], footprint(first_root, true), &selection)
         .unwrap();
     let second = registry
-        .intern(&[7; 32], &[8; 32], footprint(second_root, true), &selection)
+        .intern_for_test(&[7; 32], &[8; 32], footprint(second_root, true), &selection)
         .unwrap();
-    assert_eq!(registry.state.lock().unwrap().meanings.len(), 2);
+    assert_eq!((*registry.state_for_test()).lock().unwrap().meanings.len(), 2);
     drop(first);
-    assert_eq!(registry.state.lock().unwrap().meanings.len(), 1);
+    assert_eq!((*registry.state_for_test()).lock().unwrap().meanings.len(), 1);
     assert_eq!(second.footprint().root, second_root);
 }
 
@@ -136,7 +136,7 @@ fn reinterned_source_retains_checkpoint_identity_without_reusing_runtime_idempot
     let root = EntityId::new(PartitionId::main(), 1, 1);
     let selection = product_selection();
     let first = registry
-        .intern(&[7; 32], &[8; 32], footprint(root, true), &selection)
+        .intern_for_test(&[7; 32], &[8; 32], footprint(root, true), &selection)
         .unwrap();
     let first_runtime_identity = *first.identity();
     let first_commitment = first.runtime_idempotency_identity();
@@ -144,7 +144,7 @@ fn reinterned_source_retains_checkpoint_identity_without_reusing_runtime_idempot
     drop(first);
 
     let reinterned = registry
-        .intern(&[7; 32], &[8; 32], footprint(root, true), &selection)
+        .intern_for_test(&[7; 32], &[8; 32], footprint(root, true), &selection)
         .unwrap();
     assert_ne!(*reinterned.identity(), first_runtime_identity);
     assert_eq!(reinterned.runtime_idempotency_identity(), first_commitment);
@@ -159,7 +159,7 @@ fn sibling_product_occurrences_share_checkpoint_identity_not_runtime_idempotency
         );
     let source = world.application.current_world();
     world.application.with_host_advancement(|phase| {
-let host_custody = phase.test_host_request();
+let host_custody = phase.test_host_request_for_test();
 
 let first_branch = world
             .application
@@ -182,8 +182,8 @@ let first_branch = world
                 .select(&host_custody.phase_for_application(&world.application))
                 .expect("the sibling product remains selectable");
             WorthQueryApplicationBasisSelectionIdentity::Product(
-                worth_query_execution::facade::domain_computation::WorthQueryProductBranchReadIdentity::from_observation(
-                    selected.product().observation(),
+                worth_query_execution::facade::domain_computation::WorthQueryProductBranchReadIdentity::from_observation_for_test(
+                    selected.product().observation_for_test(),
                 ),
             )
         };
@@ -192,7 +192,7 @@ let first_branch = world
     );
         let root = EntityId::new(PartitionId::main(), 1, 1);
         let first = registry
-            .intern(
+            .intern_for_test(
                 &[7; 32],
                 &[8; 32],
                 footprint(root, true),
@@ -200,7 +200,7 @@ let first_branch = world
             )
             .unwrap();
         let second = registry
-            .intern(
+            .intern_for_test(
                 &[7; 32],
                 &[8; 32],
                 footprint(root, true),
@@ -225,12 +225,12 @@ fn parameter_partitions_are_distinct_source_occurrences() {
         worth_query_execution::facade::domain_computation::WorthQueryRuntimeAuthorityIdentity::mint_for_test(),
     );
     let lower_meaning = registry
-        .intern(&[7; 32], &[1; 32], footprint(root, true), &occurrence)
+        .intern_for_test(&[7; 32], &[1; 32], footprint(root, true), &occurrence)
         .unwrap();
     let upper_meaning = registry
-        .intern(&[7; 32], &[2; 32], footprint(root, true), &occurrence)
+        .intern_for_test(&[7; 32], &[2; 32], footprint(root, true), &occurrence)
         .unwrap();
-    let lower = WorthQueryObservedSourceEpoch::from_observation(
+    let lower = WorthQueryObservedSourceEpoch::from_observation_for_test(
         &[7; 32],
         &[1; 32],
         root,
@@ -238,7 +238,7 @@ fn parameter_partitions_are_distinct_source_occurrences() {
         lower_meaning,
     )
     .unwrap();
-    let upper = WorthQueryObservedSourceEpoch::from_observation(
+    let upper = WorthQueryObservedSourceEpoch::from_observation_for_test(
         &[7; 32],
         &[2; 32],
         root,
@@ -268,10 +268,10 @@ pub fn product_selection() -> WorthQueryApplicationBasisSelectionIdentity {
     let product = world
         .application
         .product_runtime()
-        .admit_product_branch(world.application.product_runtime().default_branch())
+        .admit_product_branch_for_test(world.application.product_runtime().default_branch_for_test())
         .expect("the fixture product occurrence is live");
     WorthQueryApplicationBasisSelectionIdentity::Product(
-        worth_query_execution::facade::domain_computation::WorthQueryProductBranchReadIdentity::from_observation(product.observation()),
+        worth_query_execution::facade::domain_computation::WorthQueryProductBranchReadIdentity::from_observation_for_test(product.observation()),
     )
 }
 
@@ -291,9 +291,9 @@ fn ordered_epoch_identity_survives_shared_meaning_registry_mutation() {
         worth_query_execution::facade::domain_computation::WorthQueryRuntimeAuthorityIdentity::mint_for_test(),
     );
     let original = registry
-        .intern(&[7; 32], &[8; 32], footprint(root, true), &occurrence)
+        .intern_for_test(&[7; 32], &[8; 32], footprint(root, true), &occurrence)
         .unwrap();
-    let epoch = WorthQueryObservedSourceEpoch::from_observation(
+    let epoch = WorthQueryObservedSourceEpoch::from_observation_for_test(
         &[7; 32],
         &[8; 32],
         root,
@@ -306,9 +306,9 @@ fn ordered_epoch_identity_survives_shared_meaning_registry_mutation() {
     // A second meaning mutates the shared registry without editing the first
     // epoch's coordinate or retained identity. Dropping it mutates it again.
     let changed = registry
-        .intern(&[7; 32], &[8; 32], footprint(root, false), &occurrence)
+        .intern_for_test(&[7; 32], &[8; 32], footprint(root, false), &occurrence)
         .unwrap();
-    let changed = WorthQueryObservedSourceEpoch::from_observation(
+    let changed = WorthQueryObservedSourceEpoch::from_observation_for_test(
         &[7; 32],
         &[8; 32],
         root,

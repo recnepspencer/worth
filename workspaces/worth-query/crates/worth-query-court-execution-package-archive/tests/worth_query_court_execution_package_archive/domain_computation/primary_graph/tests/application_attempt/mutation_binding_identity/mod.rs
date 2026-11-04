@@ -25,16 +25,16 @@ fn a_mutation_request_derives_its_identities_once_and_names_its_binding() {
     let input = ProgramRequiredInput::new("open");
     let identities = Identities::encode(&key, &input).expect("the request encodes");
     let named = WorthQueryApplicationIdempotencyBinding::for_mutation_identities(&identities);
-    let unnamed = WorthQueryApplicationIdempotencyBinding::new(
+    let unnamed = WorthQueryApplicationIdempotencyBinding::new_for_test(
         *identities.key_identity(),
         *identities.input_identity(),
     );
 
-    assert_eq!(named.key_text(), unnamed.key_text());
+    assert_eq!(named.key_text_for_test(), unnamed.key_text_for_test());
     assert_eq!(named.intent_identity(), unnamed.intent_identity());
     assert_ne!(
-        named.intent_text(),
-        unnamed.intent_text(),
+        named.intent_text_for_test(),
+        unnamed.intent_text_for_test(),
         "naming the binding is part of the intent"
     );
     assert!(named.is_for_mutation_binding(ProgramRequiredMutationBinding::IDENTITY));
@@ -50,9 +50,9 @@ fn a_retry_names_the_same_intent_and_a_changed_input_does_not() {
         let identities = Identities::encode(&key, &input).expect("the request encodes");
         WorthQueryApplicationIdempotencyBinding::for_mutation_identities(&identities)
     };
-    assert_eq!(build("open").intent_text(), build("open").intent_text());
-    assert_ne!(build("open").intent_text(), build("closed").intent_text());
-    assert_eq!(build("open").key_text(), build("closed").key_text());
+    assert_eq!(build("open").intent_text_for_test(), build("open").intent_text_for_test());
+    assert_ne!(build("open").intent_text_for_test(), build("closed").intent_text_for_test());
+    assert_eq!(build("open").key_text_for_test(), build("closed").key_text_for_test());
 }
 
 #[test]
@@ -62,7 +62,7 @@ fn two_bindings_sharing_key_namespace_operation_and_input_type_never_replay_each
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let key = "shared-key".to_owned();
@@ -82,7 +82,7 @@ fn two_bindings_sharing_key_namespace_operation_and_input_type_never_replay_each
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let first = world
@@ -103,7 +103,7 @@ fn two_bindings_sharing_key_namespace_operation_and_input_type_never_replay_each
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "committed", &request)
+            resolved_account(&(phase).test_host_request_for_test(), &world, "committed", &request)
         })
         .expect("the fixture read owns its installed host call");
     let retry = world
@@ -152,13 +152,13 @@ fn a_binding_the_schema_never_installed_is_refused_instead_of_panicking() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
+            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let operation = world
@@ -170,7 +170,7 @@ fn a_binding_the_schema_never_installed_is_refused_instead_of_panicking() {
         .application
         .with_host_advancement(|phase| {
             world
-                .selected_product(&(phase).test_host_request())
+                .selected_product(&(phase).test_host_request_for_test())
                 .authorize_operation(
                     &phase,
                     &principal,
@@ -226,7 +226,7 @@ fn handler_contact_is_preserved_after_a_later_execution_denial() {
         let principal = world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 authenticated_principal(
                     &(host_custody.phase_for_application(&world.application)).test_host_request(),
                     &world,
@@ -237,7 +237,7 @@ fn handler_contact_is_preserved_after_a_later_execution_denial() {
         let account = world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 resolved_account(
                     &(host_custody.phase_for_application(&world.application)).test_host_request(),
                     &world,
@@ -254,7 +254,7 @@ fn handler_contact_is_preserved_after_a_later_execution_denial() {
         let admission = world
             .application
             .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
+                let host_custody = phase.test_host_request_for_test();
                 world
                     .selected_product(
                         &(host_custody.phase_for_application(&world.application))

@@ -32,3 +32,5 @@ pub fn native_metadata(
         deleted_at: record.deleted_at_version(),
     }))
 }
+
+mod court_doors_for_test;

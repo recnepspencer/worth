@@ -46,7 +46,7 @@ fn every_consuming_partition_survives_in_the_facts_reverse_index() {
     attribution.record(key(1), partition(7));
     let sealed = readers(attribution, 1);
     assert_eq!(
-        sealed[0].1.partitions(),
+        sealed[0].1.partitions_for_test(),
         partitions(&[7, 9]),
         "a consumed fact's reverse index must retain every consuming partition"
     );
@@ -67,7 +67,7 @@ fn every_consuming_partition_survives_in_the_facts_reverse_index() {
     let host = worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     attribution
-        .normalize_adjacencies(&mut handler, &execution)
+        .normalize_adjacencies_for_test(&mut handler, &execution)
         .unwrap();
     assert_eq!(handler, std::collections::BTreeSet::from([adjacency(9)]));
     let observed = BTreeMap::from([(
@@ -80,8 +80,8 @@ fn every_consuming_partition_survives_in_the_facts_reverse_index() {
             relations: Vec::new(),
         },
     )]);
-    let sealed = SealedComputationFacts::at_seal(attribution, &observed);
-    let (_, _, readers) = sealed.facts().next().unwrap();
+    let sealed = SealedComputationFacts::at_seal_for_test(attribution, &observed);
+    let (_, _, readers) = sealed.facts_for_test().next().unwrap();
     assert_eq!(
         readers.reads().collect::<Vec<_>>(),
         [
@@ -109,8 +109,8 @@ pub fn readers(
             (key(slot.into()), fact)
         })
         .collect::<BTreeMap<_, _>>();
-    SealedComputationFacts::at_seal(attribution, &observed)
-        .facts()
+    SealedComputationFacts::at_seal_for_test(attribution, &observed)
+        .facts_for_test()
         .map(|(key, fact, readers)| {
             assert_eq!(
                 fact, &observed[key],
@@ -139,14 +139,14 @@ fn every_fact_keeps_the_calls_that_read_it_and_its_sealed_content() {
         [
             (
                 key(1),
-                ComputationFactReaders::read_by(false, [], partitions(&[7]))
+                ComputationFactReaders::read_by_for_test(false, [], partitions(&[7]))
             ),
             (
                 key(2),
-                ComputationFactReaders::read_by(false, [], partitions(&[7, 9]))
+                ComputationFactReaders::read_by_for_test(false, [], partitions(&[7, 9]))
             ),
-            (key(3), ComputationFactReaders::read_by(true, [], [])),
-            (key(4), ComputationFactReaders::read_by(false, [11, 12], [])),
+            (key(3), ComputationFactReaders::read_by_for_test(true, [], [])),
+            (key(4), ComputationFactReaders::read_by_for_test(false, [11, 12], [])),
         ]
     );
 }
@@ -164,9 +164,9 @@ fn a_key_read_again_by_the_same_call_names_the_call_once() {
         [
             (
                 key(1),
-                ComputationFactReaders::read_by(false, [], partitions(&[7]))
+                ComputationFactReaders::read_by_for_test(false, [], partitions(&[7]))
             ),
-            (key(2), ComputationFactReaders::read_by(false, [3], [])),
+            (key(2), ComputationFactReaders::read_by_for_test(false, [3], [])),
         ]
     );
 }
@@ -192,9 +192,9 @@ fn a_key_read_in_several_classes_belongs_to_every_one_of_them() {
     attribution.record(key(7), item(5));
     attribution.record(key(7), ComputationRead::Membership);
 
-    let membership_and_partition = ComputationFactReaders::read_by(true, [], partitions(&[7]));
-    let item_and_partition = ComputationFactReaders::read_by(false, [4], partitions(&[7]));
-    let membership_and_item = ComputationFactReaders::read_by(true, [4], []);
+    let membership_and_partition = ComputationFactReaders::read_by_for_test(true, [], partitions(&[7]));
+    let item_and_partition = ComputationFactReaders::read_by_for_test(false, [4], partitions(&[7]));
+    let membership_and_item = ComputationFactReaders::read_by_for_test(true, [4], []);
     assert_eq!(
         readers(attribution, 7),
         [
@@ -206,7 +206,7 @@ fn a_key_read_in_several_classes_belongs_to_every_one_of_them() {
             (key(6), membership_and_item),
             (
                 key(7),
-                ComputationFactReaders::read_by(true, [5], partitions(&[9]))
+                ComputationFactReaders::read_by_for_test(true, [5], partitions(&[9]))
             ),
         ]
     );
@@ -229,22 +229,22 @@ fn ordinal_alignment_includes_handler_gaps_and_retains_shared_call_keys() {
     reads.record(key(2), partition(7));
     reads.record(key(2), partition(9));
     reads.record(key(4), ComputationRead::Membership);
-    let sealed = SealedComputationFacts::at_seal(reads, &observed);
+    let sealed = SealedComputationFacts::at_seal_for_test(reads, &observed);
 
     assert!(
-        sealed.at_ordinal(0).is_none(),
+        sealed.at_ordinal_for_test(0).is_none(),
         "a handler-only ordinal is not a computation fact"
     );
-    assert_eq!(sealed.at_ordinal(1).unwrap().0, &key(2));
-    assert!(sealed.at_ordinal(2).is_none());
-    assert_eq!(sealed.at_ordinal(3).unwrap().0, &key(4));
-    assert!(sealed.at_ordinal(4).is_none());
+    assert_eq!(sealed.at_ordinal_for_test(1).unwrap().0, &key(2));
+    assert!(sealed.at_ordinal_for_test(2).is_none());
+    assert_eq!(sealed.at_ordinal_for_test(3).unwrap().0, &key(4));
+    assert!(sealed.at_ordinal_for_test(4).is_none());
     assert_eq!(
-        sealed.call_index().keys(partition(7)).collect::<Vec<_>>(),
+        sealed.call_index().keys_for_test(partition(7)).collect::<Vec<_>>(),
         [&key(2)]
     );
     assert_eq!(
-        sealed.call_index().keys(partition(9)).collect::<Vec<_>>(),
+        sealed.call_index().keys_for_test(partition(9)).collect::<Vec<_>>(),
         [&key(2)]
     );
     assert_eq!(sealed.observation_work_bound(), Some(2));
@@ -276,9 +276,9 @@ fn completion_metadata_retains_the_exact_original_pre_effect_payload() {
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .unwrap();
-    let mut body = NativeFactPayloadBuilder::allocate_completed_read(
+    let mut body = NativeFactPayloadBuilder::allocate_completed_read_for_test(
         observed.len(),
-        StorageControl::new(
+        StorageControl::new_for_test(
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             None,
         ),
@@ -288,7 +288,7 @@ fn completion_metadata_retains_the_exact_original_pre_effect_payload() {
         body.push(fact).unwrap();
     }
     let body: FactPayload = body.seal().unwrap();
-    let sealed = metadata.bind_fixture(body.clone());
+    let sealed = metadata.bind_fixture_for_test(body.clone());
     assert!(std::ptr::eq(
         body.get(1).unwrap(),
         sealed.fact(&key(2)).unwrap()
@@ -341,13 +341,13 @@ fn native_fact_index_preserves_ordinals_and_readers_without_an_observation_bill(
             )]);
             let mut reads = ComputationFactAttribution::default();
             reads.record(key(1), partition(7));
-            SealedComputationFacts::at_seal(reads, &observed)
+            SealedComputationFacts::at_seal_for_test(reads, &observed)
         })
         .unwrap();
     assert_eq!(sealed.observation_work_bound(), None);
-    assert_eq!(sealed.at_ordinal(0).unwrap().0, &key(1));
+    assert_eq!(sealed.at_ordinal_for_test(0).unwrap().0, &key(1));
     assert_eq!(
-        sealed.call_index().keys(partition(7)).collect::<Vec<_>>(),
+        sealed.call_index().keys_for_test(partition(7)).collect::<Vec<_>>(),
         [&key(1)]
     );
 }

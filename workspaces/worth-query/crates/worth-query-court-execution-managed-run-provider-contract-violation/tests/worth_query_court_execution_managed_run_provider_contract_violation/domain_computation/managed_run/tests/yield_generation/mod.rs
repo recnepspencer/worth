@@ -20,7 +20,7 @@ fn successor_installation_after_direct_safe_point_denies_yield() {
             YieldProvider::installed(5),
             resource_request,
         );
-        let installed_running_phase = execution.phase_for_direct(&running);
+        let installed_running_phase = execution.phase_for_direct_for_test(&running);
 
         let active = running
             .begin_graph_execution(
@@ -47,8 +47,8 @@ fn successor_installation_after_direct_safe_point_denies_yield() {
             worth_query_execution::facade::domain_computation::WorthQueryDirectYieldDenialKind::InstallationGenerationStale
         );
         let paused = denied.into_paused();
-        paused
-            .active
+        (*paused
+            .active_for_test())
             .request_cancellation(BridgeManagedExecutionCancellationReason::HostRequested)
             .unwrap();
         let terminal = match paused.advance(&installed_running_phase) {
@@ -109,7 +109,7 @@ fn successor_installation_after_workflow_safe_point_denies_yield() {
             resources,
             resource_request,
         );
-        let installed_running_phase = execution.phase_for_workflow(&running);
+        let installed_running_phase = execution.phase_for_workflow_for_test(&running);
 
         let active = running
             .begin_stage_graph_execution(
@@ -137,8 +137,8 @@ fn successor_installation_after_workflow_safe_point_denies_yield() {
         worth_query_execution::facade::domain_computation::WorthQueryWorkflowYieldDenialKind::InstallationGenerationStale
     );
         let paused = denied.into_paused();
-        paused
-            .active
+        (*paused
+            .active_for_test())
             .request_cancellation(BridgeManagedExecutionCancellationReason::HostRequested)
             .unwrap();
         let terminal = match paused.advance(&installed_running_phase) {

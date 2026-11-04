@@ -55,10 +55,10 @@ fn contract_incompatible_projection_mask_denies_before_result_construction() {
         )]),
         diagnostic_mask: AspectMask::<DiagnosticMask>::new([CanonicalFieldPath::single(field_key)]),
     };
-    let layout = context
+    let layout = (*context
         .world
         .application
-        .runtime
+        .runtime_for_test())
         .primary_graph()
         .unwrap()
         .layout();
@@ -87,7 +87,7 @@ fn incomplete_result_contract_denies_before_result_construction() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
 
             let capability = admit_touch_account_capability(
                 &(host_custody.phase_for_application(&context.world.application))
@@ -136,7 +136,7 @@ fn forbidden_predicate_influence_denies_before_result_construction() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
 
             let capability = admit_touch_account_capability(
                 &(host_custody.phase_for_application(&context.world.application))
@@ -187,7 +187,7 @@ fn forbidden_ordering_influence_denies_before_result_construction() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
 
             let capability = admit_touch_account_capability(
                 &(host_custody.phase_for_application(&context.world.application))
@@ -236,7 +236,7 @@ fn forbidden_live_scope_influence_denies_before_result_construction() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
 
             let capability = admit_touch_account_capability(
                 &(host_custody.phase_for_application(&context.world.application))
@@ -285,7 +285,7 @@ fn forbidden_live_target_influence_denies_before_result_construction() {
         .world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
+            let host_custody = phase.test_host_request_for_test();
 
             let capability = admit_touch_account_capability(
                 &(host_custody.phase_for_application(&context.world.application))
@@ -333,17 +333,17 @@ pub fn admission_context() -> AdmissionContext {
     let (principal, account) = world
         .application
         .with_host_advancement(|phase| {
-            let host_request = phase.test_host_request();
+            let host_request = phase.test_host_request_for_test();
             let phase_custody = &host_request;
             let borrowed_execution = phase
-                .execution_request_for(world.application.product_runtime())
+                .execution_request_for_for_test(world.application.product_runtime())
                 .expect("the fixture lends its installed phase");
             let execution = &borrowed_execution;
             let principal = world
                 .application
-                .select_product_branch(
+                .select_product_branch_for_test(
                     execution,
-                    world.application.product_runtime().default_branch(),
+                    world.application.product_runtime().default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_authenticated_principal(
@@ -356,9 +356,9 @@ pub fn admission_context() -> AdmissionContext {
                 .unwrap();
             let account = world
                 .application
-                .select_product_branch(
+                .select_product_branch_for_test(
                     execution,
-                    world.application.product_runtime().default_branch(),
+                    world.application.product_runtime().default_branch_for_test(),
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
