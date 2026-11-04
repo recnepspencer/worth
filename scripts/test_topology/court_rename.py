@@ -3,6 +3,12 @@
 Usage:
     python scripts/test_topology/court_rename.py rename OLD NEW [--frontier CRATE...]
     python scripts/test_topology/court_rename.py merge OLD INTO
+    python scripts/test_topology/court_rename.py rename OLD NEW --unsplit
+    python scripts/test_topology/court_rename.py prune
+
+`--unsplit` removes the court's split registration (a court alone on its frontier is not a
+split and takes the plain frontier name). `prune` drops every delegate that no court sharing the
+split's frontier owns, as boundary-check judges ownership.
 
 `rename` moves the crate and its test tree with `git mv`, renames the package and its test
 target, and replaces the exact old names (kebab and snake case, never as a prefix of a longer
@@ -96,6 +102,38 @@ def rename(root, old, new, frontier):
     return changed
 
 
+def unsplit(root, court):
+    splits = root / SPLITS
+    text = splits.read_text(encoding='utf-8')
+    for a, b, name in reversed(split_blocks(text)):
+        if name == court:
+            text = text[:a] + text[b:]
+    splits.write_text(text, encoding='utf-8')
+
+
+def under(child, owner):
+    return child == owner or child.startswith(owner + '/')
+
+
+def prune(root):
+    """Drop delegates no same-frontier peer owns; returns the number dropped."""
+    splits = root / SPLITS
+    text = splits.read_text(encoding='utf-8')
+    blocks = split_blocks(text)
+    fields = {court: (list_field(text[a:b], 'frontier'), list_field(text[a:b], 'owners')) for a, b, court in blocks}
+    dropped = 0
+    for a, b, court in reversed(blocks):
+        block = text[a:b]
+        frontier, owners = fields[court]
+        peers = [o for c, (f, o) in fields.items() if c != court and f == frontier]
+        kept = [d for d in list_field(block, 'delegates')
+                if any(under(child, f'{owner}/{d}') for owner in owners for peer in peers for child in peer)]
+        dropped += len(list_field(block, 'delegates')) - len(kept)
+        text = text[:a] + set_list(block, 'delegates', kept) + text[b:]
+    splits.write_text(text, encoding='utf-8')
+    return dropped
+
+
 def merged_mod(ours, theirs):
     """`ours` with every line of `theirs` that declares a module or its #[path] it lacks."""
     lines = ours.rstrip('\n').split('\n')
@@ -154,15 +192,20 @@ def merge(root, old, into):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('step', choices=('rename', 'merge'))
-    parser.add_argument('old')
-    parser.add_argument('new')
+    parser.add_argument('step', choices=('rename', 'merge', 'prune'))
+    parser.add_argument('old', nargs='?')
+    parser.add_argument('new', nargs='?')
     parser.add_argument('--frontier', nargs='*', default=[])
+    parser.add_argument('--unsplit', action='store_true')
     parser.add_argument('--root', type=Path, default=Path('.'))
     args = parser.parse_args(argv)
     root = args.root.resolve()
-    if args.step == 'rename':
+    if args.step == 'prune':
+        print(f'{prune(root)} delegates dropped')
+    elif args.step == 'rename':
         print(f'{rename(root, args.old, args.new, args.frontier)} reference files updated')
+        if args.unsplit:
+            unsplit(root, args.new)
     else:
         print(f'{merge(root, args.old, args.new)} reference files updated')
 

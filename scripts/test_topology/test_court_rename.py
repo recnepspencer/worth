@@ -26,6 +26,18 @@ class CourtRenameTests(unittest.TestCase):
         self.assertEqual(list_field(block, 'owners'), ['x', 'y'])
         self.assertIn('owners = ["x", "y", "z"]', set_list(block, 'owners', ['x', 'y', 'z']))
 
+    def test_prune_keeps_only_delegates_a_same_frontier_peer_owns(self):
+        from court_rename import SPLITS, prune
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / SPLITS).parent.mkdir(parents=True)
+            (root / SPLITS).write_text(
+                '[[splits]]\ncourt = "a"\nfrontier = ["x"]\narea = "a"\nowners = ["t"]\ndelegates = ["kept", "gone"]\n\n'
+                '[[splits]]\ncourt = "b"\nfrontier = ["x"]\narea = "b"\nowners = ["t/kept"]\ndelegates = []\n\n'
+                '[[splits]]\ncourt = "c"\nfrontier = ["y"]\narea = "c"\nowners = ["t/gone"]\ndelegates = []\n')
+            self.assertEqual(prune(root), 1)
+            self.assertIn('delegates = ["kept"]', (root / SPLITS).read_text())
+
 
 if __name__ == '__main__':
     unittest.main()
