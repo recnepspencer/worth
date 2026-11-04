@@ -1,17 +1,17 @@
 # worth-query-execution sealed test doors
 
-- item doors: 785
-- member doors: 1978 in 605 files
-  - constructor: 131
-  - field: 535
-  - field_into: 38
-  - field_mut: 187
+- item doors: 788
+- member doors: 2013 in 618 files
+  - constructor: 133
+  - field: 541
+  - field_into: 40
+  - field_mut: 192
   - hand: 12
-  - method: 1075
+  - method: 1095
 
 ## Authority doors for owner review
 
-### Member doors (132)
+### Member doors (134)
 
 - `domain_computation/application_aftermath/external_effect/dispatch/court_doors_for_test.rs: impl WorthQueryExternalEffectDispatch :: matches_committed_owner_for_test (method)`
 - `domain_computation/application_aftermath/recovery_handle/handle/court_doors_for_test.rs: impl WorthQueryRecoveryHandle :: authority_identity_for_test (method)`
@@ -32,7 +32,7 @@
 - `domain_computation/authorization/application_disclosure/decision/governance/court_doors_for_test.rs: impl WorthQueryApplicationQueryGovernance :: readmission_matches_for_test (method)`
 - `domain_computation/authorization/application_disclosure/receipt/court_doors_for_test.rs: impl WorthQueryApplicationDisclosureReceipt :: governed_for_test (method)`
 - `domain_computation/authorization/operation_admission/brand_custody_court_doors_for_test.rs: impl <Schema, Operation, Input, Scope> WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope> :: belongs_to_for_test (method)`
-- `domain_computation/authorization/operation_admission/brand_custody_court_doors_for_test.rs: impl <Schema, Operation, Input, Scope> WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope> :: validate_runtime_ownership_for_test (method)`
+- `domain_computation/authorization/operation_admission/installed_reentry_court_doors_for_test.rs: impl <Schema, Operation, Input, Scope> WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope> :: validate_installed_entry_for_test (method)`
 - `domain_computation/authorization/operation_scope_binding/court_doors_for_test.rs: impl WorthQueryOperationScopeBinding :: axis_probe_scope_for_test (method)`
 - `domain_computation/authorization/workflow_approval_authority/court_doors_for_test.rs: impl WorthQueryWorkflowApprovalAuthorityBasis :: from_retained_approval_for_test (method)`
 - `domain_computation/execution_runtime/product_world/resources/court_doors_for_test.rs: impl WorthQueryProductExecution :: authority_for_test (field)`
@@ -64,6 +64,7 @@
 - `domain_computation/primary_graph/application_attempt/compare_and_commit/commit_receipt/court_doors_for_test.rs: impl WorthQueryApplicationCommitReceipt :: authority_binding_for_test (field)`
 - `domain_computation/primary_graph/application_attempt/compare_and_commit/commit_receipt/court_doors_for_test.rs: impl WorthQueryApplicationCommitReceipt :: authority_binding_mut_for_test (field_mut)`
 - `domain_computation/primary_graph/application_attempt/compare_and_commit/commit_receipt/court_doors_for_test.rs: impl WorthQueryApplicationCommitReceipt :: runtime_authority_for_test (method)`
+- `domain_computation/primary_graph/application_attempt/effect_program/installed_reentry/court_doors_for_test.rs: impl <Schema, Operation, Input, Scope> WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope> :: validate_current_authority_for_test (method)`
 - `domain_computation/primary_graph/application_attempt/provider_binding/court_doors_for_test.rs: impl WorthQueryPreparedApplicationProviderAttempt :: into_parts_for_test (hand)`
 - `domain_computation/primary_graph/application_attempt/provider_execution/phase/prepared/running/progression/court_doors_for_test.rs: impl <'a, 'provider, Schema, Operation, Input, Scope> WorthQueryApplicationCommitProgressionAuthority<'a, 'provider, Schema, Operation, Input, Scope> :: new_for_test (constructor)`
 - `domain_computation/primary_graph/application_attempt/provider_execution/phase/prepared/running/progression/session_admission/court_doors_for_test.rs: impl <'run> WorthQueryRegisteredProviderSession<'run> :: progress_for_test (method)`
@@ -96,10 +97,11 @@
 - `domain_computation/primary_graph/application_query/read_execution/tree_materialization/source_footprint/material_storage/court_doors_for_test.rs: impl <'a, 'request, 'authority> MaterialFootprintStorage<'a, 'request, 'authority> :: new_for_test (constructor)`
 - `domain_computation/primary_graph/application_query/read_execution/tree_materialization/source_footprint/material_storage/court_doors_for_test.rs: impl <'a, 'request, 'authority> MaterialFootprintStorage<'a, 'request, 'authority> :: normalize_for_test (method)`
 - `domain_computation/primary_graph/application_runtime/court_doors_for_test.rs: impl <Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> :: mutation_projection_for_test (field)`
-- `domain_computation/primary_graph/application_runtime/court_doors_for_test.rs: impl <Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> :: primary_graph_authority_for_test (field)`
 - `domain_computation/primary_graph/application_runtime/inbound_occurrence/transport_binding/court_doors_for_test.rs: impl WorthQueryInstalledTransportCompletionBinding :: runtime_for_test (method)`
 - `domain_computation/primary_graph/application_runtime/inbound_occurrence/transport_publication_permit/court_doors_for_test.rs: impl <Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> :: reserve_installed_transport_publication_for_test (method)`
 - `domain_computation/primary_graph/application_runtime/publication_entry/court_doors_for_test.rs: impl <Schema> WorthQueryPrimaryGraphBootstrap<Schema> where Schema: ApplicationSchema, :: publish_application_runtime_with_ports_for_test (method)`
+- `domain_computation/primary_graph/application_runtime_core_court_doors_for_test.rs: impl WorthQueryApplicationRuntimeCore :: authority_identity_for_test (method)`
+- `domain_computation/primary_graph/application_runtime_core_court_doors_for_test.rs: impl WorthQueryApplicationRuntimeCore :: primary_graph_authority_for_test (method)`
 - `domain_computation/primary_graph/bootstrap/checkpoint_transition/capture_funding/court_doors_for_test.rs: impl WorthQueryCheckpointTransitionResources :: capture_lease_for_test (method)`
 - `domain_computation/primary_graph/bootstrap/court_doors_for_test.rs: impl <Schema> WorthQueryPrimaryGraphBootstrap<Schema> where Schema: ApplicationSchema, :: publish_for_test (method)`
 - `domain_computation/primary_graph/bootstrap/preparation/court_doors_for_test.rs: impl WorthQueryExecutionInstallationAuthority :: prepare_primary_graph_with_relational_runtime_and_invariants_for_test (method)`
