@@ -10,17 +10,6 @@ impl WorthQueryPrimaryGraphLayout {
 
 impl WorthQueryPrimaryGraphLayout {
     #[doc(hidden)]
-    pub fn lower_for_test(
-        schema: &ErasedApplicationSchemaDeclaration,
-        native_contracts: &WorthQueryInstalledApplicationSchemaContractCatalog,
-        existing_registry: &RelationalSchemaRegistry,
-    ) -> Result<(Self, RelationalSchemaRegistry), WorthQueryPrimaryGraphInstallationDenial> {
-        Self::lower(schema, native_contracts, existing_registry)
-    }
-}
-
-impl WorthQueryPrimaryGraphLayout {
-    #[doc(hidden)]
     pub fn field_locator_for_test(
         &self,
         entity: &str,

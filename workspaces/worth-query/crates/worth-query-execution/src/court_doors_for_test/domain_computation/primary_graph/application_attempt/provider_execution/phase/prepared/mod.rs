@@ -1,6 +1,4 @@
 //! Doors under `domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared`.
-#[path = "commit_preparation/mod.rs"]
-pub mod commit_preparation;
 #[path = "currentness/mod.rs"]
 pub mod currentness;
 #[path = "native_reference_invariants/mod.rs"]

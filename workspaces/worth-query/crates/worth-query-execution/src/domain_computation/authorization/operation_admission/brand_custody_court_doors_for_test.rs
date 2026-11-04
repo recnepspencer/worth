@@ -26,15 +26,3 @@ impl<Schema, Operation, Input, Scope>
     }
 }
 
-impl<Schema, Operation, Input, Scope>
-    WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>
-{
-    #[doc(hidden)]
-    pub fn validate_runtime_ownership_for_test(
-        &self,
-        runtime_authority: WorthQueryRuntimeAuthorityIdentity,
-        binding_identity: &ApplicationSchemaBindingIdentity,
-    ) -> Result<(), Denial> {
-        Self::validate_runtime_ownership(self, runtime_authority, binding_identity)
-    }
-}
