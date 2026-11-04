@@ -36,7 +36,7 @@ Read these in order the first time. Keep the Glossary open as a reference while 
 | Run pure computation with tracked inputs and owner completion | [Managed and partitioned computation](build-an-application.md#36-declare-and-install-a-partitioned-managed-computation) |
 | Preserve authored source while regenerating output after a code change | [Application build identity](build-an-application.md#application-build-identity) |
 | Retain an original action through refusal, delivery and close | [Owning actions](build-an-application.md#53-execute-through-the-program) |
-| Install the application graph | [Build an Application §4](build-an-application.md#4-install-the-application-graph) |
+| Install the application graph | [Build an Application §4](build-an-application.md#4-install-or-reopen) |
 | Author, publish, and run workflows | [Build an Application §6](build-an-application.md#6-author-publish-and-run-workflows) |
 | Move a branch to a new program revision | [Build an Application §7](build-an-application.md#7-adopt-a-new-program-on-a-branch) |
 | Find which crate to import for any other job | [API Map](api.md) |
